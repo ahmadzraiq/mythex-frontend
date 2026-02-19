@@ -1,0 +1,28 @@
+---
+description: AI build guide - read SCHEMA.md when building screens, layouts, fragments
+alwaysApply: true
+---
+
+# AI Build Guide
+
+When asked to build or add screens, layouts, modals, or features to this website:
+
+1. **Read `docs/SCHEMA.md`** – It defines the full JSON schema for screens, layouts, fragments, actions, and routes.
+
+2. **Follow the schema exactly:**
+   - Screens with header/drawer: use `layout: "authenticated"` + `content`
+   - Screens without: use `ui` directly
+   - Reusable UI: create fragments in `config/fragments/`, register in `fragments/index.ts`, use `$ref`
+   - Modals: Form must wrap ModalBody + ModalFooter; FormSubmitButton must be inside Form
+
+3. **Add routes** in `config/routes.json` and **import** new screens in `config/app.ts`.
+
+4. **Actions** go in `config/actions/` (auth, products, layout, other). Use `type: "fetch"`, `type: "set"`, `type: "validate"`, etc. per schema.
+
+5. **Never hardcode** layout or shared UI in React—define everything in JSON config.
+
+6. **Config-driven, no hardcoded values:**
+   - Routes: `config/routes.json` (dynamic routes use `dynamic: true`)
+   - Initial state: `config/store.json` (`initialData`)
+   - Theme: `config/theme.json` (colors, sections); use `var(--theme-*)` in classNames
+   - Dynamic navigation: `{ "action": "navigate", "payload": { "routeConfig": "product", "slug": { "var": "$item.slug" } } }`—not hardcoded action names like `navigateToProduct`

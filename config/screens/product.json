@@ -1,0 +1,88 @@
+{
+  "meta": { "title": "Product | NOIR & AURA", "description": "Product details" },
+  "state": {
+    "product": {},
+    "relatedProducts": [],
+    "activeTab": "description"
+  },
+  "layout": "store",
+  "initActions": [{ "action": "fetchProductBySlug" }],
+  "content": {
+    "type": "Box",
+    "props": { "className": "max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12" },
+    "children": [
+      {
+        "type": "Box",
+        "condition": { "var": "product.id" },
+        "props": { "className": "grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "aspect-square bg-gray-100 rounded-xl overflow-hidden" },
+            "children": [
+              { "type": "NextImage", "props": { "src": "{{product.image}}", "alt": "{{product.name}}", "fill": true, "className": "object-cover" } }
+            ]
+          },
+          {
+            "type": "VStack",
+            "props": { "className": "gap-6" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-gray-500 text-xs font-medium tracking-widest uppercase" }, "text": "{{product.brand}}" },
+              { "type": "Heading", "props": { "size": "2xl", "className": "font-light tracking-tight text-[#1a1a1a]" }, "text": "{{product.name}}" },
+              {
+                "type": "HStack",
+                "props": { "className": "gap-3 items-baseline" },
+                "children": [
+                  { "type": "Text", "props": { "className": "font-semibold text-lg text-[#1a1a1a]" }, "text": "{{product.price}}" },
+                  { "type": "Text", "condition": { "var": "product.originalPrice" }, "props": { "className": "text-gray-500 line-through" }, "text": "{{product.originalPrice}}" }
+                ]
+              },
+              {
+                "type": "HStack",
+                "props": { "className": "gap-2 items-center" },
+                "children": [
+                  { "type": "Badge", "condition": { "==": [{ "var": "product.stock" }, "in_stock"] }, "props": { "action": "success", "size": "sm" }, "children": [{ "type": "BadgeText", "text": "In Stock" }] }
+                ]
+              },
+              { "type": "Divider" },
+              { "type": "Text", "props": { "className": "font-medium text-sm text-[#1a1a1a]" }, "text": "Size" },
+              {
+                "type": "HStack",
+                "props": { "className": "gap-2 flex-wrap" },
+                "children": [
+                  { "type": "Pressable", "map": "product.variants.size", "props": { "className": "px-4 py-2.5 border border-gray-200 rounded-lg hover:border-[#1a1a1a] text-sm font-medium text-[#1a1a1a]" }, "actions": { "click": { "action": "setState", "payload": { "path": "product.selectedSize", "value": { "var": "$item" } } } }, "children": [{ "type": "Text", "text": "{{$item}}" }] }
+                ]
+              },
+              { "type": "Text", "props": { "className": "font-medium text-sm text-[#1a1a1a]" }, "text": "Color" },
+              {
+                "type": "HStack",
+                "props": { "className": "gap-2 flex-wrap" },
+                "children": [
+                  { "type": "Pressable", "map": "product.variants.color", "props": { "className": "px-4 py-2.5 border border-gray-200 rounded-lg hover:border-[#1a1a1a] text-sm font-medium text-[#1a1a1a]" }, "actions": { "click": { "action": "setState", "payload": { "path": "product.selectedColor", "value": { "var": "$item" } } } }, "children": [{ "type": "Text", "text": "{{$item}}" }] }
+                ]
+              },
+              { "type": "Divider" },
+              {
+                "type": "HStack",
+                "props": { "className": "gap-4" },
+                "children": [
+                  { "type": "Button", "props": { "action": "primary", "className": "flex-1 py-3.5 bg-[#1a1a1a] hover:bg-gray-800" }, "text": "Add to Cart", "actions": { "click": { "action": "addToCart" } } },
+                  { "type": "Button", "props": { "variant": "outline", "className": "flex-1 py-3.5" }, "text": "Buy Now", "actions": { "click": { "action": "navigate", "payload": { "path": "/checkout" } } } }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "condition": { "!": { "var": "product.id" } },
+        "props": { "className": "flex flex-col items-center justify-center py-20 text-center" },
+        "children": [
+          { "type": "Heading", "props": { "size": "xl", "className": "text-[#1a1a1a]" }, "text": "Product not found" },
+          { "type": "Button", "props": { "className": "mt-4 bg-[#1a1a1a]" }, "text": "Continue Shopping", "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } } }
+        ]
+      }
+    ]
+  }
+}

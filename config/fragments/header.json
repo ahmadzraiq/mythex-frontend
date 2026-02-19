@@ -1,0 +1,72 @@
+{
+  "type": "Box",
+  "props": {
+    "className": "bg-primary-600 px-4 py-4 shadow-sm shrink-0"
+  },
+  "children": [
+    {
+      "type": "HStack",
+      "props": {
+        "className": "items-center justify-between"
+      },
+      "children": [
+        {
+          "type": "Pressable",
+          "props": {
+            "className": "p-2 -ml-2 rounded-lg hover:bg-primary-500"
+          },
+          "actions": {
+            "click": {
+              "action": "openDrawer"
+            }
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "className": "text-typography-0 text-xl"
+              },
+              "text": "☰"
+            }
+          ]
+        },
+        {
+          "type": "Text",
+          "props": {
+            "className": "text-typography-0 font-semibold text-lg"
+          },
+          "text": "{{meta.title}}"
+        },
+        {
+          "type": "HStack",
+          "props": {
+            "className": "items-center gap-4"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "className": "text-typography-100 text-sm"
+              },
+              "text": "Hi, {{auth.user.name}}"
+            },
+            {
+              "type": "Button",
+              "props": {
+                "size": "sm",
+                "variant": "outline",
+                "action": "secondary"
+              },
+              "text": "Logout",
+              "actions": {
+                "click": {
+                  "action": "logout"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

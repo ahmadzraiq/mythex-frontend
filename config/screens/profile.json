@@ -1,0 +1,102 @@
+{
+  "meta": {
+    "title": "Profile",
+    "description": "Your profile"
+  },
+  "state": {
+    "form": {
+      "name": "",
+      "email": ""
+    }
+  },
+  "layout": "authenticated",
+  "content": {
+    "type": "Box",
+    "props": {
+      "className": "flex-1 min-h-0 flex flex-col overflow-hidden"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "p-6 flex-1 overflow-auto"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "max-w-md mx-auto w-full"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "xl",
+                  "className": "mb-6 text-typography-900"
+                },
+                "text": "Profile"
+              },
+              {
+                "type": "Form",
+                "props": {
+                  "defaultValues": {
+                    "form": {
+                      "name": "",
+                      "email": ""
+                    }
+                  },
+                  "validationRules": {
+                    "form.name": {
+                      "required": true,
+                      "minLength": 2
+                    },
+                    "form.email": {
+                      "required": true,
+                      "pattern": "email"
+                    }
+                  },
+                  "submitAction": "updateProfile"
+                },
+                "children": [
+                  {
+                    "type": "FormInputWithLabel",
+                    "props": {
+                      "name": "form.name",
+                      "label": "Name",
+                      "placeholder": "Your name",
+                      "variant": "outline",
+                      "className": "mb-4"
+                    }
+                  },
+                  {
+                    "type": "FormInputWithLabel",
+                    "props": {
+                      "name": "form.email",
+                      "label": "Email",
+                      "placeholder": "you@example.com",
+                      "variant": "outline",
+                      "className": "mb-6"
+                    }
+                  },
+                  {
+                    "type": "FormSubmitButton",
+                    "props": {
+                      "action": "primary",
+                      "className": "w-full"
+                    },
+                    "text": "Save Changes"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "initActions": [
+    {
+      "action": "fetchProfile"
+    }
+  ]
+}

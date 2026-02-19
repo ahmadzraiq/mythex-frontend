@@ -1,0 +1,31 @@
+{
+  "meta": { "title": "Wishlist | LUMEN", "description": "Your wishlist" },
+  "state": {
+    "items": [
+      { "id": "1", "name": "Organic Cotton Oversized Tee", "price": "AED 149", "image": "https://picsum.photos/seed/shirt1/600/600" },
+      { "id": "3", "name": "Linen Blend Blazer", "price": "AED 549", "image": "https://picsum.photos/seed/blazer1/600/600" },
+      { "id": "10", "name": "Minimalist Watch", "price": "AED 599", "image": "https://picsum.photos/seed/watch1/600/600" }
+    ]
+  },
+  "layout": "store",
+  "content": {
+    "type": "Box",
+    "props": { "className": "max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12" },
+    "children": [
+      { "type": "Text", "props": { "className": "text-gray-500 text-xs font-medium tracking-widest uppercase mb-2" }, "text": "Saved" },
+      { "type": "Heading", "props": { "size": "2xl", "className": "mb-8 font-light" }, "text": "Wishlist" },
+      {
+        "type": "Box",
+        "props": { "className": "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6" },
+        "children": [
+          {
+            "type": "Box",
+            "map": "items",
+            "key": "product",
+            "children": [{ "$ref": "fragments/product-card" }]
+          }
+        ]
+      }
+    ]
+  }
+}

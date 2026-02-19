@@ -1,0 +1,35 @@
+---
+description: JSON composition patterns - $ref, $slot, no duplication
+globs: config/**/*.json
+alwaysApply: false
+---
+
+# JSON Composition Rules
+
+## Do NOT duplicate
+- **Drawer, header, nav**: Define once in `config/fragments/`, reference with `$ref`
+- **Modals**: Extract to `config/fragments/modals/` when used in multiple places or for clarity
+- **Layout shell**: Define in `config/layouts/`, use `layout: "name"` in screens
+
+## $ref syntax
+```json
+{ "$ref": "fragments/drawer" }
+{ "$ref": "fragments/modals/createProduct" }
+```
+Path must match a key in `fragments/index.ts`.
+
+## $slot (layouts only)
+```json
+{ "$slot": "content" }
+```
+Replaced with screen's `content` when resolving.
+
+## Adding a new reusable piece
+1. Create JSON in `config/fragments/` or `config/fragments/modals/`
+2. Add to `config/fragments/index.ts`: `'fragments/name': import`
+3. Use `{ "$ref": "fragments/name" }` in layouts or screen content
+
+## Config sources (no hardcoding)
+- Routes: `config/routes.json`
+- Initial state: `config/store.json` → `initialData`
+- Theme: `config/theme.json` → use `var(--theme-*)` in classNames

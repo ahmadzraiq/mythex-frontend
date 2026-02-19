@@ -1,0 +1,13 @@
+{
+  "initialData": {
+    "layout": {
+      "drawerOpen": false,
+      "announcementVisible": true
+    },
+    "route": {
+      "path": "/"
+    },
+    "cart.items": [],
+    "account.wishlist": []
+  }
+}

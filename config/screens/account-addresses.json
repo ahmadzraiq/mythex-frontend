@@ -1,0 +1,49 @@
+{
+  "meta": { "title": "Addresses | LUMEN", "description": "Saved addresses" },
+  "state": {
+    "addresses": [
+      { "id": "1", "name": "Home", "address": "Villa 12, Palm Jumeirah, Dubai", "default": true },
+      { "id": "2", "name": "Office", "address": "Level 5, DIFC Gate Avenue, Dubai", "default": false }
+    ]
+  },
+  "layout": "store",
+  "content": {
+    "type": "Box",
+    "props": { "className": "max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12" },
+    "children": [
+      {
+        "type": "HStack",
+        "props": { "className": "justify-between items-center mb-8" },
+        "children": [
+          { "type": "Box", "children": [
+            { "type": "Text", "props": { "className": "text-tertiary-600 text-xs font-medium tracking-widest uppercase mb-2" }, "text": "Saved" },
+            { "type": "Heading", "props": { "size": "2xl", "className": "font-light" }, "text": "Addresses" }
+          ]},
+          { "type": "Button", "props": { "size": "sm" }, "text": "+ Add Address", "actions": { "click": { "action": "log", "payload": { "message": "Add address" } } } }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6" },
+        "children": [
+          {
+            "type": "Box",
+            "map": "addresses",
+            "key": "address",
+            "props": { "className": "p-6 bg-white rounded-xl border border-gray-200" },
+            "children": [
+              { "type": "Text", "props": { "className": "font-semibold text-gray-900" }, "text": "{{$item.name}}" },
+              { "type": "Text", "props": { "className": "text-gray-600 mt-2" }, "text": "{{$item.address}}" },
+              {
+                "type": "Badge",
+                "condition": { "var": "$item.default" },
+                "props": { "size": "sm", "className": "mt-3 bg-gray-200 text-gray-800" },
+                "children": [{ "type": "BadgeText", "text": "Default" }]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #fafaf9;
+  --foreground: #1c1917;
+  /* Theme section fallbacks (overridden by ThemeProvider from config/theme.json) */
+  --theme-announcement-bg: #171717;
+  --theme-announcement-text: #ffffff;
+  --theme-header-bg: #fafaf9;
+  --theme-header-bgMuted: rgba(250, 250, 249, 0.95);
+  --theme-header-border: rgba(229, 229, 229, 0.6);
+  --theme-header-text: #171717;
+  --theme-header-textMuted: #525252;
+  --theme-header-accent: #dc2626;
+  --theme-header-accentForeground: #ffffff;
+  --theme-header-sale: #dc2626;
+  --theme-hero-bg: #171717;
+  --theme-hero-text: #ffffff;
+  --theme-hero-textMuted: rgba(255, 255, 255, 0.9);
+  --theme-hero-accent: #f59e0b;
+  --theme-hero-overlayGradient: rgba(0, 0, 0, 0.4);
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Stagger animation for grid children */
+@layer utilities {
+  .animate-stagger-1 { animation-delay: 100ms; }
+  .animate-stagger-2 { animation-delay: 200ms; }
+  .animate-stagger-3 { animation-delay: 300ms; }
+  .animate-stagger-4 { animation-delay: 400ms; }
+  .animate-stagger-5 { animation-delay: 500ms; }
+  .animate-stagger-6 { animation-delay: 600ms; }
+}

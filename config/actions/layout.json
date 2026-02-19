@@ -1,0 +1,8 @@
+{
+  "openDrawer": { "type": "set", "path": "layout", "value": { "drawerOpen": true } },
+  "closeDrawer": { "type": "set", "path": "layout", "value": { "drawerOpen": false } },
+  "dismissAnnouncement": { "type": "set", "path": "layout.announcementVisible", "value": false },
+  "navigateToDashboard": { "type": "runMultiple", "actions": [{ "action": "closeDrawer" }, { "action": "navigate", "payload": { "path": "/dashboard" } }] },
+  "navigateToProducts": { "type": "runMultiple", "actions": [{ "action": "closeDrawer" }, { "action": "navigate", "payload": { "path": "/dashboard/products" } }] },
+  "navigateToProfile": { "type": "runMultiple", "actions": [{ "action": "closeDrawer" }, { "action": "navigate", "payload": { "path": "/profile" } }] }
+}

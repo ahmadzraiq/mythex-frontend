@@ -1,0 +1,6 @@
+{
+  "addToCart": { "type": "append", "path": "ecommerce.cart", "value": { "product": { "var": "$item" }, "quantity": 1 } },
+  "fetchStoreHome": { "type": "fetch", "url": "/api/store/home", "storeIn": "store" },
+  "fetchStoreProducts": { "type": "fetch", "url": "/api/store/products", "storeIn": "store.products" },
+  "fetchProductBySlug": { "type": "fetch", "url": "/api/store/product/{{route.slug}}", "storeIn": "product" }
+}

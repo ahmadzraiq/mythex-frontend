@@ -1,0 +1,91 @@
+{
+  "type": "Modal",
+  "props": {
+    "isOpen": "{{modal.deleteProduct}}",
+    "onClose": {
+      "action": "closeDeleteModal"
+    },
+    "closeOnOverlayClick": true
+  },
+  "children": [
+    {
+      "type": "ModalBackdrop",
+      "actions": {
+        "click": {
+          "action": "closeDeleteModal"
+        }
+      }
+    },
+    {
+      "type": "ModalContent",
+      "props": {
+        "size": "sm"
+      },
+      "children": [
+        {
+          "type": "ModalHeader",
+          "children": [
+            {
+              "type": "Heading",
+              "props": {
+                "size": "lg"
+              },
+              "text": "Delete Product"
+            },
+            {
+              "type": "ModalCloseButton",
+              "actions": {
+                "click": {
+                  "action": "closeDeleteModal"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "ModalBody",
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "className": "text-typography-700"
+              },
+              "text": "Are you sure you want to delete this product?"
+            }
+          ]
+        },
+        {
+          "type": "ModalFooter",
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "variant": "outline",
+                "className": "mr-2"
+              },
+              "text": "Cancel",
+              "actions": {
+                "click": {
+                  "action": "closeDeleteModal"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "action": "primary",
+                "variant": "outline"
+              },
+              "text": "Delete",
+              "actions": {
+                "click": {
+                  "action": "deleteProduct"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

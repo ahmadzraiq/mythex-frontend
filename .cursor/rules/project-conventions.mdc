@@ -1,0 +1,32 @@
+---
+description: Project conventions and structure
+alwaysApply: true
+---
+
+# Project Conventions
+
+## Schema Reference
+**Before building screens, layouts, or fragments:** Read `docs/SCHEMA.md` for the full JSON schema.
+
+## Architecture
+- **JSON-driven UI**: Screens, layouts, fragments are defined in `config/` as JSON
+- **Config resolver** (`lib/sdui/config-resolver.ts`): Resolves `$ref`, `$slot`, layout composition at build time
+- **Redux SDUI Engine**: Renders resolved config, merges state (config + Redux), runs actions
+
+## Key Paths
+- `config/screens/` - Screen definitions (meta, state, layout, content)
+- `config/layouts/` - Layout structures (header + content slot + drawer)
+- `config/fragments/` - Reusable UI (header, drawer, modals)
+- `config/actions/` - Action definitions (fetch, set, navigate, etc.)
+- `config/routes.json` - Routes, dynamic routes (`dynamic: true`), defaultRedirect
+- `config/store.json` - Initial Redux state (`initialData`), no hardcoded values in configSlice
+- `config/theme.json` - Theme colors and sections (announcement, header, hero, etc.)
+- `lib/sdui/` - Engine, renderer, config resolver
+
+## When adding features
+1. Prefer JSON config over new React components
+2. Extract shared UI to fragments; use `$ref` to compose
+3. Use `layout` for screens that share header/drawer
+4. Actions (openDrawer, closeDrawer, etc.) live in `config/actions/layout.json` and use `type: "set"` for Redux-persisted state
+5. **No hardcoded values in code**: paths, routes, initial state, colors—all come from JSON config
+6. Use theme variables: `var(--theme-announcement-bg)`, `var(--theme-header-text)`, etc.

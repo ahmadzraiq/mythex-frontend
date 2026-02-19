@@ -1,0 +1,16 @@
+{
+  "structure": {
+    "type": "Box",
+    "props": { "className": "min-h-screen w-full flex flex-col bg-[var(--theme-header-bg)] text-[var(--theme-header-text)]" },
+    "children": [
+      { "$ref": "fragments/announcement-bar" },
+      { "$ref": "fragments/store-header" },
+      {
+        "type": "Box",
+        "props": { "className": "flex flex-col flex-1 min-h-0" },
+        "children": [{ "$slot": "content" }]
+      },
+      { "$ref": "fragments/store-footer" }
+    ]
+  }
+}

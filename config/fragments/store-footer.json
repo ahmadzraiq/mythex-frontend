@@ -1,0 +1,172 @@
+{
+  "type": "Box",
+  "props": {
+    "className": "border-t border-gray-200 bg-[#1a1a1a] text-white mt-auto shrink-0"
+  },
+  "children": [
+    {
+      "type": "Box",
+      "props": { "className": "max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8" },
+      "children": [
+        {
+          "type": "Box",
+          "props": { "className": "grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4" },
+          "children": [
+            {
+              "type": "VStack",
+              "props": { "className": "gap-4" },
+              "children": [
+                {
+                  "type": "Pressable",
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": { "className": "text-2xl font-bold tracking-tighter text-white" },
+                      "text": "NOIR"
+                    },
+                    {
+                      "type": "Text",
+                      "props": { "className": "text-2xl font-bold tracking-tighter text-amber-500" },
+                      "text": " & "
+                    },
+                    {
+                      "type": "Text",
+                      "props": { "className": "text-2xl font-bold tracking-tighter text-white" },
+                      "text": "AURA"
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "props": { "className": "text-sm leading-relaxed text-white/70" },
+                  "text": "Discover the latest trends in fashion. Shop men, women, kids clothing and accessories with free shipping across the UAE."
+                }
+              ]
+            },
+            {
+              "type": "VStack",
+              "props": { "className": "gap-4" },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": { "className": "text-sm font-semibold uppercase tracking-wider text-white" },
+                  "text": "Shop"
+                },
+                {
+                  "type": "Pressable",
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } },
+                  "children": [{ "type": "Text", "props": { "className": "text-sm text-white/70 hover:text-white transition-colors" }, "text": "Women" }]
+                },
+                {
+                  "type": "Pressable",
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } },
+                  "children": [{ "type": "Text", "props": { "className": "text-sm text-white/70 hover:text-white transition-colors" }, "text": "Men" }]
+                },
+                {
+                  "type": "Pressable",
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } },
+                  "children": [{ "type": "Text", "props": { "className": "text-sm text-white/70 hover:text-white transition-colors" }, "text": "Kids" }]
+                },
+                {
+                  "type": "Pressable",
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } },
+                  "children": [{ "type": "Text", "props": { "className": "text-sm text-white/70 hover:text-white transition-colors" }, "text": "Accessories" }]
+                },
+                {
+                  "type": "Pressable",
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/shop?sale=true" } } },
+                  "children": [{ "type": "Text", "props": { "className": "text-sm text-white/70 hover:text-white transition-colors" }, "text": "Sale" }]
+                }
+              ]
+            },
+            {
+              "type": "VStack",
+              "props": { "className": "gap-4" },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": { "className": "text-sm font-semibold uppercase tracking-wider text-white" },
+                  "text": "Information"
+                },
+                {
+                  "type": "Pressable",
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } },
+                  "children": [{ "type": "Text", "props": { "className": "text-sm text-white/70 hover:text-white transition-colors" }, "text": "About Us" }]
+                },
+                {
+                  "type": "Pressable",
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } },
+                  "children": [{ "type": "Text", "props": { "className": "text-sm text-white/70 hover:text-white transition-colors" }, "text": "Contact Us" }]
+                },
+                {
+                  "type": "Pressable",
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } },
+                  "children": [{ "type": "Text", "props": { "className": "text-sm text-white/70 hover:text-white transition-colors" }, "text": "FAQ" }]
+                }
+              ]
+            },
+            {
+              "type": "VStack",
+              "props": { "className": "gap-4" },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": { "className": "text-sm font-semibold uppercase tracking-wider text-white" },
+                  "text": "Customer Service"
+                },
+                {
+                  "type": "Pressable",
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } },
+                  "children": [{ "type": "Text", "props": { "className": "text-sm text-white/70 hover:text-white transition-colors" }, "text": "Privacy Policy" }]
+                },
+                {
+                  "type": "Pressable",
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } },
+                  "children": [{ "type": "Text", "props": { "className": "text-sm text-white/70 hover:text-white transition-colors" }, "text": "Terms & Conditions" }]
+                },
+                {
+                  "type": "Pressable",
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } },
+                  "children": [{ "type": "Text", "props": { "className": "text-sm text-white/70 hover:text-white transition-colors" }, "text": "Return Policy" }]
+                },
+                {
+                  "type": "Box",
+                  "props": { "className": "mt-6" },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": { "className": "text-xs font-semibold uppercase tracking-wider text-white/50 mb-2" },
+                      "text": "Payment Methods"
+                    },
+                    {
+                      "type": "HStack",
+                      "props": { "className": "flex flex-wrap gap-2 text-xs text-white/60" },
+                      "children": [
+                        { "type": "Text", "props": { "className": "rounded border border-white/20 px-2 py-1" }, "text": "Visa" },
+                        { "type": "Text", "props": { "className": "rounded border border-white/20 px-2 py-1" }, "text": "MC" },
+                        { "type": "Text", "props": { "className": "rounded border border-white/20 px-2 py-1" }, "text": "Tabby" },
+                        { "type": "Text", "props": { "className": "rounded border border-white/20 px-2 py-1" }, "text": "COD" }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "mt-10 border-t border-white/10 pt-6" },
+          "children": [
+            {
+              "type": "Text",
+              "props": { "className": "text-center text-xs text-white/50" },
+              "text": "© 2025 NOIR & AURA. All rights reserved."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "type": "Box",
+  "props": {
+    "className": "sticky top-0 z-40 w-full border-b border-[var(--theme-header-border)] bg-[var(--theme-header-bgMuted)] backdrop-blur-md supports-[backdrop-filter]:bg-[var(--theme-header-bgMuted)] shrink-0"
+  },
+  "children": [
+    {
+      "type": "Box",
+      "props": { "className": "w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" },
+      "children": [
+        {
+          "type": "HStack",
+          "props": { "className": "w-full h-16 items-center gap-4" },
+          "children": [
+            {
+              "type": "Pressable",
+              "props": {
+                "className": "lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors size-9 flex items-center justify-center"
+              },
+              "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } },
+              "children": [{ "type": "NavIcon", "props": { "icon": "Menu" } }]
+            },
+            {
+              "type": "Pressable",
+              "props": {
+                "className": "flex shrink-0 flex-row items-center hover:opacity-80 transition-opacity"
+              },
+              "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } },
+              "children": [
+                {
+                  "type": "HStack",
+                  "props": { "className": "items-center gap-0 flex-row" },
+                  "children": [
+                    { "type": "Text", "props": { "className": "text-xl font-bold tracking-tighter text-[var(--theme-header-text)]" }, "text": "NOIR" },
+                    { "type": "Text", "props": { "className": "text-xl font-bold tracking-tighter text-[var(--theme-header-accent)]" }, "text": "&" },
+                    { "type": "Text", "props": { "className": "text-xl font-bold tracking-tighter text-[var(--theme-header-accent)]" }, "text": "AURA" }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "HStack",
+              "props": { "className": "hidden lg:flex items-center gap-1" },
+              "children": [
+                { "type": "Pressable", "props": { "className": "px-3 py-2 text-sm font-medium text-[var(--theme-header-textMuted)] hover:text-[var(--theme-header-text)] transition-colors" }, "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } }, "children": [{ "type": "Text", "text": "Shop" }] },
+                { "type": "Pressable", "props": { "className": "px-3 py-2 text-sm font-medium text-[var(--theme-header-textMuted)] hover:text-[var(--theme-header-text)] transition-colors" }, "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } }, "children": [{ "type": "Text", "text": "Women" }] },
+                { "type": "Pressable", "props": { "className": "px-3 py-2 text-sm font-medium text-[var(--theme-header-textMuted)] hover:text-[var(--theme-header-text)] transition-colors" }, "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } }, "children": [{ "type": "Text", "text": "Men" }] },
+                { "type": "Pressable", "props": { "className": "px-3 py-2 text-sm font-medium text-[var(--theme-header-textMuted)] hover:text-[var(--theme-header-text)] transition-colors" }, "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } }, "children": [{ "type": "Text", "text": "Kids" }] },
+                { "type": "Pressable", "props": { "className": "px-3 py-2 text-sm font-medium text-[var(--theme-header-textMuted)] hover:text-[var(--theme-header-text)] transition-colors" }, "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } }, "children": [{ "type": "Text", "text": "Accessories" }] },
+                { "type": "Pressable", "props": { "className": "px-3 py-2 text-sm font-semibold text-[var(--theme-header-accent)] hover:opacity-80 transition-colors" }, "actions": { "click": { "action": "navigate", "payload": { "path": "/shop?sale=true" } } }, "children": [{ "type": "Text", "text": "Sale" }] }
+              ]
+            },
+            { "type": "Box", "props": { "className": "flex-1" } },
+            {
+              "type": "HStack",
+              "props": { "className": "items-center gap-2" },
+              "children": [
+                {
+                  "type": "Pressable",
+                  "props": {
+                    "className": "p-2 rounded-md hover:bg-gray-100 transition-colors size-9 flex items-center justify-center text-[var(--theme-header-textMuted)]"
+                  },
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } },
+                  "children": [{ "type": "NavIcon", "props": { "icon": "Search" } }]
+                },
+                {
+                  "type": "Pressable",
+                  "props": {
+                    "className": "hidden sm:flex flex-row items-center gap-1.5 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors text-[var(--theme-header-textMuted)] text-xs font-medium"
+                  },
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } },
+                  "children": [
+                    {
+                      "type": "HStack",
+                      "props": { "className": "items-center gap-1.5 flex-row" },
+                      "children": [
+                        { "type": "NavIcon", "props": { "icon": "Globe", "size": "sm" } },
+                        { "type": "Text", "props": { "className": "text-xs font-medium" }, "text": "العربية" }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Pressable",
+                  "props": {
+                    "className": "hidden sm:flex p-2 rounded-md hover:bg-gray-100 transition-colors size-9 items-center justify-center text-[var(--theme-header-textMuted)]"
+                  },
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/account" } } },
+                  "children": [{ "type": "NavIcon", "props": { "icon": "User" } }]
+                },
+                {
+                  "type": "Pressable",
+                  "props": {
+                    "className": "relative p-2 rounded-md hover:bg-gray-100 transition-colors size-9 flex items-center justify-center text-[var(--theme-header-textMuted)]"
+                  },
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/account/wishlist" } } },
+                  "children": [
+                    { "type": "NavIcon", "props": { "icon": "Favourite" } },
+                    {
+                      "type": "Badge",
+                      "condition": { ">": [{ "var": ["account.wishlist.length", 0] }, 0] },
+                      "props": {
+                        "size": "sm",
+                        "className": "absolute -end-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-[var(--theme-header-accent)] text-[var(--theme-header-accentForeground)] text-[10px] font-bold p-0"
+                      },
+                      "children": [{ "type": "BadgeText", "text": "{{account.wishlist.length}}" }]
+                    }
+                  ]
+                },
+                {
+                  "type": "Pressable",
+                  "props": {
+                    "className": "relative p-2 rounded-md hover:bg-gray-100 transition-colors size-9 flex items-center justify-center text-[var(--theme-header-textMuted)]"
+                  },
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/cart" } } },
+                  "children": [
+                    { "type": "NavIcon", "props": { "icon": "ShoppingBag" } },
+                    {
+                      "type": "Badge",
+                      "condition": { ">": [{ "var": ["cart.items.length", 0] }, 0] },
+                      "props": {
+                        "size": "sm",
+                        "className": "absolute -end-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-[var(--theme-header-accent)] text-[var(--theme-header-accentForeground)] text-[10px] font-bold p-0"
+                      },
+                      "children": [{ "type": "BadgeText", "text": "{{cart.items.length}}" }]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

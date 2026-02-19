@@ -1,0 +1,121 @@
+{
+  "meta": { "title": "Cart | LUMEN", "description": "Your shopping cart" },
+  "state": {
+    "items": [
+      { "id": "1", "product": { "id": "1", "name": "Organic Cotton Oversized Tee", "price": "AED 149", "image": "https://picsum.photos/seed/shirt1/200/200" }, "quantity": 2, "variant": { "size": "M", "color": "White" }, "subtotal": "AED 298" },
+      { "id": "2", "product": { "id": "2", "name": "Slim Fit Stretch Denim", "price": "AED 299", "image": "https://picsum.photos/seed/jeans1/200/200" }, "quantity": 1, "variant": { "size": "32" }, "subtotal": "AED 299" }
+    ],
+    "coupon": "",
+    "subtotal": "AED 597",
+    "shipping": "Free",
+    "total": "AED 597"
+  },
+  "layout": "store",
+  "content": {
+    "type": "Box",
+    "props": { "className": "max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12" },
+    "children": [
+      { "type": "Text", "props": { "className": "text-gray-500 text-xs font-medium tracking-widest uppercase mb-2" }, "text": "Your bag" },
+      { "type": "Heading", "props": { "size": "2xl", "className": "mb-8 font-light" }, "text": "Shopping Cart" },
+      {
+        "type": "Box",
+        "props": { "className": "grid grid-cols-1 lg:grid-cols-3 gap-8" },
+        "children": [
+          {
+            "type": "VStack",
+            "props": { "className": "gap-4 flex-1" },
+            "children": [
+              {
+                "type": "Box",
+                "map": "items",
+                "key": "item",
+                "props": { "className": "flex gap-6 p-6 bg-white rounded-xl border border-gray-200" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": { "className": "w-24 h-24 md:w-28 md:h-28 bg-gray-100 rounded-lg shrink-0 overflow-hidden" },
+                    "children": [
+                      { "type": "NextImage", "props": { "src": "{{$item.product.image}}", "alt": "{{$item.product.name}}", "width": 112, "height": 112, "className": "object-cover w-full h-full" } }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex-1 min-w-0" },
+                    "children": [
+                      { "type": "Text", "props": { "className": "font-medium text-gray-900" }, "text": "{{$item.product.name}}" },
+                      { "type": "Text", "props": { "className": "text-sm text-gray-600 mt-1" }, "text": "{{$item.product.price}} × {{$item.quantity}}" },
+                      { "type": "Text", "condition": { "var": "$item.variant" }, "props": { "className": "text-xs text-gray-500 mt-0.5" }, "text": "{{$item.variant.size}} {{$item.variant.color}}" }
+                    ]
+                  },
+                  {
+                    "type": "VStack",
+                    "props": { "className": "items-end gap-2" },
+                    "children": [
+                      { "type": "Text", "props": { "className": "font-semibold" }, "text": "{{$item.subtotal}}" },
+                      { "type": "Pressable", "props": { "className": "text-gray-500 hover:text-error-600 text-sm" }, "children": [{ "type": "Text", "text": "Remove" }] }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "lg:col-span-1" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "p-6 bg-white rounded-xl border border-gray-200 sticky top-24" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-medium tracking-widest text-gray-500 uppercase mb-4" }, "text": "Summary" },
+                  {
+                    "type": "Input",
+                    "props": { "placeholder": "Coupon code", "className": "mb-3" }
+                  },
+                  {
+                    "type": "Button",
+                    "props": { "variant": "outline", "className": "w-full mb-6" },
+                    "text": "Apply",
+                    "actions": { "click": { "action": "log", "payload": { "message": "Apply coupon" } } }
+                  },
+                  { "type": "Divider", "props": { "className": "my-4" } },
+                  {
+                    "type": "HStack",
+                    "props": { "className": "justify-between mb-2 text-sm" },
+                    "children": [
+                      { "type": "Text", "text": "Subtotal" },
+                      { "type": "Text", "text": "{{subtotal}}" }
+                    ]
+                  },
+                  {
+                    "type": "HStack",
+                    "props": { "className": "justify-between mb-2 text-sm" },
+                    "children": [
+                      { "type": "Text", "text": "Shipping" },
+                      { "type": "Text", "text": "{{shipping}}" }
+                    ]
+                  },
+                  { "type": "Divider", "props": { "className": "my-4" } },
+                  {
+                    "type": "HStack",
+                    "props": { "className": "justify-between font-semibold mb-6" },
+                    "children": [
+                      { "type": "Text", "text": "Total" },
+                      { "type": "Text", "text": "{{total}}" }
+                    ]
+                  },
+                  {
+                    "type": "Button",
+                    "props": { "action": "primary", "className": "w-full py-3.5" },
+                    "text": "Proceed to Checkout",
+                    "actions": { "click": { "action": "navigate", "payload": { "path": "/checkout" } } }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

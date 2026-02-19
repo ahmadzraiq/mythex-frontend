@@ -1,0 +1,107 @@
+{
+  "fetchProducts": {
+    "type": "fetch",
+    "url": "/api/products",
+    "storeIn": "products.list"
+  },
+  "openCreateModal": {
+    "action": "setState",
+    "payload": {
+      "path": "modal",
+      "value": {
+        "create": true,
+        "editProduct": null,
+        "deleteProduct": null
+      }
+    }
+  },
+  "closeCreateModal": {
+    "action": "setState",
+    "payload": {
+      "path": "modal.create",
+      "value": false
+    }
+  },
+  "closeEditModal": {
+    "action": "setState",
+    "payload": {
+      "path": "modal.editProduct",
+      "value": null
+    }
+  },
+  "closeDeleteModal": {
+    "action": "setState",
+    "payload": {
+      "path": "modal.deleteProduct",
+      "value": null
+    }
+  },
+  "createProduct": {
+    "type": "fetch",
+    "method": "POST",
+    "url": "/api/products",
+    "body": {
+      "name": {
+        "var": "form.product.name"
+      },
+      "price": {
+        "var": "form.product.price"
+      },
+      "category": {
+        "var": "form.product.category"
+      },
+      "description": {
+        "var": "form.product.description"
+      }
+    },
+    "storeIn": "products.newItem",
+    "onSuccess": [
+      {
+        "action": "closeCreateModal"
+      },
+      {
+        "action": "fetchProducts"
+      }
+    ]
+  },
+  "updateProduct": {
+    "type": "fetch",
+    "method": "PUT",
+    "url": "/api/products/{{modal.editProduct.id}}",
+    "body": {
+      "name": {
+        "var": "form.product.name"
+      },
+      "price": {
+        "var": "form.product.price"
+      },
+      "category": {
+        "var": "form.product.category"
+      },
+      "description": {
+        "var": "form.product.description"
+      }
+    },
+    "onSuccess": [
+      {
+        "action": "closeEditModal"
+      },
+      {
+        "action": "fetchProducts"
+      }
+    ]
+  },
+  "deleteProduct": {
+    "type": "fetch",
+    "method": "DELETE",
+    "url": "/api/products/{{modal.deleteProduct.id}}",
+    "onSuccess": [
+      {
+        "action": "closeDeleteModal"
+      },
+      {
+        "action": "fetchProducts"
+      }
+    ]
+  }
+}

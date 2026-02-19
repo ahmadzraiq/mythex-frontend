@@ -1,0 +1,47 @@
+---
+description: SDUI JSON config - layouts, fragments, $ref, $slot composition
+globs: config/**/*.json, config/**/*.ts
+alwaysApply: false
+---
+
+# SDUI JSON Configuration
+
+This project uses JSON-driven UI with composition. **Never hardcode layout or shared UI in React**—define everything in JSON.
+
+## Layouts
+- Use `layout: "authenticated"` in screen config to wrap content with shared header + drawer
+- Layouts live in `config/layouts/` and define structure with `$ref` and `$slot`
+- Add new layouts in `config/layouts/` and register in `layouts/index.ts`
+
+## Fragments ($ref)
+- Reusable UI pieces: `"$ref": "fragments/header"`, `"$ref": "fragments/drawer"`, `"$ref": "fragments/modals/createProduct"`
+- Add fragments in `config/fragments/` and register in `fragments/index.ts`
+- Fragments can contain `{{variable}}` interpolation (e.g. `{{meta.title}}`, `{{layout.drawerOpen}}`)
+
+## Navigation (no hardcoded paths)
+- Static: `{ "action": "navigate", "payload": { "path": "/shop" } }`
+- Dynamic (e.g. product detail): `{ "action": "navigate", "payload": { "routeConfig": "product", "slug": { "var": "$item.slug" } } }`—route path comes from `config/routes.json`.
+
+## Theme & Colors
+- Use theme variables: `text-[var(--theme-header-text)]`, `bg-[var(--theme-announcement-bg)]`—never hardcoded hex colors.
+- Theme defined in `config/theme.json` (colors, sections.announcement, sections.header, sections.hero).
+
+## Content Slot
+- Layouts use `"$slot": "content"` as placeholder; screen `content` is injected there
+- `content` can be a single node or array (e.g. main content + modals)
+
+## Reusing Modals
+- Extract modals to `config/fragments/modals/` and reference with `$ref`
+- Same modal fragment can be used across screens that share state paths (e.g. `modal.create`)
+
+## Screen Structure
+```json
+{
+  "meta": { "title": "..." },
+  "state": { ... },
+  "layout": "authenticated",
+  "content": { ... } or [ ... ],
+  "initActions": [ ... ]
+}
+```
+Screens without `layout` use `ui` directly (e.g. login, signup).

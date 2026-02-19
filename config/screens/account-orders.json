@@ -1,0 +1,56 @@
+{
+  "meta": { "title": "Orders | LUMEN", "description": "Your orders" },
+  "state": {
+    "orders": [
+      { "id": "ORD-2847", "date": "Feb 15, 2025", "status": "Delivered", "total": "AED 597", "items": 2 },
+      { "id": "ORD-2841", "date": "Feb 10, 2025", "status": "Shipped", "total": "AED 429", "items": 1 },
+      { "id": "ORD-2835", "date": "Feb 5, 2025", "status": "Delivered", "total": "AED 898", "items": 3 }
+    ]
+  },
+  "layout": "store",
+  "content": {
+    "type": "Box",
+    "props": { "className": "max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12" },
+    "children": [
+      { "type": "Text", "props": { "className": "text-gray-500 text-xs font-medium tracking-widest uppercase mb-2" }, "text": "History" },
+      { "type": "Heading", "props": { "size": "2xl", "className": "mb-8 font-light" }, "text": "Orders" },
+      {
+        "type": "VStack",
+        "props": { "className": "gap-4" },
+        "children": [
+          {
+            "type": "Box",
+            "map": "orders",
+            "key": "order",
+            "props": { "className": "p-6 bg-white rounded-xl border border-gray-200 hover:shadow-soft-1 transition-shadow" },
+            "children": [
+              {
+                "type": "HStack",
+                "props": { "className": "justify-between items-start flex-wrap gap-4" },
+                "children": [
+                  {
+                    "type": "VStack",
+                    "props": { "className": "gap-1" },
+                    "children": [
+                      { "type": "Text", "props": { "className": "font-semibold text-gray-900" }, "text": "{{$item.id}}" },
+                      { "type": "Text", "props": { "className": "text-sm text-gray-600" }, "text": "{{$item.date}} · {{$item.items}} items" }
+                    ]
+                  },
+                  {
+                    "type": "HStack",
+                    "props": { "className": "gap-4 items-center" },
+                    "children": [
+                      { "type": "Badge", "props": { "size": "sm", "className": "bg-success-100 text-success-700" }, "children": [{ "type": "BadgeText", "text": "{{$item.status}}" }] },
+                      { "type": "Text", "props": { "className": "font-semibold" }, "text": "{{$item.total}}" },
+                      { "type": "Pressable", "props": { "className": "text-gray-900 text-sm font-medium hover:underline" }, "children": [{ "type": "Text", "text": "View" }] }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

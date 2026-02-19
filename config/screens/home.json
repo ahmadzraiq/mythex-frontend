@@ -1,0 +1,243 @@
+{
+  "meta": { "title": "NOIR & AURA | Fashion Store", "description": "Discover the latest trends in fashion. Shop men, women, kids clothing and accessories with free shipping across the UAE." },
+  "state": {
+    "store": {
+      "products": [],
+      "categories": [],
+      "collections": [],
+      "newArrivals": [],
+      "bestSellers": [],
+      "flashSale": []
+    },
+    "newsletter": { "email": "" }
+  },
+  "layout": "store",
+  "initActions": [{ "action": "fetchStoreHome" }],
+  "content": {
+    "type": "Box",
+    "props": { "className": "flex flex-col" },
+    "children": [
+      {
+        "type": "Box",
+        "props": { "className": "relative flex min-h-[70vh] sm:min-h-[80vh] items-center justify-center overflow-hidden bg-[var(--theme-hero-bg)]" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "absolute inset-0" },
+            "children": [
+              {
+                "type": "NextImage",
+                "props": {
+                  "src": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1600&h=900&fit=crop",
+                  "alt": "Hero",
+                  "fill": true,
+                  "className": "object-cover opacity-40"
+                }
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "absolute inset-0 bg-gradient-to-t from-[var(--theme-hero-overlayGradient)] via-transparent to-transparent" },
+            "children": []
+          },
+          {
+            "type": "Box",
+            "props": { "className": "relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex justify-center" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "max-w-xl text-center" },
+                "children": [
+                  { "type": "Text", "props": { "className": "mb-4 inline-block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--theme-hero-accent)]" }, "text": "SS 2026" },
+                  { "type": "Heading", "props": { "size": "4xl", "className": "text-balance text-4xl font-bold leading-[1.1] tracking-tight text-[var(--theme-hero-text)] sm:text-5xl lg:text-7xl" }, "text": "New Season," },
+                  { "type": "Heading", "props": { "size": "4xl", "className": "text-4xl font-bold leading-[1.1] tracking-tight text-[var(--theme-hero-text)] sm:text-5xl lg:text-7xl -mt-2" }, "text": "New Style" },
+                  { "type": "Text", "props": { "className": "mt-4 text-pretty text-base text-[var(--theme-hero-textMuted)] sm:text-lg lg:mt-6 lg:text-xl" }, "text": "Discover the latest trends in fashion" },
+                  {
+                    "type": "HStack",
+                    "props": { "className": "mt-8 flex flex-wrap items-center justify-center gap-4" },
+                    "children": [
+                      { "type": "Button", "props": { "size": "lg", "className": "bg-[var(--theme-hero-accent)] text-white hover:opacity-90 px-8 text-sm font-semibold uppercase tracking-wider rounded-none" }, "text": "Shop Now →", "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } } },
+                      { "type": "Button", "props": { "variant": "outline", "size": "lg", "className": "border-[var(--theme-hero-text)]/30 bg-transparent text-[var(--theme-hero-text)] hover:bg-[var(--theme-hero-text)]/10 px-8 text-sm font-semibold uppercase tracking-wider rounded-none" }, "text": "New Arrivals", "actions": { "click": { "action": "navigate", "payload": { "path": "/shop?sort=newest" } } } }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8" },
+        "children": [
+          { "type": "Heading", "props": { "size": "2xl", "className": "mb-8 text-center text-2xl font-bold tracking-tight sm:text-3xl text-[#1a1a1a]" }, "text": "Trending Now" },
+          {
+            "type": "Box",
+            "props": { "className": "grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4" },
+            "children": [
+              {
+                "type": "Pressable",
+                "map": "store.categories",
+                "key": "cat",
+                "props": { "className": "group relative aspect-square overflow-hidden rounded-full" },
+                "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } },
+                "children": [
+                  { "type": "Box", "props": { "className": "absolute inset-0" }, "children": [{ "type": "NextImage", "props": { "src": "{{$item.image}}", "alt": "{{$item.name}}", "fill": true, "className": "object-cover transition-transform duration-500 group-hover:scale-110" } }] },
+                  { "type": "Box", "props": { "className": "absolute inset-0 bg-[#1a1a1a]/40 group-hover:bg-[#1a1a1a]/30 transition-colors" } },
+                  { "type": "Box", "props": { "className": "absolute inset-0 flex flex-col items-center justify-center" }, "children": [{ "type": "Text", "props": { "className": "text-lg font-bold uppercase tracking-wider text-white sm:text-xl" }, "text": "{{$item.name}}" }, { "type": "Text", "props": { "className": "text-xs text-white/70" }, "text": "{{$item.productCount}} products" }] }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8" },
+        "children": [
+          {
+            "type": "HStack",
+            "props": { "className": "mb-8 items-end justify-between" },
+            "children": [
+              { "type": "Heading", "props": { "size": "2xl", "className": "text-2xl font-bold tracking-tight sm:text-3xl text-[#1a1a1a]" }, "text": "New Arrivals" },
+              { "type": "Pressable", "props": { "className": "group flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-[#1a1a1a] transition-colors" }, "actions": { "click": { "action": "navigate", "payload": { "path": "/shop?sort=newest" } } }, "children": [{ "type": "Text", "text": "View All" }, { "type": "Text", "text": "→" }] }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4" },
+            "children": [{ "type": "Box", "map": "store.newArrivals", "key": "p", "children": [{ "$ref": "fragments/product-card" }] }]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20" },
+        "children": [
+          {
+            "type": "HStack",
+            "props": { "className": "mb-8 items-end justify-between" },
+            "children": [
+              { "type": "Heading", "props": { "size": "2xl", "className": "text-2xl font-bold tracking-tight sm:text-3xl text-[#1a1a1a]" }, "text": "Featured Collections" },
+              { "type": "Pressable", "props": { "className": "group flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-[#1a1a1a] transition-colors" }, "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } }, "children": [{ "type": "Text", "text": "View All" }, { "type": "Text", "text": "→" }] }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" },
+            "children": [
+              {
+                "type": "Pressable",
+                "map": "store.collections",
+                "key": "col",
+                "props": { "className": "group relative aspect-[4/5] overflow-hidden rounded-lg" },
+                "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } },
+                "children": [
+                  { "type": "Box", "props": { "className": "absolute inset-0" }, "children": [{ "type": "NextImage", "props": { "src": "{{$item.image}}", "alt": "{{$item.name}}", "fill": true, "className": "object-cover transition-transform duration-500 group-hover:scale-105" } }] },
+                  { "type": "Box", "props": { "className": "absolute inset-0 bg-gradient-to-t from-[#1a1a1a]/70 via-[#1a1a1a]/20 to-transparent" } },
+                  { "type": "Box", "props": { "className": "absolute inset-x-0 bottom-0 p-5" }, "children": [{ "type": "Text", "props": { "className": "text-lg font-bold text-white" }, "text": "{{$item.name}}" }, { "type": "Text", "props": { "className": "mt-1 text-xs text-white/70" }, "text": "{{$item.description}}" }] }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8" },
+        "children": [
+          {
+            "type": "HStack",
+            "props": { "className": "mb-8 flex items-center gap-3" },
+            "children": [
+              { "type": "Box", "props": { "className": "flex size-10 items-center justify-center rounded-full bg-amber-500" }, "children": [{ "type": "Text", "props": { "className": "text-amber-950 font-bold" }, "text": "⚡" }] },
+              { "type": "Box", "children": [{ "type": "Heading", "props": { "size": "xl", "className": "text-2xl font-bold tracking-tight text-[#1a1a1a]" }, "text": "Weekend Flash Sale" }, { "type": "Text", "props": { "className": "text-sm text-gray-500" }, "text": "Ends Soon" }] }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3" },
+            "children": [{ "type": "Box", "map": "store.flashSale", "key": "fp", "children": [{ "$ref": "fragments/product-card" }] }]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "bg-gray-100/50" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8" },
+            "children": [
+              {
+                "type": "HStack",
+                "props": { "className": "mb-8 items-end justify-between" },
+                "children": [
+                  { "type": "Heading", "props": { "size": "2xl", "className": "text-2xl font-bold tracking-tight sm:text-3xl text-[#1a1a1a]" }, "text": "Best Sellers" },
+                  { "type": "Pressable", "props": { "className": "group flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-[#1a1a1a] transition-colors" }, "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } }, "children": [{ "type": "Text", "text": "View All" }, { "type": "Text", "text": "→" }] }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4" },
+                "children": [{ "type": "Box", "map": "store.bestSellers", "key": "bp", "children": [{ "$ref": "fragments/product-card" }] }]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "grid grid-cols-1 items-center gap-8 lg:grid-cols-2 lg:gap-16" },
+            "children": [
+              { "type": "Box", "props": { "className": "relative aspect-[4/5] overflow-hidden rounded-lg lg:aspect-square" }, "children": [{ "type": "NextImage", "props": { "src": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=800&fit=crop", "alt": "Brand story", "fill": true, "className": "object-cover" } }] },
+              {
+                "type": "VStack",
+                "props": { "className": "gap-6" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-semibold uppercase tracking-[0.2em] text-amber-500" }, "text": "Our Story" },
+                  { "type": "Heading", "props": { "size": "2xl", "className": "text-3xl font-bold tracking-tight sm:text-4xl text-[#1a1a1a]" }, "text": "Crafted for You" },
+                  { "type": "Text", "props": { "className": "text-base leading-relaxed text-gray-600 sm:text-lg" }, "text": "We believe fashion should be bold, accessible, and sustainable. Every piece in our collection is thoughtfully designed for the modern lifestyle." },
+                  { "type": "Button", "props": { "variant": "outline", "className": "w-fit px-6 text-sm font-semibold uppercase tracking-wider" }, "text": "Discover More →", "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } } }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "bg-[#1a1a1a] text-white" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "mx-auto max-w-2xl text-center" },
+                "children": [
+                  { "type": "Heading", "props": { "size": "2xl", "className": "text-2xl font-bold tracking-tight sm:text-3xl text-white" }, "text": "Stay in the Loop" },
+                  { "type": "Text", "props": { "className": "mt-2 text-sm text-white/70 sm:text-base" }, "text": "Subscribe for exclusive offers and new arrivals" },
+                  {
+                    "type": "HStack",
+                    "props": { "className": "mt-6 flex gap-3 mx-auto max-w-md" },
+                    "children": [
+                      { "type": "Input", "props": { "placeholder": "Enter your email", "className": "flex-1 border-white/20 bg-white/10 text-white placeholder:text-white/50" } },
+                      { "type": "Button", "props": { "className": "bg-amber-500 text-white hover:bg-amber-600 px-6 font-semibold uppercase tracking-wider text-xs" }, "text": "Subscribe", "actions": { "click": { "action": "log", "payload": { "message": "Newsletter signup" } } } }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

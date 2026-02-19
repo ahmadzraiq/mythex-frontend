@@ -1,0 +1,113 @@
+{
+  "meta": { "title": "Checkout | LUMEN", "description": "Complete your order" },
+  "state": {
+    "email": "",
+    "shippingAddress": { "firstName": "", "lastName": "", "address": "", "city": "", "country": "AE", "phone": "" },
+    "shippingMethod": "standard",
+    "paymentMethod": "card",
+    "orderNotes": "",
+    "subtotal": "AED 597",
+    "shipping": "Free",
+    "total": "AED 597"
+  },
+  "layout": "store",
+  "content": {
+    "type": "Box",
+    "props": { "className": "max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12" },
+    "children": [
+      { "type": "Text", "props": { "className": "text-gray-500 text-xs font-medium tracking-widest uppercase mb-2" }, "text": "Secure checkout" },
+      { "type": "Heading", "props": { "size": "2xl", "className": "mb-8 font-light" }, "text": "Checkout" },
+      {
+        "type": "Box",
+        "props": { "className": "grid grid-cols-1 lg:grid-cols-3 gap-8" },
+        "children": [
+          {
+            "type": "VStack",
+            "props": { "className": "gap-6 flex-1" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "p-6 bg-white rounded-xl border border-gray-200" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-medium tracking-widest text-gray-500 uppercase mb-4" }, "text": "Contact" },
+                  { "type": "Box", "children": [{ "type": "Text", "props": { "className": "text-sm font-medium mb-2" }, "text": "Email" }, { "type": "Input", "props": { "placeholder": "you@example.com" } }] }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "p-6 bg-white rounded-xl border border-gray-200" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-medium tracking-widest text-gray-500 uppercase mb-4" }, "text": "Shipping Address" },
+                  {
+                    "type": "VStack",
+                    "props": { "className": "gap-4" },
+                    "children": [
+                      { "type": "HStack", "props": { "className": "gap-4" }, "children": [
+                        { "type": "Box", "children": [{ "type": "Text", "props": { "className": "text-sm font-medium mb-2" }, "text": "First Name" }, { "type": "Input", "props": { "placeholder": "John" } }] },
+                        { "type": "Box", "children": [{ "type": "Text", "props": { "className": "text-sm font-medium mb-2" }, "text": "Last Name" }, { "type": "Input", "props": { "placeholder": "Doe" } }] }
+                      ]},
+                      { "type": "Box", "children": [{ "type": "Text", "props": { "className": "text-sm font-medium mb-2" }, "text": "Address" }, { "type": "Input", "props": { "placeholder": "123 Main St, Dubai" } }] },
+                      { "type": "HStack", "props": { "className": "gap-4" }, "children": [
+                        { "type": "Box", "children": [{ "type": "Text", "props": { "className": "text-sm font-medium mb-2" }, "text": "City" }, { "type": "Input", "props": { "placeholder": "Dubai" } }] },
+                        { "type": "Box", "children": [{ "type": "Text", "props": { "className": "text-sm font-medium mb-2" }, "text": "Country" }, { "type": "Input", "props": { "placeholder": "UAE" } }] }
+                      ]},
+                      { "type": "Box", "children": [{ "type": "Text", "props": { "className": "text-sm font-medium mb-2" }, "text": "Phone" }, { "type": "Input", "props": { "placeholder": "+971 50 123 4567" } }] }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "p-6 bg-white rounded-xl border border-gray-200" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-medium tracking-widest text-gray-500 uppercase mb-4" }, "text": "Shipping" },
+                  { "type": "VStack", "props": { "className": "gap-2" }, "children": [
+                    { "type": "Pressable", "props": { "className": "p-4 border border-gray-900 rounded-lg" }, "children": [{ "type": "Text", "text": "Standard (5-7 days) — Free" }] },
+                    { "type": "Pressable", "props": { "className": "p-4 border border-gray-200 rounded-lg hover:border-gray-300" }, "children": [{ "type": "Text", "text": "Express (2-3 days) — AED 25" }] }
+                  ]}
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "p-6 bg-white rounded-xl border border-gray-200" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-medium tracking-widest text-gray-500 uppercase mb-4" }, "text": "Payment" },
+                  { "type": "VStack", "props": { "className": "gap-2" }, "children": [
+                    { "type": "Pressable", "props": { "className": "p-4 border border-gray-200 rounded-lg" }, "children": [{ "type": "Text", "text": "Card (Stripe)" }] },
+                    { "type": "Pressable", "props": { "className": "p-4 border border-gray-200 rounded-lg" }, "children": [{ "type": "Text", "text": "Tabby (Pay in 4)" }] },
+                    { "type": "Pressable", "props": { "className": "p-4 border border-gray-200 rounded-lg" }, "children": [{ "type": "Text", "text": "Cash on Delivery" }] }
+                  ]}
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "lg:col-span-1" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "p-6 bg-white rounded-xl border border-gray-200 sticky top-24" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-medium tracking-widest text-gray-500 uppercase mb-4" }, "text": "Order Summary" },
+                  { "type": "Text", "props": { "className": "text-sm text-gray-600 mb-4" }, "text": "2 items" },
+                  { "type": "Divider", "props": { "className": "my-4" } },
+                  { "type": "HStack", "props": { "className": "justify-between mb-2 text-sm" }, "children": [{ "type": "Text", "text": "Subtotal" }, { "type": "Text", "text": "{{subtotal}}" }] },
+                  { "type": "HStack", "props": { "className": "justify-between mb-2 text-sm" }, "children": [{ "type": "Text", "text": "Shipping" }, { "type": "Text", "text": "{{shipping}}" }] },
+                  { "type": "Divider", "props": { "className": "my-4" } },
+                  { "type": "HStack", "props": { "className": "justify-between font-semibold mb-6" }, "children": [{ "type": "Text", "text": "Total" }, { "type": "Text", "text": "{{total}}" }] },
+                  {
+                    "type": "Button",
+                    "props": { "action": "primary", "className": "w-full py-3.5" },
+                    "text": "Place Order",
+                    "actions": { "click": { "action": "log", "payload": { "message": "Place order" } } }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,1 @@
+{"navigateToShop":{"action":"navigate","payload":{"path":"/shop"}},"addToCart":{"type":"append","path":"cart.items","value":{"product":{"var":"product"},"quantity":1,"variant":{"size":{"var":"product.selectedSize"},"color":{"var":"product.selectedColor"}}}},"addToWishlist":{"type":"append","path":"account.wishlist","value":{"var":"$payload.product"}}}
