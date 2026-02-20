@@ -23,6 +23,24 @@ export function interpolate(
   });
 }
 
+/** Resolve text: string (interpolate) or { expr, suffix?, prefix?, template? } (inline JSON Logic) */
+export function resolveText(
+  text: string | { expr: object; suffix?: string; prefix?: string; template?: string } | undefined,
+  context: SDUIContext,
+  scope?: Record<string, unknown>
+): string {
+  if (text == null) return '';
+  if (typeof text === 'string') return interpolate(text, context, scope);
+  if (typeof text === 'object' && text !== null && 'expr' in text) {
+    const { expr, suffix = '', prefix = '', template } = text;
+    const result = jsonLogic.apply(expr as object, context.state ?? {});
+    const str = String(result ?? '');
+    if (template != null) return template.replace('{0}', str);
+    return prefix + str + suffix;
+  }
+  return String(text);
+}
+
 /** Evaluate JSON Logic condition against context state */
 export function evaluateCondition(
   condition: unknown,
@@ -37,11 +55,9 @@ export function evaluateCondition(
   }
 }
 
-/** Coerce string "true"/"false" to boolean for common boolean props */
-const BOOLEAN_PROPS = new Set(['isOpen', 'disabled', 'defaultIsOpen', 'closeOnOverlayClick', 'isKeyboardDismissable', 'avoidKeyboard', 'secureTextEntry']);
-
-function coerceValue(key: string, val: unknown): unknown {
-  if (typeof val === 'string' && BOOLEAN_PROPS.has(key)) {
+/** Coerce string "true"/"false" to boolean (e.g. from {{var}} interpolation) */
+function coerceValue(val: unknown): unknown {
+  if (typeof val === 'string') {
     const lower = val.toLowerCase();
     if (lower === 'true') return true;
     if (lower === 'false') return false;
@@ -61,7 +77,7 @@ export function resolveProps(
   for (const [key, value] of Object.entries(props)) {
     if (typeof value === 'string') {
       const val = interpolate(value, context, scope);
-      resolved[key] = coerceValue(key, val);
+      resolved[key] = coerceValue(val);
     } else if (value != null && typeof value === 'object' && !Array.isArray(value)) {
       const obj = value as Record<string, unknown>;
       if ('var' in obj) {
@@ -70,7 +86,7 @@ export function resolveProps(
         const fallback = Array.isArray(v) ? v[1] : undefined;
         const val = context.get(String(path), scope);
         const finalVal = val !== undefined && val !== null ? val : fallback;
-        resolved[key] = coerceValue(key, finalVal);
+        resolved[key] = coerceValue(finalVal);
       } else if ('action' in obj && runAction) {
         resolved[key] = () => runAction(obj);
       } else {

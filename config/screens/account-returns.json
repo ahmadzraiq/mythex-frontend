@@ -1,14 +1,14 @@
 {
-  "meta": { "title": "Returns | LUMEN", "description": "Return requests" },
+  "meta": { "title": "Returns | SaraZ", "description": "Return requests" },
   "state": {
     "returns": [
       { "id": "RET-1042", "orderId": "ORD-2841", "status": "Approved", "items": 1, "date": "Feb 12, 2025" }
     ]
   },
-  "layout": "store",
+  "layout": "account",
   "content": {
     "type": "Box",
-    "props": { "className": "max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12" },
+    "props": { "className": "w-full px-4 sm:px-6 py-8 md:py-12" },
     "children": [
       {
         "type": "HStack",

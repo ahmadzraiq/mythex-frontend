@@ -7,22 +7,31 @@ alwaysApply: true
 
 When asked to build or add screens, layouts, modals, or features to this website:
 
-1. **Read `docs/SCHEMA.md`** – It defines the full JSON schema for screens, layouts, fragments, actions, and routes.
+1. **Read `docs/SCHEMA.md`** – It defines the full JSON schema for screens, layouts, fragments, actions, and routes. For new apps, also use `docs/NEW-APP-CHECKLIST.md`.
 
 2. **Follow the schema exactly:**
    - Screens with header/drawer: use `layout: "authenticated"` + `content`
    - Screens without: use `ui` directly
    - Reusable UI: create fragments in `config/fragments/`, register in `fragments/index.ts`, use `$ref`
    - Modals: Form must wrap ModalBody + ModalFooter; FormSubmitButton must be inside Form
+   - Derived values: use `text: { expr: <JSON Logic>, suffix?, prefix? }` for cart count, subtotal, totals; use `formatCurrency` for money
 
 3. **Add routes** in `config/routes.json` and **import** new screens in `config/app.ts`.
 
-4. **Actions** go in `config/actions/` (auth, products, layout, other). Use `type: "fetch"`, `type: "set"`, `type: "validate"`, etc. per schema.
+4. **Actions** go in `config/actions/` (auth, products, layout, other). Use `type: "fetch"`, `type: "set"`, `type: "appendToPath"`, `type: "validate"`, etc. per schema. Fetch supports `errorMessagePath`, `storeFullResponseIn`.
 
 5. **Never hardcode** layout or shared UI in React—define everything in JSON config.
 
 6. **Config-driven, no hardcoded values:**
    - Routes: `config/routes.json` (dynamic routes use `dynamic: true`)
-   - Initial state: `config/store.json` (`initialData`)
+   - Initial state: `config/store.json` (`initialData`, optional `paths`, optional `computed`)
    - Theme: `config/theme.json` (colors, sections); use `var(--theme-*)` in classNames
    - Dynamic navigation: `{ "action": "navigate", "payload": { "routeConfig": "product", "slug": { "var": "$item.slug" } } }`—not hardcoded action names like `navigateToProduct`
+
+7. **UI/UX rules** (see `ui-ux-contrast.mdc`): No duplicate content, no dark-on-dark contrast, theme in JSON only, strong gradient + drop-shadow for text on images, light borders for outline buttons on dark backgrounds.
+
+8. **Never hardcode action logic in engine**: Use config-driven actions. For append-to-nested-array (e.g. reviews), use `type: "appendToPath"` with `targetPath`, `value` (supports `{ "var" }`, `{ "expr" }`), `resetFormPath`, `resetFormValue`. Special vars: `_timestamp`, `_date`.
+
+9. **No hardcoded conventions in code**: All engine behavior comes from `engineConventions` in `store.json`—`screenScopedAliases`, `defaultFormPath`, `loadingSuffix`, `errorSuffix`, etc. Zero fallbacks; config is the single source of truth.
+
+10. **Page must pass `configName`** to SDUIEngine so screen-scoped paths work. Route config name = screen name.

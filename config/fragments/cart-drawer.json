@@ -1,0 +1,179 @@
+{
+  "type": "Drawer",
+  "props": {
+    "isOpen": "{{layout.cartDrawerOpen}}",
+    "onClose": {"action": "closeCartDrawer"},
+    "size": "md",
+    "anchor": "right"
+  },
+  "children": [
+    {"type": "DrawerBackdrop"},
+    {
+      "type": "DrawerContent",
+      "props": {"className": "w-full max-w-md"},
+      "children": [
+        {
+          "type": "DrawerHeader",
+          "props": {"className": "border-b border-gray-200 pb-4"},
+          "children": [
+            {
+              "type": "Text",
+              "props": {"className": "font-bold text-lg text-gray-900"},
+              "text": "Your Cart"
+            },
+            {
+              "type": "DrawerCloseButton",
+              "props": {"onPress": {"action": "closeCartDrawer"}}
+            }
+          ]
+        },
+        {
+          "type": "DrawerBody",
+          "props": {"className": "py-4"},
+          "children": [
+            {
+              "type": "Box",
+              "condition": {"==": [{"var": ["cart.items.length", 0]}, 0]},
+              "props": {"className": "py-12 text-center"},
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {"className": "text-gray-500 text-sm"},
+                  "text": "Your cart is empty"
+                },
+                {
+                  "type": "Button",
+                  "props": {
+                    "action": "primary",
+                    "size": "md",
+                    "className": "mt-4 !bg-[var(--theme-shop-button)] hover:!bg-[var(--theme-shop-buttonHover)] !text-white"
+                  },
+                  "text": "Continue Shopping",
+                  "actions": {"click": {"action": "closeCartAndGoToShop"}}
+                }
+              ]
+            },
+            {
+              "type": "Box",
+              "condition": {">": [{"var": ["cart.items.length", 0]}, 0]},
+              "props": {"className": "space-y-4"},
+              "children": [
+                {
+                  "type": "Box",
+                  "props": {"className": "max-h-60 overflow-y-auto space-y-3"},
+                  "children": [
+                    {
+                      "type": "Box",
+                      "map": "cart.items",
+                      "key": "$item.product.id",
+                      "props": {
+                        "className": "flex gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50"
+                      },
+                      "children": [
+                        {
+                          "type": "Box",
+                          "props": {
+                            "className": "w-16 h-16 shrink-0 rounded overflow-hidden bg-gray-200"
+                          },
+                          "children": [
+                            {
+                              "type": "NextImage",
+                              "props": {
+                                "src": "{{$item.product.image}}",
+                                "alt": "{{$item.product.name}}",
+                                "width": 64,
+                                "height": 64,
+                                "className": "object-cover w-full h-full"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Box",
+                          "props": {"className": "flex-1 min-w-0"},
+                          "children": [
+                            {
+                              "type": "Text",
+                              "props": {
+                                "className": "font-medium text-sm text-gray-900 line-clamp-2"
+                              },
+                              "text": "{{$item.product.name}}"
+                            },
+                            {
+                              "type": "Text",
+                              "props": {
+                                "className": "text-xs text-gray-600 mt-0.5"
+                              },
+                              "text": "{{$item.product.price}} \u00d7 {{$item.quantity}}"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Pressable",
+                          "props": {
+                            "className": "text-gray-500 hover:text-red-600 text-xs shrink-0"
+                          },
+                          "actions": {"click": {"action": "removeFromCart"}},
+                          "children": [{"type": "Text", "text": "Remove"}]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "props": {"className": "text-sm text-gray-600"},
+                  "text": "{{cart.items.length}} item(s)"
+                },
+                {
+                  "type": "HStack",
+                  "props": {"className": "justify-between text-sm font-medium"},
+                  "children": [
+                    {"type": "Text", "text": "Subtotal"},
+                    {
+                      "type": "Text",
+                      "text": {
+                        "expr": {
+                          "formatCurrency": [
+                            {
+                              "reduce": [
+                                {"var": "cart.items"},
+                                {
+                                  "+": [
+                                    {"var": "accumulator"},
+                                    {
+                                      "*": [
+                                        {"var": ["current.product.price", 0]},
+                                        {"var": ["current.quantity", 1]}
+                                      ]
+                                    }
+                                  ]
+                                },
+                                0
+                              ]
+                            },
+                            "AED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "Button",
+                  "props": {
+                    "action": "primary",
+                    "size": "lg",
+                    "className": "w-full !bg-[var(--theme-shop-button)] hover:!bg-[var(--theme-shop-buttonHover)] !text-white"
+                  },
+                  "text": "View Cart",
+                  "actions": {"click": {"action": "closeCartAndGoToCart"}}
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

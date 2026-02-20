@@ -1,0 +1,15 @@
+{
+  "meta": { "title": "Returns Policy | SaraZ", "description": "Our returns and refunds policy" },
+  "state": {},
+  "layout": "store",
+  "content": {
+    "type": "Box",
+    "props": { "className": "mx-auto max-w-3xl px-4 sm:px-6 py-12 md:py-16" },
+    "children": [
+      { "type": "Heading", "props": { "size": "2xl", "className": "mb-8 font-light" }, "text": "Returns Policy" },
+      { "type": "Text", "props": { "className": "text-[var(--theme-shop-text)] leading-relaxed mb-6" }, "text": "We accept returns within 30 days of delivery. Items must be unworn, with tags attached and in original packaging." },
+      { "type": "Text", "props": { "className": "text-[var(--theme-shop-text)] leading-relaxed mb-6" }, "text": "To initiate a return, go to your account and select the order. Refunds are processed within 5-7 business days after we receive the item." },
+      { "type": "Text", "props": { "className": "text-[var(--theme-shop-text)] leading-relaxed" }, "text": "Sale items may have different return terms. Please check the product page for details." }
+    ]
+  }
+}

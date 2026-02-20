@@ -1,19 +1,17 @@
 {
-  "meta": { "title": "Checkout | LUMEN", "description": "Complete your order" },
+  "meta": { "title": "Checkout | SaraZ", "description": "Complete your order" },
   "state": {
     "email": "",
     "shippingAddress": { "firstName": "", "lastName": "", "address": "", "city": "", "country": "AE", "phone": "" },
     "shippingMethod": "standard",
     "paymentMethod": "card",
     "orderNotes": "",
-    "subtotal": "AED 597",
-    "shipping": "Free",
-    "total": "AED 597"
+    "step": 1
   },
-  "layout": "store",
+  "layout": "checkoutMinimal",
   "content": {
     "type": "Box",
-    "props": { "className": "max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12" },
+    "props": { "className": "w-full px-4 sm:px-6 py-8 md:py-12" },
     "children": [
       { "type": "Text", "props": { "className": "text-gray-500 text-xs font-medium tracking-widest uppercase mb-2" }, "text": "Secure checkout" },
       { "type": "Heading", "props": { "size": "2xl", "className": "mb-8 font-light" }, "text": "Checkout" },
@@ -30,7 +28,7 @@
                 "props": { "className": "p-6 bg-white rounded-xl border border-gray-200" },
                 "children": [
                   { "type": "Text", "props": { "className": "text-xs font-medium tracking-widest text-gray-500 uppercase mb-4" }, "text": "Contact" },
-                  { "type": "Box", "children": [{ "type": "Text", "props": { "className": "text-sm font-medium mb-2" }, "text": "Email" }, { "type": "Input", "props": { "placeholder": "you@example.com" } }] }
+                  { "type": "Box", "children": [{ "type": "Text", "props": { "className": "text-sm font-medium mb-2" }, "text": "Email" }, { "type": "Input", "props": { "placeholder": "you@example.com", "value": "{{email}}" }, "actions": { "change": { "action": "setState", "payload": { "path": "email", "value": "$event" } } } }] }
                 ]
               },
               {
@@ -43,15 +41,15 @@
                     "props": { "className": "gap-4" },
                     "children": [
                       { "type": "HStack", "props": { "className": "gap-4" }, "children": [
-                        { "type": "Box", "children": [{ "type": "Text", "props": { "className": "text-sm font-medium mb-2" }, "text": "First Name" }, { "type": "Input", "props": { "placeholder": "John" } }] },
+                        { "type": "Box", "children": [{ "type": "Text", "props": { "className": "text-sm font-medium mb-2" }, "text": "First Name" }, { "type": "Input", "props": { "placeholder": "John", "value": "{{shippingAddress.firstName}}" }, "actions": { "change": { "action": "setState", "payload": { "path": "shippingAddress.firstName", "value": "$event" } } } }] },
                         { "type": "Box", "children": [{ "type": "Text", "props": { "className": "text-sm font-medium mb-2" }, "text": "Last Name" }, { "type": "Input", "props": { "placeholder": "Doe" } }] }
                       ]},
-                      { "type": "Box", "children": [{ "type": "Text", "props": { "className": "text-sm font-medium mb-2" }, "text": "Address" }, { "type": "Input", "props": { "placeholder": "123 Main St, Dubai" } }] },
+                      { "type": "Box", "children": [{ "type": "Text", "props": { "className": "text-sm font-medium mb-2" }, "text": "Address" }, { "type": "Input", "props": { "placeholder": "123 Main St, Dubai", "value": "{{shippingAddress.address}}" }, "actions": { "change": { "action": "setState", "payload": { "path": "shippingAddress.address", "value": "$event" } } } }] },
                       { "type": "HStack", "props": { "className": "gap-4" }, "children": [
-                        { "type": "Box", "children": [{ "type": "Text", "props": { "className": "text-sm font-medium mb-2" }, "text": "City" }, { "type": "Input", "props": { "placeholder": "Dubai" } }] },
-                        { "type": "Box", "children": [{ "type": "Text", "props": { "className": "text-sm font-medium mb-2" }, "text": "Country" }, { "type": "Input", "props": { "placeholder": "UAE" } }] }
+                        { "type": "Box", "children": [{ "type": "Text", "props": { "className": "text-sm font-medium mb-2" }, "text": "City" }, { "type": "Input", "props": { "placeholder": "Dubai", "value": "{{shippingAddress.city}}" }, "actions": { "change": { "action": "setState", "payload": { "path": "shippingAddress.city", "value": "$event" } } } }] },
+                        { "type": "Box", "children": [{ "type": "Text", "props": { "className": "text-sm font-medium mb-2" }, "text": "Country" }, { "type": "Input", "props": { "placeholder": "UAE", "value": "{{shippingAddress.country}}" }, "actions": { "change": { "action": "setState", "payload": { "path": "shippingAddress.country", "value": "$event" } } } }] }
                       ]},
-                      { "type": "Box", "children": [{ "type": "Text", "props": { "className": "text-sm font-medium mb-2" }, "text": "Phone" }, { "type": "Input", "props": { "placeholder": "+971 50 123 4567" } }] }
+                      { "type": "Box", "children": [{ "type": "Text", "props": { "className": "text-sm font-medium mb-2" }, "text": "Phone" }, { "type": "Input", "props": { "placeholder": "+971 50 123 4567", "value": "{{shippingAddress.phone}}" }, "actions": { "change": { "action": "setState", "payload": { "path": "shippingAddress.phone", "value": "$event" } } } }] }
                     ]
                   }
                 ]
@@ -62,8 +60,8 @@
                 "children": [
                   { "type": "Text", "props": { "className": "text-xs font-medium tracking-widest text-gray-500 uppercase mb-4" }, "text": "Shipping" },
                   { "type": "VStack", "props": { "className": "gap-2" }, "children": [
-                    { "type": "Pressable", "props": { "className": "p-4 border border-gray-900 rounded-lg" }, "children": [{ "type": "Text", "text": "Standard (5-7 days) — Free" }] },
-                    { "type": "Pressable", "props": { "className": "p-4 border border-gray-200 rounded-lg hover:border-gray-300" }, "children": [{ "type": "Text", "text": "Express (2-3 days) — AED 25" }] }
+                    { "type": "Pressable", "props": { "className": "p-4 border border-gray-200 rounded-lg hover:border-gray-300" }, "actions": { "click": { "action": "setShippingStandard" } }, "children": [{ "type": "Text", "text": "Standard (5-7 days) — Free" }] },
+                    { "type": "Pressable", "props": { "className": "p-4 border border-gray-200 rounded-lg hover:border-gray-300" }, "actions": { "click": { "action": "setShippingExpress" } }, "children": [{ "type": "Text", "text": "Express (2-3 days) — AED 25" }] }
                   ]}
                 ]
               },
@@ -73,9 +71,9 @@
                 "children": [
                   { "type": "Text", "props": { "className": "text-xs font-medium tracking-widest text-gray-500 uppercase mb-4" }, "text": "Payment" },
                   { "type": "VStack", "props": { "className": "gap-2" }, "children": [
-                    { "type": "Pressable", "props": { "className": "p-4 border border-gray-200 rounded-lg" }, "children": [{ "type": "Text", "text": "Card (Stripe)" }] },
-                    { "type": "Pressable", "props": { "className": "p-4 border border-gray-200 rounded-lg" }, "children": [{ "type": "Text", "text": "Tabby (Pay in 4)" }] },
-                    { "type": "Pressable", "props": { "className": "p-4 border border-gray-200 rounded-lg" }, "children": [{ "type": "Text", "text": "Cash on Delivery" }] }
+                    { "type": "Pressable", "props": { "className": "p-4 border border-gray-200 rounded-lg hover:border-gray-300" }, "actions": { "click": { "action": "setPaymentCard" } }, "children": [{ "type": "Text", "text": "Card (Stripe)" }] },
+                    { "type": "Pressable", "props": { "className": "p-4 border border-gray-200 rounded-lg hover:border-gray-300" }, "actions": { "click": { "action": "setPaymentTabby" } }, "children": [{ "type": "Text", "text": "Tabby (Pay in 4)" }] },
+                    { "type": "Pressable", "props": { "className": "p-4 border border-gray-200 rounded-lg hover:border-gray-300" }, "actions": { "click": { "action": "setPaymentCOD" } }, "children": [{ "type": "Text", "text": "Cash on Delivery" }] }
                   ]}
                 ]
               }
@@ -90,17 +88,17 @@
                 "props": { "className": "p-6 bg-white rounded-xl border border-gray-200 sticky top-24" },
                 "children": [
                   { "type": "Text", "props": { "className": "text-xs font-medium tracking-widest text-gray-500 uppercase mb-4" }, "text": "Order Summary" },
-                  { "type": "Text", "props": { "className": "text-sm text-gray-600 mb-4" }, "text": "2 items" },
+                  { "type": "Text", "props": { "className": "text-sm text-gray-600 mb-4" }, "text": { "expr": { "reduce": [{"var": "cart.items"}, {"+": [{"var": "accumulator"}, {"var": ["current.quantity", 1]}]}, 0] }, "suffix": " items" } },
                   { "type": "Divider", "props": { "className": "my-4" } },
-                  { "type": "HStack", "props": { "className": "justify-between mb-2 text-sm" }, "children": [{ "type": "Text", "text": "Subtotal" }, { "type": "Text", "text": "{{subtotal}}" }] },
-                  { "type": "HStack", "props": { "className": "justify-between mb-2 text-sm" }, "children": [{ "type": "Text", "text": "Shipping" }, { "type": "Text", "text": "{{shipping}}" }] },
+                  { "type": "HStack", "props": { "className": "justify-between mb-2 text-sm" }, "children": [{ "type": "Text", "text": "Subtotal" }, { "type": "Text", "text": { "expr": { "formatCurrency": [{"reduce": [{"var": "cart.items"}, {"+": [{"var": "accumulator"}, {"*": [{"var": ["current.product.price", 0]}, {"var": ["current.quantity", 1]}]}]}, 0]}, "AED"] } } } ] },
+                  { "type": "HStack", "props": { "className": "justify-between mb-2 text-sm" }, "children": [{ "type": "Text", "text": "Shipping" }, { "type": "Text", "text": { "expr": {"if": [{"==": [{"reduce": [{"var": "cart.items"}, {"+": [{"var": "accumulator"}, 1]}, 0]}, 0]}, "—", {"var": ["cart.shippingEstimate.label", "Free"]}]} } }] },
                   { "type": "Divider", "props": { "className": "my-4" } },
-                  { "type": "HStack", "props": { "className": "justify-between font-semibold mb-6" }, "children": [{ "type": "Text", "text": "Total" }, { "type": "Text", "text": "{{total}}" }] },
+                  { "type": "HStack", "props": { "className": "justify-between font-semibold mb-6" }, "children": [{ "type": "Text", "text": "Total" }, { "type": "Text", "text": { "expr": { "formatCurrency": [{"*": [{"reduce": [{"var": "cart.items"}, {"+": [{"var": "accumulator"}, {"*": [{"var": ["current.product.price", 0]}, {"var": ["current.quantity", 1]}]}]}, 0]}, 1.05]}, "AED"] } } } ] },
                   {
                     "type": "Button",
                     "props": { "action": "primary", "className": "w-full py-3.5" },
                     "text": "Place Order",
-                    "actions": { "click": { "action": "log", "payload": { "message": "Place order" } } }
+                    "actions": { "click": { "action": "placeOrder" } }
                   }
                 ]
               }

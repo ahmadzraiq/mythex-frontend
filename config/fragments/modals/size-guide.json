@@ -1,0 +1,113 @@
+{
+  "type": "Modal",
+  "props": {
+    "isOpen": "{{layout.sizeGuideOpen}}",
+    "onClose": { "action": "closeSizeGuide" },
+    "size": "lg"
+  },
+  "children": [
+    { "type": "ModalBackdrop" },
+    {
+      "type": "ModalContent",
+      "props": { "className": "max-w-2xl" },
+      "children": [
+        {
+          "type": "ModalHeader",
+          "children": [
+            {
+              "type": "Heading",
+              "props": { "size": "lg", "className": "text-[var(--theme-shop-heading)]" },
+              "text": "Size Guide"
+            },
+            { "type": "ModalCloseButton", "actions": { "click": { "action": "closeSizeGuide" } } }
+          ]
+        },
+        {
+          "type": "ModalBody",
+          "children": [
+            {
+              "type": "Text",
+              "props": { "className": "text-sm text-[var(--theme-shop-textMuted)] mb-4" },
+              "text": "Find your perfect fit. All measurements are in cm."
+            },
+            {
+              "type": "Box",
+              "props": { "className": "overflow-x-auto" },
+              "children": [
+                {
+                  "type": "Table",
+                  "children": [
+                    {
+                      "type": "TableHeader",
+                      "children": [
+                        {
+                          "type": "TableRow",
+                          "children": [
+                            { "type": "TableHead", "children": [{ "type": "Text", "text": "Size" }] },
+                            { "type": "TableHead", "children": [{ "type": "Text", "text": "Chest" }] },
+                            { "type": "TableHead", "children": [{ "type": "Text", "text": "Waist" }] },
+                            { "type": "TableHead", "children": [{ "type": "Text", "text": "Hips" }] }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "TableBody",
+                      "children": [
+                        {
+                          "type": "TableRow",
+                          "children": [
+                            { "type": "TableData", "children": [{ "type": "Text", "text": "XS" }] },
+                            { "type": "TableData", "children": [{ "type": "Text", "text": "81-86" }] },
+                            { "type": "TableData", "children": [{ "type": "Text", "text": "61-66" }] },
+                            { "type": "TableData", "children": [{ "type": "Text", "text": "86-91" }] }
+                          ]
+                        },
+                        {
+                          "type": "TableRow",
+                          "children": [
+                            { "type": "TableData", "children": [{ "type": "Text", "text": "S" }] },
+                            { "type": "TableData", "children": [{ "type": "Text", "text": "86-91" }] },
+                            { "type": "TableData", "children": [{ "type": "Text", "text": "66-71" }] },
+                            { "type": "TableData", "children": [{ "type": "Text", "text": "91-96" }] }
+                          ]
+                        },
+                        {
+                          "type": "TableRow",
+                          "children": [
+                            { "type": "TableData", "children": [{ "type": "Text", "text": "M" }] },
+                            { "type": "TableData", "children": [{ "type": "Text", "text": "91-96" }] },
+                            { "type": "TableData", "children": [{ "type": "Text", "text": "71-76" }] },
+                            { "type": "TableData", "children": [{ "type": "Text", "text": "96-101" }] }
+                          ]
+                        },
+                        {
+                          "type": "TableRow",
+                          "children": [
+                            { "type": "TableData", "children": [{ "type": "Text", "text": "L" }] },
+                            { "type": "TableData", "children": [{ "type": "Text", "text": "96-101" }] },
+                            { "type": "TableData", "children": [{ "type": "Text", "text": "76-81" }] },
+                            { "type": "TableData", "children": [{ "type": "Text", "text": "101-106" }] }
+                          ]
+                        },
+                        {
+                          "type": "TableRow",
+                          "children": [
+                            { "type": "TableData", "children": [{ "type": "Text", "text": "XL" }] },
+                            { "type": "TableData", "children": [{ "type": "Text", "text": "101-106" }] },
+                            { "type": "TableData", "children": [{ "type": "Text", "text": "81-86" }] },
+                            { "type": "TableData", "children": [{ "type": "Text", "text": "106-111" }] }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

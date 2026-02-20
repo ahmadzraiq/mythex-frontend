@@ -1,16 +1,38 @@
 {
   "type": "Box",
   "props": {
-    "className": "border-t border-gray-200 bg-[#1a1a1a] text-white mt-auto shrink-0"
+    "className": "border-t border-[var(--theme-shop-border)] bg-[var(--theme-footer-bg)] text-[var(--theme-footer-text)] mt-auto shrink-0"
   },
+  "children": [
+{
+  "type": "Box",
+  "props": { "className": "w-full px-4 pt-12 pb-8 sm:px-6 lg:px-8 border-b border-white/10" },
   "children": [
     {
       "type": "Box",
-      "props": { "className": "max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8" },
+      "props": { "className": "max-w-md" },
       "children": [
+        { "type": "Text", "props": { "className": "text-sm font-semibold uppercase tracking-wider text-white mb-2" }, "text": "Newsletter" },
+        { "type": "Text", "props": { "className": "text-sm text-white/70 mb-4" }, "text": "Subscribe for exclusive offers and new arrivals" },
         {
-          "type": "Box",
-          "props": { "className": "grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4" },
+          "type": "HStack",
+          "props": { "className": "flex gap-2" },
+          "children": [
+            { "type": "Input", "props": { "placeholder": "Enter your email", "value": "{{newsletter.email}}", "className": "flex-1 border-white/20 bg-white/10 text-white placeholder:text-white/50 text-sm" }, "actions": { "change": { "action": "setState", "payload": { "path": "newsletter.email", "value": "$event" } } } },
+            { "type": "Button", "props": { "className": "bg-[var(--theme-footer-accent)] text-white hover:opacity-90 px-4 py-2 text-xs font-semibold uppercase tracking-wider shrink-0" }, "text": "Subscribe", "actions": { "click": { "action": "log", "payload": { "message": "Newsletter signup" } } } }
+          ]
+        }
+      ]
+    }
+  ]
+},
+{
+  "type": "Box",
+  "props": { "className": "w-full px-4 py-12 sm:px-6 lg:px-8" },
+  "children": [
+    {
+      "type": "Box",
+      "props": { "className": "grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4" },
           "children": [
             {
               "type": "VStack",
@@ -23,17 +45,7 @@
                     {
                       "type": "Text",
                       "props": { "className": "text-2xl font-bold tracking-tighter text-white" },
-                      "text": "NOIR"
-                    },
-                    {
-                      "type": "Text",
-                      "props": { "className": "text-2xl font-bold tracking-tighter text-amber-500" },
-                      "text": " & "
-                    },
-                    {
-                      "type": "Text",
-                      "props": { "className": "text-2xl font-bold tracking-tighter text-white" },
-                      "text": "AURA"
+                      "text": "SaraZ"
                     }
                   ]
                 },
@@ -91,18 +103,23 @@
                 },
                 {
                   "type": "Pressable",
-                  "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } },
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/about" } } },
                   "children": [{ "type": "Text", "props": { "className": "text-sm text-white/70 hover:text-white transition-colors" }, "text": "About Us" }]
                 },
                 {
                   "type": "Pressable",
-                  "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } },
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/contact" } } },
                   "children": [{ "type": "Text", "props": { "className": "text-sm text-white/70 hover:text-white transition-colors" }, "text": "Contact Us" }]
                 },
                 {
                   "type": "Pressable",
-                  "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } },
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/faq" } } },
                   "children": [{ "type": "Text", "props": { "className": "text-sm text-white/70 hover:text-white transition-colors" }, "text": "FAQ" }]
+                },
+                {
+                  "type": "Pressable",
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/size-guide" } } },
+                  "children": [{ "type": "Text", "props": { "className": "text-sm text-white/70 hover:text-white transition-colors" }, "text": "Size Guide" }]
                 }
               ]
             },
@@ -117,17 +134,17 @@
                 },
                 {
                   "type": "Pressable",
-                  "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } },
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/privacy-policy" } } },
                   "children": [{ "type": "Text", "props": { "className": "text-sm text-white/70 hover:text-white transition-colors" }, "text": "Privacy Policy" }]
                 },
                 {
                   "type": "Pressable",
-                  "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } },
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/terms" } } },
                   "children": [{ "type": "Text", "props": { "className": "text-sm text-white/70 hover:text-white transition-colors" }, "text": "Terms & Conditions" }]
                 },
                 {
                   "type": "Pressable",
-                  "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } },
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/returns-policy" } } },
                   "children": [{ "type": "Text", "props": { "className": "text-sm text-white/70 hover:text-white transition-colors" }, "text": "Return Policy" }]
                 },
                 {
@@ -136,17 +153,17 @@
                   "children": [
                     {
                       "type": "Text",
-                      "props": { "className": "text-xs font-semibold uppercase tracking-wider text-white/50 mb-2" },
+                      "props": { "className": "text-xs font-semibold uppercase tracking-wider text-white mb-2" },
                       "text": "Payment Methods"
                     },
                     {
                       "type": "HStack",
-                      "props": { "className": "flex flex-wrap gap-2 text-xs text-white/60" },
+                      "props": { "className": "flex flex-wrap gap-2 text-xs" },
                       "children": [
-                        { "type": "Text", "props": { "className": "rounded border border-white/20 px-2 py-1" }, "text": "Visa" },
-                        { "type": "Text", "props": { "className": "rounded border border-white/20 px-2 py-1" }, "text": "MC" },
-                        { "type": "Text", "props": { "className": "rounded border border-white/20 px-2 py-1" }, "text": "Tabby" },
-                        { "type": "Text", "props": { "className": "rounded border border-white/20 px-2 py-1" }, "text": "COD" }
+                        { "type": "Text", "props": { "className": "rounded border border-white/50 bg-white/10 px-2 py-1 text-white" }, "text": "Visa" },
+                        { "type": "Text", "props": { "className": "rounded border border-white/50 bg-white/10 px-2 py-1 text-white" }, "text": "MC" },
+                        { "type": "Text", "props": { "className": "rounded border border-white/50 bg-white/10 px-2 py-1 text-white" }, "text": "Tabby" },
+                        { "type": "Text", "props": { "className": "rounded border border-white/50 bg-white/10 px-2 py-1 text-white" }, "text": "COD" }
                       ]
                     }
                   ]
@@ -161,8 +178,8 @@
           "children": [
             {
               "type": "Text",
-              "props": { "className": "text-center text-xs text-white/50" },
-              "text": "© 2025 NOIR & AURA. All rights reserved."
+              "props": { "className": "text-center text-xs text-white/80" },
+              "text": "© 2025 SaraZ. All rights reserved."
             }
           ]
         }

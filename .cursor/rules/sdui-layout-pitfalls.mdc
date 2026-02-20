@@ -1,0 +1,121 @@
+---
+description: SDUI layout pitfalls and fixes - avoid these common mistakes
+alwaysApply: true
+---
+
+# SDUI Layout & Common Pitfalls
+
+## Layout: Sidebar + Content Side-by-Side
+
+**Problem:** Box component defaults to `flex flex-col`. Sidebar and content stack vertically instead of side-by-side.
+
+**Fix:** Add `flex-row` and `w-full` to the parent container:
+```json
+{"type":"Box","props":{"className":"flex flex-row flex-1 min-h-0 w-full"},"children":[...]}
+```
+
+**Applies to:** `config/layouts/shop.json`, `config/layouts/account.json`, any layout with sidebar + main content.
+
+---
+
+## Product/Item Grid: One Item Per Row
+
+**Problem:** Putting `map` on the grid Box creates one grid per item—each product gets its own grid with one cell.
+
+**Fix:** Grid Box wraps a child with `map` and `className: "contents"`:
+```json
+{"type":"Box","props":{"className":"grid grid-cols-2 gap-4 lg:grid-cols-4"},"children":[
+  {"type":"Box","map":"store.products","key":"product","props":{"className":"contents"},"children":[{"$ref":"fragments/product-card"}]}
+]}
+```
+`contents` (display: contents) makes the wrapper invisible so product cards become direct grid children.
+
+---
+
+## Empty Space / Centering Issues
+
+**Problem:** `mx-auto` and `max-w-7xl` on content containers cause centering and unused right-side space when content sits beside a sidebar.
+
+**Fix:** Remove `mx-auto` and `max-w-7xl` from content in layouts with sidebars. Use `w-full` only:
+```json
+"className":"w-full px-4 sm:px-6 py-8 md:py-12"
+```
+
+---
+
+## Buttons: Use Button Component, Not Pressable
+
+**Problem:** Using `Pressable` with manual button styling (`bg-gray-900`, etc.) looks inconsistent and doesn't match theme.
+
+**Fix:** Use `Button` with theme variables:
+```json
+{"type":"Button","props":{"action":"primary","className":"!bg-[var(--theme-shop-button)] hover:!bg-[var(--theme-shop-buttonHover)] !text-white"},"text":"View Cart","actions":{"click":{...}}}
+```
+
+---
+
+## path.split is not a function
+
+**Problem:** `getNestedValue` or similar receives a non-string path (undefined, array, etc.) from JSON logic conditions.
+
+**Fix:** Guard at entry: `if (path == null || typeof path !== 'string') return undefined;` in `getNestedValue`, `computeValue`, and filter `extractNodeDependencies` to strings only.
+
+---
+
+## Duplicate React Keys ($index, $item)
+
+**Problem:** Multiple children with `key: "$index"` or `key: "$item"` cause React warnings.
+
+**Fix:** In renderer, when `child.key` is `$index` or `$item`, use `child-${i}` instead:
+```js
+const isScopeVar = childKey === '$index' || childKey === '$item';
+const key = childKey && !isScopeVar ? childKey : `child-${i}`;
+```
+
+---
+
+## Product Not Found / route.slug Race
+
+**Problem:** `initActions` run before `route.slug` is set; fetch URL gets empty slug.
+
+**Fix:** (1) Use `useLayoutEffect` in page to set route data before child effects. (2) In engine `get`, fallback to `computeMergedState(useSduiStore.getState())` when mergedState lacks the value.
+
+---
+
+## initActions Stale Closure
+
+**Problem:** initActions effect may use outdated runAction if deps are wrong.
+
+**Fix:** Engine uses `runActionRef.current(action)` so initActions always call the latest runAction. Do not add runAction to the effect deps—that would re-run initActions on every runAction change.
+
+---
+
+## mergedState vs storeState Order
+
+**Problem:** Variable store's `product: {}` overwrites fetched product from global store, showing "Product not found".
+
+**Fix:** In renderer, merge as `{ ...storeState, ...mergedState }` so fetched/global data overwrites initial config state.
+
+---
+
+## Badge Blocking Clicks
+
+**Problem:** Absolutely positioned Badge overlays Pressable and captures clicks.
+
+**Fix:** Add `pointer-events-none` to Badge className.
+
+---
+
+## Cart Drawer: Show Items
+
+**Problem:** Cart drawer only shows "X item(s)" and View Cart—no product list.
+
+**Fix:** Add a `map` over `cart.items` with image, name, price×qty, and Remove button. Use `Button` for View Cart, not Pressable.
+
+---
+
+## Wishlist / Account Product Grids
+
+**Problem:** Wishlist shows one narrow card with excessive whitespace; grid doesn't fill width.
+
+**Fix:** (1) Use `contents` on the map wrapper Box. (2) Add `xl:grid-cols-5` for wider screens. (3) Add `min-w-0` to VStack/card containers to prevent overflow. (4) Use `!bg-[var(--theme-shop-button)]` on Buttons for proper theme styling.

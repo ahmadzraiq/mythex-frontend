@@ -1,0 +1,126 @@
+{
+  "meta": {
+    "title": "Category | SaraZ",
+    "description": "Browse our collection"
+  },
+  "state": {
+    "store": { "products": [] },
+    "shop": { "sortOrder": "newest", "filters": {}, "sortDropdownOpen": false }
+  },
+  "layout": "shop",
+  "initActions": [{ "action": "fetchCategoryProducts" }],
+  "content": {
+    "type": "Box",
+    "props": { "className": "w-full px-4 py-6 sm:px-6 lg:px-8" },
+    "children": [
+      {
+        "type": "HStack",
+        "props": { "className": "mb-4 gap-2 text-sm text-[var(--theme-shop-textMuted)]" },
+        "children": [
+          { "type": "Pressable", "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } }, "children": [{ "type": "Text", "text": "Home" }] },
+          { "type": "Text", "text": "/" },
+          { "type": "Pressable", "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } }, "children": [{ "type": "Text", "text": "Shop" }] },
+          { "type": "Text", "text": "/" },
+          { "type": "Text", "props": { "className": "text-[var(--theme-shop-heading)] font-medium" }, "text": "{{route.slug}}" }
+        ]
+      },
+      {
+        "type": "Box",
+        "map": "navCategories",
+        "key": "id",
+        "children": [
+          {
+            "type": "Box",
+            "condition": { "==": [{ "var": "$item.id" }, { "var": "route.slug" }] },
+            "props": { "className": "mb-8 rounded-xl overflow-hidden aspect-[3/1] min-h-[120px] relative flex items-center justify-center" },
+            "children": [
+              {
+                "type": "Box",
+                "condition": { "var": ["$item.bannerImage"] },
+                "props": { "className": "absolute inset-0 z-0" },
+                "children": [{ "type": "NextImage", "props": { "src": "{{$item.bannerImage}}", "alt": "{{$item.label}}", "fill": true, "className": "object-cover" } }]
+              },
+              {
+                "type": "Box",
+                "condition": { "!": [{ "var": ["$item.bannerImage"] }] },
+                "props": { "className": "absolute inset-0 z-0 bg-gradient-to-br from-[var(--theme-hero-bg)] to-[var(--theme-hero-bgMuted)]" }
+              },
+              { "type": "Box", "props": { "className": "absolute inset-0 z-[1] bg-gradient-to-t from-black/60 via-black/20 to-transparent" } },
+              { "type": "Heading", "props": { "size": "2xl", "className": "relative z-10 text-2xl sm:text-3xl font-bold text-white capitalize drop-shadow-lg" }, "text": "{{$item.label}}" }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "mb-6" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-wrap gap-2" },
+            "map": "navCategories",
+            "key": "id",
+            "children": [
+              {
+                "type": "Box",
+                "condition": { "==": [{ "var": "$item.id" }, { "var": "route.slug" }] },
+                "props": { "className": "flex flex-wrap gap-2" },
+                "children": [
+                  {
+                    "type": "VStack",
+                    "props": { "className": "gap-2" },
+                    "children": [
+                      { "type": "Text", "props": { "className": "text-sm font-medium text-[var(--theme-shop-textMuted)]" }, "text": "Subcategories" },
+                      {
+                        "type": "HStack",
+                        "props": { "className": "flex flex-wrap gap-2" },
+                        "map": "$item.subcategories",
+                        "key": "path",
+                        "children": [
+                          {
+                            "type": "Pressable",
+                            "props": { "className": "rounded-full px-4 py-2 text-sm font-medium border border-[var(--theme-shop-border)] text-[var(--theme-shop-textMuted)] hover:border-[var(--theme-header-accent)] hover:text-[var(--theme-header-text)] transition-colors" },
+                            "actions": { "click": { "action": "navigate", "payload": { "path": "{{$item.path}}" } } },
+                            "children": [{ "type": "Text", "text": "{{$item.label}}" }]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "HStack",
+        "props": { "className": "mb-6 flex flex-wrap items-center justify-between gap-4" },
+        "children": [
+          { "type": "Pressable", "props": { "className": "flex items-center gap-2 rounded-lg border border-[var(--theme-shop-border)] px-4 py-2 text-sm font-medium lg:hidden" }, "actions": { "click": { "action": "openFilterDrawer" } }, "children": [{ "type": "Text", "text": "Filters" }, { "type": "Text", "text": "☰" }] },
+          { "$ref": "fragments/sort-dropdown" }
+        ]
+      },
+      { "$ref": "fragments/filter-chips" },
+      {
+        "type": "Box",
+        "condition": { "==": [{ "var": ["store.products.length", 0] }, 0] },
+        "props": { "className": "flex flex-col items-center justify-center py-16 text-center" },
+        "children": [
+          { "type": "Text", "props": { "className": "text-6xl mb-4" }, "text": "🛍️" },
+          { "type": "Heading", "props": { "size": "lg", "className": "text-xl font-semibold text-[var(--theme-shop-heading)]" }, "text": "No products in this category" },
+          { "type": "Text", "props": { "className": "mt-2 text-sm text-[var(--theme-shop-textMuted)]" }, "text": "Check back soon for new arrivals" }
+        ]
+      },
+      {
+        "type": "Box",
+        "condition": { ">": [{ "var": ["store.products.length", 0] }, 0] },
+        "props": { "className": "grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4" },
+        "children": [
+          { "type": "Box", "map": "store.products", "key": "product", "props": { "className": "contents" }, "children": [{ "$ref": "fragments/product-card" }] }
+        ]
+      },
+      { "$ref": "fragments/pagination" }
+    ]
+  }
+}

@@ -4,7 +4,7 @@
  * Form with react-hook-form + yup validation - works with JSON-configured rules
  */
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -128,6 +128,18 @@ export function FormWithValidation({
     resolver: schema ? yupResolver(schema) : undefined,
     mode: 'onSubmit',
   });
+
+  // Sync form values to store on every change so {{form.*}} interpolation updates live
+  useEffect(() => {
+    if (!setState) return;
+    const unsubscribe = form.subscribe({
+      formState: { values: true },
+      callback: ({ values }) => {
+        if (values) setState((prev) => ({ ...prev, ...values }));
+      },
+    });
+    return unsubscribe;
+  }, [form, setState]);
 
   const handleValidSubmit = (data: Record<string, unknown>) => {
     if (submitAction && runAction) {

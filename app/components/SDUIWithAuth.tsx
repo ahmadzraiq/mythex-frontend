@@ -1,0 +1,37 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSduiStore } from '@/store/sdui-store';
+import { SDUIEngine } from '@/lib/sdui/sdui-engine';
+import type { SDUIConfig } from '@/lib/sdui/types';
+import storeConfig from '@/config/store.json';
+
+const AUTH_USER_PATH = (storeConfig as { paths?: { authUser?: string } }).paths?.authUser ?? 'auth.user';
+
+export function SDUIWithAuth({
+  config,
+  requireAuth = false,
+}: {
+  config: SDUIConfig;
+  requireAuth?: boolean;
+}) {
+  const isAuthenticated = !!useSduiStore((s) => s.data[AUTH_USER_PATH]);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (requireAuth && !isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [requireAuth, isAuthenticated, router]);
+
+  if (requireAuth && !isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-[var(--theme-content-textMuted)]">Redirecting...</p>
+      </div>
+    );
+  }
+
+  return <SDUIEngine config={config} />;
+}

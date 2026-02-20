@@ -1,0 +1,15 @@
+{
+  "meta": { "title": "Terms & Conditions | SaraZ", "description": "Terms of service" },
+  "state": {},
+  "layout": "store",
+  "content": {
+    "type": "Box",
+    "props": { "className": "mx-auto max-w-3xl px-4 sm:px-6 py-12 md:py-16" },
+    "children": [
+      { "type": "Heading", "props": { "size": "2xl", "className": "mb-8 font-light" }, "text": "Terms & Conditions" },
+      { "type": "Text", "props": { "className": "text-[var(--theme-shop-text)] leading-relaxed mb-6" }, "text": "By using SaraZ, you agree to these terms. Our products are sold as described. We reserve the right to correct pricing errors." },
+      { "type": "Text", "props": { "className": "text-[var(--theme-shop-text)] leading-relaxed mb-6" }, "text": "All intellectual property on this site belongs to SaraZ. Unauthorized use is prohibited." },
+      { "type": "Text", "props": { "className": "text-[var(--theme-shop-text)] leading-relaxed" }, "text": "For questions about these terms, please contact us." }
+    ]
+  }
+}

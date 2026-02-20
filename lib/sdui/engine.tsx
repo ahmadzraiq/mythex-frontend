@@ -8,41 +8,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { SDURenderer } from './renderer';
 import type { SDUIConfig, SDUIContext, SDUIAction, SDUIDataSource } from './types';
-
-function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
-  const parts = path.split('.');
-  let current: unknown = obj;
-  for (const part of parts) {
-    if (current == null || typeof current !== 'object') return undefined;
-    current = (current as Record<string, unknown>)[part];
-  }
-  return current;
-}
-
-function setNestedValue(
-  obj: Record<string, unknown>,
-  path: string,
-  value: unknown,
-  merge = false
-): Record<string, unknown> {
-  const result = JSON.parse(JSON.stringify(obj));
-  const parts = path.split('.');
-  let current = result;
-  for (let i = 0; i < parts.length - 1; i++) {
-    const part = parts[i];
-    if (!(part in current) || typeof current[part] !== 'object') {
-      current[part] = {};
-    }
-    current = current[part] as Record<string, unknown>;
-  }
-  const last = parts[parts.length - 1];
-  if (merge && typeof value === 'object' && value !== null && !Array.isArray(value)) {
-    current[last] = { ...(current[last] as object), ...(value as object) };
-  } else {
-    current[last] = value;
-  }
-  return result;
-}
+import { getNestedValue, setNestedValue } from './nested-utils';
 
 interface SDUIEngineProps {
   config: SDUIConfig;

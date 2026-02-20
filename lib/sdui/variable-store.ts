@@ -1,47 +1,14 @@
 /**
  * Variable Store - Generic reactive state for SDUI
- * Path-based get/set, adapters for external state (Redux, etc.), computed variables
+ * Path-based get/set, adapters for external state (Zustand, etc.), computed variables
  * Uses Zustand for fine-grained subscriptions - only re-render when watched paths change
  */
 
 import { useRef, useSyncExternalStore } from 'react';
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-
-function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
-  const parts = path.split('.');
-  let current: unknown = obj;
-  for (const part of parts) {
-    if (current == null || typeof current !== 'object') return undefined;
-    current = (current as Record<string, unknown>)[part];
-  }
-  return current;
-}
-
-function setNestedValue(
-  obj: Record<string, unknown>,
-  path: string,
-  value: unknown,
-  merge = false
-): Record<string, unknown> {
-  const result = JSON.parse(JSON.stringify(obj));
-  const parts = path.split('.');
-  let current = result;
-  for (let i = 0; i < parts.length - 1; i++) {
-    const part = parts[i];
-    if (!(part in current) || typeof current[part] !== 'object') {
-      current[part] = {};
-    }
-    current = current[part] as Record<string, unknown>;
-  }
-  const last = parts[parts.length - 1];
-  if (merge && typeof value === 'object' && value !== null && !Array.isArray(value)) {
-    current[last] = { ...(current[last] as object), ...(value as object) };
-  } else {
-    current[last] = value;
-  }
-  return result;
-}
+import { getNestedValue, setNestedValue } from './nested-utils';
+import type { SDUINode } from './types';
 
 export interface ComputedDef {
   type: string;
@@ -82,6 +49,7 @@ function computeValue(
   data: Record<string, unknown>,
   config: VariableStoreConfig
 ): unknown {
+  if (path == null || typeof path !== 'string') return undefined;
   const computedDef = config.computed?.[path];
   if (computedDef?.type === 'reduce' && computedDef.source) {
     const arr = (getNestedValue(data, computedDef.source) as unknown[]) ?? [];
@@ -174,18 +142,19 @@ export function extractPathsFromObject(obj: unknown): string[] {
 }
 
 /** Extract all variable paths used by a node - for selective subscription */
-export function extractNodeDependencies(node: {
-  text?: string;
-  props?: Record<string, unknown>;
-  condition?: unknown;
-  map?: string;
-}): string[] {
+export function extractNodeDependencies(node: Pick<SDUINode, 'text' | 'props' | 'condition' | 'map'>): string[] {
   const paths: string[] = [];
-  if (node.text) paths.push(...extractPathsFromTemplate(node.text));
+  if (node.text != null) {
+    if (typeof node.text === 'string') paths.push(...extractPathsFromTemplate(node.text));
+    else if (typeof node.text === 'object' && 'expr' in node.text) {
+      const exprPaths = extractPathsFromObject((node.text as { expr: unknown }).expr);
+      paths.push(...exprPaths.filter((p) => p !== 'current' && p !== 'accumulator' && !p.startsWith('current.')));
+    }
+  }
   if (node.props) paths.push(...extractPathsFromObject(node.props));
   if (node.condition) paths.push(...extractPathsFromObject(node.condition));
-  if (node.map) paths.push(node.map);
-  return [...new Set(paths)];
+  if (node.map && typeof node.map === 'string') paths.push(node.map);
+  return [...new Set(paths)].filter((p): p is string => typeof p === 'string');
 }
 
 /** Expand computed paths to their source dependencies for subscription */
@@ -210,13 +179,15 @@ function arraysEqual(a: unknown[], b: unknown[]): boolean {
   return a.length === b.length && a.every((v, i) => v === b[i]);
 }
 
+type MergedStore = { getState: () => { merged: Record<string, unknown> }; subscribe: (cb: () => void) => () => void };
+
 /** Hook: subscribe to paths - only re-renders when these values change.
- *  Caches both getSnapshot and getServerSnapshot to avoid React infinite loops.
- *  Store must have adapter data synced via mergeSlice for external state. */
+ *  When mergedStore is provided, subscribes to both for selective re-renders. */
 export function useVariablePaths(
   store: ReturnType<typeof createVariableStore>,
   paths: string[],
-  scope?: Record<string, unknown>
+  scope?: Record<string, unknown>,
+  mergedStore?: MergedStore
 ): unknown[] {
   const config = (store.getState() as Store)._config;
   const expanded = expandComputedDeps(paths, config.computed);
@@ -226,13 +197,16 @@ export function useVariablePaths(
   if (expanded.length === 0) return EMPTY_ARRAY;
 
   const getSnapshot = () => {
-    const state = store.getState();
-    const data = state.data;
     const next = expanded.map((p) => {
+      if (typeof p !== 'string') return undefined;
       if (scope && (p.startsWith('$item') || p.startsWith('$index'))) {
         return getNestedValue(scope, p);
       }
-      return computeValue(p, data, config);
+      if (mergedStore) {
+        return getNestedValue(mergedStore.getState().merged, p);
+      }
+      const state = store.getState();
+      return computeValue(p, state.data, config);
     });
     if (arraysEqual(next, clientSnapshotRef.current)) {
       return clientSnapshotRef.current;
@@ -248,9 +222,9 @@ export function useVariablePaths(
     return serverSnapshotRef.current;
   };
 
-  return useSyncExternalStore(
-    (cb) => store.subscribe(cb),
-    getSnapshot,
-    getServerSnapshot
-  );
+  const subscribe = mergedStore
+    ? (cb: () => void) => mergedStore.subscribe(cb)
+    : (cb: () => void) => store.subscribe(cb);
+
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }

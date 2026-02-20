@@ -1,0 +1,33 @@
+{
+  "type": "HStack",
+  "props": { "className": "flex-wrap gap-2 items-center" },
+  "condition": { "var": "shop.filters.category" },
+  "children": [
+    {
+      "type": "Pressable",
+      "props": {
+        "className": "inline-flex items-center gap-1 rounded-full border border-[var(--theme-shop-border)] bg-[var(--theme-content-bgAlt)] px-3 py-1 text-xs font-medium text-[var(--theme-shop-text)] hover:bg-[var(--theme-shop-border)]"
+      },
+      "actions": {
+        "click": {
+          "action": "setState",
+          "payload": { "path": "shop.filters.category", "value": null }
+        }
+      },
+      "children": [
+        { "type": "Text", "text": "Category: {{shop.filters.category}}" },
+        { "type": "Text", "props": { "className": "text-[var(--theme-shop-textMuted)]" }, "text": "×" }
+      ]
+    },
+    {
+      "type": "Pressable",
+      "props": {
+        "className": "text-xs text-[var(--theme-shop-accent)] hover:underline font-medium"
+      },
+      "actions": {
+        "click": { "action": "clearFilters" }
+      },
+      "children": [{ "type": "Text", "text": "Clear all" }]
+    }
+  ]
+}

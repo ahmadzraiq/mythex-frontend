@@ -1,5 +1,5 @@
 {
-  "meta": { "title": "Orders | LUMEN", "description": "Your orders" },
+  "meta": { "title": "Orders | SaraZ", "description": "Your orders" },
   "state": {
     "orders": [
       { "id": "ORD-2847", "date": "Feb 15, 2025", "status": "Delivered", "total": "AED 597", "items": 2 },
@@ -7,10 +7,10 @@
       { "id": "ORD-2835", "date": "Feb 5, 2025", "status": "Delivered", "total": "AED 898", "items": 3 }
     ]
   },
-  "layout": "store",
+  "layout": "account",
   "content": {
     "type": "Box",
-    "props": { "className": "max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12" },
+    "props": { "className": "w-full px-4 sm:px-6 py-8 md:py-12" },
     "children": [
       { "type": "Text", "props": { "className": "text-gray-500 text-xs font-medium tracking-widest uppercase mb-2" }, "text": "History" },
       { "type": "Heading", "props": { "size": "2xl", "className": "mb-8 font-light" }, "text": "Orders" },
@@ -42,7 +42,7 @@
                     "children": [
                       { "type": "Badge", "props": { "size": "sm", "className": "bg-success-100 text-success-700" }, "children": [{ "type": "BadgeText", "text": "{{$item.status}}" }] },
                       { "type": "Text", "props": { "className": "font-semibold" }, "text": "{{$item.total}}" },
-                      { "type": "Pressable", "props": { "className": "text-gray-900 text-sm font-medium hover:underline" }, "children": [{ "type": "Text", "text": "View" }] }
+                      { "type": "Pressable", "props": { "className": "text-gray-900 text-sm font-medium hover:underline" }, "actions": { "click": { "action": "navigate", "payload": { "path": "/account/order/{{$item.id}}" } } }, "children": [{ "type": "Text", "text": "View" }] }
                     ]
                   }
                 ]

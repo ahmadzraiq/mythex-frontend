@@ -15,155 +15,285 @@
   "ui": {
     "type": "Box",
     "props": {
-      "className": "flex flex-col items-center justify-center min-h-screen w-full bg-background-50 p-6"
+      "className": "min-h-screen w-full flex flex-col md:flex-row bg-[var(--theme-content-bg)]"
     },
     "children": [
       {
         "type": "Box",
         "props": {
-          "className": "w-full max-w-md mx-auto"
+          "className": "hidden md:flex md:w-1/2 lg:w-3/5 relative overflow-hidden"
         },
         "children": [
           {
-            "type": "Heading",
+            "type": "NextImage",
             "props": {
-              "size": "xl",
-              "className": "mb-6 text-typography-900"
-            },
-            "text": "Sign Up"
+              "src": "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1200&q=90",
+              "alt": "Create account",
+              "fill": true,
+              "className": "object-cover",
+              "priority": true
+            }
           },
           {
             "type": "Box",
-            "condition": {
-              "var": "auth.error"
-            },
             "props": {
-              "className": "mb-4 p-3 bg-error-100 rounded-lg"
+              "className": "absolute inset-0 bg-gradient-to-r from-black/30 to-transparent"
+            }
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "absolute bottom-12 left-12 right-12"
             },
             "children": [
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-error-700 text-sm"
+                  "className": "text-white text-2xl font-semibold drop-shadow-md"
                 },
-                "text": "{{auth.error}}"
-              }
-            ]
-          },
-          {
-            "type": "Form",
-            "props": {
-              "defaultValues": {
-                "form": {
-                  "name": "",
-                  "email": "",
-                  "password": "",
-                  "confirmPassword": ""
-                }
+                "text": "Join us"
               },
-              "validationRules": {
-                "form.name": {
-                  "required": true
-                },
-                "form.email": {
-                  "required": true,
-                  "pattern": "email"
-                },
-                "form.password": {
-                  "required": true,
-                  "minLength": 8
-                },
-                "form.confirmPassword": {
-                  "required": true,
-                  "equals": "form.password",
-                  "message": "Passwords must match"
-                }
-              },
-              "submitAction": "signup"
-            },
-            "children": [
-              {
-                "type": "FormInputWithLabel",
-                "props": {
-                  "name": "form.name",
-                  "label": "Name",
-                  "placeholder": "John Doe",
-                  "variant": "outline",
-                  "className": "mb-4"
-                }
-              },
-              {
-                "type": "FormInputWithLabel",
-                "props": {
-                  "name": "form.email",
-                  "label": "Email",
-                  "placeholder": "you@example.com",
-                  "variant": "outline",
-                  "className": "mb-4"
-                }
-              },
-              {
-                "type": "FormInputWithLabel",
-                "props": {
-                  "name": "form.password",
-                  "label": "Password",
-                  "placeholder": "••••••••",
-                  "variant": "outline",
-                  "secureTextEntry": true,
-                  "className": "mb-4"
-                }
-              },
-              {
-                "type": "FormInputWithLabel",
-                "props": {
-                  "name": "form.confirmPassword",
-                  "label": "Confirm Password",
-                  "placeholder": "••••••••",
-                  "variant": "outline",
-                  "secureTextEntry": true,
-                  "className": "mb-6"
-                }
-              },
-              {
-                "type": "FormSubmitButton",
-                "props": {
-                  "action": "primary",
-                  "className": "w-full mb-4"
-                },
-                "text": "Sign Up"
-              }
-            ]
-          },
-          {
-            "type": "HStack",
-            "props": {
-              "className": "justify-center"
-            },
-            "children": [
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-typography-600 text-sm"
+                  "className": "text-white/95 text-base mt-1 drop-shadow-sm"
                 },
-                "text": "Already have an account? "
-              },
+                "text": "Create an account to start shopping"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "flex-1 flex items-center justify-center p-6 md:p-12 bg-gradient-to-br from-[var(--theme-auth-bg)] via-[var(--theme-auth-bgAlt)] to-[var(--theme-auth-bg)]"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "w-full max-w-md"
+            },
+            "children": [
               {
-                "type": "Pressable",
-                "actions": {
-                  "click": {
-                    "action": "navigate",
-                    "payload": {
-                      "path": "/login"
-                    }
+                "type": "Box",
+                "props": {
+                  "className": "md:hidden mb-8 text-center"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "size": "xl",
+                      "className": "text-[var(--theme-content-heading)]"
+                    },
+                    "text": "Join us"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[var(--theme-content-textMuted)] mt-1"
+                    },
+                    "text": "Create an account to start shopping"
                   }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "mb-4 p-3 rounded-lg bg-[var(--theme-surface)]/80 border border-[var(--theme-shop-border)]/40"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-primary-600 font-medium text-sm"
+                      "className": "text-[var(--theme-content-textMuted)] text-xs mb-1"
                     },
-                    "text": "Login"
+                    "text": "Password preview:"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[var(--theme-content-text)] text-sm font-mono break-all"
+                    },
+                    "text": "{{form.password}}"
+                  }
+                ]
+              },
+              {
+                "type": "Card",
+                "props": {
+                  "className": "p-6 md:p-8 shadow-sm border-l-4 border-l-[var(--theme-shop-accent)] border border-[var(--theme-shop-border)]/60 rounded-2xl bg-[var(--theme-surface)]"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "mb-6 hidden md:block"
+                    },
+                    "children": [
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "size": "xl",
+                          "className": "text-[var(--theme-shop-accent)] font-semibold"
+                        },
+                        "text": "Sign Up"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[var(--theme-content-textMuted)] text-sm mt-1"
+                        },
+                        "text": "Create your account to get started"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "condition": {
+                      "var": "auth.error"
+                    },
+                    "props": {
+                      "className": "mb-4 p-3 bg-error-100 rounded-lg"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-error-700 text-sm"
+                        },
+                        "text": "{{auth.error}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Form",
+                    "props": {
+                      "defaultValues": {
+                        "form": {
+                          "name": "",
+                          "email": "",
+                          "password": "",
+                          "confirmPassword": ""
+                        }
+                      },
+                      "validationRules": {
+                        "form.name": {
+                          "required": true
+                        },
+                        "form.email": {
+                          "required": true,
+                          "pattern": "email"
+                        },
+                        "form.password": {
+                          "required": true,
+                          "minLength": 8
+                        },
+                        "form.confirmPassword": {
+                          "required": true,
+                          "equals": "form.password",
+                          "message": "Passwords must match"
+                        }
+                      },
+                      "submitAction": "signup"
+                    },
+                    "children": [
+                      {
+                        "type": "FormInputWithLabel",
+                        "props": {
+                          "name": "form.name",
+                          "label": "Name",
+                          "placeholder": "John Doe",
+                          "variant": "outline",
+                          "className": "mb-4"
+                        }
+                      },
+                      {
+                        "type": "FormInputWithLabel",
+                        "props": {
+                          "name": "form.email",
+                          "label": "Email",
+                          "placeholder": "you@example.com",
+                          "variant": "outline",
+                          "className": "mb-4"
+                        }
+                      },
+                      {
+                        "type": "FormInputWithLabel",
+                        "props": {
+                          "name": "form.password",
+                          "label": "Password",
+                          "placeholder": "••••••••",
+                          "variant": "outline",
+                          "secureTextEntry": true,
+                          "className": "mb-4"
+                        }
+                      },
+                      {
+                        "type": "FormInputWithLabel",
+                        "props": {
+                          "name": "form.confirmPassword",
+                          "label": "Confirm Password",
+                          "placeholder": "••••••••",
+                          "variant": "outline",
+                          "secureTextEntry": true,
+                          "className": "mb-6"
+                        }
+                      },
+                      {
+                        "type": "FormSubmitButton",
+                        "props": {
+                          "action": "primary",
+                          "className": "w-full mb-4 py-3 rounded-lg !bg-[var(--theme-shop-accent)] hover:!bg-[var(--theme-shop-accentHover)] !text-white"
+                        },
+                        "text": "Sign Up"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "pt-4 border-t border-[var(--theme-shop-border)]/40"
+                    },
+                    "children": [
+                      {
+                        "type": "HStack",
+                        "props": {
+                          "className": "justify-center"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[var(--theme-content-textMuted)] text-sm"
+                            },
+                            "text": "Already have an account? "
+                          },
+                          {
+                            "type": "Pressable",
+                            "actions": {
+                              "click": {
+                                "action": "navigate",
+                                "payload": {
+                                  "path": "/login"
+                                }
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[var(--theme-shop-accent)] font-medium text-sm hover:underline"
+                                },
+                                "text": "Login"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
                   }
                 ]
               }

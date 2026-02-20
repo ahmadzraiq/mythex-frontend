@@ -7,7 +7,7 @@
 
 import React, { useEffect, memo } from 'react';
 import { getComponent } from './component-registry';
-import { evaluateCondition, interpolate, resolveProps } from './utils';
+import { evaluateCondition, interpolate, resolveProps, resolveText } from './utils';
 import {
   createVariableStore,
   extractNodeDependencies,
@@ -15,12 +15,23 @@ import {
   type VariableStoreConfig,
 } from './variable-store';
 import type { SDUINode, SDUIContext } from './types';
+import { getNestedValue, setNestedValue } from './nested-utils';
+
+function isScreenScopedPath(path: string, aliases: string[]): boolean {
+  return aliases.some((a) => path === a || path.startsWith(`${a}.`));
+}
 
 interface RendererContext {
   store: ReturnType<typeof createVariableStore>;
+  mergedStore?: { getState: () => { merged: Record<string, unknown> }; subscribe: (cb: () => void) => () => void };
   storeConfig: VariableStoreConfig;
+  mergedState?: Record<string, unknown>;
   runAction: SDUIContext['runAction'];
   fetchData: SDUIContext['fetchData'];
+  actionsConfig?: Record<string, unknown>;
+  screenName?: string;
+  formStorePath?: string;
+  screenScopedAliases?: string[];
 }
 
 interface RendererProps {
@@ -45,17 +56,45 @@ function DataSourceWrapper({
   return <>{children}</>;
 }
 
-/** Create a context-like get that reads from store with scope */
-function createGet(store: ReturnType<typeof createVariableStore>, scope?: Record<string, unknown>) {
-  return (path: string, s?: Record<string, unknown>) => store.getState().get(path, s ?? scope);
+/** Create a combined get that reads from merged store/state first, then variable store */
+function createGet(
+  store: ReturnType<typeof createVariableStore>,
+  mergedState: Record<string, unknown> | undefined,
+  scope: Record<string, unknown> | undefined,
+  mergedStore: { getState: () => { merged: Record<string, unknown> } } | undefined,
+  screenName: string | undefined,
+  screenScopedAliases: string[]
+) {
+  return (path: string, s?: Record<string, unknown>) => {
+    const sc = s ?? scope;
+    if (sc && (path.startsWith('$item') || path.startsWith('$index') || path === '$item' || path === '$index')) {
+      return getNestedValue(sc, path);
+    }
+    const resolvedPath =
+      screenName && isScreenScopedPath(path, screenScopedAliases)
+        ? `screens.${screenName}.${path}`
+        : path;
+    const merged = mergedStore?.getState().merged ?? mergedState;
+    if (merged) {
+      const fromMerged = getNestedValue(merged, resolvedPath);
+      if (fromMerged !== undefined) return fromMerged;
+    }
+    return store.getState().get(resolvedPath, sc);
+  };
 }
 
 const SDURendererInner = memo(function SDURendererInner({ node, context, scope }: RendererProps) {
-  const { store, storeConfig, runAction, fetchData } = context;
-  const deps = extractNodeDependencies(node);
-  useVariablePaths(store, deps, scope);
-  const get = createGet(store, scope);
-  const state = store.getState().getFullState();
+  const { store, mergedStore, storeConfig, mergedState, runAction, fetchData, actionsConfig, screenName, formStorePath, screenScopedAliases = [] } = context;
+  const merged = mergedStore?.getState().merged ?? mergedState;
+  const rawDeps = extractNodeDependencies(node);
+  const deps =
+    screenName && rawDeps.some((p) => isScreenScopedPath(p, screenScopedAliases))
+      ? rawDeps.map((p) => (isScreenScopedPath(p, screenScopedAliases) ? `screens.${screenName}.${p}` : p))
+      : rawDeps;
+  useVariablePaths(store, deps, scope, mergedStore);
+  const get = createGet(store, merged, scope, mergedStore, screenName, screenScopedAliases);
+  const storeState = store.getState().getFullState();
+  const state = merged ? { ...storeState, ...merged } : storeState;
   const stateWithScope = scope ? { ...state, $item: scope.$item, $index: scope.$index } : state;
   const sduiContext: SDUIContext = {
     state: stateWithScope,
@@ -111,15 +150,30 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope }
     Object.entries(resolvedProps).filter(([k]) => !k.startsWith('$'))
   ) as Record<string, unknown>;
 
-  if ((node.type as string) === 'Form') {
+  if ((node.type as string) === 'Form' && formStorePath != null) {
     cleanProps.runAction = runAction;
-    cleanProps.setState = (updater: (prev: Record<string, unknown>) => Record<string, unknown>) =>
-      store.getState().setState(updater);
+    const storePath = formStorePath;
+    cleanProps.setState = (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => {
+      store.getState().setState((prev) => {
+        const currentForm = getNestedValue(prev as Record<string, unknown>, storePath) as Record<string, unknown> | undefined;
+        const merged = updater({ form: currentForm ?? {} });
+        const formData = (merged.form as Record<string, unknown>) ?? currentForm ?? {};
+        return setNestedValue(prev as Record<string, unknown>, storePath, formData);
+      });
+    };
   }
 
   if (node.actions) {
     for (const [event, action] of Object.entries(node.actions)) {
-      const handler = (e?: unknown) => runAction(action, e, scope);
+      const actionName = typeof action === 'object' && action && 'action' in action ? String((action as { action: string }).action) : '';
+      const actionDef = actionName && actionsConfig?.[actionName] as Record<string, unknown> | undefined;
+      const shouldStop = !!(actionDef && actionDef.stopPropagation === true);
+      const handler = (e?: unknown) => {
+        if (shouldStop && e && typeof e === 'object' && 'stopPropagation' in e && typeof (e as { stopPropagation: () => void }).stopPropagation === 'function') {
+          (e as { stopPropagation: () => void }).stopPropagation();
+        }
+        runAction(action, e, scope);
+      };
       if (event === 'click') {
         cleanProps.onPress = handler;
         cleanProps.onClick = handler;
@@ -139,13 +193,16 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope }
     }
   }
 
-  const textContent = node.text ? interpolate(node.text, sduiContext, scope) : undefined;
+  const textContent = node.text != null ? resolveText(node.text, sduiContext, scope) : undefined;
 
   let children: React.ReactNode = null;
   if (node.children?.length) {
-    children = node.children.map((child, i) => (
-      <SDURendererInner key={child.key ?? i} node={child} context={context} scope={scope} />
-    ));
+    children = node.children.map((child, i) => {
+      const childKey = child.key;
+      const isScopeVar = childKey === '$index' || childKey === '$item';
+      const key = childKey && !isScopeVar ? childKey : `child-${i}`;
+      return <SDURendererInner key={key} node={child} context={context} scope={scope} />;
+    });
   } else if (textContent !== undefined) {
     children = textContent;
   }

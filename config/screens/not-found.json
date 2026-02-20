@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "title": "Page Not Found | SaraZ",
+    "description": "The page you're looking for doesn't exist"
+  },
+  "state": {},
+  "layout": "store",
+  "content": {
+    "type": "Box",
+    "props": {
+      "className": "flex flex-col items-center justify-center min-h-[60vh] px-4 text-center"
+    },
+    "children": [
+      {
+        "type": "Text",
+        "props": { "className": "text-8xl font-bold text-[var(--theme-header-textMuted)] mb-4" },
+        "text": "404"
+      },
+      {
+        "type": "Heading",
+        "props": {
+          "size": "xl",
+          "className": "text-xl sm:text-2xl font-semibold text-[var(--theme-header-text)] mb-2"
+        },
+        "text": "Page not found"
+      },
+      {
+        "type": "Text",
+        "props": {
+          "className": "text-sm text-[var(--theme-header-textMuted)] mb-8 max-w-md"
+        },
+        "text": "Sorry, we couldn't find the page you're looking for. It might have been moved or doesn't exist."
+      },
+      {
+        "type": "Pressable",
+        "props": {
+          "className": "rounded-lg bg-[var(--theme-header-accent)] px-6 py-3 text-sm font-medium text-[var(--theme-header-accentForeground)] hover:opacity-90 transition-opacity"
+        },
+        "actions": {
+          "click": {
+            "action": "navigate",
+            "payload": { "path": "/" }
+          }
+        },
+        "children": [
+          { "type": "Text", "text": "Back to Home" }
+        ]
+      }
+    ]
+  }
+}

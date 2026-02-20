@@ -94,8 +94,10 @@ import {
   UserIcon,
   ShoppingBagIcon,
   MenuIcon,
+  ShareIcon,
 } from '@/components/ui/icon';
 import { View } from '@/components/ui/view';
+import { SocialIcon } from '@/components/ui/social-icon';
 
 // Accordion
 import {
@@ -177,6 +179,7 @@ const NAV_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   User: UserIcon,
   ShoppingBag: ShoppingBagIcon,
   Menu: MenuIcon,
+  Share: ShareIcon,
 };
 
 /** Renders a nav icon by name - use from JSON with props: { icon: "Search" } */
@@ -268,6 +271,7 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   ButtonSpinner,
   NextImage,
   Image: UIImage,
+  SocialIcon,
   Link,
   LinkText,
   Input: InputWithField,

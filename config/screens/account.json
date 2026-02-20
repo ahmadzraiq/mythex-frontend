@@ -1,15 +1,15 @@
 {
-  "meta": { "title": "Account | LUMEN", "description": "Your account" },
+  "meta": { "title": "Account | SaraZ", "description": "Your account" },
   "state": {
     "user": { "name": "Alex", "email": "alex@example.com" },
     "ordersCount": 5,
     "loyaltyPoints": 1240,
     "addressesCount": 2
   },
-  "layout": "store",
+  "layout": "account",
   "content": {
     "type": "Box",
-    "props": { "className": "max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12" },
+    "props": { "className": "w-full px-4 sm:px-6 py-8 md:py-12" },
     "children": [
       { "type": "Text", "props": { "className": "text-gray-500 text-xs font-medium tracking-widest uppercase mb-2" }, "text": "Welcome back" },
       { "type": "Heading", "props": { "size": "2xl", "className": "mb-10 font-light" }, "text": "My Account" },

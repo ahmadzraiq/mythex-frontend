@@ -1,0 +1,69 @@
+{
+  "meta": {
+    "title": "Order Confirmed | SaraZ",
+    "description": "Thank you for your order"
+  },
+  "state": {},
+  "layout": "checkoutMinimal",
+  "content": {
+    "type": "Box",
+    "props": { "className": "min-h-[60vh]" },
+    "children": [
+      {
+        "type": "Box",
+        "props": { "className": "mx-auto w-full max-w-2xl px-4 py-12 text-center" },
+        "condition": { "!": { "var": "order.lastOrder" } },
+        "children": [
+          { "type": "Heading", "props": { "size": "lg", "className": "mb-4" }, "text": "No order found" },
+          { "type": "Text", "props": { "className": "text-gray-600 mb-6" }, "text": "You may have arrived here by mistake." },
+          { "type": "Button", "props": { "action": "primary" }, "text": "Continue Shopping", "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } } }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "mx-auto w-full max-w-2xl px-4 sm:px-6 py-12 md:py-16 text-center" },
+        "condition": { "var": "order.lastOrder" },
+        "children": [
+          { "type": "Text", "props": { "className": "text-6xl mb-6" }, "text": "✓" },
+          { "type": "Heading", "props": { "size": "2xl", "className": "mb-2 font-light" }, "text": "Thank you for your order" },
+          { "type": "Text", "props": { "className": "text-[var(--theme-shop-textMuted)] mb-8" }, "text": "We've received your order and will send you a confirmation email shortly." },
+          {
+            "type": "Box",
+            "props": { "className": "p-6 bg-white rounded-xl border border-gray-200 mb-8 text-left" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-xs font-medium tracking-widest text-gray-500 uppercase mb-2" }, "text": "Order number" },
+              { "type": "Text", "props": { "className": "text-lg font-semibold mb-4" }, "text": "{{order.lastOrder.id}}" },
+              { "type": "Text", "props": { "className": "text-sm text-gray-600 mb-4" }, "text": "Placed on {{order.lastOrder.placedAt}}" },
+              { "type": "Divider", "props": { "className": "my-4" } },
+              {
+                "type": "Box",
+                "map": "order.lastOrder.items",
+                "key": "$item.product.id",
+                "props": { "className": "py-2 flex justify-between text-sm" },
+                "children": [
+                  { "type": "Text", "text": "{{$item.product.name}} × {{$item.quantity}}" },
+                  { "type": "Text", "text": "{{$item.product.price}}" }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "VStack",
+            "props": { "className": "gap-4 items-center" },
+            "children": [
+              { "type": "Button", "props": { "action": "primary", "className": "w-full sm:w-auto px-8" }, "text": "Continue Shopping", "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } } },
+              {
+                "type": "HStack",
+                "props": { "className": "gap-4" },
+                "children": [
+                  { "type": "Pressable", "props": { "className": "text-sm text-[var(--theme-shop-textMuted)] hover:underline" }, "children": [{ "type": "Text", "text": "View invoice" }] },
+                  { "type": "Pressable", "props": { "className": "text-sm text-[var(--theme-shop-textMuted)] hover:underline" }, "children": [{ "type": "Text", "text": "Track order" }] }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

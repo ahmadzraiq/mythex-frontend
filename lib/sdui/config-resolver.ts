@@ -3,6 +3,14 @@
  * Enables reusable fragments and layout composition without hardcoding
  */
 
+/** Deep clone - uses structuredClone when available (faster), falls back to JSON round-trip */
+function deepClone<T>(obj: T): T {
+  if (typeof structuredClone === 'function') {
+    return structuredClone(obj);
+  }
+  return JSON.parse(JSON.stringify(obj));
+}
+
 export type SDUINodeLike = Record<string, unknown> & {
   type?: string;
   $ref?: string;
@@ -49,7 +57,7 @@ function resolveRef(
     }
   }
 
-  return deepResolveNode(JSON.parse(JSON.stringify(node)), registry, visited);
+  return deepResolveNode(deepClone(node), registry, visited);
 }
 
 /** Deep resolve a node - replace $ref and recurse into children */
@@ -90,7 +98,7 @@ function injectSlot(
 
   if ('$slot' in node && node.$slot === slotName) {
     const contentArr = Array.isArray(content) ? content : [content];
-    return contentArr.map((c) => deepResolveNode(JSON.parse(JSON.stringify(c)) as SDUINodeLike, registry, visited));
+    return contentArr.map((c) => deepResolveNode(deepClone(c) as SDUINodeLike, registry, visited));
   }
 
   const result = { ...node };
@@ -126,7 +134,7 @@ export function resolveScreenConfig(
 
   if (layout && registry.layouts[layout]) {
     const layoutConfig = registry.layouts[layout];
-    const structure = JSON.parse(JSON.stringify(layoutConfig.structure));
+    const structure = deepClone(layoutConfig.structure);
     const withSlot = injectSlot(
       structure,
       'content',
@@ -134,12 +142,14 @@ export function resolveScreenConfig(
       registry,
       new Set()
     );
-    const resolved = deepResolveNode(withSlot, registry, new Set());
+    const resolved = Array.isArray(withSlot)
+      ? deepResolveNode({ type: 'Box', children: withSlot }, registry, new Set())
+      : deepResolveNode(withSlot, registry, new Set());
     return { ...rest, ui: resolved } as Record<string, unknown>;
   }
 
   const resolved = deepResolveNode(
-    JSON.parse(JSON.stringify(contentNode)) as SDUINodeLike,
+    deepClone(contentNode) as SDUINodeLike,
     registry,
     new Set()
   );

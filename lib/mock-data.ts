@@ -1,5 +1,5 @@
 /**
- * Mock store data - NOIR & AURA fashion store
+ * Mock store data - SaraZ fashion store
  */
 
 export const categories = [
@@ -40,7 +40,7 @@ export const products: StoreProduct[] = [
   { id: "prod-5", slug: "tailored-chinos", name: "Tailored Chinos", brand: "NOIR", price: 219, category: "men", image: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=800&h=1000&fit=crop", isBestSeller: true, rating: 4.4, reviewCount: 52 },
   { id: "prod-6", slug: "oversized-cotton-tee", name: "Oversized Cotton Tee", brand: "AURA", price: 129, category: "women", image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&h=1000&fit=crop", isBestSeller: true, rating: 4.7, reviewCount: 89 },
   { id: "prod-7", slug: "structured-tote-bag", name: "Structured Tote Bag", brand: "LUXE", price: 389, category: "accessories", image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&h=1000&fit=crop", isNew: true, rating: 4.8, reviewCount: 28 },
-  { id: "prod-8", slug: "ribbed-knit-cardigan", name: "Ribbed Knit Cardigan", brand: "AURA", price: 269, category: "women", image: "https://images.unsplash.com/photo-1434389677669-e08b4cda3a73?w=800&h=1000&fit=crop", isNew: true, rating: 4.6, reviewCount: 34 },
+  { id: "prod-8", slug: "ribbed-knit-cardigan", name: "Ribbed Knit Cardigan", brand: "AURA", price: 269, category: "women", image: "https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=800&h=1000&fit=crop", isNew: true, rating: 4.6, reviewCount: 34 },
 ];
 
 export const flashSale = { id: "fs-1", title: "Weekend Flash Sale", endsAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), productIds: ["prod-1", "prod-4", "prod-6"] };
@@ -59,4 +59,31 @@ export function getBestSellers() {
 
 export function getFlashSaleProducts() {
   return products.filter((p) => flashSale.productIds.includes(p.id));
+}
+
+export function getRelatedProducts(category: string, excludeId: string, limit = 4) {
+  return products
+    .filter((p) => p.category === category && p.id !== excludeId)
+    .slice(0, limit);
+}
+
+export function getFrequentlyBoughtTogether(productId: string, limit = 4) {
+  const pairs: Record<string, string[]> = {
+    'prod-1': ['prod-5', 'prod-3', 'prod-4'],
+    'prod-2': ['prod-6', 'prod-8', 'prod-4'],
+    'prod-3': ['prod-1', 'prod-5', 'prod-7'],
+    'prod-4': ['prod-2', 'prod-7', 'prod-6'],
+    'prod-5': ['prod-1', 'prod-3', 'prod-6'],
+    'prod-6': ['prod-2', 'prod-8', 'prod-5'],
+    'prod-7': ['prod-4', 'prod-3', 'prod-1'],
+    'prod-8': ['prod-2', 'prod-6', 'prod-4'],
+  };
+  const ids = pairs[productId] ?? products.filter((p) => p.id !== productId).map((p) => p.id).slice(0, limit);
+  return ids.map((id) => products.find((p) => p.id === id)).filter(Boolean) as StoreProduct[];
+}
+
+export function getRecentlyViewed(excludeId: string, excludeCategory: string, limit = 4) {
+  return products
+    .filter((p) => p.id !== excludeId && p.category !== excludeCategory)
+    .slice(0, limit);
 }

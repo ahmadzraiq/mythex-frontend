@@ -24,7 +24,7 @@
             {
               "type": "Text",
               "props": {
-                "className": "text-typography-0 text-xl"
+                "className": "text-[var(--theme-text-on-dark)] text-xl"
               },
               "text": "☰"
             }
@@ -33,7 +33,7 @@
         {
           "type": "Text",
           "props": {
-            "className": "text-typography-0 font-semibold text-lg"
+            "className": "text-[var(--theme-text-on-dark)] font-semibold text-lg"
           },
           "text": "{{meta.title}}"
         },
@@ -46,7 +46,7 @@
             {
               "type": "Text",
               "props": {
-                "className": "text-typography-100 text-sm"
+                "className": "text-[var(--theme-text-muted-on-dark)] text-sm"
               },
               "text": "Hi, {{auth.user.name}}"
             },

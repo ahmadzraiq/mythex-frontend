@@ -1,15 +1,15 @@
 {
-  "meta": { "title": "Addresses | LUMEN", "description": "Saved addresses" },
+  "meta": { "title": "Addresses | SaraZ", "description": "Saved addresses" },
   "state": {
     "addresses": [
       { "id": "1", "name": "Home", "address": "Villa 12, Palm Jumeirah, Dubai", "default": true },
       { "id": "2", "name": "Office", "address": "Level 5, DIFC Gate Avenue, Dubai", "default": false }
     ]
   },
-  "layout": "store",
+  "layout": "account",
   "content": {
     "type": "Box",
-    "props": { "className": "max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12" },
+    "props": { "className": "w-full px-4 sm:px-6 py-8 md:py-12" },
     "children": [
       {
         "type": "HStack",

@@ -48,7 +48,7 @@
             {
               "type": "Text",
               "props": {
-                "className": "text-typography-700"
+                "className": "text-[var(--theme-shop-text)]"
               },
               "text": "Are you sure you want to delete this product?"
             }

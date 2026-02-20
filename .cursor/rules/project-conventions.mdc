@@ -7,11 +7,14 @@ alwaysApply: true
 
 ## Schema Reference
 **Before building screens, layouts, or fragments:** Read `docs/SCHEMA.md` for the full JSON schema.
+**Starting a new app:** Use `docs/NEW-APP-CHECKLIST.md` to avoid common mistakes.
 
 ## Architecture
 - **JSON-driven UI**: Screens, layouts, fragments are defined in `config/` as JSON
+- **Global variable store** (`lib/sdui/global-variable-store.ts`): Single source of truth; path-based access; screen-scoped paths `screens.{screenName}.form.*`
 - **Config resolver** (`lib/sdui/config-resolver.ts`): Resolves `$ref`, `$slot`, layout composition at build time
-- **Redux SDUI Engine**: Renders resolved config, merges state (config + Redux), runs actions
+- **Zustand SDUI Engine**: Renders resolved config, merges state (config + Zustand), runs actions
+- **Computed runner** (`lib/sdui/computed-runner.ts`): JSON Logic–based derived values; inline expr in `text` or optional `store.json` computed
 
 ## Key Paths
 - `config/screens/` - Screen definitions (meta, state, layout, content)
@@ -19,14 +22,17 @@ alwaysApply: true
 - `config/fragments/` - Reusable UI (header, drawer, modals)
 - `config/actions/` - Action definitions (fetch, set, navigate, etc.)
 - `config/routes.json` - Routes, dynamic routes (`dynamic: true`), defaultRedirect
-- `config/store.json` - Initial Redux state (`initialData`), no hardcoded values in configSlice
+- `config/store.json` - Initial state (`initialData`), path mappings (`paths`), optional `computed`, `engineConventions` (loadingSuffix, errorSuffix, defaultStoreIn, workflowPath, etc.)
 - `config/theme.json` - Theme colors and sections (announcement, header, hero, etc.)
-- `lib/sdui/` - Engine, renderer, config resolver
+- `lib/sdui/` - Engine, renderer, config resolver, computed-runner, variable-store
 
 ## When adding features
 1. Prefer JSON config over new React components
 2. Extract shared UI to fragments; use `$ref` to compose
 3. Use `layout` for screens that share header/drawer
-4. Actions (openDrawer, closeDrawer, etc.) live in `config/actions/layout.json` and use `type: "set"` for Redux-persisted state
+4. Actions (openDrawer, closeDrawer, etc.) live in `config/actions/layout.json` and use `type: "set"` for Zustand-persisted state
 5. **No hardcoded values in code**: paths, routes, initial state, colors—all come from JSON config
 6. Use theme variables: `var(--theme-announcement-bg)`, `var(--theme-header-text)`, etc.
+7. **Derived values**: Use inline `text: { expr: <JSON Logic>, suffix?, prefix? }` for one-off computed (cart count, totals, etc.); use `formatCurrency` for money display.
+8. **Cross-screen state**: Use `screens.{screenName}.form.*`, `screens.{screenName}.errors.*`; access from anywhere via `{{screens.signup.form.password}}`.
+9. **Workflow context**: `{{_workflow.lastAction}}`, `{{_workflow.lastError}}` for last action name and error (null if success). Configurable via `engineConventions.workflowPath`.

@@ -1,0 +1,16 @@
+{
+  "type": "Box",
+  "props": {
+    "className": "mt-8 flex items-center justify-center border-t border-[var(--theme-shop-border)] pt-6"
+  },
+  "condition": { ">": [{ "var": ["store.products.length", 0] }, 0] },
+  "children": [
+    {
+      "type": "Text",
+      "props": {
+        "className": "text-sm text-[var(--theme-shop-textMuted)]"
+      },
+      "text": "Showing {{store.products.length}} products"
+    }
+  ]
+}

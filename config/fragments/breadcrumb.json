@@ -1,0 +1,37 @@
+{
+  "type": "HStack",
+  "props": {
+    "className": "gap-2 text-sm text-[var(--theme-shop-textMuted)]"
+  },
+  "children": [
+    {
+      "type": "Pressable",
+      "actions": {
+        "click": {
+          "action": "navigate",
+          "payload": { "path": "/" }
+        }
+      },
+      "children": [
+        {
+          "type": "Text",
+          "props": {
+            "className": "hover:text-[var(--theme-shop-heading)] transition-colors"
+          },
+          "text": "Home"
+        }
+      ]
+    },
+    {
+      "type": "Text",
+      "text": "/"
+    },
+    {
+      "type": "Text",
+      "props": {
+        "className": "text-[var(--theme-shop-heading)] font-medium"
+      },
+      "text": "{{breadcrumb.current}}"
+    }
+  ]
+}

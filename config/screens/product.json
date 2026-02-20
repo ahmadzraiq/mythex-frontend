@@ -1,73 +1,1235 @@
 {
-  "meta": { "title": "Product | NOIR & AURA", "description": "Product details" },
+  "meta": {
+    "title": "Product | SaraZ",
+    "description": "Product details"
+  },
   "state": {
     "product": {},
+    "productQuantity": 1,
     "relatedProducts": [],
-    "activeTab": "description"
+    "activeTab": "description",
+    "reviewForm": { "rating": 0, "title": "", "body": "" }
   },
-  "layout": "store",
-  "initActions": [{ "action": "fetchProductBySlug" }],
+  "layout": "product",
+  "initActions": [
+    {
+      "action": "fetchProductBySlug"
+    }
+  ],
   "content": {
     "type": "Box",
-    "props": { "className": "max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12" },
+    "props": {
+      "className": "relative w-full px-4 sm:px-6 py-8 md:py-12 pb-24 lg:pb-12"
+    },
     "children": [
       {
         "type": "Box",
-        "condition": { "var": "product.id" },
-        "props": { "className": "grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16" },
+        "condition": {
+          "var": "product.id"
+        },
+        "props": {
+          "className": "fixed bottom-0 left-0 right-0 z-40 lg:hidden p-4 bg-[var(--theme-header-bg)] border-t border-[var(--theme-shop-border)] shadow-[0_-4px_12px_rgba(0,0,0,0.08)]"
+        },
+        "children": [
+          {
+            "type": "HStack",
+            "props": {
+              "className": "max-w-7xl gap-4 items-center justify-between"
+            },
+            "children": [
+              {
+                "type": "VStack",
+                "props": {
+                  "className": "gap-0"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs text-[var(--theme-shop-textMuted)] line-clamp-1"
+                    },
+                    "text": "{{product.name}}"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-[var(--theme-shop-heading)]"
+                    },
+                    "text": "{{product.price}}"
+                  }
+                ]
+              },
+              {
+                "type": "HStack",
+                "props": {
+                  "className": "gap-3 flex-1 justify-end max-w-[200px]"
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "variant": "outline",
+                      "size": "sm",
+                      "className": "flex-1"
+                    },
+                    "text": "Buy Now",
+                    "actions": {
+                      "click": {
+                        "action": "navigate",
+                        "payload": { "path": "/checkout" }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "action": "primary",
+                      "size": "sm",
+                      "className": "flex-1 bg-[var(--theme-shop-button)] hover:bg-[var(--theme-shop-buttonHover)]"
+                    },
+                    "text": "Add to Cart",
+                    "actions": {
+                      "click": {
+                        "action": "addToCart"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "VStack",
+        "condition": {
+          "var": "product.id"
+        },
+        "props": {
+          "className": "gap-12"
+        },
         "children": [
           {
             "type": "Box",
-            "props": { "className": "aspect-square bg-gray-100 rounded-xl overflow-hidden" },
+            "props": {
+              "className": "grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16"
+            },
             "children": [
-              { "type": "NextImage", "props": { "src": "{{product.image}}", "alt": "{{product.name}}", "fill": true, "className": "object-cover" } }
+              {
+                "$ref": "fragments/product-image-gallery"
+          },
+          {
+            "type": "VStack",
+            "props": {
+              "className": "gap-6 lg:sticky lg:top-24 lg:self-start"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[var(--theme-shop-textMuted)] text-xs font-medium tracking-widest uppercase"
+                },
+                "text": "{{product.brand}}"
+              },
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "2xl",
+                  "className": "font-light tracking-tight text-[var(--theme-shop-heading)]"
+                },
+                "text": "{{product.name}}"
+              },
+              {
+                "type": "HStack",
+                "props": {
+                  "className": "gap-3 items-baseline"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-lg text-[var(--theme-shop-heading)]"
+                    },
+                    "text": "{{product.price}}"
+                  },
+                  {
+                    "type": "Text",
+                    "condition": {
+                      "var": "product.originalPrice"
+                    },
+                    "props": {
+                      "className": "text-[var(--theme-shop-textMuted)] line-through"
+                    },
+                    "text": "{{product.originalPrice}}"
+                  }
+                ]
+              },
+              {
+                "type": "HStack",
+                "condition": {
+                  "var": "product.rating"
+                },
+                "props": {
+                  "className": "gap-2 items-center"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm font-medium text-[var(--theme-shop-heading)]"
+                    },
+                    "text": "{{product.rating}} ★"
+                  },
+                  {
+                    "type": "Text",
+                    "condition": {
+                      "var": "product.reviewCount"
+                    },
+                    "props": {
+                      "className": "text-sm text-[var(--theme-shop-textMuted)]"
+                    },
+                    "text": "• {{product.reviewCount}} reviews"
+                  }
+                ]
+              },
+              {
+                "type": "HStack",
+                "props": {
+                  "className": "gap-2 items-center"
+                },
+                "children": [
+                  {
+                    "type": "Badge",
+                    "condition": {
+                      "==": [
+                        {
+                          "var": "product.stock"
+                        },
+                        "in_stock"
+                      ]
+                    },
+                    "props": {
+                      "action": "success",
+                      "size": "sm"
+                    },
+                    "children": [
+                      {
+                        "type": "BadgeText",
+                        "text": "In Stock"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Badge",
+                    "condition": {
+                      "!=": [
+                        {
+                          "var": "product.stock"
+                        },
+                        "in_stock"
+                      ]
+                    },
+                    "props": {
+                      "action": "error",
+                      "size": "sm"
+                    },
+                    "children": [
+                      {
+                        "type": "BadgeText",
+                        "text": "Out of Stock"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "HStack",
+                "props": {
+                  "className": "gap-2 items-center text-sm text-[var(--theme-shop-textMuted)]"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "text": "Estimated delivery: 3–5 business days"
+                  }
+                ]
+              },
+              {
+                "type": "Divider"
+              },
+              {
+                "type": "HStack",
+                "props": {
+                  "className": "gap-2 items-baseline"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-medium text-sm text-[var(--theme-shop-heading)]"
+                    },
+                    "text": "Size"
+                  },
+                  {
+                    "type": "Pressable",
+                    "props": {
+                      "className": "text-xs text-[var(--theme-shop-accent)] hover:underline"
+                    },
+                    "actions": {
+                      "click": {
+                        "action": "openSizeGuide"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "Size guide"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "HStack",
+                "props": {
+                  "className": "gap-2 flex-wrap"
+                },
+                "children": [
+                  {
+                    "type": "Pressable",
+                    "map": "product.variants.size",
+                    "key": "$index",
+                    "props": {
+                      "className": "px-4 py-2.5 border-2 border-[var(--theme-shop-accent)] rounded-lg text-sm font-medium text-[var(--theme-shop-heading)]"
+                    },
+                    "condition": {
+                      "==": [
+                        { "var": "$item" },
+                        { "var": "product.selectedSize" }
+                      ]
+                    },
+                    "actions": {
+                      "click": {
+                        "action": "setState",
+                        "payload": {
+                          "path": "product.selectedSize",
+                          "value": { "var": "$item" }
+                        }
+                      }
+                    },
+                    "children": [{ "type": "Text", "text": "{{$item}}" }]
+                  },
+                  {
+                    "type": "Pressable",
+                    "map": "product.variants.size",
+                    "key": "$index",
+                    "props": {
+                      "className": "px-4 py-2.5 border-2 border-[var(--theme-shop-border)] rounded-lg hover:border-[var(--theme-shop-button)] text-sm font-medium text-[var(--theme-shop-heading)]"
+                    },
+                    "condition": {
+                      "!=": [
+                        { "var": "$item" },
+                        { "var": "product.selectedSize" }
+                      ]
+                    },
+                    "actions": {
+                      "click": {
+                        "action": "setState",
+                        "payload": {
+                          "path": "product.selectedSize",
+                          "value": { "var": "$item" }
+                        }
+                      }
+                    },
+                    "children": [{ "type": "Text", "text": "{{$item}}" }]
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "font-medium text-sm text-[var(--theme-shop-heading)]"
+                },
+                "text": "Color"
+              },
+              {
+                "type": "HStack",
+                "props": {
+                  "className": "gap-2 flex-wrap"
+                },
+                "children": [
+                  {
+                    "type": "Pressable",
+                    "map": "product.variants.color",
+                    "key": "$index",
+                    "props": {
+                      "className": "px-4 py-2.5 border-2 border-[var(--theme-shop-accent)] rounded-lg text-sm font-medium text-[var(--theme-shop-heading)]"
+                    },
+                    "condition": {
+                      "==": [
+                        { "var": "$item" },
+                        { "var": "product.selectedColor" }
+                      ]
+                    },
+                    "actions": {
+                      "click": {
+                        "action": "setState",
+                        "payload": {
+                          "path": "product.selectedColor",
+                          "value": { "var": "$item" }
+                        }
+                      }
+                    },
+                    "children": [{ "type": "Text", "text": "{{$item}}" }]
+                  },
+                  {
+                    "type": "Pressable",
+                    "map": "product.variants.color",
+                    "key": "$index",
+                    "props": {
+                      "className": "px-4 py-2.5 border-2 border-[var(--theme-shop-border)] rounded-lg hover:border-[var(--theme-shop-button)] text-sm font-medium text-[var(--theme-shop-heading)]"
+                    },
+                    "condition": {
+                      "!=": [
+                        { "var": "$item" },
+                        { "var": "product.selectedColor" }
+                      ]
+                    },
+                    "actions": {
+                      "click": {
+                        "action": "setState",
+                        "payload": {
+                          "path": "product.selectedColor",
+                          "value": { "var": "$item" }
+                        }
+                      }
+                    },
+                    "children": [{ "type": "Text", "text": "{{$item}}" }]
+                  }
+                ]
+              },
+              {
+                "type": "HStack",
+                "props": {
+                  "className": "gap-4 items-center"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-medium text-sm text-[var(--theme-shop-heading)]"
+                    },
+                    "text": "Quantity"
+                  },
+                  {
+                    "type": "HStack",
+                    "props": {
+                      "className": "gap-0 border border-[var(--theme-shop-border)] rounded-lg overflow-hidden"
+                    },
+                    "children": [
+                      {
+                        "type": "Pressable",
+                        "props": {
+                          "className": "w-10 h-10 flex items-center justify-center text-[var(--theme-shop-text)] hover:bg-[var(--theme-content-bgAlt)]"
+                        },
+                        "actions": {
+                          "click": {
+                            "action": "decrementQuantity"
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "text": "−"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "w-12 h-10 flex items-center justify-center text-sm font-medium text-[var(--theme-shop-heading)]"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "text": "{{productQuantity}}"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Pressable",
+                        "props": {
+                          "className": "w-10 h-10 flex items-center justify-center text-[var(--theme-shop-text)] hover:bg-[var(--theme-content-bgAlt)]"
+                        },
+                        "actions": {
+                          "click": {
+                            "action": "incrementQuantity"
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "text": "+"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Divider"
+              },
+              {
+                "type": "HStack",
+                "props": {
+                  "className": "gap-4"
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "action": "primary",
+                      "className": "flex-1 py-3.5 bg-[var(--theme-shop-button)] hover:bg-[var(--theme-shop-buttonHover)]"
+                    },
+                    "text": "Add to Cart",
+                    "actions": {
+                      "click": {
+                        "action": "addToCart"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "variant": "outline",
+                      "className": "flex-1 py-3.5"
+                    },
+                    "text": "Buy Now",
+                    "actions": {
+                      "click": {
+                        "action": "navigate",
+                        "payload": {
+                          "path": "/checkout"
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "HStack",
+                "props": {
+                  "className": "gap-3"
+                },
+                "children": [
+                  {
+                    "type": "Pressable",
+                    "props": {
+                      "className": "flex items-center gap-2 px-4 py-2.5 border border-[var(--theme-shop-border)] rounded-lg hover:border-[var(--theme-shop-button)] text-sm text-[var(--theme-shop-heading)]"
+                    },
+                    "actions": {
+                      "click": {
+                        "action": "addToWishlistFromProduct"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "NavIcon",
+                        "props": {
+                          "icon": "Favourite",
+                          "className": "size-4"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "text": "Wishlist"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Pressable",
+                    "props": {
+                      "className": "flex items-center gap-2 px-4 py-2.5 border border-[var(--theme-shop-border)] rounded-lg hover:border-[var(--theme-shop-button)] text-sm text-[var(--theme-shop-heading)]"
+                    },
+                    "actions": {
+                      "click": {
+                        "action": "shareProduct"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "NavIcon",
+                        "props": {
+                          "icon": "Share",
+                          "className": "size-4"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "text": "Share"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+          },
+          {
+            "type": "VStack",
+            "props": {
+              "className": "gap-4 border-t border-[var(--theme-shop-border)] pt-8"
+            },
+            "children": [
+              {
+                "type": "HStack",
+                "props": {
+                  "className": "gap-1 border-b border-[var(--theme-shop-border)]"
+                },
+                "children": [
+                  {
+                    "type": "Pressable",
+                    "props": {
+                      "className": "px-4 py-3 text-sm font-medium border-b-2 border-[var(--theme-shop-accent)] -mb-px transition-colors"
+                    },
+                    "condition": {
+                      "==": [{ "var": "activeTab" }, "description"]
+                    },
+                    "actions": {
+                      "click": {
+                        "action": "setState",
+                        "payload": { "path": "activeTab", "value": "description" }
+                      }
+                    },
+                    "children": [{ "type": "Text", "text": "Description", "props": { "className": "text-[var(--theme-shop-accent)]" } }]
+                  },
+                  {
+                    "type": "Pressable",
+                    "props": {
+                      "className": "px-4 py-3 text-sm font-medium border-b-2 border-transparent -mb-px text-[var(--theme-shop-textMuted)] hover:text-[var(--theme-shop-heading)]"
+                    },
+                    "condition": {
+                      "!=": [{ "var": "activeTab" }, "description"]
+                    },
+                    "actions": {
+                      "click": {
+                        "action": "setState",
+                        "payload": { "path": "activeTab", "value": "description" }
+                      }
+                    },
+                    "children": [{ "type": "Text", "text": "Description" }]
+                  },
+                  {
+                    "type": "Pressable",
+                    "props": {
+                      "className": "px-4 py-3 text-sm font-medium border-b-2 border-[var(--theme-shop-accent)] -mb-px transition-colors"
+                    },
+                    "condition": {
+                      "==": [{ "var": "activeTab" }, "material"]
+                    },
+                    "actions": {
+                      "click": {
+                        "action": "setState",
+                        "payload": { "path": "activeTab", "value": "material" }
+                      }
+                    },
+                    "children": [{ "type": "Text", "text": "Material", "props": { "className": "text-[var(--theme-shop-accent)]" } }]
+                  },
+                  {
+                    "type": "Pressable",
+                    "props": {
+                      "className": "px-4 py-3 text-sm font-medium border-b-2 border-transparent -mb-px text-[var(--theme-shop-textMuted)] hover:text-[var(--theme-shop-heading)]"
+                    },
+                    "condition": {
+                      "!=": [{ "var": "activeTab" }, "material"]
+                    },
+                    "actions": {
+                      "click": {
+                        "action": "setState",
+                        "payload": { "path": "activeTab", "value": "material" }
+                      }
+                    },
+                    "children": [{ "type": "Text", "text": "Material" }]
+                  },
+                  {
+                    "type": "Pressable",
+                    "props": {
+                      "className": "px-4 py-3 text-sm font-medium border-b-2 border-[var(--theme-shop-accent)] -mb-px transition-colors"
+                    },
+                    "condition": {
+                      "==": [{ "var": "activeTab" }, "delivery"]
+                    },
+                    "actions": {
+                      "click": {
+                        "action": "setState",
+                        "payload": { "path": "activeTab", "value": "delivery" }
+                      }
+                    },
+                    "children": [{ "type": "Text", "text": "Delivery", "props": { "className": "text-[var(--theme-shop-accent)]" } }]
+                  },
+                  {
+                    "type": "Pressable",
+                    "props": {
+                      "className": "px-4 py-3 text-sm font-medium border-b-2 border-transparent -mb-px text-[var(--theme-shop-textMuted)] hover:text-[var(--theme-shop-heading)]"
+                    },
+                    "condition": {
+                      "!=": [{ "var": "activeTab" }, "delivery"]
+                    },
+                    "actions": {
+                      "click": {
+                        "action": "setState",
+                        "payload": { "path": "activeTab", "value": "delivery" }
+                      }
+                    },
+                    "children": [{ "type": "Text", "text": "Delivery" }]
+                  },
+                  {
+                    "type": "Pressable",
+                    "props": {
+                      "className": "px-4 py-3 text-sm font-medium border-b-2 border-[var(--theme-shop-accent)] -mb-px transition-colors"
+                    },
+                    "condition": {
+                      "==": [{ "var": "activeTab" }, "returns"]
+                    },
+                    "actions": {
+                      "click": {
+                        "action": "setState",
+                        "payload": { "path": "activeTab", "value": "returns" }
+                      }
+                    },
+                    "children": [{ "type": "Text", "text": "Returns", "props": { "className": "text-[var(--theme-shop-accent)]" } }]
+                  },
+                  {
+                    "type": "Pressable",
+                    "props": {
+                      "className": "px-4 py-3 text-sm font-medium border-b-2 border-transparent -mb-px text-[var(--theme-shop-textMuted)] hover:text-[var(--theme-shop-heading)]"
+                    },
+                    "condition": {
+                      "!=": [{ "var": "activeTab" }, "returns"]
+                    },
+                    "actions": {
+                      "click": {
+                        "action": "setState",
+                        "payload": { "path": "activeTab", "value": "returns" }
+                      }
+                    },
+                    "children": [{ "type": "Text", "text": "Returns" }]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "condition": {
+                  "==": [{ "var": "activeTab" }, "description"]
+                },
+                "props": {
+                  "className": "py-4"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-[var(--theme-shop-text)] leading-relaxed"
+                    },
+                    "text": "{{product.description}}"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "condition": {
+                  "==": [{ "var": "activeTab" }, "material"]
+                },
+                "props": {
+                  "className": "py-4"
+                },
+                "children": [
+                  {
+                    "type": "VStack",
+                    "props": {
+                      "className": "gap-2"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-medium text-[var(--theme-shop-heading)]"
+                        },
+                        "text": "Material"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-[var(--theme-shop-text)]"
+                        },
+                        "text": "{{product.material}}"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-medium text-[var(--theme-shop-heading)] mt-4"
+                        },
+                        "text": "Care"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-[var(--theme-shop-text)]"
+                        },
+                        "text": "{{product.care}}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "condition": {
+                  "==": [{ "var": "activeTab" }, "delivery"]
+                },
+                "props": {
+                  "className": "py-4"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-[var(--theme-shop-text)] leading-relaxed"
+                    },
+                    "text": "Standard delivery: 3–5 business days. Express delivery: 1–2 business days (additional fee). Free shipping on orders over AED 200."
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "condition": {
+                  "==": [{ "var": "activeTab" }, "returns"]
+                },
+                "props": {
+                  "className": "py-4"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-[var(--theme-shop-text)] leading-relaxed"
+                    },
+                    "text": "30-day hassle-free returns. Items must be unworn with tags attached. Contact support to initiate a return."
+                  }
+                ]
+              }
             ]
           },
           {
             "type": "VStack",
-            "props": { "className": "gap-6" },
+            "props": {
+              "className": "gap-6 border-t border-[var(--theme-shop-border)] pt-8"
+            },
             "children": [
-              { "type": "Text", "props": { "className": "text-gray-500 text-xs font-medium tracking-widest uppercase" }, "text": "{{product.brand}}" },
-              { "type": "Heading", "props": { "size": "2xl", "className": "font-light tracking-tight text-[#1a1a1a]" }, "text": "{{product.name}}" },
               {
-                "type": "HStack",
-                "props": { "className": "gap-3 items-baseline" },
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "text-[var(--theme-shop-heading)]"
+                },
+                "text": "Customer Reviews"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "grid grid-cols-1 md:grid-cols-3 gap-8"
+                },
                 "children": [
-                  { "type": "Text", "props": { "className": "font-semibold text-lg text-[#1a1a1a]" }, "text": "{{product.price}}" },
-                  { "type": "Text", "condition": { "var": "product.originalPrice" }, "props": { "className": "text-gray-500 line-through" }, "text": "{{product.originalPrice}}" }
+                  {
+                    "type": "VStack",
+                    "props": {
+                      "className": "gap-2 items-center md:items-start"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-3xl font-bold text-[var(--theme-shop-heading)]"
+                        },
+                        "text": "{{product.rating}}"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-[var(--theme-shop-textMuted)]"
+                        },
+                        "text": "{{product.reviewCount}} reviews"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "VStack",
+                    "condition": {
+                      "var": "product.ratingBreakdown"
+                    },
+                    "props": {
+                      "className": "gap-1"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "map": "product.ratingBreakdown",
+                        "key": "$item.stars",
+                        "props": {
+                          "className": "flex gap-2 items-center"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-sm w-12 text-[var(--theme-shop-text)]"
+                            },
+                            "text": "{{$item.stars}} ★"
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "flex-1 h-2 bg-[var(--theme-shop-border)] rounded-full overflow-hidden"
+                            },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "props": {
+                                  "className": "h-full bg-[var(--theme-shop-accent)] rounded-full",
+                                  "style": { "width": "{{$item.pct}}%" }
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-sm text-[var(--theme-shop-textMuted)] w-8"
+                            },
+                            "text": "{{$item.count}}"
+                          }
+                        ]
+                      }
+                    ]
+                  }
                 ]
               },
               {
-                "type": "HStack",
-                "props": { "className": "gap-2 items-center" },
+                "type": "VStack",
+                "props": {
+                  "className": "gap-4"
+                },
                 "children": [
-                  { "type": "Badge", "condition": { "==": [{ "var": "product.stock" }, "in_stock"] }, "props": { "action": "success", "size": "sm" }, "children": [{ "type": "BadgeText", "text": "In Stock" }] }
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-medium text-[var(--theme-shop-heading)]"
+                    },
+                    "text": "Reviews"
+                  },
+                  {
+                    "type": "VStack",
+                    "condition": {
+                      "var": "product.reviews"
+                    },
+                    "map": "product.reviews",
+                    "key": "$item.id",
+                    "props": {
+                      "className": "gap-2 py-4 border-b border-[var(--theme-shop-border)] last:border-0"
+                    },
+                    "children": [
+                      {
+                        "type": "HStack",
+                        "props": {
+                          "className": "gap-2 items-center"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "font-medium text-sm text-[var(--theme-shop-heading)]"
+                            },
+                            "text": "{{$item.author}}"
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-sm text-[var(--theme-shop-textMuted)]"
+                            },
+                            "text": "{{$item.rating}} ★"
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-xs text-[var(--theme-shop-textMuted)]"
+                            },
+                            "text": "{{$item.date}}"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "font-medium text-sm text-[var(--theme-shop-heading)]"
+                        },
+                        "text": "{{$item.title}}"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-[var(--theme-shop-text)]"
+                        },
+                        "text": "{{$item.body}}"
+                      }
+                    ]
+                  }
                 ]
               },
-              { "type": "Divider" },
-              { "type": "Text", "props": { "className": "font-medium text-sm text-[#1a1a1a]" }, "text": "Size" },
               {
-                "type": "HStack",
-                "props": { "className": "gap-2 flex-wrap" },
+                "type": "VStack",
+                "props": {
+                  "className": "gap-4 p-6 border border-[var(--theme-shop-border)] rounded-xl"
+                },
                 "children": [
-                  { "type": "Pressable", "map": "product.variants.size", "props": { "className": "px-4 py-2.5 border border-gray-200 rounded-lg hover:border-[#1a1a1a] text-sm font-medium text-[#1a1a1a]" }, "actions": { "click": { "action": "setState", "payload": { "path": "product.selectedSize", "value": { "var": "$item" } } } }, "children": [{ "type": "Text", "text": "{{$item}}" }] }
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-medium text-[var(--theme-shop-heading)]"
+                    },
+                    "text": "Write a review"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-[var(--theme-shop-textMuted)]"
+                    },
+                    "text": "Your rating"
+                  },
+                  {
+                    "type": "HStack",
+                    "props": {
+                      "className": "gap-1"
+                    },
+                    "children": [
+                      {
+                        "type": "Pressable",
+                        "map": [1, 2, 3, 4, 5],
+                        "key": "$index",
+                        "props": {
+                          "className": "text-2xl text-[var(--theme-shop-textMuted)] hover:text-[var(--theme-shop-accent)]"
+                        },
+                        "condition": {
+                          ">": [{ "var": "$item" }, { "var": "reviewForm.rating" }]
+                        },
+                        "actions": {
+                          "click": {
+                            "action": "setState",
+                            "payload": { "path": "reviewForm.rating", "value": { "var": "$item" } }
+                          }
+                        },
+                        "children": [{ "type": "Text", "text": "★" }]
+                      },
+                      {
+                        "type": "Pressable",
+                        "map": [1, 2, 3, 4, 5],
+                        "key": "$index",
+                        "props": {
+                          "className": "text-2xl text-[var(--theme-shop-accent)]"
+                        },
+                        "condition": {
+                          "<=": [{ "var": "$item" }, { "var": "reviewForm.rating" }]
+                        },
+                        "actions": {
+                          "click": {
+                            "action": "setState",
+                            "payload": { "path": "reviewForm.rating", "value": { "var": "$item" } }
+                          }
+                        },
+                        "children": [{ "type": "Text", "text": "★" }]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "gap-2"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-medium text-[var(--theme-shop-heading)]"
+                        },
+                        "text": "Title"
+                      },
+                      {
+                        "type": "Input",
+                        "props": {
+                          "className": "border border-[var(--theme-shop-border)] rounded-lg",
+                          "placeholder": "Sum up your experience",
+                          "value": "{{reviewForm.title}}"
+                        },
+                        "actions": {
+                          "change": {
+                            "action": "setState",
+                            "payload": { "path": "reviewForm.title", "value": "$event" }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "gap-2"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-medium text-[var(--theme-shop-heading)]"
+                        },
+                        "text": "Your review"
+                      },
+                      {
+                        "type": "Textarea",
+                        "props": {
+                          "className": "border border-[var(--theme-shop-border)] rounded-lg",
+                          "placeholder": "Share your thoughts...",
+                          "value": "{{reviewForm.body}}"
+                        },
+                        "actions": {
+                          "change": {
+                            "action": "setState",
+                            "payload": { "path": "reviewForm.body", "value": "$event" }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "action": "primary",
+                      "className": "self-start bg-[var(--theme-shop-button)] hover:bg-[var(--theme-shop-buttonHover)]"
+                    },
+                    "text": "Submit Review",
+                    "actions": {
+                      "click": {
+                        "action": "submitReview"
+                      }
+                    }
+                  }
                 ]
               },
-              { "type": "Text", "props": { "className": "font-medium text-sm text-[#1a1a1a]" }, "text": "Color" },
               {
-                "type": "HStack",
-                "props": { "className": "gap-2 flex-wrap" },
+                "type": "VStack",
+                "condition": {
+                  "and": [
+                    { "var": "product.relatedProducts" },
+                    { ">": [{ "var": ["product.relatedProducts.length", 0] }, 0] }
+                  ]
+                },
+                "props": {
+                  "className": "gap-6 border-t border-[var(--theme-shop-border)] pt-8"
+                },
                 "children": [
-                  { "type": "Pressable", "map": "product.variants.color", "props": { "className": "px-4 py-2.5 border border-gray-200 rounded-lg hover:border-[#1a1a1a] text-sm font-medium text-[#1a1a1a]" }, "actions": { "click": { "action": "setState", "payload": { "path": "product.selectedColor", "value": { "var": "$item" } } } }, "children": [{ "type": "Text", "text": "{{$item}}" }] }
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "size": "lg",
+                      "className": "text-[var(--theme-shop-heading)]"
+                    },
+                    "text": "You may also like"
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "map": "product.relatedProducts",
+                        "key": "$item.id",
+                        "children": [{ "$ref": "fragments/product-card" }]
+                      }
+                    ]
+                  }
                 ]
               },
-              { "type": "Divider" },
               {
-                "type": "HStack",
-                "props": { "className": "gap-4" },
+                "type": "VStack",
+                "condition": {
+                  "and": [
+                    { "var": "product.frequentlyBoughtTogether" },
+                    { ">": [{ "var": ["product.frequentlyBoughtTogether.length", 0] }, 0] }
+                  ]
+                },
+                "props": {
+                  "className": "gap-6 border-t border-[var(--theme-shop-border)] pt-8"
+                },
                 "children": [
-                  { "type": "Button", "props": { "action": "primary", "className": "flex-1 py-3.5 bg-[#1a1a1a] hover:bg-gray-800" }, "text": "Add to Cart", "actions": { "click": { "action": "addToCart" } } },
-                  { "type": "Button", "props": { "variant": "outline", "className": "flex-1 py-3.5" }, "text": "Buy Now", "actions": { "click": { "action": "navigate", "payload": { "path": "/checkout" } } } }
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "size": "lg",
+                      "className": "text-[var(--theme-shop-heading)]"
+                    },
+                    "text": "Frequently bought together"
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "map": "product.frequentlyBoughtTogether",
+                        "key": "$item.id",
+                        "children": [{ "$ref": "fragments/product-card" }]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "VStack",
+                "condition": {
+                  "and": [
+                    { "var": "product.recentlyViewed" },
+                    { ">": [{ "var": ["product.recentlyViewed.length", 0] }, 0] }
+                  ]
+                },
+                "props": {
+                  "className": "gap-6 border-t border-[var(--theme-shop-border)] pt-8"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "size": "lg",
+                      "className": "text-[var(--theme-shop-heading)]"
+                    },
+                    "text": "Recently viewed"
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "map": "product.recentlyViewed",
+                        "key": "$item.id",
+                        "children": [{ "$ref": "fragments/product-card" }]
+                      }
+                    ]
+                  }
                 ]
               }
             ]
@@ -76,11 +1238,38 @@
       },
       {
         "type": "Box",
-        "condition": { "!": { "var": "product.id" } },
-        "props": { "className": "flex flex-col items-center justify-center py-20 text-center" },
+        "condition": {
+          "!": {
+            "var": "product.id"
+          }
+        },
+        "props": {
+          "className": "flex flex-col items-center justify-center py-20 text-center"
+        },
         "children": [
-          { "type": "Heading", "props": { "size": "xl", "className": "text-[#1a1a1a]" }, "text": "Product not found" },
-          { "type": "Button", "props": { "className": "mt-4 bg-[#1a1a1a]" }, "text": "Continue Shopping", "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } } }
+          {
+            "type": "Heading",
+            "props": {
+              "size": "xl",
+              "className": "text-[var(--theme-shop-heading)]"
+            },
+            "text": "Product not found"
+          },
+          {
+            "type": "Button",
+            "props": {
+              "className": "mt-4 bg-[var(--theme-shop-button)]"
+            },
+            "text": "Continue Shopping",
+            "actions": {
+              "click": {
+                "action": "navigate",
+                "payload": {
+                  "path": "/shop"
+                }
+              }
+            }
+          }
         ]
       }
     ]

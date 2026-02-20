@@ -1,0 +1,50 @@
+{
+  "type": "Box",
+  "props": {
+    "className": "w-full lg:w-64 shrink-0 border-r border-[var(--theme-shop-border)] bg-[var(--theme-content-bg)] p-4 lg:p-6"
+  },
+  "children": [
+    {
+      "type": "VStack",
+      "props": { "className": "gap-1" },
+      "children": [
+        {
+          "type": "Pressable",
+          "props": { "className": "px-4 py-3 rounded-lg text-left text-sm font-medium text-[var(--theme-shop-heading)] hover:bg-[var(--theme-content-bgAlt)]" },
+          "actions": { "click": { "action": "navigate", "payload": { "path": "/account" } } },
+          "children": [{ "type": "Text", "text": "Dashboard" }]
+        },
+        {
+          "type": "Pressable",
+          "props": { "className": "px-4 py-3 rounded-lg text-left text-sm font-medium text-[var(--theme-shop-heading)] hover:bg-[var(--theme-content-bgAlt)]" },
+          "actions": { "click": { "action": "navigate", "payload": { "path": "/account/orders" } } },
+          "children": [{ "type": "Text", "text": "Orders" }]
+        },
+        {
+          "type": "Pressable",
+          "props": { "className": "px-4 py-3 rounded-lg text-left text-sm font-medium text-[var(--theme-shop-heading)] hover:bg-[var(--theme-content-bgAlt)]" },
+          "actions": { "click": { "action": "navigate", "payload": { "path": "/account/addresses" } } },
+          "children": [{ "type": "Text", "text": "Addresses" }]
+        },
+        {
+          "type": "Pressable",
+          "props": { "className": "px-4 py-3 rounded-lg text-left text-sm font-medium text-[var(--theme-shop-heading)] hover:bg-[var(--theme-content-bgAlt)]" },
+          "actions": { "click": { "action": "navigate", "payload": { "path": "/account/wishlist" } } },
+          "children": [{ "type": "Text", "text": "Wishlist" }]
+        },
+        {
+          "type": "Pressable",
+          "props": { "className": "px-4 py-3 rounded-lg text-left text-sm font-medium text-[var(--theme-shop-heading)] hover:bg-[var(--theme-content-bgAlt)]" },
+          "actions": { "click": { "action": "navigate", "payload": { "path": "/account/loyalty" } } },
+          "children": [{ "type": "Text", "text": "Loyalty" }]
+        },
+        {
+          "type": "Pressable",
+          "props": { "className": "px-4 py-3 rounded-lg text-left text-sm font-medium text-[var(--theme-shop-heading)] hover:bg-[var(--theme-content-bgAlt)]" },
+          "actions": { "click": { "action": "navigate", "payload": { "path": "/account/returns" } } },
+          "children": [{ "type": "Text", "text": "Returns" }]
+        }
+      ]
+    }
+  ]
+}

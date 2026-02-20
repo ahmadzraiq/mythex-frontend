@@ -1,0 +1,94 @@
+{
+  "type": "Box",
+  "props": { "className": "relative" },
+  "children": [
+    {
+      "type": "Pressable",
+      "props": {
+        "className": "flex items-center gap-2 rounded-lg border border-[var(--theme-shop-border)] bg-[var(--theme-content-bg)] px-4 py-2 text-sm font-medium text-[var(--theme-shop-heading)] hover:bg-[var(--theme-content-bgAlt)] min-w-[140px] justify-between"
+      },
+      "actions": {
+        "click": {
+          "action": "toggleSortDropdown"
+        }
+      },
+      "children": [
+        {
+          "type": "Text",
+          "props": { "className": "text-sm text-[var(--theme-shop-textMuted)]" },
+          "text": "Sort:"
+        },
+        {
+          "type": "HStack",
+          "props": { "className": "gap-1 items-center" },
+          "children": [
+            {
+              "type": "Text",
+              "condition": { "==": [{ "var": "shop.sortOrder" }, "newest"] },
+              "text": "Newest"
+            },
+            {
+              "type": "Text",
+              "condition": { "==": [{ "var": "shop.sortOrder" }, "price-asc"] },
+              "text": "Price: Low"
+            },
+            {
+              "type": "Text",
+              "condition": { "==": [{ "var": "shop.sortOrder" }, "price-desc"] },
+              "text": "Price: High"
+            },
+            {
+              "type": "Text",
+              "condition": { "!": { "var": "shop.sortOrder" } },
+              "text": "Newest"
+            },
+            {
+              "type": "Text",
+              "props": { "className": "text-xs" },
+              "text": "▼"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Box",
+      "condition": { "var": "shop.sortDropdownOpen" },
+      "props": {
+        "className": "absolute right-0 top-full mt-1 z-50 min-w-[160px] rounded-lg border border-[var(--theme-shop-border)] bg-[var(--theme-content-bg)] shadow-lg py-1"
+      },
+      "children": [
+        {
+          "type": "Pressable",
+          "props": {
+            "className": "w-full px-4 py-2.5 text-left text-sm text-[var(--theme-shop-text)] hover:bg-[var(--theme-content-bgAlt)]"
+          },
+          "actions": {
+            "click": { "action": "setSortNewest" }
+          },
+          "children": [{ "type": "Text", "text": "Newest" }]
+        },
+        {
+          "type": "Pressable",
+          "props": {
+            "className": "w-full px-4 py-2.5 text-left text-sm text-[var(--theme-shop-text)] hover:bg-[var(--theme-content-bgAlt)]"
+          },
+          "actions": {
+            "click": { "action": "setSortPriceAsc" }
+          },
+          "children": [{ "type": "Text", "text": "Price: Low to High" }]
+        },
+        {
+          "type": "Pressable",
+          "props": {
+            "className": "w-full px-4 py-2.5 text-left text-sm text-[var(--theme-shop-text)] hover:bg-[var(--theme-content-bgAlt)]"
+          },
+          "actions": {
+            "click": { "action": "setSortPriceDesc" }
+          },
+          "children": [{ "type": "Text", "text": "Price: High to Low" }]
+        }
+      ]
+    }
+  ]
+}

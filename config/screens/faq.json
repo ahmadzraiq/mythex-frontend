@@ -1,0 +1,36 @@
+{
+  "meta": { "title": "FAQ | SaraZ", "description": "Frequently asked questions" },
+  "state": {
+    "faqs": [
+      { "q": "What is your return policy?", "a": "We offer 30-day returns on unworn items with tags attached. Contact us to initiate a return." },
+      { "q": "How long does shipping take?", "a": "Standard shipping: 5-7 business days. Express: 2-3 business days within UAE." },
+      { "q": "Do you ship internationally?", "a": "Yes, we ship to most countries. International delivery typically takes 7-14 business days." },
+      { "q": "How can I track my order?", "a": "Once shipped, you'll receive a tracking link via email. You can also check your order status in your account." },
+      { "q": "What payment methods do you accept?", "a": "We accept major credit cards, Tabby, and Cash on Delivery (UAE only)." }
+    ]
+  },
+  "layout": "store",
+  "content": {
+    "type": "Box",
+    "props": { "className": "mx-auto max-w-3xl px-4 sm:px-6 py-12 md:py-16" },
+    "children": [
+      { "type": "Heading", "props": { "size": "2xl", "className": "mb-8 font-light" }, "text": "FAQ" },
+      {
+        "type": "VStack",
+        "props": { "className": "gap-4" },
+        "children": [
+          {
+            "type": "Box",
+            "map": "faqs",
+            "key": "$item.q",
+            "props": { "className": "p-6 bg-[var(--theme-content-bg)] rounded-xl border border-[var(--theme-shop-border)]" },
+            "children": [
+              { "type": "Text", "props": { "className": "font-semibold mb-2" }, "text": "{{$item.q}}" },
+              { "type": "Text", "props": { "className": "text-sm text-[var(--theme-shop-textMuted)]" }, "text": "{{$item.a}}" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

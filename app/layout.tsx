@@ -3,9 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import StyledJsxRegistry from './registry';
-import { StoreProvider } from '@/store/StoreProvider';
-import { ThemeProvider } from '@/lib/ThemeProvider';
-import themeConfig from '@/config/theme.json';
+import { ThemeStyles } from '@/lib/ThemeStyles';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -32,17 +30,14 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         style={{ flex: 1 }}
       >
-<StoreProvider>
-            <StyledJsxRegistry>
-              <GluestackUIProvider mode="light">
-                <ThemeProvider theme={themeConfig}>
-                <div className="min-h-screen w-full overflow-auto bg-gray-50">
-                {children}
-              </div>
-                </ThemeProvider>
-            </GluestackUIProvider>
-          </StyledJsxRegistry>
-        </StoreProvider>
+        <ThemeStyles />
+        <StyledJsxRegistry>
+          <GluestackUIProvider mode="light">
+            <div className="min-h-screen w-full overflow-auto" style={{ backgroundColor: 'var(--background)' }}>
+              {children}
+            </div>
+          </GluestackUIProvider>
+        </StyledJsxRegistry>
       </body>
     </html>
   );

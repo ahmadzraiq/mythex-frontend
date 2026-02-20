@@ -1,1 +1,52 @@
-{"defaultRedirect":"/","routes":[{"path":"/","config":"home","auth":false,"layout":"full"},{"path":"/shop","config":"shop","auth":false,"layout":"full"},{"path":"/product","config":"product","auth":false,"layout":"full","dynamic":true},{"path":"/cart","config":"cart","auth":false,"layout":"full"},{"path":"/checkout","config":"checkout","auth":false,"layout":"full"},{"path":"/account","config":"account","auth":true,"layout":"full"},{"path":"/account/orders","config":"accountOrders","auth":true,"layout":"full"},{"path":"/account/addresses","config":"accountAddresses","auth":true,"layout":"full"},{"path":"/account/wishlist","config":"accountWishlist","auth":true,"layout":"full"},{"path":"/account/returns","config":"accountReturns","auth":true,"layout":"full"},{"path":"/login","config":"login","auth":false,"layout":"centered"},{"path":"/signup","config":"signup","auth":false,"layout":"centered"},{"path":"/dashboard","config":"dashboard","auth":true,"layout":"full"},{"path":"/dashboard/products","config":"products","auth":true,"layout":"full"},{"path":"/forgot-password","config":"forgotPassword","auth":false,"layout":"centered"},{"path":"/reset-password","config":"resetPassword","auth":false,"layout":"centered"},{"path":"/profile","config":"profile","auth":true,"layout":"full"}]}
+{
+  "defaultRedirect": "/login",
+  "ui": {
+    "redirecting": {
+      "text": "Redirecting...",
+      "wrapperClassName": "flex items-center justify-center min-h-screen",
+      "textClassName": "text-[var(--theme-content-textMuted)]"
+    },
+    "pageNotFound": {
+      "text": "Page not found",
+      "wrapperClassName": "flex items-center justify-center min-h-screen",
+      "textClassName": "text-[var(--theme-content-textMuted)]"
+    },
+    "layoutClasses": {
+      "centered": "w-full min-h-screen flex items-center justify-center",
+      "full": "w-full"
+    }
+  },
+  "routes": [
+    {"path":"/","config":"home","auth":false,"layout":"full"},
+    {"path":"/shop","config":"shop","auth":false,"layout":"full"},
+    {"path":"/search","config":"search","auth":false,"layout":"full"},
+    {"path":"/category","config":"category","auth":false,"layout":"full","dynamic":true},
+    {"path":"/product","config":"product","auth":false,"layout":"full","dynamic":true},
+    {"path":"/cart","config":"cart","auth":false,"layout":"full"},
+    {"path":"/checkout","config":"checkout","auth":false,"layout":"full"},
+    {"path":"/order-confirmation","config":"orderConfirmation","auth":false,"layout":"full"},
+    {"path":"/account","config":"account","auth":false,"layout":"full"},
+    {"path":"/account/orders","config":"accountOrders","auth":false,"layout":"full"},
+    {"path":"/account/addresses","config":"accountAddresses","auth":false,"layout":"full"},
+    {"path":"/account/wishlist","config":"accountWishlist","auth":false,"layout":"full"},
+    {"path":"/account/returns","config":"accountReturns","auth":false,"layout":"full"},
+    {"path":"/account/loyalty","config":"accountLoyalty","auth":false,"layout":"full"},
+    {"path":"/account/order","config":"accountOrderDetails","auth":false,"layout":"full","dynamic":true},
+    {"path":"/login","config":"login","auth":false,"layout":"centered"},
+    {"path":"/signup","config":"signup","auth":false,"layout":"centered"},
+    {"path":"/forgot-password","config":"forgotPassword","auth":false,"layout":"centered"},
+    {"path":"/reset-password","config":"resetPassword","auth":false,"layout":"centered"},
+    {"path":"/about","config":"about","auth":false,"layout":"full"},
+    {"path":"/contact","config":"contact","auth":false,"layout":"full"},
+    {"path":"/faq","config":"faq","auth":false,"layout":"full"},
+    {"path":"/shipping-policy","config":"shippingPolicy","auth":false,"layout":"full"},
+    {"path":"/returns-policy","config":"returnsPolicy","auth":false,"layout":"full"},
+    {"path":"/privacy-policy","config":"privacyPolicy","auth":false,"layout":"full"},
+    {"path":"/terms","config":"terms","auth":false,"layout":"full"},
+    {"path":"/size-guide","config":"sizeGuide","auth":false,"layout":"full"},
+    {"path":"/500","config":"error500","auth":false,"layout":"centered"},
+    {"path":"/maintenance","config":"maintenance","auth":false,"layout":"centered"},
+    {"path":"/verify-email","config":"emailVerification","auth":false,"layout":"centered"},
+    {"path":"/activate","config":"accountActivation","auth":false,"layout":"centered"}
+  ]
+}

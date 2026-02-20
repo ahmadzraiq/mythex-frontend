@@ -14,6 +14,7 @@ export type SDUIComponentType =
   | 'View'
   | 'Image'
   | 'NextImage'
+  | 'SocialIcon'
   | 'Icon'
   | 'Button'
   | 'ButtonText'
@@ -217,7 +218,7 @@ export interface SDUINode {
   props?: Record<string, unknown>;
   className?: string;
   children?: SDUINode[];
-  text?: string;
+  text?: string | { expr: object; suffix?: string; prefix?: string; template?: string };
   src?: string;
   alt?: string;
   /** Action handlers: onClick, onSubmit, onChange, etc. Can be single action or array */

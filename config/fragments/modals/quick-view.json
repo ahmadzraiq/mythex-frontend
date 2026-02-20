@@ -1,0 +1,109 @@
+{
+  "type": "Modal",
+  "props": {
+    "isOpen": "{{layout.quickViewOpen}}",
+    "onClose": { "action": "closeQuickView" },
+    "size": "md"
+  },
+  "children": [
+    { "type": "ModalBackdrop" },
+    {
+      "type": "ModalContent",
+      "props": { "className": "max-w-2xl" },
+      "children": [
+        {
+          "type": "ModalHeader",
+          "children": [
+            { "type": "ModalCloseButton", "actions": { "click": { "action": "closeQuickView" } } }
+          ]
+        },
+        {
+          "type": "ModalBody",
+          "props": { "className": "p-0" },
+          "children": [
+            {
+              "type": "Box",
+              "condition": { "var": "quickViewProduct" },
+              "props": { "className": "grid grid-cols-1 sm:grid-cols-2 gap-6 p-6" },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": { "className": "aspect-square bg-[var(--theme-shop-border)] rounded-lg overflow-hidden" },
+                  "children": [
+                    {
+                      "type": "NextImage",
+                      "props": {
+                        "src": "{{quickViewProduct.image}}",
+                        "alt": "{{quickViewProduct.name}}",
+                        "fill": true,
+                        "className": "object-cover"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "VStack",
+                  "props": { "className": "gap-4 justify-center" },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": { "className": "text-xs text-[var(--theme-shop-textMuted)] uppercase tracking-wider" },
+                      "text": "{{quickViewProduct.brand}}"
+                    },
+                    {
+                      "type": "Heading",
+                      "props": { "size": "xl", "className": "font-light text-[var(--theme-shop-heading)]" },
+                      "text": "{{quickViewProduct.name}}"
+                    },
+                    {
+                      "type": "HStack",
+                      "props": { "className": "gap-2 items-baseline" },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "props": { "className": "font-semibold text-lg text-[var(--theme-shop-heading)]" },
+                          "text": "{{quickViewProduct.price}}"
+                        },
+                        {
+                          "type": "Text",
+                          "condition": { "var": "quickViewProduct.originalPrice" },
+                          "props": { "className": "text-[var(--theme-shop-textMuted)] line-through text-sm" },
+                          "text": "{{quickViewProduct.originalPrice}}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "HStack",
+                      "props": { "className": "gap-3 mt-4" },
+                      "children": [
+                        {
+                          "type": "Button",
+                          "props": {
+                            "action": "primary",
+                            "className": "flex-1 bg-[var(--theme-shop-button)] hover:bg-[var(--theme-shop-buttonHover)]"
+                          },
+                          "text": "Add to Cart",
+                          "actions": {
+                            "click": { "action": "addToCartAndCloseQuickView" }
+                          }
+                        },
+                        {
+                          "type": "Button",
+                          "props": { "variant": "outline", "className": "flex-1" },
+                          "text": "View Full Details",
+                          "actions": {
+                            "click": { "action": "closeQuickViewAndNavigateToProduct" }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

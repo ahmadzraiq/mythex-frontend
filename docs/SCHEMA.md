@@ -83,17 +83,44 @@ Every UI node has:
 | $ref | string | Reference fragment: "fragments/modals/createProduct" |
 | $slot | string | Layout placeholder: "content" |
 
-### Interpolation
+### Interpolation & inline expr
 
-Use `{{path}}` in strings to inject state:
+**String:** Use `{{path}}` to inject state:
 
-- `{{form.email}}` – nested state
+- `{{form.email}}` – current screen's form (alias for `screens.{screenName}.form.email`)
+- `{{screens.signup.form.password}}` – cross-screen: signup form from any screen
+- `{{screens.shop.tabs.activeTab}}` – screen-scoped tabs
 - `{{auth.user.name}}` – auth user
 - `{{meta.title}}` – screen title (from meta)
-- `{{layout.drawerOpen}}` – drawer state (Redux)
+- `{{layout.drawerOpen}}` – drawer state (Zustand)
 - `{{route.path}}` – current path (/dashboard, /profile, etc.)
+- `{{_workflow.lastAction}}` – last action name (e.g. "login", "fetchProductBySlug")
+- `{{_workflow.lastError}}` – last action error (null if success); configurable via `engineConventions.workflowPath`
 - `{{$item.name}}` – current item in map loop
 - `{{$index}}` – index in map loop
+
+**Global variable store (path conventions):**
+- `screens.{screenName}.form.*` – Form values per screen (e.g. `screens.signup.form.password`)
+- `screens.{screenName}.errors.*` – Validation errors per screen
+- `screens.{screenName}.tabs.*` – Tab state (e.g. `screens.shop.tabs.activeTab`)
+- `layout.*`, `auth.*`, `cart.*` – Global state from store.json
+- Access any value from anywhere; only components using a path re-render when it changes
+
+**Inline expr:** For derived values, use `{ "expr": <JSON Logic>, "suffix"?, "prefix"?, "template"? }`:
+
+```json
+{ "type": "Text", "text": { "expr": { "reduce": [{"var": "cart.items"}, {"+": [{"var": "accumulator"}, {"var": ["current.quantity", 1]}]}, 0] }, "suffix": " items" } }
+```
+
+- `expr` – JSON Logic expression (data = merged state)
+- `suffix` – appended after result
+- `prefix` – prepended before result
+- `template` – e.g. `"{0} items"` replaces `{0}` with result
+
+**Examples:**
+- Cart count: `{ "expr": { "reduce": [{"var": "cart.items"}, {"+": [{"var": "accumulator"}, {"var": ["current.quantity", 1]}]}, 0] }, "suffix": " items" }`
+- Subtotal: `{ "expr": { "formatCurrency": [{ "reduce": [{"var": "cart.items"}, {"+": [{"var": "accumulator"}, {"*": [{"var": ["current.product.price", 0]}, {"var": ["current.quantity", 1]}]}]}, 0] }, "AED"] } }`
+- Conditional: `{ "expr": { "if": [{ "==": [{ "reduce": [{"var": "cart.items"}, {"+": [{"var": "accumulator"}, 1]}, 0] }, 0] }, "—", { "var": ["cart.shippingEstimate.label", "Free"] }] } }`
 
 ### Condition (JSON Logic)
 
@@ -164,6 +191,8 @@ Fragments are reusable UI pieces. Reference with `$ref`.
 
 Actions live in `config/actions/*.json`. Reference by name: `{ "action": "login" }`.
 
+**stopPropagation:** Add `"stopPropagation": true` to actions triggered from inside clickable parents (e.g. product card buttons) so the parent's click handler doesn't also fire. Example: `addToWishlistFromCard`, `quickAddToCart`, `openQuickView`.
+
 ### fetch
 
 ```json
@@ -172,13 +201,19 @@ Actions live in `config/actions/*.json`. Reference by name: `{ "action": "login"
   "url": "/api/products",
   "method": "GET",
   "storeIn": "products.list",
+  "storeFullResponseIn": "products._raw",
   "responsePath": "data",
+  "errorMessagePath": "message",
   "body": { "email": { "var": "form.email" } },
   "onSuccess": { "action": "navigate", "payload": { "path": "/dashboard" } }
 }
 ```
 
-### set (Redux state)
+- `storeIn` – where to store extracted response (default from `store.json` engineConventions.defaultStoreIn)
+- `storeFullResponseIn` – optional; store raw API response before responsePath extraction
+- `errorMessagePath` – dot path into error JSON for message (default: "message")
+
+### set (Zustand state)
 
 ```json
 {
@@ -229,9 +264,57 @@ Actions live in `config/actions/*.json`. Reference by name: `{ "action": "login"
 }
 ```
 
+### appendToPath
+
+Append to a nested array (e.g. `product.reviews`). Supports `{ "var": "path" }` and `{ "expr": <JSON Logic> }` in value. Special vars: `_timestamp`, `_date`.
+
+```json
+{
+  "type": "appendToPath",
+  "targetPath": "product.reviews",
+  "value": {
+    "id": { "expr": { "cat": ["rev-", { "var": "_timestamp" }] } },
+    "author": "You",
+    "rating": { "var": "reviewForm.rating" },
+    "date": { "var": "_date" },
+    "title": { "var": "reviewForm.title" },
+    "body": { "var": "reviewForm.body" }
+  },
+  "resetFormPath": "reviewForm",
+  "resetFormValue": { "rating": 0, "title": "", "body": "" }
+}
+```
+
 ---
 
-## 7. Route Schema
+## 7. Store Config & Derived Values
+
+**`config/store.json`** – Initial state and path mappings:
+
+| Key | Description |
+|-----|-------------|
+| initialData | Initial Zustand state (layout, cart, route, etc.) |
+| paths | Optional key→path mapping (e.g. `authUser` → `auth.user`, `routePath` → `route.path`) |
+| computed | Optional array of `{ output, expr }` for shared derived state (JSON Logic) |
+| engineConventions | **Required** for apps using forms/fetch/workflow. No fallbacks in code—all values come from JSON: `loadingSuffix`, `errorSuffix`, `defaultStoreErrorsIn`, `defaultStoreIn`, `defaultErrorMessagePath`, `workflowPath`, `screenScopedAliases`, `defaultFormPath` |
+
+**Derived values – prefer inline expr:** For one-off computed values (cart count, subtotal, totals), use inline `text: { expr, suffix?, prefix?, template? }` in UI nodes. See §3 Interpolation & inline expr.
+
+**Store-based computed (optional):** For values reused across many screens, add to `store.json`:
+
+```json
+"computed": [
+  { "output": "cartCount", "expr": { "reduce": [{"var": "cart.items"}, {"+": [{"var": "accumulator"}, {"var": ["current.quantity", 1]}]}, 0] } }
+]
+```
+
+**JSON Logic:** `+`, `*`, `-`, `/`, `var`, `reduce`, `map`, `filter`, `if`, `cat`, etc. See [jsonlogic.com](https://jsonlogic.com/operations.html).
+
+**Custom op:** `formatCurrency` (num, currency) – rounds and formats (e.g. `{"formatCurrency": [{"var": "cart.subtotal"}, "AED"]}`).
+
+---
+
+## 8. Route Schema
 
 `config/routes.json`:
 
@@ -255,7 +338,7 @@ Actions live in `config/actions/*.json`. Reference by name: `{ "action": "login"
 
 ---
 
-## 8. Form Schema
+## 9. Form Schema
 
 Form must wrap FormInputWithLabel and FormSubmitButton. FormSubmitButton must be a child of Form.
 
@@ -282,7 +365,7 @@ Form must wrap FormInputWithLabel and FormSubmitButton. FormSubmitButton must be
 
 ---
 
-## 9. Modal Schema
+## 10. Modal Schema
 
 ```json
 {
@@ -301,7 +384,7 @@ Form must wrap FormInputWithLabel and FormSubmitButton. FormSubmitButton must be
 
 ---
 
-## 10. Available Components
+## 11. Available Components
 
 All components from `@/components/ui/*` are supported. Use `type` in JSON to reference them.
 
@@ -498,7 +581,7 @@ All components from `@/components/ui/*` are supported. Use `type` in JSON to ref
 
 ---
 
-## 11. Quick Reference: Adding a New Screen
+## 12. Quick Reference: Adding a New Screen
 
 1. Create `config/screens/myScreen.json`
 2. Add route in `config/routes.json`

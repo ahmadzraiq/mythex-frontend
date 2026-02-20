@@ -1,0 +1,36 @@
+{
+  "structure": {
+    "type": "Box",
+    "props": {
+      "className": "min-h-screen w-full flex flex-col bg-[var(--theme-content-bg)] text-[var(--theme-header-text)]"
+    },
+    "children": [
+      {
+        "$ref": "fragments/store-header"
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "flex flex-col flex-1 min-h-0"
+        },
+        "children": [
+          {
+            "$slot": "content"
+          }
+        ]
+      },
+      {
+        "$ref": "fragments/store-footer"
+      },
+      {
+        "$ref": "fragments/mobile-nav-drawer"
+      },
+      {
+        "$ref": "fragments/search-drawer"
+      },
+      {
+        "$ref": "fragments/cart-drawer"
+      }
+    ]
+  }
+}

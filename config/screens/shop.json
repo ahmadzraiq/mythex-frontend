@@ -1,26 +1,184 @@
 {
-  "meta": { "title": "Shop | NOIR & AURA", "description": "Browse our curated collection" },
-  "state": {
-    "store": { "products": [] }
+  "meta": {
+    "title": "Shop | SaraZ",
+    "description": "Browse our curated collection"
   },
-  "layout": "store",
-  "initActions": [{ "action": "fetchStoreProducts" }],
+  "state": {
+    "store": {
+      "products": []
+    },
+    "shop": {
+      "sortOrder": "newest",
+      "filters": {},
+      "sortDropdownOpen": false
+    }
+  },
+  "layout": "shop",
+  "initActions": [
+    {
+      "action": "fetchStoreProducts"
+    }
+  ],
   "content": {
     "type": "Box",
-    "props": { "className": "mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8" },
+    "props": {
+      "className": "w-full px-4 py-6 sm:px-6 lg:px-8"
+    },
     "children": [
-      { "type": "Heading", "props": { "size": "2xl", "className": "text-2xl font-bold tracking-tight sm:text-3xl text-[#1a1a1a]" }, "text": "Shop" },
+      {
+        "type": "HStack",
+        "props": {
+          "className": "mb-4 gap-2 text-sm text-[var(--theme-shop-textMuted)]"
+        },
+        "children": [
+          {
+            "type": "Pressable",
+            "actions": {
+              "click": {
+                "action": "navigate",
+                "payload": {
+                  "path": "/"
+                }
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "text": "Home"
+              }
+            ]
+          },
+          {
+            "type": "Text",
+            "text": "/"
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[var(--theme-shop-heading)] font-medium"
+            },
+            "text": "Shop"
+          }
+        ]
+      },
+      {
+        "type": "Heading",
+        "props": {
+          "size": "2xl",
+          "className": "text-2xl font-bold tracking-tight sm:text-3xl text-[var(--theme-shop-heading)]"
+        },
+        "text": "Shop"
+      },
+      {
+        "type": "HStack",
+        "props": {
+          "className": "mt-4 mb-6 flex flex-wrap items-center justify-between gap-4"
+        },
+        "children": [
+          {
+            "type": "Pressable",
+            "props": {
+              "className": "flex items-center gap-2 rounded-lg border border-[var(--theme-shop-border)] px-4 py-2 text-sm font-medium lg:hidden"
+            },
+            "actions": {
+              "click": {
+                "action": "openFilterDrawer"
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "text": "Filters"
+              },
+              {
+                "type": "Text",
+                "text": "\u2630"
+              }
+            ]
+          },
+          {
+            "$ref": "fragments/sort-dropdown"
+          }
+        ]
+      },
+      {
+        "$ref": "fragments/filter-chips"
+      },
       {
         "type": "Box",
-        "props": { "className": "mt-8 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4" },
+        "condition": {
+          "==": [
+            {
+              "var": [
+                "store.products.length",
+                0
+              ]
+            },
+            0
+          ]
+        },
+        "props": {
+          "className": "flex flex-col items-center justify-center py-16 text-center"
+        },
+        "children": [
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-6xl mb-4"
+            },
+            "text": "\ud83d\udecd\ufe0f"
+          },
+          {
+            "type": "Heading",
+            "props": {
+              "size": "lg",
+              "className": "text-xl font-semibold text-[var(--theme-shop-heading)]"
+            },
+            "text": "No products yet"
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "mt-2 text-sm text-[var(--theme-shop-textMuted)]"
+            },
+            "text": "Check back soon for new arrivals"
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "condition": {
+          ">": [
+            {
+              "var": [
+                "store.products.length",
+                0
+              ]
+            },
+            0
+          ]
+        },
+        "props": {
+          "className": "grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4"
+        },
         "children": [
           {
             "type": "Box",
             "map": "store.products",
             "key": "product",
-            "children": [{ "$ref": "fragments/product-card" }]
+            "props": {
+              "className": "contents"
+            },
+            "children": [
+              {
+                "$ref": "fragments/product-card"
+              }
+            ]
           }
         ]
+      },
+      {
+        "$ref": "fragments/pagination"
       }
     ]
   }

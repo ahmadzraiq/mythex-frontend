@@ -1,0 +1,15 @@
+{
+  "meta": { "title": "About Us | SaraZ", "description": "Our story" },
+  "state": {},
+  "layout": "store",
+  "content": {
+    "type": "Box",
+    "props": { "className": "mx-auto max-w-3xl px-4 sm:px-6 py-12 md:py-16" },
+    "children": [
+      { "type": "Heading", "props": { "size": "2xl", "className": "mb-6 font-light" }, "text": "About SaraZ" },
+      { "type": "Text", "props": { "className": "text-[var(--theme-shop-text)] leading-relaxed mb-6" }, "text": "SaraZ is a contemporary fashion brand offering curated collections for the modern lifestyle. Founded with a passion for quality and style, we bring you thoughtfully designed pieces that blend comfort with elegance." },
+      { "type": "Text", "props": { "className": "text-[var(--theme-shop-text)] leading-relaxed mb-6" }, "text": "Our mission is to make premium fashion accessible while maintaining the highest standards of craftsmanship and sustainability." },
+      { "type": "Button", "props": { "variant": "outline" }, "text": "Shop Now", "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } } }
+    ]
+  }
+}

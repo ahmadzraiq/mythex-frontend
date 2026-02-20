@@ -1,6 +1,154 @@
 {
-  "addToCart": { "type": "append", "path": "ecommerce.cart", "value": { "product": { "var": "$item" }, "quantity": 1 } },
-  "fetchStoreHome": { "type": "fetch", "url": "/api/store/home", "storeIn": "store" },
-  "fetchStoreProducts": { "type": "fetch", "url": "/api/store/products", "storeIn": "store.products" },
-  "fetchProductBySlug": { "type": "fetch", "url": "/api/store/product/{{route.slug}}", "storeIn": "product" }
+  "addToCart": {
+    "type": "append",
+    "path": "ecommerce.cart",
+    "value": {"product": {"var": "$item"}, "quantity": 1}
+  },
+  "fetchStoreHome": {
+    "type": "fetch",
+    "url": "/api/store/home",
+    "storeIn": "store"
+  },
+  "fetchStoreProducts": {
+    "type": "fetch",
+    "url": "/api/store/products?category={{shop.filters.category}}&sort={{shop.sortOrder}}&q={{route.q}}",
+    "storeIn": "store.products"
+  },
+  "setCategoryFromRoute": {
+    "type": "set",
+    "path": "shop.filters.category",
+    "value": {"var": "route.slug"}
+  },
+  "fetchCategoryProducts": {
+    "type": "runMultiple",
+    "actions": [
+      {"action": "setCategoryFromRoute"},
+      {"action": "fetchStoreProducts"}
+    ]
+  },
+  "fetchSearchProducts": {
+    "type": "fetch",
+    "url": "/api/store/products?q={{route.q}}&sort={{shop.sortOrder}}",
+    "storeIn": "store.products"
+  },
+  "setSearchQueryFromRoute": {
+    "type": "set",
+    "path": "search.query",
+    "value": {"var": "route.q"}
+  },
+  "fetchProductBySlug": {
+    "type": "fetch",
+    "url": "/api/store/product/{{route.slug}}",
+    "storeIn": "product"
+  },
+  "toggleSortDropdown": {"type": "toggle", "path": "shop.sortDropdownOpen"},
+  "setSortNewest": {
+    "type": "runMultiple",
+    "actions": [
+      {
+        "action": "setState",
+        "payload": {"path": "shop.sortOrder", "value": "newest"}
+      },
+      {
+        "action": "setState",
+        "payload": {"path": "shop.sortDropdownOpen", "value": false}
+      },
+      {"action": "fetchStoreProducts"}
+    ]
+  },
+  "setSortPriceAsc": {
+    "type": "runMultiple",
+    "actions": [
+      {
+        "action": "setState",
+        "payload": {"path": "shop.sortOrder", "value": "price-asc"}
+      },
+      {
+        "action": "setState",
+        "payload": {"path": "shop.sortDropdownOpen", "value": false}
+      },
+      {"action": "fetchStoreProducts"}
+    ]
+  },
+  "setSortPriceDesc": {
+    "type": "runMultiple",
+    "actions": [
+      {
+        "action": "setState",
+        "payload": {"path": "shop.sortOrder", "value": "price-desc"}
+      },
+      {
+        "action": "setState",
+        "payload": {"path": "shop.sortDropdownOpen", "value": false}
+      },
+      {"action": "fetchStoreProducts"}
+    ]
+  },
+  "setCategoryWomen": {
+    "type": "runMultiple",
+    "actions": [
+      {
+        "action": "setState",
+        "payload": {"path": "shop.filters.category", "value": "women"}
+      },
+      {"action": "fetchStoreProducts"}
+    ]
+  },
+  "setCategoryMen": {
+    "type": "runMultiple",
+    "actions": [
+      {
+        "action": "setState",
+        "payload": {"path": "shop.filters.category", "value": "men"}
+      },
+      {"action": "fetchStoreProducts"}
+    ]
+  },
+  "setCategoryKids": {
+    "type": "runMultiple",
+    "actions": [
+      {
+        "action": "setState",
+        "payload": {"path": "shop.filters.category", "value": "kids"}
+      },
+      {"action": "fetchStoreProducts"}
+    ]
+  },
+  "setCategoryAccessories": {
+    "type": "runMultiple",
+    "actions": [
+      {
+        "action": "setState",
+        "payload": {"path": "shop.filters.category", "value": "accessories"}
+      },
+      {"action": "fetchStoreProducts"}
+    ]
+  },
+  "clearFilters": {
+    "type": "runMultiple",
+    "actions": [
+      {"action": "setState", "payload": {"path": "shop.filters", "value": {}}},
+      {"action": "fetchStoreProducts"}
+    ]
+  },
+  "removeCategoryFilter": {
+    "type": "runMultiple",
+    "actions": [
+      {
+        "action": "setState",
+        "payload": {"path": "shop.filters.category", "value": null}
+      },
+      {"action": "fetchStoreProducts"}
+    ]
+  },
+  "fetchCartUpsell": {
+    "type": "fetch",
+    "url": "/api/store/cart/upsell",
+    "storeIn": "cart.upsell"
+  },
+  "fetchOrderById": {
+    "type": "fetch",
+    "url": "/api/store/orders/{{route.slug}}",
+    "storeIn": "order"
+  }
 }
