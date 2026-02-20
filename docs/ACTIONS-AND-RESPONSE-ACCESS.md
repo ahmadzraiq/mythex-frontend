@@ -131,6 +131,48 @@
 
 ---
 
+---
+
+## GraphQL Action
+
+Use `type: "graphql"` to call any GraphQL endpoint. The engine always sends a POST with `{ query, variables }`. It checks for both HTTP errors and `response.errors` in the GraphQL body.
+
+### GraphQL Action – Full Example
+
+```json
+{
+  "type": "graphql",
+  "query": "query GetProduct($handle: String!) { product(handle: $handle) { id title descriptionHtml variants(first: 10) { edges { node { id title price { amount currencyCode } } } } } }",
+  "variables": {
+    "handle": { "var": "route.slug" }
+  },
+  "responsePath": "data.product",
+  "storeIn": "product",
+  "storeFullResponseIn": "product._raw",
+  "onSuccess": { "action": "setProductVariant" }
+}
+```
+
+### Global GraphQL Config (store.json)
+
+```json
+{
+  "engineConventions": {
+    "graphqlEndpoint": "https://my-store.myshopify.com/api/2024-01/graphql.json",
+    "graphqlHeaders": {
+      "X-Shopify-Storefront-Access-Token": "shpat_xxxx"
+    }
+  }
+}
+```
+
+- Per-action `headers` merge on top of `engineConventions.graphqlHeaders`; action headers take precedence
+- `variables` values support `{ "var": "path" }` and `{ "expr": <JSON Logic> }` resolution
+- `endpoint` supports `{{var}}` interpolation (e.g. `{{config.graphqlEndpoint}}`)
+- GraphQL errors (`response.errors[0].message`) are thrown and stored at `storeIn.error`
+
+---
+
 ## Summary
 
 | Need | Status |
@@ -143,3 +185,5 @@
 | Custom action logic | ✅ `appendToPath` action type (submitReview in config) |
 | Special vars `_timestamp`, `_date` | ✅ Available in `{ "var": "_timestamp" }` |
 | Last action/result | ✅ `_workflow.lastAction`, `_workflow.lastError` (configurable via `engineConventions.workflowPath`) |
+| GraphQL queries & mutations | ✅ `type: "graphql"` with `query`, `variables`, `endpoint`, `headers` |
+| Global GraphQL endpoint/headers | ✅ `engineConventions.graphqlEndpoint` + `graphqlHeaders` |

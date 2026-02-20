@@ -5,6 +5,93 @@ alwaysApply: true
 
 # AI Build Guide
 
+## Migrating an Existing App to SDUI
+
+When asked to migrate an existing app (React, Next.js, etc.) to this JSON-driven SDUI system, follow this order:
+
+1. **`config/store.json` first** — Define `initialData` (all global state: auth, cart, route, etc.), `engineConventions` (loadingSuffix, errorSuffix, defaultStoreIn, defaultFormPath, screenScopedAliases, graphqlEndpoint, graphqlHeaders, etc.), and `paths` aliases.
+2. **`config/theme.json`** — Map brand colors and section themes. All colors become `var(--theme-*)` CSS variables.
+3. **`config/routes.json`** — Add every route. Dynamic routes (product, category, etc.) use `dynamic: true`. Set `auth: true` for protected routes.
+4. **Layouts** (`config/layouts/`) — Create shared layout shells (header + content slot + drawer/footer). Reuse across screens via `layout: "layoutName"`.
+5. **Fragments** (`config/fragments/`) — Extract shared UI: header, footer, drawer, nav, product cards, modals. Register in `fragments/index.ts`.
+6. **Actions** (`config/actions/`) — Map every data-fetch and mutation. Use `type: "graphql"` for GraphQL APIs or `type: "fetch"` for REST. Auth flows use `type: "validate"` then fetch/graphql.
+7. **Screens** (`config/screens/`) — One JSON per screen. Each maps to a route config name. Add `initActions` for data fetching on mount.
+8. **`config/app.ts`** — Import all screens and merge into the app config.
+
+**Mapping guide:**
+- React component state → `state` in screen JSON + `{{form.field}}` interpolation
+- `useEffect` data fetching → `initActions` with `type: "graphql"` or `type: "fetch"`
+- `onClick` / form submit → `actions.click` / `submitAction` in JSON
+- React Router / Next.js `<Link>` → `{ "action": "navigate", "payload": { "path": "/..." } }`
+- Dynamic routes (e.g. `/product/:slug`) → `{ "action": "navigate", "payload": { "routeConfig": "product", "slug": { "var": "$item.slug" } } }`
+- Shared UI (header, cards) → fragments with `$ref`
+- Conditional rendering → `condition` (JSON Logic) on nodes
+- Lists / `.map()` → `map` on the node with `{{$item.field}}`
+
+---
+
+## Bootstrap Files (Required When Starting Fresh)
+
+When `config/` is empty, create these 3 wiring files before anything else. Without them `$ref`, layouts, and `resolveScreenConfig` all fail.
+
+**Do NOT modify `app/[[...slug]]/page.tsx` or `lib/sdui/`** — they are generic and work as-is for any app.
+
+### `config/fragments/index.ts`
+Keys MUST use the full `'fragments/name'` prefix — `$ref` resolves by this exact string.
+```ts
+import header from './header.json';
+import drawer from './drawer.json';
+// import every fragment you create
+
+export const fragments = {
+  'fragments/header': header,
+  'fragments/drawer': drawer,
+  'fragments/modals/myModal': myModal,
+} as const;
+```
+
+### `config/layouts/index.ts`
+```ts
+import authenticated from './authenticated.json';
+// import every layout you create
+
+export const layouts = {
+  authenticated: authenticated as { structure: object },
+  minimal: minimal as { structure: object },
+} as const;
+```
+
+### `config/app.ts`
+```ts
+import routes from './routes.json';
+import { layouts } from './layouts';
+import { fragments } from './fragments';
+import { resolveScreenConfig } from '@/lib/sdui/config-resolver';
+// import every screen JSON
+import home from './screens/home.json';
+import login from './screens/login.json';
+// import every action file
+import authActions from './actions/auth.json';
+import layoutActions from './actions/layout.json';
+
+const registry = { layouts, fragments };
+
+const rawScreens = { home, login /*, ...*/ };
+const screens = Object.fromEntries(
+  Object.entries(rawScreens).map(([name, screen]) =>
+    [name, resolveScreenConfig(screen as Parameters<typeof resolveScreenConfig>[0], registry)]
+  )
+) as typeof rawScreens;
+
+const actions = { ...authActions, ...layoutActions /*, ...*/ };
+
+export default { ...routes, screens, actions } as const;
+```
+
+---
+
+## Building New Screens / Features
+
 When asked to build or add screens, layouts, modals, or features to this website:
 
 1. **Read `docs/SCHEMA.md`** – It defines the full JSON schema for screens, layouts, fragments, actions, and routes. For new apps, also use `docs/NEW-APP-CHECKLIST.md`.
@@ -18,15 +105,19 @@ When asked to build or add screens, layouts, modals, or features to this website
 
 3. **Add routes** in `config/routes.json` and **import** new screens in `config/app.ts`.
 
-4. **Actions** go in `config/actions/` (auth, products, layout, other). Use `type: "fetch"`, `type: "set"`, `type: "appendToPath"`, `type: "validate"`, etc. per schema. Fetch supports `errorMessagePath`, `storeFullResponseIn`.
+4. **Actions** go in `config/actions/` (auth, products, layout, other). Use `type: "fetch"`, `type: "graphql"`, `type: "set"`, `type: "appendToPath"`, `type: "validate"`, etc. per schema.
+   - **fetch**: REST calls; supports `url`, `method`, `body`, `storeIn`, `responsePath`, `errorMessagePath`, `storeFullResponseIn`, `onSuccess`
+   - **graphql**: GraphQL queries/mutations; supports `query`, `variables` (JSON Logic-resolvable), `endpoint` (falls back to `engineConventions.graphqlEndpoint`), `headers` (merged on top of `engineConventions.graphqlHeaders`), `responsePath`, `storeIn`, `storeFullResponseIn`, `onSuccess`. Handles both HTTP errors and `response.errors`. No API routes needed—calls external GraphQL endpoint directly.
 
 5. **Never hardcode** layout or shared UI in React—define everything in JSON config.
 
 6. **Config-driven, no hardcoded values:**
-   - Routes: `config/routes.json` (dynamic routes use `dynamic: true`)
-   - Initial state: `config/store.json` (`initialData`, optional `paths`, optional `computed`)
-   - Theme: `config/theme.json` (colors, sections); use `var(--theme-*)` in classNames
-   - Dynamic navigation: `{ "action": "navigate", "payload": { "routeConfig": "product", "slug": { "var": "$item.slug" } } }`—not hardcoded action names like `navigateToProduct`
+ - Routes: `config/routes.json` (dynamic routes use `dynamic: true`)
+ - Initial state: `config/store.json` (`initialData`, optional `paths`, optional `computed`)
+ - Theme: `config/theme.json` (colors, sections); use `var(--theme-*)` in classNames
+ - GraphQL endpoint & headers: `engineConventions.graphqlEndpoint` + `engineConventions.graphqlHeaders` in `store.json`
+ - Dynamic navigation: `{ "action": "navigate", "payload": { "routeConfig": "product", "slug": { "var": "$item.slug" } } }`—not hardcoded action names like `navigateToProduct`
+ - **No Next.js API routes**: Data comes from external APIs (REST or GraphQL). Do not create `app/api/` routes.
 
 7. **UI/UX rules** (see `ui-ux-contrast.mdc`): No duplicate content, no dark-on-dark contrast, theme in JSON only, strong gradient + drop-shadow for text on images, light borders for outline buttons on dark backgrounds.
 

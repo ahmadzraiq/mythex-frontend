@@ -1,7 +1,6 @@
 ---
 description: JSON composition patterns - $ref, $slot, no duplication
-globs: config/**/*.json
-alwaysApply: false
+alwaysApply: true
 ---
 
 # JSON Composition Rules

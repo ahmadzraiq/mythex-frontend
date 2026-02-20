@@ -27,6 +27,8 @@ type EngineConventions = {
   workflowPath?: string;
   screenScopedAliases?: string[];
   defaultFormPath?: string;
+  graphqlEndpoint?: string;
+  graphqlHeaders?: Record<string, string>;
 };
 const engineConventions = (storeConfig as { engineConventions?: EngineConventions }).engineConventions ?? {};
 const CONVENTIONS = {
@@ -38,6 +40,8 @@ const CONVENTIONS = {
   workflowPath: engineConventions.workflowPath,
   screenScopedAliases: engineConventions.screenScopedAliases ?? [],
   defaultFormPath: engineConventions.defaultFormPath,
+  graphqlEndpoint: engineConventions.graphqlEndpoint,
+  graphqlHeaders: engineConventions.graphqlHeaders ?? {},
 };
 
 function isScreenScopedPath(path: string, aliases: string[]): boolean {
@@ -489,6 +493,64 @@ export function SDUIEngine({
             }
           } catch (err) {
             setError(storeIn, err instanceof Error ? err.message : 'Fetch failed');
+          }
+          return;
+        }
+        if (actionDef?.type === 'graphql') {
+          const storeIn = actionDef.storeIn ?? CONVENTIONS.defaultStoreIn;
+          const storeFullResponseIn = (actionDef as { storeFullResponseIn?: string }).storeFullResponseIn;
+          const errorMessagePath = ((actionDef as { errorMessagePath?: string }).errorMessagePath ?? CONVENTIONS.defaultErrorMessagePath) as string;
+          const rawEndpoint = (actionDef as { endpoint?: string }).endpoint ?? CONVENTIONS.graphqlEndpoint ?? '';
+          const endpoint = interpolateUrl(rawEndpoint, get, scope);
+          const query = (actionDef as { query?: string }).query ?? '';
+          const rawVariables = (actionDef as { variables?: Record<string, unknown> }).variables;
+          const variables = rawVariables ? resolvePayload(rawVariables, get, scope) : undefined;
+          const rawHeaders = (actionDef as { headers?: Record<string, string> }).headers ?? {};
+          const resolvedActionHeaders = resolvePayload(rawHeaders as Record<string, unknown>, get, scope) as Record<string, string>;
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            ...CONVENTIONS.graphqlHeaders,
+            ...resolvedActionHeaders,
+          };
+          const responsePath = actionDef.responsePath as string | undefined;
+          setLoading(storeIn, true);
+          try {
+            const res = await fetch(endpoint, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ query, variables }),
+            });
+            const rawResponse = await res.json().catch(() => ({}));
+            if (!res.ok) {
+              const msg =
+                (getNestedValue(rawResponse as Record<string, unknown>, errorMessagePath) as string) ??
+                `GraphQL request failed: ${res.status}`;
+              throw new Error(msg);
+            }
+            const gqlErrors = (rawResponse as { errors?: Array<{ message: string }> }).errors;
+            if (gqlErrors && gqlErrors.length > 0) {
+              throw new Error(gqlErrors[0]?.message ?? 'GraphQL error');
+            }
+            if (storeFullResponseIn) {
+              setData(storeFullResponseIn, rawResponse);
+            }
+            let data: unknown = rawResponse;
+            if (responsePath && typeof responsePath === 'string') {
+              const parts = responsePath.split('.');
+              for (const p of parts) {
+                data = (data as Record<string, unknown>)?.[p];
+              }
+            }
+            setData(storeIn, data);
+            const onSuccess = actionDef.onSuccess;
+            if (onSuccess) {
+              const actions = Array.isArray(onSuccess) ? onSuccess : [onSuccess];
+              for (const a of actions) {
+                await runOne(a as SDUIAction);
+              }
+            }
+          } catch (err) {
+            setError(storeIn, err instanceof Error ? err.message : 'GraphQL request failed');
           }
           return;
         }

@@ -4,6 +4,5 @@
  */
 
 export { SDUIEngine, type ActionsConfig } from './sdui-engine';
-export { SDUIEngine as SimpleSDUIEngine } from './engine';
 export { SDURenderer } from './renderer';
 export type { SDUIConfig, SDUINode, SDUIContext } from './types';

@@ -36,3 +36,5 @@ alwaysApply: true
 7. **Derived values**: Use inline `text: { expr: <JSON Logic>, suffix?, prefix? }` for one-off computed (cart count, totals, etc.); use `formatCurrency` for money display.
 8. **Cross-screen state**: Use `screens.{screenName}.form.*`, `screens.{screenName}.errors.*`; access from anywhere via `{{screens.signup.form.password}}`.
 9. **Workflow context**: `{{_workflow.lastAction}}`, `{{_workflow.lastError}}` for last action name and error (null if success). Configurable via `engineConventions.workflowPath`.
+10. **Data fetching**: Use `type: "fetch"` for REST or `type: "graphql"` for GraphQL. **Never create Next.js API routes** (`app/api/`)—data comes directly from external APIs/services.
+11. **GraphQL config**: Set `engineConventions.graphqlEndpoint` and `engineConventions.graphqlHeaders` in `store.json` for global defaults. Override per-action with `endpoint` and `headers` fields.

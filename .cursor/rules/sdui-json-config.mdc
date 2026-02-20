@@ -1,7 +1,6 @@
 ---
 description: SDUI JSON config - layouts, fragments, $ref, $slot composition
-globs: config/**/*.json, config/**/*.ts
-alwaysApply: false
+alwaysApply: true
 ---
 
 # SDUI JSON Configuration

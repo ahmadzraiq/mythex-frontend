@@ -1,40 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SDUI – JSON-Driven UI Engine
 
-## JSON-Driven UI
+A Server-Driven UI (SDUI) framework built on Next.js. All screens, layouts, fragments, and actions are defined in JSON — no hardcoded UI logic in React.
 
-Screens, layouts, and actions are defined in JSON config. See **[`docs/SCHEMA.md`](docs/SCHEMA.md)** for the full schema reference when building or extending the app.
+## Stack
+
+- **Next.js 15** + React 19
+- **Zustand** – global state
+- **json-logic-js** – computed values and conditions
+- **Gluestack UI** + NativeWind – components
+- **react-hook-form** + Yup – form validation
+
+## Architecture
+
+```
+config/
+├── app.ts          # Merges all config ($ref/$slot resolved here)
+├── routes.json     # All routes (static + dynamic)
+├── store.json      # Initial state, engineConventions, computed
+├── theme.json      # Brand colors and section themes
+├── screens/        # One .json per screen
+├── layouts/        # Layout structures (header + content slot + drawer)
+├── fragments/      # Reusable UI (header, drawer, modals/*)
+└── actions/        # All actions (fetch, graphql, set, validate, etc.)
+
+lib/sdui/
+├── sdui-engine.tsx     # Engine: actions, state, workflow
+├── renderer.tsx        # Fine-grained reactive renderer
+├── computed-runner.ts  # JSON Logic computed values
+├── config-resolver.ts  # $ref/$slot resolution
+├── variable-store.ts   # Reactive path-based state
+└── component-registry.tsx  # JSON type → React component
+```
+
+## Data Fetching
+
+This project calls external APIs directly — **no Next.js API routes**.
+
+- **REST**: `type: "fetch"` action
+- **GraphQL**: `type: "graphql"` action (configures global endpoint + headers in `store.json` `engineConventions`)
+
+## Docs
+
+- [`docs/SCHEMA.md`](docs/SCHEMA.md) – Full JSON schema reference
+- [`docs/NEW-APP-CHECKLIST.md`](docs/NEW-APP-CHECKLIST.md) – Setup checklist for new apps
+- [`docs/ACTIONS-AND-RESPONSE-ACCESS.md`](docs/ACTIONS-AND-RESPONSE-ACCESS.md) – Action patterns and data access
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

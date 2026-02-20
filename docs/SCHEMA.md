@@ -213,6 +213,58 @@ Actions live in `config/actions/*.json`. Reference by name: `{ "action": "login"
 - `storeFullResponseIn` – optional; store raw API response before responsePath extraction
 - `errorMessagePath` – dot path into error JSON for message (default: "message")
 
+### graphql
+
+Sends a GraphQL query or mutation. Always uses HTTP POST. Handles both HTTP errors and `errors` in the GraphQL response body.
+
+```json
+{
+  "type": "graphql",
+  "query": "query GetProducts($first: Int) { products(first: $first) { edges { node { id title handle } } } }",
+  "variables": {
+    "first": 20,
+    "handle": { "var": "route.slug" }
+  },
+  "endpoint": "{{config.graphqlEndpoint}}",
+  "headers": {
+    "X-Shopify-Storefront-Access-Token": "{{config.storefrontToken}}"
+  },
+  "responsePath": "data.products.edges",
+  "storeIn": "products.list",
+  "storeFullResponseIn": "products._raw",
+  "errorMessagePath": "errors[0].message",
+  "onSuccess": { "action": "..." }
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `query` | GraphQL query or mutation string |
+| `variables` | Variables object; values support `{ "var": "path" }` and `{ "expr": <JSON Logic> }` |
+| `endpoint` | GraphQL URL; supports `{{var}}` interpolation; falls back to `engineConventions.graphqlEndpoint` |
+| `headers` | Per-action headers merged on top of `engineConventions.graphqlHeaders`; values support `{ "var": "path" }` |
+| `responsePath` | Dot path into response (e.g. `data.products.edges`); applied after GraphQL error check |
+| `storeIn` | State path to store the extracted data |
+| `storeFullResponseIn` | Optional; stores the full raw response before `responsePath` extraction |
+| `errorMessagePath` | Dot path for error message in HTTP error body (default from `engineConventions.defaultErrorMessagePath`) |
+| `onSuccess` | Action(s) to run on success |
+
+**Global config in `store.json`:**
+
+```json
+{
+  "engineConventions": {
+    "graphqlEndpoint": "https://my-store.myshopify.com/api/2024-01/graphql.json",
+    "graphqlHeaders": {
+      "X-Shopify-Storefront-Access-Token": "your-token-here"
+    }
+  }
+}
+```
+
+- Per-action `headers` always override `engineConventions.graphqlHeaders`
+- Use `{{config.someToken}}` in headers if the token lives in store state (e.g. loaded from env at runtime)
+
 ### set (Zustand state)
 
 ```json
@@ -296,7 +348,7 @@ Append to a nested array (e.g. `product.reviews`). Supports `{ "var": "path" }` 
 | initialData | Initial Zustand state (layout, cart, route, etc.) |
 | paths | Optional key→path mapping (e.g. `authUser` → `auth.user`, `routePath` → `route.path`) |
 | computed | Optional array of `{ output, expr }` for shared derived state (JSON Logic) |
-| engineConventions | **Required** for apps using forms/fetch/workflow. No fallbacks in code—all values come from JSON: `loadingSuffix`, `errorSuffix`, `defaultStoreErrorsIn`, `defaultStoreIn`, `defaultErrorMessagePath`, `workflowPath`, `screenScopedAliases`, `defaultFormPath` |
+| engineConventions | **Required** for apps using forms/fetch/workflow/graphql. No fallbacks in code—all values come from JSON: `loadingSuffix`, `errorSuffix`, `defaultStoreErrorsIn`, `defaultStoreIn`, `defaultErrorMessagePath`, `workflowPath`, `screenScopedAliases`, `defaultFormPath`, `graphqlEndpoint` (default GraphQL URL), `graphqlHeaders` (default headers applied to all graphql actions) |
 
 **Derived values – prefer inline expr:** For one-off computed values (cart count, subtotal, totals), use inline `text: { expr, suffix?, prefix?, template? }` in UI nodes. See §3 Interpolation & inline expr.
 

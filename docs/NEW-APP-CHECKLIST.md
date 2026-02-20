@@ -4,6 +4,56 @@ Use this checklist when creating a new app from this template to avoid common mi
 
 ---
 
+## 0. Bootstrap Infrastructure (Do This First)
+
+These three files are the wiring layer. Nothing renders without them. Create them before any screens, layouts, or fragments.
+
+- [ ] **`config/fragments/index.ts`** – Register every fragment. Keys MUST use the full `'fragments/name'` prefix (this is what `$ref` looks up):
+  ```ts
+  import header from './header.json';
+  import drawer from './drawer.json';
+
+  export const fragments = {
+    'fragments/header': header,
+    'fragments/drawer': drawer,
+    'fragments/modals/myModal': myModal,
+  } as const;
+  ```
+
+- [ ] **`config/layouts/index.ts`** – Register every layout with the required TypeScript cast:
+  ```ts
+  import authenticated from './authenticated.json';
+
+  export const layouts = {
+    authenticated: authenticated as { structure: object },
+  } as const;
+  ```
+
+- [ ] **`config/app.ts`** – Merge screens, actions, and the registry. This is the single export consumed by `page.tsx`:
+  ```ts
+  import routes from './routes.json';
+  import { layouts } from './layouts';
+  import { fragments } from './fragments';
+  import { resolveScreenConfig } from '@/lib/sdui/config-resolver';
+  import home from './screens/home.json';
+  import authActions from './actions/auth.json';
+
+  const registry = { layouts, fragments };
+  const rawScreens = { home };
+  const screens = Object.fromEntries(
+    Object.entries(rawScreens).map(([name, screen]) =>
+      [name, resolveScreenConfig(screen as Parameters<typeof resolveScreenConfig>[0], registry)]
+    )
+  ) as typeof rawScreens;
+  const actions = { ...authActions };
+
+  export default { ...routes, screens, actions } as const;
+  ```
+
+- [ ] **`app/[[...slug]]/page.tsx` and `lib/sdui/`** – Do NOT modify. They are generic and work as-is for any app.
+
+---
+
 ## 1. Config Setup
 
 - [ ] **store.json** – Define complete `engineConventions` (no fallbacks in code):
@@ -16,9 +66,14 @@ Use this checklist when creating a new app from this template to avoid common mi
     "defaultErrorMessagePath": "message",
     "workflowPath": "_workflow",
     "screenScopedAliases": ["form", "errors", "reviewForm"],
-    "defaultFormPath": "form"
+    "defaultFormPath": "form",
+    "graphqlEndpoint": "https://your-store.myshopify.com/api/2024-01/graphql.json",
+    "graphqlHeaders": {
+      "X-Shopify-Storefront-Access-Token": "your-token"
+    }
   }
   ```
+  Omit `graphqlEndpoint` / `graphqlHeaders` if not using GraphQL, or if the app provides them per-action.
 - [ ] **store.json** – Use nested paths for `initialData` (e.g. `cart: { items: [] }` not `"cart.items": []`)
 - [ ] **routes.json** – Add routes; set `config` to screen name (used as `configName` for screen-scoped paths)
 - [ ] **app.ts** – Import all new screens and merge into app config
@@ -43,6 +98,7 @@ Use this checklist when creating a new app from this template to avoid common mi
 ## 4. Actions (No Hardcoded Logic)
 
 - [ ] **Fetch** – Use `storeIn`, `responsePath`, `errorMessagePath`, `storeFullResponseIn`; all configurable
+- [ ] **GraphQL** – Use `type: "graphql"` with `query`, `variables` (supports `{ "var" }`, `{ "expr" }`), `endpoint`, `headers`, `responsePath`, `storeIn`. Set defaults in `engineConventions.graphqlEndpoint` + `graphqlHeaders`
 - [ ] **Append to nested array** – Use `type: "appendToPath"` with `targetPath`, `value` (supports `{ "var" }`, `{ "expr" }`), `resetFormPath`, `resetFormValue`
 - [ ] **Special vars** – `_timestamp`, `_date` available in `{ "var": "_timestamp" }` and JSON Logic `expr`
 - [ ] **Never add app-specific action logic in engine** – Define in `config/actions/*.json`
