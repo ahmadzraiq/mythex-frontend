@@ -62,16 +62,6 @@ import { Input, InputField, InputIcon, InputSlot } from '@/components/ui/input';
 import { Checkbox, CheckboxIndicator, CheckboxIcon, CheckboxLabel } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Textarea, TextareaInput } from '@/components/ui/textarea';
-import {
-  FormControl,
-  FormControlLabel,
-  FormControlLabelText,
-  FormControlError,
-  FormControlErrorText,
-  FormControlHelper,
-  FormControlHelperText,
-} from '@/components/ui/form-control';
-import { SDUIForm, FormInputWithLabel, FormSubmitButton } from '@/lib/sdui/form-with-validation';
 import { Carousel, CarouselSlide } from '@/lib/sdui/carousel';
 import { FacetFiltersPanel } from '@/lib/sdui/facet-filters-panel';
 
@@ -102,6 +92,7 @@ import {
   CircleDollarSign,
   Zap,
   ChevronDown,
+  ChevronUp,
   ChevronLeft,
   ChevronRight,
   Bell,
@@ -213,6 +204,7 @@ const NAV_ICONS: Record<string, React.ComponentType<{ size?: number; color?: str
   ShoppingCart,
   Zap,
   ChevronDown,
+  ChevronUp,
   ChevronLeft,
   ChevronRight,
   Bell,
@@ -390,16 +382,6 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   TableRow,
   TableHead,
   TableData,
-  Form: SDUIForm,
-  FormInputWithLabel,
-  FormSubmitButton,
-  FormControl,
-  FormControlLabel,
-  FormControlLabelText,
-  FormControlError,
-  FormControlErrorText,
-  FormControlHelper,
-  FormControlHelperText,
   Checkbox,
   CheckboxIndicator,
   CheckboxIcon,

@@ -99,6 +99,13 @@ export function resolveProps(
         const val = context.get(String(path), scope);
         const finalVal = val !== undefined && val !== null ? val : fallback;
         resolved[key] = coerceValue(finalVal);
+      } else if ('expr' in obj) {
+        try {
+          const result = jsonLogic.apply((obj.expr ?? {}) as object, context.state ?? {});
+          resolved[key] = result != null ? String(result) : result;
+        } catch {
+          resolved[key] = value;
+        }
       } else if ('action' in obj && runAction) {
         resolved[key] = () => runAction(obj);
       } else {

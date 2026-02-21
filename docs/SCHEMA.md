@@ -293,15 +293,28 @@ Sends a GraphQL query or mutation. Always uses HTTP POST. Handles both HTTP erro
 
 ### validate
 
+Validates form fields before running `onSuccess`. Stores errors in nested structure at `storeErrorsIn` (default `errors`). Use per-field error display—see `.cursor/rules/sdui-layout-pitfalls.mdc` → "Form Validation with Per-Field Errors".
+
+| Rule | Description |
+|------|-------------|
+| `required` | Field must be non-empty |
+| `minLength` | Minimum string length |
+| `maxLength` | Maximum string length |
+| `pattern: "email"` | Email format |
+| `equals` | Must match fixed value |
+| `equalsField` | Must match another field (e.g. `"form.password"` for confirm) |
+| `message` | Error message when rule fails |
+
 ```json
 {
   "type": "validate",
   "rules": {
-    "form.email": { "required": true, "pattern": "email" },
-    "form.password": { "required": true, "minLength": 8 }
+    "form.email": { "required": true, "pattern": "email", "message": "Please enter a valid email" },
+    "form.password": { "required": true, "minLength": 8, "message": "Password must be at least 8 characters" },
+    "form.confirmPassword": { "required": true, "equalsField": "form.password", "message": "Passwords do not match" }
   },
   "storeErrorsIn": "errors",
-  "onSuccess": { "action": "login" }
+  "onSuccess": { "action": "registerMutation" }
 }
 ```
 

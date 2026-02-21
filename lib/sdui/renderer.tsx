@@ -30,7 +30,6 @@ interface RendererContext {
   fetchData: SDUIContext['fetchData'];
   actionsConfig?: Record<string, unknown>;
   screenName?: string;
-  formStorePath?: string;
   screenScopedAliases?: string[];
 }
 
@@ -84,7 +83,7 @@ function createGet(
 }
 
 const SDURendererInner = memo(function SDURendererInner({ node, context, scope }: RendererProps) {
-  const { store, mergedStore, storeConfig, mergedState, runAction, fetchData, actionsConfig, screenName, formStorePath, screenScopedAliases = [] } = context;
+  const { store, mergedStore, storeConfig, mergedState, runAction, fetchData, actionsConfig, screenName, screenScopedAliases = [] } = context;
   const merged = mergedStore?.getState().merged ?? mergedState;
   const rawDeps = extractNodeDependencies(node);
   const deps =
@@ -149,19 +148,6 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope }
   const cleanProps = Object.fromEntries(
     Object.entries(resolvedProps).filter(([k]) => !k.startsWith('$'))
   ) as Record<string, unknown>;
-
-  if ((node.type as string) === 'Form' && formStorePath != null) {
-    cleanProps.runAction = runAction;
-    const storePath = formStorePath;
-    cleanProps.setState = (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => {
-      store.getState().setState((prev) => {
-        const currentForm = getNestedValue(prev as Record<string, unknown>, storePath) as Record<string, unknown> | undefined;
-        const merged = updater({ form: currentForm ?? {} });
-        const formData = (merged.form as Record<string, unknown>) ?? currentForm ?? {};
-        return setNestedValue(prev as Record<string, unknown>, storePath, formData);
-      });
-    };
-  }
 
   if (node.actions) {
     for (const [event, action] of Object.entries(node.actions)) {

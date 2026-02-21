@@ -30,9 +30,7 @@
           },
           {
             "type": "Card",
-            "props": {
-              "className": "w-full !rounded-xl !border !border-gray-200 !bg-white !py-6 !shadow-sm dark:!border-gray-700 dark:!bg-[#1e293b]"
-            },
+            "props": { "className": "w-full !rounded-xl !border !border-gray-200 !bg-white !py-6 !shadow-sm dark:!border-gray-700 dark:!bg-[#1e293b]" },
             "children": [
               {
                 "type": "Box",
@@ -45,30 +43,31 @@
                       { "type": "Text", "props": { "className": "text-sm font-medium leading-none" }, "text": "Email Address" },
                       {
                         "type": "Input",
-                        "props": {
-                          "variant": "outline",
-                          "size": "sm",
-                          "className": "w-full !rounded-md !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900"
-                        },
+                        "props": { "variant": "outline", "size": "sm", "className": "w-full !rounded-md !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900" },
                         "children": [
                           {
                             "type": "InputField",
-                            "props": {
-                              "type": "email",
-                              "placeholder": "you@example.com",
-                              "placeholderTextColor": "#9ca3af",
-                              "value": "{{form.emailAddress}}",
-                              "className": "!text-gray-900 dark:!text-gray-100"
-                            },
-                            "actions": { "change": { "action": "setState", "payload": { "path": "screens.register.form.emailAddress", "value": "$event" } } }
+                            "props": { "type": "email", "placeholder": "you@example.com", "placeholderTextColor": "#9ca3af", "value": "{{form.emailAddress}}", "className": "!text-gray-900 dark:!text-gray-100" },
+                            "actions": {
+                              "change": {
+                                "type": "runMultiple",
+                                "actions": [
+                                  { "action": "setState", "payload": { "path": "screens.register.form.emailAddress", "value": "$event" } },
+                                  { "action": "setState", "payload": { "path": "screens.register.errors.form.emailAddress", "value": "" } },
+                                  { "action": "setState", "payload": { "path": "_workflow.lastError", "value": "" } }
+                                ]
+                              }
+                            }
                           }
                         ]
                       },
                       {
-                        "type": "Text",
-                        "props": { "className": "text-sm text-red-500" },
-                        "condition": { "and": [{ "var": ["errors.form.emailAddress"] }, { "!=": [{ "var": ["errors.form.emailAddress"] }, ""] }] },
-                        "text": "{{errors.form.emailAddress}}"
+                        "type": "Box",
+                        "props": { "className": "min-h-[20px]" },
+                        "condition": { "var": ["screens.register.errors.form.emailAddress"] },
+                        "children": [
+                          { "type": "Text", "props": { "className": "text-sm text-red-500 dark:text-red-400" }, "text": "{{errors.form.emailAddress}}" }
+                        ]
                       }
                     ]
                   },
@@ -83,22 +82,30 @@
                           { "type": "Text", "props": { "className": "text-sm font-medium leading-none" }, "text": "First name" },
                           {
                             "type": "Input",
-                            "props": {
-                              "variant": "outline",
-                              "size": "sm",
-                              "className": "w-full !rounded-md !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900"
-                            },
+                            "props": { "variant": "outline", "size": "sm", "className": "w-full !rounded-md !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900" },
                             "children": [
                               {
                                 "type": "InputField",
-                                "props": {
-                                  "placeholder": "John",
-                                  "placeholderTextColor": "#9ca3af",
-                                  "value": "{{form.firstName}}",
-                                  "className": "!text-gray-900 dark:!text-gray-100"
-                                },
-                                "actions": { "change": { "action": "setState", "payload": { "path": "screens.register.form.firstName", "value": "$event" } } }
+                                "props": { "placeholder": "John", "placeholderTextColor": "#9ca3af", "value": "{{form.firstName}}", "className": "!text-gray-900 dark:!text-gray-100" },
+                                "actions": {
+                                  "change": {
+                                    "type": "runMultiple",
+                                    "actions": [
+                                      { "action": "setState", "payload": { "path": "screens.register.form.firstName", "value": "$event" } },
+                                      { "action": "setState", "payload": { "path": "screens.register.errors.form.firstName", "value": "" } },
+                                      { "action": "setState", "payload": { "path": "_workflow.lastError", "value": "" } }
+                                    ]
+                                  }
+                                }
                               }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": { "className": "min-h-[20px]" },
+                            "condition": { "var": ["screens.register.errors.form.firstName"] },
+                            "children": [
+                              { "type": "Text", "props": { "className": "text-sm text-red-500 dark:text-red-400" }, "text": "{{errors.form.firstName}}" }
                             ]
                           }
                         ]
@@ -110,22 +117,30 @@
                           { "type": "Text", "props": { "className": "text-sm font-medium leading-none" }, "text": "Last name" },
                           {
                             "type": "Input",
-                            "props": {
-                              "variant": "outline",
-                              "size": "sm",
-                              "className": "w-full !rounded-md !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900"
-                            },
+                            "props": { "variant": "outline", "size": "sm", "className": "w-full !rounded-md !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900" },
                             "children": [
                               {
                                 "type": "InputField",
-                                "props": {
-                                  "placeholder": "Doe",
-                                  "placeholderTextColor": "#9ca3af",
-                                  "value": "{{form.lastName}}",
-                                  "className": "!text-gray-900 dark:!text-gray-100"
-                                },
-                                "actions": { "change": { "action": "setState", "payload": { "path": "screens.register.form.lastName", "value": "$event" } } }
+                                "props": { "placeholder": "Doe", "placeholderTextColor": "#9ca3af", "value": "{{form.lastName}}", "className": "!text-gray-900 dark:!text-gray-100" },
+                                "actions": {
+                                  "change": {
+                                    "type": "runMultiple",
+                                    "actions": [
+                                      { "action": "setState", "payload": { "path": "screens.register.form.lastName", "value": "$event" } },
+                                      { "action": "setState", "payload": { "path": "screens.register.errors.form.lastName", "value": "" } },
+                                      { "action": "setState", "payload": { "path": "_workflow.lastError", "value": "" } }
+                                    ]
+                                  }
+                                }
                               }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": { "className": "min-h-[20px]" },
+                            "condition": { "var": ["screens.register.errors.form.lastName"] },
+                            "children": [
+                              { "type": "Text", "props": { "className": "text-sm text-red-500 dark:text-red-400" }, "text": "{{errors.form.lastName}}" }
                             ]
                           }
                         ]
@@ -139,22 +154,12 @@
                       { "type": "Text", "props": { "className": "text-sm font-medium leading-none" }, "text": "Phone Number" },
                       {
                         "type": "Input",
-                        "props": {
-                          "variant": "outline",
-                          "size": "sm",
-                          "className": "w-full !rounded-md !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900"
-                        },
+                        "props": { "variant": "outline", "size": "sm", "className": "w-full !rounded-md !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900" },
                         "children": [
                           {
                             "type": "InputField",
-                            "props": {
-                              "type": "tel",
-                              "placeholder": "+1 234 567 8900",
-                              "placeholderTextColor": "#9ca3af",
-                              "value": "{{form.phoneNumber}}",
-                              "className": "!text-gray-900 dark:!text-gray-100"
-                            },
-                            "actions": { "change": { "action": "setState", "payload": { "path": "screens.register.form.phoneNumber", "value": "$event" } } }
+                            "props": { "type": "tel", "placeholder": "+1 234 567 8900", "placeholderTextColor": "#9ca3af", "value": "{{form.phoneNumber}}", "className": "!text-gray-900 dark:!text-gray-100" },
+                            "actions": { "change": { "type": "runMultiple", "actions": [{ "action": "setState", "payload": { "path": "screens.register.form.phoneNumber", "value": "$event" } }, { "action": "setState", "payload": { "path": "_workflow.lastError", "value": "" } }] } }
                           }
                         ]
                       }
@@ -167,30 +172,32 @@
                       { "type": "Text", "props": { "className": "text-sm font-medium leading-none" }, "text": "Password" },
                       {
                         "type": "Input",
-                        "props": {
-                          "variant": "outline",
-                          "size": "sm",
-                          "className": "w-full !rounded-md !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900"
-                        },
+                        "props": { "variant": "outline", "size": "sm", "className": "w-full !rounded-md !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900" },
                         "children": [
                           {
                             "type": "InputField",
-                            "props": {
-                              "type": "password",
-                              "placeholder": "••••••••",
-                              "placeholderTextColor": "#9ca3af",
-                              "value": "{{form.password}}",
-                              "className": "!text-gray-900 dark:!text-gray-100"
-                            },
-                            "actions": { "change": { "action": "setState", "payload": { "path": "screens.register.form.password", "value": "$event" } } }
+                            "props": { "type": "password", "placeholder": "••••••••", "placeholderTextColor": "#9ca3af", "value": "{{form.password}}", "className": "!text-gray-900 dark:!text-gray-100" },
+                            "actions": {
+                              "change": {
+                                "type": "runMultiple",
+                                "actions": [
+                                  { "action": "setState", "payload": { "path": "screens.register.form.password", "value": "$event" } },
+                                  { "action": "setState", "payload": { "path": "screens.register.errors.form.password", "value": "" } },
+                                  { "action": "setState", "payload": { "path": "screens.register.errors.form.confirmPassword", "value": "" } },
+                                  { "action": "setState", "payload": { "path": "_workflow.lastError", "value": "" } }
+                                ]
+                              }
+                            }
                           }
                         ]
                       },
                       {
-                        "type": "Text",
-                        "props": { "className": "text-sm text-red-500" },
-                        "condition": { "and": [{ "var": ["errors.form.password"] }, { "!=": [{ "var": ["errors.form.password"] }, ""] }] },
-                        "text": "{{errors.form.password}}"
+                        "type": "Box",
+                        "props": { "className": "min-h-[20px]" },
+                        "condition": { "var": ["screens.register.errors.form.password"] },
+                        "children": [
+                          { "type": "Text", "props": { "className": "text-sm text-red-500 dark:text-red-400" }, "text": "{{errors.form.password}}" }
+                        ]
                       }
                     ]
                   },
@@ -201,23 +208,30 @@
                       { "type": "Text", "props": { "className": "text-sm font-medium leading-none" }, "text": "Confirm Password" },
                       {
                         "type": "Input",
-                        "props": {
-                          "variant": "outline",
-                          "size": "sm",
-                          "className": "w-full !rounded-md !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900"
-                        },
+                        "props": { "variant": "outline", "size": "sm", "className": "w-full !rounded-md !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900" },
                         "children": [
                           {
                             "type": "InputField",
-                            "props": {
-                              "type": "password",
-                              "placeholder": "••••••••",
-                              "placeholderTextColor": "#9ca3af",
-                              "value": "{{form.confirmPassword}}",
-                              "className": "!text-gray-900 dark:!text-gray-100"
-                            },
-                            "actions": { "change": { "action": "setState", "payload": { "path": "screens.register.form.confirmPassword", "value": "$event" } } }
+                            "props": { "type": "password", "placeholder": "••••••••", "placeholderTextColor": "#9ca3af", "value": "{{form.confirmPassword}}", "className": "!text-gray-900 dark:!text-gray-100" },
+                            "actions": {
+                              "change": {
+                                "type": "runMultiple",
+                                "actions": [
+                                  { "action": "setState", "payload": { "path": "screens.register.form.confirmPassword", "value": "$event" } },
+                                  { "action": "setState", "payload": { "path": "screens.register.errors.form.confirmPassword", "value": "" } },
+                                  { "action": "setState", "payload": { "path": "_workflow.lastError", "value": "" } }
+                                ]
+                              }
+                            }
                           }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "min-h-[20px]" },
+                        "condition": { "var": ["screens.register.errors.form.confirmPassword"] },
+                        "children": [
+                          { "type": "Text", "props": { "className": "text-sm text-red-500 dark:text-red-400" }, "text": "{{errors.form.confirmPassword}}" }
                         ]
                       }
                     ]
@@ -225,7 +239,7 @@
                   {
                     "type": "Box",
                     "props": { "className": "text-sm text-red-500" },
-                    "condition": { "and": [{ "var": ["_workflow.lastError"] }, { "!=": [{ "var": ["_workflow.lastError"] }, ""] }] },
+                    "condition": { "and": [{ "==": [{ "var": ["_workflow.lastAction"] }, "registerMutation"] }, { "var": ["_workflow.lastError"] }] },
                     "children": [{ "type": "Text", "text": "{{_workflow.lastError}}" }]
                   },
                   {
@@ -235,19 +249,19 @@
                     "actions": { "click": { "action": "register" } }
                   }
                 ]
-              },
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "px-6 mt-6 flex flex-row items-center justify-center" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-gray-500 text-sm text-center dark:text-gray-400" }, "text": "Already have an account? " },
               {
-                "type": "Box",
-                "props": { "className": "px-6 mt-6 flex flex-row items-center justify-center" },
+                "type": "Pressable",
+                "actions": { "click": { "action": "navigate", "payload": { "path": "/sign-in" } } },
                 "children": [
-                  { "type": "Text", "props": { "className": "text-gray-500 text-sm text-center dark:text-gray-400" }, "text": "Already have an account? " },
-                  {
-                    "type": "Pressable",
-                    "actions": { "click": { "action": "navigate", "payload": { "path": "/sign-in" } } },
-                    "children": [
-                      { "type": "Text", "props": { "className": "text-sm text-[#1e293b] underline hover:text-[#334155] text-center dark:text-gray-200 dark:hover:text-gray-100" }, "text": "Sign in" }
-                    ]
-                  }
+                  { "type": "Text", "props": { "className": "text-sm text-[#1e293b] underline hover:text-[#334155] text-center dark:text-gray-200 dark:hover:text-gray-100" }, "text": "Sign in" }
                 ]
               }
             ]

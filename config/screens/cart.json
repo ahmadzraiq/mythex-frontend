@@ -428,7 +428,7 @@
                             "actions": {
                               "change": {
                                 "action": "setState",
-                                "payload": { "path": "form.couponCode", "value": "$event" }
+                                "payload": { "path": "screens.cart.form.couponCode", "value": "$event" }
                               }
                             }
                           }

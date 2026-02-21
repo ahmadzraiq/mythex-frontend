@@ -61,16 +61,6 @@ export type SDUIComponentType =
   | 'MenuItem'
   | 'MenuItemLabel'
   | 'MenuSeparator'
-  | 'Form'
-  | 'FormInputWithLabel'
-  | 'FormSubmitButton'
-  | 'FormControl'
-  | 'FormControlLabel'
-  | 'FormControlLabelText'
-  | 'FormControlError'
-  | 'FormControlErrorText'
-  | 'FormControlHelper'
-  | 'FormControlHelperText'
   | 'Checkbox'
   | 'CheckboxIndicator'
   | 'CheckboxIcon'
@@ -201,14 +191,6 @@ export interface SDUIAction {
   payload?: SetStatePayload | FetchPayload | NavigatePayload | Record<string, unknown>;
 }
 
-/** Validation rule for form fields */
-export interface SDUIValidationRule {
-  required?: boolean;
-  minLength?: number;
-  maxLength?: number;
-  pattern?: string;
-}
-
 /** Single UI node in the JSON tree */
 export interface SDUINode {
   type: SDUIComponentType;
@@ -225,8 +207,6 @@ export interface SDUINode {
   actions?: Record<string, SDUIAction | SDUIAction[]>;
   /** Data source - fetch on mount when this node is rendered */
   dataSource?: SDUIDataSource;
-  /** Validation rules for form fields - keyed by field path */
-  validation?: Record<string, SDUIValidationRule>;
 }
 
 /** Full screen/page configuration */

@@ -62,15 +62,15 @@
               "children": [
 
                 {
-                  "type": "Form",
-                  "props": { "submitAction": "navigateToSearch", "defaultValues": {} },
+                  "type": "Box",
+                  "props": { "className": "hidden lg:flex" },
                   "children": [
                     {
                       "type": "Input",
                       "props": {
                         "variant": "outline",
                         "size": "sm",
-                        "className": "hidden lg:flex w-64 !rounded-md !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900"
+                        "className": "w-64 !rounded-md !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900"
                       },
                       "children": [
                         {

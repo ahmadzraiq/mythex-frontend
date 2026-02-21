@@ -44,12 +44,15 @@
       "cartDrawerOpen": false
     },
     "checkout": {
-      "step": 0,
+      "step": "contact",
+      "contactCompleted": false,
+      "order": null,
       "shippingMethods": [],
       "paymentMethods": [],
       "countries": [],
       "selectedShippingMethodId": null,
-      "selectedPaymentMethodCode": null
+      "selectedPaymentMethodCode": null,
+      "useSameForBilling": true
     },
     "_workflow": {
       "lastAction": null,
@@ -75,7 +78,6 @@
       "form",
       "errors"
     ],
-    "defaultFormPath": "form",
     "graphqlEndpoint": "http://localhost:3000/shop-api",
     "graphqlHeaders": {
       "vendure-token": "__default_channel__"

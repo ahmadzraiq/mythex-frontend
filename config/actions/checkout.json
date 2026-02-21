@@ -35,11 +35,8 @@
   "setShippingAddress": {
     "type": "validate",
     "rules": {
-      "form.fullName": { "required": true, "message": "Full name required" },
-      "form.streetLine1": { "required": true, "message": "Street address required" },
-      "form.city": { "required": true, "message": "City required" },
-      "form.postalCode": { "required": true, "message": "Postal code required" },
-      "form.countryCode": { "required": true, "message": "Country required" }
+      "form.streetLine1": { "required": true, "message": "Street address is required" },
+      "form.countryCode": { "required": true, "message": "Country is required" }
     },
     "storeErrorsIn": "errors",
     "onSuccess": { "action": "setShippingAddressMutation" }
@@ -49,12 +46,13 @@
     "query": "mutation SetOrderShippingAddress($input: CreateAddressInput!) { setOrderShippingAddress(input: $input) { __typename ... on Order { id code shippingAddress { fullName streetLine1 city postalCode country } } ... on ErrorResult { errorCode message } } }",
     "variables": {
       "input": {
-        "fullName": { "var": "form.fullName" },
+        "fullName": { "var": ["form.fullName", ""] },
+        "company": { "var": ["form.company", ""] },
         "streetLine1": { "var": "form.streetLine1" },
         "streetLine2": { "var": ["form.streetLine2", ""] },
-        "city": { "var": "form.city" },
+        "city": { "var": ["form.city", ""] },
         "province": { "var": ["form.province", ""] },
-        "postalCode": { "var": "form.postalCode" },
+        "postalCode": { "var": ["form.postalCode", ""] },
         "countryCode": { "var": "form.countryCode" },
         "phoneNumber": { "var": ["form.phoneNumber", ""] }
       }
@@ -65,11 +63,41 @@
     "storeIn": "checkout._shippingAddressResult",
     "responsePath": "data.setOrderShippingAddress",
     "onSuccess": [
+      { "action": "fetchCheckoutOrder" },
       { "action": "fetchShippingMethods" },
-      { "type": "set", "path": "checkout.step", "value": 2 }
+      { "condition": { "var": "checkout.useSameForBilling" }, "action": "setOrderBillingAddressMutation" },
+      { "type": "set", "path": "checkout.step", "value": "delivery" }
     ]
   },
+  "setOrderBillingAddressMutation": {
+    "type": "graphql",
+    "query": "mutation SetOrderBillingAddress($input: CreateAddressInput!) { setOrderBillingAddress(input: $input) { __typename ... on Order { id code billingAddress { fullName streetLine1 city postalCode country } } ... on ErrorResult { errorCode message } } }",
+    "variables": {
+      "input": {
+        "fullName": { "var": ["form.fullName", ""] },
+        "company": { "var": ["form.company", ""] },
+        "streetLine1": { "var": "form.streetLine1" },
+        "streetLine2": { "var": ["form.streetLine2", ""] },
+        "city": { "var": ["form.city", ""] },
+        "province": { "var": ["form.province", ""] },
+        "postalCode": { "var": ["form.postalCode", ""] },
+        "countryCode": { "var": "form.countryCode" },
+        "phoneNumber": { "var": ["form.phoneNumber", ""] }
+      }
+    },
+    "headers": {
+      "Authorization": { "var": ["auth.token", ""] }
+    },
+    "storeIn": "checkout._billingAddressResult",
+    "responsePath": "data.setOrderBillingAddress"
+  },
   "setShippingMethod": {
+    "type": "validate",
+    "rules": { "checkout.selectedShippingMethodId": { "required": true, "message": "Please select a shipping method" } },
+    "storeErrorsIn": "errors",
+    "onSuccess": { "action": "setShippingMethodMutation" }
+  },
+  "setShippingMethodMutation": {
     "type": "graphql",
     "query": "mutation SetOrderShippingMethod($shippingMethodId: [ID!]!) { setOrderShippingMethod(shippingMethodId: $shippingMethodId) { __typename ... on Order { id code shippingWithTax totalWithTax shippingLines { shippingMethod { id name description } priceWithTax } } ... on ErrorResult { errorCode message } } }",
     "variables": {
@@ -81,9 +109,16 @@
     "storeIn": "checkout._shippingMethodResult",
     "responsePath": "data.setOrderShippingMethod",
     "onSuccess": [
+      { "action": "fetchCheckoutOrder" },
       { "action": "fetchPaymentMethods" },
-      { "type": "set", "path": "checkout.step", "value": 3 }
+      { "type": "set", "path": "checkout.step", "value": "payment" }
     ]
+  },
+  "placeOrder": {
+    "type": "validate",
+    "rules": { "checkout.selectedPaymentMethodCode": { "required": true, "message": "Please select a payment method" } },
+    "storeErrorsIn": "errors",
+    "onSuccess": { "action": "transitionToArrangingPayment" }
   },
   "transitionToArrangingPayment": {
     "type": "graphql",

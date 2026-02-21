@@ -108,6 +108,7 @@ When asked to build or add screens, layouts, modals, or features to this website
 4. **Actions** go in `config/actions/` (auth, products, layout, other). Use `type: "fetch"`, `type: "graphql"`, `type: "set"`, `type: "appendToPath"`, `type: "validate"`, etc. per schema.
    - **fetch**: REST calls; supports `url`, `method`, `body`, `storeIn`, `responsePath`, `errorMessagePath`, `storeFullResponseIn`, `onSuccess`
    - **graphql**: GraphQL queries/mutations; supports `query`, `variables` (JSON Logic-resolvable), `endpoint` (falls back to `engineConventions.graphqlEndpoint`), `headers` (merged on top of `engineConventions.graphqlHeaders`), `responsePath`, `storeIn`, `storeFullResponseIn`, `onSuccess`. Handles both HTTP errors and `response.errors`. No API routes needed—calls external GraphQL endpoint directly.
+   - **validate**: Form validation before mutation. Use `rules` (required, minLength, pattern, equalsField), `storeErrorsIn: "errors"`, `onSuccess` for the mutation. **Form validation with per-field errors:** See `sdui-layout-pitfalls.mdc` → "Form Validation with Per-Field Errors".
 
 5. **Never hardcode** layout or shared UI in React—define everything in JSON config.
 

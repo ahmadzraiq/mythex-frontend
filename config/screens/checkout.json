@@ -2,10 +2,9 @@
   "meta": { "title": "Checkout" },
   "state": {
     "checkout": { "step": "contact" },
-    "completedSteps": [],
     "form": {
       "emailAddress": "", "firstName": "", "lastName": "",
-      "fullName": "", "streetLine1": "", "streetLine2": "",
+      "fullName": "", "company": "", "streetLine1": "", "streetLine2": "",
       "city": "", "province": "", "postalCode": "", "countryCode": "", "phoneNumber": ""
     },
     "errors": {}
@@ -35,27 +34,31 @@
                 "children": [
                   {
                     "type": "Pressable",
-                    "props": { "className": "flex items-center gap-3 w-full py-4" },
+                    "props": { "className": "flex flex-row items-center justify-between w-full py-4" },
                     "actions": { "click": { "type": "set", "path": "checkout.step", "value": "contact" } },
                     "children": [
                       {
                         "type": "Box",
-                        "props": {
-                          "className": {
-                            "expr": {
-                              "cat": [
-                                "flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ",
-                                { "if": [{ "in": ["contact", { "var": "completedSteps" }] }, "bg-green-500 text-white",
-                                  { "if": [{ "==": [{ "var": "checkout.step" }, "contact"] }, "bg-[#1e293b] text-white", "bg-gray-100 text-gray-500"] }] }
-                              ]
-                            }
-                          }
-                        },
+                        "props": { "className": "flex flex-row items-center gap-3 flex-1" },
                         "children": [
-                          { "type": "Text", "text": { "expr": { "if": [{ "in": ["contact", { "var": "completedSteps" }] }, "✓", "1"] } } }
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": { "expr": { "cat": ["flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ", { "if": [{ "var": "checkout.contactCompleted" }, "bg-green-500 !text-white", { "if": [{ "==": [{ "var": "checkout.step" }, "contact"] }, "bg-[#1e293b] !text-white", "bg-gray-100 !text-gray-500"] }] }] } }
+                            },
+                            "children": [
+                              { "type": "NavIcon", "props": { "icon": "Check", "size": 16, "className": "!text-white" }, "condition": { "var": "checkout.contactCompleted" } },
+                              { "type": "Text", "props": { "className": "font-semibold text-sm !text-white" }, "text": "1", "condition": { "and": [{ "!": [{ "var": "checkout.contactCompleted" }] }, { "==": [{ "var": "checkout.step" }, "contact"] }] } },
+                              { "type": "Text", "props": { "className": "font-semibold text-sm !text-gray-500" }, "text": "1", "condition": { "and": [{ "!": [{ "var": "checkout.contactCompleted" }] }, { "!=": [{ "var": "checkout.step" }, "contact"] }] } }
+                            ]
+                          },
+                          { "type": "Text", "props": { "className": "text-lg font-semibold" }, "text": "Contact Information" }
                         ]
                       },
-                      { "type": "Text", "props": { "className": "text-lg font-semibold" }, "text": "Contact Information" }
+                      { "type": "Box", "props": { "className": "ml-auto shrink-0" }, "children": [
+                        { "type": "NavIcon", "props": { "icon": "ChevronUp", "size": 16, "className": "!text-gray-500" }, "condition": { "==": [{ "var": "checkout.step" }, "contact"] } },
+                        { "type": "NavIcon", "props": { "icon": "ChevronDown", "size": 16, "className": "!text-gray-500" }, "condition": { "!=": [{ "var": "checkout.step" }, "contact"] } }
+                      ] }
                     ]
                   },
                   {
@@ -69,33 +72,13 @@
                         "children": [
                           {
                             "type": "Box",
-                            "props": { "className": "grid grid-cols-2 gap-4" },
+                            "props": { "className": "flex flex-row items-center gap-1 text-sm" },
                             "children": [
+                              { "type": "Text", "props": { "className": "text-gray-600" }, "text": "Already have an account? " },
                               {
-                                "type": "Box",
-                                "props": { "className": "space-y-2" },
-                                "children": [
-                                  { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "First name" },
-                                  {
-                                    "type": "Input",
-                                    "children": [
-                                      { "type": "InputField", "props": { "placeholder": "Jane", "value": "{{form.firstName}}" }, "actions": { "change": { "action": "setState", "payload": { "path": "form.firstName", "value": "$event" } } } }
-                                    ]
-                                  }
-                                ]
-                              },
-                              {
-                                "type": "Box",
-                                "props": { "className": "space-y-2" },
-                                "children": [
-                                  { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Last name" },
-                                  {
-                                    "type": "Input",
-                                    "children": [
-                                      { "type": "InputField", "props": { "placeholder": "Doe", "value": "{{form.lastName}}" }, "actions": { "change": { "action": "setState", "payload": { "path": "form.lastName", "value": "$event" } } } }
-                                    ]
-                                  }
-                                ]
+                                "type": "Link",
+                                "props": { "href": "/sign-in", "className": "text-blue-600 hover:underline font-medium" },
+                                "children": [{ "type": "LinkText", "text": "Sign in" }]
                               }
                             ]
                           },
@@ -103,11 +86,46 @@
                             "type": "Box",
                             "props": { "className": "space-y-2" },
                             "children": [
-                              { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Email" },
+                              { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Email Address *" },
                               {
                                 "type": "Input",
                                 "children": [
-                                  { "type": "InputField", "props": { "type": "email", "placeholder": "you@example.com", "value": "{{form.emailAddress}}" }, "actions": { "change": { "action": "setState", "payload": { "path": "form.emailAddress", "value": "$event" } } } }
+                                  { "type": "InputField", "props": { "type": "email", "placeholder": "you@example.com", "value": "{{form.emailAddress}}" }, "actions": { "change": { "type": "runMultiple", "actions": [{ "action": "setState", "payload": { "path": "screens.checkout.form.emailAddress", "value": "$event" } }, { "action": "setState", "payload": { "path": "screens.checkout.errors.form.emailAddress", "value": "" } }] } } }
+                                ]
+                              },
+                              { "type": "Box", "props": { "className": "min-h-[20px]" }, "condition": { "var": ["screens.checkout.errors.form.emailAddress"] }, "children": [{ "type": "Text", "props": { "className": "text-sm text-red-500 dark:text-red-400" }, "text": "{{errors.form.emailAddress}}" }] }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": { "className": "grid grid-cols-2 gap-4" },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "props": { "className": "space-y-2" },
+                                "children": [
+                                  { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "First Name *" },
+                                  {
+                                    "type": "Input",
+                                    "children": [
+                                      { "type": "InputField", "props": { "placeholder": "Jane", "value": "{{form.firstName}}" }, "actions": { "change": { "type": "runMultiple", "actions": [{ "action": "setState", "payload": { "path": "screens.checkout.form.firstName", "value": "$event" } }, { "action": "setState", "payload": { "path": "screens.checkout.errors.form.firstName", "value": "" } }] } } }
+                                    ]
+                                  },
+                                  { "type": "Box", "props": { "className": "min-h-[20px]" }, "condition": { "var": ["screens.checkout.errors.form.firstName"] }, "children": [{ "type": "Text", "props": { "className": "text-sm text-red-500 dark:text-red-400" }, "text": "{{errors.form.firstName}}" }] }
+                                ]
+                              },
+                              {
+                                "type": "Box",
+                                "props": { "className": "space-y-2" },
+                                "children": [
+                                  { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Last Name *" },
+                                  {
+                                    "type": "Input",
+                                    "children": [
+                                      { "type": "InputField", "props": { "placeholder": "Doe", "value": "{{form.lastName}}" }, "actions": { "change": { "type": "runMultiple", "actions": [{ "action": "setState", "payload": { "path": "screens.checkout.form.lastName", "value": "$event" } }, { "action": "setState", "payload": { "path": "screens.checkout.errors.form.lastName", "value": "" } }] } } }
+                                    ]
+                                  },
+                                  { "type": "Box", "props": { "className": "min-h-[20px]" }, "condition": { "var": ["screens.checkout.errors.form.lastName"] }, "children": [{ "type": "Text", "props": { "className": "text-sm text-red-500 dark:text-red-400" }, "text": "{{errors.form.lastName}}" }] }
                                 ]
                               }
                             ]
@@ -130,17 +148,33 @@
                 "children": [
                   {
                     "type": "Pressable",
-                    "props": { "className": "flex items-center gap-3 w-full py-4" },
+                    "props": {
+                      "className": { "expr": { "cat": ["flex flex-row items-center justify-between w-full py-4 ", { "if": [{ "or": [{ "var": "auth.user" }, { "var": "checkout.contactCompleted" }] }, "", "opacity-50 pointer-events-none cursor-not-allowed"] }] } }
+                    },
                     "actions": { "click": { "type": "set", "path": "checkout.step", "value": "shipping" } },
                     "children": [
                       {
                         "type": "Box",
-                        "props": {
-                          "className": { "expr": { "cat": ["flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ", { "if": [{ "in": ["shipping", { "var": "completedSteps" }] }, "bg-green-500 text-white", { "if": [{ "==": [{ "var": "checkout.step" }, "shipping"] }, "bg-[#1e293b] text-white", "bg-gray-100 text-gray-500"] }] }] } }
-                        },
-                        "children": [{ "type": "Text", "text": { "expr": { "if": [{ "in": ["shipping", { "var": "completedSteps" }] }, "✓", "2"] } } }]
+                        "props": { "className": "flex flex-row items-center gap-3 flex-1 min-w-0" },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": { "expr": { "cat": ["flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ", { "if": [{ "var": ["checkout.order.shippingAddress.streetLine1"] }, "bg-green-500 !text-white", { "if": [{ "==": [{ "var": "checkout.step" }, "shipping"] }, "bg-[#1e293b] !text-white", "bg-gray-100 !text-gray-500"] }] }] } }
+                            },
+                            "children": [
+                              { "type": "NavIcon", "props": { "icon": "Check", "size": 16, "className": "!text-white" }, "condition": { "var": ["checkout.order.shippingAddress.streetLine1"] } },
+                              { "type": "Text", "props": { "className": "font-semibold text-sm !text-white" }, "text": "2", "condition": { "and": [{ "!": [{ "var": ["checkout.order.shippingAddress.streetLine1"] }] }, { "==": [{ "var": "checkout.step" }, "shipping"] }] } },
+                              { "type": "Text", "props": { "className": "font-semibold text-sm !text-gray-500" }, "text": "2", "condition": { "and": [{ "!": [{ "var": ["checkout.order.shippingAddress.streetLine1"] }] }, { "!=": [{ "var": "checkout.step" }, "shipping"] }] } }
+                            ]
+                          },
+                          { "type": "Text", "props": { "className": "text-lg font-semibold" }, "text": "Shipping Address" }
+                        ]
                       },
-                      { "type": "Text", "props": { "className": "text-lg font-semibold" }, "text": "Shipping Address" }
+                      { "type": "Box", "props": { "className": "ml-auto shrink-0" }, "children": [
+                        { "type": "NavIcon", "props": { "icon": "ChevronUp", "size": 16, "className": "!text-gray-500" }, "condition": { "==": [{ "var": "checkout.step" }, "shipping"] } },
+                        { "type": "NavIcon", "props": { "icon": "ChevronDown", "size": 16, "className": "!text-gray-500" }, "condition": { "!=": [{ "var": "checkout.step" }, "shipping"] } }
+                      ] }
                     ]
                   },
                   {
@@ -157,15 +191,32 @@
                             "props": { "className": "space-y-2" },
                             "children": [
                               { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Full name" },
-                              { "type": "Input", "children": [{ "type": "InputField", "props": { "placeholder": "Jane Doe", "value": "{{form.fullName}}" }, "actions": { "change": { "action": "setState", "payload": { "path": "form.fullName", "value": "$event" } } } }] }
+                              { "type": "Input", "children": [{ "type": "InputField", "props": { "placeholder": "Jane Doe", "value": "{{form.fullName}}" }, "actions": { "change": { "action": "setState", "payload": { "path": "screens.checkout.form.fullName", "value": "$event" } } } }] }
                             ]
                           },
                           {
                             "type": "Box",
                             "props": { "className": "space-y-2" },
                             "children": [
-                              { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Street address" },
-                              { "type": "Input", "children": [{ "type": "InputField", "props": { "placeholder": "123 Main St", "value": "{{form.streetLine1}}" }, "actions": { "change": { "action": "setState", "payload": { "path": "form.streetLine1", "value": "$event" } } } }] }
+                              { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Company" },
+                              { "type": "Input", "children": [{ "type": "InputField", "props": { "placeholder": "Acme Inc", "value": "{{form.company}}" }, "actions": { "change": { "action": "setState", "payload": { "path": "screens.checkout.form.company", "value": "$event" } } } }] }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": { "className": "space-y-2" },
+                            "children": [
+                              { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Street address *" },
+                              { "type": "Input", "children": [{ "type": "InputField", "props": { "placeholder": "123 Main St", "value": "{{form.streetLine1}}" }, "actions": { "change": { "type": "runMultiple", "actions": [{ "action": "setState", "payload": { "path": "screens.checkout.form.streetLine1", "value": "$event" } }, { "action": "setState", "payload": { "path": "screens.checkout.errors.form.streetLine1", "value": "" } }] } } }] },
+                              { "type": "Box", "props": { "className": "min-h-[20px]" }, "condition": { "var": ["screens.checkout.errors.form.streetLine1"] }, "children": [{ "type": "Text", "props": { "className": "text-sm text-red-500 dark:text-red-400" }, "text": "{{errors.form.streetLine1}}" }] }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": { "className": "space-y-2" },
+                            "children": [
+                              { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Apartment, suite, etc." },
+                              { "type": "Input", "children": [{ "type": "InputField", "props": { "placeholder": "Apt 4", "value": "{{form.streetLine2}}" }, "actions": { "change": { "action": "setState", "payload": { "path": "screens.checkout.form.streetLine2", "value": "$event" } } } }] }
                             ]
                           },
                           {
@@ -177,7 +228,7 @@
                                 "props": { "className": "space-y-2" },
                                 "children": [
                                   { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "City" },
-                                  { "type": "Input", "children": [{ "type": "InputField", "props": { "placeholder": "New York", "value": "{{form.city}}" }, "actions": { "change": { "action": "setState", "payload": { "path": "form.city", "value": "$event" } } } }] }
+                                  { "type": "Input", "children": [{ "type": "InputField", "props": { "placeholder": "New York", "value": "{{form.city}}" }, "actions": { "change": { "action": "setState", "payload": { "path": "screens.checkout.form.city", "value": "$event" } } } }] }
                                 ]
                               },
                               {
@@ -185,7 +236,7 @@
                                 "props": { "className": "space-y-2" },
                                 "children": [
                                   { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Postal code" },
-                                  { "type": "Input", "children": [{ "type": "InputField", "props": { "placeholder": "10001", "value": "{{form.postalCode}}" }, "actions": { "change": { "action": "setState", "payload": { "path": "form.postalCode", "value": "$event" } } } }] }
+                                  { "type": "Input", "children": [{ "type": "InputField", "props": { "placeholder": "10001", "value": "{{form.postalCode}}" }, "actions": { "change": { "action": "setState", "payload": { "path": "screens.checkout.form.postalCode", "value": "$event" } } } }] }
                                 ]
                               }
                             ]
@@ -194,8 +245,39 @@
                             "type": "Box",
                             "props": { "className": "space-y-2" },
                             "children": [
-                              { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Country code" },
-                              { "type": "Input", "children": [{ "type": "InputField", "props": { "placeholder": "US", "value": "{{form.countryCode}}" }, "actions": { "change": { "action": "setState", "payload": { "path": "form.countryCode", "value": "$event" } } } }] }
+                              { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Country code *" },
+                              { "type": "Input", "children": [{ "type": "InputField", "props": { "placeholder": "US", "value": "{{form.countryCode}}" }, "actions": { "change": { "type": "runMultiple", "actions": [{ "action": "setState", "payload": { "path": "screens.checkout.form.countryCode", "value": "$event" } }, { "action": "setState", "payload": { "path": "screens.checkout.errors.form.countryCode", "value": "" } }] } } }] },
+                              { "type": "Box", "props": { "className": "min-h-[20px]" }, "condition": { "var": ["screens.checkout.errors.form.countryCode"] }, "children": [{ "type": "Text", "props": { "className": "text-sm text-red-500 dark:text-red-400" }, "text": "{{errors.form.countryCode}}" }] }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": { "className": "space-y-2" },
+                            "children": [
+                              { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Phone number" },
+                              { "type": "Input", "children": [{ "type": "InputField", "props": { "type": "tel", "placeholder": "+1 234 567 8900", "value": "{{form.phoneNumber}}" }, "actions": { "change": { "action": "setState", "payload": { "path": "screens.checkout.form.phoneNumber", "value": "$event" } } } }] }
+                            ]
+                          },
+                          {
+                            "type": "Pressable",
+                            "props": { "className": "flex flex-row items-center gap-2 py-2" },
+                            "actions": { "click": { "type": "toggle", "path": "checkout.useSameForBilling" } },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "props": {
+                                  "className": { "expr": { "cat": ["w-4 h-4 rounded border flex items-center justify-center ", { "if": [{ "var": "checkout.useSameForBilling" }, "bg-[#1e293b] border-[#1e293b]", "border-gray-300"] }] } }
+                                },
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": { "className": "text-white text-xs font-bold" },
+                                    "condition": { "var": "checkout.useSameForBilling" },
+                                    "text": "✓"
+                                  }
+                                ]
+                              },
+                              { "type": "Text", "props": { "className": "text-sm" }, "text": "Use same address for billing" }
                             ]
                           },
                           {
@@ -216,17 +298,33 @@
                 "children": [
                   {
                     "type": "Pressable",
-                    "props": { "className": "flex items-center gap-3 w-full py-4" },
+                    "props": {
+                      "className": { "expr": { "cat": ["flex flex-row items-center justify-between w-full py-4 ", { "if": [{ "and": [{ "!=": [{ "var": "checkout.step" }, "contact"] }, { "!=": [{ "var": "checkout.step" }, "shipping"] }, { "var": ["checkout.order.shippingAddress.streetLine1"] }] }, "", "opacity-50 pointer-events-none cursor-not-allowed"] }] } }
+                    },
                     "actions": { "click": { "type": "set", "path": "checkout.step", "value": "delivery" } },
                     "children": [
                       {
                         "type": "Box",
-                        "props": {
-                          "className": { "expr": { "cat": ["flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ", { "if": [{ "in": ["delivery", { "var": "completedSteps" }] }, "bg-green-500 text-white", { "if": [{ "==": [{ "var": "checkout.step" }, "delivery"] }, "bg-[#1e293b] text-white", "bg-gray-100 text-gray-500"] }] }] } }
-                        },
-                        "children": [{ "type": "Text", "text": { "expr": { "if": [{ "in": ["delivery", { "var": "completedSteps" }] }, "✓", "3"] } } }]
+                        "props": { "className": "flex flex-row items-center gap-3 flex-1 min-w-0" },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": { "expr": { "cat": ["flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ", { "if": [{ ">": [{ "var": ["checkout.order.shippingLines.length", 0] }, 0] }, "bg-green-500 !text-white", { "if": [{ "==": [{ "var": "checkout.step" }, "delivery"] }, "bg-[#1e293b] !text-white", "bg-gray-100 !text-gray-500"] }] }] } }
+                            },
+                            "children": [
+                              { "type": "NavIcon", "props": { "icon": "Check", "size": 16, "className": "!text-white" }, "condition": { ">": [{ "var": ["checkout.order.shippingLines.length", 0] }, 0] } },
+                              { "type": "Text", "props": { "className": "font-semibold text-sm !text-white" }, "text": "3", "condition": { "and": [{ "<=": [{ "var": ["checkout.order.shippingLines.length", 0] }, 0] }, { "==": [{ "var": "checkout.step" }, "delivery"] }] } },
+                              { "type": "Text", "props": { "className": "font-semibold text-sm !text-gray-500" }, "text": "3", "condition": { "and": [{ "<=": [{ "var": ["checkout.order.shippingLines.length", 0] }, 0] }, { "!=": [{ "var": "checkout.step" }, "delivery"] }] } }
+                            ]
+                          },
+                          { "type": "Text", "props": { "className": "text-lg font-semibold" }, "text": "Delivery Method" }
+                        ]
                       },
-                      { "type": "Text", "props": { "className": "text-lg font-semibold" }, "text": "Delivery Method" }
+                      { "type": "Box", "props": { "className": "ml-auto shrink-0" }, "children": [
+                        { "type": "NavIcon", "props": { "icon": "ChevronUp", "size": 16, "className": "!text-gray-500" }, "condition": { "==": [{ "var": "checkout.step" }, "delivery"] } },
+                        { "type": "NavIcon", "props": { "icon": "ChevronDown", "size": 16, "className": "!text-gray-500" }, "condition": { "!=": [{ "var": "checkout.step" }, "delivery"] } }
+                      ] }
                     ]
                   },
                   {
@@ -242,21 +340,36 @@
                         "children": [
                           {
                             "type": "Pressable",
-                            "props": { "className": "flex items-center justify-between p-4 border rounded-lg hover:border-primary transition-colors" },
-                            "actions": { "click": { "type": "set", "path": "checkout.selectedShippingMethodId", "value": { "var": "$item.id" } } },
+                            "props": {
+                              "className": {
+                                "expr": {
+                                  "cat": [
+                                    "flex flex-row items-center justify-between p-4 border-2 rounded-lg w-full cursor-pointer transition-colors ",
+                                    { "if": [{ "==": [{ "var": "checkout.selectedShippingMethodId" }, { "var": "$item.id" }] }, "border-[#1e293b] bg-slate-50 dark:bg-slate-800/50", "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"] }
+                                  ]
+                                }
+                              }
+                            },
+                            "actions": { "click": { "type": "runMultiple", "actions": [{ "type": "set", "path": "checkout.selectedShippingMethodId", "value": { "var": "$item.id" } }, { "action": "setState", "payload": { "path": "screens.checkout.errors.checkout.selectedShippingMethodId", "value": "" } }] } },
                             "children": [
                               {
                                 "type": "VStack",
-                                "props": { "className": "gap-0.5 text-left" },
+                                "props": { "className": "gap-0.5 text-left flex-1 min-w-0" },
                                 "children": [
-                                  { "type": "Text", "props": { "className": "font-medium text-sm" }, "text": "{{$item.name}}" },
-                                  { "type": "Text", "props": { "className": "text-xs text-gray-500" }, "text": "{{$item.description}}" }
+                                  { "type": "Text", "props": { "className": "font-medium text-sm text-gray-900 dark:text-gray-100" }, "text": "{{$item.name}}" },
+                                  { "type": "Text", "props": { "className": "text-xs text-gray-500 dark:text-gray-400" }, "text": "{{$item.description}}" }
                                 ]
                               },
-                              { "type": "Text", "props": { "className": "font-semibold text-sm" }, "text": { "expr": { "formatCurrency": [{ "/": [{ "var": "$item.priceWithTax" }, 100] }, "USD"] } } }
+                              { "type": "Text", "props": { "className": "font-semibold text-sm text-gray-900 dark:text-gray-100 shrink-0 ml-3" }, "text": { "expr": { "formatCurrency": [{ "/": [{ "var": "$item.priceWithTax" }, 100] }, "USD"] } } }
                             ]
                           }
                         ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "min-h-[20px]" },
+                        "condition": { "var": ["screens.checkout.errors.checkout.selectedShippingMethodId"] },
+                        "children": [{ "type": "Text", "props": { "className": "text-sm text-red-500 dark:text-red-400" }, "text": "{{errors.checkout.selectedShippingMethodId}}" }]
                       },
                       {
                         "type": "Button",
@@ -274,17 +387,33 @@
                 "children": [
                   {
                     "type": "Pressable",
-                    "props": { "className": "flex items-center gap-3 w-full py-4" },
+                    "props": {
+                      "className": { "expr": { "cat": ["flex flex-row items-center justify-between w-full py-4 ", { "if": [{ "and": [{ "!=": [{ "var": "checkout.step" }, "contact"] }, { "!=": [{ "var": "checkout.step" }, "shipping"] }, { "!=": [{ "var": "checkout.step" }, "delivery"] }, { ">": [{ "var": ["checkout.order.shippingLines.length", 0] }, 0] }] }, "", "opacity-50 pointer-events-none cursor-not-allowed"] }] } }
+                    },
                     "actions": { "click": { "type": "set", "path": "checkout.step", "value": "payment" } },
                     "children": [
                       {
                         "type": "Box",
-                        "props": {
-                          "className": { "expr": { "cat": ["flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ", { "if": [{ "in": ["payment", { "var": "completedSteps" }] }, "bg-green-500 text-white", { "if": [{ "==": [{ "var": "checkout.step" }, "payment"] }, "bg-[#1e293b] text-white", "bg-gray-100 text-gray-500"] }] }] } }
-                        },
-                        "children": [{ "type": "Text", "text": { "expr": { "if": [{ "in": ["payment", { "var": "completedSteps" }] }, "✓", "4"] } } }]
+                        "props": { "className": "flex flex-row items-center gap-3 flex-1 min-w-0" },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": { "expr": { "cat": ["flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ", { "if": [{ "var": ["checkout.selectedPaymentMethodCode"] }, "bg-green-500 !text-white", { "if": [{ "==": [{ "var": "checkout.step" }, "payment"] }, "bg-[#1e293b] !text-white", "bg-gray-100 !text-gray-500"] }] }] } }
+                            },
+                            "children": [
+                              { "type": "NavIcon", "props": { "icon": "Check", "size": 16, "className": "!text-white" }, "condition": { "var": ["checkout.selectedPaymentMethodCode"] } },
+                              { "type": "Text", "props": { "className": "font-semibold text-sm !text-white" }, "text": "4", "condition": { "and": [{ "!": [{ "var": ["checkout.selectedPaymentMethodCode"] }] }, { "==": [{ "var": "checkout.step" }, "payment"] }] } },
+                              { "type": "Text", "props": { "className": "font-semibold text-sm !text-gray-500" }, "text": "4", "condition": { "and": [{ "!": [{ "var": ["checkout.selectedPaymentMethodCode"] }] }, { "!=": [{ "var": "checkout.step" }, "payment"] }] } }
+                            ]
+                          },
+                          { "type": "Text", "props": { "className": "text-lg font-semibold" }, "text": "Payment Method" }
+                        ]
                       },
-                      { "type": "Text", "props": { "className": "text-lg font-semibold" }, "text": "Payment Method" }
+                      { "type": "Box", "props": { "className": "ml-auto shrink-0" }, "children": [
+                        { "type": "NavIcon", "props": { "icon": "ChevronUp", "size": 16, "className": "!text-gray-500" }, "condition": { "==": [{ "var": "checkout.step" }, "payment"] } },
+                        { "type": "NavIcon", "props": { "icon": "ChevronDown", "size": 16, "className": "!text-gray-500" }, "condition": { "!=": [{ "var": "checkout.step" }, "payment"] } }
+                      ] }
                     ]
                   },
                   {
@@ -318,8 +447,175 @@
                       {
                         "type": "Button",
                         "props": { "className": "bg-[#1e293b] text-white hover:bg-[#334155] mt-2" },
+                        "children": [{ "type": "ButtonText", "props": { "className": "!text-white" }, "text": "Continue to review" }],
+                        "actions": { "click": { "type": "set", "path": "checkout.step", "value": "review" } }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "border rounded-lg px-6" },
+                "children": [
+                  {
+                    "type": "Pressable",
+                    "props": {
+                      "className": { "expr": { "cat": ["flex flex-row items-center justify-between w-full py-4 ", { "if": [{ "and": [{ "!=": [{ "var": "checkout.step" }, "contact"] }, { "!=": [{ "var": "checkout.step" }, "shipping"] }, { "!=": [{ "var": "checkout.step" }, "delivery"] }, { "!=": [{ "var": "checkout.step" }, "payment"] }, { "var": ["checkout.selectedPaymentMethodCode"] }] }, "", "opacity-50 pointer-events-none cursor-not-allowed"] }] } }
+                    },
+                    "actions": { "click": { "type": "set", "path": "checkout.step", "value": "review" } },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-row items-center gap-3 flex-1 min-w-0" },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": { "expr": { "cat": ["flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ", { "if": [{ "==": [{ "var": "checkout.step" }, "review"] }, "bg-[#1e293b] !text-white", "bg-gray-100 !text-gray-500"] }] } }
+                            },
+                            "children": [{ "type": "Text", "props": { "className": "font-semibold text-sm !text-white" }, "text": "5", "condition": { "==": [{ "var": "checkout.step" }, "review"] } },
+                            { "type": "Text", "props": { "className": "font-semibold text-sm !text-gray-500" }, "text": "5", "condition": { "!=": [{ "var": "checkout.step" }, "review"] } }]
+                          },
+                          { "type": "Text", "props": { "className": "text-lg font-semibold" }, "text": "Review & Place Order" }
+                        ]
+                      },
+                      { "type": "Box", "props": { "className": "ml-auto shrink-0" }, "children": [
+                        { "type": "NavIcon", "props": { "icon": "ChevronUp", "size": 16, "className": "!text-gray-500" }, "condition": { "==": [{ "var": "checkout.step" }, "review"] } },
+                        { "type": "NavIcon", "props": { "icon": "ChevronDown", "size": 16, "className": "!text-gray-500" }, "condition": { "!=": [{ "var": "checkout.step" }, "review"] } }
+                      ] }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "pb-6 space-y-6" },
+                    "condition": { "==": [{ "var": "checkout.step" }, "review"] },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "font-semibold text-lg" },
+                        "text": "Review your order"
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": { "className": "space-y-3" },
+                            "condition": { "==": [{ "var": "auth.user" }, null] },
+                            "children": [
+                              { "type": "Text", "props": { "className": "font-medium" }, "text": "Contact" },
+                              {
+                                "type": "Box",
+                                "props": { "className": "text-sm text-gray-500 space-y-1" },
+                                "condition": { "var": ["checkout.order.customer.emailAddress"] },
+                                "children": [
+                                  { "type": "Text", "text": { "expr": { "cat": [{ "var": ["checkout.order.customer.firstName", ""] }, " ", { "var": ["checkout.order.customer.lastName", ""] }] } } },
+                                  { "type": "Text", "text": { "expr": { "var": "checkout.order.customer.emailAddress" } } }
+                                ]
+                              },
+                              {
+                                "type": "Button",
+                                "props": { "size": "sm", "variant": "outline", "className": "!border-gray-300" },
+                                "children": [{ "type": "ButtonText", "text": "Edit" }],
+                                "actions": { "click": { "type": "set", "path": "checkout.step", "value": "contact" } }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": { "className": "space-y-3" },
+                            "children": [
+                              { "type": "Text", "props": { "className": "font-medium" }, "text": "Shipping Address" },
+                              {
+                                "type": "Box",
+                                "props": { "className": "text-sm text-gray-500 space-y-1" },
+                                "condition": { "var": ["checkout.order.shippingAddress.streetLine1"] },
+                                "children": [
+                                  { "type": "Text", "text": "{{checkout.order.shippingAddress.fullName}}" },
+                                  { "type": "Text", "text": "{{checkout.order.shippingAddress.streetLine1}}" },
+                                  { "type": "Text", "text": { "expr": { "cat": [{ "var": ["checkout.order.shippingAddress.city", ""] }, ", ", { "var": ["checkout.order.shippingAddress.province", ""] }, " ", { "var": ["checkout.order.shippingAddress.postalCode", ""] }] } } },
+                                  { "type": "Text", "text": "{{checkout.order.shippingAddress.country}}" }
+                                ]
+                              },
+                              {
+                                "type": "Button",
+                                "props": { "size": "sm", "variant": "outline", "className": "!border-gray-300" },
+                                "children": [{ "type": "ButtonText", "text": "Edit" }],
+                                "actions": { "click": { "type": "set", "path": "checkout.step", "value": "shipping" } }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": { "className": "space-y-3" },
+                            "children": [
+                              { "type": "Text", "props": { "className": "font-medium" }, "text": "Delivery" },
+                              {
+                                "type": "Box",
+                                "props": { "className": "text-sm text-gray-500" },
+                                "condition": { ">": [{ "var": ["checkout.order.shippingLines.length", 0] }, 0] },
+                                "children": [
+                                  { "type": "Text", "text": "{{checkout.order.shippingLines.0.shippingMethod.name}}" },
+                                  {
+                                    "type": "Text",
+                                    "text": { "expr": { "if": [{ "==": [{ "var": ["checkout.order.shippingLines.0.priceWithTax"] }, 0] }, "FREE", { "formatCurrency": [{ "/": [{ "var": ["checkout.order.shippingLines.0.priceWithTax"] }, 100] }, "USD"] }] } }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Button",
+                                "props": { "size": "sm", "variant": "outline", "className": "!border-gray-300" },
+                                "children": [{ "type": "ButtonText", "text": "Edit" }],
+                                "actions": { "click": { "type": "set", "path": "checkout.step", "value": "delivery" } }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": { "className": "space-y-3" },
+                            "children": [
+                              { "type": "Text", "props": { "className": "font-medium" }, "text": "Payment Method" },
+                              {
+                                "type": "Box",
+                                "props": { "className": "text-sm text-gray-500 space-y-1" },
+                                "condition": { "var": ["checkout.selectedPaymentMethodCode"] },
+                                "children": [
+                                  {
+                                    "type": "Box",
+                                    "props": { "className": "contents" },
+                                    "map": "checkout.paymentMethods",
+                                    "key": "pm",
+                                    "condition": { "==": [{ "var": "$item.code" }, { "var": "checkout.selectedPaymentMethodCode" }] },
+                                    "children": [
+                                      { "type": "Text", "props": { "className": "font-medium text-gray-900" }, "text": "{{$item.name}}" },
+                                      { "type": "Text", "condition": { "var": ["$item.description"] }, "text": "{{$item.description}}" }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Button",
+                                "props": { "size": "sm", "variant": "outline", "className": "!border-gray-300" },
+                                "children": [{ "type": "ButtonText", "text": "Edit" }],
+                                "actions": { "click": { "type": "set", "path": "checkout.step", "value": "payment" } }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "min-h-[20px]" },
+                        "condition": { "var": ["screens.checkout.errors.checkout.selectedPaymentMethodCode"] },
+                        "children": [{ "type": "Text", "props": { "className": "text-sm text-red-500 dark:text-red-400" }, "text": "{{errors.checkout.selectedPaymentMethodCode}}" }]
+                      },
+                      {
+                        "type": "Button",
+                        "props": { "className": "w-full bg-[#1e293b] text-white hover:bg-[#334155] !py-3" },
                         "children": [{ "type": "ButtonText", "props": { "className": "!text-white" }, "text": "Place Order" }],
-                        "actions": { "click": { "action": "transitionToArrangingPayment" } }
+                        "actions": { "click": { "action": "placeOrder" } }
                       }
                     ]
                   }
@@ -338,17 +634,37 @@
                   { "type": "Heading", "props": { "className": "text-lg font-bold" }, "text": "Order Summary" },
                   {
                     "type": "VStack",
-                    "props": { "className": "space-y-2 max-h-64 overflow-y-auto" },
+                    "props": { "className": "space-y-3 max-h-64 overflow-y-auto" },
                     "map": "checkout.order.lines",
                     "key": "checkoutLine",
                     "children": [
                       {
                         "type": "HStack",
-                        "props": { "className": "flex gap-2 text-sm" },
+                        "props": { "className": "flex gap-3 text-sm items-start" },
                         "children": [
-                          { "type": "Text", "props": { "className": "flex-1 truncate" }, "text": "{{$item.productVariant.product.name}}" },
-                          { "type": "Text", "props": { "className": "text-gray-500" }, "text": { "expr": { "var": "$item.quantity" }, "prefix": "×" } },
-                          { "type": "Text", "props": { "className": "font-medium" }, "text": { "expr": { "formatCurrency": [{ "/": [{ "var": "$item.linePriceWithTax" }, 100] }, "USD"] } } }
+                          {
+                            "type": "Box",
+                            "props": { "className": "flex-shrink-0 w-15 h-15 rounded overflow-hidden bg-gray-100" },
+                            "condition": { "var": ["$item.productVariant.product.featuredAsset.preview"] },
+                            "children": [
+                              { "type": "NextImage", "props": { "src": "{{$item.productVariant.product.featuredAsset.preview}}", "alt": "{{$item.productVariant.product.name}}", "width": 60, "height": 60, "className": "w-full h-full object-cover" } }
+                            ]
+                          },
+                          {
+                            "type": "VStack",
+                            "props": { "className": "flex-1 min-w-0 gap-0.5" },
+                            "children": [
+                              { "type": "Text", "props": { "className": "font-medium line-clamp-2" }, "text": "{{$item.productVariant.product.name}}" },
+                              {
+                                "type": "Text",
+                                "props": { "className": "text-xs text-gray-500" },
+                                "condition": { "!=": [{ "var": "$item.productVariant.name" }, { "var": "$item.productVariant.product.name" }] },
+                                "text": "{{$item.productVariant.name}}"
+                              },
+                              { "type": "Text", "props": { "className": "text-xs text-gray-500" }, "text": { "expr": { "var": "$item.quantity" }, "prefix": "Qty: " } }
+                            ]
+                          },
+                          { "type": "Text", "props": { "className": "font-medium flex-shrink-0" }, "text": { "expr": { "formatCurrency": [{ "/": [{ "var": "$item.linePriceWithTax" }, 100] }, { "var": ["checkout.order.currencyCode", "USD"] }] } } }
                         ]
                       }
                     ]
@@ -363,7 +679,24 @@
                         "props": { "className": "flex justify-between" },
                         "children": [
                           { "type": "Text", "props": { "className": "text-gray-500" }, "text": "Subtotal" },
-                          { "type": "Text", "text": { "expr": { "formatCurrency": [{ "/": [{ "var": ["checkout.order.subTotalWithTax", 0] }, 100] }, "USD"] } } }
+                          { "type": "Text", "text": { "expr": { "formatCurrency": [{ "/": [{ "var": ["checkout.order.subTotalWithTax", 0] }, 100] }, { "var": ["checkout.order.currencyCode", "USD"] }] } } }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "contents" },
+                        "map": "checkout.order.discounts",
+                        "key": "discount",
+                        "condition": { ">": [{ "var": ["checkout.order.discounts.length", 0] }, 0] },
+                        "children": [
+                          {
+                            "type": "HStack",
+                            "props": { "className": "flex justify-between text-sm text-green-600" },
+                            "children": [
+                              { "type": "Text", "text": "{{$item.description}}" },
+                              { "type": "Text", "text": { "expr": { "formatCurrency": [{ "/": [{ "var": "$item.amountWithTax" }, 100] }, "USD"] } } }
+                            ]
+                          }
                         ]
                       },
                       {
@@ -371,7 +704,10 @@
                         "props": { "className": "flex justify-between" },
                         "children": [
                           { "type": "Text", "props": { "className": "text-gray-500" }, "text": "Shipping" },
-                          { "type": "Text", "text": { "expr": { "formatCurrency": [{ "/": [{ "var": ["checkout.order.shippingWithTax", 0] }, 100] }, "USD"] } } }
+                          {
+                            "type": "Text",
+                            "text": { "expr": { "if": [{ ">": [{ "var": ["checkout.order.shippingWithTax", 0] }, 0] }, { "formatCurrency": [{ "/": [{ "var": ["checkout.order.shippingWithTax", 0] }, 100] }, { "var": ["checkout.order.currencyCode", "USD"] }] }, "To be calculated"] } }
+                          }
                         ]
                       },
                       { "type": "Box", "props": { "className": "border-t" } },
@@ -380,7 +716,7 @@
                         "props": { "className": "flex justify-between font-bold text-base" },
                         "children": [
                           { "type": "Text", "text": "Total" },
-                          { "type": "Text", "text": { "expr": { "formatCurrency": [{ "/": [{ "var": ["checkout.order.totalWithTax", 0] }, 100] }, "USD"] } } }
+                          { "type": "Text", "text": { "expr": { "formatCurrency": [{ "/": [{ "var": ["checkout.order.totalWithTax", 0] }, 100] }, { "var": ["checkout.order.currencyCode", "USD"] }] } } }
                         ]
                       }
                     ]

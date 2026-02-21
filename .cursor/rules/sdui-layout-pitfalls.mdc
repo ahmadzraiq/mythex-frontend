@@ -316,3 +316,108 @@ return <IconComponent size={numericSize} color={color} className={className} {..
 - `NavIcon` accepts `size` as a number OR named string (`'sm'` = 16, `'md'` = 18, etc.) — converted to numeric before passing to Lucide
 - Use `color` prop (hex string) for icon color — Lucide forwards it directly to the SVG stroke
 - Never use `<Icon as={...} />` for icons that need a specific color — always render Lucide components directly
+
+---
+
+## Form Validation with Per-Field Errors
+
+**Pattern:** Show validation errors under each input, clear on change, and show API errors separately.
+
+### 1. Auth action — validate before mutation
+
+```json
+{
+  "login": {
+    "type": "validate",
+    "rules": {
+      "form.username": { "required": true, "pattern": "email", "message": "Please enter a valid email address" },
+      "form.password": { "required": true, "message": "Please enter your password" }
+    },
+    "storeErrorsIn": "errors",
+    "onSuccess": { "action": "loginMutation" }
+  }
+}
+```
+
+**Validation rules:** `required`, `minLength`, `maxLength`, `pattern: "email"`, `equals` (fixed value), `equalsField` (compare to another field, e.g. confirm password).
+
+### 2. Screen state — add `errors: {}`
+
+```json
+"state": { "form": { "email": "", "password": "" }, "errors": {} }
+```
+
+### 3. Per-field error — use full path in condition
+
+**Condition uses raw state** — screen-scoped aliases are NOT resolved. Use full path: `screens.{screenName}.errors.form.{field}`.
+
+```json
+{
+  "type": "Box",
+  "props": { "className": "min-h-[20px]" },
+  "condition": { "var": ["screens.signIn.errors.form.username"] },
+  "children": [
+    { "type": "Text", "props": { "className": "text-sm text-red-500 dark:text-red-400" }, "text": "{{errors.form.username}}" }
+  ]
+}
+```
+
+**Text uses alias** — `{{errors.form.username}}` works because interpolation resolves screen-scoped aliases.
+
+### 4. setState path — use full path for screen-scoped form/errors
+
+**Problem:** The setState handler does NOT resolve screen-scoped aliases. Using `path: "form.field"` writes to a top-level `form.field` that is never read (value comes from `screens.{screenName}.form.field`). Input appears read-only.
+
+**Fix:** Always use the full path: `screens.{screenName}.form.{field}` (e.g. `screens.cart.form.couponCode`, `screens.signIn.form.username`).
+
+### 5. Clear field error on change — runMultiple
+
+```json
+"actions": {
+  "change": {
+    "type": "runMultiple",
+    "actions": [
+      { "action": "setState", "payload": { "path": "screens.signIn.form.username", "value": "$event" } },
+      { "action": "setState", "payload": { "path": "screens.signIn.errors.form.username", "value": "" } }
+    ]
+  }
+}
+```
+
+### 6. API errors — show when mutation fails
+
+For screens that call a mutation after validate (e.g. register, login), show API errors (e.g. "Email already registered") above the submit button. Use `_workflow.lastAction` to distinguish validation vs API:
+
+```json
+{
+  "type": "Box",
+  "props": { "className": "text-sm text-red-500" },
+  "condition": { "and": [{ "==": [{ "var": ["_workflow.lastAction"] }, "registerMutation"] }, { "var": ["_workflow.lastError"] }] },
+  "children": [{ "type": "Text", "text": "{{_workflow.lastError}}" }]
+}
+```
+
+**Clear API error on input change** — add to each field's runMultiple: `{ "action": "setState", "payload": { "path": "_workflow.lastError", "value": "" } }`
+
+### 7. Password + confirm password
+
+Use `equalsField` to compare confirm to password. When password changes, also clear confirmPassword error:
+
+```json
+"actions": {
+  "change": {
+    "type": "runMultiple",
+    "actions": [
+      { "action": "setState", "payload": { "path": "screens.register.form.password", "value": "$event" } },
+      { "action": "setState", "payload": { "path": "screens.register.errors.form.password", "value": "" } },
+      { "action": "setState", "payload": { "path": "screens.register.errors.form.confirmPassword", "value": "" } }
+    ]
+  }
+}
+```
+
+**Rules:**
+- Per-field errors: condition = `screens.{screenName}.errors.form.{field}` (full path)
+- Per-field text: `{{errors.form.field}}` (alias works)
+- No global error box for validation-only screens (sign-in); use per-field only
+- API error box: condition on `lastAction === "mutationName"` so it only shows when the mutation ran and failed

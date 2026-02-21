@@ -29,7 +29,6 @@ type EngineConventions = {
   defaultErrorMessagePath?: string;
   workflowPath?: string;
   screenScopedAliases?: string[];
-  defaultFormPath?: string;
   graphqlEndpoint?: string;
   graphqlHeaders?: Record<string, string>;
   graphqlCredentials?: RequestCredentials;
@@ -44,7 +43,6 @@ const CONVENTIONS = {
   defaultErrorMessagePath: engineConventions.defaultErrorMessagePath,
   workflowPath: engineConventions.workflowPath,
   screenScopedAliases: engineConventions.screenScopedAliases ?? [],
-  defaultFormPath: engineConventions.defaultFormPath,
   graphqlEndpoint: engineConventions.graphqlEndpoint,
   graphqlHeaders: engineConventions.graphqlHeaders ?? {},
   graphqlCredentials: engineConventions.graphqlCredentials,
@@ -124,7 +122,10 @@ function resolveValue(
   fullState?: Record<string, unknown>
 ): unknown {
   if (value == null) return value;
-  if (typeof value === 'object' && !Array.isArray(value)) {
+  if (Array.isArray(value)) {
+    return value.map((item) => resolveValue(item, get, scope, fullState));
+  }
+  if (typeof value === 'object') {
     const obj = value as Record<string, unknown>;
     if ('var' in obj) {
       const v = (obj as { var: string | [string, unknown] }).var;
@@ -144,9 +145,6 @@ function resolveValue(
       } catch {
         return undefined;
       }
-    }
-    if (Array.isArray(value)) {
-      return value.map((item) => resolveValue(item, get, scope, fullState));
     }
     const resolved: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(obj)) {
@@ -172,6 +170,7 @@ export interface ValidationRule {
   maxLength?: number;
   pattern?: string;
   equals?: string;
+  equalsField?: string;
   message?: string;
 }
 
@@ -450,47 +449,6 @@ export function SDUIEngine({
           const alias = actionDef as { action: string; payload?: Record<string, unknown> };
           return runOne({ action: alias.action, payload: alias.payload ?? payload });
         }
-        if (actionDef?.type === 'validate' && actionDef.rules) {
-          const rules = actionDef.rules;
-          const baseStoreErrorsIn = actionDef.storeErrorsIn ?? CONVENTIONS.defaultStoreErrorsIn;
-          const storeErrorsIn = configName ? `screens.${configName}.${baseStoreErrorsIn}` : baseStoreErrorsIn;
-          const flatErrors: Record<string, string> = {};
-          for (const [path, rule] of Object.entries(rules)) {
-            const val = get(path);
-            if (rule.required && (val === undefined || val === null || val === '')) {
-              flatErrors[path] = rule.message ?? 'Required';
-            } else if (rule.minLength && typeof val === 'string' && val.length < rule.minLength) {
-              flatErrors[path] = rule.message ?? `Min ${rule.minLength} characters`;
-            } else if (rule.maxLength && typeof val === 'string' && val.length > rule.maxLength) {
-              flatErrors[path] = rule.message ?? `Max ${rule.maxLength} characters`;
-            } else if (rule.pattern && typeof val === 'string') {
-              const regex = rule.pattern === 'email' ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/ : new RegExp(rule.pattern);
-              if (!regex.test(val)) {
-                flatErrors[path] = rule.message ?? 'Invalid format';
-              }
-            } else if (rule.equals != null) {
-              const otherVal = get(rule.equals);
-              if (val !== otherVal) {
-                flatErrors[path] = rule.message ?? 'Must match';
-              }
-            }
-          }
-          const nestedErrors: Record<string, unknown> = {};
-          for (const [path, msg] of Object.entries(flatErrors)) {
-            setNestedValue(nestedErrors, path, msg);
-          }
-          store.getState().setState((prev) => setNestedValue(prev, storeErrorsIn, nestedErrors));
-          if (Object.keys(flatErrors).length === 0) {
-            const onSuccess = actionDef.onSuccess;
-            if (onSuccess) {
-              const actions = Array.isArray(onSuccess) ? onSuccess : [onSuccess];
-              for (const a of actions) {
-                await runOne(a as SDUIAction);
-              }
-            }
-          }
-          return;
-        }
         if (actionDef?.type === 'append') {
           const path = actionDef.path ?? '';
           const rawValue = actionDef.value ?? (payload && typeof payload === 'object' ? (payload as Record<string, unknown>).value : undefined);
@@ -688,10 +646,9 @@ export function SDUIEngine({
                 data = (data as Record<string, unknown>)?.[p];
               }
             }
-            const addResult = data as { __typename?: string; message?: string } | undefined;
-            if (addResult?.__typename === 'ErrorResult') {
-              toast.error(addResult.message ?? 'Operation failed');
-              setError(storeIn, addResult.message ?? 'Failed');
+            const addResult = data as { __typename?: string; errorCode?: string; message?: string } | undefined;
+            if (addResult?.errorCode) {
+              throw new Error(addResult.message ?? 'Operation failed');
             } else {
               const skipStoreWhenNull = (actionDef as { skipStoreWhenNull?: boolean }).skipStoreWhenNull;
               if (!skipStoreWhenNull || data != null) setData(storeIn, data);
@@ -706,14 +663,93 @@ export function SDUIEngine({
               }
             }
           } catch (err) {
-            setError(storeIn, err instanceof Error ? err.message : 'GraphQL request failed');
-            toast.error(err instanceof Error ? err.message : 'Request failed');
+            const msg = err instanceof Error ? err.message : 'GraphQL request failed';
+            setError(storeIn, msg);
+            toast.error(msg);
+            throw err;
           }
           return;
         }
         if (actionDef?.type === 'runMultiple' && Array.isArray(actionDef.actions)) {
           for (const a of actionDef.actions) {
+            const actionItem = a as { condition?: object; action?: string; [k: string]: unknown };
+            if (actionItem.condition != null) {
+              const condResult = jsonLogic.apply(actionItem.condition as object, getFullMergedState() ?? {});
+              if (!condResult) continue;
+            }
             await runOne(a as SDUIAction);
+          }
+          return;
+        }
+        if (actionDef?.type === 'validate') {
+          const rules = (actionDef.rules ?? {}) as Record<string, ValidationRule>;
+          const storeErrorsIn =
+            (actionDef.storeErrorsIn as string) ?? CONVENTIONS.defaultStoreErrorsIn ?? 'errors';
+          const errorsPath =
+            configName && isScreenScopedPath(storeErrorsIn, CONVENTIONS.screenScopedAliases)
+              ? `screens.${configName}.${storeErrorsIn}`
+              : storeErrorsIn;
+          let errors: Record<string, unknown> = {};
+          let firstMsg: string | undefined;
+          for (const [fieldPath, rule] of Object.entries(rules)) {
+            if (!rule) continue;
+            const value = get(fieldPath);
+            const str = String(value ?? '').trim();
+            const msg = rule.message ?? 'Invalid';
+            if (rule.required && !str) {
+              errors = setNestedValue(errors, fieldPath, msg) as Record<string, unknown>;
+              if (!firstMsg) firstMsg = msg;
+              continue;
+            }
+            if (!str && !rule.required) continue;
+            if (rule.minLength != null && str.length < rule.minLength) {
+              errors = setNestedValue(errors, fieldPath, msg) as Record<string, unknown>;
+              if (!firstMsg) firstMsg = msg;
+              continue;
+            }
+            if (rule.maxLength != null && str.length > rule.maxLength) {
+              errors = setNestedValue(errors, fieldPath, msg) as Record<string, unknown>;
+              if (!firstMsg) firstMsg = msg;
+              continue;
+            }
+            if (rule.pattern === 'email') {
+              const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+              if (!emailRe.test(str)) {
+                errors = setNestedValue(errors, fieldPath, msg) as Record<string, unknown>;
+                if (!firstMsg) firstMsg = msg;
+              }
+              continue;
+            }
+            if (rule.equals != null && str !== String(rule.equals)) {
+              errors = setNestedValue(errors, fieldPath, msg) as Record<string, unknown>;
+              if (!firstMsg) firstMsg = msg;
+            }
+            if (rule.equalsField != null) {
+              const otherVal = get(rule.equalsField);
+              if (str !== String(otherVal ?? '')) {
+                errors = setNestedValue(errors, fieldPath, msg) as Record<string, unknown>;
+                if (!firstMsg) firstMsg = msg;
+              }
+            }
+          }
+          store.getState().setState((prev) => setNestedValue(prev, errorsPath, errors));
+          if (firstMsg) {
+            store.getState().setState((prev) =>
+              setNestedValue(prev, CONVENTIONS.workflowPath ?? '_workflow', {
+                lastAction: actionName,
+                lastError: firstMsg,
+              })
+            );
+            const err = new Error(firstMsg) as Error & { __validationError?: boolean };
+            err.__validationError = true;
+            throw err;
+          }
+          const onSuccess = actionDef.onSuccess;
+          if (onSuccess) {
+            const actions = Array.isArray(onSuccess) ? onSuccess : [onSuccess];
+            for (const a of actions) {
+              await runOne(a as SDUIAction);
+            }
           }
           return;
         }
@@ -932,32 +968,6 @@ export function SDUIEngine({
           });
         } else if (actionName === 'fetch' && payload && typeof payload === 'object' && 'url' in payload) {
           await fetchDataStable(payload as SDUIDataSource);
-        } else if (actionName === 'validate' && payload && typeof payload === 'object' && 'rules' in payload) {
-          const pl = payload as { rules: Record<string, ValidationRule>; storeErrorsIn?: string };
-          const rules = pl.rules;
-          const baseStoreErrorsIn = pl.storeErrorsIn ?? CONVENTIONS.defaultStoreErrorsIn;
-          const storeErrorsIn = configName ? `screens.${configName}.${baseStoreErrorsIn}` : baseStoreErrorsIn;
-          const flatErrors: Record<string, string> = {};
-          for (const [path, rule] of Object.entries(rules)) {
-            const val = get(path);
-            if (rule.required && (val === undefined || val === null || val === '')) {
-              flatErrors[path] = rule.message ?? 'Required';
-            } else if (rule.minLength && typeof val === 'string' && val.length < rule.minLength) {
-              flatErrors[path] = rule.message ?? `Min ${rule.minLength} characters`;
-            } else if (rule.maxLength && typeof val === 'string' && val.length > rule.maxLength) {
-              flatErrors[path] = rule.message ?? `Max ${rule.maxLength} characters`;
-            } else if (rule.pattern && typeof val === 'string') {
-              const regex = rule.pattern === 'email' ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/ : new RegExp(rule.pattern);
-              if (!regex.test(val)) flatErrors[path] = rule.message ?? 'Invalid format';
-            } else if (rule.equals != null && val !== get(rule.equals)) {
-              flatErrors[path] = rule.message ?? 'Must match';
-            }
-          }
-          const nestedErrors: Record<string, unknown> = {};
-          for (const [path, msg] of Object.entries(flatErrors)) {
-            setNestedValue(nestedErrors, path, msg);
-          }
-          store.getState().setState((prev) => setNestedValue(prev, storeErrorsIn, nestedErrors));
         } else if (actionName === 'showToast' && payload && typeof payload === 'object') {
           const pl = payload as { message?: string; type?: 'success' | 'error' | 'info' };
           const msg = String(pl.message ?? 'Done');
@@ -995,6 +1005,8 @@ export function SDUIEngine({
   const runActionStable = useCallback(
     (action: SDUIAction | SDUIAction[], event?: unknown, scope?: Record<string, unknown>) => {
       runAction(action, event, scope).catch((err) => {
+        // Don't log validation errors - they're expected and already shown in the UI
+        if ((err as Error & { __validationError?: boolean }).__validationError) return;
         console.error('[SDUI] runAction error:', err);
       });
     },
@@ -1013,14 +1025,6 @@ export function SDUIEngine({
     [config.state]
   );
 
-  const defaultFormPath = CONVENTIONS.defaultFormPath;
-  const formStorePath =
-    defaultFormPath != null
-      ? configName
-        ? `screens.${configName}.${defaultFormPath}`
-        : defaultFormPath
-      : undefined;
-
   const context = useMemo(
     () => ({
       store,
@@ -1030,10 +1034,9 @@ export function SDUIEngine({
       fetchData: fetchDataStable,
       actionsConfig,
       screenName: configName,
-      formStorePath,
       screenScopedAliases: CONVENTIONS.screenScopedAliases,
     }),
-    [store, mergedStore, variableStoreConfig, runActionStable, fetchDataStable, actionsConfig, configName, formStorePath]
+    [store, mergedStore, variableStoreConfig, runActionStable, fetchDataStable, actionsConfig, configName]
   );
 
   useEffect(() => {
