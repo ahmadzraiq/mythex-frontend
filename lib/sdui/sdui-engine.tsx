@@ -35,6 +35,7 @@ type EngineConventions = {
   graphqlCredentials?: RequestCredentials;
 };
 const engineConventions = (storeConfig as { engineConventions?: EngineConventions }).engineConventions ?? {};
+let globalInitHasRun = false;
 const CONVENTIONS = {
   loadingSuffix: engineConventions.loadingSuffix,
   errorSuffix: engineConventions.errorSuffix,
@@ -51,6 +52,28 @@ const CONVENTIONS = {
 
 function isScreenScopedPath(path: string, aliases: string[]): boolean {
   return aliases.some((a) => path === a || path.startsWith(`${a}.`));
+}
+
+/** Config-driven fetch cache: tag + vars key, TTL in seconds, invalidate on mutation */
+const fetchCache = new Map<string, { data: unknown; expiresAt: number }>();
+function cacheKey(tag: string, vars: Record<string, unknown> | undefined): string {
+  const v = vars ? JSON.stringify(vars) : '';
+  return `${tag}:${v}`;
+}
+function cacheGet(tag: string, vars: Record<string, unknown> | undefined): unknown | null {
+  const key = cacheKey(tag, vars);
+  const e = fetchCache.get(key);
+  if (!e || Date.now() > e.expiresAt) {
+    if (e) fetchCache.delete(key);
+    return null;
+  }
+  return e.data;
+}
+function cacheSet(tag: string, vars: Record<string, unknown> | undefined, data: unknown, ttlSec: number): void {
+  fetchCache.set(cacheKey(tag, vars), { data, expiresAt: Date.now() + ttlSec * 1000 });
+}
+function cacheInvalidate(tag: string): void {
+  for (const k of fetchCache.keys()) if (k.startsWith(tag + ':')) fetchCache.delete(k);
 }
 
 const computedDefs = (storeConfig as { computed?: unknown[] }).computed ?? [];
@@ -608,6 +631,27 @@ export function SDUIEngine({
           const credentials =
             (actionDef as { credentials?: RequestCredentials }).credentials ?? CONVENTIONS.graphqlCredentials;
           const storeHeaderIn = (actionDef as { storeHeaderIn?: Record<string, string> }).storeHeaderIn;
+          const cacheTag = (actionDef as { cacheTag?: string }).cacheTag;
+          const cacheTTL = (actionDef as { cacheTTL?: number }).cacheTTL ?? 0;
+          const invalidateCache = (actionDef as { invalidateCache?: string[] }).invalidateCache;
+          const cacheKeyVars = (actionDef as { cacheKeyVars?: string[] }).cacheKeyVars;
+          const isQuery = query.trim().toLowerCase().startsWith('query');
+          const canCache = isQuery && cacheTag && cacheTTL > 0;
+          const cacheVars =
+            canCache && cacheKeyVars?.length
+              ? { ...variables, ...Object.fromEntries(cacheKeyVars.map((p) => [p, get(p)])) }
+              : variables;
+          const cached = canCache ? cacheGet(cacheTag, cacheVars) : null;
+          if (cached != null) {
+            let data: unknown = cached;
+            if (responsePath && typeof responsePath === 'string') {
+              const parts = responsePath.split('.');
+              for (const p of parts) data = (data as Record<string, unknown>)?.[p];
+            }
+            const skipStoreWhenNull = (actionDef as { skipStoreWhenNull?: boolean }).skipStoreWhenNull;
+            if (!skipStoreWhenNull || data != null) setData(storeIn, data);
+            return;
+          }
           setLoading(storeIn, true);
           try {
             const res = await fetch(endpoint, {
@@ -651,6 +695,8 @@ export function SDUIEngine({
             } else {
               const skipStoreWhenNull = (actionDef as { skipStoreWhenNull?: boolean }).skipStoreWhenNull;
               if (!skipStoreWhenNull || data != null) setData(storeIn, data);
+              if (canCache) cacheSet(cacheTag!, cacheVars, rawResponse, cacheTTL);
+              if (invalidateCache?.length) for (const t of invalidateCache) cacheInvalidate(t);
               const onSuccess = actionDef.onSuccess;
               if (onSuccess) {
                 const actions = Array.isArray(onSuccess) ? onSuccess : [onSuccess];
@@ -993,6 +1039,13 @@ export function SDUIEngine({
   useEffect(() => {
     config.dataSources?.forEach((ds) => fetchDataStable(ds));
   }, [config.dataSources]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const globalInitActions = (storeConfig as { globalInitActions?: Array<{ action: string }> }).globalInitActions ?? [];
+  useEffect(() => {
+    if (globalInitHasRun) return;
+    globalInitHasRun = true;
+    globalInitActions.forEach((action) => runActionRef.current(action));
+  }, [globalInitActions]);
 
   useEffect(() => {
     config.initActions?.forEach((action) => runActionRef.current(action));

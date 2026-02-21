@@ -19,7 +19,9 @@ export function interpolate(
   if (!template || typeof template !== 'string') return String(template ?? '');
   return template.replace(/\{\{([^}]+)\}\}/g, (_, path) => {
     const value = context.get(path.trim(), scope);
-    return value != null ? String(value) : '';
+    if (value == null) return '';
+    if (typeof value === 'object') return '';
+    return String(value);
   });
 }
 

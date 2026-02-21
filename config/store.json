@@ -21,6 +21,7 @@
       "path": "/",
       "slug": "",
       "q": "",
+      "token": "",
       "sort": "name-asc",
       "facets": []
     },
@@ -81,6 +82,10 @@
     },
     "graphqlCredentials": "include"
   },
+  "globalInitActions": [
+    { "action": "fetchNavCollections" },
+    { "action": "fetchCart" }
+  ],
   "computed": [
     {
       "output": "sortInput",
@@ -143,6 +148,56 @@
       "expr": { "min": [{ "var": ["collectionTotalPages", 1] }, { "+": [{ "var": ["collectionCurrentPage", 1] }, 1] }] }
     },
     {
+      "output": "searchPaginationPages",
+      "expr": {
+        "paginationPages": [
+          { "var": ["search.totalItems", 0] },
+          { "var": ["collectionSkip", 0] },
+          { "var": ["collectionPageSize", 12] }
+        ]
+      }
+    },
+    {
+      "output": "searchCurrentPage",
+      "expr": {
+        "max": [
+          1,
+          {
+            "floor": {
+              "+": [
+                { "/": [{ "var": ["collectionSkip", 0] }, { "var": ["collectionPageSize", 12] }] },
+                1
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "output": "searchTotalPages",
+      "expr": {
+        "max": [
+          1,
+          {
+            "ceil": {
+              "/": [
+                { "var": ["search.totalItems", 0] },
+                { "var": ["collectionPageSize", 12] }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "output": "searchPrevPage",
+      "expr": { "max": [1, { "-": [{ "var": ["searchCurrentPage", 1] }, 1] }] }
+    },
+    {
+      "output": "searchNextPage",
+      "expr": { "min": [{ "var": ["searchTotalPages", 1] }, { "+": [{ "var": ["searchCurrentPage", 1] }, 1] }] }
+    },
+    {
       "output": "product.selectedVariantId",
       "expr": { "findMatchingVariantId": [{ "var": "product.variants" }, { "var": "product.optionGroups" }, { "var": "product.selectedOptions" }] }
     },
@@ -165,6 +220,7 @@
   ],
   "searchParamSync": [
     { "param": "q", "path": "route.q", "default": "" },
+    { "param": "token", "path": "route.token", "default": "" },
     { "param": "sort", "path": "route.sort", "default": "name-asc" },
     { "param": "facets", "path": "route.facets", "type": "array" },
     { "param": "page", "path": "collectionSkip", "default": "1", "transform": "pageToSkip", "pageSize": 12 }

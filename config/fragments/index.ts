@@ -12,6 +12,7 @@ import cartDrawer from './cart-drawer.json';
 import accountSidebar from './account-sidebar.json';
 import facetFilters from './facet-filters.json';
 import collectionPagination from './collection-pagination.json';
+import searchPagination from './search-pagination.json';
 
 export const fragments = {
   'fragments/navbar': navbar,
@@ -23,4 +24,5 @@ export const fragments = {
   'fragments/account-sidebar': accountSidebar,
   'fragments/facet-filters': facetFilters,
   'fragments/collection-pagination': collectionPagination,
+  'fragments/search-pagination': searchPagination,
 } as const;

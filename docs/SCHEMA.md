@@ -381,6 +381,7 @@ Append to a nested array (e.g. `product.reviews`). Supports `{ "var": "path" }` 
 | paths | Optional key→path mapping (e.g. `authUser` → `auth.user`, `routePath` → `route.path`) |
 | computed | Optional array of `{ output, expr }` for shared derived state (JSON Logic) |
 | engineConventions | **Required** for apps using forms/fetch/workflow/graphql. No fallbacks in code—all values come from JSON: `loadingSuffix`, `errorSuffix`, `defaultStoreErrorsIn`, `defaultStoreIn`, `defaultErrorMessagePath`, `workflowPath`, `screenScopedAliases`, `defaultFormPath`, `graphqlEndpoint` (default GraphQL URL), `graphqlHeaders` (default headers applied to all graphql actions) |
+| globalInitActions | Actions run on every page load (e.g. `fetchNavCollections`, `fetchCart`). Use for layout-level data (navbar, cart badge) so it's available on all pages without duplicating in each screen's initActions |
 
 **Derived values – prefer inline expr:** For one-off computed values (cart count, subtotal, totals), use inline `text: { expr, suffix?, prefix?, template? }` in UI nodes. See §3 Interpolation & inline expr.
 

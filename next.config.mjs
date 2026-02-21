@@ -1,6 +1,7 @@
 import { withGluestackUI } from '@gluestack/ui-next-adapter';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: false,
   eslint: {
     ignoreDuringBuilds: true,
   },

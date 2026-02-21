@@ -3,13 +3,17 @@
     "type": "graphql",
     "query": "query GetTopCollections { collections(options: { filter: { parentId: { eq: \"1\" } } }) { items { id name slug } } }",
     "storeIn": "nav.collections",
-    "responsePath": "data.collections.items"
+    "responsePath": "data.collections.items",
+    "cacheTag": "nav",
+    "cacheTTL": 300
   },
   "fetchHome": {
     "type": "graphql",
     "query": "query GetTopCollections { collections(options: { filter: { parentId: { eq: \"1\" } } }) { items { id name slug } } }",
     "storeIn": "nav.collections",
-    "responsePath": "data.collections.items"
+    "responsePath": "data.collections.items",
+    "cacheTag": "nav",
+    "cacheTTL": 300
   },
   "fetchFeaturedProducts": {
     "type": "graphql",
@@ -23,7 +27,9 @@
       }
     },
     "storeIn": "featured.products",
-    "responsePath": "data.search.items"
+    "responsePath": "data.search.items",
+    "cacheTag": "featured",
+    "cacheTTL": 60
   },
   "fetchProduct": {
     "type": "graphql",
@@ -33,6 +39,8 @@
     },
     "storeIn": "product",
     "responsePath": "data.product",
+    "cacheTag": "product",
+    "cacheTTL": 60,
     "onSuccess": { "action": "fetchRelatedProducts" }
   },
   "fetchCollection": {
@@ -50,7 +58,27 @@
       }
     },
     "storeIn": "collection",
-    "responsePath": "data"
+    "responsePath": "data",
+    "cacheTag": "collection",
+    "cacheTTL": 60
+  },
+  "fetchSearchResults": {
+    "type": "graphql",
+    "query": "query SearchProducts($input: SearchInput!) { search(input: $input) { totalItems items { productId productName slug productAsset { id preview } priceWithTax { __typename ... on PriceRange { min max } ... on SinglePrice { value } } currencyCode } facetValues { count facetValue { id name facet { id name } } } } }",
+    "variables": {
+      "input": {
+        "term": { "var": "route.q" },
+        "take": { "var": ["collectionPageSize", 12] },
+        "skip": { "var": ["collectionSkip", 0] },
+        "groupByProduct": true,
+        "sort": { "var": ["sortInput", { "name": "ASC" }] },
+        "facetValueIds": { "var": ["route.facets", []] }
+      }
+    },
+    "storeIn": "search",
+    "responsePath": "data.search",
+    "cacheTag": "search",
+    "cacheTTL": 60
   },
   "searchProducts": {
     "type": "graphql",
@@ -64,7 +92,9 @@
       }
     },
     "storeIn": "search",
-    "responsePath": "data.search"
+    "responsePath": "data.search",
+    "cacheTag": "search",
+    "cacheTTL": 60
   },
   "fetchRelatedProducts": {
     "type": "graphql",
@@ -78,7 +108,9 @@
       }
     },
     "storeIn": "related._raw",
-    "responsePath": "data.search.items"
+    "responsePath": "data.search.items",
+    "cacheTag": "related",
+    "cacheTTL": 60
   },
   "selectProductOption": {
     "type": "mergeAtPath",

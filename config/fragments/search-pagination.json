@@ -1,0 +1,86 @@
+{
+  "type": "Box",
+  "condition": { ">": [{ "var": ["search.totalItems", 0] }, { "var": ["collectionPageSize", 12] }] },
+  "props": { "className": "w-full border-t border-gray-200 dark:border-gray-700 pt-8 flex flex-row items-center justify-center gap-2 flex-wrap" },
+  "children": [
+    {
+      "type": "Box",
+      "condition": { "<=": [{ "var": ["searchCurrentPage", 1] }, 1] },
+      "props": { "className": "flex items-center justify-center h-9 w-9 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 cursor-not-allowed pointer-events-none flex-shrink-0" },
+      "children": [{ "type": "NavIcon", "props": { "icon": "ChevronLeft", "size": 16, "color": "#6b7280" } }]
+    },
+    {
+      "type": "Pressable",
+      "condition": { ">": [{ "var": ["searchCurrentPage", 1] }, 1] },
+      "props": { "className": "flex items-center justify-center h-9 w-9 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex-shrink-0" },
+      "actions": {
+        "click": {
+          "type": "runMultiple",
+          "actions": [
+            { "type": "decrement", "path": "collectionSkip", "amount": { "var": ["collectionPageSize", 12] } },
+            { "action": "fetchSearchResults" },
+            { "action": "navigate", "payload": { "path": "{{route.path}}?page={{searchPrevPage}}" } }
+          ]
+        }
+      },
+      "children": [{ "type": "NavIcon", "props": { "icon": "ChevronLeft", "size": 16, "color": "#374151" } }]
+    },
+    {
+      "type": "Box",
+      "map": "searchPaginationPages",
+      "props": { "className": "contents" },
+      "children": [
+        {
+          "type": "Text",
+          "condition": { "==": [{ "var": "$item" }, "..."] },
+          "props": { "className": "px-2 text-sm text-gray-500 dark:text-gray-400 flex-shrink-0" },
+          "text": "..."
+        },
+        {
+          "type": "Pressable",
+          "condition": { "and": [{ "!=": [{ "var": "$item" }, "..."] }, { "==": [{ "var": "$item" }, { "var": ["searchCurrentPage", 1] }] }] },
+          "props": { "className": "flex items-center justify-center h-9 w-9 rounded-md border border-gray-900 dark:border-gray-600 bg-gray-900 dark:bg-gray-700 text-white pointer-events-none flex-shrink-0" },
+          "children": [{ "type": "Text", "props": { "className": "text-sm font-medium text-white" }, "text": { "var": "$item" } }]
+        },
+        {
+          "type": "Pressable",
+          "condition": { "and": [{ "!=": [{ "var": "$item" }, "..."] }, { "!=": [{ "var": "$item" }, { "var": ["searchCurrentPage", 1] }] }] },
+          "props": { "className": "flex items-center justify-center h-9 w-9 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex-shrink-0" },
+          "actions": {
+            "click": {
+              "type": "runMultiple",
+              "actions": [
+                { "type": "goToPage", "page": { "var": "$item" }, "pageSize": { "var": ["collectionPageSize", 12] }, "fetchAction": "fetchSearchResults" },
+                { "action": "fetchSearchResults" },
+                { "action": "navigate", "payload": { "path": "{{route.path}}?page={{$item}}" } }
+              ]
+            }
+          },
+          "children": [{ "type": "Text", "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300" }, "text": { "var": "$item" } }]
+        }
+      ]
+    },
+    {
+      "type": "Box",
+      "condition": { ">=": [{ "var": ["searchCurrentPage", 1] }, { "var": ["searchTotalPages", 1] }] },
+      "props": { "className": "flex items-center justify-center h-9 w-9 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 cursor-not-allowed pointer-events-none flex-shrink-0" },
+      "children": [{ "type": "NavIcon", "props": { "icon": "ChevronRight", "size": 16, "color": "#6b7280" } }]
+    },
+    {
+      "type": "Pressable",
+      "condition": { "<": [{ "var": ["searchCurrentPage", 1] }, { "var": ["searchTotalPages", 1] }] },
+      "props": { "className": "flex items-center justify-center h-9 w-9 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex-shrink-0" },
+      "actions": {
+        "click": {
+          "type": "runMultiple",
+          "actions": [
+            { "type": "increment", "path": "collectionSkip", "amount": { "var": ["collectionPageSize", 12] } },
+            { "action": "fetchSearchResults" },
+            { "action": "navigate", "payload": { "path": "{{route.path}}?page={{searchNextPage}}" } }
+          ]
+        }
+      },
+      "children": [{ "type": "NavIcon", "props": { "icon": "ChevronRight", "size": 16, "color": "#374151" } }]
+    }
+  ]
+}
