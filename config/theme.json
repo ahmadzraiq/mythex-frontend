@@ -1,81 +1,93 @@
 {
-  "name": "saraz",
+  "brand": "vendure-storefront",
+  "cssVariables": {
+    "root": {
+      "--radius": "0.625rem",
+      "--background": "#ffffff",
+      "--foreground": "#171923",
+      "--card": "#ffffff",
+      "--card-foreground": "#171923",
+      "--popover": "#ffffff",
+      "--popover-foreground": "#171923",
+      "--primary": "#1e293b",
+      "--primary-foreground": "#f8fafc",
+      "--secondary": "#f1f5f9",
+      "--secondary-foreground": "#1e293b",
+      "--muted": "#f1f5f9",
+      "--muted-foreground": "#64748b",
+      "--accent": "#f1f5f9",
+      "--accent-foreground": "#1e293b",
+      "--destructive": "#ef4444",
+      "--destructive-foreground": "#ffffff",
+      "--border": "#e2e8f0",
+      "--input": "#e2e8f0",
+      "--ring": "#94a3b8"
+    },
+    "dark": {
+      "--background": "#0f172a",
+      "--foreground": "#f8fafc",
+      "--card": "#1e293b",
+      "--card-foreground": "#f8fafc",
+      "--popover": "#1e293b",
+      "--popover-foreground": "#f8fafc",
+      "--primary": "#f8fafc",
+      "--primary-foreground": "#1e293b",
+      "--secondary": "#1e293b",
+      "--secondary-foreground": "#f8fafc",
+      "--muted": "#334155",
+      "--muted-foreground": "#94a3b8",
+      "--accent": "#334155",
+      "--accent-foreground": "#f8fafc",
+      "--destructive": "#ef4444",
+      "--destructive-foreground": "#f8fafc",
+      "--border": "#334155",
+      "--input": "#334155",
+      "--ring": "#94a3b8"
+    }
+  },
   "colors": {
-    "background": "#fafaf9",
-    "surface": "#ffffff",
-    "text": "#1a1a1a",
-    "textMuted": "#525252",
-    "textOnDark": "#ffffff",
-    "textMutedOnDark": "rgba(255,255,255,0.8)",
-    "primary": "#1a1a1a",
-    "primaryHover": "#2d2d2d",
-    "accent": "#d97706",
-    "accentHover": "#b45309",
-    "accentMuted": "rgba(217,119,6,0.2)",
-    "border": "#e5e5e5",
-    "borderDark": "#404040"
+    "background": "#ffffff",
+    "foreground": "#171923",
+    "primary": "#1e293b",
+    "primaryForeground": "#f8fafc",
+    "secondary": "#f1f5f9",
+    "secondaryForeground": "#1e293b",
+    "muted": "#f1f5f9",
+    "mutedForeground": "#64748b",
+    "accent": "#f1f5f9",
+    "accentForeground": "#1e293b",
+    "card": "#ffffff",
+    "cardForeground": "#171923",
+    "border": "#e2e8f0",
+    "input": "#e2e8f0",
+    "ring": "#94a3b8",
+    "destructive": "#ef4444",
+    "destructiveForeground": "#ffffff"
   },
   "sections": {
-    "auth": {
-      "bg": "#fdf8f3",
-      "bgAlt": "#faf3eb",
-      "accentMuted": "rgba(217,119,6,0.08)"
-    },
-    "announcement": {
-      "bg": "#1a1a1a",
-      "text": "#ffffff"
-    },
     "header": {
-      "bg": "#fafaf9",
-      "bgMuted": "rgba(250,250,249,0.95)",
-      "border": "rgba(229,229,229,0.6)",
-      "text": "#1a1a1a",
-      "textMuted": "#525252",
-      "accent": "#d97706",
-      "accentForeground": "#ffffff",
-      "sale": "#d97706"
-    },
-    "hero": {
-      "bg": "#1a1a1a",
-      "text": "#ffffff",
-      "textMuted": "rgba(255,255,255,0.9)",
-      "accent": "#d97706",
-      "accentHover": "#b45309",
-      "overlayGradient": "rgba(0,0,0,0.5)"
-    },
-    "content": {
-      "bg": "#fafaf9",
-      "bgAlt": "#f5f5f4",
-      "text": "#1a1a1a",
-      "textMuted": "#525252",
-      "heading": "#1a1a1a",
-      "label": "#737373"
-    },
-    "shop": {
-      "bg": "#fafaf9",
-      "text": "#1a1a1a",
-      "textMuted": "#525252",
-      "heading": "#1a1a1a",
-      "border": "#e5e5e5",
-      "accent": "#d97706",
-      "accentHover": "#b45309",
-      "button": "#1a1a1a",
-      "buttonHover": "#2d2d2d",
-      "buttonText": "#ffffff"
+      "bg": "#ffffff",
+      "text": "#171923",
+      "border": "#e2e8f0"
     },
     "footer": {
-      "bg": "#1a1a1a",
-      "text": "#ffffff",
-      "textMuted": "rgba(255,255,255,0.7)",
-      "link": "#d4d4d4",
-      "accent": "#d97706"
+      "bg": "#ffffff",
+      "text": "#171923",
+      "textMuted": "#64748b",
+      "border": "#e2e8f0"
     },
-    "flashSale": {
-      "bg": "#1a1a1a",
-      "text": "#ffffff",
-      "textMuted": "rgba(255,255,255,0.8)",
-      "accent": "#d97706",
-      "accentMuted": "rgba(217,119,6,0.2)"
+    "hero": {
+      "bg": "#f1f5f9"
+    },
+    "content": {
+      "bg": "#ffffff",
+      "text": "#171923",
+      "textMuted": "#64748b"
+    },
+    "shop": {
+      "button": "#1e293b",
+      "buttonHover": "#334155",
+      "buttonText": "#f8fafc"
     }
   }
 }

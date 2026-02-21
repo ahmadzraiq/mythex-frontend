@@ -1,0 +1,126 @@
+{
+  "meta": { "title": "Order Details" },
+  "state": {},
+  "layout": "account",
+  "initActions": [{ "action": "fetchNavCollections" }, { "action": "fetchOrderDetail" }],
+  "content": {
+    "type": "VStack",
+    "props": { "className": "space-y-6" },
+    "children": [
+      {
+        "type": "HStack",
+        "props": { "className": "flex items-center gap-3" },
+        "children": [
+          {
+            "type": "Pressable",
+            "actions": { "click": { "action": "navigate", "payload": { "path": "/account/orders" } } },
+            "children": [
+              { "type": "Text", "props": { "className": "text-sm text-gray-500 hover:text-gray-900 hover:underline transition-colors" }, "text": "← Orders" }
+            ]
+          },
+          { "type": "Heading", "props": { "className": "text-3xl font-bold" }, "text": { "expr": { "var": "account.orderDetail.code" }, "prefix": "Order #" } },
+          { "type": "Badge", "props": { "className": "text-xs" }, "children": [{ "type": "BadgeText", "text": "{{account.orderDetail.state}}" }] }
+        ]
+      },
+      {
+        "type": "Card",
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "p-6 space-y-4" },
+            "children": [
+              { "type": "Heading", "props": { "className": "text-lg font-semibold mb-4" }, "text": "Items" },
+              {
+                "type": "VStack",
+                "props": { "className": "space-y-4" },
+                "map": "account.orderDetail.lines",
+                "key": "orderDetailLine",
+                "children": [
+                  {
+                    "type": "HStack",
+                    "props": { "className": "flex gap-4 items-start" },
+                    "children": [
+                      {
+                        "type": "NextImage",
+                        "props": { "src": "{{$item.productVariant.product.featuredAsset.preview}}", "alt": "{{$item.productVariant.product.name}}", "width": 80, "height": 80, "className": "rounded-md object-cover w-20 h-20 flex-shrink-0 border border-gray-200" }
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex-1 min-w-0" },
+                        "children": [
+                          { "type": "Text", "props": { "className": "font-medium" }, "text": "{{$item.productVariant.product.name}}" },
+                          { "type": "Text", "props": { "className": "text-sm text-gray-500" }, "text": "{{$item.productVariant.name}}" },
+                          { "type": "Text", "props": { "className": "text-sm text-gray-500 mt-1" }, "text": { "expr": { "var": "$item.quantity" }, "prefix": "Qty: " } }
+                        ]
+                      },
+                      { "type": "Text", "props": { "className": "font-semibold text-right flex-shrink-0" }, "text": { "expr": { "formatCurrency": [{ "/": [{ "var": "$item.linePriceWithTax" }, 100] }, { "var": ["account.orderDetail.currencyCode", "USD"] }] } } }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "grid md:grid-cols-2 gap-6" },
+        "children": [
+          {
+            "type": "Card",
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "p-6" },
+                "children": [
+                  { "type": "Heading", "props": { "className": "text-base font-semibold mb-3" }, "text": "Shipping Address" },
+                  { "type": "Text", "props": { "className": "text-sm" }, "text": "{{account.orderDetail.shippingAddress.fullName}}" },
+                  { "type": "Text", "props": { "className": "text-sm text-gray-500" }, "text": "{{account.orderDetail.shippingAddress.streetLine1}}" },
+                  { "type": "Text", "props": { "className": "text-sm text-gray-500" }, "text": "{{account.orderDetail.shippingAddress.city}}, {{account.orderDetail.shippingAddress.postalCode}}" },
+                  { "type": "Text", "props": { "className": "text-sm text-gray-500" }, "text": "{{account.orderDetail.shippingAddress.country}}" }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Card",
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "p-6 space-y-2" },
+                "children": [
+                  { "type": "Heading", "props": { "className": "text-base font-semibold mb-3" }, "text": "Order Summary" },
+                  {
+                    "type": "HStack",
+                    "props": { "className": "flex justify-between text-sm" },
+                    "children": [
+                      { "type": "Text", "props": { "className": "text-gray-500" }, "text": "Subtotal" },
+                      { "type": "Text", "text": { "expr": { "formatCurrency": [{ "/": [{ "var": ["account.orderDetail.subTotalWithTax", 0] }, 100] }, { "var": ["account.orderDetail.currencyCode", "USD"] }] } } }
+                    ]
+                  },
+                  {
+                    "type": "HStack",
+                    "props": { "className": "flex justify-between text-sm" },
+                    "children": [
+                      { "type": "Text", "props": { "className": "text-gray-500" }, "text": "Shipping" },
+                      { "type": "Text", "text": { "expr": { "formatCurrency": [{ "/": [{ "var": ["account.orderDetail.shippingWithTax", 0] }, 100] }, { "var": ["account.orderDetail.currencyCode", "USD"] }] } } }
+                    ]
+                  },
+                  { "type": "Divider" },
+                  {
+                    "type": "HStack",
+                    "props": { "className": "flex justify-between font-bold" },
+                    "children": [
+                      { "type": "Text", "text": "Total" },
+                      { "type": "Text", "text": { "expr": { "formatCurrency": [{ "/": [{ "var": ["account.orderDetail.totalWithTax", 0] }, 100] }, { "var": ["account.orderDetail.currencyCode", "USD"] }] } } }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

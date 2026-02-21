@@ -98,6 +98,27 @@ const key = childKey && !isScopeVar ? childKey : `child-${i}`;
 
 ---
 
+## setState / toggle Wipes Sibling Keys in Shared Namespace (e.g. nav.*)
+
+**Problem:** `setState` and `toggle` action types write to the global variable store. When you call `setState` with `path: "nav.themeMenuOpen"`, the variable store gets `{ nav: { themeMenuOpen: true } }`. The variable store subscription then does `{ ...prev, ...vs }` — a **shallow merge** — so `vs.nav` (partial) overwrites `prev.nav` (which contains `nav.collections`, `nav.searchQuery`, etc.). Result: categories disappear whenever any `nav.*` key is updated.
+
+**Fix:** The variable store subscription in `sdui-engine.tsx` must **deep-merge at the first level**: if both `prev[key]` and `vs[key]` are plain objects, spread them together instead of overwriting:
+```typescript
+for (const [key, val] of Object.entries(vs)) {
+  const prevVal = prev[key];
+  if (typeof val === 'object' && !Array.isArray(val) && val !== null &&
+      typeof prevVal === 'object' && !Array.isArray(prevVal) && prevVal !== null) {
+    next[key] = { ...(prevVal as object), ...(val as object) };
+  } else {
+    next[key] = val;
+  }
+}
+```
+
+**Rule:** Any time you add a `setState`/`toggle` action that writes to a path like `nav.*`, `cart.*`, or any namespace that also has Zustand-fetched data, this deep-merge is critical. Without it, partial variable store updates silently destroy sibling keys fetched from the API.
+
+---
+
 ## Badge Blocking Clicks
 
 **Problem:** Absolutely positioned Badge overlays Pressable and captures clicks.
@@ -119,3 +140,179 @@ const key = childKey && !isScopeVar ? childKey : `child-${i}`;
 **Problem:** Wishlist shows one narrow card with excessive whitespace; grid doesn't fill width.
 
 **Fix:** (1) Use `contents` on the map wrapper Box. (2) Add `xl:grid-cols-5` for wider screens. (3) Add `min-w-0` to VStack/card containers to prevent overflow. (4) Use `!bg-[var(--theme-shop-button)]` on Buttons for proper theme styling.
+
+---
+
+## Gluestack Input — Always Use InputSlot for Icons, Override Color Tokens with `!`
+
+**Problem 0 (registry):** The `Input` type in COMPONENT_REGISTRY is mapped to `InputWithField` — a composite wrapper. If `InputWithField` ignores `children`, any `InputSlot`/`InputField` children in JSON are silently discarded. Also `InputSlot` must be explicitly imported and registered. Fix: `InputWithField` checks for `children`; if present, renders the real Gluestack `Input` with children; if absent, auto-injects `InputField` for the simple case.
+
+**Problem 1:** `InputField` throws `Cannot destructure property 'variant' of useStyleContext(...)` when rendered without a parent `Input`. `InputField` must always be a direct child of `Input`.
+
+**Problem 2:** Gluestack's `inputFieldStyle` applies `text-typography-900` and `placeholder:text-typography-500` — Gluestack color tokens that don't resolve in NativeWind without the full token setup, making text and placeholders invisible.
+
+**Problem 3:** Using an absolutely-positioned icon `Box` beside an `Input` is fragile. Gluestack's `Input` already has a built-in `flex-row` layout with `InputSlot` for icons — use it.
+
+**Fix:**
+1. Always use `Input > InputSlot + InputField` (never bare `InputField`)
+2. Pass `variant` and `size` to `Input` so context is set correctly
+3. Override unresolved Gluestack color tokens on `InputField` with `!` prefix
+4. Use `InputSlot` (not absolute Box) for left/right icons — it sits naturally in the flex-row layout
+
+```json
+{
+  "type": "Input",
+  "props": {
+    "variant": "outline",
+    "size": "sm",
+    "className": "!rounded-md !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900"
+  },
+  "children": [
+    {
+      "type": "InputSlot",
+      "props": { "className": "pl-3 pointer-events-none" },
+      "children": [
+        { "type": "NavIcon", "props": { "icon": "Search", "size": 16, "className": "!text-gray-400" } }
+      ]
+    },
+    {
+      "type": "InputField",
+      "props": {
+        "placeholder": "Search products...",
+        "placeholderTextColor": "#9ca3af",
+        "className": "!text-gray-900 dark:!text-gray-100"
+      },
+      "actions": {
+        "change": { "action": "setState", "payload": { "path": "nav.searchQuery", "value": "$event" } }
+      }
+    }
+  ]
+}
+```
+
+**Rules:**
+- Always override Gluestack typography color tokens (`text-typography-*`) with explicit Tailwind colors using `!` on `InputField`.
+- **Never** use `placeholder:` CSS variant to set placeholder color — NativeWind does not reliably support `!` inside pseudo-class variants. Use `placeholderTextColor` prop instead (React Native's cross-platform prop that maps to `::placeholder` on web and native placeholder color on mobile).
+- Use `InputSlot` for icons — never absolute positioning inside Input.
+- For icon color inside `InputSlot`, use the `color` prop directly (e.g. `"color": "#9ca3af"`) rather than `className` — Lucide icons forward `color` as the SVG fill/stroke color reliably cross-platform.
+
+## Custom SDUI-Aware Components (FacetFiltersPanel Pattern)
+
+**Problem:** Some UI logic (like grouping flat arrays, managing complex local state) can't be expressed purely in JSON. Custom React components need access to `runAction` to dispatch SDUI actions, but the renderer doesn't automatically pass it.
+
+**Fix:** Use `RunActionProvider` context:
+1. `lib/sdui/run-action-context.tsx` exports `RunActionProvider` and `useRunAction()` hook
+2. `sdui-engine.tsx` wraps `SDURenderer` with `<RunActionProvider value={runActionStable}>`
+3. Custom components call `const runAction = useRunAction()` to dispatch actions
+
+**Passing arrays/objects as props from JSON:**
+Use `{ "var": ["path.to.data", []] }` — `resolveProps` handles `{ "var": ... }` and returns the actual value (not stringified):
+```json
+{ "type": "FacetFiltersPanel", "props": {
+  "facetValues": { "var": ["collection.search.facetValues", []] },
+  "selectedFacets": { "var": ["selectedFacets", []] }
+}}
+```
+
+**Rules:**
+- Generic reusable components that group/transform data are acceptable (like `Carousel`, `FacetFiltersPanel`)
+- The component should be data-agnostic — accept data via props, not hard-code paths
+- Use `useSduiStore.getState().setData()` for Zustand writes and `getGlobalVariableStore().getState().setState()` for variable-store writes
+
+---
+
+## setVar vs set: Two Stores, Know Which to Use
+
+**Problem:** `increment`/`decrement`/`toggle` write to the **variable store** (local, fast, synchronous). `type: "set"` writes to **Zustand** (global, persisted). They are SEPARATE — writing to one does NOT update the other. If you use `increment` then reset with `set`, the variable store still has the old value and `get()` returns it (variable store checked first).
+
+**Fix:** Be consistent per path:
+- **Variable store paths** (`sortMenuOpen`, `collectionSkip`, `sort` label): use `setVar`/`increment`/`decrement`/`toggle`
+- **Zustand paths** (`selectedFacets`, `sortInput`, fetched data): use `set` or `setData()`
+
+**New `setVar` action type** — sets a value in the variable store (same store as `increment`/`decrement`/`toggle`):
+```json
+{ "type": "setVar", "path": "collectionSkip", "value": 0 }
+```
+Use `setVar` to reset a path that was previously modified by `increment`/`decrement`/`toggle`.
+
+---
+
+## Inline Action Types in runMultiple (and Engine Inline Fallback)
+
+**Problem:** `runMultiple` actions array only supports `{ "action": "namedAction" }` references — it does NOT natively support inline types like `{ "type": "increment", "path": "..." }`. The engine's `runOne` looks up `actionsConfig[actionName]` which returns `undefined` for inline objects, causing all `if (actionDef?.type === ...)` checks to silently fail.
+
+**Fix:** Added inline fallback in `sdui-engine.tsx` `runOne`:
+```ts
+// Fall back to treating the action object itself as the definition when no named action found
+if (!actionDef && 'type' in (a as object)) {
+  actionDef = a as typeof actionDef;
+}
+```
+
+**Rule:** You can now use inline action types inside `runMultiple.actions`, `onSuccess`, etc.:
+```json
+{
+  "type": "runMultiple",
+  "actions": [
+    { "type": "increment", "path": "collectionSkip", "amount": 24 },
+    { "action": "fetchCollection" }
+  ]
+}
+```
+This also applies to `onSuccess` chaining: `"onSuccess": { "type": "set", "path": "menuOpen", "value": false }`.
+
+---
+
+## increment/decrement Min Value (defaults to 0, not 1)
+
+**Problem:** `increment` and `decrement` previously clamped to `Math.max(1, ...)`. This broke offset-based counters (like `collectionSkip` which starts at 0) — decrementing 24 → 0 would produce 1 instead of 0.
+
+**Fix:** Both now use a configurable `min` property defaulting to 0:
+```ts
+const minVal = Number((actionDef as { min?: number }).min ?? 0);
+const next = Math.max(minVal, (Number(current) || 0) - amount);
+```
+
+**Rule:** If you have a counter that should start at 1 (e.g., page number), either use `{ "min": 1 }` in the action config, or use `set` with a condition. Offsets and skip values that start at 0 work correctly by default.
+
+---
+
+## Pagination + URL Query Params
+
+**Problem 1 (page=0):** Navigate uses `{{collectionCurrentPage}}` but it can be stale or 0 due to timing; URL shows `?page=0`.
+
+**Fix:** Use explicit values in navigate payload:
+- Page click: `{{$item}}` (the page from map scope)
+- Prev: `{{collectionPrevPage}}` (computed: max(1, current - 1))
+- Next: `{{collectionNextPage}}` (computed: min(totalPages, current + 1))
+
+**Problem 2 (initActions overwrites URL):** Screen has `setVar collectionSkip 0` in initActions; it overwrites the value synced from `?page=2`.
+
+**Fix:** Remove setVar from initActions when collectionSkip is synced from URL via searchParamSync. The page sync sets it from `?page=N`.
+
+**Problem 3 (double loading / flickering):** Adding `page` to route `keyBy` causes engine remount on every page change; initActions run again → fetchCollection runs twice → loading skeleton flickers.
+
+**Fix:** Do NOT add `page` to keyBy for collection route. Use `keyBy: ["sort", "facets"]` only. The engine stays mounted; only the click-triggered fetch runs.
+
+**Problem 4 (collectionCurrentPage = 0):** Formula can yield 0 from edge cases (NaN, etc.).
+
+**Fix:** Wrap in `max(1, floor(...))` in store.json computed so collectionCurrentPage is never &lt; 1.
+
+**Rule:** For pagination with URL sync: searchParamSync with `transform: "pageToSkip"`, navigate with explicit page values, no page in keyBy, no initActions that reset collectionSkip.
+
+---
+
+## NavIcon — Always Use Lucide Directly, Never Gluestack Icon Wrapper
+
+**Problem:** Gluestack's `Icon` wrapper applies `text-typography-950` (unresolved token) and `fill-none` as base classes. Icons wrapped with `<Icon as={LucideIcon} />` get no visible color and no fill — they appear invisible.
+
+**Fix:** `NavIcon` renders Lucide icons directly without Gluestack's `Icon` wrapper:
+```tsx
+return <IconComponent size={numericSize} color={color} className={className} {...rest} />;
+```
+
+**Rules:**
+- All icons in `NAV_ICONS` must be from `lucide-react-native` — never mix with Gluestack icon components
+- `NavIcon` accepts `size` as a number OR named string (`'sm'` = 16, `'md'` = 18, etc.) — converted to numeric before passing to Lucide
+- Use `color` prop (hex string) for icon color — Lucide forwards it directly to the SVG stroke
+- Never use `<Icon as={...} />` for icons that need a specific color — always render Lucide components directly

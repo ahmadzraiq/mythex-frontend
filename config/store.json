@@ -1,201 +1,172 @@
 {
+  "initialData": {
+    "auth": {
+      "user": null,
+      "token": null
+    },
+    "cart": {
+      "id": null,
+      "code": null,
+      "state": null,
+      "totalQuantity": 0,
+      "subTotalWithTax": 0,
+      "shippingWithTax": 0,
+      "totalWithTax": 0,
+      "currencyCode": "USD",
+      "couponCodes": [],
+      "discounts": [],
+      "lines": []
+    },
+    "route": {
+      "path": "/",
+      "slug": "",
+      "q": "",
+      "sort": "name-asc",
+      "facets": []
+    },
+    "nav": {
+      "collections": [],
+      "searchQuery": "",
+      "themeMenuOpen": false,
+      "colorScheme": "system"
+    },
+    "collectionSkip": 0,
+    "collectionPageSize": 12,
+    "selectedFacets": [],
+    "sortInput": {
+      "name": "ASC"
+    },
+    "sort": "name-asc",
+    "sortMenuOpen": false,
+    "layout": {
+      "drawerOpen": false,
+      "cartDrawerOpen": false
+    },
+    "checkout": {
+      "step": 0,
+      "shippingMethods": [],
+      "paymentMethods": [],
+      "countries": [],
+      "selectedShippingMethodId": null,
+      "selectedPaymentMethodCode": null
+    },
+    "_workflow": {
+      "lastAction": null,
+      "lastError": null
+    }
+  },
   "paths": {
     "authUser": "auth.user",
     "routePath": "route.path",
     "routeSlug": "route.slug",
-    "routeQ": "route.q"
+    "routeQ": "route.q",
+    "routeSort": "route.sort",
+    "routeFacets": "route.facets"
   },
   "engineConventions": {
     "loadingSuffix": "loading",
     "errorSuffix": "error",
-    "defaultStoreErrorsIn": "errors",
     "defaultStoreIn": "data",
+    "defaultStoreErrorsIn": "errors",
     "defaultErrorMessagePath": "message",
     "workflowPath": "_workflow",
     "screenScopedAliases": [
       "form",
-      "errors",
-      "reviewForm"
+      "errors"
     ],
-    "defaultFormPath": "form"
+    "defaultFormPath": "form",
+    "graphqlEndpoint": "http://localhost:3000/shop-api",
+    "graphqlHeaders": {
+      "vendure-token": "__default_channel__"
+    },
+    "graphqlCredentials": "include"
   },
-  "initialData": {
-    "layout": {
-      "drawerOpen": false,
-      "announcementVisible": true,
-      "mobileNavOpen": false,
-      "searchDrawerOpen": false,
-      "cartDrawerOpen": false,
-      "filterDrawerOpen": false,
-      "sizeGuideOpen": false,
-      "quickViewOpen": false
-    },
-    "route": {
-      "path": "/",
-      "q": ""
-    },
-    "cart.items": [],
-    "account.wishlist": [],
-    "newsletter": {
-      "email": ""
-    },
-    "socialLinks": [
-      {
-        "platform": "instagram",
-        "href": "https://instagram.com/saraz",
-        "label": "Instagram"
-      },
-      {
-        "platform": "facebook",
-        "href": "https://facebook.com/saraz",
-        "label": "Facebook"
-      },
-      {
-        "platform": "twitter",
-        "href": "https://x.com/saraz",
-        "label": "Twitter"
-      },
-      {
-        "platform": "tiktok",
-        "href": "https://tiktok.com/@saraz",
-        "label": "TikTok"
+  "computed": [
+    {
+      "output": "sortInput",
+      "expr": {
+        "sortInputFromRoute": [
+          {
+            "var": "route.sort"
+          }
+        ]
       }
-    ],
-    "navCategories": [
-      {
-        "id": "shop",
-        "label": "Shop",
-        "path": "/shop",
-        "megaMenu": true,
-        "subcategories": [
-          {
-            "label": "All Products",
-            "path": "/shop"
-          },
-          {
-            "label": "New Arrivals",
-            "path": "/shop?sort=newest"
-          },
-          {
-            "label": "Best Sellers",
-            "path": "/shop?sort=bestsellers"
-          },
-          {
-            "label": "Sale",
-            "path": "/shop?sale=true"
-          }
+    },
+    {
+      "output": "collectionPaginationPages",
+      "expr": {
+        "paginationPages": [
+          { "var": ["collection.search.totalItems", 0] },
+          { "var": ["collectionSkip", 0] },
+          { "var": ["collectionPageSize", 12] }
         ]
-      },
-      {
-        "id": "women",
-        "label": "Women",
-        "path": "/category/women",
-        "megaMenu": true,
-        "bannerImage": "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=1200&h=400&fit=crop",
-        "subcategories": [
-          {
-            "label": "Dresses",
-            "path": "/shop?category=women&sub=dresses"
-          },
-          {
-            "label": "Tops",
-            "path": "/shop?category=women&sub=tops"
-          },
-          {
-            "label": "Bottoms",
-            "path": "/shop?category=women&sub=bottoms"
-          },
-          {
-            "label": "Shoes",
-            "path": "/shop?category=women&sub=shoes"
-          },
-          {
-            "label": "Accessories",
-            "path": "/shop?category=women&sub=accessories"
-          }
-        ]
-      },
-      {
-        "id": "men",
-        "label": "Men",
-        "path": "/category/men",
-        "megaMenu": true,
-        "bannerImage": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&h=400&fit=crop",
-        "subcategories": [
-          {
-            "label": "Shirts",
-            "path": "/shop?category=men&sub=shirts"
-          },
-          {
-            "label": "Pants",
-            "path": "/shop?category=men&sub=pants"
-          },
-          {
-            "label": "Shoes",
-            "path": "/shop?category=men&sub=shoes"
-          },
-          {
-            "label": "Accessories",
-            "path": "/shop?category=men&sub=accessories"
-          }
-        ]
-      },
-      {
-        "id": "kids",
-        "label": "Kids",
-        "path": "/category/kids",
-        "megaMenu": true,
-        "bannerImage": "https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?w=1200&h=400&fit=crop",
-        "subcategories": [
-          {
-            "label": "Boys",
-            "path": "/shop?category=kids&sub=boys"
-          },
-          {
-            "label": "Girls",
-            "path": "/shop?category=kids&sub=girls"
-          },
-          {
-            "label": "Baby",
-            "path": "/shop?category=kids&sub=baby"
-          }
-        ]
-      },
-      {
-        "id": "accessories",
-        "label": "Accessories",
-        "path": "/category/accessories",
-        "megaMenu": true,
-        "bannerImage": "https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?w=1200&h=400&fit=crop",
-        "subcategories": [
-          {
-            "label": "Bags",
-            "path": "/shop?category=accessories&sub=bags"
-          },
-          {
-            "label": "Jewelry",
-            "path": "/shop?category=accessories&sub=jewelry"
-          },
-          {
-            "label": "Sunglasses",
-            "path": "/shop?category=accessories&sub=sunglasses"
-          },
-          {
-            "label": "Watches",
-            "path": "/shop?category=accessories&sub=watches"
-          }
-        ]
-      },
-      {
-        "id": "sale",
-        "label": "Sale",
-        "path": "/shop?sale=true",
-        "megaMenu": false,
-        "accent": true
       }
-    ],
-    "search": {
-      "query": ""
+    },
+    {
+      "output": "collectionCurrentPage",
+      "expr": {
+        "max": [
+          1,
+          {
+            "floor": {
+              "+": [
+                { "/": [{ "var": ["collectionSkip", 0] }, { "var": ["collectionPageSize", 12] }] },
+                1
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "output": "collectionTotalPages",
+      "expr": {
+        "max": [
+          1,
+          {
+            "ceil": {
+              "/": [
+                { "var": ["collection.search.totalItems", 0] },
+                { "var": ["collectionPageSize", 12] }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "output": "collectionPrevPage",
+      "expr": { "max": [1, { "-": [{ "var": ["collectionCurrentPage", 1] }, 1] }] }
+    },
+    {
+      "output": "collectionNextPage",
+      "expr": { "min": [{ "var": ["collectionTotalPages", 1] }, { "+": [{ "var": ["collectionCurrentPage", 1] }, 1] }] }
+    },
+    {
+      "output": "product.selectedVariantId",
+      "expr": { "findMatchingVariantId": [{ "var": "product.variants" }, { "var": "product.optionGroups" }, { "var": "product.selectedOptions" }] }
+    },
+    {
+      "output": "product.primaryCollectionSlug",
+      "expr": { "primaryCollectionSlug": [{ "var": "product.collections" }] }
+    },
+    {
+      "output": "product.currentImage",
+      "expr": { "at": [{ "var": "product.assets" }, { "var": ["product.imageIndex", 0] }] }
+    },
+    {
+      "output": "product.selectedVariant",
+      "expr": { "findVariantById": [{ "var": "product.variants" }, { "var": "product.selectedVariantId" }] }
+    },
+    {
+      "output": "related.products",
+      "expr": { "filterRelatedProducts": [{ "var": "related._raw" }, { "var": "product.id" }, 12] }
     }
-  }
+  ],
+  "searchParamSync": [
+    { "param": "q", "path": "route.q", "default": "" },
+    { "param": "sort", "path": "route.sort", "default": "name-asc" },
+    { "param": "facets", "path": "route.facets", "type": "array" },
+    { "param": "page", "path": "collectionSkip", "default": "1", "transform": "pageToSkip", "pageSize": 12 }
+  ]
 }

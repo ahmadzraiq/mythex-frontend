@@ -4,6 +4,7 @@ import './globals.css';
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import StyledJsxRegistry from './registry';
 import { ThemeStyles } from '@/lib/ThemeStyles';
+import { Toaster } from 'sonner';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -16,8 +17,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'E-commerce App',
-  description: 'Login, Signup & Dashboard',
+  title: {
+    default: 'Vendure Store',
+    template: '%s | Vendure Store',
+  },
+  description: 'Shop the best products at Vendure Store. Quality products, competitive prices, and fast delivery.',
 };
 export default function RootLayout({
   children,
@@ -32,10 +36,11 @@ export default function RootLayout({
       >
         <ThemeStyles />
         <StyledJsxRegistry>
-          <GluestackUIProvider mode="light">
-            <div className="min-h-screen w-full overflow-auto" style={{ backgroundColor: 'var(--background)' }}>
+          <GluestackUIProvider mode="system">
+            <div className="min-h-screen w-full overflow-auto">
               {children}
             </div>
+            <Toaster position="top-center" richColors />
           </GluestackUIProvider>
         </StyledJsxRegistry>
       </body>

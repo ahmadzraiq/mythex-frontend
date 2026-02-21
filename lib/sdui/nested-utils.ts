@@ -25,7 +25,9 @@ export function setNestedValue(
   let current = result;
   for (let i = 0; i < parts.length - 1; i++) {
     const part = parts[i];
-    if (!(part in current) || typeof current[part] !== 'object') {
+    const next = current[part];
+    // Replace null/undefined/non-object so we can traverse (typeof null === 'object' in JS)
+    if (next == null || typeof next !== 'object') {
       current[part] = {};
     }
     current = current[part] as Record<string, unknown>;

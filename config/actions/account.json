@@ -1,0 +1,161 @@
+{
+  "fetchProfile": {
+    "type": "graphql",
+    "query": "query GetActiveCustomer { activeCustomer { id firstName lastName emailAddress } }",
+    "headers": {
+      "Authorization": { "var": ["auth.token", ""] }
+    },
+    "storeIn": "account.profile",
+    "responsePath": "data.activeCustomer"
+  },
+  "updateProfile": {
+    "type": "validate",
+    "rules": {
+      "form.firstName": { "required": true, "message": "First name required" },
+      "form.lastName": { "required": true, "message": "Last name required" }
+    },
+    "storeErrorsIn": "errors",
+    "onSuccess": { "action": "updateProfileMutation" }
+  },
+  "updateProfileMutation": {
+    "type": "graphql",
+    "query": "mutation UpdateCustomer($input: UpdateCustomerInput!) { updateCustomer(input: $input) { __typename id firstName lastName emailAddress } }",
+    "variables": {
+      "input": {
+        "firstName": { "var": "form.firstName" },
+        "lastName": { "var": "form.lastName" }
+      }
+    },
+    "headers": {
+      "Authorization": { "var": ["auth.token", ""] }
+    },
+    "storeIn": "account.profile",
+    "responsePath": "data.updateCustomer"
+  },
+  "changePassword": {
+    "type": "validate",
+    "rules": {
+      "form.currentPassword": { "required": true, "message": "Current password required" },
+      "form.newPassword": { "required": true, "minLength": 8, "message": "New password must be at least 8 characters" }
+    },
+    "storeErrorsIn": "errors",
+    "onSuccess": { "action": "changePasswordMutation" }
+  },
+  "changePasswordMutation": {
+    "type": "graphql",
+    "query": "mutation UpdateCustomerPassword($currentPassword: String!, $newPassword: String!) { updateCustomerPassword(currentPassword: $currentPassword, newPassword: $newPassword) { __typename ... on Success { success } ... on ErrorResult { errorCode message } } }",
+    "variables": {
+      "currentPassword": { "var": "form.currentPassword" },
+      "newPassword": { "var": "form.newPassword" }
+    },
+    "headers": {
+      "Authorization": { "var": ["auth.token", ""] }
+    },
+    "storeIn": "account._changePasswordResult",
+    "responsePath": "data.updateCustomerPassword"
+  },
+  "requestEmailUpdate": {
+    "type": "validate",
+    "rules": {
+      "form.password": { "required": true, "message": "Password required" },
+      "form.newEmailAddress": { "required": true, "pattern": "email", "message": "Valid email required" }
+    },
+    "storeErrorsIn": "errors",
+    "onSuccess": { "action": "requestEmailUpdateMutation" }
+  },
+  "requestEmailUpdateMutation": {
+    "type": "graphql",
+    "query": "mutation RequestUpdateCustomerEmailAddress($password: String!, $newEmailAddress: String!) { requestUpdateCustomerEmailAddress(password: $password, newEmailAddress: $newEmailAddress) { __typename ... on Success { success } ... on ErrorResult { errorCode message } } }",
+    "variables": {
+      "password": { "var": "form.password" },
+      "newEmailAddress": { "var": "form.newEmailAddress" }
+    },
+    "headers": {
+      "Authorization": { "var": ["auth.token", ""] }
+    },
+    "storeIn": "account._emailUpdateResult",
+    "responsePath": "data.requestUpdateCustomerEmailAddress"
+  },
+  "fetchOrders": {
+    "type": "graphql",
+    "query": "query GetCustomerOrders($options: OrderListOptions) { activeCustomer { id orders(options: $options) { totalItems items { id code state totalWithTax currencyCode createdAt updatedAt lines { id productVariant { id name product { id name featuredAsset { id preview } } } } } } } }",
+    "variables": {
+      "options": { "take": 10, "skip": 0 }
+    },
+    "headers": {
+      "Authorization": { "var": ["auth.token", ""] }
+    },
+    "storeIn": "account.orders",
+    "responsePath": "data.activeCustomer.orders"
+  },
+  "fetchOrderDetail": {
+    "type": "graphql",
+    "query": "query GetOrderDetail($code: String!) { orderByCode(code: $code) { id code state active createdAt updatedAt totalQuantity subTotal subTotalWithTax shipping shippingWithTax total totalWithTax currencyCode customer { id firstName lastName emailAddress } shippingAddress { fullName company streetLine1 streetLine2 city province postalCode country phoneNumber } shippingLines { shippingMethod { id name description } priceWithTax } payments { id method amount state transactionId createdAt } lines { id productVariant { id name sku product { id name slug featuredAsset { id preview } } } unitPriceWithTax quantity linePriceWithTax } discounts { description amountWithTax } } }",
+    "variables": {
+      "code": { "var": "route.slug" }
+    },
+    "headers": {
+      "Authorization": { "var": ["auth.token", ""] }
+    },
+    "storeIn": "account.orderDetail",
+    "responsePath": "data.orderByCode"
+  },
+  "fetchAddresses": {
+    "type": "graphql",
+    "query": "query GetCustomerAddresses { activeCustomer { id addresses { id fullName company streetLine1 streetLine2 city province postalCode country { id code name } phoneNumber defaultShippingAddress defaultBillingAddress } } }",
+    "headers": {
+      "Authorization": { "var": ["auth.token", ""] }
+    },
+    "storeIn": "account.addresses",
+    "responsePath": "data.activeCustomer.addresses"
+  },
+  "createAddress": {
+    "type": "validate",
+    "rules": {
+      "form.fullName": { "required": true, "message": "Full name required" },
+      "form.streetLine1": { "required": true, "message": "Street address required" },
+      "form.city": { "required": true, "message": "City required" },
+      "form.postalCode": { "required": true, "message": "Postal code required" },
+      "form.countryCode": { "required": true, "message": "Country required" }
+    },
+    "storeErrorsIn": "errors",
+    "onSuccess": { "action": "createAddressMutation" }
+  },
+  "createAddressMutation": {
+    "type": "graphql",
+    "query": "mutation CreateCustomerAddress($input: CreateAddressInput!) { createCustomerAddress(input: $input) { id fullName streetLine1 city postalCode country { id code name } defaultShippingAddress defaultBillingAddress } }",
+    "variables": {
+      "input": {
+        "fullName": { "var": "form.fullName" },
+        "streetLine1": { "var": "form.streetLine1" },
+        "streetLine2": { "var": ["form.streetLine2", ""] },
+        "city": { "var": "form.city" },
+        "province": { "var": ["form.province", ""] },
+        "postalCode": { "var": "form.postalCode" },
+        "countryCode": { "var": "form.countryCode" },
+        "phoneNumber": { "var": ["form.phoneNumber", ""] },
+        "defaultShippingAddress": { "var": ["form.defaultShippingAddress", false] },
+        "defaultBillingAddress": { "var": ["form.defaultBillingAddress", false] }
+      }
+    },
+    "headers": {
+      "Authorization": { "var": ["auth.token", ""] }
+    },
+    "storeIn": "account._createAddressResult",
+    "responsePath": "data.createCustomerAddress",
+    "onSuccess": { "action": "fetchAddresses" }
+  },
+  "deleteAddress": {
+    "type": "graphql",
+    "query": "mutation DeleteCustomerAddress($id: ID!) { deleteCustomerAddress(id: $id) { success } }",
+    "variables": {
+      "id": { "var": "$item.id" }
+    },
+    "headers": {
+      "Authorization": { "var": ["auth.token", ""] }
+    },
+    "storeIn": "account._deleteAddressResult",
+    "responsePath": "data.deleteCustomerAddress",
+    "onSuccess": { "action": "fetchAddresses" }
+  }
+}

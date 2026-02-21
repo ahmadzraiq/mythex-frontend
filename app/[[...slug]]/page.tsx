@@ -4,16 +4,26 @@ import { useEffect, useLayoutEffect, useMemo } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useSduiStore } from '@/store/sdui-store';
 import { SDUIEngine, type ActionsConfig } from '@/lib/sdui/sdui-engine';
+import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
+import { setNestedValue } from '@/lib/sdui/nested-utils';
 import type { SDUIConfig } from '@/lib/sdui/types';
 
 import appConfig from '@/config/app';
 import storeConfig from '@/config/store.json';
 
-const PATHS = (storeConfig as { paths?: { authUser?: string; routePath?: string; routeSlug?: string; routeQ?: string } }).paths ?? {};
+type SearchParamSyncDef = { param: string; path: string; default?: string; type?: 'array'; transform?: string; pageSize?: number };
+const PATHS = (storeConfig as { paths?: { authUser?: string; routePath?: string; routeSlug?: string } }).paths ?? {};
 const AUTH_USER_PATH = PATHS.authUser ?? 'auth.user';
 const ROUTE_PATH = PATHS.routePath ?? 'route.path';
 const ROUTE_SLUG = PATHS.routeSlug ?? 'route.slug';
-const ROUTE_Q = PATHS.routeQ ?? 'route.q';
+const syncDefs = (storeConfig as { searchParamSync?: SearchParamSyncDef[] }).searchParamSync ?? [];
+
+function valuesEqual(a: unknown, b: unknown): boolean {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.length === b.length && a.every((x, i) => x === b[i]);
+  }
+  return a === b;
+}
 
 type PageUI = {
   redirecting?: { text?: string; wrapperClassName?: string; textClassName?: string };
@@ -82,10 +92,22 @@ export default function DynamicRoutePage() {
         setData(ROUTE_SLUG, slug);
       }
     }
-    const q = searchParams?.get('q') ?? '';
-    const currentQ = useSduiStore.getState().data[ROUTE_Q];
-    if (currentQ !== q) {
-      setData(ROUTE_Q, q);
+    for (const def of syncDefs) {
+      let value: unknown =
+        def.type === 'array'
+          ? searchParams?.getAll(def.param) ?? []
+          : searchParams?.get(def.param) ?? (def.default ?? '');
+      if (def.transform === 'pageToSkip') {
+        const page = Math.max(1, parseInt(String(value || def.default || '1'), 10) || 1);
+        value = (page - 1) * (def.pageSize ?? 12);
+      }
+      const current = useSduiStore.getState().data[def.path];
+      if (!valuesEqual(current, value)) {
+        setData(def.path, value);
+        if (def.path === 'collectionSkip') {
+          getGlobalVariableStore().getState().setState((prev) => setNestedValue(prev, def.path, value));
+        }
+      }
     }
   }, [pathname, path, searchParams, setData, sortedRoutes]);
 
@@ -133,7 +155,20 @@ export default function DynamicRoutePage() {
 
   const layoutClass = layoutClasses[route?.layout ?? 'full'] ?? layoutClasses.full;
 
-  const engineKey = path === '/search' ? `search-${searchParams?.get('q') ?? ''}` : path;
+  const keyByParams = (route as { keyBy?: string[] }).keyBy ?? [];
+  const engineKey =
+    keyByParams.length > 0
+      ? `${path}-${keyByParams
+          .map((p) => {
+            const def = syncDefs.find((d) => d.param === p);
+            const v =
+              def?.type === 'array'
+                ? (searchParams?.getAll(p) ?? []).sort().join(',')
+                : searchParams?.get(p) ?? def?.default ?? '';
+            return v;
+          })
+          .join('-')}`
+      : path;
 
   return (
     <main className={layoutClass}>

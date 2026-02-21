@@ -67,7 +67,7 @@ function createGet(
 ) {
   return (path: string, s?: Record<string, unknown>) => {
     const sc = s ?? scope;
-    if (sc && (path.startsWith('$item') || path.startsWith('$index') || path === '$item' || path === '$index')) {
+    if (sc && (path.startsWith('$item') || path.startsWith('$index') || path.startsWith('$parent') || path === '$item' || path === '$index' || path === '$parent')) {
       return getNestedValue(sc, path);
     }
     const resolvedPath =
@@ -95,7 +95,7 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope }
   const get = createGet(store, merged, scope, mergedStore, screenName, screenScopedAliases);
   const storeState = store.getState().getFullState();
   const state = merged ? { ...storeState, ...merged } : storeState;
-  const stateWithScope = scope ? { ...state, $item: scope.$item, $index: scope.$index } : state;
+  const stateWithScope = scope ? { ...state, $item: scope.$item, $index: scope.$index, $parent: scope.$parent } : state;
   const sduiContext: SDUIContext = {
     state: stateWithScope,
     setState: (updater) => store.getState().setState(updater),
@@ -120,7 +120,7 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope }
             key={node.key ? `${node.key}-${index}` : index}
             node={{ ...node, map: undefined, key: node.key ? `${node.key}-${index}` : String(index) }}
             context={context}
-            scope={{ $item: item, $index: index }}
+            scope={{ ...scope, $item: item, $index: index, $parent: scope?.$item }}
           />
         ))}
       </>
@@ -205,11 +205,6 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope }
     });
   } else if (textContent !== undefined) {
     children = textContent;
-  }
-
-  if (node.type === 'Button' && textContent && !node.children?.length) {
-    const { Button: Btn, ButtonText: BtnText } = require('@/components/ui/button');
-    return React.createElement(Btn, cleanProps, React.createElement(BtnText, null, textContent));
   }
 
   const element = React.createElement(Component, { ...cleanProps, key: node.key }, children);

@@ -58,7 +58,7 @@ import {
 import { Menu, MenuItem, MenuItemLabel, MenuSeparator } from '@/components/ui/menu';
 
 // Form
-import { Input, InputField, InputIcon } from '@/components/ui/input';
+import { Input, InputField, InputIcon, InputSlot } from '@/components/ui/input';
 import { Checkbox, CheckboxIndicator, CheckboxIcon, CheckboxLabel } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Textarea, TextareaInput } from '@/components/ui/textarea';
@@ -72,6 +72,8 @@ import {
   FormControlHelperText,
 } from '@/components/ui/form-control';
 import { SDUIForm, FormInputWithLabel, FormSubmitButton } from '@/lib/sdui/form-with-validation';
+import { Carousel, CarouselSlide } from '@/lib/sdui/carousel';
+import { FacetFiltersPanel } from '@/lib/sdui/facet-filters-panel';
 
 // Data display
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableData } from '@/components/ui/table';
@@ -86,18 +88,41 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 
 // Image
 import { Image as UIImage } from '@/components/ui/image';
+import { Icon } from '@/components/ui/icon';
 import {
-  Icon,
-  SearchIcon,
-  FavouriteIcon,
-  GlobeIcon,
-  UserIcon,
-  ShoppingBagIcon,
-  MenuIcon,
-  ShareIcon,
-} from '@/components/ui/icon';
+  Search,
+  User,
+  ShoppingBag,
+  Menu as MenuIcon,
+  Share,
+  Globe,
+  Heart,
+  Check,
+  CheckCircle2,
+  CircleDollarSign,
+  Zap,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Bell,
+  Star,
+  Package,
+  Truck,
+  ShieldCheck,
+  X,
+  Plus,
+  Minus,
+  ArrowRight,
+  LogOut,
+  Sun,
+  Moon,
+  Monitor,
+  ShoppingCart,
+  Tag,
+} from 'lucide-react-native';
 import { View } from '@/components/ui/view';
 import { SocialIcon } from '@/components/ui/social-icon';
+
 
 // Accordion
 import {
@@ -172,27 +197,59 @@ import { Fab, FabLabel, FabIcon } from '@/components/ui/fab';
 
 // Note: BottomSheet requires react-native-gesture-handler & react-native-reanimated - add when deps installed
 
-const NAV_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  Search: SearchIcon,
-  Favourite: FavouriteIcon,
-  Globe: GlobeIcon,
-  User: UserIcon,
-  ShoppingBag: ShoppingBagIcon,
+// All icons are Lucide — consistent rendering, no unresolved Gluestack color tokens
+const NAV_ICONS: Record<string, React.ComponentType<{ size?: number; color?: string; strokeWidth?: number; className?: string }>> = {
+  Search,
+  User,
+  ShoppingBag,
   Menu: MenuIcon,
-  Share: ShareIcon,
+  Share,
+  Globe,
+  Heart,
+  Favourite: Heart,
+  Check,
+  CheckCircle2,
+  CircleDollarSign,
+  ShoppingCart,
+  Zap,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Bell,
+  Star,
+  Package,
+  Truck,
+  ShieldCheck,
+  X,
+  Plus,
+  Minus,
+  ArrowRight,
+  LogOut,
+  Sun,
+  Moon,
+  Monitor,
+  Tag,
 };
 
-/** Renders a nav icon by name - use from JSON with props: { icon: "Search" } */
+const NAMED_SIZE_MAP: Record<string, number> = {
+  '2xs': 12, xs: 14, sm: 16, md: 18, lg: 20, xl: 24,
+};
+
+/** Renders a Lucide icon by name. Props: icon, size (number or named string), color, className */
 function NavIcon(props: ComponentProps) {
-  const { icon, size = 'sm', className, ...rest } = props as {
+  const { icon, size = 'sm', color, className, ...rest } = props as {
     icon: string;
-    size?: '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+    size?: number | string;
+    color?: string;
     className?: string;
     [k: string]: unknown;
   };
   const IconComponent = icon ? NAV_ICONS[icon] : null;
   if (!IconComponent) return null;
-  return <Icon as={IconComponent} size={size} className={className as string} {...rest} />;
+  const numericSize = typeof size === 'number' ? size : (NAMED_SIZE_MAP[size] ?? 16);
+  // Render Lucide icon directly — avoids Gluestack Icon wrapper's unresolved
+  // `text-typography-950` and `fill-none` base classes that make icons invisible
+  return <IconComponent size={numericSize} color={color} className={className as string} {...(rest as object)} />;
 }
 
 type ComponentProps = Record<string, unknown>;
@@ -228,26 +285,46 @@ function NextImage(props: ComponentProps) {
   );
 }
 
-// Input with InputField - composite for simple usage, supports value/onChange
+// Input wrapper:
+// - With children (InputSlot, InputField, etc.): renders the real Gluestack Input and passes children through
+// - Without children (simple usage): auto-injects an InputField using placeholder/value/onChange props
+/** Renders HTML content (e.g. product description). Props: html, className */
+function HtmlContent(props: ComponentProps) {
+  const { html, className, ...rest } = props as { html?: string; className?: string; [k: string]: unknown };
+  if (!html) return null;
+  return (
+    <div
+      className={className as string}
+      dangerouslySetInnerHTML={{ __html: html }}
+      {...(rest as React.HTMLAttributes<HTMLDivElement>)}
+    />
+  );
+}
+
 function InputWithField(props: ComponentProps) {
-  const { Input: In, InputField: InField } = require('@/components/ui/input');
-  const { placeholder, value, onChange, onChangeText, ...rest } = props as {
+  const { placeholder, value, onChange, onChangeText, children, ...rest } = props as {
     placeholder?: string;
     value?: string;
     onChange?: (e: unknown) => void;
     onChangeText?: (text: string) => void;
+    children?: React.ReactNode;
     [k: string]: unknown;
   };
+
+  if (children) {
+    return <Input {...(rest as React.ComponentProps<typeof Input>)}>{children}</Input>;
+  }
+
   const handleChange = onChange ?? onChangeText;
   return (
-    <In {...rest}>
-      <InField
+    <Input {...(rest as React.ComponentProps<typeof Input>)}>
+      <InputField
         placeholder={placeholder as string}
         value={value ?? ''}
-        onChange={handleChange}
-        onChangeText={handleChange}
+        onChange={handleChange as React.ComponentProps<typeof InputField>['onChange']}
+        onChangeText={handleChange as React.ComponentProps<typeof InputField>['onChangeText']}
       />
-    </In>
+    </Input>
   );
 }
 
@@ -271,12 +348,14 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   ButtonSpinner,
   NextImage,
   Image: UIImage,
+  HtmlContent,
   SocialIcon,
   Link,
   LinkText,
   Input: InputWithField,
   InputField,
   InputIcon,
+  InputSlot,
   Drawer,
   DrawerBackdrop,
   DrawerContent,
@@ -345,6 +424,9 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   View,
   Icon,
   NavIcon,
+  Carousel,
+  CarouselSlide,
+  FacetFiltersPanel,
   Accordion,
   AccordionItem,
   AccordionHeader,

@@ -1,0 +1,126 @@
+{
+  "fetchCheckoutOrder": {
+    "type": "graphql",
+    "query": "query GetActiveOrderForCheckout { activeOrder { id code state totalQuantity subTotal subTotalWithTax shipping shippingWithTax total totalWithTax currencyCode couponCodes customer { id firstName lastName emailAddress phoneNumber } shippingAddress { fullName company streetLine1 streetLine2 city province postalCode country phoneNumber } shippingLines { shippingMethod { id name description } priceWithTax } discounts { description amountWithTax } lines { id productVariant { id name sku product { id name slug featuredAsset { id preview } } } unitPriceWithTax quantity linePriceWithTax } } }",
+    "headers": {
+      "Authorization": { "var": ["auth.token", ""] }
+    },
+    "storeIn": "checkout.order",
+    "responsePath": "data.activeOrder"
+  },
+  "fetchShippingMethods": {
+    "type": "graphql",
+    "query": "query GetEligibleShippingMethods { eligibleShippingMethods { id name code description priceWithTax } }",
+    "headers": {
+      "Authorization": { "var": ["auth.token", ""] }
+    },
+    "storeIn": "checkout.shippingMethods",
+    "responsePath": "data.eligibleShippingMethods"
+  },
+  "fetchPaymentMethods": {
+    "type": "graphql",
+    "query": "query GetEligiblePaymentMethods { eligiblePaymentMethods { id name code description isEligible eligibilityMessage } }",
+    "headers": {
+      "Authorization": { "var": ["auth.token", ""] }
+    },
+    "storeIn": "checkout.paymentMethods",
+    "responsePath": "data.eligiblePaymentMethods"
+  },
+  "fetchCountries": {
+    "type": "graphql",
+    "query": "query GetAvailableCountries { availableCountries { id code name } }",
+    "storeIn": "checkout.countries",
+    "responsePath": "data.availableCountries"
+  },
+  "setShippingAddress": {
+    "type": "validate",
+    "rules": {
+      "form.fullName": { "required": true, "message": "Full name required" },
+      "form.streetLine1": { "required": true, "message": "Street address required" },
+      "form.city": { "required": true, "message": "City required" },
+      "form.postalCode": { "required": true, "message": "Postal code required" },
+      "form.countryCode": { "required": true, "message": "Country required" }
+    },
+    "storeErrorsIn": "errors",
+    "onSuccess": { "action": "setShippingAddressMutation" }
+  },
+  "setShippingAddressMutation": {
+    "type": "graphql",
+    "query": "mutation SetOrderShippingAddress($input: CreateAddressInput!) { setOrderShippingAddress(input: $input) { __typename ... on Order { id code shippingAddress { fullName streetLine1 city postalCode country } } ... on ErrorResult { errorCode message } } }",
+    "variables": {
+      "input": {
+        "fullName": { "var": "form.fullName" },
+        "streetLine1": { "var": "form.streetLine1" },
+        "streetLine2": { "var": ["form.streetLine2", ""] },
+        "city": { "var": "form.city" },
+        "province": { "var": ["form.province", ""] },
+        "postalCode": { "var": "form.postalCode" },
+        "countryCode": { "var": "form.countryCode" },
+        "phoneNumber": { "var": ["form.phoneNumber", ""] }
+      }
+    },
+    "headers": {
+      "Authorization": { "var": ["auth.token", ""] }
+    },
+    "storeIn": "checkout._shippingAddressResult",
+    "responsePath": "data.setOrderShippingAddress",
+    "onSuccess": [
+      { "action": "fetchShippingMethods" },
+      { "type": "set", "path": "checkout.step", "value": 2 }
+    ]
+  },
+  "setShippingMethod": {
+    "type": "graphql",
+    "query": "mutation SetOrderShippingMethod($shippingMethodId: [ID!]!) { setOrderShippingMethod(shippingMethodId: $shippingMethodId) { __typename ... on Order { id code shippingWithTax totalWithTax shippingLines { shippingMethod { id name description } priceWithTax } } ... on ErrorResult { errorCode message } } }",
+    "variables": {
+      "shippingMethodId": [{ "var": "checkout.selectedShippingMethodId" }]
+    },
+    "headers": {
+      "Authorization": { "var": ["auth.token", ""] }
+    },
+    "storeIn": "checkout._shippingMethodResult",
+    "responsePath": "data.setOrderShippingMethod",
+    "onSuccess": [
+      { "action": "fetchPaymentMethods" },
+      { "type": "set", "path": "checkout.step", "value": 3 }
+    ]
+  },
+  "transitionToArrangingPayment": {
+    "type": "graphql",
+    "query": "mutation TransitionOrderToState($state: String!) { transitionOrderToState(state: $state) { __typename ... on Order { id code state } ... on OrderStateTransitionError { errorCode message transitionError fromState toState } } }",
+    "variables": {
+      "state": "ArrangingPayment"
+    },
+    "headers": {
+      "Authorization": { "var": ["auth.token", ""] }
+    },
+    "storeIn": "checkout._transitionResult",
+    "responsePath": "data.transitionOrderToState",
+    "onSuccess": { "action": "addPaymentToOrder" }
+  },
+  "addPaymentToOrder": {
+    "type": "graphql",
+    "query": "mutation AddPaymentToOrder($input: PaymentInput!) { addPaymentToOrder(input: $input) { __typename ... on Order { id code state payments { id method amount state } } ... on ErrorResult { errorCode message } } }",
+    "variables": {
+      "input": {
+        "method": { "var": "checkout.selectedPaymentMethodCode" },
+        "metadata": {}
+      }
+    },
+    "headers": {
+      "Authorization": { "var": ["auth.token", ""] }
+    },
+    "storeIn": "checkout.completedOrder",
+    "responsePath": "data.addPaymentToOrder",
+    "onSuccess": { "action": "navigateToOrderConfirmation" }
+  },
+  "navigateToOrderConfirmation": {
+    "action": "navigate",
+    "payload": { "routeConfig": "orderConfirmation", "slug": { "var": "checkout.completedOrder.code" } }
+  },
+  "goToCheckoutStep": {
+    "type": "set",
+    "path": "checkout.step",
+    "value": { "var": "$item" }
+  }
+}

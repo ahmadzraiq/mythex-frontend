@@ -1,117 +1,66 @@
 {
   "type": "Pressable",
-  "props": { "className": "group h-full" },
+  "props": { "className": "group block bg-white rounded-lg overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow" },
   "actions": {
-    "click": {
-      "action": "navigate",
-      "payload": { "routeConfig": "product", "slug": { "var": "$item.slug" } }
-    }
+    "click": { "action": "navigate", "payload": { "routeConfig": "product", "slug": { "var": "$item.slug" } } }
   },
   "children": [
     {
-      "type": "Card",
-      "props": {
-        "className": "overflow-hidden border-0 shadow-soft-1 hover:shadow-soft-2 transition-all duration-300 h-full flex flex-col"
-      },
+      "type": "Box",
+      "props": { "className": "aspect-square relative bg-gray-100" },
       "children": [
         {
-          "type": "Box",
+          "type": "NextImage",
           "props": {
-            "className": "aspect-square bg-background-100 relative overflow-hidden"
-          },
-          "children": [
-            {
-              "type": "NextImage",
-              "props": {
-                "src": "{{$item.image}}",
-                "alt": "{{$item.name}}",
-                "fill": true,
-                "className": "object-cover group-hover:scale-105 transition-transform duration-500"
-              }
-            },
-            {
-              "type": "Badge",
-              "condition": { "var": "$item.badge" },
-              "props": {
-                "size": "sm",
-                "className": "absolute top-3 left-3 bg-[var(--theme-shop-button)]/90 text-white border-0"
-              },
-              "children": [{ "type": "BadgeText", "text": "{{$item.badge}}" }]
-            },
-            {
-              "type": "Pressable",
-              "props": {
-                "className": "absolute top-3 right-3 p-2 rounded-full bg-white/90 shadow-sm hover:bg-white flex items-center justify-center size-9 transition-colors"
-              },
-              "actions": { "click": { "action": "addToWishlistFromCard" } },
-              "children": [{ "type": "NavIcon", "props": { "icon": "Favourite", "className": "size-4 text-[var(--theme-shop-accent)]" } }]
-            },
-            {
-              "type": "Box",
-              "props": {
-                "className": "absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
-              },
-              "children": [
-{
-              "type": "HStack",
-              "props": { "className": "gap-2" },
-              "children": [
-                {
-                  "type": "Button",
-                  "props": {
-                    "size": "sm",
-                    "className": "flex-1 !bg-white !text-[var(--theme-shop-heading)] hover:!bg-gray-100"
-                  },
-                  "text": "Quick Add",
-                  "actions": { "click": { "action": "quickAddToCart" } }
-                },
-                {
-                  "type": "Button",
-                  "props": {
-                    "size": "sm",
-                    "variant": "outline",
-                    "className": "flex-1 !border-white !text-white hover:!bg-white/20"
-                  },
-                  "text": "Quick View",
-                  "actions": { "click": { "action": "openQuickView" } }
-                }
-              ]
-            }
-              ]
-            }
-          ]
+            "src": "{{$item.productAsset.preview}}",
+            "alt": "{{$item.productName}}",
+            "fill": true,
+            "className": "object-cover group-hover:scale-105 transition-transform duration-300",
+            "sizes": "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          }
         },
         {
           "type": "Box",
-          "props": { "className": "p-4 flex-1 flex flex-col" },
+          "props": { "className": "w-full h-full flex items-center justify-center text-gray-500" },
+          "condition": { "==": [{ "var": "$item.productAsset" }, null] },
           "children": [
-            {
-              "type": "Text",
-              "props": {
-                "className": "font-medium text-[var(--theme-shop-text)] text-sm leading-snug line-clamp-2"
-              },
-              "text": "{{$item.name}}"
-            },
-            {
-              "type": "HStack",
-              "props": { "className": "items-baseline gap-2 mt-2 mt-auto" },
-              "children": [
+            { "type": "Text", "text": "No image" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Box",
+      "props": { "className": "p-4 space-y-2" },
+      "children": [
+        {
+          "type": "Text",
+          "props": { "className": "font-medium line-clamp-2 group-hover:text-[#1e293b] transition-colors" },
+          "text": "{{$item.productName}}"
+        },
+        {
+          "type": "Text",
+          "props": { "className": "text-lg font-bold" },
+          "text": {
+            "expr": {
+              "if": [
+                { "==": [{ "var": "$item.priceWithTax.__typename" }, "SinglePrice"] },
+                { "formatCurrency": [{ "/": [{ "var": "$item.priceWithTax.value" }, 100] }, { "var": "$item.currencyCode" }] },
                 {
-                  "type": "Text",
-                  "props": { "className": "font-semibold text-[var(--theme-shop-text)]" },
-                  "text": "{{$item.price}}"
-                },
-                {
-                  "type": "Text",
-                  "condition": { "var": "$item.originalPrice" },
-                  "props": {
-                    "className": "text-[var(--theme-shop-textMuted)] line-through text-sm"
-                  },
-                  "text": "{{$item.originalPrice}}"
+                  "if": [
+                    { "!=": [{ "var": "$item.priceWithTax.min" }, { "var": "$item.priceWithTax.max" }] },
+                    {
+                      "cat": [
+                        "from ",
+                        { "formatCurrency": [{ "/": [{ "var": "$item.priceWithTax.min" }, 100] }, { "var": "$item.currencyCode" }] }
+                      ]
+                    },
+                    { "formatCurrency": [{ "/": [{ "var": "$item.priceWithTax.min" }, 100] }, { "var": "$item.currencyCode" }] }
+                  ]
                 }
               ]
             }
-          ]
+          }
         }
       ]
     }

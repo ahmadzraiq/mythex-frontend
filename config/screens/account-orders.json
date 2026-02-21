@@ -1,48 +1,95 @@
 {
-  "meta": { "title": "Orders | SaraZ", "description": "Your orders" },
-  "state": {
-    "orders": [
-      { "id": "ORD-2847", "date": "Feb 15, 2025", "status": "Delivered", "total": "AED 597", "items": 2 },
-      { "id": "ORD-2841", "date": "Feb 10, 2025", "status": "Shipped", "total": "AED 429", "items": 1 },
-      { "id": "ORD-2835", "date": "Feb 5, 2025", "status": "Delivered", "total": "AED 898", "items": 3 }
-    ]
-  },
+  "meta": { "title": "My Orders" },
+  "state": { "orders": [], "currentPage": 1 },
   "layout": "account",
+  "initActions": [{ "action": "fetchNavCollections" }, { "action": "fetchCustomerOrders" }],
   "content": {
     "type": "Box",
-    "props": { "className": "w-full px-4 sm:px-6 py-8 md:py-12" },
     "children": [
-      { "type": "Text", "props": { "className": "text-gray-500 text-xs font-medium tracking-widest uppercase mb-2" }, "text": "History" },
-      { "type": "Heading", "props": { "size": "2xl", "className": "mb-8 font-light" }, "text": "Orders" },
+      { "type": "Heading", "props": { "className": "text-3xl font-bold mb-6" }, "text": "My Orders" },
       {
-        "type": "VStack",
-        "props": { "className": "gap-4" },
+        "type": "Box",
+        "props": { "className": "text-center py-12" },
+        "condition": { "==": [{ "var": ["orders.length", 0] }, 0] },
+        "children": [
+          { "type": "Text", "props": { "className": "text-gray-500" }, "text": "You haven't placed any orders yet." }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "border rounded-lg overflow-hidden" },
+        "condition": { ">": [{ "var": ["orders.length", 0] }, 0] },
         "children": [
           {
-            "type": "Box",
-            "map": "orders",
-            "key": "order",
-            "props": { "className": "p-6 bg-white rounded-xl border border-gray-200 hover:shadow-soft-1 transition-shadow" },
+            "type": "Table",
             "children": [
               {
-                "type": "HStack",
-                "props": { "className": "justify-between items-start flex-wrap gap-4" },
+                "type": "TableHeader",
+                "props": { "className": "bg-gray-100" },
                 "children": [
                   {
-                    "type": "VStack",
-                    "props": { "className": "gap-1" },
+                    "type": "TableRow",
                     "children": [
-                      { "type": "Text", "props": { "className": "font-semibold text-gray-900" }, "text": "{{$item.id}}" },
-                      { "type": "Text", "props": { "className": "text-sm text-gray-600" }, "text": "{{$item.date}} · {{$item.items}} items" }
+                      { "type": "TableHead", "children": [{ "type": "Text", "text": "Order Number" }] },
+                      { "type": "TableHead", "children": [{ "type": "Text", "text": "Date" }] },
+                      { "type": "TableHead", "children": [{ "type": "Text", "text": "Status" }] },
+                      { "type": "TableHead", "children": [{ "type": "Text", "text": "Items" }] },
+                      { "type": "TableHead", "props": { "className": "text-right" }, "children": [{ "type": "Text", "text": "Total" }] }
                     ]
-                  },
+                  }
+                ]
+              },
+              {
+                "type": "TableBody",
+                "children": [
                   {
-                    "type": "HStack",
-                    "props": { "className": "gap-4 items-center" },
+                    "type": "TableRow",
+                    "map": "orders",
+                    "key": "orderRow",
+                    "props": { "className": "hover:bg-gray-50/50" },
                     "children": [
-                      { "type": "Badge", "props": { "size": "sm", "className": "bg-success-100 text-success-700" }, "children": [{ "type": "BadgeText", "text": "{{$item.status}}" }] },
-                      { "type": "Text", "props": { "className": "font-semibold" }, "text": "{{$item.total}}" },
-                      { "type": "Pressable", "props": { "className": "text-gray-900 text-sm font-medium hover:underline" }, "actions": { "click": { "action": "navigate", "payload": { "path": "/account/order/{{$item.id}}" } } }, "children": [{ "type": "Text", "text": "View" }] }
+                      {
+                        "type": "TableData",
+                        "props": { "className": "font-medium" },
+                        "children": [
+                          {
+                            "type": "Pressable",
+                            "props": { "className": "inline-flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-md text-sm hover:bg-gray-100 transition-colors" },
+                            "actions": { "click": { "action": "navigate", "payload": { "routeConfig": "order-detail", "slug": { "var": "$item.code" } } } },
+                            "children": [
+                              { "type": "Text", "text": "{{$item.code}}" },
+                              { "type": "NavIcon", "props": { "icon": "Share", "className": "h-3 w-3" } }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "TableData",
+                        "children": [
+                          { "type": "Text", "text": "{{$item.createdAt}}" }
+                        ]
+                      },
+                      {
+                        "type": "TableData",
+                        "children": [
+                          {
+                            "type": "Badge",
+                            "props": { "className": "text-xs font-medium" },
+                            "children": [{ "type": "BadgeText", "text": "{{$item.state}}" }]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "TableData",
+                        "children": [{ "type": "Text", "text": { "expr": { "var": "$item.lines.length" }, "suffix": " item(s)" } }]
+                      },
+                      {
+                        "type": "TableData",
+                        "props": { "className": "text-right" },
+                        "children": [
+                          { "type": "Text", "props": { "className": "font-medium" }, "text": { "expr": { "formatCurrency": [{ "/": [{ "var": "$item.totalWithTax" }, 100] }, { "var": "$item.currencyCode" }] } } }
+                        ]
+                      }
                     ]
                   }
                 ]

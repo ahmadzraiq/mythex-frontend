@@ -1,0 +1,240 @@
+---
+description: NativeWind + Gluestack SDUI JSON rules - correct colors, icons, and layout
+alwaysApply: true
+---
+
+# NativeWind/Gluestack SDUI JSON Rules
+
+## 1. Icons — Use `NavIcon`, Never `Icon` with string `as`
+
+**Problem:** `"type": "Icon"` with `"props": { "as": "SearchIcon" }` passes a string to React, which treats it as an unknown HTML element. Causes "incorrect casing" warnings and renders nothing.
+
+**Fix:** Use `"type": "NavIcon"` with `"props": { "icon": "Search" }`.
+
+```json
+// ❌ BAD
+{ "type": "Icon", "props": { "as": "SearchIcon", "className": "h-5 w-5" } }
+
+// ✅ GOOD
+{ "type": "NavIcon", "props": { "icon": "Search", "size": "sm" } }
+```
+
+---
+
+## 2. Colors — Use Plain Tailwind, Never CSS Variables
+
+**Problem:** NativeWind's StyleSheet compiler does NOT reliably resolve Tailwind color tokens that reference CSS variables (e.g. `bg-background`, `bg-muted`, `text-foreground`, `border-border`). These silently produce wrong/no colors.
+
+**Fix:** Use plain Tailwind utility classes or hardcoded hex values. Always derive the correct value from the app's `config/theme.json` and `globals.css` and use the actual color directly:
+
+| ❌ CSS Variable Class | ✅ Use Instead |
+|---|---|
+| `bg-background` | `bg-white` / `bg-gray-950` |
+| `bg-muted` | `bg-gray-100` |
+| `text-foreground` | `text-gray-900` |
+| `text-muted-foreground` | `text-gray-500` |
+| `border-border` | `border-gray-200` |
+| `bg-primary` | actual hex, e.g. `bg-[#1e293b]` |
+| `text-primary-foreground` | `text-white` |
+| `bg-destructive` | `bg-red-500` |
+
+The exact replacements depend on the app's design — always check `theme.json` and `globals.css` for the actual values.
+
+---
+
+## 3. Layout — Always `w-full` + `flex-row` for Proper Width & Direction
+
+**Problem 1:** Gluestack `Box` maps to a React Native `View` which does **not** expand to fill its parent width automatically. Without `w-full`, a Box shrinks to its content width — making everything appear centered or squished.
+
+**Problem 2:** `Box` defaults to `flex-col`. Horizontal layouts break silently without `flex-row`.
+
+**Fix:** Add `w-full` to every container that should fill available width, AND add `flex-row` for horizontal layouts:
+
+```json
+// ❌ BAD — content appears centered/collapsed
+{ "type": "Box", "props": { "className": "max-w-screen-xl mx-auto px-4" } }
+
+// ✅ GOOD — full width then centered max-width
+{ "type": "Box", "props": { "className": "w-full max-w-screen-xl mx-auto px-4" } }
+
+// ❌ BAD — will stack vertically even with justify-between
+{ "type": "Box", "props": { "className": "flex items-center justify-between" } }
+
+// ✅ GOOD
+{ "type": "Box", "props": { "className": "w-full flex flex-row items-center justify-between" } }
+```
+
+**Rule:** Every layout wrapper that uses `mx-auto`, `justify-between`, or `grid` must also have `w-full`.
+
+---
+
+## 4. Fixed Navbar — Offset Content Below It
+
+When a layout has a fixed/sticky navbar, the main content area must be padded by the navbar's height to prevent content from being hidden underneath it.
+
+```json
+// If navbar is h-16 (64px), the content wrapper needs:
+{ "type": "Box", "props": { "className": "flex-1 pt-16" }, "children": [...] }
+```
+
+Always match `pt-*` to the actual navbar height defined in the layout.
+
+---
+
+## 5. Theme Switching — Use NativeWind `useColorScheme`
+
+**Problem:** Libraries like `next-themes` conflict with NativeWind's color scheme system.
+
+**Fix:** Use `useColorScheme` from `nativewind` directly in React components registered in the component registry:
+
+```tsx
+import { useColorScheme } from "nativewind";
+const { colorScheme, setColorScheme } = useColorScheme();
+setColorScheme("dark"); // or "light" or "system"
+```
+
+**GluestackUIProvider** on web manages the `dark` class on `document.documentElement`. Setting `mode="system"` lets NativeWind control dark mode automatically.
+
+**Design the ThemeSwitcher according to the app's requirements** — it could be a simple toggle, a dropdown, or any other control. Always read the source design spec before implementing. Register it in the component registry so it can be used as `{ "type": "ThemeSwitcher" }` in JSON.
+
+**Closing a dropdown on outside click:**
+```tsx
+useEffect(() => {
+  const handler = (e: MouseEvent) => {
+    if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+  };
+  document.addEventListener("mousedown", handler);
+  return () => document.removeEventListener("mousedown", handler);
+}, []);
+```
+
+---
+
+## 6. Global Data Availability Across All Pages
+
+**Problem:** Actions that fetch shared data (navigation items, global config, etc.) are often only called from one screen's `initActions`. This leaves navbar/footer empty on all other pages.
+
+**Fix:**
+- Extract any data needed by layout-level UI (navbar, footer, sidebar) into a dedicated action (e.g. `fetchNavData`)
+- Add that action as the **first** entry in `initActions` for **every** screen
+- This ensures shared data is always populated regardless of which page the user lands on
+
+---
+
+## 7. Reading Zustand Store in React Components — Use Flat Key Directly
+
+**Problem:** `setData("some.path", value)` stores data as a **flat key** in Zustand: `data["some.path"] = value`. If you then call `getNestedValue(data, "some.path")`, it does nested access looking for `data.some.path` — which doesn't exist. The result is `undefined` and the component shows nothing.
+
+**Fix:** In React components that read from the Zustand store directly, always use the flat key:
+
+```tsx
+// ❌ BAD — getNestedValue does data.featured.products (nested), finds undefined
+const data = useSduiStore((s) => s.data);
+const products = getNestedValue(data, "featured.products"); // undefined!
+
+// ✅ GOOD — reads the actual flat key set by setData("featured.products", [...])
+const products = useSduiStore((s) => s.data["featured.products"]);
+```
+
+The JSON renderer uses `computeMergedState` which converts flat keys to nested via `setNestedValue` — but direct React component reads do not go through that transformation.
+
+---
+
+## 8. Global Variable Store — Do NOT Include Zustand-Managed Paths
+
+**Problem:** If `global-variable-store.ts` is initialized with paths also managed by the Zustand store (e.g. `nav`, `auth`, `cart`), the stale initial values in the variable store will overwrite freshly-fetched Zustand data during the `{ ...merged, ...vs }` shallow merge in `sdui-engine.tsx`.
+
+**Fix:** The global variable store must only own screen-scoped state that Zustand does not manage:
+
+```typescript
+// global-variable-store.ts
+const globalStore = createVariableStore({
+  initialState: {
+    screens: {} as Record<string, Record<string, unknown>>,
+    // Only add paths here that are NOT in the Zustand store
+  },
+});
+```
+
+All data fetched via `graphql`/`fetch` actions (`nav`, `auth`, `cart`, etc.) is owned exclusively by the Zustand store and flows to the renderer via `computeMergedState`.
+
+The merge order in `sdui-engine.tsx` must be `{ ...vs, ...merged }` (Zustand wins) — not `{ ...merged, ...vs }`.
+
+---
+
+## 8. CSS Transitions — Use Inline Style When NativeWind May Not Compile Them
+
+**Problem:** NativeWind's CSS compiler may not correctly output `transition-shadow`, `transition-colors`, or other CSS transition utilities for React Native web. This causes animations to snap instantly instead of animating, making hover effects look sharp/jarring.
+
+**Fix:** In pure React components (not SDUI JSON nodes), use inline `style` + `onMouseEnter`/`onMouseLeave` for transitions that must work reliably on web:
+
+```tsx
+// ❌ May snap instantly if transition-shadow doesn't compile
+className="hover:shadow-lg transition-shadow"
+
+// ✅ Guaranteed smooth transition via inline style
+style={{ transition: "box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1)" }}
+onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)")}
+onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
+```
+
+`shadow-lg` value = `0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)`
+`shadow-md` value = `0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)`
+
+---
+
+## 9. Icon Vertical Centering in Native HTML Elements
+
+When placing an icon inside a native `<span>` or `<div>` alongside an `<input>`, use flexbox on the wrapper rather than CSS `transform: translateY(-50%)`, which may not work correctly in NativeWind's web output:
+
+```tsx
+// ✅ GOOD — flexbox wrapper centers reliably
+<span className="absolute left-3 flex items-center justify-center pointer-events-none">
+  <SearchIcon size={16} />
+</span>
+
+// ❌ BAD — transform may not center correctly in NativeWind
+<Icon style={{ position: "absolute", top: "50%", transform: "translateY(-50%)" }} />
+```
+
+---
+
+## 9. Match the Source Design — Read Before Building
+
+Before implementing any component (navbar, footer, cards, etc.):
+1. **Read the source design** — check the original component file, the design spec, or the app's config
+2. **Identify what the component actually needs** — number of menu options, icons, layout, interactions
+3. **Build to spec** — don't assume generic defaults (e.g. "always 3 theme options", "always show user icon")
+
+Rules in this file capture *patterns and pitfalls*, not app-specific decisions. App-specific choices (colors, number of menu items, which icons to show) must always come from the source design.
+
+---
+
+## 10. Text Centering — Apply `text-center` Directly on Each `Text`, Not on Parent Box
+
+**Problem:** In NativeWind, `text-center` on a `Box` (which maps to a React Native `View`) does **not** cascade down to child `Text` components. Children appear left-aligned even when the parent has `text-center`.
+
+**Fix:** Add `text-center` directly to every `Text` or `Heading` that needs centering. Use `items-center` on the parent `Box` to center flex children horizontally.
+
+```json
+// ❌ BAD — text-center on Box does not cascade
+{ "type": "Box", "props": { "className": "text-center" }, "children": [
+  { "type": "Text", "text": "This will NOT be centered" }
+]}
+
+// ✅ GOOD — text-center on each Text, items-center on Box
+{ "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [
+  { "type": "Text", "props": { "className": "text-center" }, "text": "This IS centered" }
+]}
+```
+
+Use `gap-*` instead of `space-y-*` / margin utilities for spacing between flex children in NativeWind.
+
+---
+
+## 11. Self-Correction Rule
+
+**When any visual issue is found:**
+1. Identify the root cause
+2. Fix the code
+3. Add the **generic pattern** (not the app-specific fix) to this rule file so it's never repeated

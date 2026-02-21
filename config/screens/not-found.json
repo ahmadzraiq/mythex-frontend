@@ -1,49 +1,29 @@
 {
-  "meta": {
-    "title": "Page Not Found | SaraZ",
-    "description": "The page you're looking for doesn't exist"
-  },
-  "state": {},
-  "layout": "store",
-  "content": {
+  "meta": { "title": "Page Not Found" },
+  "state": {}, "initActions": [{ "action": "fetchNavCollections" }],
+  "ui": {
     "type": "Box",
-    "props": {
-      "className": "flex flex-col items-center justify-center min-h-[60vh] px-4 text-center"
-    },
+    "props": { "className": "flex flex-col min-h-screen" },
     "children": [
       {
-        "type": "Text",
-        "props": { "className": "text-8xl font-bold text-[var(--theme-header-textMuted)] mb-4" },
-        "text": "404"
-      },
-      {
-        "type": "Heading",
-        "props": {
-          "size": "xl",
-          "className": "text-xl sm:text-2xl font-semibold text-[var(--theme-header-text)] mb-2"
-        },
-        "text": "Page not found"
-      },
-      {
-        "type": "Text",
-        "props": {
-          "className": "text-sm text-[var(--theme-header-textMuted)] mb-8 max-w-md"
-        },
-        "text": "Sorry, we couldn't find the page you're looking for. It might have been moved or doesn't exist."
-      },
-      {
-        "type": "Pressable",
-        "props": {
-          "className": "rounded-lg bg-[var(--theme-header-accent)] px-6 py-3 text-sm font-medium text-[var(--theme-header-accentForeground)] hover:opacity-90 transition-opacity"
-        },
-        "actions": {
-          "click": {
-            "action": "navigate",
-            "payload": { "path": "/" }
-          }
-        },
+        "type": "Box",
+        "props": { "className": "flex-1 flex items-center justify-center px-4 py-16" },
         "children": [
-          { "type": "Text", "text": "Back to Home" }
+          {
+            "type": "Box",
+            "props": { "className": "text-center space-y-6 max-w-md" },
+            "children": [
+              { "type": "Heading", "props": { "className": "text-8xl font-bold text-gray-500" }, "text": "404" },
+              { "type": "Heading", "props": { "className": "text-3xl font-bold" }, "text": "Page Not Found" },
+              { "type": "Text", "props": { "className": "text-gray-500 text-lg" }, "text": "Sorry, we couldn't find the page you're looking for." },
+              {
+                "type": "Button",
+                "props": { "className": "bg-[#1e293b] text-white hover:bg-[#334155] px-8 h-11" },
+                "children": [{ "type": "ButtonText", "props": { "className": "!text-white" }, "text": "Back to Home" }],
+                "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } }
+              }
+            ]
+          }
         ]
       }
     ]

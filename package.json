@@ -18,6 +18,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@legendapp/motion": "^2.4.0",
     "dom-helpers": "^5.2.1",
+    "embla-carousel-react": "^8.6.0",
     "json-logic-js": "^2.0.5",
     "lucide-react-native": "^0.510.0",
     "nativewind": "^4.1.23",
@@ -30,6 +31,7 @@
     "react-native-svg": "^15.12.0",
     "react-native-web": "^0.20.0",
     "react-stately": "^3.39.0",
+    "sonner": "^2.0.7",
     "tailwind-variants": "^0.1.20",
     "yup": "^1.7.1",
     "zustand": "^5.0.11"

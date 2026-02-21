@@ -72,7 +72,7 @@ export function createVariableStore(config: VariableStoreConfig = {}) {
       data: JSON.parse(JSON.stringify(initialState)),
 
       get: (path: string, scope?: Record<string, unknown>) => {
-        if (scope && (path.startsWith('$item') || path.startsWith('$index') || path === '$item' || path === '$index')) {
+        if (scope && (path.startsWith('$item') || path.startsWith('$index') || path.startsWith('$parent') || path === '$item' || path === '$index' || path === '$parent')) {
           return getNestedValue(scope, path);
         }
         const state = get();
@@ -199,7 +199,7 @@ export function useVariablePaths(
   const getSnapshot = () => {
     const next = expanded.map((p) => {
       if (typeof p !== 'string') return undefined;
-      if (scope && (p.startsWith('$item') || p.startsWith('$index'))) {
+      if (scope && (p.startsWith('$item') || p.startsWith('$index') || p.startsWith('$parent'))) {
         return getNestedValue(scope, p);
       }
       if (mergedStore) {

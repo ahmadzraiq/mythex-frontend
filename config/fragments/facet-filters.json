@@ -1,0 +1,56 @@
+{
+  "type": "Box",
+  "props": { "className": "w-56 flex-shrink-0 hidden md:block" },
+  "children": [
+    {
+      "type": "VStack",
+      "props": { "className": "gap-4" },
+      "children": [
+        {
+          "type": "Text",
+          "props": { "className": "text-sm font-semibold text-[var(--theme-content-text)] uppercase tracking-wide" },
+          "text": "Filters"
+        },
+        {
+          "type": "Accordion",
+          "props": { "type": "multiple", "className": "w-full" },
+          "map": "search.facetValues",
+          "key": "facetGroup",
+          "children": [
+            {
+              "type": "AccordionItem",
+              "props": { "value": "{{$item.facetValue.facet.name}}" },
+              "children": [
+                {
+                  "type": "AccordionHeader",
+                  "children": [
+                    {
+                      "type": "AccordionTrigger",
+                      "children": [
+                        {
+                          "type": "AccordionTitleText",
+                          "props": { "className": "text-sm font-medium" },
+                          "text": "{{$item.facetValue.facet.name}}"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "AccordionContent",
+                  "children": [
+                    {
+                      "type": "AccordionContentText",
+                      "props": { "className": "text-sm text-[var(--theme-content-textMuted)]" },
+                      "text": "{{$item.facetValue.name}} ({{$item.count}})"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

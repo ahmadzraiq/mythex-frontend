@@ -1,35 +1,46 @@
 {
   "structure": {
     "type": "Box",
-    "props": {
-      "className": "min-h-screen w-full flex flex-col bg-[var(--theme-content-bg)] text-[var(--theme-header-text)]"
-    },
+    "props": { "className": "flex flex-col min-h-screen bg-[var(--theme-content-bg)]" },
     "children": [
       {
-        "$ref": "fragments/store-header"
-      },
-      {
         "type": "Box",
-        "props": {
-          "className": "flex flex-col flex-1 min-h-0"
-        },
+        "props": { "className": "border-b border-[var(--theme-header-border)] bg-[var(--theme-header-bg)] px-6 py-4" },
         "children": [
           {
-            "$slot": "content"
+            "type": "Box",
+            "props": { "className": "max-w-5xl mx-auto flex items-center justify-between" },
+            "children": [
+              {
+                "type": "Pressable",
+                "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-xl font-bold text-[var(--theme-header-text)]" },
+                    "text": "Store"
+                  }
+                ]
+              },
+              {
+                "type": "Pressable",
+                "actions": { "click": { "action": "navigate", "payload": { "path": "/cart" } } },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-sm text-[var(--theme-content-textMuted)]" },
+                    "text": "Back to cart"
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
       {
-        "$ref": "fragments/store-footer"
-      },
-      {
-        "$ref": "fragments/mobile-nav-drawer"
-      },
-      {
-        "$ref": "fragments/search-drawer"
-      },
-      {
-        "$ref": "fragments/cart-drawer"
+        "type": "Box",
+        "props": { "className": "flex-1 w-full max-w-5xl mx-auto px-4 py-8" },
+        "children": [{ "$slot": "content" }]
       }
     ]
   }

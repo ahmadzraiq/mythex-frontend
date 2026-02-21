@@ -1,0 +1,83 @@
+{
+  "type": "Box",
+  "props": { "className": "w-full border-t border-gray-200 dark:border-gray-800 mt-auto bg-white dark:bg-gray-950" },
+  "children": [
+    {
+      "type": "Box",
+      "props": { "className": "w-full max-w-screen-xl mx-auto px-4 py-12" },
+      "children": [
+        {
+          "type": "Box",
+          "props": { "className": "w-full grid grid-cols-1 md:grid-cols-4 gap-8" },
+          "children": [
+            {
+              "type": "Box",
+              "children": [
+                { "type": "Text", "props": { "className": "text-sm font-semibold mb-4 uppercase tracking-wider text-gray-900 dark:text-gray-100" }, "text": "Vendure Store" }
+              ]
+            },
+            {
+              "type": "Box",
+              "children": [
+                { "type": "Text", "props": { "className": "text-sm font-semibold mb-4 text-gray-900 dark:text-gray-100" }, "text": "Categories" },
+                {
+                  "type": "Box",
+                  "props": { "className": "flex flex-col gap-2" },
+                  "children": [
+                    {
+                      "type": "Box",
+                      "map": "nav.collections",
+                      "key": "footerCol",
+                      "props": { "className": "contents" },
+                      "children": [
+                        {
+                          "type": "Pressable",
+                          "actions": { "click": { "action": "navigate", "payload": { "routeConfig": "collection", "slug": { "var": "$item.slug" } } } },
+                          "children": [
+                            { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100" }, "text": "{{$item.name}}" }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Box",
+              "children": [
+                { "type": "Text", "props": { "className": "text-sm font-semibold mb-4 text-gray-900 dark:text-gray-100" }, "text": "Vendure" },
+                {
+                  "type": "Box",
+                  "props": { "className": "flex flex-col gap-2" },
+                  "children": [
+                    { "type": "Pressable", "children": [{ "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "GitHub" }] },
+                    { "type": "Pressable", "children": [{ "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "Documentation" }] },
+                    { "type": "Pressable", "children": [{ "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "Source code" }] }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "w-full mt-12 pt-8 border-t border-gray-200 dark:border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4" },
+          "children": [
+            { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "© 2025 Vendure Store. All rights reserved." },
+            {
+              "type": "Box",
+              "props": { "className": "flex flex-row items-center gap-2" },
+              "children": [
+                { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "Powered by" },
+                { "type": "NextImage", "props": { "src": "/vendure.svg", "alt": "Vendure", "width": 40, "height": 27, "className": "h-4 w-auto dark:invert" } },
+                { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "&" },
+                { "type": "NextImage", "props": { "src": "/next.svg", "alt": "Next.js", "width": 16, "height": 16, "className": "h-5 w-auto dark:invert" } }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -245,6 +245,7 @@ Sends a GraphQL query or mutation. Always uses HTTP POST. Handles both HTTP erro
 | `headers` | Per-action headers merged on top of `engineConventions.graphqlHeaders`; values support `{ "var": "path" }` |
 | `responsePath` | Dot path into response (e.g. `data.products.edges`); applied after GraphQL error check |
 | `storeIn` | State path to store the extracted data |
+| `skipStoreWhenNull` | When true, do not overwrite storeIn when response data is null |
 | `storeFullResponseIn` | Optional; stores the full raw response before `responsePath` extraction |
 | `errorMessagePath` | Dot path for error message in HTTP error body (default from `engineConventions.defaultErrorMessagePath`) |
 | `onSuccess` | Action(s) to run on success |
@@ -313,6 +314,37 @@ Sends a GraphQL query or mutation. Always uses HTTP POST. Handles both HTTP erro
     { "action": "closeDrawer" },
     { "action": "navigate", "payload": { "path": "/dashboard" } }
   ]
+}
+```
+
+### mergeArraysByKey
+
+Merge two arrays by a key path (e.g. cart lines by `productVariant.id`). Config-driven—no app-specific logic in engine.
+
+| Field | Description |
+|-------|-------------|
+| `targetPath` | Path to the object that has the array and receives the merged result |
+| `sourcePath` | Path to the new data to merge in |
+| `arrayPath` | Key of the array in both objects (default: `lines`) |
+| `keyPath` | Dot path to get the merge key from each item (e.g. `productVariant.id`) |
+| `aggregate` | When keys match, aggregate fields: `{ "quantity": "sum" }` |
+| `recomputePerItem` | Recompute fields after merge: `{ "linePriceWithTax": { "multiply": ["unitPriceWithTax", "quantity"] } }` |
+| `totalFields` | Recompute parent fields from merged array: `{ "totalQuantity": { "from": "lines", "field": "quantity" } }` |
+
+```json
+{
+  "type": "mergeArraysByKey",
+  "targetPath": "cart",
+  "sourcePath": "cart._addResult",
+  "arrayPath": "lines",
+  "keyPath": "productVariant.id",
+  "aggregate": { "quantity": "sum" },
+  "recomputePerItem": { "linePriceWithTax": { "multiply": ["unitPriceWithTax", "quantity"] } },
+  "totalFields": {
+    "totalQuantity": { "from": "lines", "field": "quantity" },
+    "subTotalWithTax": { "from": "lines", "field": "linePriceWithTax" },
+    "totalWithTax": { "from": "lines", "field": "linePriceWithTax" }
+  }
 }
 ```
 
@@ -461,7 +493,7 @@ All components from `@/components/ui/*` are supported. Use `type` in JSON to ref
 ### Interactive
 | Component | Description |
 |-----------|-------------|
-| Button | Primary action (use `text` or children) |
+| Button | Primary action (use `text` or children). Use `props.textClassName` to override ButtonText color when Gluestack defaults don't apply (e.g. `!text-gray-900` on light backgrounds). |
 | ButtonText | Button label |
 | ButtonIcon | Button icon |
 | ButtonSpinner | Loading spinner in button |

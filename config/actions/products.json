@@ -1,121 +1,106 @@
 {
-  "fetchProducts": {
-    "type": "fetch",
-    "url": "/api/products",
-    "storeIn": "products.list"
+  "fetchNavCollections": {
+    "type": "graphql",
+    "query": "query GetTopCollections { collections(options: { filter: { parentId: { eq: \"1\" } } }) { items { id name slug } } }",
+    "storeIn": "nav.collections",
+    "responsePath": "data.collections.items"
   },
-  "submitReview": {
-    "type": "appendToPath",
-    "targetPath": "product.reviews",
-    "value": {
-      "id": { "expr": { "cat": ["rev-", { "var": "_timestamp" }] } },
-      "author": "You",
-      "rating": { "var": "reviewForm.rating" },
-      "date": { "var": "_date" },
-      "title": { "var": "reviewForm.title" },
-      "body": { "var": "reviewForm.body" }
-    },
-    "resetFormPath": "reviewForm",
-    "resetFormValue": { "rating": 0, "title": "", "body": "" }
+  "fetchHome": {
+    "type": "graphql",
+    "query": "query GetTopCollections { collections(options: { filter: { parentId: { eq: \"1\" } } }) { items { id name slug } } }",
+    "storeIn": "nav.collections",
+    "responsePath": "data.collections.items"
   },
-  "openCreateModal": {
-    "action": "setState",
-    "payload": {
-      "path": "modal",
-      "value": {
-        "create": true,
-        "editProduct": null,
-        "deleteProduct": null
-      }
-    }
-  },
-  "closeCreateModal": {
-    "action": "setState",
-    "payload": {
-      "path": "modal.create",
-      "value": false
-    }
-  },
-  "closeEditModal": {
-    "action": "setState",
-    "payload": {
-      "path": "modal.editProduct",
-      "value": null
-    }
-  },
-  "closeDeleteModal": {
-    "action": "setState",
-    "payload": {
-      "path": "modal.deleteProduct",
-      "value": null
-    }
-  },
-  "createProduct": {
-    "type": "fetch",
-    "method": "POST",
-    "url": "/api/products",
-    "body": {
-      "name": {
-        "var": "form.product.name"
-      },
-      "price": {
-        "var": "form.product.price"
-      },
-      "category": {
-        "var": "form.product.category"
-      },
-      "description": {
-        "var": "form.product.description"
+  "fetchFeaturedProducts": {
+    "type": "graphql",
+    "query": "query GetFeaturedProducts($input: SearchInput!) { search(input: $input) { items { productId productName slug productAsset { id preview } priceWithTax { __typename ... on PriceRange { min max } ... on SinglePrice { value } } currencyCode } } }",
+    "variables": {
+      "input": {
+        "collectionSlug": "electronics",
+        "take": 8,
+        "skip": 0,
+        "groupByProduct": true
       }
     },
-    "storeIn": "products.newItem",
-    "onSuccess": [
-      {
-        "action": "closeCreateModal"
-      },
-      {
-        "action": "fetchProducts"
-      }
-    ]
+    "storeIn": "featured.products",
+    "responsePath": "data.search.items"
   },
-  "updateProduct": {
-    "type": "fetch",
-    "method": "PUT",
-    "url": "/api/products/{{modal.editProduct.id}}",
-    "body": {
-      "name": {
-        "var": "form.product.name"
-      },
-      "price": {
-        "var": "form.product.price"
-      },
-      "category": {
-        "var": "form.product.category"
-      },
-      "description": {
-        "var": "form.product.description"
+  "fetchProduct": {
+    "type": "graphql",
+    "query": "query GetProductDetail($slug: String!) { product(slug: $slug) { id name description slug assets { id preview source } variants { id name sku priceWithTax stockLevel options { id code name groupId group { id code name } } } optionGroups { id code name options { id code name } } collections { id name slug parent { id } } } }",
+    "variables": {
+      "slug": { "var": "route.slug" }
+    },
+    "storeIn": "product",
+    "responsePath": "data.product",
+    "onSuccess": { "action": "fetchRelatedProducts" }
+  },
+  "fetchCollection": {
+    "type": "graphql",
+    "query": "query GetCollectionProducts($slug: String!, $input: SearchInput!) { collection(slug: $slug) { id name slug description featuredAsset { id preview } } search(input: $input) { totalItems items { productId productName slug productAsset { id preview } priceWithTax { __typename ... on PriceRange { min max } ... on SinglePrice { value } } currencyCode } facetValues { count facetValue { id name facet { id name } } } } }",
+    "variables": {
+      "slug": { "var": "route.slug" },
+      "input": {
+        "collectionSlug": { "var": "route.slug" },
+        "take": { "var": ["collectionPageSize", 12] },
+        "skip": { "var": ["collectionSkip", 0] },
+        "groupByProduct": true,
+        "sort": { "var": ["sortInput", { "name": "ASC" }] },
+        "facetValueIds": { "var": ["route.facets", []] }
       }
     },
-    "onSuccess": [
-      {
-        "action": "closeEditModal"
-      },
-      {
-        "action": "fetchProducts"
-      }
-    ]
+    "storeIn": "collection",
+    "responsePath": "data"
   },
-  "deleteProduct": {
-    "type": "fetch",
-    "method": "DELETE",
-    "url": "/api/products/{{modal.deleteProduct.id}}",
-    "onSuccess": [
-      {
-        "action": "closeDeleteModal"
-      },
-      {
-        "action": "fetchProducts"
+  "searchProducts": {
+    "type": "graphql",
+    "query": "query SearchProducts($input: SearchInput!) { search(input: $input) { totalItems items { productId productName slug productAsset { id preview } priceWithTax { __typename ... on PriceRange { min max } ... on SinglePrice { value } } currencyCode } facetValues { count facetValue { id name facet { id name } } } } }",
+    "variables": {
+      "input": {
+        "term": { "var": "route.q" },
+        "take": 24,
+        "skip": 0,
+        "groupByProduct": true
       }
-    ]
+    },
+    "storeIn": "search",
+    "responsePath": "data.search"
+  },
+  "fetchRelatedProducts": {
+    "type": "graphql",
+    "query": "query GetRelatedProducts($input: SearchInput!) { search(input: $input) { items { productId productName slug productAsset { id preview } priceWithTax { __typename ... on PriceRange { min max } ... on SinglePrice { value } } currencyCode } } }",
+    "variables": {
+      "input": {
+        "collectionSlug": { "var": "product.primaryCollectionSlug" },
+        "take": 13,
+        "skip": 0,
+        "groupByProduct": true
+      }
+    },
+    "storeIn": "related._raw",
+    "responsePath": "data.search.items"
+  },
+  "selectProductOption": {
+    "type": "mergeAtPath",
+    "path": "product.selectedOptions",
+    "key": { "var": "$parent.id" },
+    "value": { "var": "$item.id" }
+  },
+  "prevProductImage": {
+    "type": "cycleIndex",
+    "path": "product.imageIndex",
+    "arrayPath": "product.assets",
+    "direction": "prev"
+  },
+  "nextProductImage": {
+    "type": "cycleIndex",
+    "path": "product.imageIndex",
+    "arrayPath": "product.assets",
+    "direction": "next"
+  },
+  "selectProductImage": {
+    "type": "setVar",
+    "path": "product.imageIndex",
+    "value": { "var": "$index" }
   }
 }

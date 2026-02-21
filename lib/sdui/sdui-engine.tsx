@@ -7,16 +7,19 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useColorScheme } from 'nativewind';
 import { create } from 'zustand';
 import { useSduiStore } from '@/store/sdui-store';
 import { SDURenderer } from './renderer';
 import { getGlobalVariableStore } from './global-variable-store';
+import { RunActionProvider } from './run-action-context';
 import type { SDUIConfig, SDUIContext, SDUIAction, SDUIDataSource } from './types';
 import jsonLogic from 'json-logic-js';
 import { getNestedValue, setNestedValue } from './nested-utils';
 import { runComputed, getComputedDeps } from './computed-runner';
 import storeConfig from '@/config/store.json';
+import { toast } from 'sonner';
 
 type EngineConventions = {
   loadingSuffix?: string;
@@ -29,6 +32,7 @@ type EngineConventions = {
   defaultFormPath?: string;
   graphqlEndpoint?: string;
   graphqlHeaders?: Record<string, string>;
+  graphqlCredentials?: RequestCredentials;
 };
 const engineConventions = (storeConfig as { engineConventions?: EngineConventions }).engineConventions ?? {};
 const CONVENTIONS = {
@@ -42,6 +46,7 @@ const CONVENTIONS = {
   defaultFormPath: engineConventions.defaultFormPath,
   graphqlEndpoint: engineConventions.graphqlEndpoint,
   graphqlHeaders: engineConventions.graphqlHeaders ?? {},
+  graphqlCredentials: engineConventions.graphqlCredentials,
 };
 
 function isScreenScopedPath(path: string, aliases: string[]): boolean {
@@ -59,14 +64,32 @@ function interpolateUrl(url: string, get: (path: string, scope?: Record<string, 
   });
 }
 
+function resolveActionValue(
+  value: unknown,
+  get: (path: string, scope?: Record<string, unknown>) => unknown,
+  scope?: Record<string, unknown>,
+  defaultNum = 1
+): number {
+  if (value == null) return defaultNum;
+  if (typeof value === 'object' && value && 'var' in value) {
+    const v = (value as { var: string | [string, unknown] }).var;
+    const path = Array.isArray(v) ? String(v[0]) : String(v);
+    const fallback = Array.isArray(v) ? v[1] : undefined;
+    const resolved = get(path, scope);
+    return Number(resolved ?? fallback ?? defaultNum);
+  }
+  return Number(value ?? defaultNum);
+}
+
 function resolvePayload(
   payload: Record<string, unknown>,
   get: (path: string, scope?: Record<string, unknown>) => unknown,
-  scope?: Record<string, unknown>
+  scope?: Record<string, unknown>,
+  fullState?: Record<string, unknown>
 ): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(payload)) {
-    result[key] = resolveValue(value, get, scope);
+    result[key] = resolveValue(value, get, scope, fullState);
   }
   return result;
 }
@@ -105,6 +128,15 @@ function resolveValue(
     const resolved: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(obj)) {
       resolved[k] = resolveValue(v, get, scope, fullState);
+    }
+    // Evaluate JSON Logic expressions (e.g. {"-":[a,1]}, {"max":[1,x]}) so payload values become primitives
+    const keys = Object.keys(resolved);
+    if (keys.length === 1 && typeof keys[0] === 'string') {
+      try {
+        return jsonLogic.apply(resolved as object, fullState ?? {});
+      } catch {
+        /* fall through */
+      }
     }
     return resolved;
   }
@@ -171,6 +203,8 @@ export function SDUIEngine({
   routes = [],
 }: SDUIEngineProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { setColorScheme } = useColorScheme();
   const setLoading = useSduiStore((s) => s.setLoading);
   const setData = useSduiStore((s) => s.setData);
   const setError = useSduiStore((s) => s.setError);
@@ -241,7 +275,27 @@ export function SDUIEngine({
   useEffect(() => {
     return store.subscribe(() => {
       const vs = store.getState().getFullState();
-      mergedStore.getState().setMerged((prev) => ({ ...prev, ...vs }));
+      mergedStore.getState().setMerged((prev) => {
+        // Deep-merge one level: if both prev[key] and vs[key] are plain objects,
+        // spread them together so a partial vs.nav doesn't wipe prev.nav.collections
+        let next: Record<string, unknown> = { ...prev };
+        for (const [key, val] of Object.entries(vs)) {
+          const prevVal = prev[key];
+          if (
+            val !== null && typeof val === 'object' && !Array.isArray(val) &&
+            prevVal !== null && typeof prevVal === 'object' && !Array.isArray(prevVal)
+          ) {
+            next[key] = { ...(prevVal as object), ...(val as object) };
+          } else {
+            next[key] = val;
+          }
+        }
+        // Recompute when vs updates (e.g. collectionSkip) so collectionCurrentPage stays in sync with pagination
+        if (computedDefs.length > 0) {
+          next = runComputed(next, computedDefs as Parameters<typeof runComputed>[1], {});
+        }
+        return next;
+      });
     });
   }, [store, mergedStore]);
 
@@ -288,8 +342,22 @@ export function SDUIEngine({
           merged = setNestedValue(merged, outPath, value);
         }
       }
+      // Merge: Zustand data (merged) as base; variable store (vs) overlays with deep merge
+      // so product.selectedOptions from vs is merged into product from Zustand.
       const vs = store.getState().getFullState();
-      mergedStore.getState().setMerged({ ...merged, ...vs });
+      let next: Record<string, unknown> = { ...merged };
+      for (const [key, val] of Object.entries(vs)) {
+        const mVal = merged[key];
+        if (
+          val !== null && typeof val === 'object' && !Array.isArray(val) &&
+          mVal !== null && typeof mVal === 'object' && !Array.isArray(mVal)
+        ) {
+          next[key] = { ...(mVal as object), ...(val as object) };
+        } else if (val !== undefined) {
+          next[key] = val;
+        }
+      }
+      mergedStore.getState().setMerged(next);
     });
   }, [computeMergedState, config, mergedStore, store]);
 
@@ -311,7 +379,7 @@ export function SDUIEngine({
     async (action: SDUIAction | SDUIAction[], event?: unknown, scope?: Record<string, unknown>) => {
       const get = (path: string, s?: Record<string, unknown>) => {
         const sc = s ?? scope;
-        if (sc && (path.startsWith('$item') || path.startsWith('$index') || path === '$item' || path === '$index')) {
+        if (sc && (path.startsWith('$item') || path.startsWith('$index') || path.startsWith('$parent') || path === '$item' || path === '$index' || path === '$parent')) {
           return getNestedValue(sc, path);
         }
         if (path === '_timestamp') return Date.now();
@@ -328,6 +396,9 @@ export function SDUIEngine({
         if (fromMerged !== undefined) return fromMerged;
         return undefined;
       };
+
+      const getFullMergedState = () =>
+        ({ ...mergedStore.getState().merged, ...store.getState().getFullState() }) as Record<string, unknown>;
 
       const runOne = async (a: SDUIAction) => {
         const actionName = String((a as { action: string }).action);
@@ -347,6 +418,11 @@ export function SDUIEngine({
           onSuccess?: { action: string; payload?: { path: string } };
           actions?: Array<{ action: string; payload?: Record<string, unknown> }>;
         } | undefined;
+        // Fall back to treating the action object itself as the definition when no named action found
+        // This allows inline types like { "type": "increment", "path": "..." } inside runMultiple
+        if (!actionDef && 'type' in (a as object)) {
+          actionDef = a as typeof actionDef;
+        }
         if (actionDef && 'action' in actionDef && typeof (actionDef as { action?: string }).action === 'string') {
           const alias = actionDef as { action: string; payload?: Record<string, unknown> };
           return runOne({ action: alias.action, payload: alias.payload ?? payload });
@@ -403,9 +479,9 @@ export function SDUIEngine({
           return;
         }
         if (actionDef?.type === 'appendToPath') {
-          const targetPath = (actionDef.targetPath ?? actionDef.path ?? '') as string;
+          const targetPath = ((actionDef as { targetPath?: string }).targetPath ?? actionDef.path ?? '') as string;
           const rawValue = actionDef.value;
-          const fullState = { ...mergedStore.getState().merged, ...store.getState().getFullState() };
+          const fullState = getFullMergedState();
           const resolvedValue =
             rawValue != null && typeof rawValue === 'object'
               ? resolveValue(rawValue, get, scope, fullState)
@@ -424,8 +500,8 @@ export function SDUIEngine({
               setData(targetPath, arr);
             }
           }
-          const resetFormPath = actionDef.resetFormPath as string | undefined;
-          const resetFormValue = (actionDef.resetFormValue ?? {}) as Record<string, unknown>;
+          const resetFormPath = (actionDef as { resetFormPath?: string }).resetFormPath;
+          const resetFormValue = ((actionDef as { resetFormValue?: Record<string, unknown> }).resetFormValue ?? {}) as Record<string, unknown>;
           if (resetFormPath) {
             const pathToReset = configName && !resetFormPath.startsWith('screens.') ? `screens.${configName}.${resetFormPath}` : resetFormPath;
             store.getState().setState((prev) => setNestedValue(prev, pathToReset, resetFormValue));
@@ -441,8 +517,8 @@ export function SDUIEngine({
         }
         if (actionDef?.type === 'fetch') {
           const storeIn = actionDef.storeIn ?? CONVENTIONS.defaultStoreIn;
-          const storeFullResponseIn = actionDef.storeFullResponseIn as string | undefined;
-          const errorMessagePath = (actionDef.errorMessagePath ?? CONVENTIONS.defaultErrorMessagePath) as string;
+          const storeFullResponseIn = (actionDef as { storeFullResponseIn?: string }).storeFullResponseIn;
+          const errorMessagePath = ((actionDef as { errorMessagePath?: string }).errorMessagePath ?? CONVENTIONS.defaultErrorMessagePath) as string;
           const url = interpolateUrl(String(actionDef.url ?? ''), get, scope);
           const map = actionDef.map;
           const responsePath = actionDef.responsePath as string | undefined;
@@ -504,7 +580,17 @@ export function SDUIEngine({
           const endpoint = interpolateUrl(rawEndpoint, get, scope);
           const query = (actionDef as { query?: string }).query ?? '';
           const rawVariables = (actionDef as { variables?: Record<string, unknown> }).variables;
-          const variables = rawVariables ? resolvePayload(rawVariables, get, scope) : undefined;
+          const fullState = getFullMergedState();
+          const stateWithScope = scope ? { ...fullState, ...scope } : fullState;
+          const baseVars = rawVariables ? resolvePayload(rawVariables, get, scope, stateWithScope) : {};
+          const payloadVars =
+            payload && typeof payload === 'object'
+              ? resolvePayload(payload as Record<string, unknown>, get, scope, stateWithScope)
+              : {};
+          const variables: Record<string, unknown> | undefined =
+            Object.keys(baseVars).length || Object.keys(payloadVars).length
+              ? { ...baseVars, ...payloadVars }
+              : undefined;
           const rawHeaders = (actionDef as { headers?: Record<string, string> }).headers ?? {};
           const resolvedActionHeaders = resolvePayload(rawHeaders as Record<string, unknown>, get, scope) as Record<string, string>;
           const headers: Record<string, string> = {
@@ -512,13 +598,23 @@ export function SDUIEngine({
             ...CONVENTIONS.graphqlHeaders,
             ...resolvedActionHeaders,
           };
+          // Remove headers with null/undefined/empty values (e.g. Authorization when not logged in)
+          for (const key of Object.keys(headers)) {
+            if (headers[key] == null || headers[key] === '' || headers[key] === 'null' || headers[key] === 'undefined') {
+              delete headers[key];
+            }
+          }
           const responsePath = actionDef.responsePath as string | undefined;
+          const credentials =
+            (actionDef as { credentials?: RequestCredentials }).credentials ?? CONVENTIONS.graphqlCredentials;
+          const storeHeaderIn = (actionDef as { storeHeaderIn?: Record<string, string> }).storeHeaderIn;
           setLoading(storeIn, true);
           try {
             const res = await fetch(endpoint, {
               method: 'POST',
               headers,
               body: JSON.stringify({ query, variables }),
+              ...(credentials ? { credentials } : {}),
             });
             const rawResponse = await res.json().catch(() => ({}));
             if (!res.ok) {
@@ -531,6 +627,13 @@ export function SDUIEngine({
             if (gqlErrors && gqlErrors.length > 0) {
               throw new Error(gqlErrors[0]?.message ?? 'GraphQL error');
             }
+            // Store response headers into state paths (e.g. auth token from vendure-auth-token header)
+            if (storeHeaderIn) {
+              for (const [storePath, headerName] of Object.entries(storeHeaderIn)) {
+                const headerValue = res.headers.get(headerName);
+                if (headerValue) setData(storePath, headerValue);
+              }
+            }
             if (storeFullResponseIn) {
               setData(storeFullResponseIn, rawResponse);
             }
@@ -541,16 +644,24 @@ export function SDUIEngine({
                 data = (data as Record<string, unknown>)?.[p];
               }
             }
-            setData(storeIn, data);
-            const onSuccess = actionDef.onSuccess;
-            if (onSuccess) {
-              const actions = Array.isArray(onSuccess) ? onSuccess : [onSuccess];
-              for (const a of actions) {
-                await runOne(a as SDUIAction);
+            const addResult = data as { __typename?: string; message?: string } | undefined;
+            if (addResult?.__typename === 'ErrorResult') {
+              toast.error(addResult.message ?? 'Operation failed');
+              setError(storeIn, addResult.message ?? 'Failed');
+            } else {
+              const skipStoreWhenNull = (actionDef as { skipStoreWhenNull?: boolean }).skipStoreWhenNull;
+              if (!skipStoreWhenNull || data != null) setData(storeIn, data);
+              const onSuccess = actionDef.onSuccess;
+              if (onSuccess) {
+                const actions = Array.isArray(onSuccess) ? onSuccess : [onSuccess];
+                for (const a of actions) {
+                  await runOne(a as SDUIAction);
+                }
               }
             }
           } catch (err) {
             setError(storeIn, err instanceof Error ? err.message : 'GraphQL request failed');
+            toast.error(err instanceof Error ? err.message : 'Request failed');
           }
           return;
         }
@@ -563,9 +674,10 @@ export function SDUIEngine({
         if (actionDef?.type === 'set') {
           const path = actionDef.path ?? '';
           const rawValue = actionDef.value;
+          const fullState = getFullMergedState();
           const value =
             rawValue != null && typeof rawValue === 'object' && !Array.isArray(rawValue)
-              ? resolvePayload(rawValue as Record<string, unknown>, get, scope)
+              ? resolveValue(rawValue, get, scope, fullState)
               : rawValue;
           if (path) setData(path, value);
           const onSuccess = actionDef.onSuccess;
@@ -579,24 +691,97 @@ export function SDUIEngine({
         }
         if (actionDef?.type === 'increment') {
           const path = (actionDef.path ?? '') as string;
-          const amount = Number((actionDef as { amount?: number }).amount ?? 1);
+          const amountRaw = (actionDef as { amount?: unknown }).amount;
+          const amount = resolveActionValue(amountRaw, get, scope, 1);
           const current = get(path);
-          const next = Math.max(1, (Number(current) || 0) + amount);
+          const minVal = Number((actionDef as { min?: number }).min ?? 0);
+          const next = Math.max(minVal, (Number(current) || 0) + amount);
           store.getState().setState((prev) => setNestedValue(prev, path, next));
+          if (!path.startsWith('screens.')) {
+            useSduiStore.getState().setData(path, next);
+          }
           return;
         }
         if (actionDef?.type === 'decrement') {
           const path = (actionDef.path ?? '') as string;
-          const amount = Number((actionDef as { amount?: number }).amount ?? 1);
+          const amountRaw = (actionDef as { amount?: unknown }).amount;
+          const amount = resolveActionValue(amountRaw, get, scope, 1);
           const current = get(path);
-          const next = Math.max(1, (Number(current) || 0) - amount);
+          const minVal = Number((actionDef as { min?: number }).min ?? 0);
+          const next = Math.max(minVal, (Number(current) || 0) - amount);
           store.getState().setState((prev) => setNestedValue(prev, path, next));
+          if (!path.startsWith('screens.')) {
+            useSduiStore.getState().setData(path, next);
+          }
           return;
         }
         if (actionDef?.type === 'toggle') {
           const path = (actionDef.path ?? '') as string;
           const current = get(path);
           store.getState().setState((prev) => setNestedValue(prev, path, !current));
+          return;
+        }
+        // setVar: variable store + Zustand for global paths (so merge has correct value and fetch reads it)
+        if (actionDef?.type === 'setVar') {
+          const path = (actionDef.path ?? '') as string;
+          const rawValue = actionDef.value;
+          const value =
+            rawValue != null && typeof rawValue === 'object' && !Array.isArray(rawValue)
+              ? resolvePayload(rawValue as Record<string, unknown>, get, scope)
+              : rawValue;
+          store.getState().setState((prev) => setNestedValue(prev, path, value));
+          if (!path.startsWith('screens.')) {
+            useSduiStore.getState().setData(path, value);
+          }
+          return;
+        }
+        // cycleIndex: cycle through array index (for product image carousel prev/next)
+        if (actionDef?.type === 'cycleIndex') {
+          const path = ((actionDef as { path?: string }).path ?? '') as string;
+          const arrayPath = ((actionDef as { arrayPath?: string }).arrayPath ?? '') as string;
+          const direction = ((actionDef as { direction?: string }).direction ?? 'next') as string;
+          const arr = (get(arrayPath) as unknown[]) ?? [];
+          const len = arr.length;
+          const current = Number(get(path)) || 0;
+          const next = direction === 'prev'
+            ? (current - 1 + len) % len
+            : (current + 1) % len;
+          if (path) {
+            store.getState().setState((prev) => setNestedValue(prev, path, next));
+            if (!path.startsWith('screens.')) {
+              useSduiStore.getState().setData(path, next);
+            }
+          }
+          return;
+        }
+        // mergeAtPath: merge one key-value into object at path (for product.selectedOptions)
+        if (actionDef?.type === 'mergeAtPath') {
+          const path = ((actionDef as { path?: string }).path ?? '') as string;
+          const keyRaw = (actionDef as { key?: unknown }).key;
+          const valueRaw = (actionDef as { value?: unknown }).value;
+          const key = resolveValue(keyRaw, get, scope) as string;
+          const value = resolveValue(valueRaw, get, scope);
+          if (path && key != null) {
+            const current = get(path) as Record<string, unknown> | undefined;
+            const next = { ...(current ?? {}), [key]: value };
+            store.getState().setState((prev) => setNestedValue(prev, path, next));
+          }
+          return;
+        }
+        // goToPage: set skip from page number, then run fetch (for pagination with page numbers)
+        if (actionDef?.type === 'goToPage') {
+          const path = ((actionDef as { path?: string }).path ?? 'collectionSkip') as string;
+          const pageRaw = (actionDef as { page?: unknown }).page;
+          const page = resolveActionValue(pageRaw, get, scope, 1);
+          const pageSizeRaw = (actionDef as { pageSize?: unknown }).pageSize;
+          const pageSize = resolveActionValue(pageSizeRaw, get, scope, 12);
+          const fetchAction = ((actionDef as { fetchAction?: string }).fetchAction ?? 'fetchCollection') as string;
+          const skip = Math.max(0, (page - 1) * pageSize);
+          store.getState().setState((prev) => setNestedValue(prev, path, skip));
+          if (!path.startsWith('screens.')) {
+            useSduiStore.getState().setData(path, skip);
+          }
+          await runOne({ action: fetchAction });
           return;
         }
         if (actionDef?.type === 'removeAt') {
@@ -636,6 +821,13 @@ export function SDUIEngine({
           return;
         }
 
+        if (actionDef?.type === 'setTheme') {
+          const value = ((actionDef as { value?: string }).value ?? 'system') as 'light' | 'dark' | 'system';
+          setColorScheme(value);
+          setData('nav.colorScheme', value);
+          return;
+        }
+
         if (actionName === 'navigate' && payload && typeof payload === 'object') {
           const pl = payload as { path?: string; routeConfig?: string; slug?: unknown };
           if (pl.routeConfig != null) {
@@ -660,7 +852,21 @@ export function SDUIEngine({
           } else if ('path' in pl && pl.path) {
             const path = String(pl.path);
             const interpolated = interpolateUrl(path, get, scope);
-            router.push(interpolated);
+            const qIdx = interpolated.indexOf('?');
+            if (qIdx >= 0) {
+              const basePath = interpolated.slice(0, qIdx);
+              const newQuery = interpolated.slice(qIdx + 1);
+              const merged = new URLSearchParams(searchParams ? searchParams.toString() : '');
+              const newParams = new URLSearchParams(newQuery);
+              for (const key of newParams.keys()) {
+                merged.delete(key);
+                for (const v of newParams.getAll(key)) merged.append(key, v);
+              }
+              const qs = merged.toString();
+              router.push(qs ? `${basePath}?${qs}` : basePath);
+            } else {
+              router.push(interpolated);
+            }
           }
         } else if (actionName === 'setState' && payload && typeof payload === 'object' && 'path' in payload) {
           const p = payload as { path: string; value?: unknown; merge?: boolean };
@@ -706,6 +912,12 @@ export function SDUIEngine({
             setNestedValue(nestedErrors, path, msg);
           }
           store.getState().setState((prev) => setNestedValue(prev, storeErrorsIn, nestedErrors));
+        } else if (actionName === 'showToast' && payload && typeof payload === 'object') {
+          const pl = payload as { message?: string; type?: 'success' | 'error' | 'info' };
+          const msg = String(pl.message ?? 'Done');
+          if (pl.type === 'error') toast.error(msg);
+          else if (pl.type === 'info') toast.info(msg);
+          else toast.success(msg);
         } else if (actionName === 'log') {
           console.log('[SDUI]', payload);
         }
@@ -731,7 +943,7 @@ export function SDUIEngine({
         }
       }
     },
-    [router, fetchDataStable, actionsConfig, store, mergedStore, setLoading, setData, setError, append, routes, configName]
+    [router, searchParams, setColorScheme, fetchDataStable, actionsConfig, store, mergedStore, setLoading, setData, setError, append, routes, configName]
   );
 
   const runActionStable = useCallback(
@@ -786,5 +998,9 @@ export function SDUIEngine({
     config.initActions?.forEach((action) => runActionRef.current(action));
   }, [config.initActions]); // runActionRef.current always has latest runAction
 
-  return <SDURenderer node={config.ui} context={context} />;
+  return (
+    <RunActionProvider value={runActionStable}>
+      <SDURenderer node={config.ui} context={context} />
+    </RunActionProvider>
+  );
 }

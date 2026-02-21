@@ -1,0 +1,275 @@
+{
+  "meta": {
+    "title": "Sign In"
+  },
+  "state": {
+    "form": {
+      "username": "",
+      "password": ""
+    },
+    "errors": {}
+  },
+  "ui": {
+    "type": "Box",
+    "props": {
+      "className": "flex min-h-screen items-center justify-center px-4"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full max-w-md space-y-6"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "space-y-2 text-center"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "className": "text-3xl font-bold"
+                },
+                "text": "Sign In"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-gray-500"
+                },
+                "text": "Enter your credentials to access your account"
+              }
+            ]
+          },
+          {
+            "type": "Card",
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "p-6 space-y-4"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "space-y-2"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-medium leading-none"
+                        },
+                        "text": "Email"
+                      },
+                      {
+                        "type": "Input",
+                        "props": {
+                          "className": "flex h-9 w-full rounded-md border border-gray-200 bg-transparent px-3 py-1 text-sm shadow-sm"
+                        },
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": {
+                              "type": "email",
+                              "placeholder": "you@example.com",
+                              "value": "{{form.username}}",
+                              "className": "flex-1 bg-transparent outline-none text-sm"
+                            },
+                            "actions": {
+                              "change": {
+                                "action": "setState",
+                                "payload": {
+                                  "path": "form.username",
+                                  "value": "$event"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-red-500"
+                        },
+                        "condition": {
+                          "!=": [
+                            {
+                              "var": "errors.form.username"
+                            },
+                            null
+                          ]
+                        },
+                        "text": "{{errors.form.username}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "space-y-2"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex items-center justify-between"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-sm font-medium leading-none"
+                            },
+                            "text": "Password"
+                          },
+                          {
+                            "type": "Pressable",
+                            "actions": {
+                              "click": {
+                                "action": "navigate",
+                                "payload": {
+                                  "path": "/forgot-password"
+                                }
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-gray-500 hover:text-[#1e293b] text-sm"
+                                },
+                                "text": "Forgot password?"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Input",
+                        "props": {
+                          "className": "flex h-9 w-full rounded-md border border-gray-200 bg-transparent px-3 py-1 text-sm shadow-sm"
+                        },
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": {
+                              "type": "password",
+                              "placeholder": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",
+                              "value": "{{form.password}}",
+                              "className": "flex-1 bg-transparent outline-none text-sm"
+                            },
+                            "actions": {
+                              "change": {
+                                "action": "setState",
+                                "payload": {
+                                  "path": "form.password",
+                                  "value": "$event"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-red-500"
+                        },
+                        "condition": {
+                          "!=": [
+                            {
+                              "var": "errors.form.password"
+                            },
+                            null
+                          ]
+                        },
+                        "text": "{{errors.form.password}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "text-sm text-red-500"
+                    },
+                    "condition": {
+                      "!=": [
+                        {
+                          "var": "_workflow.lastError"
+                        },
+                        null
+                      ]
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "{{_workflow.lastError}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "className": "w-full"
+                    },
+                    "children": [{ "type": "ButtonText", "props": { "className": "!text-white" }, "text": "Sign In" }],
+                    "actions": {
+                      "click": {
+                        "action": "login"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "px-6 pb-6 flex flex-col space-y-4"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-gray-500 text-sm text-center"
+                    },
+                    "text": "Don't have an account?"
+                  },
+                  {
+                    "type": "Pressable",
+                    "actions": {
+                      "click": {
+                        "action": "navigate",
+                        "payload": {
+                          "path": "/register"
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-center text-[#1e293b] hover:underline w-full block"
+                        },
+                        "text": "Register"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "initActions": [
+    {
+      "action": "fetchNavCollections"
+    }
+  ]
+}

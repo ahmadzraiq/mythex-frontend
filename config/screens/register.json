@@ -1,0 +1,359 @@
+{
+  "meta": {
+    "title": "Create Account"
+  },
+  "state": {
+    "form": {
+      "emailAddress": "",
+      "firstName": "",
+      "lastName": "",
+      "password": "",
+      "confirmPassword": ""
+    },
+    "errors": {}
+  },
+  "ui": {
+    "type": "Box",
+    "props": {
+      "className": "flex min-h-screen items-center justify-center px-4"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full max-w-md space-y-6"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "space-y-2 text-center"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "className": "text-3xl font-bold"
+                },
+                "text": "Create Account"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-gray-500"
+                },
+                "text": "Sign up to start shopping with us"
+              }
+            ]
+          },
+          {
+            "type": "Card",
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "p-6 space-y-4"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "space-y-2"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-medium leading-none"
+                        },
+                        "text": "Email"
+                      },
+                      {
+                        "type": "Input",
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": {
+                              "type": "email",
+                              "placeholder": "you@example.com",
+                              "value": "{{form.emailAddress}}"
+                            },
+                            "actions": {
+                              "change": {
+                                "action": "setState",
+                                "payload": {
+                                  "path": "form.emailAddress",
+                                  "value": "$event"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-red-500"
+                        },
+                        "condition": {
+                          "!=": [
+                            {
+                              "var": "errors.form.emailAddress"
+                            },
+                            null
+                          ]
+                        },
+                        "text": "{{errors.form.emailAddress}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "grid grid-cols-2 gap-4"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "space-y-2"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-sm font-medium leading-none"
+                            },
+                            "text": "First name"
+                          },
+                          {
+                            "type": "Input",
+                            "children": [
+                              {
+                                "type": "InputField",
+                                "props": {
+                                  "placeholder": "Jane",
+                                  "value": "{{form.firstName}}"
+                                },
+                                "actions": {
+                                  "change": {
+                                    "action": "setState",
+                                    "payload": {
+                                      "path": "form.firstName",
+                                      "value": "$event"
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "space-y-2"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-sm font-medium leading-none"
+                            },
+                            "text": "Last name"
+                          },
+                          {
+                            "type": "Input",
+                            "children": [
+                              {
+                                "type": "InputField",
+                                "props": {
+                                  "placeholder": "Doe",
+                                  "value": "{{form.lastName}}"
+                                },
+                                "actions": {
+                                  "change": {
+                                    "action": "setState",
+                                    "payload": {
+                                      "path": "form.lastName",
+                                      "value": "$event"
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "space-y-2"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-medium leading-none"
+                        },
+                        "text": "Password"
+                      },
+                      {
+                        "type": "Input",
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": {
+                              "type": "password",
+                              "placeholder": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",
+                              "value": "{{form.password}}"
+                            },
+                            "actions": {
+                              "change": {
+                                "action": "setState",
+                                "payload": {
+                                  "path": "form.password",
+                                  "value": "$event"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-red-500"
+                        },
+                        "condition": {
+                          "!=": [
+                            {
+                              "var": "errors.form.password"
+                            },
+                            null
+                          ]
+                        },
+                        "text": "{{errors.form.password}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "space-y-2"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-medium leading-none"
+                        },
+                        "text": "Confirm Password"
+                      },
+                      {
+                        "type": "Input",
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": {
+                              "type": "password",
+                              "placeholder": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",
+                              "value": "{{form.confirmPassword}}"
+                            },
+                            "actions": {
+                              "change": {
+                                "action": "setState",
+                                "payload": {
+                                  "path": "form.confirmPassword",
+                                  "value": "$event"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "text-sm text-red-500"
+                    },
+                    "condition": {
+                      "!=": [
+                        {
+                          "var": "_workflow.lastError"
+                        },
+                        null
+                      ]
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "{{_workflow.lastError}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "className": "w-full bg-[#1e293b] text-white hover:bg-[#334155]"
+                    },
+                    "children": [{ "type": "ButtonText", "props": { "className": "!text-white" }, "text": "Create Account" }],
+                    "actions": {
+                      "click": {
+                        "action": "registerCustomer"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "px-6 pb-6 text-center"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500"
+                    },
+                    "text": "Already have an account?"
+                  },
+                  {
+                    "type": "Pressable",
+                    "actions": {
+                      "click": {
+                        "action": "navigate",
+                        "payload": {
+                          "path": "/sign-in"
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-[#1e293b] hover:underline ml-1"
+                        },
+                        "text": "Sign in"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "initActions": [
+    {
+      "action": "fetchNavCollections"
+    }
+  ]
+}

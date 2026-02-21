@@ -1,0 +1,209 @@
+{
+  "meta": { "title": "Collection" },
+  "state": {},
+  "layout": "store",
+  "initActions": [
+    { "action": "fetchNavCollections" },
+    { "action": "fetchCollection" }
+  ],
+  "content": {
+    "type": "Box",
+    "props": { "className": "container mx-auto px-4 py-8" },
+    "children": [
+      {
+        "type": "Box",
+        "condition": { "var": "collection.loading" },
+        "props": { "className": "grid grid-cols-1 lg:grid-cols-4 gap-8 animate-pulse" },
+        "children": [
+          { "type": "Box", "props": { "className": "lg:col-span-1 h-64 bg-gray-200 dark:bg-gray-700 rounded-lg" } },
+          {
+            "type": "Box",
+            "props": { "className": "lg:col-span-3 space-y-6" },
+            "children": [
+              { "type": "Box", "props": { "className": "w-full flex flex-row justify-between items-center" }, "children": [
+                { "type": "Box", "props": { "className": "h-5 bg-gray-200 dark:bg-gray-700 rounded w-24" } },
+                { "type": "Box", "props": { "className": "h-9 bg-gray-200 dark:bg-gray-700 rounded w-44 flex-shrink-0" } }
+              ]},
+              {
+                "type": "Box",
+                "props": { "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" },
+                "children": [
+                  { "type": "Box", "props": { "className": "aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg" } },
+                  { "type": "Box", "props": { "className": "aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg" } },
+                  { "type": "Box", "props": { "className": "aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg" } },
+                  { "type": "Box", "props": { "className": "aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg hidden sm:block" } },
+                  { "type": "Box", "props": { "className": "aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg hidden sm:block" } },
+                  { "type": "Box", "props": { "className": "aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg hidden lg:block" } }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "condition": { "!": [{ "var": "collection.loading" }] },
+        "props": { "className": "grid grid-cols-1 lg:grid-cols-4 gap-8" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "lg:col-span-1" },
+            "children": [
+              {
+                "type": "FacetFiltersPanel",
+                "props": {
+                  "facetValues": { "var": ["collection.search.facetValues", []] },
+                  "selectedFacets": { "var": ["route.facets", []] }
+                }
+              }
+            ]
+          },
+
+          {
+            "type": "Box",
+            "props": { "className": "lg:col-span-3 space-y-8" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "relative z-10 w-full flex flex-row items-center justify-between" },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+                    "text": {
+                      "expr": {
+                        "if": [
+                          { "==": [{ "var": ["collection.search.totalItems", 0] }, 1] },
+                          "1 product",
+                          { "cat": [{ "var": ["collection.search.totalItems", "0"] }, " products"] }
+                        ]
+                      }
+                    }
+                  },
+
+                  {
+                    "type": "Box",
+                    "props": { "className": "relative flex-shrink-0" },
+                    "children": [
+                      {
+                        "type": "Pressable",
+                        "props": { "className": "fixed inset-0 z-[9998]" },
+                        "condition": { "var": "sortMenuOpen" },
+                        "actions": { "click": { "type": "setVar", "path": "sortMenuOpen", "value": false } }
+                      },
+                      {
+                        "type": "Pressable",
+                        "props": { "className": "relative z-50 flex flex-row items-center gap-2 h-9 px-3 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 min-w-[180px] justify-between" },
+                        "actions": { "click": { "type": "toggle", "path": "sortMenuOpen" } },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": { "className": "text-sm text-gray-700 dark:text-gray-300" },
+                            "text": {
+                              "expr": {
+                                "if": [
+                                  { "==": [{ "var": "route.sort" }, "name-asc"] }, "Name: A to Z",
+                                  { "==": [{ "var": "route.sort" }, "name-desc"] }, "Name: Z to A",
+                                  { "==": [{ "var": "route.sort" }, "price-asc"] }, "Price: Low to High",
+                                  "Price: High to Low"
+                                ]
+                              }
+                            }
+                          },
+                          { "type": "NavIcon", "props": { "icon": "ChevronDown", "size": 14, "color": "#6b7280" } }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "condition": { "var": "sortMenuOpen" },
+                        "props": { "className": "absolute right-0 top-full mt-1 min-w-[180px] rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-md z-[9999] py-1" },
+                        "children": [
+                          {
+                            "type": "Pressable",
+                            "props": { "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800" },
+                            "actions": { "click": { "type": "runMultiple", "actions": [
+                              { "type": "setVar", "path": "sortMenuOpen", "value": false },
+                              { "action": "navigate", "payload": { "path": "{{route.path}}?sort=name-asc" } }
+                            ] } },
+                            "children": [
+                              { "type": "Text", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "Name: A to Z" },
+                              { "type": "NavIcon", "props": { "icon": "Check", "size": 14, "color": "#1e293b" }, "condition": { "==": [{ "var": "route.sort" }, "name-asc"] } }
+                            ]
+                          },
+                          {
+                            "type": "Pressable",
+                            "props": { "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800" },
+                            "actions": { "click": { "type": "runMultiple", "actions": [
+                              { "type": "setVar", "path": "sortMenuOpen", "value": false },
+                              { "action": "navigate", "payload": { "path": "{{route.path}}?sort=name-desc" } }
+                            ] } },
+                            "children": [
+                              { "type": "Text", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "Name: Z to A" },
+                              { "type": "NavIcon", "props": { "icon": "Check", "size": 14, "color": "#1e293b" }, "condition": { "==": [{ "var": "route.sort" }, "name-desc"] } }
+                            ]
+                          },
+                          {
+                            "type": "Pressable",
+                            "props": { "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800" },
+                            "actions": { "click": { "type": "runMultiple", "actions": [
+                              { "type": "setVar", "path": "sortMenuOpen", "value": false },
+                              { "action": "navigate", "payload": { "path": "{{route.path}}?sort=price-asc" } }
+                            ] } },
+                            "children": [
+                              { "type": "Text", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "Price: Low to High" },
+                              { "type": "NavIcon", "props": { "icon": "Check", "size": 14, "color": "#1e293b" }, "condition": { "==": [{ "var": "route.sort" }, "price-asc"] } }
+                            ]
+                          },
+                          {
+                            "type": "Pressable",
+                            "props": { "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800" },
+                            "actions": { "click": { "type": "runMultiple", "actions": [
+                              { "type": "setVar", "path": "sortMenuOpen", "value": false },
+                              { "action": "navigate", "payload": { "path": "{{route.path}}?sort=price-desc" } }
+                            ] } },
+                            "children": [
+                              { "type": "Text", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "Price: High to Low" },
+                              { "type": "NavIcon", "props": { "icon": "Check", "size": 14, "color": "#1e293b" }, "condition": { "==": [{ "var": "route.sort" }, "price-desc"] } }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+
+              {
+                "type": "Box",
+                "condition": { "==": [{ "var": ["collection.search.totalItems", 0] }, 0] },
+                "props": { "className": "text-center py-12" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "No products found" }
+                ]
+              },
+
+              {
+                "type": "Box",
+                "condition": { ">": [{ "var": ["collection.search.totalItems", 0] }, 0] },
+                "props": { "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "map": "collection.search.items",
+                    "props": { "className": "contents" },
+                    "children": [{ "$ref": "fragments/product-card" }]
+                  }
+                ]
+              },
+
+              {
+                "$ref": "fragments/collection-pagination"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,126 +1,86 @@
 {
-  "meta": {
-    "title": "Search | SaraZ",
-    "description": "Search our collection"
-  },
-  "state": {
-    "store": { "products": [] },
-    "shop": { "sortOrder": "newest", "filters": {}, "sortDropdownOpen": false },
-    "search": { "query": "" }
-  },
-  "layout": "shop",
-  "initActions": [{ "action": "setSearchQueryFromRoute" }, { "action": "fetchSearchProducts" }],
+  "meta": { "title": "Search Products" },
+  "state": { "searchQuery": "", "currentPage": 1 },
+  "layout": "store",
+  "initActions": [{ "action": "fetchNavCollections" }, { "action": "fetchSearchResults" }],
   "content": {
     "type": "Box",
-    "props": { "className": "w-full px-4 py-6 sm:px-6 lg:px-8" },
+    "props": { "className": "w-full max-w-screen-xl mx-auto px-4 py-8" },
     "children": [
       {
         "type": "Box",
-        "props": { "className": "sticky top-16 z-30 -mx-4 px-4 py-3 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 bg-[var(--theme-header-bg)] border-b border-[var(--theme-header-border)] mb-6" },
+        "props": { "className": "mb-8" },
         "children": [
           {
-            "type": "HStack",
-            "props": { "className": "items-center gap-3" },
+            "type": "Heading",
+            "props": { "className": "text-3xl font-bold mb-2" },
+            "text": { "expr": { "if": [{ "!=": [{ "var": "searchQuery" }, ""] }, { "cat": ["Search results for \"", { "var": "searchQuery" }, "\""] }, "Search Products"] } }
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex items-center gap-2 mt-4 max-w-xl" },
             "children": [
               {
                 "type": "Input",
-                "props": {
-                  "className": "flex-1",
-                  "placeholder": "Search products...",
-                  "value": "{{search.query}}"
-                },
-                "actions": {
-                  "change": {
-                    "action": "setState",
-                    "payload": { "path": "search.query", "value": "$event" }
+                "props": { "className": "flex-1" },
+                "children": [
+                  {
+                    "type": "InputField",
+                    "props": { "placeholder": "Search for products...", "value": "{{searchQuery}}" },
+                    "actions": { "change": { "action": "setState", "payload": { "path": "searchQuery", "value": "$event" } } }
                   }
-                }
+                ]
               },
               {
-                "type": "Pressable",
-                "props": {
-                  "className": "rounded-lg bg-[var(--theme-header-accent)] px-4 py-2 text-sm font-medium text-[var(--theme-header-accentForeground)]"
-                },
-                "actions": {
-                  "click": {
-                    "action": "navigate",
-                    "payload": { "path": "/search?q={{search.query}}" }
-                  }
-                },
-                "children": [{ "type": "Text", "text": "Search" }]
+                "type": "Button",
+                "props": { "className": "bg-[#1e293b] text-white hover:bg-[#334155] px-4" },
+                "children": [{ "type": "ButtonText", "props": { "className": "!text-white" }, "text": "Search" }],
+                "actions": { "click": { "action": "fetchSearchResults" } }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "text-center py-12" },
+        "condition": { "==": [{ "var": ["searchResults.totalItems", 0] }, 0] },
+        "children": [
+          { "type": "Text", "props": { "className": "text-gray-500 text-lg" }, "text": "No products found" },
+          { "type": "Text", "props": { "className": "text-sm text-gray-500 mt-2" }, "text": "Try adjusting your search terms" }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "space-y-8" },
+        "condition": { ">": [{ "var": ["searchResults.totalItems", 0] }, 0] },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex items-center justify-between" },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-sm text-gray-500" },
+                "text": { "expr": { "var": ["searchResults.totalItems", 0] }, "suffix": " products" }
               }
             ]
           },
           {
-            "type": "Text",
-            "condition": { "var": "route.q" },
-            "props": { "className": "mt-2 text-sm text-[var(--theme-shop-textMuted)]" },
-            "text": "Results for \"{{route.q}}\""
-          }
-        ]
-      },
-      {
-        "type": "HStack",
-        "props": { "className": "mb-4 gap-2 text-sm text-[var(--theme-shop-textMuted)]" },
-        "children": [
-          { "type": "Pressable", "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } }, "children": [{ "type": "Text", "text": "Home" }] },
-          { "type": "Text", "text": "/" },
-          { "type": "Text", "props": { "className": "text-[var(--theme-shop-heading)] font-medium" }, "text": "Search" }
-        ]
-      },
-      {
-        "type": "HStack",
-        "props": { "className": "mb-6 flex flex-wrap items-center justify-between gap-4" },
-        "children": [
-          { "type": "Pressable", "props": { "className": "flex items-center gap-2 rounded-lg border border-[var(--theme-shop-border)] px-4 py-2 text-sm font-medium lg:hidden" }, "actions": { "click": { "action": "openFilterDrawer" } }, "children": [{ "type": "Text", "text": "Filters" }, { "type": "Text", "text": "☰" }] },
-          { "$ref": "fragments/sort-dropdown" }
-        ]
-      },
-      {
-        "type": "Box",
-        "condition": { "and": [{ "var": "route.q" }, { "==": [{ "var": ["store.products.length", 0] }, 0] }] },
-        "props": { "className": "flex flex-col items-center justify-center py-16 text-center" },
-        "children": [
-          { "type": "Text", "props": { "className": "text-6xl mb-4" }, "text": "🔍" },
-          { "type": "Heading", "props": { "size": "lg", "className": "text-xl font-semibold text-[var(--theme-shop-heading)]" }, "text": "No results for \"{{route.q}}\"" },
-          { "type": "Text", "props": { "className": "mt-2 text-sm text-[var(--theme-shop-textMuted)]" }, "text": "Try different keywords or browse our shop" },
-          { "type": "Text", "props": { "className": "mt-4 text-sm font-medium text-[var(--theme-shop-heading)]" }, "text": "Did you mean?" },
-          {
-            "type": "HStack",
-            "props": { "className": "mt-2 flex flex-wrap gap-2 justify-center" },
+            "type": "Box",
+            "props": { "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" },
             "children": [
-              { "type": "Pressable", "props": { "className": "px-3 py-1.5 rounded-full border border-[var(--theme-shop-border)] text-sm hover:bg-[var(--theme-content-bgAlt)]" }, "actions": { "click": { "action": "navigate", "payload": { "path": "/search?q=dresses" } } }, "children": [{ "type": "Text", "text": "Dresses" }] },
-              { "type": "Pressable", "props": { "className": "px-3 py-1.5 rounded-full border border-[var(--theme-shop-border)] text-sm hover:bg-[var(--theme-content-bgAlt)]" }, "actions": { "click": { "action": "navigate", "payload": { "path": "/search?q=shoes" } } }, "children": [{ "type": "Text", "text": "Shoes" }] },
-              { "type": "Pressable", "props": { "className": "px-3 py-1.5 rounded-full border border-[var(--theme-shop-border)] text-sm hover:bg-[var(--theme-content-bgAlt)]" }, "actions": { "click": { "action": "navigate", "payload": { "path": "/search?q=accessories" } } }, "children": [{ "type": "Text", "text": "Accessories" }] }
+              {
+                "type": "Box",
+                "map": "searchResults.items",
+                "key": "searchProduct",
+                "props": { "className": "contents" },
+                "children": [{ "$ref": "fragments/product-card" }]
+              }
             ]
-          },
-          {
-            "type": "Pressable",
-            "props": { "className": "mt-4 rounded-lg bg-[var(--theme-header-accent)] px-6 py-2 text-sm font-medium text-[var(--theme-header-accentForeground)]" },
-            "actions": { "click": { "action": "navigate", "payload": { "path": "/shop" } } },
-            "children": [{ "type": "Text", "text": "Browse Shop" }]
           }
         ]
-      },
-      {
-        "type": "Box",
-        "condition": { "!": [{ "var": "route.q" }] },
-        "props": { "className": "flex flex-col items-center justify-center py-16 text-center" },
-        "children": [
-          { "type": "Text", "props": { "className": "text-6xl mb-4" }, "text": "🔍" },
-          { "type": "Heading", "props": { "size": "lg", "className": "text-xl font-semibold text-[var(--theme-shop-heading)]" }, "text": "Start your search" },
-          { "type": "Text", "props": { "className": "mt-2 text-sm text-[var(--theme-shop-textMuted)]" }, "text": "Enter a search term above to find products" }
-        ]
-      },
-      {
-        "type": "Box",
-        "condition": { ">": [{ "var": ["store.products.length", 0] }, 0] },
-        "props": { "className": "grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4" },
-        "children": [
-          { "type": "Box", "map": "store.products", "key": "product", "props": { "className": "contents" }, "children": [{ "$ref": "fragments/product-card" }] }
-        ]
-      },
-      { "$ref": "fragments/pagination" }
+      }
     ]
   }
 }

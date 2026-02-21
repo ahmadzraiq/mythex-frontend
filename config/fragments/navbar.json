@@ -1,0 +1,217 @@
+{
+  "type": "Box",
+  "props": { "className": "fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white dark:bg-gray-950 dark:border-gray-800 w-full" },
+  "children": [
+    {
+      "type": "Box",
+      "props": { "className": "w-full max-w-screen-xl mx-auto px-4" },
+      "children": [
+        {
+          "type": "Box",
+          "props": { "className": "w-full flex flex-row items-center justify-between h-16" },
+          "children": [
+            {
+              "type": "Box",
+              "props": { "className": "flex flex-row items-center gap-8" },
+              "children": [
+                {
+                  "type": "Pressable",
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } },
+                  "children": [
+                    {
+                      "type": "NextImage",
+                      "props": {
+                        "src": "/vendure.svg",
+                        "alt": "Vendure",
+                        "width": 40,
+                        "height": 27,
+                        "className": "h-6 w-auto dark:invert"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": { "className": "hidden md:flex flex-row items-center gap-1" },
+                  "children": [
+                    {
+                      "type": "Box",
+                      "map": "nav.collections",
+                      "key": "navCollection",
+                      "props": { "className": "contents" },
+                      "children": [
+                        {
+                          "type": "Pressable",
+                          "props": { "className": "px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800" },
+                          "actions": {
+                            "click": { "action": "navigate", "payload": { "routeConfig": "collection", "slug": { "var": "$item.slug" } } }
+                          },
+                          "children": [
+                            { "type": "Text", "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300" }, "text": "{{$item.name}}" }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": { "className": "flex flex-row items-center gap-2" },
+              "children": [
+
+                {
+                  "type": "Form",
+                  "props": { "submitAction": "navigateToSearch", "defaultValues": {} },
+                  "children": [
+                    {
+                      "type": "Input",
+                      "props": {
+                        "variant": "outline",
+                        "size": "sm",
+                        "className": "hidden lg:flex w-64 !rounded-md !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900"
+                      },
+                      "children": [
+                        {
+                          "type": "InputSlot",
+                          "props": { "className": "pl-3 pointer-events-none" },
+                          "children": [
+                            { "type": "NavIcon", "props": { "icon": "Search", "size": 16, "color": "#9ca3af" } }
+                          ]
+                        },
+                        {
+                          "type": "InputField",
+                          "props": {
+                            "placeholder": "Search products...",
+                            "placeholderTextColor": "#9ca3af",
+                            "className": "!text-gray-900 dark:!text-gray-100"
+                          },
+                          "actions": {
+                            "change": { "action": "setState", "payload": { "path": "nav.searchQuery", "value": "$event" } }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+
+                {
+                  "type": "Box",
+                  "props": { "className": "relative" },
+                  "children": [
+                    {
+                      "type": "Pressable",
+                      "props": { "className": "fixed inset-0 z-40" },
+                      "condition": { "var": "nav.themeMenuOpen" },
+                      "actions": { "click": { "action": "closeThemeMenu" } }
+                    },
+                    {
+                      "type": "Pressable",
+                      "props": { "className": "relative z-50 inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800" },
+                      "actions": { "click": { "action": "toggleThemeMenu" } },
+                      "children": [
+                        { "type": "NavIcon", "props": { "icon": "Sun",  "size": 20, "className": "text-gray-700 dark:text-gray-300" }, "condition": { "==": [{ "var": "nav.colorScheme" }, "dark"] } },
+                        { "type": "NavIcon", "props": { "icon": "Moon", "size": 20, "className": "text-gray-700 dark:text-gray-300" }, "condition": { "!=": [{ "var": "nav.colorScheme" }, "dark"] } }
+                      ]
+                    },
+                    {
+                      "type": "Box",
+                      "props": { "className": "absolute right-0 top-full mt-1 w-36 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-md z-50 py-1" },
+                      "condition": { "var": "nav.themeMenuOpen" },
+                      "children": [
+                        {
+                          "type": "Pressable",
+                          "props": { "className": "w-full flex flex-row items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800" },
+                          "actions": { "click": { "action": "setThemeLight" } },
+                          "children": [
+                            { "type": "NavIcon", "props": { "icon": "Sun",  "size": 16, "className": "text-gray-700 dark:text-gray-300" } },
+                            { "type": "Text", "props": { "className": "flex-1 text-left text-sm text-gray-700 dark:text-gray-300" }, "text": "Light" },
+                            { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "✓", "condition": { "==": [{ "var": "nav.colorScheme" }, "light"] } }
+                          ]
+                        },
+                        {
+                          "type": "Pressable",
+                          "props": { "className": "w-full flex flex-row items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800" },
+                          "actions": { "click": { "action": "setThemeDark" } },
+                          "children": [
+                            { "type": "NavIcon", "props": { "icon": "Moon", "size": 16, "className": "text-gray-700 dark:text-gray-300" } },
+                            { "type": "Text", "props": { "className": "flex-1 text-left text-sm text-gray-700 dark:text-gray-300" }, "text": "Dark" },
+                            { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "✓", "condition": { "==": [{ "var": "nav.colorScheme" }, "dark"] } }
+                          ]
+                        },
+                        {
+                          "type": "Pressable",
+                          "props": { "className": "w-full flex flex-row items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800" },
+                          "actions": { "click": { "action": "setThemeSystem" } },
+                          "children": [
+                            { "type": "NavIcon", "props": { "icon": "Monitor", "size": 16, "className": "text-gray-700 dark:text-gray-300" } },
+                            { "type": "Text", "props": { "className": "flex-1 text-left text-sm text-gray-700 dark:text-gray-300" }, "text": "System" },
+                            { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "✓", "condition": { "==": [{ "var": "nav.colorScheme" }, "system"] } }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+
+                {
+                  "type": "Pressable",
+                  "props": { "className": "relative inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800" },
+                  "actions": { "click": { "action": "goToCart" } },
+                  "children": [
+                    { "type": "NavIcon", "props": { "icon": "ShoppingBag", "size": "sm", "className": "text-gray-700 dark:text-gray-300" } },
+                    {
+                      "type": "Box",
+                      "props": { "className": "absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-[#1e293b] flex items-center justify-center pointer-events-none" },
+                      "condition": { ">": [{ "var": ["cart.totalQuantity", 0] }, 0] },
+                      "children": [
+                        { "type": "Text", "props": { "className": "text-white text-[10px] font-bold" }, "text": { "expr": { "var": "cart.totalQuantity" } } }
+                      ]
+                    }
+                  ]
+                },
+
+                {
+                  "type": "Pressable",
+                  "props": { "className": "inline-flex flex-row items-center h-9 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800" },
+                  "condition": { "==": [{ "var": "auth.user" }, null] },
+                  "actions": { "click": { "action": "navigate", "payload": { "path": "/sign-in" } } },
+                  "children": [
+                    { "type": "Text", "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300" }, "text": "Sign in" }
+                  ]
+                },
+
+                {
+                  "type": "Box",
+                  "props": { "className": "flex flex-row items-center gap-1" },
+                  "condition": { "!=": [{ "var": "auth.user" }, null] },
+                  "children": [
+                    {
+                      "type": "Pressable",
+                      "props": { "className": "inline-flex flex-row items-center gap-2 h-9 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800" },
+                      "actions": { "click": { "action": "navigate", "payload": { "path": "/account/orders" } } },
+                      "children": [
+                        { "type": "NavIcon", "props": { "icon": "User", "size": "sm", "className": "text-gray-700 dark:text-gray-300" } },
+                        { "type": "Text", "props": { "className": "hidden sm:flex text-sm font-medium text-gray-700 dark:text-gray-300" }, "text": "Hi, {{auth.user.firstName}}" }
+                      ]
+                    },
+                    {
+                      "type": "Pressable",
+                      "props": { "className": "h-9 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800" },
+                      "actions": { "click": { "action": "logout" } },
+                      "children": [
+                        { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "Sign out" }
+                      ]
+                    }
+                  ]
+                }
+
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

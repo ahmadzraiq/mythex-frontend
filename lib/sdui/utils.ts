@@ -23,20 +23,30 @@ export function interpolate(
   });
 }
 
-/** Resolve text: string (interpolate) or { expr, suffix?, prefix?, template? } (inline JSON Logic) */
+/** Resolve text: string (interpolate), { var } (path lookup), or { expr, suffix?, prefix?, template? } (inline JSON Logic) */
 export function resolveText(
-  text: string | { expr: object; suffix?: string; prefix?: string; template?: string } | undefined,
+  text: string | { expr?: object; var?: string | [string, unknown]; suffix?: string; prefix?: string; template?: string } | undefined,
   context: SDUIContext,
   scope?: Record<string, unknown>
 ): string {
   if (text == null) return '';
   if (typeof text === 'string') return interpolate(text, context, scope);
-  if (typeof text === 'object' && text !== null && 'expr' in text) {
-    const { expr, suffix = '', prefix = '', template } = text;
-    const result = jsonLogic.apply(expr as object, context.state ?? {});
-    const str = String(result ?? '');
-    if (template != null) return template.replace('{0}', str);
-    return prefix + str + suffix;
+  if (typeof text === 'object' && text !== null) {
+    if ('var' in text) {
+      const v = text.var;
+      const path = Array.isArray(v) ? String(v[0]) : String(v);
+      const fallback = Array.isArray(v) ? v[1] : undefined;
+      const val = context.get(path, scope);
+      const result = val !== undefined && val !== null ? val : fallback;
+      return String(result ?? '');
+    }
+    if ('expr' in text) {
+      const { expr, suffix = '', prefix = '', template } = text;
+      const result = jsonLogic.apply((expr ?? {}) as object, context.state ?? {});
+      const str = String(result ?? '');
+      if (template != null) return template.replace('{0}', str);
+      return prefix + str + suffix;
+    }
   }
   return String(text);
 }

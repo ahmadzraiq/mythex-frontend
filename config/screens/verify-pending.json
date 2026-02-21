@@ -1,0 +1,31 @@
+{
+  "meta": { "title": "Check Your Email" },
+  "state": {}, "initActions": [{ "action": "fetchNavCollections" }],
+  "ui": {
+    "type": "Box",
+    "props": { "className": "flex min-h-screen items-center justify-center px-4" },
+    "children": [
+      {
+        "type": "Box",
+        "props": { "className": "w-full max-w-md text-center space-y-6" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "w-16 h-16 mx-auto rounded-full bg-[#1e293b]/10 flex items-center justify-center" },
+            "children": [
+              { "type": "NavIcon", "props": { "icon": "Globe", "className": "h-8 w-8 text-[#1e293b]" } }
+            ]
+          },
+          { "type": "Heading", "props": { "className": "text-3xl font-bold" }, "text": "Check Your Email" },
+          { "type": "Text", "props": { "className": "text-gray-500 text-lg" }, "text": "We've sent a verification link to your email address. Please click the link to verify your account." },
+          {
+            "type": "Button",
+            "props": { "className": "bg-[#1e293b] text-white hover:bg-[#334155] px-8" },
+            "children": [{ "type": "ButtonText", "props": { "className": "!text-white" }, "text": "Back to Sign In" }],
+            "actions": { "click": { "action": "navigate", "payload": { "path": "/sign-in" } } }
+          }
+        ]
+      }
+    ]
+  }
+}

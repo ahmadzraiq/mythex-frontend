@@ -10,9 +10,7 @@ const nextConfig = {
   transpilePackages: [],
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: 'fakestoreapi.com', pathname: '/**' },
-      { protocol: 'https', hostname: 'picsum.photos', pathname: '/**' },
-      { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
+      { protocol: 'http', hostname: 'localhost', pathname: '/**' },
     ],
   },
 };

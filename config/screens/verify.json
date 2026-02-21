@@ -1,0 +1,25 @@
+{
+  "meta": { "title": "Verify Email" },
+  "state": {}, "initActions": [{ "action": "fetchNavCollections" }],
+  "ui": {
+    "type": "Box",
+    "props": { "className": "flex min-h-screen items-center justify-center px-4" },
+    "children": [
+      {
+        "type": "Box",
+        "props": { "className": "w-full max-w-md text-center space-y-6" },
+        "children": [
+          { "type": "Heading", "props": { "className": "text-3xl font-bold" }, "text": "Verifying Email..." },
+          { "type": "Text", "props": { "className": "text-gray-500" }, "text": "Please wait while we verify your email address." },
+          {
+            "type": "Box",
+            "props": { "className": "flex justify-center" },
+            "children": [
+              { "type": "Spinner", "props": { "className": "h-8 w-8 text-[#1e293b]" } }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

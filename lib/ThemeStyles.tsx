@@ -1,34 +1,80 @@
 /**
- * Injects theme from config/theme.json as CSS variables.
- * Single source of truth - all theme values come from JSON, nothing in globals.css.
+ * Injects all design tokens from config/theme.json as CSS variables.
+ *
+ * Outputs three blocks:
+ *  1. :root { --primary: R G B; --radius: ...; ... }  — standard design-system vars
+ *  2. .dark { --primary: R G B; ... }                 — dark-mode overrides
+ *  3. :root { --theme-section-key: #hex; ... }        — section-level theme vars
+ *
+ * Colors in cssVariables are stored as hex in JSON and converted to RGB triplets
+ * here so that tailwind.config.js can use them as `rgb(var(--primary)/<alpha-value>)`.
  */
 import themeConfig from '@/config/theme.json';
 
-function toCssVarName(key: string): string {
-  return `--theme-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
+function hexToRgb(hex: string): string {
+  const clean = hex.replace('#', '');
+  const full = clean.length === 3
+    ? clean.split('').map((c) => c + c).join('')
+    : clean;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  return `${r} ${g} ${b}`;
+}
+
+function isHex(value: string): boolean {
+  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value);
+}
+
+function buildVarBlock(vars: Record<string, string>): string {
+  return Object.entries(vars)
+    .map(([name, value]) => {
+      const cssValue = isHex(value) ? hexToRgb(value) : value;
+      return `  ${name}: ${cssValue}`;
+    })
+    .join(';\n');
 }
 
 export function ThemeStyles() {
-  const vars: string[] = [];
+  const cssBlocks: string[] = [];
 
-  if (themeConfig.colors && typeof themeConfig.colors === 'object') {
-    const colors = themeConfig.colors as Record<string, string>;
-    for (const [key, value] of Object.entries(colors)) {
-      vars.push(`${toCssVarName(key)}: ${value}`);
-    }
-    vars.push(`--background: ${colors.background ?? '#fafaf9'}`);
-    vars.push(`--foreground: ${colors.text ?? '#1a1a1a'}`);
+  const theme = themeConfig as {
+    cssVariables?: {
+      root?: Record<string, string>;
+      dark?: Record<string, string>;
+    };
+    colors?: Record<string, string>;
+    sections?: Record<string, Record<string, string>>;
+  };
+
+  if (theme.cssVariables?.root) {
+    cssBlocks.push(`:root {\n${buildVarBlock(theme.cssVariables.root)}\n}`);
   }
 
-  if (themeConfig.sections && typeof themeConfig.sections === 'object') {
-    const sections = themeConfig.sections as Record<string, Record<string, string>>;
-    for (const [sectionName, sectionColors] of Object.entries(sections)) {
-      for (const [key, value] of Object.entries(sectionColors)) {
-        vars.push(`--theme-${sectionName}-${key}: ${value}`);
+  if (theme.cssVariables?.dark) {
+    cssBlocks.push(`.dark {\n${buildVarBlock(theme.cssVariables.dark)}\n}`);
+  }
+
+  const themeVars: string[] = [];
+
+  if (theme.colors) {
+    for (const [key, value] of Object.entries(theme.colors)) {
+      const cssName = `--theme-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
+      themeVars.push(`  ${cssName}: ${value}`);
+    }
+  }
+
+  if (theme.sections) {
+    for (const [section, values] of Object.entries(theme.sections)) {
+      for (const [key, value] of Object.entries(values)) {
+        themeVars.push(`  --theme-${section}-${key}: ${value}`);
       }
     }
   }
 
-  const css = `:root { ${vars.join('; ')} }`;
-  return <style dangerouslySetInnerHTML={{ __html: css }} />;
+  if (themeVars.length > 0) {
+    cssBlocks.push(`:root {\n${themeVars.join(';\n')}\n}`);
+  }
+
+  return <style dangerouslySetInnerHTML={{ __html: cssBlocks.join('\n\n') }} />;
 }

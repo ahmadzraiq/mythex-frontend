@@ -11,6 +11,15 @@ import {
 import { H3 } from '@expo/html-elements';
 import { cssInterop } from 'nativewind';
 import { PrimitiveIcon, UIIcon } from '@gluestack-ui/core/icon/creator';
+import { ChevronDown } from 'lucide-react-native';
+
+/** Chevron icon for accordion - Lucide directly (Gluestack Icon wrapper makes icons invisible) */
+const AccordionChevronIcon = React.forwardRef<
+  React.ComponentRef<typeof ChevronDown>,
+  React.ComponentProps<typeof ChevronDown>
+>(({ className, ...props }, ref) => (
+  <ChevronDown ref={ref} size={16} color="#6b7280" className={className} {...props} />
+));
 
 const SCOPE = 'ACCORDION';
 /** Styles */
@@ -50,7 +59,7 @@ const accordionTitleTextStyle = tva({
   },
 });
 const accordionIconStyle = tva({
-  base: 'text-typography-900 fill-none',
+  base: '!text-gray-500 fill-none shrink-0 transition-transform duration-200 data-[state=open]:rotate-180',
   parentVariants: {
     size: {
       '2xs': 'h-3 w-3',
@@ -94,7 +103,7 @@ const UIAccordion = createAccordion({
   Item: View,
   Header: Header,
   Trigger: Pressable,
-  Icon: UIIcon,
+  Icon: AccordionChevronIcon,
   TitleText: Text,
   ContentText: Text,
   Content: View,
