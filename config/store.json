@@ -32,6 +32,7 @@
       "colorScheme": "system"
     },
     "collectionSkip": 0,
+    "searchSkip": 0,
     "collectionPageSize": 12,
     "selectedFacets": [],
     "sortInput": {
@@ -68,7 +69,10 @@
     "routeFacets": "route.facets"
   },
   "engineConventions": {
-    "computedConventionKeys": ["sortInputMap", "defaultSortInput"],
+    "computedConventionKeys": [
+      "sortInputMap",
+      "defaultSortInput"
+    ],
     "themePath": "nav.colorScheme",
     "defaultPaginationPath": "collectionSkip",
     "defaultPaginationFetchAction": "fetchCollection",
@@ -79,14 +83,26 @@
     "defaultStoreErrorsIn": "errors",
     "defaultErrorMessagePath": "message",
     "workflowPath": "_workflow",
-    "persistPaths": ["checkout.selectedPaymentMethodCode"],
+    "persistPaths": [
+      "checkout.selectedPaymentMethodCode"
+    ],
     "sortInputMap": {
-      "name-asc": { "name": "ASC" },
-      "name-desc": { "name": "DESC" },
-      "price-asc": { "price": "ASC" },
-      "price-desc": { "price": "DESC" }
+      "name-asc": {
+        "name": "ASC"
+      },
+      "name-desc": {
+        "name": "DESC"
+      },
+      "price-asc": {
+        "price": "ASC"
+      },
+      "price-desc": {
+        "price": "DESC"
+      }
     },
-    "defaultSortInput": { "name": "ASC" },
+    "defaultSortInput": {
+      "name": "ASC"
+    },
     "screenScopedAliases": [
       "form",
       "errors"
@@ -98,17 +114,30 @@
     "graphqlCredentials": "include"
   },
   "globalInitActions": [
-    { "action": "fetchNavCollections" },
-    { "action": "fetchCart" }
+    {
+      "action": "fetchNavCollections"
+    },
+    {
+      "action": "fetchCart"
+    }
   ],
   "computed": [
     {
       "output": "sortInput",
       "expr": {
         "lookupMap": [
-          { "var": "_conventions.sortInputMap" },
-          { "var": ["route.sort", "name-asc"] },
-          { "var": "_conventions.defaultSortInput" }
+          {
+            "var": "_conventions.sortInputMap"
+          },
+          {
+            "var": [
+              "route.sort",
+              "name-asc"
+            ]
+          },
+          {
+            "var": "_conventions.defaultSortInput"
+          }
         ]
       }
     },
@@ -116,9 +145,24 @@
       "output": "collectionPaginationPages",
       "expr": {
         "paginationPages": [
-          { "var": ["collection.search.totalItems", 0] },
-          { "var": ["collectionSkip", 0] },
-          { "var": ["collectionPageSize", 12] }
+          {
+            "var": [
+              "collection.search.totalItems",
+              0
+            ]
+          },
+          {
+            "var": [
+              "collectionSkip",
+              0
+            ]
+          },
+          {
+            "var": [
+              "collectionPageSize",
+              12
+            ]
+          }
         ]
       }
     },
@@ -130,7 +174,22 @@
           {
             "floor": {
               "+": [
-                { "/": [{ "var": ["collectionSkip", 0] }, { "var": ["collectionPageSize", 12] }] },
+                {
+                  "/": [
+                    {
+                      "var": [
+                        "collectionSkip",
+                        0
+                      ]
+                    },
+                    {
+                      "var": [
+                        "collectionPageSize",
+                        12
+                      ]
+                    }
+                  ]
+                },
                 1
               ]
             }
@@ -146,8 +205,18 @@
           {
             "ceil": {
               "/": [
-                { "var": ["collection.search.totalItems", 0] },
-                { "var": ["collectionPageSize", 12] }
+                {
+                  "var": [
+                    "collection.search.totalItems",
+                    0
+                  ]
+                },
+                {
+                  "var": [
+                    "collectionPageSize",
+                    12
+                  ]
+                }
               ]
             }
           }
@@ -156,19 +225,69 @@
     },
     {
       "output": "collectionPrevPage",
-      "expr": { "max": [1, { "-": [{ "var": ["collectionCurrentPage", 1] }, 1] }] }
+      "expr": {
+        "max": [
+          1,
+          {
+            "-": [
+              {
+                "var": [
+                  "collectionCurrentPage",
+                  1
+                ]
+              },
+              1
+            ]
+          }
+        ]
+      }
     },
     {
       "output": "collectionNextPage",
-      "expr": { "min": [{ "var": ["collectionTotalPages", 1] }, { "+": [{ "var": ["collectionCurrentPage", 1] }, 1] }] }
+      "expr": {
+        "min": [
+          {
+            "var": [
+              "collectionTotalPages",
+              1
+            ]
+          },
+          {
+            "+": [
+              {
+                "var": [
+                  "collectionCurrentPage",
+                  1
+                ]
+              },
+              1
+            ]
+          }
+        ]
+      }
     },
     {
       "output": "searchPaginationPages",
       "expr": {
         "paginationPages": [
-          { "var": ["search.totalItems", 0] },
-          { "var": ["collectionSkip", 0] },
-          { "var": ["collectionPageSize", 12] }
+          {
+            "var": [
+              "search.totalItems",
+              0
+            ]
+          },
+          {
+            "var": [
+              "collectionSkip",
+              0
+            ]
+          },
+          {
+            "var": [
+              "collectionPageSize",
+              12
+            ]
+          }
         ]
       }
     },
@@ -180,7 +299,22 @@
           {
             "floor": {
               "+": [
-                { "/": [{ "var": ["collectionSkip", 0] }, { "var": ["collectionPageSize", 12] }] },
+                {
+                  "/": [
+                    {
+                      "var": [
+                        "searchSkip",
+                        0
+                      ]
+                    },
+                    {
+                      "var": [
+                        "collectionPageSize",
+                        12
+                      ]
+                    }
+                  ]
+                },
                 1
               ]
             }
@@ -196,8 +330,18 @@
           {
             "ceil": {
               "/": [
-                { "var": ["search.totalItems", 0] },
-                { "var": ["collectionPageSize", 12] }
+                {
+                  "var": [
+                    "search.totalItems",
+                    0
+                  ]
+                },
+                {
+                  "var": [
+                    "collectionPageSize",
+                    12
+                  ]
+                }
               ]
             }
           }
@@ -206,49 +350,178 @@
     },
     {
       "output": "searchPrevPage",
-      "expr": { "max": [1, { "-": [{ "var": ["searchCurrentPage", 1] }, 1] }] }
+      "expr": {
+        "max": [
+          1,
+          {
+            "-": [
+              {
+                "var": [
+                  "searchCurrentPage",
+                  1
+                ]
+              },
+              1
+            ]
+          }
+        ]
+      }
     },
     {
       "output": "searchNextPage",
-      "expr": { "min": [{ "var": ["searchTotalPages", 1] }, { "+": [{ "var": ["searchCurrentPage", 1] }, 1] }] }
+      "expr": {
+        "min": [
+          {
+            "var": [
+              "searchTotalPages",
+              1
+            ]
+          },
+          {
+            "+": [
+              {
+                "var": [
+                  "searchCurrentPage",
+                  1
+                ]
+              },
+              1
+            ]
+          }
+        ]
+      }
     },
     {
       "output": "product.selectedVariantId",
-      "expr": { "findItemByOptionsMatch": [{ "var": "product.variants" }, { "var": "product.optionGroups" }, { "var": "product.selectedOptions" }] }
+      "expr": {
+        "findItemByOptionsMatch": [
+          {
+            "var": "product.variants"
+          },
+          {
+            "var": "product.optionGroups"
+          },
+          {
+            "var": "product.selectedOptions"
+          }
+        ]
+      }
     },
     {
       "output": "product.primaryCollectionSlug",
-      "expr": { "findFirstByPreference": [{ "var": "product.collections" }] }
+      "expr": {
+        "findFirstByPreference": [
+          {
+            "var": "product.collections"
+          }
+        ]
+      }
     },
     {
       "output": "product.currentImage",
-      "expr": { "at": [{ "var": "product.assets" }, { "var": ["product.imageIndex", 0] }] }
+      "expr": {
+        "at": [
+          {
+            "var": "product.assets"
+          },
+          {
+            "var": [
+              "product.imageIndex",
+              0
+            ]
+          }
+        ]
+      }
     },
     {
       "output": "product.selectedVariant",
-      "expr": { "findItemById": [{ "var": "product.variants" }, { "var": "product.selectedVariantId" }] }
+      "expr": {
+        "findItemById": [
+          {
+            "var": "product.variants"
+          },
+          {
+            "var": "product.selectedVariantId"
+          }
+        ]
+      }
     },
     {
       "output": "related.products",
-      "expr": { "filterExcludeByFieldAndSlice": [{ "var": "related._raw" }, "productId", { "var": "product.id" }, 12] }
+      "expr": {
+        "filterExcludeByFieldAndSlice": [
+          {
+            "var": "related._raw"
+          },
+          "productId",
+          {
+            "var": "product.id"
+          },
+          12
+        ]
+      }
     },
     {
       "output": "checkout.firstIncompleteStep",
       "expr": {
         "if": [
-          { "!": [{ "or": [{ "var": "auth.user" }, { "var": ["checkout.order.customer.emailAddress", ""] }] }] },
+          {
+            "!": [
+              {
+                "or": [
+                  {
+                    "var": "auth.user"
+                  },
+                  {
+                    "var": [
+                      "checkout.order.customer.emailAddress",
+                      ""
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
           "contact",
           {
             "if": [
-              { "!": [{ "var": ["checkout.order.shippingAddress.streetLine1", ""] }] },
+              {
+                "!": [
+                  {
+                    "var": [
+                      "checkout.order.shippingAddress.streetLine1",
+                      ""
+                    ]
+                  }
+                ]
+              },
               "shipping",
               {
                 "if": [
-                  { "<=": [{ "var": ["checkout.order.shippingLines.length", 0] }, 0] },
+                  {
+                    "<=": [
+                      {
+                        "var": [
+                          "checkout.order.shippingLines.length",
+                          0
+                        ]
+                      },
+                      0
+                    ]
+                  },
                   "delivery",
                   {
                     "if": [
-                      { "!": [{ "var": ["checkout.selectedPaymentMethodCode", ""] }] },
+                      {
+                        "!": [
+                          {
+                            "var": [
+                              "checkout.selectedPaymentMethodCode",
+                              ""
+                            ]
+                          }
+                        ]
+                      },
                       "payment",
                       "review"
                     ]
@@ -261,27 +534,236 @@
       }
     },
     {
+      "output": "collection.resultsHeaderText",
+      "expr": {
+        "if": [
+          { "==": [{ "var": ["collection.search.totalItems", 0] }, 1] },
+          "1 product",
+          { "cat": [{ "var": ["collection.search.totalItems", "0"] }, " products"] }
+        ]
+      }
+    },
+    {
+      "output": "collection.facetGroups",
+      "expr": {
+        "groupBy": [
+          { "var": ["collection.search.facetValues", []] },
+          "facetValue.facet.name",
+          "facetValue.facet.id"
+        ]
+      }
+    },
+    {
+      "output": "search.resultsHeaderText",
+      "expr": {
+        "if": [
+          { "==": [{ "var": ["search.totalItems", 0] }, 1] },
+          "1 product",
+          { "cat": [{ "var": ["search.totalItems", "0"] }, " products"] }
+        ]
+      }
+    },
+    {
+      "output": "search.resultsHeadingText",
+      "expr": {
+        "if": [
+          { "!=": [{ "var": ["route.q", ""] }, ""] },
+          { "cat": ["Search results for \"", { "var": ["route.q", ""] }, "\""] },
+          "Search"
+        ]
+      }
+    },
+    {
+      "output": "search.facetGroups",
+      "expr": {
+        "groupBy": [
+          { "var": ["search.facetValues", []] },
+          "facetValue.facet.name",
+          "facetValue.facet.id"
+        ]
+      }
+    },
+    {
       "output": "checkout.selectedPaymentMethodDisplay",
       "expr": {
         "lookupInArray": [
-          { "var": ["checkout.paymentMethods", []] },
+          {
+            "var": [
+              "checkout.paymentMethods",
+              []
+            ]
+          },
           "code",
-          { "var": ["checkout.selectedPaymentMethodCode", ""] },
+          {
+            "var": [
+              "checkout.selectedPaymentMethodCode",
+              ""
+            ]
+          },
           "name"
+        ]
+      }
+    },
+    {
+      "output": "checkout.contactStepIndicatorClassName",
+      "expr": {
+        "cat": [
+          "flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ",
+          {
+            "if": [
+              {
+                "or": [
+                  { "var": "auth.user" },
+                  { "var": ["checkout.order.customer.emailAddress", false] }
+                ]
+              },
+              "bg-green-500 !text-white",
+              {
+                "if": [
+                  { "==": [{ "var": "checkout.step" }, "contact"] },
+                  "bg-[#1e293b] !text-white",
+                  "bg-gray-100 !text-gray-500"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "output": "checkout.shippingStepIndicatorClassName",
+      "expr": {
+        "cat": [
+          "flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ",
+          {
+            "if": [
+              { "var": ["checkout.order.shippingAddress.streetLine1"] },
+              "bg-green-500 !text-white",
+              {
+                "if": [
+                  { "==": [{ "var": "checkout.step" }, "shipping"] },
+                  "bg-[#1e293b] !text-white",
+                  "bg-gray-100 !text-gray-500"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "output": "checkout.paymentStepIndicatorClassName",
+      "expr": {
+        "cat": [
+          "flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ",
+          {
+            "if": [
+              { "var": ["checkout.selectedPaymentMethodCode"] },
+              "bg-green-500 !text-white",
+              {
+                "if": [
+                  { "==": [{ "var": "checkout.step" }, "payment"] },
+                  "bg-[#1e293b] !text-white",
+                  "bg-gray-100 !text-gray-500"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "output": "checkout.shippingStepHeaderClassName",
+      "expr": {
+        "cat": [
+          "flex flex-row items-center justify-between w-full py-4 ",
+          {
+            "if": [
+              {
+                "or": [
+                  { "var": "auth.user" },
+                  { "var": ["checkout.order.customer.emailAddress", false] }
+                ]
+              },
+              "",
+              "opacity-50 pointer-events-none cursor-not-allowed"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "output": "checkout.paymentStepHeaderClassName",
+      "expr": {
+        "cat": [
+          "flex flex-row items-center justify-between w-full py-4 ",
+          {
+            "if": [
+              {
+                "or": [
+                  { ">": [{ "var": ["checkout.order.shippingLines.length", 0] }, 0] },
+                  { "var": ["checkout.selectedPaymentMethodCode", ""] }
+                ]
+              },
+              "",
+              "opacity-50 pointer-events-none cursor-not-allowed"
+            ]
+          }
         ]
       }
     }
   ],
   "variableStoreInitial": {
     "collectionSkip": 0,
+    "searchSkip": 0,
     "sortMenuOpen": false,
-    "product": { "selectedOptions": {}, "imageIndex": 0 }
+    "product": {
+      "selectedOptions": {},
+      "imageIndex": 0
+    }
   },
   "searchParamSync": [
-    { "param": "q", "path": "route.q", "default": "", "variableStorePath": "nav.searchQuery", "triggersParamChange": true },
-    { "param": "token", "path": "route.token", "default": "" },
-    { "param": "sort", "path": "route.sort", "default": "name-asc", "triggersParamChange": true },
-    { "param": "facets", "path": "route.facets", "type": "array", "triggersParamChange": true },
-    { "param": "page", "path": "collectionSkip", "default": "1", "transform": "pageToSkip", "pageSize": 12, "variableStorePath": "collectionSkip" }
+    {
+      "param": "q",
+      "path": "route.q",
+      "default": "",
+      "variableStorePath": "nav.searchQuery",
+      "triggersParamChange": true
+    },
+    {
+      "param": "token",
+      "path": "route.token",
+      "default": ""
+    },
+    {
+      "param": "sort",
+      "path": "route.sort",
+      "default": "name-asc",
+      "triggersParamChange": true
+    },
+    {
+      "param": "facets",
+      "path": "route.facets",
+      "type": "array",
+      "triggersParamChange": true
+    },
+    {
+      "param": "page",
+      "path": "collectionSkip",
+      "default": "1",
+      "transform": "pageToSkip",
+      "pageSize": 12,
+      "variableStorePath": "collectionSkip",
+      "routePrefix": "/collection"
+    },
+    {
+      "param": "page",
+      "path": "searchSkip",
+      "default": "1",
+      "transform": "pageToSkip",
+      "pageSize": 12,
+      "variableStorePath": "searchSkip",
+      "routePrefix": "/search"
+    }
   ]
 }

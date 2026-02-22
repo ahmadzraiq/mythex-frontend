@@ -1,62 +1,348 @@
 {
-  "meta": { "title": "Addresses" },
+  "meta": {
+    "title": "Addresses"
+  },
   "state": {
     "addresses": [],
-    "form": { "fullName": "", "streetLine1": "", "streetLine2": "", "city": "", "province": "", "postalCode": "", "countryCode": "US", "phoneNumber": "" },
+    "form": {
+      "fullName": "",
+      "streetLine1": "",
+      "streetLine2": "",
+      "city": "",
+      "province": "",
+      "postalCode": "",
+      "countryCode": "US",
+      "phoneNumber": ""
+    },
     "showAddForm": false
   },
   "layout": "account",
-  "initActions": [{ "action": "fetchNavCollections" }, { "action": "fetchCustomerAddresses" }],
+  "initActions": [
+    {
+      "action": "fetchNavCollections"
+    },
+    {
+      "action": "fetchCustomerAddresses"
+    }
+  ],
   "content": {
     "type": "VStack",
-    "props": { "className": "space-y-6" },
+    "props": {
+      "className": "space-y-6"
+    },
     "children": [
       {
         "type": "Box",
-        "props": { "className": "flex justify-between items-start" },
+        "props": {
+          "className": "flex justify-between items-start"
+        },
         "children": [
           {
             "type": "Box",
             "children": [
-              { "type": "Heading", "props": { "className": "text-3xl font-bold" }, "text": "Addresses" },
-              { "type": "Text", "props": { "className": "text-gray-500 mt-2" }, "text": "Manage your saved shipping and billing addresses" }
+              {
+                "type": "Heading",
+                "props": {
+                  "className": "text-3xl font-bold"
+                },
+                "text": "Addresses"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-gray-500 mt-2"
+                },
+                "text": "Manage your saved shipping and billing addresses"
+              }
             ]
           },
           {
             "type": "Button",
-            "props": { "className": "bg-[#1e293b] text-white hover:bg-[#334155]" },
-            "children": [{ "type": "ButtonText", "props": { "className": "!text-white" }, "text": "+ Add Address" }],
-            "actions": { "click": { "type": "set", "path": "showAddForm", "value": true } }
+            "props": {
+              "className": "bg-[#1e293b] text-white hover:bg-[#334155]"
+            },
+            "children": [
+              {
+                "type": "ButtonText",
+                "props": {
+                  "className": "!text-white"
+                },
+                "text": "+ Add Address"
+              }
+            ],
+            "actions": {
+              "click": {
+                "type": "set",
+                "path": "showAddForm",
+                "value": true
+              }
+            }
           }
         ]
       },
       {
         "type": "Card",
-        "props": { "className": "p-6" },
-        "condition": { "==": [{ "var": "showAddForm" }, true] },
+        "props": {
+          "className": "p-6"
+        },
+        "condition": {
+          "==": [
+            {
+              "var": "showAddForm"
+            },
+            true
+          ]
+        },
         "children": [
-          { "type": "Heading", "props": { "className": "text-lg font-semibold mb-4" }, "text": "Add New Address" },
+          {
+            "type": "Heading",
+            "props": {
+              "className": "text-lg font-semibold mb-4"
+            },
+            "text": "Add New Address"
+          },
           {
             "type": "VStack",
-            "props": { "className": "space-y-4" },
+            "props": {
+              "className": "space-y-4"
+            },
             "children": [
-              { "type": "Box", "props": { "className": "space-y-2" }, "children": [{ "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Full name" }, { "type": "Input", "children": [{ "type": "InputField", "props": { "value": "{{form.fullName}}", "placeholder": "Jane Doe" }, "actions": { "change": { "action": "setState", "payload": { "path": "form.fullName", "value": "$event" } } } }] }] },
-              { "type": "Box", "props": { "className": "space-y-2" }, "children": [{ "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Street address" }, { "type": "Input", "children": [{ "type": "InputField", "props": { "value": "{{form.streetLine1}}", "placeholder": "123 Main St" }, "actions": { "change": { "action": "setState", "payload": { "path": "form.streetLine1", "value": "$event" } } } }] }] },
               {
                 "type": "Box",
-                "props": { "className": "grid grid-cols-2 gap-4" },
+                "props": {
+                  "className": "space-y-2"
+                },
                 "children": [
-                  { "type": "Box", "props": { "className": "space-y-2" }, "children": [{ "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "City" }, { "type": "Input", "children": [{ "type": "InputField", "props": { "value": "{{form.city}}", "placeholder": "New York" }, "actions": { "change": { "action": "setState", "payload": { "path": "form.city", "value": "$event" } } } }] }] },
-                  { "type": "Box", "props": { "className": "space-y-2" }, "children": [{ "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Postal code" }, { "type": "Input", "children": [{ "type": "InputField", "props": { "value": "{{form.postalCode}}", "placeholder": "10001" }, "actions": { "change": { "action": "setState", "payload": { "path": "form.postalCode", "value": "$event" } } } }] }] }
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm font-medium"
+                    },
+                    "text": "Full name"
+                  },
+                  {
+                    "type": "Input",
+                    "children": [
+                      {
+                        "type": "InputField",
+                        "props": {
+                          "value": "{{form.fullName}}",
+                          "placeholder": "Jane Doe"
+                        },
+                        "actions": {
+                          "change": {
+                            "action": "setState",
+                            "payload": {
+                              "path": "form.fullName",
+                              "value": "$event"
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
                 ]
               },
-              { "type": "Box", "props": { "className": "space-y-2" }, "children": [{ "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Country code" }, { "type": "Input", "children": [{ "type": "InputField", "props": { "value": "{{form.countryCode}}", "placeholder": "US" }, "actions": { "change": { "action": "setState", "payload": { "path": "form.countryCode", "value": "$event" } } } }] }] },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "space-y-2"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm font-medium"
+                    },
+                    "text": "Street address"
+                  },
+                  {
+                    "type": "Input",
+                    "children": [
+                      {
+                        "type": "InputField",
+                        "props": {
+                          "value": "{{form.streetLine1}}",
+                          "placeholder": "123 Main St"
+                        },
+                        "actions": {
+                          "change": {
+                            "action": "setState",
+                            "payload": {
+                              "path": "form.streetLine1",
+                              "value": "$event"
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "grid grid-cols-2 gap-4"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "space-y-2"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-medium"
+                        },
+                        "text": "City"
+                      },
+                      {
+                        "type": "Input",
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": {
+                              "value": "{{form.city}}",
+                              "placeholder": "New York"
+                            },
+                            "actions": {
+                              "change": {
+                                "action": "setState",
+                                "payload": {
+                                  "path": "form.city",
+                                  "value": "$event"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "space-y-2"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-medium"
+                        },
+                        "text": "Postal code"
+                      },
+                      {
+                        "type": "Input",
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": {
+                              "value": "{{form.postalCode}}",
+                              "placeholder": "10001"
+                            },
+                            "actions": {
+                              "change": {
+                                "action": "setState",
+                                "payload": {
+                                  "path": "form.postalCode",
+                                  "value": "$event"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "space-y-2"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm font-medium"
+                    },
+                    "text": "Country code"
+                  },
+                  {
+                    "type": "Input",
+                    "children": [
+                      {
+                        "type": "InputField",
+                        "props": {
+                          "value": "{{form.countryCode}}",
+                          "placeholder": "US"
+                        },
+                        "actions": {
+                          "change": {
+                            "action": "setState",
+                            "payload": {
+                              "path": "form.countryCode",
+                              "value": "$event"
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
               {
                 "type": "HStack",
-                "props": { "className": "flex gap-2" },
+                "props": {
+                  "className": "flex gap-2"
+                },
                 "children": [
-                  { "type": "Button", "props": { "className": "bg-[#1e293b] text-white hover:bg-[#334155]" }, "children": [{ "type": "ButtonText", "props": { "className": "!text-white" }, "text": "Save Address" }], "actions": { "click": { "action": "createCustomerAddress" } } },
-                  { "type": "Button", "props": { "className": "border border-gray-200 bg-white text-gray-900 hover:bg-gray-100" }, "children": [{ "type": "ButtonText", "props": { "className": "!text-gray-900" }, "text": "Cancel" }], "actions": { "click": { "type": "set", "path": "showAddForm", "value": false } } }
+                  {
+                    "type": "Button",
+                    "props": {
+                      "className": "bg-[#1e293b] text-white hover:bg-[#334155]"
+                    },
+                    "children": [
+                      {
+                        "type": "ButtonText",
+                        "props": {
+                          "className": "!text-white"
+                        },
+                        "text": "Save Address"
+                      }
+                    ],
+                    "actions": {
+                      "click": {
+                        "action": "createCustomerAddress"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "className": "border border-gray-200 bg-white text-gray-900 hover:bg-gray-100"
+                    },
+                    "children": [
+                      {
+                        "type": "ButtonText",
+                        "props": {
+                          "className": "!text-gray-900"
+                        },
+                        "text": "Cancel"
+                      }
+                    ],
+                    "actions": {
+                      "click": {
+                        "type": "set",
+                        "path": "showAddForm",
+                        "value": false
+                      }
+                    }
+                  }
                 ]
               }
             ]
@@ -65,15 +351,35 @@
       },
       {
         "type": "Box",
-        "props": { "className": "text-center py-12" },
-        "condition": { "==": [{ "var": ["addresses.length", 0] }, 0] },
+        "props": {
+          "className": "text-center py-12"
+        },
+        "condition": {
+          "==": [
+            {
+              "var": [
+                "addresses.length",
+                0
+              ]
+            },
+            0
+          ]
+        },
         "children": [
-          { "type": "Text", "props": { "className": "text-gray-500" }, "text": "No saved addresses yet." }
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-gray-500"
+            },
+            "text": "No saved addresses yet."
+          }
         ]
       },
       {
         "type": "Box",
-        "props": { "className": "grid grid-cols-1 md:grid-cols-2 gap-4" },
+        "props": {
+          "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+        },
         "map": "addresses",
         "key": "addressCard",
         "children": [
@@ -82,18 +388,79 @@
             "children": [
               {
                 "type": "Box",
-                "props": { "className": "p-4" },
+                "props": {
+                  "className": "p-4"
+                },
                 "children": [
-                  { "type": "Text", "props": { "className": "font-semibold" }, "text": "{{$item.fullName}}" },
-                  { "type": "Text", "props": { "className": "text-sm text-gray-500 mt-1" }, "text": "{{$item.streetLine1}}" },
-                  { "type": "Text", "props": { "className": "text-sm text-gray-500" }, "text": "{{$item.city}}, {{$item.postalCode}}" },
-                  { "type": "Text", "props": { "className": "text-sm text-gray-500" }, "text": "{{$item.country.name}}" },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold"
+                    },
+                    "text": "{{$item.fullName}}"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 mt-1"
+                    },
+                    "text": "{{$item.streetLine1}}"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500"
+                    },
+                    "text": "{{$item.city}}, {{$item.postalCode}}"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500"
+                    },
+                    "text": "{{$item.country.name}}"
+                  },
                   {
                     "type": "HStack",
-                    "props": { "className": "flex gap-2 mt-3" },
+                    "props": {
+                      "className": "flex gap-2 mt-3"
+                    },
                     "children": [
-                      { "type": "Button", "props": { "className": "border border-gray-200 bg-white text-gray-900 hover:bg-gray-100 text-xs h-8 px-3" }, "children": [{ "type": "ButtonText", "props": { "className": "!text-gray-900" }, "text": "Edit" }] },
-                      { "type": "Button", "props": { "className": "border border-red-400 text-red-500 hover:bg-red-50 text-xs h-8 px-3" }, "children": [{ "type": "ButtonText", "props": { "className": "!text-red-500" }, "text": "Delete" }], "actions": { "click": { "action": "deleteCustomerAddress" } } }
+                      {
+                        "type": "Button",
+                        "props": {
+                          "className": "border border-gray-200 bg-white text-gray-900 hover:bg-gray-100 text-xs h-8 px-3"
+                        },
+                        "children": [
+                          {
+                            "type": "ButtonText",
+                            "props": {
+                              "className": "!text-gray-900"
+                            },
+                            "text": "Edit"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Button",
+                        "props": {
+                          "className": "border border-red-400 text-red-500 hover:bg-red-50 text-xs h-8 px-3"
+                        },
+                        "children": [
+                          {
+                            "type": "ButtonText",
+                            "props": {
+                              "className": "!text-red-500"
+                            },
+                            "text": "Delete"
+                          }
+                        ],
+                        "actions": {
+                          "click": {
+                            "action": "deleteCustomerAddress"
+                          }
+                        }
+                      }
                     ]
                   }
                 ]

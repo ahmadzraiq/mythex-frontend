@@ -1,63 +1,145 @@
 {
-  "meta": { "title": "Shopping Cart" },
-  "state": { "form": { "couponCode": "" } },
+  "meta": {
+    "title": "Shopping Cart"
+  },
+  "state": {
+    "form": {
+      "couponCode": ""
+    }
+  },
   "layout": "store",
   "initActions": [
-    { "action": "fetchNavCollections" },
-    { "action": "fetchCart" }
+    {
+      "action": "fetchNavCollections"
+    },
+    {
+      "action": "fetchCart"
+    }
   ],
   "content": {
     "type": "Box",
-    "props": { "className": "container mx-auto px-4 py-20" },
+    "props": {
+      "className": "container mx-auto px-4 py-20"
+    },
     "children": [
       {
         "type": "Heading",
-        "props": { "className": "text-3xl font-bold mb-8" },
+        "props": {
+          "className": "text-3xl font-bold mb-8"
+        },
         "text": "Shopping Cart"
       },
       {
         "type": "Box",
-        "props": { "className": "text-center py-16" },
-        "condition": { "==": [{ "var": ["cart.totalQuantity", 0] }, 0] },
+        "props": {
+          "className": "text-center py-16"
+        },
+        "condition": {
+          "==": [
+            {
+              "var": [
+                "cart.totalQuantity",
+                0
+              ]
+            },
+            0
+          ]
+        },
         "children": [
-          { "type": "Heading", "props": { "className": "text-3xl font-bold mb-4" }, "text": "Your Cart is Empty" },
-          { "type": "Text", "props": { "className": "text-gray-500 mb-8" }, "text": "Add some items to your cart to get started" },
+          {
+            "type": "Heading",
+            "props": {
+              "className": "text-3xl font-bold mb-4"
+            },
+            "text": "Your Cart is Empty"
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-gray-500 mb-8"
+            },
+            "text": "Add some items to your cart to get started"
+          },
           {
             "type": "Button",
-            "props": { "className": "!bg-[#1e293b] hover:!bg-[#334155] px-6" },
+            "props": {
+              "className": "!bg-[#1e293b] hover:!bg-[#334155] px-6"
+            },
             "children": [
-              { "type": "ButtonText", "props": { "className": "!text-white" }, "text": "Continue Shopping" }
+              {
+                "type": "ButtonText",
+                "props": {
+                  "className": "!text-white"
+                },
+                "text": "Continue Shopping"
+              }
             ],
-            "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } }
+            "actions": {
+              "click": {
+                "action": "navigate",
+                "payload": {
+                  "path": "/"
+                }
+              }
+            }
           }
         ]
       },
       {
         "type": "Box",
-        "props": { "className": "grid lg:grid-cols-3 gap-8" },
-        "condition": { ">": [{ "var": ["cart.totalQuantity", 0] }, 0] },
+        "props": {
+          "className": "grid lg:grid-cols-3 gap-8"
+        },
+        "condition": {
+          ">": [
+            {
+              "var": [
+                "cart.totalQuantity",
+                0
+              ]
+            },
+            0
+          ]
+        },
         "children": [
           {
             "type": "Box",
-            "props": { "className": "lg:col-span-2 space-y-4" },
+            "_meta": {
+              "section": "cart-line-list",
+              "description": "Cart line items with quantity controls"
+            },
+            "props": {
+              "className": "lg:col-span-2 space-y-4"
+            },
             "children": [
               {
                 "type": "Box",
-                "props": { "className": "contents" },
+                "props": {
+                  "className": "contents"
+                },
                 "map": "cart.lines",
                 "key": "cartLine",
                 "children": [
                   {
                     "type": "Box",
-                    "props": { "className": "flex flex-col sm:flex-row gap-4 p-4 border border-gray-200 rounded-lg !bg-white" },
+                    "props": {
+                      "className": "flex flex-col sm:flex-row gap-4 p-4 border border-gray-200 rounded-lg !bg-white"
+                    },
                     "children": [
                       {
                         "type": "Pressable",
-                        "props": { "className": "flex-shrink-0" },
+                        "props": {
+                          "className": "flex-shrink-0"
+                        },
                         "actions": {
                           "click": {
                             "action": "navigate",
-                            "payload": { "routeConfig": "product", "slug": { "var": "$item.productVariant.product.slug" } }
+                            "payload": {
+                              "routeConfig": "product",
+                              "slug": {
+                                "var": "$item.productVariant.product.slug"
+                              }
+                            }
                           }
                         },
                         "children": [
@@ -75,121 +157,283 @@
                       },
                       {
                         "type": "Box",
-                        "props": { "className": "flex-grow min-w-0" },
+                        "props": {
+                          "className": "flex-grow min-w-0"
+                        },
                         "children": [
                           {
                             "type": "Pressable",
-                            "props": { "className": "font-semibold hover:underline block" },
+                            "props": {
+                              "className": "font-semibold hover:underline block"
+                            },
                             "actions": {
                               "click": {
                                 "action": "navigate",
-                                "payload": { "routeConfig": "product", "slug": { "var": "$item.productVariant.product.slug" } }
+                                "payload": {
+                                  "routeConfig": "product",
+                                  "slug": {
+                                    "var": "$item.productVariant.product.slug"
+                                  }
+                                }
                               }
                             },
-                            "children": [{ "type": "Text", "text": "{{$item.productVariant.product.name}}" }]
+                            "children": [
+                              {
+                                "type": "Text",
+                                "text": "{{$item.productVariant.product.name}}"
+                              }
+                            ]
                           },
                           {
                             "type": "Text",
-                            "props": { "className": "text-sm text-gray-500 mt-1" },
+                            "props": {
+                              "className": "text-sm text-gray-500 mt-1"
+                            },
                             "text": "{{$item.productVariant.name}}",
-                            "condition": { "!=": [{ "var": "$item.productVariant.name" }, { "var": "$item.productVariant.product.name" }] }
+                            "condition": {
+                              "!=": [
+                                {
+                                  "var": "$item.productVariant.name"
+                                },
+                                {
+                                  "var": "$item.productVariant.product.name"
+                                }
+                              ]
+                            }
                           },
                           {
                             "type": "Text",
-                            "props": { "className": "text-sm text-gray-500 mt-1" },
-                            "text": { "expr": { "var": "$item.productVariant.sku" }, "prefix": "SKU: " }
+                            "props": {
+                              "className": "text-sm text-gray-500 mt-1"
+                            },
+                            "text": {
+                              "expr": {
+                                "var": "$item.productVariant.sku"
+                              },
+                              "prefix": "SKU: "
+                            }
                           },
-{
+                          {
+                            "type": "HStack",
+                            "props": {
+                              "className": "flex items-center gap-3 mt-4 flex-wrap"
+                            },
+                            "children": [
+                              {
                                 "type": "HStack",
-                                "props": { "className": "flex items-center gap-3 mt-4 flex-wrap" },
+                                "props": {
+                                  "className": "flex items-center gap-2 border rounded-md"
+                                },
                                 "children": [
                                   {
-                                    "type": "HStack",
-                                    "props": { "className": "flex items-center gap-2 border rounded-md" },
+                                    "type": "Button",
+                                    "props": {
+                                      "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-gray-100 rounded-none disabled:opacity-50"
+                                    },
+                                    "condition": {
+                                      ">": [
+                                        {
+                                          "var": [
+                                            "$item.quantity",
+                                            0
+                                          ]
+                                        },
+                                        1
+                                      ]
+                                    },
                                     "children": [
                                       {
-                                        "type": "Button",
+                                        "type": "ButtonText",
                                         "props": {
-                                          "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-gray-100 rounded-none disabled:opacity-50"
+                                          "className": "!text-gray-900"
                                         },
-                                        "condition": { ">": [{ "var": ["$item.quantity", 0] }, 1] },
-                                        "children": [
-                                          { "type": "ButtonText", "props": { "className": "!text-gray-900" }, "text": "−" }
-                                        ],
-                                        "actions": {
-                                          "click": {
-                                            "action": "adjustCartItemQuantity",
-                                            "payload": {
-                                              "lineId": { "var": "$item.id" },
-                                              "quantity": { "expr": { "-": [{ "var": ["$item.quantity", 1] }, 1] } }
-                                            }
-                                          }
-                                        }
-                                      },
-                                      {
-                                        "type": "Button",
-                                        "props": {
-                                          "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-gray-100 rounded-none disabled:opacity-50"
-                                        },
-                                        "condition": { "==": [{ "var": ["$item.quantity", 0] }, 1] },
-                                        "children": [
-                                          { "type": "ButtonText", "props": { "className": "!text-gray-900" }, "text": "−" }
-                                        ],
-                                        "actions": { "click": { "action": "removeFromCart", "stopPropagation": true } }
-                                      },
-                                      {
-                                        "type": "Text",
-                                        "props": { "className": "w-12 text-center font-medium text-sm" },
-                                        "text": { "expr": { "var": "$item.quantity" } }
-                                      },
-                                      {
-                                        "type": "Button",
-                                        "props": {
-                                          "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-gray-100 rounded-none"
-                                        },
-                                        "children": [
-                                          { "type": "ButtonText", "props": { "className": "!text-gray-900" }, "text": "+" }
-                                        ],
-                                        "actions": {
-                                          "click": {
-                                            "action": "adjustCartItemQuantity",
-                                            "payload": {
-                                              "lineId": { "var": "$item.id" },
-                                              "quantity": { "expr": { "+": [{ "var": ["$item.quantity", 0] }, 1] } }
-                                            }
-                                          }
-                                        }
-                                      },
-                                      {
-                                        "type": "Button",
-                                        "props": {
-                                          "className": "h-9 w-9 p-0 flex items-center justify-center !bg-transparent border-0 hover:!bg-red-50 rounded-none"
-                                        },
-                                        "children": [
-                                          { "type": "ButtonText", "props": { "className": "!text-red-500" }, "text": "✕" }
-                                        ],
-                                        "actions": { "click": { "action": "removeFromCart", "stopPropagation": true } }
+                                        "text": "−"
                                       }
-                                    ]
+                                    ],
+                                    "actions": {
+                                      "click": {
+                                        "action": "adjustCartItemQuantity",
+                                        "payload": {
+                                          "lineId": {
+                                            "var": "$item.id"
+                                          },
+                                          "quantity": {
+                                            "expr": {
+                                              "-": [
+                                                {
+                                                  "var": [
+                                                    "$item.quantity",
+                                                    1
+                                                  ]
+                                                },
+                                                1
+                                              ]
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
                                   },
                                   {
-                                    "type": "VStack",
-                                "props": { "className": "sm:hidden ml-auto gap-0 items-end" },
-                                "children": [
-                                  {
-                                    "type": "Text",
-                                    "props": { "className": "font-semibold text-lg" },
-                                    "text": {
-                                      "expr": {
-                                        "formatCurrency": [{ "/": [{ "var": "$item.linePriceWithTax" }, 100] }, { "var": ["cart.currencyCode", "USD"] }]
+                                    "type": "Button",
+                                    "props": {
+                                      "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-gray-100 rounded-none disabled:opacity-50"
+                                    },
+                                    "condition": {
+                                      "==": [
+                                        {
+                                          "var": [
+                                            "$item.quantity",
+                                            0
+                                          ]
+                                        },
+                                        1
+                                      ]
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "ButtonText",
+                                        "props": {
+                                          "className": "!text-gray-900"
+                                        },
+                                        "text": "−"
+                                      }
+                                    ],
+                                    "actions": {
+                                      "click": {
+                                        "action": "removeFromCart",
+                                        "stopPropagation": true
                                       }
                                     }
                                   },
                                   {
                                     "type": "Text",
-                                    "props": { "className": "text-sm text-gray-500 mt-1" },
+                                    "props": {
+                                      "className": "w-12 text-center font-medium text-sm"
+                                    },
                                     "text": {
-                                      "expr": { "formatCurrency": [{ "/": [{ "var": "$item.unitPriceWithTax" }, 100] }, { "var": ["cart.currencyCode", "USD"] }] },
+                                      "expr": {
+                                        "var": "$item.quantity"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Button",
+                                    "props": {
+                                      "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-gray-100 rounded-none"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "ButtonText",
+                                        "props": {
+                                          "className": "!text-gray-900"
+                                        },
+                                        "text": "+"
+                                      }
+                                    ],
+                                    "actions": {
+                                      "click": {
+                                        "action": "adjustCartItemQuantity",
+                                        "payload": {
+                                          "lineId": {
+                                            "var": "$item.id"
+                                          },
+                                          "quantity": {
+                                            "expr": {
+                                              "+": [
+                                                {
+                                                  "var": [
+                                                    "$item.quantity",
+                                                    0
+                                                  ]
+                                                },
+                                                1
+                                              ]
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Button",
+                                    "props": {
+                                      "className": "h-9 w-9 p-0 flex items-center justify-center !bg-transparent border-0 hover:!bg-red-50 rounded-none"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "ButtonText",
+                                        "props": {
+                                          "className": "!text-red-500"
+                                        },
+                                        "text": "✕"
+                                      }
+                                    ],
+                                    "actions": {
+                                      "click": {
+                                        "action": "removeFromCart",
+                                        "stopPropagation": true
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "VStack",
+                                "props": {
+                                  "className": "sm:hidden ml-auto gap-0 items-end"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "font-semibold text-lg"
+                                    },
+                                    "text": {
+                                      "expr": {
+                                        "formatCurrency": [
+                                          {
+                                            "/": [
+                                              {
+                                                "var": "$item.linePriceWithTax"
+                                              },
+                                              100
+                                            ]
+                                          },
+                                          {
+                                            "var": [
+                                              "cart.currencyCode",
+                                              "USD"
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-sm text-gray-500 mt-1"
+                                    },
+                                    "text": {
+                                      "expr": {
+                                        "formatCurrency": [
+                                          {
+                                            "/": [
+                                              {
+                                                "var": "$item.unitPriceWithTax"
+                                              },
+                                              100
+                                            ]
+                                          },
+                                          {
+                                            "var": [
+                                              "cart.currencyCode",
+                                              "USD"
+                                            ]
+                                          }
+                                        ]
+                                      },
                                       "suffix": " each"
                                     }
                                   }
@@ -201,23 +445,59 @@
                       },
                       {
                         "type": "Box",
-                        "props": { "className": "hidden sm:flex sm:flex-col sm:items-end text-right flex-shrink-0" },
+                        "props": {
+                          "className": "hidden sm:flex sm:flex-col sm:items-end text-right flex-shrink-0"
+                        },
                         "children": [
                           {
                             "type": "Text",
-                            "props": { "className": "font-semibold text-lg" },
+                            "props": {
+                              "className": "font-semibold text-lg"
+                            },
                             "text": {
                               "expr": {
-                                "formatCurrency": [{ "/": [{ "var": "$item.linePriceWithTax" }, 100] }, { "var": ["cart.currencyCode", "USD"] }]
+                                "formatCurrency": [
+                                  {
+                                    "/": [
+                                      {
+                                        "var": "$item.linePriceWithTax"
+                                      },
+                                      100
+                                    ]
+                                  },
+                                  {
+                                    "var": [
+                                      "cart.currencyCode",
+                                      "USD"
+                                    ]
+                                  }
+                                ]
                               }
                             }
                           },
                           {
                             "type": "Text",
-                            "props": { "className": "text-sm text-gray-500 mt-1" },
+                            "props": {
+                              "className": "text-sm text-gray-500 mt-1"
+                            },
                             "text": {
                               "expr": {
-                                "formatCurrency": [{ "/": [{ "var": "$item.unitPriceWithTax" }, 100] }, { "var": ["cart.currencyCode", "USD"] }]
+                                "formatCurrency": [
+                                  {
+                                    "/": [
+                                      {
+                                        "var": "$item.unitPriceWithTax"
+                                      },
+                                      100
+                                    ]
+                                  },
+                                  {
+                                    "var": [
+                                      "cart.currencyCode",
+                                      "USD"
+                                    ]
+                                  }
+                                ]
                               },
                               "suffix": " each"
                             }
@@ -232,27 +512,62 @@
           },
           {
             "type": "Box",
-            "props": { "className": "lg:col-span-1 space-y-4" },
+            "props": {
+              "className": "lg:col-span-1 space-y-4"
+            },
             "children": [
               {
                 "type": "Box",
-                "props": { "className": "border rounded-lg p-6 bg-white sticky top-4 h-fit" },
+                "props": {
+                  "className": "border rounded-lg p-6 bg-white sticky top-4 h-fit"
+                },
                 "children": [
-                  { "type": "Heading", "props": { "className": "text-xl font-bold mb-4" }, "text": "Order Summary" },
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "className": "text-xl font-bold mb-4"
+                    },
+                    "text": "Order Summary"
+                  },
                   {
                     "type": "VStack",
-                    "props": { "className": "space-y-2 mb-4" },
+                    "props": {
+                      "className": "space-y-2 mb-4"
+                    },
                     "children": [
                       {
                         "type": "HStack",
-                        "props": { "className": "flex justify-between text-sm" },
+                        "props": {
+                          "className": "flex justify-between text-sm"
+                        },
                         "children": [
-                          { "type": "Text", "props": { "className": "text-gray-500" }, "text": "Subtotal" },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-gray-500"
+                            },
+                            "text": "Subtotal"
+                          },
                           {
                             "type": "Text",
                             "text": {
                               "expr": {
-                                "formatCurrency": [{ "/": [{ "var": "cart.subTotalWithTax" }, 100] }, { "var": ["cart.currencyCode", "USD"] }]
+                                "formatCurrency": [
+                                  {
+                                    "/": [
+                                      {
+                                        "var": "cart.subTotalWithTax"
+                                      },
+                                      100
+                                    ]
+                                  },
+                                  {
+                                    "var": [
+                                      "cart.currencyCode",
+                                      "USD"
+                                    ]
+                                  }
+                                ]
                               }
                             }
                           }
@@ -260,21 +575,53 @@
                       },
                       {
                         "type": "Box",
-                        "props": { "className": "contents" },
+                        "props": {
+                          "className": "contents"
+                        },
                         "map": "cart.discounts",
                         "key": "discount",
-                        "condition": { ">": [{ "var": ["cart.discounts.length", 0] }, 0] },
+                        "condition": {
+                          ">": [
+                            {
+                              "var": [
+                                "cart.discounts.length",
+                                0
+                              ]
+                            },
+                            0
+                          ]
+                        },
                         "children": [
                           {
                             "type": "HStack",
-                            "props": { "className": "flex justify-between text-sm text-green-600" },
+                            "props": {
+                              "className": "flex justify-between text-sm text-green-600"
+                            },
                             "children": [
-                              { "type": "Text", "text": "{{$item.description}}" },
+                              {
+                                "type": "Text",
+                                "text": "{{$item.description}}"
+                              },
                               {
                                 "type": "Text",
                                 "text": {
                                   "expr": {
-                                    "formatCurrency": [{ "/": [{ "var": "$item.amountWithTax" }, 100] }, { "var": ["cart.currencyCode", "USD"] }]
+                                    "formatCurrency": [
+                                      {
+                                        "/": [
+                                          {
+                                            "var": "$item.amountWithTax"
+                                          },
+                                          100
+                                        ]
+                                      },
+                                      {
+                                        "var": [
+                                          "cart.currencyCode",
+                                          "USD"
+                                        ]
+                                      }
+                                    ]
                                   }
                                 }
                               }
@@ -284,17 +631,47 @@
                       },
                       {
                         "type": "HStack",
-                        "props": { "className": "flex justify-between text-sm" },
+                        "props": {
+                          "className": "flex justify-between text-sm"
+                        },
                         "children": [
-                          { "type": "Text", "props": { "className": "text-gray-500" }, "text": "Shipping" },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-gray-500"
+                            },
+                            "text": "Shipping"
+                          },
                           {
                             "type": "Text",
                             "text": {
                               "expr": {
                                 "if": [
-                                  { ">": [{ "var": "cart.shippingWithTax" }, 0] },
                                   {
-                                    "formatCurrency": [{ "/": [{ "var": "cart.shippingWithTax" }, 100] }, { "var": ["cart.currencyCode", "USD"] }]
+                                    ">": [
+                                      {
+                                        "var": "cart.shippingWithTax"
+                                      },
+                                      0
+                                    ]
+                                  },
+                                  {
+                                    "formatCurrency": [
+                                      {
+                                        "/": [
+                                          {
+                                            "var": "cart.shippingWithTax"
+                                          },
+                                          100
+                                        ]
+                                      },
+                                      {
+                                        "var": [
+                                          "cart.currencyCode",
+                                          "USD"
+                                        ]
+                                      }
+                                    ]
                                   },
                                   "Calculated at checkout"
                                 ]
@@ -307,18 +684,40 @@
                   },
                   {
                     "type": "Box",
-                    "props": { "className": "border-t pt-4 mb-6" },
+                    "props": {
+                      "className": "border-t pt-4 mb-6"
+                    },
                     "children": [
                       {
                         "type": "HStack",
-                        "props": { "className": "flex justify-between font-bold text-lg" },
+                        "props": {
+                          "className": "flex justify-between font-bold text-lg"
+                        },
                         "children": [
-                          { "type": "Text", "text": "Total" },
+                          {
+                            "type": "Text",
+                            "text": "Total"
+                          },
                           {
                             "type": "Text",
                             "text": {
                               "expr": {
-                                "formatCurrency": [{ "/": [{ "var": "cart.totalWithTax" }, 100] }, { "var": ["cart.currencyCode", "USD"] }]
+                                "formatCurrency": [
+                                  {
+                                    "/": [
+                                      {
+                                        "var": "cart.totalWithTax"
+                                      },
+                                      100
+                                    ]
+                                  },
+                                  {
+                                    "var": [
+                                      "cart.currencyCode",
+                                      "USD"
+                                    ]
+                                  }
+                                ]
                               }
                             }
                           }
@@ -328,47 +727,110 @@
                   },
                   {
                     "type": "Button",
-                    "props": { "className": "w-full !bg-[#1e293b] hover:!bg-[#334155] h-11 text-base font-medium" },
+                    "props": {
+                      "className": "w-full !bg-[#1e293b] hover:!bg-[#334155] h-11 text-base font-medium"
+                    },
                     "children": [
-                      { "type": "ButtonText", "props": { "className": "!text-white" }, "text": "Proceed to Checkout" }
+                      {
+                        "type": "ButtonText",
+                        "props": {
+                          "className": "!text-white"
+                        },
+                        "text": "Proceed to Checkout"
+                      }
                     ],
-                    "actions": { "click": { "action": "navigate", "payload": { "path": "/checkout" } } }
+                    "actions": {
+                      "click": {
+                        "action": "navigate",
+                        "payload": {
+                          "path": "/checkout"
+                        }
+                      }
+                    }
                   },
                   {
                     "type": "Button",
-                    "props": { "className": "w-full mt-2 border border-gray-200 !bg-white hover:!bg-gray-100 h-10" },
+                    "props": {
+                      "className": "w-full mt-2 border border-gray-200 !bg-white hover:!bg-gray-100 h-10"
+                    },
                     "children": [
-                      { "type": "ButtonText", "props": { "className": "!text-gray-900" }, "text": "Continue Shopping" }
+                      {
+                        "type": "ButtonText",
+                        "props": {
+                          "className": "!text-gray-900"
+                        },
+                        "text": "Continue Shopping"
+                      }
                     ],
-                    "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } }
+                    "actions": {
+                      "click": {
+                        "action": "navigate",
+                        "payload": {
+                          "path": "/"
+                        }
+                      }
+                    }
                   }
                 ]
               },
               {
                 "type": "Box",
-                "props": { "className": "border rounded-lg p-6 bg-white" },
+                "props": {
+                  "className": "border rounded-lg p-6 bg-white"
+                },
                 "children": [
                   {
                     "type": "HStack",
-                    "props": { "className": "flex items-center gap-2 mb-2" },
+                    "props": {
+                      "className": "flex items-center gap-2 mb-2"
+                    },
                     "children": [
-                      { "type": "NavIcon", "props": { "icon": "Tag", "size": 20, "className": "text-gray-500" } },
-                      { "type": "Heading", "props": { "className": "text-lg" }, "text": "Promotion Code" }
+                      {
+                        "type": "NavIcon",
+                        "props": {
+                          "icon": "Tag",
+                          "size": 20,
+                          "className": "text-gray-500"
+                        }
+                      },
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "className": "text-lg"
+                        },
+                        "text": "Promotion Code"
+                      }
                     ]
                   },
                   {
                     "type": "Text",
-                    "props": { "className": "text-sm text-gray-500 mb-4" },
+                    "props": {
+                      "className": "text-sm text-gray-500 mb-4"
+                    },
                     "text": "Enter your discount code below"
                   },
                   {
                     "type": "Box",
-                    "props": { "className": "space-y-2" },
-                    "condition": { ">": [{ "var": ["cart.couponCodes.length", 0] }, 0] },
+                    "props": {
+                      "className": "space-y-2"
+                    },
+                    "condition": {
+                      ">": [
+                        {
+                          "var": [
+                            "cart.couponCodes.length",
+                            0
+                          ]
+                        },
+                        0
+                      ]
+                    },
                     "children": [
                       {
                         "type": "Box",
-                        "props": { "className": "contents" },
+                        "props": {
+                          "className": "contents"
+                        },
                         "map": "cart.couponCodes",
                         "key": "code",
                         "children": [
@@ -380,22 +842,49 @@
                             "children": [
                               {
                                 "type": "HStack",
-                                "props": { "className": "flex items-center gap-2" },
+                                "props": {
+                                  "className": "flex items-center gap-2"
+                                },
                                 "children": [
-                                  { "type": "NavIcon", "props": { "icon": "Tag", "size": 16, "className": "text-green-600" } },
-                                  { "type": "Text", "props": { "className": "font-medium text-sm" }, "text": "{{$item}}" }
+                                  {
+                                    "type": "NavIcon",
+                                    "props": {
+                                      "icon": "Tag",
+                                      "size": 16,
+                                      "className": "text-green-600"
+                                    }
+                                  },
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "font-medium text-sm"
+                                    },
+                                    "text": "{{$item}}"
+                                  }
                                 ]
                               },
                               {
                                 "type": "Button",
-                                "props": { "className": "h-8 !bg-transparent hover:!bg-red-50" },
+                                "props": {
+                                  "className": "h-8 !bg-transparent hover:!bg-red-50"
+                                },
                                 "children": [
-                                  { "type": "ButtonText", "props": { "className": "!text-red-500" }, "text": "Remove" }
+                                  {
+                                    "type": "ButtonText",
+                                    "props": {
+                                      "className": "!text-red-500"
+                                    },
+                                    "text": "Remove"
+                                  }
                                 ],
                                 "actions": {
                                   "click": {
                                     "action": "removePromotionCode",
-                                    "payload": { "couponCode": { "var": "$item" } }
+                                    "payload": {
+                                      "couponCode": {
+                                        "var": "$item"
+                                      }
+                                    }
                                   }
                                 }
                               }
@@ -407,8 +896,20 @@
                   },
                   {
                     "type": "HStack",
-                    "props": { "className": "flex gap-2" },
-                    "condition": { "==": [{ "var": ["cart.couponCodes.length", 0] }, 0] },
+                    "props": {
+                      "className": "flex gap-2"
+                    },
+                    "condition": {
+                      "==": [
+                        {
+                          "var": [
+                            "cart.couponCodes.length",
+                            0
+                          ]
+                        },
+                        0
+                      ]
+                    },
                     "children": [
                       {
                         "type": "Input",
@@ -428,7 +929,10 @@
                             "actions": {
                               "change": {
                                 "action": "setState",
-                                "payload": { "path": "screens.cart.form.couponCode", "value": "$event" }
+                                "payload": {
+                                  "path": "screens.cart.form.couponCode",
+                                  "value": "$event"
+                                }
                               }
                             }
                           }
@@ -436,11 +940,23 @@
                       },
                       {
                         "type": "Button",
-                        "props": { "className": "!bg-[#1e293b] hover:!bg-[#334155] px-4" },
+                        "props": {
+                          "className": "!bg-[#1e293b] hover:!bg-[#334155] px-4"
+                        },
                         "children": [
-                          { "type": "ButtonText", "props": { "className": "!text-white" }, "text": "Apply" }
+                          {
+                            "type": "ButtonText",
+                            "props": {
+                              "className": "!text-white"
+                            },
+                            "text": "Apply"
+                          }
                         ],
-                        "actions": { "click": { "action": "applyPromotionCode" } }
+                        "actions": {
+                          "click": {
+                            "action": "applyPromotionCode"
+                          }
+                        }
                       }
                     ]
                   }

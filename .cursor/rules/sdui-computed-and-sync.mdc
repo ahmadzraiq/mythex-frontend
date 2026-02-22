@@ -39,13 +39,14 @@ alwaysApply: true
 |-------|------|---------|
 | `variableStorePath` | string | When set, also sync value to variable store at this path (e.g. `nav.searchQuery` when `route.q` changes, or `collectionSkip` for page) |
 | `triggersParamChange` | boolean | When true, URL change triggers `paramChangeAction` for the route |
+| `routePrefix` | string | When set, only apply this sync when pathname.startsWith(routePrefix). Use for route-specific page sync (e.g. collectionSkip for /collection, searchSkip for /search) |
 
-**Example:**
+**Example (independent pagination for collection vs search):**
 ```json
 "searchParamSync": [
   { "param": "q", "path": "route.q", "default": "", "variableStorePath": "nav.searchQuery", "triggersParamChange": true },
-  { "param": "sort", "path": "route.sort", "default": "name-asc", "triggersParamChange": true },
-  { "param": "page", "path": "collectionSkip", "default": "1", "transform": "pageToSkip", "pageSize": 12, "variableStorePath": "collectionSkip" }
+  { "param": "page", "path": "collectionSkip", "default": "1", "transform": "pageToSkip", "pageSize": 12, "variableStorePath": "collectionSkip", "routePrefix": "/collection" },
+  { "param": "page", "path": "searchSkip", "default": "1", "transform": "pageToSkip", "pageSize": 12, "variableStorePath": "searchSkip", "routePrefix": "/search" }
 ]
 ```
 

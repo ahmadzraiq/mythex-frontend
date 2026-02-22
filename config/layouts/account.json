@@ -1,26 +1,44 @@
 {
   "structure": {
     "type": "Box",
-    "props": { "className": "w-full flex flex-col min-h-screen" },
+    "props": {
+      "className": "w-full flex flex-col min-h-screen"
+    },
     "children": [
-      { "$ref": "fragments/navbar" },
+      {
+        "$ref": "fragments/layout/navbar"
+      },
       {
         "type": "Box",
-        "props": { "className": "w-full flex-1 pt-16" },
+        "props": {
+          "className": "w-full flex-1 pt-16"
+        },
         "children": [
           {
             "type": "Box",
-            "props": { "className": "w-full max-w-screen-xl mx-auto px-4 py-8" },
+            "props": {
+              "className": "w-full max-w-screen-xl mx-auto px-4 py-8"
+            },
             "children": [
               {
                 "type": "Box",
-                "props": { "className": "flex flex-row gap-8" },
+                "props": {
+                  "className": "flex flex-row gap-8"
+                },
                 "children": [
-                  { "$ref": "fragments/account-sidebar" },
+                  {
+                    "$ref": "fragments/layout/account-sidebar"
+                  },
                   {
                     "type": "Box",
-                    "props": { "className": "flex-1 min-w-0" },
-                    "children": [{ "$slot": "content" }]
+                    "props": {
+                      "className": "flex-1 min-w-0"
+                    },
+                    "children": [
+                      {
+                        "$slot": "content"
+                      }
+                    ]
                   }
                 ]
               }
@@ -28,7 +46,9 @@
           }
         ]
       },
-      { "$ref": "fragments/footer" }
+      {
+        "$ref": "fragments/layout/footer"
+      }
     ]
   }
 }

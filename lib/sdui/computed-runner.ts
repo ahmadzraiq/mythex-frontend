@@ -1,12 +1,19 @@
 /**
- * JSON Logic–based computed state runner.
- * Uses json-logic-js for generic, standards-based expressions.
- * All custom ops are generic and parameterized—no app-specific logic.
- * Field paths, keys, and limits are passed via JSON config (store.json computed).
+ * store.json computed runner (output/expr).
+ * Runs after merge; produces derived values like collectionCurrentPage, sortLabel, resultsHeaderText.
+ * Uses json-logic-js. All custom ops are generic and parameterized—no app-specific logic.
+ * Distinct from variable-store computed (type/source/path) which handles reduce-style values.
  */
 
 import jsonLogic from 'json-logic-js';
-import { setNestedValue } from './nested-utils';
+import { getNestedValue, setNestedValue } from './nested-utils';
+
+/** Memo cache: output -> { depsValues, outputValue }. Skip jsonLogic.apply when deps unchanged. */
+const computedMemo = new Map<string, { depsValues: unknown[]; outputValue: unknown }>();
+
+function arraysEqual(a: unknown[], b: unknown[]): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}
 
 /** Extract data paths from JSON Logic expr (excludes reduce scope: current, accumulator) */
 function extractPathsFromExpr(obj: unknown): string[] {
@@ -168,6 +175,49 @@ jsonLogic.add_operation('paginationPages', (totalItems: unknown, collectionSkip:
   return rangeWithDots;
 });
 
+// Generic: group array by key path. Args: items, groupKeyPath, groupIdPath?
+// Returns: [{ key, id?, items }] — key from groupKeyPath, id from groupIdPath of first item, items = grouped array
+function getNested(obj: unknown, path: string): unknown {
+  if (!path || typeof obj !== 'object' || obj == null) return undefined;
+  return path.split('.').reduce((o: unknown, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), obj);
+}
+jsonLogic.add_operation('groupBy', (items: unknown, groupKeyPath: unknown, groupIdPath?: unknown) => {
+  const arr = (items as Record<string, unknown>[]) ?? [];
+  const keyPath = String(groupKeyPath ?? '').trim();
+  const idPath = groupIdPath != null ? String(groupIdPath).trim() : undefined;
+  const map = new Map<string, { key: string; id?: string; items: unknown[] }>();
+  for (const item of arr) {
+    if (!item || typeof item !== 'object') continue;
+    const key = String(getNested(item, keyPath) ?? '');
+    if (!map.has(key)) {
+      const id = idPath ? getNested(item, idPath) : undefined;
+      map.set(key, { key, id: id != null ? String(id) : undefined, items: [] });
+    }
+    map.get(key)!.items.push(item);
+  }
+  return [...map.values()];
+});
+
+// Generic: toggle value in array — add if absent, remove if present.
+jsonLogic.add_operation('toggleInArray', (arr: unknown, value: unknown) => {
+  const a = (arr as unknown[]) ?? [];
+  const v = value;
+  const has = a.some((x) => x === v || (typeof x === 'string' && typeof v === 'string' && x === v));
+  if (has) return a.filter((x) => x !== v && !(typeof x === 'string' && typeof v === 'string' && x === v));
+  return [...a, v];
+});
+
+// Generic: check if array includes value.
+jsonLogic.add_operation('arrayIncludes', (arr: unknown, value: unknown) => {
+  const a = (arr as unknown[]) ?? [];
+  return a.some((x) => x === value || (typeof x === 'string' && typeof value === 'string' && x === value));
+});
+
+// Generic: array length.
+jsonLogic.add_operation('arrayLength', (arr: unknown) => {
+  return Array.isArray(arr) ? arr.length : 0;
+});
+
 export type ComputedDef = {
   output: string;
   expr: object; // JSON Logic expression; data = merged state
@@ -181,7 +231,16 @@ export function runComputed(
   let result = merged;
   for (const def of computed) {
     try {
-      const value = jsonLogic.apply(def.expr as object, result);
+      const deps = extractPathsFromExpr(def.expr);
+      const currentValues = deps.map((p) => getNestedValue(result, p));
+      const cached = computedMemo.get(def.output);
+      let value: unknown;
+      if (cached && arraysEqual(cached.depsValues, currentValues)) {
+        value = cached.outputValue;
+      } else {
+        value = jsonLogic.apply(def.expr as object, result);
+        computedMemo.set(def.output, { depsValues: currentValues, outputValue: value });
+      }
       result = setNestedValue(result, def.output, value);
     } catch (err) {
       console.error('[SDUI] computed error:', def, err);

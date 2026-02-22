@@ -271,7 +271,27 @@ Use `gap-*` instead of `space-y-*` / margin utilities for spacing between flex c
 
 ---
 
-## 14. Self-Correction Rule
+## 14. Pressable/Box/View — Wrap Text in Text Component
+
+**Problem:** In React Native, `Pressable`, `Box`, and `View` map to native View components. They **cannot** have raw text as direct children. Using `"text": "Clear all"` on a Pressable causes: "Unexpected text node: Clear all. A text node cannot be a child of a &lt;View&gt;."
+
+**Fix:** Always wrap text in a `Text` (or `Heading`, `ButtonText`) child. Never use `"text"` directly on Pressable, Box, or Button when it would render as raw string children.
+
+```json
+// ❌ BAD — raw text as Pressable child
+{ "type": "Pressable", "text": "Clear all", "actions": { "click": {...} } }
+
+// ✅ GOOD — Text child
+{ "type": "Pressable", "children": [
+  { "type": "Text", "props": { "className": "text-sm text-gray-500" }, "text": "Clear all" }
+], "actions": { "click": {...} } }
+```
+
+**Rule:** Any node that renders to View (Pressable, Box, Button without ButtonText, etc.) must have Text/Heading/ButtonText as children for text content—never raw `"text"` that becomes string children.
+
+---
+
+## 15. Self-Correction Rule
 
 **When any visual issue is found:**
 1. Identify the root cause

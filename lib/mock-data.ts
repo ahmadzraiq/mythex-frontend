@@ -1,5 +1,6 @@
 /**
  * Mock store data - SaraZ fashion store
+ * NOTE: Not currently used; app fetches from Vendure GraphQL. Keep for optional mock/dev mode.
  */
 
 export const categories = [

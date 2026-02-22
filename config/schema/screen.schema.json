@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "sdui-screen",
+  "title": "SDUI Screen",
+  "description": "Screen config for JSON-driven SDUI",
+  "type": "object",
+  "properties": {
+    "meta": {
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "state": { "type": "object" },
+    "layout": { "type": "string" },
+    "content": {
+      "oneOf": [
+        { "$ref": "#/definitions/uiNode" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/definitions/uiNode" }
+        }
+      ]
+    },
+    "ui": { "$ref": "#/definitions/uiNode" },
+    "initActions": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/actionRef" }
+    }
+  },
+  "additionalProperties": true,
+  "definitions": {
+    "uiNode": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "props": { "type": "object" },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/uiNode" }
+        },
+        "text": { "oneOf": [{ "type": "string" }, { "type": "object" }] },
+        "condition": { "type": "object" },
+        "map": { "type": "string" },
+        "key": { "type": "string" },
+        "actions": { "type": "object" },
+        "$ref": { "type": "string", "pattern": "^fragments/" },
+        "$slot": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "actionRef": {
+      "type": "object",
+      "properties": {
+        "action": { "type": "string" },
+        "payload": { "type": "object" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

@@ -1,0 +1,355 @@
+{
+  "type": "Box",
+  "props": {
+    "className": "border rounded-lg px-6"
+  },
+  "children": [
+    {
+      "type": "Pressable",
+      "props": {
+        "className": "{{checkout.paymentStepHeaderClassName}}"
+      },
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "className": "flex flex-row items-center gap-3 flex-1 min-w-0"
+          },
+          "children": [
+            {
+              "type": "Box",
+              "props": {
+                "className": "{{checkout.paymentStepIndicatorClassName}}"
+              },
+              "children": [
+                {
+                  "type": "NavIcon",
+                  "props": {
+                    "icon": "Check",
+                    "size": 16,
+                    "className": "!text-white"
+                  },
+                  "condition": {
+                    "var": [
+                      "checkout.selectedPaymentMethodCode"
+                    ]
+                  }
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "font-semibold text-sm !text-white"
+                  },
+                  "condition": {
+                    "and": [
+                      {
+                        "!": [
+                          {
+                            "var": [
+                              "checkout.selectedPaymentMethodCode"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "==": [
+                          {
+                            "var": "checkout.step"
+                          },
+                          "payment"
+                        ]
+                      }
+                    ]
+                  },
+                  "text": "4"
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "font-semibold text-sm !text-gray-500"
+                  },
+                  "condition": {
+                    "and": [
+                      {
+                        "!": [
+                          {
+                            "var": [
+                              "checkout.selectedPaymentMethodCode"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "!=": [
+                          {
+                            "var": "checkout.step"
+                          },
+                          "payment"
+                        ]
+                      }
+                    ]
+                  },
+                  "text": "4"
+                }
+              ]
+            },
+            {
+              "type": "Text",
+              "props": {
+                "className": "text-lg font-semibold"
+              },
+              "text": "Payment Method"
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "ml-auto shrink-0"
+          },
+          "children": [
+            {
+              "type": "NavIcon",
+              "props": {
+                "icon": "ChevronUp",
+                "size": 16,
+                "className": "!text-gray-500"
+              },
+              "condition": {
+                "==": [
+                  {
+                    "var": "checkout.step"
+                  },
+                  "payment"
+                ]
+              }
+            },
+            {
+              "type": "NavIcon",
+              "props": {
+                "icon": "ChevronDown",
+                "size": 16,
+                "className": "!text-gray-500"
+              },
+              "condition": {
+                "!=": [
+                  {
+                    "var": "checkout.step"
+                  },
+                  "payment"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "actions": {
+        "click": {
+          "type": "set",
+          "path": "checkout.step",
+          "value": "payment"
+        }
+      }
+    },
+    {
+      "type": "Box",
+      "props": {
+        "className": "pb-6 space-y-3"
+      },
+      "condition": {
+        "==": [
+          {
+            "var": "checkout.step"
+          },
+          "payment"
+        ]
+      },
+      "children": [
+        {
+          "type": "Text",
+          "props": {
+            "className": "text-sm text-gray-600 dark:text-gray-400"
+          },
+          "text": "Select payment method"
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "flex flex-row flex-wrap gap-4"
+          },
+          "map": "checkout.paymentMethods",
+          "key": "paymentOpt",
+          "children": [
+            {
+              "type": "Pressable",
+              "props": {
+                "className": {
+                  "expr": {
+                    "cat": [
+                      "flex flex-row items-center gap-3 p-4 border-2 rounded-lg w-full cursor-pointer transition-colors ",
+                      {
+                        "if": [
+                          {
+                            "==": [
+                              {
+                                "var": "checkout.selectedPaymentMethodCode"
+                              },
+                              {
+                                "var": "$item.code"
+                              }
+                            ]
+                          },
+                          "border-[#1e293b] bg-slate-50 dark:bg-slate-800/50",
+                          "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": {
+                      "expr": {
+                        "cat": [
+                          "w-5 h-5 min-w-5 min-h-5 rounded-full border-2 flex items-center justify-center shrink-0 ",
+                          {
+                            "if": [
+                              {
+                                "==": [
+                                  {
+                                    "var": "checkout.selectedPaymentMethodCode"
+                                  },
+                                  {
+                                    "var": "$item.code"
+                                  }
+                                ]
+                              },
+                              "border-[#1e293b] bg-[#1e293b]",
+                              "border-gray-300 dark:border-gray-600"
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "w-2 h-2 rounded-full bg-white pointer-events-none"
+                      },
+                      "condition": {
+                        "==": [
+                          {
+                            "var": "checkout.selectedPaymentMethodCode"
+                          },
+                          {
+                            "var": "$item.code"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "NavIcon",
+                  "props": {
+                    "icon": "CircleDollarSign",
+                    "size": 20,
+                    "className": "!text-gray-500 dark:!text-gray-400 shrink-0"
+                  }
+                },
+                {
+                  "type": "VStack",
+                  "props": {
+                    "className": "gap-0.5 text-left flex-1 min-w-0"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "font-medium text-sm text-gray-900 dark:text-gray-100"
+                      },
+                      "text": "{{$item.name}}"
+                    },
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "{{$item.description}}"
+                    }
+                  ]
+                }
+              ],
+              "actions": {
+                "click": {
+                  "type": "runMultiple",
+                  "actions": [
+                    {
+                      "type": "set",
+                      "path": "checkout.selectedPaymentMethodCode",
+                      "value": {
+                        "var": "$item.code"
+                      }
+                    },
+                    {
+                      "action": "setState",
+                      "payload": {
+                        "path": "screens.checkout.errors.checkout.selectedPaymentMethodCode",
+                        "value": ""
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "Button",
+          "props": {
+            "className": {
+              "expr": {
+                "cat": [
+                  "bg-[#1e293b] text-white hover:bg-[#334155] mt-2 ",
+                  {
+                    "if": [
+                      {
+                        "var": [
+                          "checkout.selectedPaymentMethodCode",
+                          ""
+                        ]
+                      },
+                      "",
+                      "opacity-50 pointer-events-none cursor-not-allowed"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "ButtonText",
+              "props": {
+                "className": "!text-white"
+              },
+              "text": "Continue to review"
+            }
+          ],
+          "actions": {
+            "click": {
+              "type": "set",
+              "path": "checkout.step",
+              "value": "review"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -2,85 +2,181 @@
   "fetchCart": {
     "type": "graphql",
     "query": "query GetActiveOrder { activeOrder { id code state totalQuantity subTotal subTotalWithTax shipping shippingWithTax total totalWithTax currencyCode couponCodes discounts { description amountWithTax } lines { id productVariant { id name sku product { id name slug featuredAsset { id preview } } } unitPriceWithTax quantity linePriceWithTax } } }",
-    "headers": {"Authorization": {"var": ["auth.token", ""]}},
+    "headers": {
+      "Authorization": {
+        "var": [
+          "auth.token",
+          ""
+        ]
+      }
+    },
     "storeIn": "cart",
     "responsePath": "data.activeOrder",
     "skipStoreWhenNull": true,
     "cacheTag": "cart",
     "cacheTTL": 60,
-    "cacheKeyVars": ["auth.token"]
+    "cacheKeyVars": [
+      "auth.token"
+    ]
   },
   "addToCart": {
     "type": "graphql",
     "query": "mutation AddToCart($variantId: ID!, $quantity: Int!) { addItemToOrder(productVariantId: $variantId, quantity: $quantity) { __typename ... on Order { id code state totalQuantity subTotal subTotalWithTax shipping shippingWithTax total totalWithTax currencyCode couponCodes discounts { description amountWithTax } lines { id productVariant { id name sku product { id name slug featuredAsset { id preview } } } unitPriceWithTax quantity linePriceWithTax } } ... on ErrorResult { errorCode message } } }",
     "variables": {
-      "variantId": {"var": "product.selectedVariant.id"},
+      "variantId": {
+        "var": "product.selectedVariant.id"
+      },
       "quantity": 1
     },
-    "headers": {"Authorization": {"var": ["auth.token", ""]}},
+    "headers": {
+      "Authorization": {
+        "var": [
+          "auth.token",
+          ""
+        ]
+      }
+    },
     "storeIn": "cart",
     "responsePath": "data.addItemToOrder",
     "onSuccess": {
       "action": "showToast",
-      "payload": {"message": "Added to cart"}
+      "payload": {
+        "message": "Added to cart"
+      }
     },
-    "invalidateCache": ["cart"]
+    "invalidateCache": [
+      "cart"
+    ]
   },
   "addToCartFromCard": {
     "type": "graphql",
     "query": "mutation AddToCart($variantId: ID!, $quantity: Int!) { addItemToOrder(productVariantId: $variantId, quantity: $quantity) { __typename ... on Order { id code state totalQuantity subTotal subTotalWithTax shipping shippingWithTax total totalWithTax currencyCode couponCodes discounts { description amountWithTax } lines { id productVariant { id name sku product { id name slug featuredAsset { id preview } } } unitPriceWithTax quantity linePriceWithTax } } ... on ErrorResult { errorCode message } } }",
-    "variables": {"variantId": {"var": "$item.variantId"}, "quantity": 1},
-    "headers": {"Authorization": {"var": ["auth.token", ""]}},
+    "variables": {
+      "variantId": {
+        "var": "$item.variantId"
+      },
+      "quantity": 1
+    },
+    "headers": {
+      "Authorization": {
+        "var": [
+          "auth.token",
+          ""
+        ]
+      }
+    },
     "storeIn": "cart",
     "responsePath": "data.addItemToOrder",
-    "invalidateCache": ["cart"]
+    "invalidateCache": [
+      "cart"
+    ]
   },
   "removeFromCart": {
     "type": "graphql",
     "query": "mutation RemoveFromCart($lineId: ID!) { removeOrderLine(orderLineId: $lineId) { __typename ... on Order { id code state totalQuantity subTotal subTotalWithTax shipping shippingWithTax total totalWithTax currencyCode couponCodes discounts { description amountWithTax } lines { id productVariant { id name sku product { id name slug featuredAsset { id preview } } } unitPriceWithTax quantity linePriceWithTax } } ... on ErrorResult { errorCode message } } }",
-    "variables": {"lineId": {"var": "$item.id"}},
-    "headers": {"Authorization": {"var": ["auth.token", ""]}},
+    "variables": {
+      "lineId": {
+        "var": "$item.id"
+      }
+    },
+    "headers": {
+      "Authorization": {
+        "var": [
+          "auth.token",
+          ""
+        ]
+      }
+    },
     "storeIn": "cart",
     "responsePath": "data.removeOrderLine",
-    "invalidateCache": ["cart"]
+    "invalidateCache": [
+      "cart"
+    ]
   },
   "adjustCartItemQuantity": {
     "type": "graphql",
     "query": "mutation AdjustCartItem($lineId: ID!, $quantity: Int!) { adjustOrderLine(orderLineId: $lineId, quantity: $quantity) { __typename ... on Order { id code state totalQuantity subTotal subTotalWithTax shipping shippingWithTax total totalWithTax currencyCode couponCodes discounts { description amountWithTax } lines { id productVariant { id name sku product { id name slug featuredAsset { id preview } } } unitPriceWithTax quantity linePriceWithTax } } ... on ErrorResult { errorCode message } } }",
     "variables": {
-      "lineId": {"var": "$item.id"},
-      "quantity": {"var": "$item.quantity"}
+      "lineId": {
+        "var": "$item.id"
+      },
+      "quantity": {
+        "var": "$item.quantity"
+      }
     },
-    "headers": {"Authorization": {"var": ["auth.token", ""]}},
+    "headers": {
+      "Authorization": {
+        "var": [
+          "auth.token",
+          ""
+        ]
+      }
+    },
     "storeIn": "cart",
     "responsePath": "data.adjustOrderLine",
-    "invalidateCache": ["cart"]
+    "invalidateCache": [
+      "cart"
+    ]
   },
   "applyPromotionCode": {
     "type": "graphql",
     "query": "mutation ApplyPromotionCode($couponCode: String!) { applyCouponCode(couponCode: $couponCode) { __typename ... on Order { id code totalWithTax couponCodes discounts { description amountWithTax } } ... on ErrorResult { errorCode message } } }",
-    "variables": {"couponCode": {"var": "form.couponCode"}},
-    "headers": {"Authorization": {"var": ["auth.token", ""]}},
+    "variables": {
+      "couponCode": {
+        "var": "form.couponCode"
+      }
+    },
+    "headers": {
+      "Authorization": {
+        "var": [
+          "auth.token",
+          ""
+        ]
+      }
+    },
     "storeIn": "cart._promoResult",
     "responsePath": "data.applyCouponCode",
     "onSuccess": {
       "type": "runMultiple",
       "actions": [
-        {"action": "fetchCart"},
-        {"type": "set", "path": "screens.cart.form.couponCode", "value": ""}
+        {
+          "action": "fetchCart"
+        },
+        {
+          "type": "set",
+          "path": "screens.cart.form.couponCode",
+          "value": ""
+        }
       ]
     },
-    "invalidateCache": ["cart"]
+    "invalidateCache": [
+      "cart"
+    ]
   },
   "removePromotionCode": {
     "type": "graphql",
     "query": "mutation RemovePromotionCode($couponCode: String!) { removeCouponCode(couponCode: $couponCode) { id code totalWithTax couponCodes discounts { description amountWithTax } } }",
-    "variables": {"couponCode": {"var": "$item"}},
-    "headers": {"Authorization": {"var": ["auth.token", ""]}},
+    "variables": {
+      "couponCode": {
+        "var": "$item"
+      }
+    },
+    "headers": {
+      "Authorization": {
+        "var": [
+          "auth.token",
+          ""
+        ]
+      }
+    },
     "storeIn": "cart._removePromoResult",
     "responsePath": "data.removeCouponCode",
-    "onSuccess": {"action": "fetchCart"},
-    "invalidateCache": ["cart"]
+    "onSuccess": {
+      "action": "fetchCart"
+    },
+    "invalidateCache": [
+      "cart"
+    ]
   },
   "openCartDrawer": {
     "type": "set",

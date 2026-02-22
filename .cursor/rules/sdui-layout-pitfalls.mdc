@@ -32,6 +32,28 @@ alwaysApply: true
 
 ---
 
+## Map Wrapper: Use `contents` vs `flex flex-col gap-*`
+
+**Problem:** Using `className: "contents"` on a map-Box inside a stacked vertical layout (e.g. facet filters, filter groups) breaks spacing. The parent's `space-y-*` does not reliably apply to the mapped children—items like "Category" and "Brand" appear with no gap between them.
+
+**When to use `contents`:** Only when the map is inside a **grid** (or similar) where mapped items must become direct grid children. The grid's `gap` handles spacing.
+
+**When NOT to use `contents`:** When the map renders stacked vertical items (e.g. filter groups, facet groups, checkbox lists) and you need spacing between them. Use `flex flex-col gap-*` on the map-Box instead:
+
+```json
+// ❌ BAD — no space between "Category" and "Brand" groups
+{"type":"Box","map":"collection.facetGroups","key":"$item.id","props":{"className":"contents"},"children":[...]}
+
+// ✅ GOOD — gap-5 adds visible space between groups
+{"type":"Box","map":"collection.facetGroups","key":"$item.id","props":{"className":"flex flex-col gap-5"},"children":[...]}
+```
+
+Same for checkbox/value lists: use `flex flex-col gap-2` or `gap-3` on the values wrapper, not `contents`.
+
+**Applies to:** Facet filters (collection, search), any stacked list of mapped items where spacing between items matters.
+
+---
+
 ## Empty Space / Centering Issues
 
 **Problem:** `mx-auto` and `max-w-7xl` on content containers cause centering and unused right-side space when content sits beside a sidebar.
@@ -196,27 +218,20 @@ for (const [key, val] of Object.entries(vs)) {
 - Use `InputSlot` for icons — never absolute positioning inside Input.
 - For icon color inside `InputSlot`, use the `color` prop directly (e.g. `"color": "#9ca3af"`) rather than `className` — Lucide icons forward `color` as the SVG fill/stroke color reliably cross-platform.
 
-## Custom SDUI-Aware Components (FacetFiltersPanel Pattern)
+## Custom SDUI-Aware Components (RunActionProvider Pattern)
 
-**Problem:** Some UI logic (like grouping flat arrays, managing complex local state) can't be expressed purely in JSON. Custom React components need access to `runAction` to dispatch SDUI actions, but the renderer doesn't automatically pass it.
+**Problem:** Some UI logic (like Carousel) can't be expressed purely in JSON. Custom React components need access to `runAction` to dispatch SDUI actions, but the renderer doesn't automatically pass it.
 
 **Fix:** Use `RunActionProvider` context:
 1. `lib/sdui/run-action-context.tsx` exports `RunActionProvider` and `useRunAction()` hook
 2. `sdui-engine.tsx` wraps `SDURenderer` with `<RunActionProvider value={runActionStable}>`
 3. Custom components call `const runAction = useRunAction()` to dispatch actions
 
-**Passing arrays/objects as props from JSON:**
-Use `{ "var": ["path.to.data", []] }` — `resolveProps` handles `{ "var": ... }` and returns the actual value (not stringified):
-```json
-{ "type": "FacetFiltersPanel", "props": {
-  "facetValues": { "var": ["collection.search.facetValues", []] },
-  "selectedFacets": { "var": ["selectedFacets", []] }
-}}
-```
+**Facet filters (collection/search):** Use pure JSON — `groupBy` computed op for `collection.facetGroups` / `search.facetGroups`, `navigateWithQuery` action for toggle/clear, `arrayIncludes` / `arrayLength` for conditions.
 
 **Rules:**
-- Generic reusable components that group/transform data are acceptable (like `Carousel`, `FacetFiltersPanel`)
-- The component should be data-agnostic — accept data via props, not hard-code paths
+- Prefer JSON + generic ops over custom components when possible
+- Generic reusable components (e.g. `Carousel`) should be data-agnostic — accept data via props
 - Use `useSduiStore.getState().setData()` for Zustand writes and `getGlobalVariableStore().getState().setState()` for variable-store writes
 
 ---

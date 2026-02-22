@@ -4,7 +4,7 @@
  */
 
 import { create } from 'zustand';
-import storeConfig from '@/config/store.json';
+import storeConfig from '@/config/store-config';
 
 export interface SduiState {
   data: Record<string, unknown>;

@@ -56,7 +56,7 @@ These three files are the wiring layer. Nothing renders without them. Create the
 
 ## 1. Config Setup
 
-- [ ] **store.json** – Define complete `engineConventions` (no fallbacks in code):
+- [ ] **store.json** – Define complete `engineConventions` (no fallbacks in code). For production, use env vars: `NEXT_PUBLIC_GRAPHQL_ENDPOINT` and `NEXT_PUBLIC_VENDURE_TOKEN` override `graphqlEndpoint` and `graphqlHeaders.vendure-token` via `config/store-config.ts`.
   ```json
   "engineConventions": {
     "loadingSuffix": "loading",
@@ -135,5 +135,5 @@ These three files are the wiring layer. Nothing renders without them. Create the
 ## 8. Before First Deploy
 
 - [ ] Remove or gate debug UI (password preview, etc.)
-- [ ] Add `.env.example` with required vars
+- [ ] Add `.env.example` with required vars (see project root; includes `NEXT_PUBLIC_GRAPHQL_ENDPOINT`, `NEXT_PUBLIC_VENDURE_TOKEN`)
 - [ ] Verify `cart.items` path structure matches usage (nested vs flat)

@@ -1,0 +1,15 @@
+---
+description: Primary AI entry point - read docs/AI-BUILD-GUIDE.md or docs/CODE-ARCHITECTURE.md depending on task
+alwaysApply: true
+---
+
+# AI Entry Point
+
+**Before building or modifying:**
+
+- **JSON config** (screens, layouts, fragments, actions): Read [docs/AI-BUILD-GUIDE.md](../../docs/AI-BUILD-GUIDE.md) — structure, $ref/$slot, state paths, common patterns.
+- **Engine/renderer/actions** (lib/sdui/): Read [docs/CODE-ARCHITECTURE.md](../../docs/CODE-ARCHITECTURE.md) first — file map, data flow, where to add action types, **engine & performance patterns** (setNestedValue, useVariablePaths, computed memo, fetch cache LRU, searchParamSync routePrefix).
+
+**Also:** [docs/SCHEMA.md](../../docs/SCHEMA.md) for schema; [sdui-layout-pitfalls.mdc](./sdui-layout-pitfalls.mdc) for layout pitfalls; [nativewind-sdui-json.mdc](./nativewind-sdui-json.mdc) for Pressable/Box text (must use Text child).
+
+**JSON rules:** No trailing commas; escape quotes in strings; run `npm run validate:json` before commit.

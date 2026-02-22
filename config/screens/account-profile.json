@@ -1,20 +1,50 @@
 {
-  "meta": { "title": "Profile" },
+  "meta": {
+    "title": "Profile"
+  },
   "state": {
-    "form": { "firstName": "", "lastName": "", "phoneNumber": "", "emailAddress": "", "currentPassword": "", "newPassword": "" },
+    "form": {
+      "firstName": "",
+      "lastName": "",
+      "phoneNumber": "",
+      "emailAddress": "",
+      "currentPassword": "",
+      "newPassword": ""
+    },
     "errors": {}
   },
   "layout": "account",
-  "initActions": [{ "action": "fetchNavCollections" }, { "action": "fetchActiveCustomer" }],
+  "initActions": [
+    {
+      "action": "fetchNavCollections"
+    },
+    {
+      "action": "fetchActiveCustomer"
+    }
+  ],
   "content": {
     "type": "VStack",
-    "props": { "className": "space-y-6" },
+    "props": {
+      "className": "space-y-6"
+    },
     "children": [
       {
         "type": "Box",
         "children": [
-          { "type": "Heading", "props": { "className": "text-3xl font-bold" }, "text": "Profile" },
-          { "type": "Text", "props": { "className": "text-gray-500 mt-2" }, "text": "Manage your account information" }
+          {
+            "type": "Heading",
+            "props": {
+              "className": "text-3xl font-bold"
+            },
+            "text": "Profile"
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-gray-500 mt-2"
+            },
+            "text": "Manage your account information"
+          }
         ]
       },
       {
@@ -22,48 +52,159 @@
         "children": [
           {
             "type": "Box",
-            "props": { "className": "p-6" },
+            "props": {
+              "className": "p-6"
+            },
             "children": [
-              { "type": "Heading", "props": { "className": "text-lg font-semibold mb-4" }, "text": "Personal Information" },
+              {
+                "type": "Heading",
+                "props": {
+                  "className": "text-lg font-semibold mb-4"
+                },
+                "text": "Personal Information"
+              },
               {
                 "type": "VStack",
-                "props": { "className": "space-y-4" },
+                "props": {
+                  "className": "space-y-4"
+                },
                 "children": [
                   {
                     "type": "Box",
-                    "props": { "className": "grid grid-cols-2 gap-4" },
+                    "props": {
+                      "className": "grid grid-cols-2 gap-4"
+                    },
                     "children": [
                       {
                         "type": "Box",
-                        "props": { "className": "space-y-2" },
+                        "props": {
+                          "className": "space-y-2"
+                        },
                         "children": [
-                          { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "First name" },
-                          { "type": "Input", "children": [{ "type": "InputField", "props": { "value": "{{form.firstName}}", "placeholder": "Jane" }, "actions": { "change": { "action": "setState", "payload": { "path": "form.firstName", "value": "$event" } } } }] }
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-sm font-medium"
+                            },
+                            "text": "First name"
+                          },
+                          {
+                            "type": "Input",
+                            "children": [
+                              {
+                                "type": "InputField",
+                                "props": {
+                                  "value": "{{form.firstName}}",
+                                  "placeholder": "Jane"
+                                },
+                                "actions": {
+                                  "change": {
+                                    "action": "setState",
+                                    "payload": {
+                                      "path": "form.firstName",
+                                      "value": "$event"
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
                         ]
                       },
                       {
                         "type": "Box",
-                        "props": { "className": "space-y-2" },
+                        "props": {
+                          "className": "space-y-2"
+                        },
                         "children": [
-                          { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Last name" },
-                          { "type": "Input", "children": [{ "type": "InputField", "props": { "value": "{{form.lastName}}", "placeholder": "Doe" }, "actions": { "change": { "action": "setState", "payload": { "path": "form.lastName", "value": "$event" } } } }] }
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-sm font-medium"
+                            },
+                            "text": "Last name"
+                          },
+                          {
+                            "type": "Input",
+                            "children": [
+                              {
+                                "type": "InputField",
+                                "props": {
+                                  "value": "{{form.lastName}}",
+                                  "placeholder": "Doe"
+                                },
+                                "actions": {
+                                  "change": {
+                                    "action": "setState",
+                                    "payload": {
+                                      "path": "form.lastName",
+                                      "value": "$event"
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
                         ]
                       }
                     ]
                   },
                   {
                     "type": "Box",
-                    "props": { "className": "space-y-2" },
+                    "props": {
+                      "className": "space-y-2"
+                    },
                     "children": [
-                      { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Phone number" },
-                      { "type": "Input", "children": [{ "type": "InputField", "props": { "type": "tel", "value": "{{form.phoneNumber}}", "placeholder": "+1 (555) 000-0000" }, "actions": { "change": { "action": "setState", "payload": { "path": "form.phoneNumber", "value": "$event" } } } }] }
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-medium"
+                        },
+                        "text": "Phone number"
+                      },
+                      {
+                        "type": "Input",
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": {
+                              "type": "tel",
+                              "value": "{{form.phoneNumber}}",
+                              "placeholder": "+1 (555) 000-0000"
+                            },
+                            "actions": {
+                              "change": {
+                                "action": "setState",
+                                "payload": {
+                                  "path": "form.phoneNumber",
+                                  "value": "$event"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
                     ]
                   },
                   {
                     "type": "Button",
-                    "props": { "className": "bg-[#1e293b] text-white hover:bg-[#334155]" },
-                    "children": [{ "type": "ButtonText", "props": { "className": "!text-white" }, "text": "Save Changes" }],
-                    "actions": { "click": { "action": "updateCustomer" } }
+                    "props": {
+                      "className": "bg-[#1e293b] text-white hover:bg-[#334155]"
+                    },
+                    "children": [
+                      {
+                        "type": "ButtonText",
+                        "props": {
+                          "className": "!text-white"
+                        },
+                        "text": "Save Changes"
+                      }
+                    ],
+                    "actions": {
+                      "click": {
+                        "action": "updateCustomer"
+                      }
+                    }
                   }
                 ]
               }
@@ -76,26 +217,79 @@
         "children": [
           {
             "type": "Box",
-            "props": { "className": "p-6" },
+            "props": {
+              "className": "p-6"
+            },
             "children": [
-              { "type": "Heading", "props": { "className": "text-lg font-semibold mb-4" }, "text": "Email Address" },
+              {
+                "type": "Heading",
+                "props": {
+                  "className": "text-lg font-semibold mb-4"
+                },
+                "text": "Email Address"
+              },
               {
                 "type": "VStack",
-                "props": { "className": "space-y-4" },
+                "props": {
+                  "className": "space-y-4"
+                },
                 "children": [
                   {
                     "type": "Box",
-                    "props": { "className": "space-y-2" },
+                    "props": {
+                      "className": "space-y-2"
+                    },
                     "children": [
-                      { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Email" },
-                      { "type": "Input", "children": [{ "type": "InputField", "props": { "type": "email", "value": "{{form.emailAddress}}", "placeholder": "you@example.com" }, "actions": { "change": { "action": "setState", "payload": { "path": "form.emailAddress", "value": "$event" } } } }] }
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-medium"
+                        },
+                        "text": "Email"
+                      },
+                      {
+                        "type": "Input",
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": {
+                              "type": "email",
+                              "value": "{{form.emailAddress}}",
+                              "placeholder": "you@example.com"
+                            },
+                            "actions": {
+                              "change": {
+                                "action": "setState",
+                                "payload": {
+                                  "path": "form.emailAddress",
+                                  "value": "$event"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
                     ]
                   },
                   {
                     "type": "Button",
-                    "props": { "className": "bg-[#1e293b] text-white hover:bg-[#334155]" },
-                    "children": [{ "type": "ButtonText", "props": { "className": "!text-white" }, "text": "Update Email" }],
-                    "actions": { "click": { "action": "updateCustomerEmail" } }
+                    "props": {
+                      "className": "bg-[#1e293b] text-white hover:bg-[#334155]"
+                    },
+                    "children": [
+                      {
+                        "type": "ButtonText",
+                        "props": {
+                          "className": "!text-white"
+                        },
+                        "text": "Update Email"
+                      }
+                    ],
+                    "actions": {
+                      "click": {
+                        "action": "updateCustomerEmail"
+                      }
+                    }
                   }
                 ]
               }
@@ -108,34 +302,116 @@
         "children": [
           {
             "type": "Box",
-            "props": { "className": "p-6" },
+            "props": {
+              "className": "p-6"
+            },
             "children": [
-              { "type": "Heading", "props": { "className": "text-lg font-semibold mb-4" }, "text": "Change Password" },
+              {
+                "type": "Heading",
+                "props": {
+                  "className": "text-lg font-semibold mb-4"
+                },
+                "text": "Change Password"
+              },
               {
                 "type": "VStack",
-                "props": { "className": "space-y-4" },
+                "props": {
+                  "className": "space-y-4"
+                },
                 "children": [
                   {
                     "type": "Box",
-                    "props": { "className": "space-y-2" },
+                    "props": {
+                      "className": "space-y-2"
+                    },
                     "children": [
-                      { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "Current password" },
-                      { "type": "Input", "children": [{ "type": "InputField", "props": { "type": "password", "value": "{{form.currentPassword}}", "placeholder": "••••••••" }, "actions": { "change": { "action": "setState", "payload": { "path": "form.currentPassword", "value": "$event" } } } }] }
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-medium"
+                        },
+                        "text": "Current password"
+                      },
+                      {
+                        "type": "Input",
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": {
+                              "type": "password",
+                              "value": "{{form.currentPassword}}",
+                              "placeholder": "••••••••"
+                            },
+                            "actions": {
+                              "change": {
+                                "action": "setState",
+                                "payload": {
+                                  "path": "form.currentPassword",
+                                  "value": "$event"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
                     ]
                   },
                   {
                     "type": "Box",
-                    "props": { "className": "space-y-2" },
+                    "props": {
+                      "className": "space-y-2"
+                    },
                     "children": [
-                      { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": "New password" },
-                      { "type": "Input", "children": [{ "type": "InputField", "props": { "type": "password", "value": "{{form.newPassword}}", "placeholder": "••••••••" }, "actions": { "change": { "action": "setState", "payload": { "path": "form.newPassword", "value": "$event" } } } }] }
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-medium"
+                        },
+                        "text": "New password"
+                      },
+                      {
+                        "type": "Input",
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": {
+                              "type": "password",
+                              "value": "{{form.newPassword}}",
+                              "placeholder": "••••••••"
+                            },
+                            "actions": {
+                              "change": {
+                                "action": "setState",
+                                "payload": {
+                                  "path": "form.newPassword",
+                                  "value": "$event"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
                     ]
                   },
                   {
                     "type": "Button",
-                    "props": { "className": "bg-[#1e293b] text-white hover:bg-[#334155]" },
-                    "children": [{ "type": "ButtonText", "props": { "className": "!text-white" }, "text": "Change Password" }],
-                    "actions": { "click": { "action": "updateCustomerPassword" } }
+                    "props": {
+                      "className": "bg-[#1e293b] text-white hover:bg-[#334155]"
+                    },
+                    "children": [
+                      {
+                        "type": "ButtonText",
+                        "props": {
+                          "className": "!text-white"
+                        },
+                        "text": "Change Password"
+                      }
+                    ],
+                    "actions": {
+                      "click": {
+                        "action": "updateCustomerPassword"
+                      }
+                    }
                   }
                 ]
               }

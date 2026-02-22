@@ -8,18 +8,12 @@
 import React, { useEffect, memo } from 'react';
 import { getComponent } from './component-registry';
 import { evaluateCondition, interpolate, resolveProps, resolveText } from './utils';
-import {
-  createVariableStore,
-  extractNodeDependencies,
-  useVariablePaths,
-  type VariableStoreConfig,
-} from './variable-store';
+import { createVariableStore, useVariablePaths, type VariableStoreConfig } from './variable-store';
+import { extractNodeDependencies } from './dependency-extractor';
 import type { SDUINode, SDUIContext } from './types';
-import { getNestedValue, setNestedValue } from './nested-utils';
-
-function isScreenScopedPath(path: string, aliases: string[]): boolean {
-  return aliases.some((a) => path === a || path.startsWith(`${a}.`));
-}
+import { isScreenScopedPath } from './path-utils';
+import { createGet } from './create-get';
+import { bindActionsToProps } from './action-binding';
 
 interface RendererContext {
   store: ReturnType<typeof createVariableStore>;
@@ -53,33 +47,6 @@ function DataSourceWrapper({
     fetchData(dataSource);
   }, [dataSource.url, dataSource.key, fetchData]);
   return <>{children}</>;
-}
-
-/** Create a combined get that reads from merged store/state first, then variable store */
-function createGet(
-  store: ReturnType<typeof createVariableStore>,
-  mergedState: Record<string, unknown> | undefined,
-  scope: Record<string, unknown> | undefined,
-  mergedStore: { getState: () => { merged: Record<string, unknown> } } | undefined,
-  screenName: string | undefined,
-  screenScopedAliases: string[]
-) {
-  return (path: string, s?: Record<string, unknown>) => {
-    const sc = s ?? scope;
-    if (sc && (path.startsWith('$item') || path.startsWith('$index') || path.startsWith('$parent') || path === '$item' || path === '$index' || path === '$parent')) {
-      return getNestedValue(sc, path);
-    }
-    const resolvedPath =
-      screenName && isScreenScopedPath(path, screenScopedAliases)
-        ? `screens.${screenName}.${path}`
-        : path;
-    const merged = mergedStore?.getState().merged ?? mergedState;
-    if (merged) {
-      const fromMerged = getNestedValue(merged, resolvedPath);
-      if (fromMerged !== undefined) return fromMerged;
-    }
-    return store.getState().get(resolvedPath, sc);
-  };
 }
 
 const SDURendererInner = memo(function SDURendererInner({ node, context, scope }: RendererProps) {
@@ -146,52 +113,10 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope }
   );
 
   const cleanProps = Object.fromEntries(
-    Object.entries(resolvedProps).filter(([k]) => !k.startsWith('$'))
+    Object.entries(resolvedProps).filter(([k]) => !k.startsWith('$') && k !== '_meta')
   ) as Record<string, unknown>;
 
-  if (node.actions) {
-    for (const [event, action] of Object.entries(node.actions)) {
-      const actionName = typeof action === 'object' && action && 'action' in action ? String((action as { action: string }).action) : '';
-      const actionDef = actionName && actionsConfig?.[actionName] as Record<string, unknown> | undefined;
-      const shouldStop = !!(actionDef && actionDef.stopPropagation === true);
-      const handler = (e?: unknown) => {
-        if (shouldStop && e && typeof e === 'object' && 'stopPropagation' in e && typeof (e as { stopPropagation: () => void }).stopPropagation === 'function') {
-          (e as { stopPropagation: () => void }).stopPropagation();
-        }
-        runAction(action, e, scope);
-      };
-      if (event === 'click') {
-        cleanProps.onPress = handler;
-        cleanProps.onClick = handler;
-      } else if (event === 'change') {
-        cleanProps.onChangeText = handler;
-        cleanProps.onChange = (e: unknown) => {
-          const val =
-            e && typeof e === 'object' && 'target' in e
-              ? (e as { target: { value?: unknown } }).target?.value
-              : e;
-          handler(val);
-        };
-      } else if (event === 'keyDown') {
-        const keyHandler = (e: React.KeyboardEvent | { key?: string; keyCode?: number; nativeEvent?: { key?: string; keyCode?: number }; preventDefault?: () => void }) => {
-          const key = e.key ?? (e.nativeEvent as { key?: string })?.key;
-          const code = e.keyCode ?? (e.nativeEvent as { keyCode?: number })?.keyCode;
-          if (key === 'Enter' || code === 13) {
-            e.preventDefault?.();
-            handler(e);
-          }
-        };
-        cleanProps.onKeyDown = keyHandler;
-        cleanProps.onKeyPress = keyHandler;
-        cleanProps.onSubmitEditing = () => handler(undefined);
-      } else if (event === 'valueChange') {
-        cleanProps.onValueChange = (value: unknown) => handler(value);
-      } else {
-        const propName = `on${event.charAt(0).toUpperCase()}${event.slice(1)}`;
-        cleanProps[propName] = handler;
-      }
-    }
-  }
+  Object.assign(cleanProps, bindActionsToProps(node.actions, runAction, actionsConfig, scope));
 
   const textContent = node.text != null ? resolveText(node.text, sduiContext, scope) : undefined;
 

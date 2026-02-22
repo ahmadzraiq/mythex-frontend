@@ -1,182 +1,606 @@
 {
-  "meta": { "title": "Collection" },
+  "meta": {
+    "title": "Collection"
+  },
   "state": {},
   "layout": "store",
   "initActions": [
-    { "action": "fetchNavCollections" },
-    { "action": "fetchCollection" }
+    {
+      "action": "fetchNavCollections"
+    },
+    {
+      "action": "fetchCollection"
+    }
   ],
   "content": {
     "type": "Box",
-    "props": { "className": "container mx-auto px-4 py-8" },
+    "props": {
+      "className": "container mx-auto px-4 py-8"
+    },
     "children": [
       {
+        "$ref": "fragments/sections/collection-loading-skeleton"
+      },
+      {
         "type": "Box",
-        "condition": { "var": "collection.loading" },
-        "props": { "className": "grid grid-cols-1 lg:grid-cols-4 gap-8 animate-pulse" },
+        "_meta": {
+          "section": "collection-grid",
+          "description": "Filters sidebar + sort bar + product grid"
+        },
+        "props": {
+          "className": "grid grid-cols-1 lg:grid-cols-4 gap-8"
+        },
+        "condition": {
+          "!": [
+            {
+              "var": "collection.loading"
+            }
+          ]
+        },
         "children": [
-          { "type": "Box", "props": { "className": "lg:col-span-1 h-64 bg-gray-200 dark:bg-gray-700 rounded-lg" } },
           {
             "type": "Box",
-            "props": { "className": "lg:col-span-3 space-y-6" },
+            "props": {
+              "className": "lg:col-span-1"
+            },
             "children": [
-              { "type": "Box", "props": { "className": "w-full flex flex-row justify-between items-center" }, "children": [
-                { "type": "Box", "props": { "className": "h-5 bg-gray-200 dark:bg-gray-700 rounded w-24" } },
-                { "type": "Box", "props": { "className": "h-9 bg-gray-200 dark:bg-gray-700 rounded w-44 flex-shrink-0" } }
-              ]},
               {
                 "type": "Box",
-                "props": { "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" },
+                "props": {
+                  "className": "space-y-6"
+                },
                 "children": [
-                  { "type": "Box", "props": { "className": "aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg" } },
-                  { "type": "Box", "props": { "className": "aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg" } },
-                  { "type": "Box", "props": { "className": "aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg" } },
-                  { "type": "Box", "props": { "className": "aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg hidden sm:block" } },
-                  { "type": "Box", "props": { "className": "aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg hidden sm:block" } },
-                  { "type": "Box", "props": { "className": "aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg hidden lg:block" } }
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-row items-center justify-between"
+                    },
+                    "children": [
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "className": "font-semibold text-lg text-gray-900 dark:text-gray-100"
+                        },
+                        "text": "Filters"
+                      },
+                      {
+                        "type": "Pressable",
+                        "condition": {
+                          ">": [
+                            {
+                              "arrayLength": [
+                                {
+                                  "var": ["route.facets", []]
+                                }
+                              ]
+                            },
+                            0
+                          ]
+                        },
+                        "props": {
+                          "className": "text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-sm text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "Clear all"
+                          }
+                        ],
+                        "actions": {
+                          "click": {
+                            "type": "navigateWithQuery",
+                            "path": {
+                              "var": "route.path"
+                            },
+                            "queryParams": {
+                              "facets": [],
+                              "page": "1"
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "map": "collection.facetGroups",
+                    "key": "$item.id",
+                    "props": {
+                      "className": "flex flex-col gap-5"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "space-y-4"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "font-medium text-sm text-gray-700 dark:text-gray-300 capitalize"
+                            },
+                            "text": "{{$item.key}}"
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "flex flex-col gap-2"
+                            },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "map": "$item.items",
+                                "key": "$item.facetValue.id",
+                                "props": {
+                                  "className": "contents"
+                                },
+                                "children": [
+                              {
+                                "type": "Pressable",
+                                "props": {
+                                  "className": "flex flex-row items-center gap-2 cursor-pointer group"
+                                },
+                                "actions": {
+                                  "click": {
+                                    "type": "navigateWithQuery",
+                                    "path": {
+                                      "var": "route.path"
+                                    },
+                                    "queryParams": {
+                                      "facets": {
+                                        "expr": {
+                                          "toggleInArray": [
+                                            {
+                                              "var": ["route.facets", []]
+                                            },
+                                            {
+                                              "var": "$item.facetValue.id"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "page": "1"
+                                    }
+                                  }
+                                },
+                                "children": [
+                                  {
+                                    "type": "Box",
+                                    "props": {
+                                      "className": "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors border-gray-300 dark:border-gray-600 group-hover:border-gray-500"
+                                    },
+                                    "condition": {
+                                      "!": [
+                                        {
+                                          "arrayIncludes": [
+                                            {
+                                              "var": ["route.facets", []]
+                                            },
+                                            {
+                                              "var": "$item.facetValue.id"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "children": []
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "props": {
+                                      "className": "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors bg-gray-900 border-gray-900 dark:bg-white dark:border-white"
+                                    },
+                                    "condition": {
+                                      "arrayIncludes": [
+                                        {
+                                          "var": ["route.facets", []]
+                                        },
+                                        {
+                                          "var": "$item.facetValue.id"
+                                        }
+                                      ]
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "NavIcon",
+                                        "props": {
+                                          "icon": "Check",
+                                          "size": 10,
+                                          "className": "!text-white dark:!text-gray-900"
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors"
+                                    },
+                                    "text": "{{$item.facetValue.name}}"
+                                  },
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-xs text-gray-400 dark:text-gray-500"
+                                    },
+                                    "text": "({{$item.count}})"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
                 ]
               }
             ]
           }
         ]
       },
-
       {
         "type": "Box",
-        "condition": { "!": [{ "var": "collection.loading" }] },
-        "props": { "className": "grid grid-cols-1 lg:grid-cols-4 gap-8" },
+        "props": {
+          "className": "lg:col-span-3 space-y-8"
+        },
         "children": [
-          {
-            "type": "Box",
-            "props": { "className": "lg:col-span-1" },
-            "children": [
-              {
-                "type": "FacetFiltersPanel",
-                "props": {
-                  "facetValues": { "var": ["collection.search.facetValues", []] },
-                  "selectedFacets": { "var": ["route.facets", []] }
-                }
-              }
-            ]
-          },
-
-          {
-            "type": "Box",
-            "props": { "className": "lg:col-span-3 space-y-8" },
-            "children": [
               {
                 "type": "Box",
-                "props": { "className": "relative z-10 w-full flex flex-row items-center justify-between" },
+                "props": {
+                  "className": "relative z-10 w-full flex flex-row items-center justify-between"
+                },
                 "children": [
                   {
                     "type": "Text",
-                    "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
-                    "text": {
-                      "expr": {
-                        "if": [
-                          { "==": [{ "var": ["collection.search.totalItems", 0] }, 1] },
-                          "1 product",
-                          { "cat": [{ "var": ["collection.search.totalItems", "0"] }, " products"] }
-                        ]
-                      }
-                    }
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "{{collection.resultsHeaderText}}"
                   },
-
                   {
                     "type": "Box",
-                    "props": { "className": "relative flex-shrink-0" },
+                    "props": {
+                      "className": "relative flex-shrink-0"
+                    },
                     "children": [
                       {
                         "type": "Pressable",
-                        "props": { "className": "fixed inset-0 z-[9998]" },
-                        "condition": { "var": "sortMenuOpen" },
-                        "actions": { "click": { "type": "setVar", "path": "sortMenuOpen", "value": false } }
+                        "props": {
+                          "className": "fixed inset-0 z-[9998]"
+                        },
+                        "condition": {
+                          "var": "sortMenuOpen"
+                        },
+                        "actions": {
+                          "click": {
+                            "type": "setVar",
+                            "path": "sortMenuOpen",
+                            "value": false
+                          }
+                        }
                       },
                       {
                         "type": "Pressable",
-                        "props": { "className": "relative z-50 flex flex-row items-center gap-2 h-9 px-3 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 min-w-[180px] justify-between" },
-                        "actions": { "click": { "type": "toggle", "path": "sortMenuOpen" } },
+                        "props": {
+                          "className": "relative z-50 flex flex-row items-center gap-2 h-9 px-3 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 min-w-[180px] justify-between"
+                        },
+                        "actions": {
+                          "click": {
+                            "type": "toggle",
+                            "path": "sortMenuOpen"
+                          }
+                        },
                         "children": [
                           {
                             "type": "Text",
-                            "props": { "className": "text-sm text-gray-700 dark:text-gray-300" },
+                            "props": {
+                              "className": "text-sm text-gray-700 dark:text-gray-300"
+                            },
                             "text": {
                               "expr": {
                                 "if": [
-                                  { "==": [{ "var": "route.sort" }, "name-asc"] }, "Name: A to Z",
-                                  { "==": [{ "var": "route.sort" }, "name-desc"] }, "Name: Z to A",
-                                  { "==": [{ "var": "route.sort" }, "price-asc"] }, "Price: Low to High",
+                                  {
+                                    "==": [
+                                      {
+                                        "var": "route.sort"
+                                      },
+                                      "name-asc"
+                                    ]
+                                  },
+                                  "Name: A to Z",
+                                  {
+                                    "==": [
+                                      {
+                                        "var": "route.sort"
+                                      },
+                                      "name-desc"
+                                    ]
+                                  },
+                                  "Name: Z to A",
+                                  {
+                                    "==": [
+                                      {
+                                        "var": "route.sort"
+                                      },
+                                      "price-asc"
+                                    ]
+                                  },
+                                  "Price: Low to High",
                                   "Price: High to Low"
                                 ]
                               }
                             }
                           },
-                          { "type": "NavIcon", "props": { "icon": "ChevronDown", "size": 14, "color": "#6b7280" } }
+                          {
+                            "type": "NavIcon",
+                            "props": {
+                              "icon": "ChevronDown",
+                              "size": 14,
+                              "color": "#6b7280"
+                            }
+                          }
                         ]
                       },
                       {
                         "type": "Box",
-                        "condition": { "var": "sortMenuOpen" },
-                        "props": { "className": "absolute right-0 top-full mt-1 min-w-[180px] rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-md z-[9999] py-1" },
+                        "condition": {
+                          "var": "sortMenuOpen"
+                        },
+                        "props": {
+                          "className": "absolute right-0 top-full mt-1 min-w-[180px] rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-md z-[9999] py-1"
+                        },
                         "children": [
                           {
                             "type": "Pressable",
-                            "props": { "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800" },
-                            "actions": { "click": { "type": "runMultiple", "actions": [
-                              { "type": "setVar", "path": "sortMenuOpen", "value": false },
-                              { "type": "set", "path": "route.sort", "value": "name-asc" },
-                              { "type": "setVar", "path": "collectionSkip", "value": 0 },
-                              { "action": "fetchCollection" },
-                              { "action": "navigate", "payload": { "path": "{{route.path}}?sort=name-asc&page=1" } }
-                            ] } },
+                            "props": {
+                              "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                            },
+                            "actions": {
+                              "click": {
+                                "type": "runMultiple",
+                                "actions": [
+                                  {
+                                    "type": "setVar",
+                                    "path": "sortMenuOpen",
+                                    "value": false
+                                  },
+                                  {
+                                    "type": "set",
+                                    "path": "route.sort",
+                                    "value": "name-asc"
+                                  },
+                                  {
+                                    "type": "setVar",
+                                    "path": "collectionSkip",
+                                    "value": 0
+                                  },
+                                  {
+                                    "action": "fetchCollection"
+                                  },
+                                  {
+                                    "action": "navigate",
+                                    "payload": {
+                                      "path": "{{route.path}}?sort=name-asc&page=1"
+                                    }
+                                  }
+                                ]
+                              }
+                            },
                             "children": [
-                              { "type": "Text", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "Name: A to Z" },
-                              { "type": "NavIcon", "props": { "icon": "Check", "size": 14, "color": "#1e293b" }, "condition": { "==": [{ "var": "route.sort" }, "name-asc"] } }
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-sm text-gray-700 dark:text-gray-300"
+                                },
+                                "text": "Name: A to Z"
+                              },
+                              {
+                                "type": "NavIcon",
+                                "props": {
+                                  "icon": "Check",
+                                  "size": 14,
+                                  "color": "#1e293b"
+                                },
+                                "condition": {
+                                  "==": [
+                                    {
+                                      "var": "route.sort"
+                                    },
+                                    "name-asc"
+                                  ]
+                                }
+                              }
                             ]
                           },
                           {
                             "type": "Pressable",
-                            "props": { "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800" },
-                            "actions": { "click": { "type": "runMultiple", "actions": [
-                              { "type": "setVar", "path": "sortMenuOpen", "value": false },
-                              { "type": "set", "path": "route.sort", "value": "name-desc" },
-                              { "type": "setVar", "path": "collectionSkip", "value": 0 },
-                              { "action": "fetchCollection" },
-                              { "action": "navigate", "payload": { "path": "{{route.path}}?sort=name-desc&page=1" } }
-                            ] } },
+                            "props": {
+                              "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                            },
+                            "actions": {
+                              "click": {
+                                "type": "runMultiple",
+                                "actions": [
+                                  {
+                                    "type": "setVar",
+                                    "path": "sortMenuOpen",
+                                    "value": false
+                                  },
+                                  {
+                                    "type": "set",
+                                    "path": "route.sort",
+                                    "value": "name-desc"
+                                  },
+                                  {
+                                    "type": "setVar",
+                                    "path": "collectionSkip",
+                                    "value": 0
+                                  },
+                                  {
+                                    "action": "fetchCollection"
+                                  },
+                                  {
+                                    "action": "navigate",
+                                    "payload": {
+                                      "path": "{{route.path}}?sort=name-desc&page=1"
+                                    }
+                                  }
+                                ]
+                              }
+                            },
                             "children": [
-                              { "type": "Text", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "Name: Z to A" },
-                              { "type": "NavIcon", "props": { "icon": "Check", "size": 14, "color": "#1e293b" }, "condition": { "==": [{ "var": "route.sort" }, "name-desc"] } }
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-sm text-gray-700 dark:text-gray-300"
+                                },
+                                "text": "Name: Z to A"
+                              },
+                              {
+                                "type": "NavIcon",
+                                "props": {
+                                  "icon": "Check",
+                                  "size": 14,
+                                  "color": "#1e293b"
+                                },
+                                "condition": {
+                                  "==": [
+                                    {
+                                      "var": "route.sort"
+                                    },
+                                    "name-desc"
+                                  ]
+                                }
+                              }
                             ]
                           },
                           {
                             "type": "Pressable",
-                            "props": { "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800" },
-                            "actions": { "click": { "type": "runMultiple", "actions": [
-                              { "type": "setVar", "path": "sortMenuOpen", "value": false },
-                              { "type": "set", "path": "route.sort", "value": "price-asc" },
-                              { "type": "setVar", "path": "collectionSkip", "value": 0 },
-                              { "action": "fetchCollection" },
-                              { "action": "navigate", "payload": { "path": "{{route.path}}?sort=price-asc&page=1" } }
-                            ] } },
+                            "props": {
+                              "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                            },
+                            "actions": {
+                              "click": {
+                                "type": "runMultiple",
+                                "actions": [
+                                  {
+                                    "type": "setVar",
+                                    "path": "sortMenuOpen",
+                                    "value": false
+                                  },
+                                  {
+                                    "type": "set",
+                                    "path": "route.sort",
+                                    "value": "price-asc"
+                                  },
+                                  {
+                                    "type": "setVar",
+                                    "path": "collectionSkip",
+                                    "value": 0
+                                  },
+                                  {
+                                    "action": "fetchCollection"
+                                  },
+                                  {
+                                    "action": "navigate",
+                                    "payload": {
+                                      "path": "{{route.path}}?sort=price-asc&page=1"
+                                    }
+                                  }
+                                ]
+                              }
+                            },
                             "children": [
-                              { "type": "Text", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "Price: Low to High" },
-                              { "type": "NavIcon", "props": { "icon": "Check", "size": 14, "color": "#1e293b" }, "condition": { "==": [{ "var": "route.sort" }, "price-asc"] } }
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-sm text-gray-700 dark:text-gray-300"
+                                },
+                                "text": "Price: Low to High"
+                              },
+                              {
+                                "type": "NavIcon",
+                                "props": {
+                                  "icon": "Check",
+                                  "size": 14,
+                                  "color": "#1e293b"
+                                },
+                                "condition": {
+                                  "==": [
+                                    {
+                                      "var": "route.sort"
+                                    },
+                                    "price-asc"
+                                  ]
+                                }
+                              }
                             ]
                           },
                           {
                             "type": "Pressable",
-                            "props": { "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800" },
-                            "actions": { "click": { "type": "runMultiple", "actions": [
-                              { "type": "setVar", "path": "sortMenuOpen", "value": false },
-                              { "type": "set", "path": "route.sort", "value": "price-desc" },
-                              { "type": "setVar", "path": "collectionSkip", "value": 0 },
-                              { "action": "fetchCollection" },
-                              { "action": "navigate", "payload": { "path": "{{route.path}}?sort=price-desc&page=1" } }
-                            ] } },
+                            "props": {
+                              "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                            },
+                            "actions": {
+                              "click": {
+                                "type": "runMultiple",
+                                "actions": [
+                                  {
+                                    "type": "setVar",
+                                    "path": "sortMenuOpen",
+                                    "value": false
+                                  },
+                                  {
+                                    "type": "set",
+                                    "path": "route.sort",
+                                    "value": "price-desc"
+                                  },
+                                  {
+                                    "type": "setVar",
+                                    "path": "collectionSkip",
+                                    "value": 0
+                                  },
+                                  {
+                                    "action": "fetchCollection"
+                                  },
+                                  {
+                                    "action": "navigate",
+                                    "payload": {
+                                      "path": "{{route.path}}?sort=price-desc&page=1"
+                                    }
+                                  }
+                                ]
+                              }
+                            },
                             "children": [
-                              { "type": "Text", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "Price: High to Low" },
-                              { "type": "NavIcon", "props": { "icon": "Check", "size": 14, "color": "#1e293b" }, "condition": { "==": [{ "var": "route.sort" }, "price-desc"] } }
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-sm text-gray-700 dark:text-gray-300"
+                                },
+                                "text": "Price: High to Low"
+                              },
+                              {
+                                "type": "NavIcon",
+                                "props": {
+                                  "icon": "Check",
+                                  "size": 14,
+                                  "color": "#1e293b"
+                                },
+                                "condition": {
+                                  "==": [
+                                    {
+                                      "var": "route.sort"
+                                    },
+                                    "price-desc"
+                                  ]
+                                }
+                              }
                             ]
                           }
                         ]
@@ -185,32 +609,65 @@
                   }
                 ]
               },
-
               {
                 "type": "Box",
-                "condition": { "==": [{ "var": ["collection.search.totalItems", 0] }, 0] },
-                "props": { "className": "text-center py-12" },
+                "condition": {
+                  "==": [
+                    {
+                      "var": [
+                        "collection.search.totalItems",
+                        0
+                      ]
+                    },
+                    0
+                  ]
+                },
+                "props": {
+                  "className": "text-center py-12"
+                },
                 "children": [
-                  { "type": "Text", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "No products found" }
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "No products found"
+                  }
                 ]
               },
-
               {
                 "type": "Box",
-                "condition": { ">": [{ "var": ["collection.search.totalItems", 0] }, 0] },
-                "props": { "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" },
+                "condition": {
+                  ">": [
+                    {
+                      "var": [
+                        "collection.search.totalItems",
+                        0
+                      ]
+                    },
+                    0
+                  ]
+                },
+                "props": {
+                  "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+                },
                 "children": [
                   {
                     "type": "Box",
                     "map": "collection.search.items",
-                    "props": { "className": "contents" },
-                    "children": [{ "$ref": "fragments/product-card" }]
+                    "props": {
+                      "className": "contents"
+                    },
+                    "children": [
+                      {
+                        "$ref": "fragments/cards/product-card"
+                      }
+                    ]
                   }
                 ]
               },
-
               {
-                "$ref": "fragments/collection-pagination"
+                "$ref": "fragments/pagination/collection-pagination"
               }
             ]
           }

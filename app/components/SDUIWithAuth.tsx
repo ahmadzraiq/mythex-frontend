@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSduiStore } from '@/store/sdui-store';
 import { SDUIEngine } from '@/lib/sdui/sdui-engine';
 import type { SDUIConfig } from '@/lib/sdui/types';
-import storeConfig from '@/config/store.json';
+import storeConfig from '@/config/store-config';
 
 const AUTH_USER_PATH = (storeConfig as { paths?: { authUser?: string } }).paths?.authUser ?? 'auth.user';
 

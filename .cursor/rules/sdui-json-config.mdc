@@ -13,9 +13,14 @@ This project uses JSON-driven UI with composition. **Never hardcode layout or sh
 - Add new layouts in `config/layouts/` and register in `layouts/index.ts`
 
 ## Fragments ($ref)
-- Reusable UI pieces: `"$ref": "fragments/header"`, `"$ref": "fragments/drawer"`, `"$ref": "fragments/modals/createProduct"`
+- Reusable UI pieces: `"$ref": "fragments/layout/navbar"`, `"$ref": "fragments/cards/product-card"`
+- Structure: `layout/`, `sections/`, `cards/`, `product/`, `pagination/`, `checkout/`
 - Add fragments in `config/fragments/` and register in `fragments/index.ts`
 - Fragments can contain `{{variable}}` interpolation (e.g. `{{meta.title}}`, `{{layout.drawerOpen}}`)
+- Use `groupBy` computed + `navigateWithQuery` action for collection/search facet filters (pure JSON)
+
+## Key Order (UI nodes)
+Use this order for predictable AI scanning: 1. `type` 2. `props` 3. `condition` 4. `map`/`key` 5. `children` 6. `actions` 7. `text`/`$ref`/`$slot`
 
 ## Navigation (no hardcoded paths)
 - Static: `{ "action": "navigate", "payload": { "path": "/shop" } }`

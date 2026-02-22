@@ -1,26 +1,74 @@
 {
-  "meta": { "title": "Page Not Found" },
-  "state": {}, "initActions": [{ "action": "fetchNavCollections" }],
+  "meta": {
+    "title": "Page Not Found"
+  },
+  "state": {},
+  "initActions": [
+    {
+      "action": "fetchNavCollections"
+    }
+  ],
   "ui": {
     "type": "Box",
-    "props": { "className": "flex flex-col min-h-screen" },
+    "props": {
+      "className": "flex flex-col min-h-screen"
+    },
     "children": [
       {
         "type": "Box",
-        "props": { "className": "flex-1 flex items-center justify-center px-4 py-16" },
+        "props": {
+          "className": "flex-1 flex items-center justify-center px-4 py-16"
+        },
         "children": [
           {
             "type": "Box",
-            "props": { "className": "text-center space-y-6 max-w-md" },
+            "props": {
+              "className": "text-center space-y-6 max-w-md"
+            },
             "children": [
-              { "type": "Heading", "props": { "className": "text-8xl font-bold text-gray-500" }, "text": "404" },
-              { "type": "Heading", "props": { "className": "text-3xl font-bold" }, "text": "Page Not Found" },
-              { "type": "Text", "props": { "className": "text-gray-500 text-lg" }, "text": "Sorry, we couldn't find the page you're looking for." },
+              {
+                "type": "Heading",
+                "props": {
+                  "className": "text-8xl font-bold text-gray-500"
+                },
+                "text": "404"
+              },
+              {
+                "type": "Heading",
+                "props": {
+                  "className": "text-3xl font-bold"
+                },
+                "text": "Page Not Found"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-gray-500 text-lg"
+                },
+                "text": "Sorry, we couldn't find the page you're looking for."
+              },
               {
                 "type": "Button",
-                "props": { "className": "bg-[#1e293b] text-white hover:bg-[#334155] px-8 h-11" },
-                "children": [{ "type": "ButtonText", "props": { "className": "!text-white" }, "text": "Back to Home" }],
-                "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } }
+                "props": {
+                  "className": "bg-[#1e293b] text-white hover:bg-[#334155] px-8 h-11"
+                },
+                "children": [
+                  {
+                    "type": "ButtonText",
+                    "props": {
+                      "className": "!text-white"
+                    },
+                    "text": "Back to Home"
+                  }
+                ],
+                "actions": {
+                  "click": {
+                    "action": "navigate",
+                    "payload": {
+                      "path": "/"
+                    }
+                  }
+                }
               }
             ]
           }

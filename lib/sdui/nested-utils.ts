@@ -14,29 +14,53 @@ export function getNestedValue(obj: Record<string, unknown>, path: string): unkn
   return current;
 }
 
+/**
+ * Set value at path using structural sharing - only clones the path branch,
+ * not the entire object. O(depth) instead of O(entire tree).
+ */
 export function setNestedValue(
   obj: Record<string, unknown>,
   path: string,
   value: unknown,
   merge = false
 ): Record<string, unknown> {
-  const result = JSON.parse(JSON.stringify(obj));
-  const parts = path.split('.');
-  let current = result;
-  for (let i = 0; i < parts.length - 1; i++) {
-    const part = parts[i];
-    const next = current[part];
-    // Replace null/undefined/non-object so we can traverse (typeof null === 'object' in JS)
-    if (next == null || typeof next !== 'object') {
-      current[part] = {};
+  if (path == null || typeof path !== 'string') return obj;
+  const parts = path.split('.').filter(Boolean);
+  if (parts.length === 0) return obj;
+
+  function setAtPath(
+    current: Record<string, unknown>,
+    partIndex: number
+  ): Record<string, unknown> {
+    const part = parts[partIndex];
+    const isLast = partIndex === parts.length - 1;
+
+    if (isLast) {
+      const existing = current[part];
+      const finalValue =
+        merge && typeof value === 'object' && value !== null && !Array.isArray(value)
+          ? {
+              ...(existing != null && typeof existing === 'object' && !Array.isArray(existing)
+                ? (existing as Record<string, unknown>)
+                : {}),
+              ...(value as Record<string, unknown>),
+            }
+          : value;
+      return { ...current, [part]: finalValue };
     }
-    current = current[part] as Record<string, unknown>;
+
+    const next = current[part];
+    const nextObj =
+      next != null && typeof next === 'object' && !Array.isArray(next)
+        ? (next as Record<string, unknown>)
+        : {};
+    const updatedNext = setAtPath(nextObj, partIndex + 1);
+    return { ...current, [part]: updatedNext };
   }
-  const last = parts[parts.length - 1];
-  if (merge && typeof value === 'object' && value !== null && !Array.isArray(value)) {
-    current[last] = { ...(current[last] as object), ...(value as object) };
-  } else {
-    current[last] = value;
-  }
-  return result;
+
+  const base =
+    obj != null && typeof obj === 'object' && !Array.isArray(obj)
+      ? (obj as Record<string, unknown>)
+      : {};
+  return setAtPath(base, 0);
 }

@@ -13,7 +13,7 @@
  */
 
 import { createVariableStore } from './variable-store';
-import storeConfig from '@/config/store.json';
+import storeConfig from '@/config/store-config';
 
 // The global variable store only owns screen-scoped state (screens.*) and paths
 // defined in variableStoreInitial. Global data like nav, auth, cart, etc. is

@@ -1,0 +1,472 @@
+{
+  "type": "Box",
+  "props": {
+    "className": "border rounded-lg px-6"
+  },
+  "condition": {
+    "==": [
+      {
+        "var": "auth.user"
+      },
+      null
+    ]
+  },
+  "children": [
+    {
+      "type": "Pressable",
+      "props": {
+        "className": "flex flex-row items-center justify-between w-full py-4"
+      },
+      "actions": {
+        "click": {
+          "type": "set",
+          "path": "checkout.step",
+          "value": "contact"
+        }
+      },
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "className": "flex flex-row items-center gap-3 flex-1"
+          },
+          "children": [
+            {
+              "type": "Box",
+              "props": {
+                "className": "{{checkout.contactStepIndicatorClassName}}"
+              },
+              "children": [
+                {
+                  "type": "NavIcon",
+                  "props": {
+                    "icon": "Check",
+                    "size": 16,
+                    "className": "!text-white"
+                  },
+                  "condition": {
+                    "or": [
+                      {
+                        "var": "auth.user"
+                      },
+                      {
+                        "var": [
+                          "checkout.order.customer.emailAddress",
+                          false
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "font-semibold text-sm !text-white"
+                  },
+                  "text": "1",
+                  "condition": {
+                    "and": [
+                      {
+                        "!": [
+                          {
+                            "or": [
+                              {
+                                "var": "auth.user"
+                              },
+                              {
+                                "var": [
+                                  "checkout.order.customer.emailAddress",
+                                  false
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "==": [
+                          {
+                            "var": "checkout.step"
+                          },
+                          "contact"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "font-semibold text-sm !text-gray-500"
+                  },
+                  "text": "1",
+                  "condition": {
+                    "and": [
+                      {
+                        "!": [
+                          {
+                            "or": [
+                              {
+                                "var": "auth.user"
+                              },
+                              {
+                                "var": [
+                                  "checkout.order.customer.emailAddress",
+                                  false
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "!=": [
+                          {
+                            "var": "checkout.step"
+                          },
+                          "contact"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "type": "Text",
+              "props": {
+                "className": "text-lg font-semibold"
+              },
+              "text": "Contact Information"
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "ml-auto shrink-0"
+          },
+          "children": [
+            {
+              "type": "NavIcon",
+              "props": {
+                "icon": "ChevronUp",
+                "size": 16,
+                "className": "!text-gray-500"
+              },
+              "condition": {
+                "==": [
+                  {
+                    "var": "checkout.step"
+                  },
+                  "contact"
+                ]
+              }
+            },
+            {
+              "type": "NavIcon",
+              "props": {
+                "icon": "ChevronDown",
+                "size": 16,
+                "className": "!text-gray-500"
+              },
+              "condition": {
+                "!=": [
+                  {
+                    "var": "checkout.step"
+                  },
+                  "contact"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Box",
+      "props": {
+        "className": "pb-6"
+      },
+      "condition": {
+        "==": [
+          {
+            "var": "checkout.step"
+          },
+          "contact"
+        ]
+      },
+      "children": [
+        {
+          "type": "VStack",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "type": "Box",
+              "props": {
+                "className": "flex flex-row items-center gap-1 text-sm"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "text-gray-600"
+                  },
+                  "text": "Already have an account? "
+                },
+                {
+                  "type": "Link",
+                  "props": {
+                    "href": "/sign-in",
+                    "className": "text-blue-600 hover:underline font-medium"
+                  },
+                  "children": [
+                    {
+                      "type": "LinkText",
+                      "text": "Sign in"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "space-y-2"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "text-sm font-medium"
+                  },
+                  "text": "Email Address *"
+                },
+                {
+                  "type": "Input",
+                  "children": [
+                    {
+                      "type": "InputField",
+                      "props": {
+                        "type": "email",
+                        "placeholder": "you@example.com",
+                        "value": "{{form.emailAddress}}"
+                      },
+                      "actions": {
+                        "change": {
+                          "type": "runMultiple",
+                          "actions": [
+                            {
+                              "action": "setState",
+                              "payload": {
+                                "path": "screens.checkout.form.emailAddress",
+                                "value": "$event"
+                              }
+                            },
+                            {
+                              "action": "setState",
+                              "payload": {
+                                "path": "screens.checkout.errors.form.emailAddress",
+                                "value": ""
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "min-h-[20px]"
+                  },
+                  "condition": {
+                    "var": [
+                      "screens.checkout.errors.form.emailAddress"
+                    ]
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-sm text-red-500 dark:text-red-400"
+                      },
+                      "text": "{{errors.form.emailAddress}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "grid grid-cols-2 gap-4"
+              },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "space-y-2"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-sm font-medium"
+                      },
+                      "text": "First Name *"
+                    },
+                    {
+                      "type": "Input",
+                      "children": [
+                        {
+                          "type": "InputField",
+                          "props": {
+                            "placeholder": "Jane",
+                            "value": "{{form.firstName}}"
+                          },
+                          "actions": {
+                            "change": {
+                              "type": "runMultiple",
+                              "actions": [
+                                {
+                                  "action": "setState",
+                                  "payload": {
+                                    "path": "screens.checkout.form.firstName",
+                                    "value": "$event"
+                                  }
+                                },
+                                {
+                                  "action": "setState",
+                                  "payload": {
+                                    "path": "screens.checkout.errors.form.firstName",
+                                    "value": ""
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "min-h-[20px]"
+                      },
+                      "condition": {
+                        "var": [
+                          "screens.checkout.errors.form.firstName"
+                        ]
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "className": "text-sm text-red-500 dark:text-red-400"
+                          },
+                          "text": "{{errors.form.firstName}}"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "space-y-2"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-sm font-medium"
+                      },
+                      "text": "Last Name *"
+                    },
+                    {
+                      "type": "Input",
+                      "children": [
+                        {
+                          "type": "InputField",
+                          "props": {
+                            "placeholder": "Doe",
+                            "value": "{{form.lastName}}"
+                          },
+                          "actions": {
+                            "change": {
+                              "type": "runMultiple",
+                              "actions": [
+                                {
+                                  "action": "setState",
+                                  "payload": {
+                                    "path": "screens.checkout.form.lastName",
+                                    "value": "$event"
+                                  }
+                                },
+                                {
+                                  "action": "setState",
+                                  "payload": {
+                                    "path": "screens.checkout.errors.form.lastName",
+                                    "value": ""
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "min-h-[20px]"
+                      },
+                      "condition": {
+                        "var": [
+                          "screens.checkout.errors.form.lastName"
+                        ]
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "className": "text-sm text-red-500 dark:text-red-400"
+                          },
+                          "text": "{{errors.form.lastName}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Button",
+              "props": {
+                "className": "bg-[#1e293b] text-white hover:bg-[#334155]"
+              },
+              "children": [
+                {
+                  "type": "ButtonText",
+                  "props": {
+                    "className": "!text-white"
+                  },
+                  "text": "Continue"
+                }
+              ],
+              "actions": {
+                "click": {
+                  "action": "setCustomerForOrder"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

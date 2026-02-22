@@ -35,26 +35,56 @@
     "type": "graphql",
     "query": "query GetProductDetail($slug: String!) { product(slug: $slug) { id name description slug assets { id preview source } variants { id name sku priceWithTax stockLevel options { id code name groupId group { id code name } } } optionGroups { id code name options { id code name } } collections { id name slug parent { id } } } }",
     "variables": {
-      "slug": { "var": "route.slug" }
+      "slug": {
+        "var": "route.slug"
+      }
     },
     "storeIn": "product",
     "responsePath": "data.product",
     "cacheTag": "product",
     "cacheTTL": 60,
-    "onSuccess": { "action": "fetchRelatedProducts" }
+    "onSuccess": {
+      "action": "fetchRelatedProducts"
+    }
   },
   "fetchCollection": {
     "type": "graphql",
     "query": "query GetCollectionProducts($slug: String!, $input: SearchInput!) { collection(slug: $slug) { id name slug description featuredAsset { id preview } } search(input: $input) { totalItems items { productId productName slug productAsset { id preview } priceWithTax { __typename ... on PriceRange { min max } ... on SinglePrice { value } } currencyCode } facetValues { count facetValue { id name facet { id name } } } } }",
     "variables": {
-      "slug": { "var": "route.slug" },
+      "slug": {
+        "var": "route.slug"
+      },
       "input": {
-        "collectionSlug": { "var": "route.slug" },
-        "take": { "var": ["collectionPageSize", 12] },
-        "skip": { "var": ["collectionSkip", 0] },
+        "collectionSlug": {
+          "var": "route.slug"
+        },
+        "take": {
+          "var": [
+            "collectionPageSize",
+            12
+          ]
+        },
+        "skip": {
+          "var": [
+            "collectionSkip",
+            0
+          ]
+        },
         "groupByProduct": true,
-        "sort": { "var": ["sortInput", { "name": "ASC" }] },
-        "facetValueIds": { "var": ["route.facets", []] }
+        "sort": {
+          "var": [
+            "sortInput",
+            {
+              "name": "ASC"
+            }
+          ]
+        },
+        "facetValueIds": {
+          "var": [
+            "route.facets",
+            []
+          ]
+        }
       }
     },
     "storeIn": "collection",
@@ -67,12 +97,36 @@
     "query": "query SearchProducts($input: SearchInput!) { search(input: $input) { totalItems items { productId productName slug productAsset { id preview } priceWithTax { __typename ... on PriceRange { min max } ... on SinglePrice { value } } currencyCode } facetValues { count facetValue { id name facet { id name } } } } }",
     "variables": {
       "input": {
-        "term": { "var": "route.q" },
-        "take": { "var": ["collectionPageSize", 12] },
-        "skip": { "var": ["collectionSkip", 0] },
+        "term": {
+          "var": "route.q"
+        },
+        "take": {
+          "var": [
+            "collectionPageSize",
+            12
+          ]
+        },
+        "skip": {
+          "var": [
+            "searchSkip",
+            0
+          ]
+        },
         "groupByProduct": true,
-        "sort": { "var": ["sortInput", { "name": "ASC" }] },
-        "facetValueIds": { "var": ["route.facets", []] }
+        "sort": {
+          "var": [
+            "sortInput",
+            {
+              "name": "ASC"
+            }
+          ]
+        },
+        "facetValueIds": {
+          "var": [
+            "route.facets",
+            []
+          ]
+        }
       }
     },
     "storeIn": "search",
@@ -85,7 +139,9 @@
     "query": "query SearchProducts($input: SearchInput!) { search(input: $input) { totalItems items { productId productName slug productAsset { id preview } priceWithTax { __typename ... on PriceRange { min max } ... on SinglePrice { value } } currencyCode } facetValues { count facetValue { id name facet { id name } } } } }",
     "variables": {
       "input": {
-        "term": { "var": "route.q" },
+        "term": {
+          "var": "route.q"
+        },
         "take": 24,
         "skip": 0,
         "groupByProduct": true
@@ -101,7 +157,9 @@
     "query": "query GetRelatedProducts($input: SearchInput!) { search(input: $input) { items { productId productName slug productAsset { id preview } priceWithTax { __typename ... on PriceRange { min max } ... on SinglePrice { value } } currencyCode } } }",
     "variables": {
       "input": {
-        "collectionSlug": { "var": "product.primaryCollectionSlug" },
+        "collectionSlug": {
+          "var": "product.primaryCollectionSlug"
+        },
         "take": 13,
         "skip": 0,
         "groupByProduct": true
@@ -115,8 +173,12 @@
   "selectProductOption": {
     "type": "mergeAtPath",
     "path": "product.selectedOptions",
-    "key": { "var": "$parent.id" },
-    "value": { "var": "$item.id" }
+    "key": {
+      "var": "$parent.id"
+    },
+    "value": {
+      "var": "$item.id"
+    }
   },
   "prevProductImage": {
     "type": "cycleIndex",
@@ -133,6 +195,8 @@
   "selectProductImage": {
     "type": "setVar",
     "path": "product.imageIndex",
-    "value": { "var": "$index" }
+    "value": {
+      "var": "$index"
+    }
   }
 }

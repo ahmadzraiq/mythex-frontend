@@ -8,7 +8,7 @@ A Server-Driven UI (SDUI) framework built on Next.js. All screens, layouts, frag
 - **Zustand** – global state
 - **json-logic-js** – computed values and conditions
 - **Gluestack UI** + NativeWind – components
-- **react-hook-form** + Yup – form validation
+- Config-driven `validate` action – form validation (no react-hook-form/Yup)
 
 ## Architecture
 

@@ -1,1 +1,94 @@
-{"openDrawer":{"type":"set","path":"layout.drawerOpen","value":true},"closeDrawer":{"type":"set","path":"layout.drawerOpen","value":false},"openCartDrawer":{"type":"set","path":"layout.cartDrawerOpen","value":true},"closeCartDrawer":{"type":"set","path":"layout.cartDrawerOpen","value":false},"toggleThemeMenu":{"type":"toggle","path":"nav.themeMenuOpen"},"closeThemeMenu":{"type":"set","path":"nav.themeMenuOpen","value":false},"applyThemeLight":{"type":"setTheme","value":"light"},"applyThemeDark":{"type":"setTheme","value":"dark"},"applyThemeSystem":{"type":"setTheme","value":"system"},"setThemeLight":{"type":"runMultiple","actions":[{"action":"applyThemeLight"},{"action":"closeThemeMenu"}]},"setThemeDark":{"type":"runMultiple","actions":[{"action":"applyThemeDark"},{"action":"closeThemeMenu"}]},"setThemeSystem":{"type":"runMultiple","actions":[{"action":"applyThemeSystem"},{"action":"closeThemeMenu"}]},"navigateToSearch":{"action":"navigate","payload":{"path":"/search?q={{nav.searchQuery}}"}},"submitSearch":{"action":"navigate","payload":{"path":"/search?q={{form.searchQuery}}"}},"goToCart":{"action":"navigate","payload":{"path":"/cart"}}}
+{
+  "openDrawer": {
+    "type": "set",
+    "path": "layout.drawerOpen",
+    "value": true
+  },
+  "closeDrawer": {
+    "type": "set",
+    "path": "layout.drawerOpen",
+    "value": false
+  },
+  "openCartDrawer": {
+    "type": "set",
+    "path": "layout.cartDrawerOpen",
+    "value": true
+  },
+  "closeCartDrawer": {
+    "type": "set",
+    "path": "layout.cartDrawerOpen",
+    "value": false
+  },
+  "toggleThemeMenu": {
+    "type": "toggle",
+    "path": "nav.themeMenuOpen"
+  },
+  "closeThemeMenu": {
+    "type": "set",
+    "path": "nav.themeMenuOpen",
+    "value": false
+  },
+  "applyThemeLight": {
+    "type": "setTheme",
+    "value": "light"
+  },
+  "applyThemeDark": {
+    "type": "setTheme",
+    "value": "dark"
+  },
+  "applyThemeSystem": {
+    "type": "setTheme",
+    "value": "system"
+  },
+  "setThemeLight": {
+    "type": "runMultiple",
+    "actions": [
+      {
+        "action": "applyThemeLight"
+      },
+      {
+        "action": "closeThemeMenu"
+      }
+    ]
+  },
+  "setThemeDark": {
+    "type": "runMultiple",
+    "actions": [
+      {
+        "action": "applyThemeDark"
+      },
+      {
+        "action": "closeThemeMenu"
+      }
+    ]
+  },
+  "setThemeSystem": {
+    "type": "runMultiple",
+    "actions": [
+      {
+        "action": "applyThemeSystem"
+      },
+      {
+        "action": "closeThemeMenu"
+      }
+    ]
+  },
+  "navigateToSearch": {
+    "action": "navigate",
+    "payload": {
+      "path": "/search?q={{nav.searchQuery}}"
+    }
+  },
+  "submitSearch": {
+    "action": "navigate",
+    "payload": {
+      "path": "/search?q={{form.searchQuery}}"
+    }
+  },
+  "goToCart": {
+    "action": "navigate",
+    "payload": {
+      "path": "/cart"
+    }
+  }
+}

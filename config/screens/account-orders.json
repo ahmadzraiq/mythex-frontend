@@ -1,40 +1,133 @@
 {
-  "meta": { "title": "My Orders" },
-  "state": { "orders": [], "currentPage": 1 },
+  "meta": {
+    "title": "My Orders"
+  },
+  "state": {
+    "orders": [],
+    "currentPage": 1
+  },
   "layout": "account",
-  "initActions": [{ "action": "fetchNavCollections" }, { "action": "fetchCustomerOrders" }],
+  "initActions": [
+    {
+      "action": "fetchNavCollections"
+    },
+    {
+      "action": "fetchCustomerOrders"
+    }
+  ],
   "content": {
     "type": "Box",
     "children": [
-      { "type": "Heading", "props": { "className": "text-3xl font-bold mb-6" }, "text": "My Orders" },
+      {
+        "type": "Heading",
+        "props": {
+          "className": "text-3xl font-bold mb-6"
+        },
+        "text": "My Orders"
+      },
       {
         "type": "Box",
-        "props": { "className": "text-center py-12" },
-        "condition": { "==": [{ "var": ["orders.length", 0] }, 0] },
+        "props": {
+          "className": "text-center py-12"
+        },
+        "condition": {
+          "==": [
+            {
+              "var": [
+                "orders.length",
+                0
+              ]
+            },
+            0
+          ]
+        },
         "children": [
-          { "type": "Text", "props": { "className": "text-gray-500" }, "text": "You haven't placed any orders yet." }
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-gray-500"
+            },
+            "text": "You haven't placed any orders yet."
+          }
         ]
       },
       {
         "type": "Box",
-        "props": { "className": "border rounded-lg overflow-hidden" },
-        "condition": { ">": [{ "var": ["orders.length", 0] }, 0] },
+        "props": {
+          "className": "border rounded-lg overflow-hidden"
+        },
+        "condition": {
+          ">": [
+            {
+              "var": [
+                "orders.length",
+                0
+              ]
+            },
+            0
+          ]
+        },
         "children": [
           {
             "type": "Table",
             "children": [
               {
                 "type": "TableHeader",
-                "props": { "className": "bg-gray-100" },
+                "props": {
+                  "className": "bg-gray-100"
+                },
                 "children": [
                   {
                     "type": "TableRow",
                     "children": [
-                      { "type": "TableHead", "children": [{ "type": "Text", "text": "Order Number" }] },
-                      { "type": "TableHead", "children": [{ "type": "Text", "text": "Date" }] },
-                      { "type": "TableHead", "children": [{ "type": "Text", "text": "Status" }] },
-                      { "type": "TableHead", "children": [{ "type": "Text", "text": "Items" }] },
-                      { "type": "TableHead", "props": { "className": "text-right" }, "children": [{ "type": "Text", "text": "Total" }] }
+                      {
+                        "type": "TableHead",
+                        "children": [
+                          {
+                            "type": "Text",
+                            "text": "Order Number"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "TableHead",
+                        "children": [
+                          {
+                            "type": "Text",
+                            "text": "Date"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "TableHead",
+                        "children": [
+                          {
+                            "type": "Text",
+                            "text": "Status"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "TableHead",
+                        "children": [
+                          {
+                            "type": "Text",
+                            "text": "Items"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "TableHead",
+                        "props": {
+                          "className": "text-right"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "text": "Total"
+                          }
+                        ]
+                      }
                     ]
                   }
                 ]
@@ -46,19 +139,44 @@
                     "type": "TableRow",
                     "map": "orders",
                     "key": "orderRow",
-                    "props": { "className": "hover:bg-gray-50/50" },
+                    "props": {
+                      "className": "hover:bg-gray-50/50"
+                    },
                     "children": [
                       {
                         "type": "TableData",
-                        "props": { "className": "font-medium" },
+                        "props": {
+                          "className": "font-medium"
+                        },
                         "children": [
                           {
                             "type": "Pressable",
-                            "props": { "className": "inline-flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-md text-sm hover:bg-gray-100 transition-colors" },
-                            "actions": { "click": { "action": "navigate", "payload": { "routeConfig": "order-detail", "slug": { "var": "$item.code" } } } },
+                            "props": {
+                              "className": "inline-flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-md text-sm hover:bg-gray-100 transition-colors"
+                            },
+                            "actions": {
+                              "click": {
+                                "action": "navigate",
+                                "payload": {
+                                  "routeConfig": "order-detail",
+                                  "slug": {
+                                    "var": "$item.code"
+                                  }
+                                }
+                              }
+                            },
                             "children": [
-                              { "type": "Text", "text": "{{$item.code}}" },
-                              { "type": "NavIcon", "props": { "icon": "Share", "className": "h-3 w-3" } }
+                              {
+                                "type": "Text",
+                                "text": "{{$item.code}}"
+                              },
+                              {
+                                "type": "NavIcon",
+                                "props": {
+                                  "icon": "Share",
+                                  "className": "h-3 w-3"
+                                }
+                              }
                             ]
                           }
                         ]
@@ -66,7 +184,10 @@
                       {
                         "type": "TableData",
                         "children": [
-                          { "type": "Text", "text": "{{$item.createdAt}}" }
+                          {
+                            "type": "Text",
+                            "text": "{{$item.createdAt}}"
+                          }
                         ]
                       },
                       {
@@ -74,20 +195,61 @@
                         "children": [
                           {
                             "type": "Badge",
-                            "props": { "className": "text-xs font-medium" },
-                            "children": [{ "type": "BadgeText", "text": "{{$item.state}}" }]
+                            "props": {
+                              "className": "text-xs font-medium"
+                            },
+                            "children": [
+                              {
+                                "type": "BadgeText",
+                                "text": "{{$item.state}}"
+                              }
+                            ]
                           }
                         ]
                       },
                       {
                         "type": "TableData",
-                        "children": [{ "type": "Text", "text": { "expr": { "var": "$item.lines.length" }, "suffix": " item(s)" } }]
+                        "children": [
+                          {
+                            "type": "Text",
+                            "text": {
+                              "expr": {
+                                "var": "$item.lines.length"
+                              },
+                              "suffix": " item(s)"
+                            }
+                          }
+                        ]
                       },
                       {
                         "type": "TableData",
-                        "props": { "className": "text-right" },
+                        "props": {
+                          "className": "text-right"
+                        },
                         "children": [
-                          { "type": "Text", "props": { "className": "font-medium" }, "text": { "expr": { "formatCurrency": [{ "/": [{ "var": "$item.totalWithTax" }, 100] }, { "var": "$item.currencyCode" }] } } }
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "font-medium"
+                            },
+                            "text": {
+                              "expr": {
+                                "formatCurrency": [
+                                  {
+                                    "/": [
+                                      {
+                                        "var": "$item.totalWithTax"
+                                      },
+                                      100
+                                    ]
+                                  },
+                                  {
+                                    "var": "$item.currencyCode"
+                                  }
+                                ]
+                              }
+                            }
+                          }
                         ]
                       }
                     ]

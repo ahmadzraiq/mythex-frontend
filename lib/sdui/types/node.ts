@@ -1,9 +1,9 @@
 /**
- * SDUI (Server-Driven UI) Engine - Type Definitions
- * Defines the JSON schema for rendering UI, logic, and conditions
+ * SDUI node and action types - JSON tree structure
  */
 
 import type { JsonLogicRules } from 'json-logic-js';
+import type { SetStatePayload, FetchPayload, NavigatePayload } from './payloads';
 
 /** All gluestack-ui component types - AI can generate any of these */
 export type SDUIComponentType =
@@ -144,7 +144,7 @@ export type SDUIComponentType =
   | 'Fab'
   | 'FabLabel'
   | 'FabIcon'
-  | 'WebInput'
+  | 'WebInput';
 
 /** Data source - fetch from API and store in state */
 export interface SDUIDataSource {
@@ -155,34 +155,6 @@ export interface SDUIDataSource {
   dependsOn?: string;
   /** JSON Logic - only fetch when condition is truthy */
   when?: JsonLogicRules;
-}
-
-/** Action payload for setState */
-export interface SetStatePayload {
-  path: string;
-  value?: unknown;
-  merge?: boolean;
-}
-
-/** Action payload for fetch */
-export interface FetchPayload {
-  url: string;
-  method?: string;
-  key: string;
-  body?: Record<string, unknown>;
-}
-
-/** Action payload for navigate (switch view) */
-export interface NavigatePayload {
-  view: string;
-  state?: Record<string, unknown>;
-}
-
-/** Action payload for setStateTemporary (e.g. toast - clears after delay) */
-export interface SetStateTemporaryPayload {
-  path: string;
-  value: unknown;
-  clearAfter?: number;
 }
 
 /** Action definition for event handlers - action can be any string (resolved from actions.json) */
@@ -207,24 +179,4 @@ export interface SDUINode {
   actions?: Record<string, SDUIAction | SDUIAction[]>;
   /** Data source - fetch on mount when this node is rendered */
   dataSource?: SDUIDataSource;
-}
-
-/** Full screen/page configuration */
-export interface SDUIConfig {
-  state?: Record<string, unknown>;
-  /** Data sources - fetched when config loads */
-  dataSources?: SDUIDataSource[];
-  /** Actions to run on mount (e.g. redux_fetchProducts) */
-  initActions?: SDUIAction[];
-  ui: SDUINode;
-  meta?: { title?: string; description?: string };
-}
-
-/** Runtime context passed through render tree */
-export interface SDUIContext {
-  state: Record<string, unknown>;
-  setState: (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void;
-  get: (path: string, scope?: Record<string, unknown>) => unknown;
-  runAction: (action: SDUIAction | SDUIAction[], event?: unknown, scope?: Record<string, unknown>) => void | Promise<void>;
-  fetchData: (ds: SDUIDataSource) => Promise<void>;
 }

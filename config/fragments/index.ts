@@ -1,28 +1,37 @@
 /**
  * Fragment registry - reusable JSON UI fragments
  * Reference with $ref: "fragments/name" in layouts or screens
+ * Structure: layout/, sections/, cards/, product/, pagination/, checkout/
  */
 
-import navbar from './navbar.json';
-import footer from './footer.json';
-import productCard from './product-card.json';
-import productImageCarousel from './product-image-carousel.json';
-import productInfo from './product-info.json';
-import cartDrawer from './cart-drawer.json';
-import accountSidebar from './account-sidebar.json';
-import facetFilters from './facet-filters.json';
-import collectionPagination from './collection-pagination.json';
-import searchPagination from './search-pagination.json';
+import navbar from './layout/navbar.json';
+import footer from './layout/footer.json';
+import cartDrawer from './layout/cart-drawer.json';
+import accountSidebar from './layout/account-sidebar.json';
+import productCard from './cards/product-card.json';
+import productImageCarousel from './cards/product-image-carousel.json';
+import productInfo from './product/product-info.json';
+import collectionPagination from './pagination/collection-pagination.json';
+import searchPagination from './pagination/search-pagination.json';
+import checkoutContactStep from './checkout/contact-step.json';
+import checkoutShippingStep from './checkout/shipping-step.json';
+import checkoutPaymentStep from './checkout/payment-step.json';
+import collectionLoadingSkeleton from './sections/collection-loading-skeleton.json';
+import searchLoadingSkeleton from './sections/search-loading-skeleton.json';
 
 export const fragments = {
-  'fragments/navbar': navbar,
-  'fragments/footer': footer,
-  'fragments/product-card': productCard,
-  'fragments/product-image-carousel': productImageCarousel,
-  'fragments/product-info': productInfo,
-  'fragments/cart-drawer': cartDrawer,
-  'fragments/account-sidebar': accountSidebar,
-  'fragments/facet-filters': facetFilters,
-  'fragments/collection-pagination': collectionPagination,
-  'fragments/search-pagination': searchPagination,
+  'fragments/layout/navbar': navbar,
+  'fragments/layout/footer': footer,
+  'fragments/layout/cart-drawer': cartDrawer,
+  'fragments/layout/account-sidebar': accountSidebar,
+  'fragments/cards/product-card': productCard,
+  'fragments/cards/product-image-carousel': productImageCarousel,
+  'fragments/product/product-info': productInfo,
+  'fragments/pagination/collection-pagination': collectionPagination,
+  'fragments/pagination/search-pagination': searchPagination,
+  'fragments/checkout/contact-step': checkoutContactStep,
+  'fragments/checkout/shipping-step': checkoutShippingStep,
+  'fragments/checkout/payment-step': checkoutPaymentStep,
+  'fragments/sections/collection-loading-skeleton': collectionLoadingSkeleton,
+  'fragments/sections/search-loading-skeleton': searchLoadingSkeleton,
 } as const;
