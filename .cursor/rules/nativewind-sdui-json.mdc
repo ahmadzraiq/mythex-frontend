@@ -21,7 +21,46 @@ alwaysApply: true
 
 ---
 
-## 2. Colors — Use Plain Tailwind, Never CSS Variables
+## 2. Select — Use Gluestack Select, Never Custom Components
+
+**Problem:** Custom select components (e.g. `CountrySelect`) duplicate functionality and are not generic.
+
+**Fix:** Use the generic Gluestack `Select` with `SelectTrigger`, `SelectInput`, `SelectIcon`, `SelectPortal`, `SelectBackdrop`, `SelectContent`, and `SelectItem`. Map options via `map` on a wrapper Box with `className: "contents"`. Use `valueChange` action (maps to `onValueChange`):
+
+```json
+{
+  "type": "Select",
+  "props": { "selectedValue": "{{form.countryCode}}" },
+  "actions": {
+    "valueChange": {
+      "type": "runMultiple",
+      "actions": [
+        { "action": "setState", "payload": { "path": "screens.checkout.form.countryCode", "value": "$event" } }
+      ]
+    }
+  },
+  "children": [
+    { "type": "SelectTrigger", "children": [
+      { "type": "SelectInput", "props": { "placeholder": "Select..." } },
+      { "type": "SelectIcon", "children": [{ "type": "NavIcon", "props": { "icon": "ChevronDown", "size": 16 } }] }
+    ]},
+    { "type": "SelectPortal", "children": [
+      { "type": "SelectBackdrop" },
+      { "type": "SelectContent", "children": [
+        { "type": "Box", "map": "checkout.countries", "key": "opt", "props": { "className": "contents" }, "children": [
+          { "type": "SelectItem", "props": { "label": "{{$item.name}}", "value": "{{$item.code}}" } }
+        ]}
+      ]}
+    ]}
+  ]
+}
+```
+
+**Rule:** Never create custom select/dropdown components. Use generic Gluestack Select with `map` for options.
+
+---
+
+## 3. Colors — Use Plain Tailwind, Never CSS Variables
 
 **Problem:** NativeWind's StyleSheet compiler does NOT reliably resolve Tailwind color tokens that reference CSS variables (e.g. `bg-background`, `bg-muted`, `text-foreground`, `border-border`). These silently produce wrong/no colors.
 
@@ -42,7 +81,7 @@ The exact replacements depend on the app's design — always check `theme.json` 
 
 ---
 
-## 3. Layout — Always `w-full` + `flex-row` for Proper Width & Direction
+## 4. Layout — Always `w-full` + `flex-row` for Proper Width & Direction
 
 **Problem 1:** Gluestack `Box` maps to a React Native `View` which does **not** expand to fill its parent width automatically. Without `w-full`, a Box shrinks to its content width — making everything appear centered or squished.
 
@@ -68,7 +107,7 @@ The exact replacements depend on the app's design — always check `theme.json` 
 
 ---
 
-## 4. Fixed Navbar — Offset Content Below It
+## 5. Fixed Navbar — Offset Content Below It
 
 When a layout has a fixed/sticky navbar, the main content area must be padded by the navbar's height to prevent content from being hidden underneath it.
 
@@ -81,7 +120,7 @@ Always match `pt-*` to the actual navbar height defined in the layout.
 
 ---
 
-## 5. Theme Switching — Use NativeWind `useColorScheme`
+## 6. Theme Switching — Use NativeWind `useColorScheme`
 
 **Problem:** Libraries like `next-themes` conflict with NativeWind's color scheme system.
 
@@ -110,7 +149,7 @@ useEffect(() => {
 
 ---
 
-## 6. Global Data Availability Across All Pages
+## 7. Global Data Availability Across All Pages
 
 **Problem:** Actions that fetch shared data (navigation items, global config, etc.) are often only called from one screen's `initActions`. This leaves navbar/footer empty on all other pages.
 
@@ -121,7 +160,7 @@ useEffect(() => {
 
 ---
 
-## 7. Reading Zustand Store in React Components — Use Flat Key Directly
+## 8. Reading Zustand Store in React Components — Use Flat Key Directly
 
 **Problem:** `setData("some.path", value)` stores data as a **flat key** in Zustand: `data["some.path"] = value`. If you then call `getNestedValue(data, "some.path")`, it does nested access looking for `data.some.path` — which doesn't exist. The result is `undefined` and the component shows nothing.
 
@@ -162,7 +201,7 @@ The merge order in `sdui-engine.tsx` must be `{ ...vs, ...merged }` (Zustand win
 
 ---
 
-## 8. CSS Transitions — Use Inline Style When NativeWind May Not Compile Them
+## 10. CSS Transitions — Use Inline Style When NativeWind May Not Compile Them
 
 **Problem:** NativeWind's CSS compiler may not correctly output `transition-shadow`, `transition-colors`, or other CSS transition utilities for React Native web. This causes animations to snap instantly instead of animating, making hover effects look sharp/jarring.
 
@@ -199,7 +238,7 @@ When placing an icon inside a native `<span>` or `<div>` alongside an `<input>`,
 
 ---
 
-## 9. Match the Source Design — Read Before Building
+## 12. Match the Source Design — Read Before Building
 
 Before implementing any component (navbar, footer, cards, etc.):
 1. **Read the source design** — check the original component file, the design spec, or the app's config
@@ -232,7 +271,7 @@ Use `gap-*` instead of `space-y-*` / margin utilities for spacing between flex c
 
 ---
 
-## 11. Self-Correction Rule
+## 14. Self-Correction Rule
 
 **When any visual issue is found:**
 1. Identify the root cause

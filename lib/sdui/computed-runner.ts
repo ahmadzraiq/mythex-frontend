@@ -1,7 +1,8 @@
 /**
  * JSON Logic–based computed state runner.
  * Uses json-logic-js for generic, standards-based expressions.
- * No app-specific reduce types—all logic expressed as JSON Logic.
+ * All custom ops are generic and parameterized—no app-specific logic.
+ * Field paths, keys, and limits are passed via JSON config (store.json computed).
  */
 
 import jsonLogic from 'json-logic-js';
@@ -44,79 +45,116 @@ jsonLogic.add_operation('formatCurrency', (num: unknown, currency: unknown) => {
   }
 });
 
-// Maps route.sort string to Vendure SearchResultSortParameter (avoids returning {name:"ASC"} which json-logic parses as logic)
-const SORT_MAP: Record<string, { name?: 'ASC' | 'DESC'; price?: 'ASC' | 'DESC' }> = {
-  'name-asc': { name: 'ASC' },
-  'name-desc': { name: 'DESC' },
-  'price-asc': { price: 'ASC' },
-  'price-desc': { price: 'DESC' },
-};
-jsonLogic.add_operation('sortInputFromRoute', (routeSort: unknown) => {
-  const key = String(routeSort ?? 'name-asc');
-  return SORT_MAP[key] ?? SORT_MAP['name-asc'];
+// Generic: lookup key in map/object, return value or default (config-driven via engineConventions.sortInputMap)
+jsonLogic.add_operation('lookupMap', (map: unknown, key: unknown, defaultVal: unknown) => {
+  const m = (map as Record<string, unknown>) ?? {};
+  const k = String(key ?? '');
+  const val = k ? m[k] : undefined;
+  return val !== undefined && val !== null ? val : defaultVal;
 });
 
-// Get item at index from array (for product.assets[product.imageIndex])
+// Generic: get item at index from array. Args: arr, index.
 jsonLogic.add_operation('at', (arr: unknown, index: unknown) => {
   const a = (arr as unknown[]) ?? [];
   const i = Math.max(0, Math.min(Math.floor(Number(index) ?? 0), a.length - 1));
   return a[i];
 });
 
-// Get primary collection slug (prefer one with parent, else first). For related products fetch.
-jsonLogic.add_operation('primaryCollectionSlug', (collections: unknown) => {
-  const arr = (collections as Array<{ slug?: string; parent?: { id?: string } }>) ?? [];
-  const withParent = arr.find((c) => c.parent?.id);
-  return (withParent ?? arr[0])?.slug ?? '';
+// Generic: find first item where preferPath exists, else first item; return valuePath.
+// Args: items, preferPath?, valuePath?
+jsonLogic.add_operation('findFirstByPreference', (items: unknown, preferPath?: unknown, valuePath?: unknown) => {
+  const arr = (items as Record<string, unknown>[]) ?? [];
+  const prefer = String(preferPath ?? 'parent.id').trim();
+  const value = String(valuePath ?? 'slug').trim();
+  if (arr.length === 0) return '';
+  const getNested = (obj: Record<string, unknown>, path: string) =>
+    path.split('.').reduce((o: unknown, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), obj);
+  const withPrefer = arr.find((c) => getNested(c as Record<string, unknown>, prefer) != null);
+  const item = withPrefer ?? arr[0];
+  return (item && getNested(item as Record<string, unknown>, value)) ?? '';
 });
 
-// Filter items where productId !== currentId, then slice to limit. For related products.
-jsonLogic.add_operation('filterRelatedProducts', (items: unknown, currentId: unknown, limit: unknown) => {
-  const arr = (items as Array<{ productId?: string }>) ?? [];
-  const id = String(currentId ?? '');
+// Generic: filter items where item[excludeField] !== excludeValue, then slice to limit.
+// Args: items, excludeField?, excludeValue, limit
+jsonLogic.add_operation('filterExcludeByFieldAndSlice', (items: unknown, excludeField: unknown, excludeValue: unknown, limit: unknown) => {
+  const arr = (items as Record<string, unknown>[]) ?? [];
+  const field = String(excludeField ?? 'productId').trim();
+  const val = excludeValue;
   const max = Number(limit ?? 12);
-  return arr.filter((i) => i.productId !== id).slice(0, max);
+  return arr.filter((i) => i && (i as Record<string, unknown>)[field] !== val).slice(0, max);
 });
 
-// Get selected option id for a group from selectedOptions object.
-jsonLogic.add_operation('selectedOptionForGroup', (selectedOptions: unknown, groupId: unknown) => {
-  const sel = (selectedOptions as Record<string, string>) ?? {};
-  return sel[String(groupId ?? '')] ?? null;
+// Generic: lookup key in map/object. Alias for lookupMap with 2 args (returns null if not found).
+jsonLogic.add_operation('getFromMap', (map: unknown, key: unknown) => {
+  const m = (map as Record<string, unknown>) ?? {};
+  const k = String(key ?? '');
+  const v = k ? m[k] : undefined;
+  return v !== undefined && v !== null ? v : null;
 });
 
-// Find variant by id. Returns variant object or null.
-jsonLogic.add_operation('findVariantById', (variants: unknown, id: unknown) => {
-  const v = (variants as Array<{ id: string; [k: string]: unknown }>) ?? [];
+// Generic: find item in array by id field. Returns item or null.
+// Args: items, id, idField?
+jsonLogic.add_operation('findItemById', (items: unknown, id: unknown, idField?: unknown) => {
+  const arr = (items as Record<string, unknown>[]) ?? [];
   const target = String(id ?? '');
-  return v.find((x) => x.id === target) ?? null;
+  const field = String(idField ?? 'id').trim();
+  return arr.find((x) => x && String((x as Record<string, unknown>)[field] ?? '') === target) ?? null;
 });
 
-// Find variant whose options match selectedOptions (groupId -> optionId). Returns variant.id or null.
-jsonLogic.add_operation('findMatchingVariantId', (variants: unknown, optionGroups: unknown, selectedOptions: unknown) => {
-  const v = (variants as Array<{ id: string; options: Array<{ id: string }> }>) ?? [];
-  const groups = (optionGroups as Array<{ id: string }>) ?? [];
+// Generic: find item whose options match selectedOptions (groupId -> optionId). Returns item[returnField] or null.
+// Args: items, optionGroups, selectedOptions, optionsKey?, optionIdKey?, groupIdKey?, returnField?
+jsonLogic.add_operation('findItemByOptionsMatch', (
+  items: unknown,
+  optionGroups: unknown,
+  selectedOptions: unknown,
+  optionsKey?: unknown,
+  optionIdKey?: unknown,
+  groupIdKey?: unknown,
+  returnField?: unknown
+) => {
+  const arr = (items as Record<string, unknown>[]) ?? [];
+  const groups = (optionGroups as Record<string, unknown>[]) ?? [];
   const sel = (selectedOptions as Record<string, string>) ?? {};
-  if (v.length === 1) return v[0]?.id ?? null;
-  const selectedIds = groups.map((g) => sel[g.id]).filter(Boolean);
+  const optKey = String(optionsKey ?? 'options').trim();
+  const optIdKey = String(optionIdKey ?? 'id').trim();
+  const grpIdKey = String(groupIdKey ?? 'id').trim();
+  const retKey = String(returnField ?? 'id').trim();
+  if (arr.length === 1) return (arr[0] as Record<string, unknown>)?.[retKey] ?? null;
+  const selectedIds = groups.map((g) => sel[String((g as Record<string, unknown>)[grpIdKey] ?? '')]).filter(Boolean);
   if (selectedIds.length !== groups.length) return null;
-  const match = v.find((variant) => {
-    const variantOptIds = (variant.options ?? []).map((o) => o.id);
-    return selectedIds.every((id) => variantOptIds.includes(id));
+  const match = arr.find((item) => {
+    const opts = ((item as Record<string, unknown>)[optKey] as Record<string, unknown>[]) ?? [];
+    const itemOptIds = opts.map((o) => String((o as Record<string, unknown>)[optIdKey] ?? ''));
+    return selectedIds.every((id) => itemOptIds.includes(id));
   });
-  return match?.id ?? null;
+  return (match && (match as Record<string, unknown>)[retKey]) ?? null;
 });
 
-// Returns page numbers to display with ellipsis: [1, 2, 3, "...", 10] (delta=2 around current)
-jsonLogic.add_operation('paginationPages', (totalItems: unknown, collectionSkip: unknown, pageSize: unknown) => {
+// Generic: lookup in array by key field, return display field (or keyValue if not found)
+jsonLogic.add_operation('lookupInArray', (arr: unknown, keyField: unknown, keyValue: unknown, returnField: unknown) => {
+  const a = (arr as Record<string, unknown>[]) ?? [];
+  const kf = String(keyField ?? '').trim();
+  const kv = keyValue;
+  const rf = String(returnField ?? '').trim();
+  if (!kf) return typeof kv === 'string' ? kv : '';
+  const found = a.find((item) => item && String(item[kf] ?? '') === String(kv ?? ''));
+  if (!found || !rf) return typeof kv === 'string' ? kv : '';
+  const val = found[rf];
+  return val != null ? String(val) : (typeof kv === 'string' ? kv : '');
+});
+
+// Generic: returns page numbers to display with ellipsis: [1, 2, 3, "...", 10].
+// Args: totalItems, skip, pageSize, delta? (pages around current, default 2)
+jsonLogic.add_operation('paginationPages', (totalItems: unknown, collectionSkip: unknown, pageSize: unknown, delta?: unknown) => {
   const total = Number(totalItems ?? 0);
   const skip = Number(collectionSkip ?? 0);
   const size = Math.max(1, Number(pageSize ?? 12));
   const totalPages = Math.max(1, Math.ceil(total / size));
   const currentPage = Math.min(totalPages, Math.floor(skip / size) + 1);
-  const delta = 2;
+  const d = Math.max(0, Number(delta ?? 2));
   const range: number[] = [];
   for (let i = 1; i <= totalPages; i++) {
-    if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
+    if (i === 1 || i === totalPages || (i >= currentPage - d && i <= currentPage + d)) {
       range.push(i);
     }
   }

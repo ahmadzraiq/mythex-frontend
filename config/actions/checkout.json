@@ -1,12 +1,39 @@
 {
   "fetchCheckoutOrder": {
     "type": "graphql",
-    "query": "query GetActiveOrderForCheckout { activeOrder { id code state totalQuantity subTotal subTotalWithTax shipping shippingWithTax total totalWithTax currencyCode couponCodes customer { id firstName lastName emailAddress phoneNumber } shippingAddress { fullName company streetLine1 streetLine2 city province postalCode country phoneNumber } shippingLines { shippingMethod { id name description } priceWithTax } discounts { description amountWithTax } lines { id productVariant { id name sku product { id name slug featuredAsset { id preview } } } unitPriceWithTax quantity linePriceWithTax } } }",
+    "query": "query GetActiveOrderForCheckout { activeOrder { id code state totalQuantity subTotal subTotalWithTax shipping shippingWithTax total totalWithTax currencyCode couponCodes customer { id firstName lastName emailAddress phoneNumber } shippingAddress { fullName company streetLine1 streetLine2 city province postalCode country countryCode phoneNumber } shippingLines { shippingMethod { id name description } priceWithTax } discounts { description amountWithTax } lines { id productVariant { id name sku product { id name slug featuredAsset { id preview } } } unitPriceWithTax quantity linePriceWithTax } } }",
     "headers": {
       "Authorization": { "var": ["auth.token", ""] }
     },
     "storeIn": "checkout.order",
-    "responsePath": "data.activeOrder"
+    "responsePath": "data.activeOrder",
+    "onSuccess": [{ "type": "restore", "path": "checkout.selectedPaymentMethodCode", "storageKey": "checkout.selectedPaymentMethodCode" }, { "action": "syncCheckoutStep" }, { "action": "populateCheckoutForm" }, { "action": "fetchCheckoutDependentData" }]
+  },
+  "syncCheckoutStep": { "type": "set", "path": "checkout.step", "value": { "var": "checkout.firstIncompleteStep" } },
+  "populateCheckoutForm": {
+    "type": "runMultiple",
+    "actions": [
+      { "action": "setState", "payload": { "path": "screens.checkout.form.emailAddress", "value": { "var": ["checkout.order.customer.emailAddress", ""] } } },
+      { "action": "setState", "payload": { "path": "screens.checkout.form.firstName", "value": { "var": ["checkout.order.customer.firstName", ""] } } },
+      { "action": "setState", "payload": { "path": "screens.checkout.form.lastName", "value": { "var": ["checkout.order.customer.lastName", ""] } } },
+      { "action": "setState", "payload": { "path": "screens.checkout.form.fullName", "value": { "var": ["checkout.order.shippingAddress.fullName", ""] } } },
+      { "action": "setState", "payload": { "path": "screens.checkout.form.company", "value": { "var": ["checkout.order.shippingAddress.company", ""] } } },
+      { "action": "setState", "payload": { "path": "screens.checkout.form.streetLine1", "value": { "var": ["checkout.order.shippingAddress.streetLine1", ""] } } },
+      { "action": "setState", "payload": { "path": "screens.checkout.form.streetLine2", "value": { "var": ["checkout.order.shippingAddress.streetLine2", ""] } } },
+      { "action": "setState", "payload": { "path": "screens.checkout.form.city", "value": { "var": ["checkout.order.shippingAddress.city", ""] } } },
+      { "action": "setState", "payload": { "path": "screens.checkout.form.province", "value": { "var": ["checkout.order.shippingAddress.province", ""] } } },
+      { "action": "setState", "payload": { "path": "screens.checkout.form.postalCode", "value": { "var": ["checkout.order.shippingAddress.postalCode", ""] } } },
+      { "action": "setState", "payload": { "path": "screens.checkout.form.countryCode", "value": { "var": ["checkout.order.shippingAddress.countryCode", ""] } } },
+      { "action": "setState", "payload": { "path": "screens.checkout.form.phoneNumber", "value": { "var": ["checkout.order.shippingAddress.phoneNumber", ""] } } },
+      { "type": "set", "path": "checkout.selectedShippingMethodId", "value": { "var": ["checkout.order.shippingLines.0.shippingMethod.id"] } }
+    ]
+  },
+  "fetchCheckoutDependentData": {
+    "type": "runMultiple",
+    "actions": [
+      { "condition": { "var": ["checkout.order.shippingAddress.streetLine1", ""] }, "action": "fetchShippingMethods" },
+      { "condition": { ">": [{ "var": ["checkout.order.shippingLines.length", 0] }, 0] }, "action": "fetchPaymentMethods" }
+    ]
   },
   "fetchShippingMethods": {
     "type": "graphql",
@@ -139,7 +166,7 @@
     "variables": {
       "input": {
         "method": { "var": "checkout.selectedPaymentMethodCode" },
-        "metadata": {}
+        "metadata": { "shouldDecline": false, "shouldError": false, "shouldErrorOnSettle": false }
       }
     },
     "headers": {
@@ -147,11 +174,32 @@
     },
     "storeIn": "checkout.completedOrder",
     "responsePath": "data.addPaymentToOrder",
-    "onSuccess": { "action": "navigateToOrderConfirmation" }
+    "invalidateCache": ["cart"],
+    "onSuccess": { "action": "clearCheckoutSessionAndNavigate" }
+  },
+  "clearCartAfterOrder": {
+    "type": "set",
+    "path": "cart",
+    "value": { "id": null, "code": null, "state": null, "totalQuantity": 0, "subTotalWithTax": 0, "shippingWithTax": 0, "totalWithTax": 0, "currencyCode": "USD", "couponCodes": [], "discounts": [], "lines": [] }
+  },
+  "clearCheckoutSessionAndNavigate": {
+    "type": "runMultiple",
+    "actions": [
+      { "action": "clearCartAfterOrder" },
+      { "type": "clearPersistedPaths", "onSuccess": { "action": "navigateToOrderConfirmation" } }
+    ]
   },
   "navigateToOrderConfirmation": {
     "action": "navigate",
     "payload": { "routeConfig": "orderConfirmation", "slug": { "var": "checkout.completedOrder.code" } }
+  },
+  "fetchOrderByCode": {
+    "type": "graphql",
+    "query": "query GetOrderByCode($code: String!) { orderByCode(code: $code) { id code state totalWithTax currencyCode lines { id productVariant { id name product { id name slug featuredAsset { id preview } } } quantity linePriceWithTax } shippingAddress { fullName streetLine1 streetLine2 city province postalCode country } } }",
+    "variables": { "code": { "var": "route.slug" } },
+    "headers": { "Authorization": { "var": ["auth.token", ""] } },
+    "storeIn": "order",
+    "responsePath": "data.orderByCode"
   },
   "goToCheckoutStep": {
     "type": "set",

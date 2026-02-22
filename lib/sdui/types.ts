@@ -144,7 +144,7 @@ export type SDUIComponentType =
   | 'Fab'
   | 'FabLabel'
   | 'FabIcon'
-  | 'WebInput';
+  | 'WebInput'
 
 /** Data source - fetch from API and store in state */
 export interface SDUIDataSource {

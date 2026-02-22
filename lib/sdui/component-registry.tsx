@@ -64,6 +64,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea, TextareaInput } from '@/components/ui/textarea';
 import { Carousel, CarouselSlide } from '@/lib/sdui/carousel';
 import { FacetFiltersPanel } from '@/lib/sdui/facet-filters-panel';
+import { SearchForm } from '@/components/shared/search-form';
 
 // Data display
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableData } from '@/components/ui/table';

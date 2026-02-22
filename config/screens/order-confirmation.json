@@ -5,92 +5,179 @@
   "initActions": [{ "action": "fetchNavCollections" }, { "action": "fetchOrderByCode" }],
   "content": {
     "type": "Box",
-    "props": { "className": "w-full max-w-screen-xl mx-auto px-4 py-16" },
+    "props": { "className": "container mx-auto px-4 py-16" },
     "children": [
       {
         "type": "Box",
-        "props": { "className": "max-w-2xl mx-auto text-center space-y-6" },
+        "props": { "className": "max-w-3xl mx-auto" },
+        "children": [
+      {
+        "type": "Box",
+        "props": { "className": "text-center py-16" },
+        "condition": { "!": [{ "var": ["order"] }] },
+        "children": [{ "type": "Text", "props": { "className": "text-gray-500" }, "text": "Loading order..." }]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "text-center mb-8" },
+        "condition": { "var": ["order"] },
         "children": [
           {
             "type": "Box",
-            "props": { "className": "w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center" },
+            "props": { "className": "flex items-center justify-center mb-4" },
+            "children": [{ "type": "NavIcon", "props": { "icon": "CheckCircle2", "size": 64, "className": "!text-green-500" } }]
+          },
+          { "type": "Heading", "props": { "className": "text-3xl font-bold mb-2 text-center" }, "text": "Order Confirmed!" },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row flex-wrap justify-center items-baseline gap-1" },
             "children": [
-              { "type": "Text", "props": { "className": "text-green-600 text-2xl" }, "text": "✓" }
+              { "type": "Text", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "Thank you for your order. Your order number is " },
+              { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-gray-100" }, "text": "{{order.code}}" }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Card",
+        "props": { "className": "mb-6 rounded-xl border border-gray-200 shadow-sm bg-white dark:border-gray-700 dark:bg-gray-900 p-0 overflow-hidden" },
+        "condition": { "var": ["order"] },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "px-6 py-4 border-b border-gray-200 dark:border-gray-700" },
+            "children": [
+              { "type": "Heading", "props": { "className": "text-lg font-semibold leading-none" }, "text": "Order Summary" }
             ]
           },
-          { "type": "Heading", "props": { "className": "text-3xl font-bold" }, "text": "Order Confirmed!" },
-          { "type": "Text", "props": { "className": "text-gray-500 text-lg" }, "text": "Thank you for your purchase. We'll send you a confirmation email shortly." },
           {
-            "type": "Card",
+            "type": "Box",
+            "props": { "className": "px-6 py-4 space-y-4" },
             "children": [
               {
-                "type": "Box",
-                "props": { "className": "p-6 text-left space-y-4" },
+                "type": "VStack",
+                "props": { "className": "space-y-4" },
+                "map": "order.lines",
+                "key": "orderConfLine",
                 "children": [
                   {
                     "type": "HStack",
-                    "props": { "className": "flex justify-between items-center" },
-                    "children": [
-                      { "type": "Text", "props": { "className": "text-sm text-gray-500" }, "text": "Order number" },
-                      { "type": "Text", "props": { "className": "font-semibold" }, "text": "{{order.code}}" }
-                    ]
-                  },
-                  {
-                    "type": "HStack",
-                    "props": { "className": "flex justify-between items-center" },
-                    "children": [
-                      { "type": "Text", "props": { "className": "text-sm text-gray-500" }, "text": "Status" },
-                      { "type": "Badge", "children": [{ "type": "BadgeText", "text": "{{order.state}}" }] }
-                    ]
-                  },
-                  {
-                    "type": "HStack",
-                    "props": { "className": "flex justify-between items-center" },
-                    "children": [
-                      { "type": "Text", "props": { "className": "text-sm text-gray-500" }, "text": "Total" },
-                      { "type": "Text", "props": { "className": "font-bold text-lg" }, "text": { "expr": { "formatCurrency": [{ "/": [{ "var": ["order.totalWithTax", 0] }, 100] }, { "var": ["order.currencyCode", "USD"] }] } } }
-                    ]
-                  },
-                  { "type": "Divider", "props": { "className": "my-2" } },
-                  {
-                    "type": "VStack",
-                    "props": { "className": "space-y-3" },
-                    "map": "order.lines",
-                    "key": "orderConfLine",
+                    "props": { "className": "flex gap-4 items-center" },
                     "children": [
                       {
-                        "type": "HStack",
-                        "props": { "className": "flex gap-3 items-center" },
+                        "type": "Box",
+                        "props": { "className": "flex-shrink-0" },
+                        "condition": { "var": ["$item.productVariant.product.featuredAsset.preview"] },
                         "children": [
                           {
                             "type": "NextImage",
-                            "props": { "src": "{{$item.productVariant.product.featuredAsset.preview}}", "alt": "{{$item.productVariant.product.name}}", "width": 60, "height": 60, "className": "rounded-md object-cover w-15 h-15 flex-shrink-0" }
-                          },
+                            "props": {
+                              "src": "{{$item.productVariant.product.featuredAsset.preview}}",
+                              "alt": "{{$item.productVariant.product.name}}",
+                              "width": 80,
+                              "height": 80,
+                              "className": "rounded object-cover w-20 h-20 object-center"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex-1 min-w-0" },
+                        "children": [
+                          { "type": "Text", "props": { "className": "font-medium" }, "text": "{{$item.productVariant.product.name}}" },
                           {
-                            "type": "Box",
-                            "props": { "className": "flex-1 min-w-0" },
-                            "children": [
-                              { "type": "Text", "props": { "className": "font-medium text-sm truncate" }, "text": "{{$item.productVariant.product.name}}" },
-                              { "type": "Text", "props": { "className": "text-xs text-gray-500" }, "text": { "expr": { "var": "$item.quantity" }, "prefix": "Qty: " } }
-                            ]
-                          },
-                          { "type": "Text", "props": { "className": "text-sm font-medium" }, "text": { "expr": { "formatCurrency": [{ "/": [{ "var": "$item.linePriceWithTax" }, 100] }, { "var": ["order.currencyCode", "USD"] }] } } }
+                            "type": "Text",
+                            "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+                            "text": "{{$item.productVariant.name}}",
+                            "condition": { "!=": [{ "var": "$item.productVariant.name" }, { "var": "$item.productVariant.product.name" }] }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "text-center w-16 flex flex-col" },
+                        "children": [
+                          { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "Qty" },
+                          { "type": "Text", "props": { "className": "font-medium" }, "text": "{{$item.quantity}}" }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "text-right w-24" },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": { "className": "font-semibold" },
+                            "text": { "expr": { "formatCurrency": [{ "/": [{ "var": "$item.linePriceWithTax" }, 100] }, { "var": ["order.currencyCode", "USD"] }] } }
+                          }
                         ]
                       }
                     ]
                   }
                 ]
+              },
+              { "type": "Divider", "props": { "className": "my-4 h-px w-full !bg-gray-200 dark:!bg-gray-700" } },
+              {
+                "type": "HStack",
+                "props": { "className": "flex justify-between font-bold text-lg" },
+                "children": [
+                  { "type": "Text", "text": "Total" },
+                  {
+                    "type": "Text",
+                    "text": { "expr": { "formatCurrency": [{ "/": [{ "var": ["order.totalWithTax", 0] }, 100] }, { "var": ["order.currencyCode", "USD"] }] } }
+                  }
+                ]
               }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Card",
+        "props": { "className": "mb-6 rounded-xl border border-gray-200 shadow-sm bg-white dark:border-gray-700 dark:bg-gray-900 p-0 overflow-hidden" },
+        "condition": { "and": [{ "var": ["order"] }, { "var": ["order.shippingAddress"] }] },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "px-6 py-4 border-b border-gray-200 dark:border-gray-700" },
+            "children": [
+              { "type": "Heading", "props": { "className": "text-lg font-semibold leading-none" }, "text": "Shipping Address" }
             ]
           },
           {
-            "type": "HStack",
-            "props": { "className": "flex flex-col sm:flex-row gap-4 justify-center" },
+            "type": "Box",
+            "props": { "className": "px-6 py-4" },
             "children": [
-              { "type": "Button", "props": { "className": "bg-[#1e293b] text-white hover:bg-[#334155] px-8" }, "children": [{ "type": "ButtonText", "props": { "className": "!text-white" }, "text": "Continue Shopping" }], "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } } },
-              { "type": "Button", "props": { "className": "border border-gray-200 bg-white text-gray-900 hover:bg-gray-100 px-8" }, "children": [{ "type": "ButtonText", "props": { "className": "!text-gray-900" }, "text": "View Orders" }], "actions": { "click": { "action": "navigate", "payload": { "path": "/account/orders" } } } }
+              { "type": "Text", "props": { "className": "font-medium" }, "text": "{{order.shippingAddress.fullName}}" },
+              {
+                "type": "Text",
+                "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" },
+                "text": { "expr": { "cat": [{ "var": ["order.shippingAddress.streetLine1", ""] }, { "if": [{ "var": ["order.shippingAddress.streetLine2", ""] }, { "cat": [", ", { "var": "order.shippingAddress.streetLine2" }] }, ""] }] } }
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+                "text": { "expr": { "cat": [{ "var": ["order.shippingAddress.city", ""] }, ", ", { "var": ["order.shippingAddress.province", ""] }, " ", { "var": ["order.shippingAddress.postalCode", ""] }] } }
+              },
+              { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "{{order.shippingAddress.country}}" }
             ]
           }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "flex gap-4" },
+        "condition": { "var": ["order"] },
+        "children": [
+          {
+            "type": "Button",
+            "props": { "className": "flex-1 rounded-md h-9 px-4 py-2 text-sm font-medium bg-[#1e293b] text-white hover:bg-[#334155]" },
+            "children": [{ "type": "ButtonText", "props": { "className": "!text-white" }, "text": "Continue Shopping" }],
+            "actions": { "click": { "action": "navigate", "payload": { "path": "/" } } }
+          }
+        ]
+      }
         ]
       }
     ]

@@ -14,7 +14,7 @@ alwaysApply: true
 - **Global variable store** (`lib/sdui/global-variable-store.ts`): Single source of truth; path-based access; screen-scoped paths `screens.{screenName}.form.*`
 - **Config resolver** (`lib/sdui/config-resolver.ts`): Resolves `$ref`, `$slot`, layout composition at build time
 - **Zustand SDUI Engine**: Renders resolved config, merges state (config + Zustand), runs actions
-- **Computed runner** (`lib/sdui/computed-runner.ts`): JSON Logic–based derived values; inline expr in `text` or optional `store.json` computed
+- **Computed runner** (`lib/sdui/computed-runner.ts`): JSON Logic–based derived values; inline expr in `text` or optional `store.json` computed. **Generic ops only** — see `sdui-computed-and-sync.mdc`.
 
 ## Key Paths
 - `config/screens/` - Screen definitions (meta, state, layout, content)
@@ -22,7 +22,7 @@ alwaysApply: true
 - `config/fragments/` - Reusable UI (header, drawer, modals)
 - `config/actions/` - Action definitions (fetch, set, navigate, etc.)
 - `config/routes.json` - Routes, dynamic routes (`dynamic: true`), defaultRedirect
-- `config/store.json` - Initial state (`initialData`), path mappings (`paths`), optional `computed`, `engineConventions` (loadingSuffix, errorSuffix, defaultStoreIn, workflowPath, etc.)
+- `config/store.json` - Initial state (`initialData`), path mappings (`paths`), optional `computed`, `engineConventions`, `searchParamSync` (with `variableStorePath`, `triggersParamChange`). See `sdui-computed-and-sync.mdc`.
 - `config/theme.json` - Theme colors and sections (announcement, header, hero, etc.)
 - `lib/sdui/` - Engine, renderer, config resolver, computed-runner, variable-store
 

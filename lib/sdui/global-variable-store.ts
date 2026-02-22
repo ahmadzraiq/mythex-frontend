@@ -13,18 +13,16 @@
  */
 
 import { createVariableStore } from './variable-store';
+import storeConfig from '@/config/store.json';
 
-// The global variable store only owns screen-scoped state (screens.*).
-// Global data like nav, auth, cart, etc. is managed exclusively by the Zustand store
-// (sdui-store.ts) and flows into the renderer via computeMergedState.
-// Keeping them here too would cause the stale initial values to overwrite
-// freshly fetched Zustand data in the shallow merge inside sdui-engine.tsx.
+// The global variable store only owns screen-scoped state (screens.*) and paths
+// defined in variableStoreInitial. Global data like nav, auth, cart, etc. is
+// managed exclusively by the Zustand store and flows into the renderer via computeMergedState.
+const variableStoreInitial = (storeConfig as { variableStoreInitial?: Record<string, unknown> }).variableStoreInitial ?? {};
 const globalStore = createVariableStore({
   initialState: {
     screens: {} as Record<string, Record<string, unknown>>,
-    collectionSkip: 0,
-    sortMenuOpen: false,
-    product: { selectedOptions: {} as Record<string, string>, imageIndex: 0 },
+    ...variableStoreInitial,
   },
   adapters: [],
 });

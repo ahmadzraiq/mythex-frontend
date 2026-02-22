@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useMemo } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useSduiStore } from '@/store/sdui-store';
-import { SDUIEngine, type ActionsConfig } from '@/lib/sdui/sdui-engine';
+import { SDUIEngine, paramChangeRunActionRef, type ActionsConfig } from '@/lib/sdui/sdui-engine';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 import { setNestedValue } from '@/lib/sdui/nested-utils';
 import type { SDUIConfig } from '@/lib/sdui/types';
@@ -11,7 +11,16 @@ import type { SDUIConfig } from '@/lib/sdui/types';
 import appConfig from '@/config/app';
 import storeConfig from '@/config/store.json';
 
-type SearchParamSyncDef = { param: string; path: string; default?: string; type?: 'array'; transform?: string; pageSize?: number };
+type SearchParamSyncDef = {
+  param: string;
+  path: string;
+  default?: string;
+  type?: 'array';
+  transform?: string;
+  pageSize?: number;
+  variableStorePath?: string;
+  triggersParamChange?: boolean;
+};
 const PATHS = (storeConfig as { paths?: { authUser?: string; routePath?: string; routeSlug?: string } }).paths ?? {};
 const AUTH_USER_PATH = PATHS.authUser ?? 'auth.user';
 const ROUTE_PATH = PATHS.routePath ?? 'route.path';
@@ -75,6 +84,8 @@ export default function DynamicRoutePage() {
     return r.path === path;
   });
 
+  const paramSyncMountedRef = useRef(false);
+
   useLayoutEffect(() => {
     const newPath = pathname || '/';
     const currentPath = useSduiStore.getState().data[ROUTE_PATH];
@@ -92,6 +103,7 @@ export default function DynamicRoutePage() {
         setData(ROUTE_SLUG, slug);
       }
     }
+    let paramSyncDidUpdate = false;
     for (const def of syncDefs) {
       let value: unknown =
         def.type === 'array'
@@ -104,12 +116,22 @@ export default function DynamicRoutePage() {
       const current = useSduiStore.getState().data[def.path];
       if (!valuesEqual(current, value)) {
         setData(def.path, value);
-        if (def.path === 'collectionSkip') {
-          getGlobalVariableStore().getState().setState((prev) => setNestedValue(prev, def.path, value));
+        if (def.variableStorePath) {
+          getGlobalVariableStore().getState().setState((prev) => setNestedValue(prev, def.variableStorePath!, value));
+        }
+        if (def.triggersParamChange) {
+          paramSyncDidUpdate = true;
         }
       }
     }
-  }, [pathname, path, searchParams, setData, sortedRoutes]);
+    if (paramSyncMountedRef.current && paramSyncDidUpdate) {
+      const action = (route as { paramChangeAction?: string })?.paramChangeAction;
+      if (action) {
+        setTimeout(() => paramChangeRunActionRef.current?.(action), 0);
+      }
+    }
+    paramSyncMountedRef.current = true;
+  }, [pathname, path, searchParams, setData, sortedRoutes, route]);
 
   useEffect(() => {
     if (route?.redirect) {
@@ -178,6 +200,7 @@ export default function DynamicRoutePage() {
         configName={configName}
         actionsConfig={app.actions as ActionsConfig}
         routes={app.routes}
+        paramChangeAction={(route as { paramChangeAction?: string })?.paramChangeAction}
       />
     </main>
   );

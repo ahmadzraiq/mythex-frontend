@@ -149,6 +149,9 @@
                                 "type": "runMultiple",
                                 "actions": [
                                   { "type": "setVar", "path": "sortMenuOpen", "value": false },
+                                  { "type": "set", "path": "route.sort", "value": "name-asc" },
+                                  { "type": "setVar", "path": "collectionSkip", "value": 0 },
+                                  { "action": "fetchSearchResults" },
                                   { "action": "navigate", "payload": { "path": "{{route.path}}?q={{route.q}}&sort=name-asc&page=1" } }
                                 ]
                               }
@@ -166,6 +169,9 @@
                                 "type": "runMultiple",
                                 "actions": [
                                   { "type": "setVar", "path": "sortMenuOpen", "value": false },
+                                  { "type": "set", "path": "route.sort", "value": "name-desc" },
+                                  { "type": "setVar", "path": "collectionSkip", "value": 0 },
+                                  { "action": "fetchSearchResults" },
                                   { "action": "navigate", "payload": { "path": "{{route.path}}?q={{route.q}}&sort=name-desc&page=1" } }
                                 ]
                               }
@@ -183,6 +189,9 @@
                                 "type": "runMultiple",
                                 "actions": [
                                   { "type": "setVar", "path": "sortMenuOpen", "value": false },
+                                  { "type": "set", "path": "route.sort", "value": "price-asc" },
+                                  { "type": "setVar", "path": "collectionSkip", "value": 0 },
+                                  { "action": "fetchSearchResults" },
                                   { "action": "navigate", "payload": { "path": "{{route.path}}?q={{route.q}}&sort=price-asc&page=1" } }
                                 ]
                               }
@@ -200,6 +209,9 @@
                                 "type": "runMultiple",
                                 "actions": [
                                   { "type": "setVar", "path": "sortMenuOpen", "value": false },
+                                  { "type": "set", "path": "route.sort", "value": "price-desc" },
+                                  { "type": "setVar", "path": "collectionSkip", "value": 0 },
+                                  { "action": "fetchSearchResults" },
                                   { "action": "navigate", "payload": { "path": "{{route.path}}?q={{route.q}}&sort=price-desc&page=1" } }
                                 ]
                               }

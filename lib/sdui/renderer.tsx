@@ -172,6 +172,20 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope }
               : e;
           handler(val);
         };
+      } else if (event === 'keyDown') {
+        const keyHandler = (e: React.KeyboardEvent | { key?: string; keyCode?: number; nativeEvent?: { key?: string; keyCode?: number }; preventDefault?: () => void }) => {
+          const key = e.key ?? (e.nativeEvent as { key?: string })?.key;
+          const code = e.keyCode ?? (e.nativeEvent as { keyCode?: number })?.keyCode;
+          if (key === 'Enter' || code === 13) {
+            e.preventDefault?.();
+            handler(e);
+          }
+        };
+        cleanProps.onKeyDown = keyHandler;
+        cleanProps.onKeyPress = keyHandler;
+        cleanProps.onSubmitEditing = () => handler(undefined);
+      } else if (event === 'valueChange') {
+        cleanProps.onValueChange = (value: unknown) => handler(value);
       } else {
         const propName = `on${event.charAt(0).toUpperCase()}${event.slice(1)}`;
         cleanProps[propName] = handler;

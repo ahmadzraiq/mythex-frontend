@@ -68,12 +68,25 @@
     "routeFacets": "route.facets"
   },
   "engineConventions": {
+    "computedConventionKeys": ["sortInputMap", "defaultSortInput"],
+    "themePath": "nav.colorScheme",
+    "defaultPaginationPath": "collectionSkip",
+    "defaultPaginationFetchAction": "fetchCollection",
+    "shareSlugPrefix": "/product",
     "loadingSuffix": "loading",
     "errorSuffix": "error",
     "defaultStoreIn": "data",
     "defaultStoreErrorsIn": "errors",
     "defaultErrorMessagePath": "message",
     "workflowPath": "_workflow",
+    "persistPaths": ["checkout.selectedPaymentMethodCode"],
+    "sortInputMap": {
+      "name-asc": { "name": "ASC" },
+      "name-desc": { "name": "DESC" },
+      "price-asc": { "price": "ASC" },
+      "price-desc": { "price": "DESC" }
+    },
+    "defaultSortInput": { "name": "ASC" },
     "screenScopedAliases": [
       "form",
       "errors"
@@ -92,10 +105,10 @@
     {
       "output": "sortInput",
       "expr": {
-        "sortInputFromRoute": [
-          {
-            "var": "route.sort"
-          }
+        "lookupMap": [
+          { "var": "_conventions.sortInputMap" },
+          { "var": ["route.sort", "name-asc"] },
+          { "var": "_conventions.defaultSortInput" }
         ]
       }
     },
@@ -201,11 +214,11 @@
     },
     {
       "output": "product.selectedVariantId",
-      "expr": { "findMatchingVariantId": [{ "var": "product.variants" }, { "var": "product.optionGroups" }, { "var": "product.selectedOptions" }] }
+      "expr": { "findItemByOptionsMatch": [{ "var": "product.variants" }, { "var": "product.optionGroups" }, { "var": "product.selectedOptions" }] }
     },
     {
       "output": "product.primaryCollectionSlug",
-      "expr": { "primaryCollectionSlug": [{ "var": "product.collections" }] }
+      "expr": { "findFirstByPreference": [{ "var": "product.collections" }] }
     },
     {
       "output": "product.currentImage",
@@ -213,18 +226,62 @@
     },
     {
       "output": "product.selectedVariant",
-      "expr": { "findVariantById": [{ "var": "product.variants" }, { "var": "product.selectedVariantId" }] }
+      "expr": { "findItemById": [{ "var": "product.variants" }, { "var": "product.selectedVariantId" }] }
     },
     {
       "output": "related.products",
-      "expr": { "filterRelatedProducts": [{ "var": "related._raw" }, { "var": "product.id" }, 12] }
+      "expr": { "filterExcludeByFieldAndSlice": [{ "var": "related._raw" }, "productId", { "var": "product.id" }, 12] }
+    },
+    {
+      "output": "checkout.firstIncompleteStep",
+      "expr": {
+        "if": [
+          { "!": [{ "or": [{ "var": "auth.user" }, { "var": ["checkout.order.customer.emailAddress", ""] }] }] },
+          "contact",
+          {
+            "if": [
+              { "!": [{ "var": ["checkout.order.shippingAddress.streetLine1", ""] }] },
+              "shipping",
+              {
+                "if": [
+                  { "<=": [{ "var": ["checkout.order.shippingLines.length", 0] }, 0] },
+                  "delivery",
+                  {
+                    "if": [
+                      { "!": [{ "var": ["checkout.selectedPaymentMethodCode", ""] }] },
+                      "payment",
+                      "review"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "output": "checkout.selectedPaymentMethodDisplay",
+      "expr": {
+        "lookupInArray": [
+          { "var": ["checkout.paymentMethods", []] },
+          "code",
+          { "var": ["checkout.selectedPaymentMethodCode", ""] },
+          "name"
+        ]
+      }
     }
   ],
+  "variableStoreInitial": {
+    "collectionSkip": 0,
+    "sortMenuOpen": false,
+    "product": { "selectedOptions": {}, "imageIndex": 0 }
+  },
   "searchParamSync": [
-    { "param": "q", "path": "route.q", "default": "" },
+    { "param": "q", "path": "route.q", "default": "", "variableStorePath": "nav.searchQuery", "triggersParamChange": true },
     { "param": "token", "path": "route.token", "default": "" },
-    { "param": "sort", "path": "route.sort", "default": "name-asc" },
-    { "param": "facets", "path": "route.facets", "type": "array" },
-    { "param": "page", "path": "collectionSkip", "default": "1", "transform": "pageToSkip", "pageSize": 12 }
+    { "param": "sort", "path": "route.sort", "default": "name-asc", "triggersParamChange": true },
+    { "param": "facets", "path": "route.facets", "type": "array", "triggersParamChange": true },
+    { "param": "page", "path": "collectionSkip", "default": "1", "transform": "pageToSkip", "pageSize": 12, "variableStorePath": "collectionSkip" }
   ]
 }

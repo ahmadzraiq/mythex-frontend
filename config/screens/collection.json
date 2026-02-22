@@ -124,7 +124,10 @@
                             "props": { "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800" },
                             "actions": { "click": { "type": "runMultiple", "actions": [
                               { "type": "setVar", "path": "sortMenuOpen", "value": false },
-                              { "action": "navigate", "payload": { "path": "{{route.path}}?sort=name-asc" } }
+                              { "type": "set", "path": "route.sort", "value": "name-asc" },
+                              { "type": "setVar", "path": "collectionSkip", "value": 0 },
+                              { "action": "fetchCollection" },
+                              { "action": "navigate", "payload": { "path": "{{route.path}}?sort=name-asc&page=1" } }
                             ] } },
                             "children": [
                               { "type": "Text", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "Name: A to Z" },
@@ -136,7 +139,10 @@
                             "props": { "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800" },
                             "actions": { "click": { "type": "runMultiple", "actions": [
                               { "type": "setVar", "path": "sortMenuOpen", "value": false },
-                              { "action": "navigate", "payload": { "path": "{{route.path}}?sort=name-desc" } }
+                              { "type": "set", "path": "route.sort", "value": "name-desc" },
+                              { "type": "setVar", "path": "collectionSkip", "value": 0 },
+                              { "action": "fetchCollection" },
+                              { "action": "navigate", "payload": { "path": "{{route.path}}?sort=name-desc&page=1" } }
                             ] } },
                             "children": [
                               { "type": "Text", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "Name: Z to A" },
@@ -148,7 +154,10 @@
                             "props": { "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800" },
                             "actions": { "click": { "type": "runMultiple", "actions": [
                               { "type": "setVar", "path": "sortMenuOpen", "value": false },
-                              { "action": "navigate", "payload": { "path": "{{route.path}}?sort=price-asc" } }
+                              { "type": "set", "path": "route.sort", "value": "price-asc" },
+                              { "type": "setVar", "path": "collectionSkip", "value": 0 },
+                              { "action": "fetchCollection" },
+                              { "action": "navigate", "payload": { "path": "{{route.path}}?sort=price-asc&page=1" } }
                             ] } },
                             "children": [
                               { "type": "Text", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "Price: Low to High" },
@@ -160,7 +169,10 @@
                             "props": { "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800" },
                             "actions": { "click": { "type": "runMultiple", "actions": [
                               { "type": "setVar", "path": "sortMenuOpen", "value": false },
-                              { "action": "navigate", "payload": { "path": "{{route.path}}?sort=price-desc" } }
+                              { "type": "set", "path": "route.sort", "value": "price-desc" },
+                              { "type": "setVar", "path": "collectionSkip", "value": 0 },
+                              { "action": "fetchCollection" },
+                              { "action": "navigate", "payload": { "path": "{{route.path}}?sort=price-desc&page=1" } }
                             ] } },
                             "children": [
                               { "type": "Text", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "Price: High to Low" },

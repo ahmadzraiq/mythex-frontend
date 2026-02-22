@@ -22,6 +22,11 @@ import storeConfig from '@/config/store.json';
 import { toast } from 'sonner';
 
 type EngineConventions = {
+  computedConventionKeys?: string[];
+  themePath?: string;
+  defaultPaginationPath?: string;
+  defaultPaginationFetchAction?: string;
+  shareSlugPrefix?: string;
   loadingSuffix?: string;
   errorSuffix?: string;
   defaultStoreErrorsIn?: string;
@@ -29,6 +34,9 @@ type EngineConventions = {
   defaultErrorMessagePath?: string;
   workflowPath?: string;
   screenScopedAliases?: string[];
+  persistPaths?: string[];
+  sortInputMap?: Record<string, Record<string, string>>;
+  defaultSortInput?: Record<string, string>;
   graphqlEndpoint?: string;
   graphqlHeaders?: Record<string, string>;
   graphqlCredentials?: RequestCredentials;
@@ -36,6 +44,11 @@ type EngineConventions = {
 const engineConventions = (storeConfig as { engineConventions?: EngineConventions }).engineConventions ?? {};
 let globalInitHasRun = false;
 const CONVENTIONS = {
+  computedConventionKeys: engineConventions.computedConventionKeys ?? ['sortInputMap', 'defaultSortInput'],
+  themePath: engineConventions.themePath ?? 'nav.colorScheme',
+  defaultPaginationPath: engineConventions.defaultPaginationPath ?? 'collectionSkip',
+  defaultPaginationFetchAction: engineConventions.defaultPaginationFetchAction ?? 'fetchCollection',
+  shareSlugPrefix: engineConventions.shareSlugPrefix ?? '/product',
   loadingSuffix: engineConventions.loadingSuffix,
   errorSuffix: engineConventions.errorSuffix,
   defaultStoreErrorsIn: engineConventions.defaultStoreErrorsIn,
@@ -43,10 +56,49 @@ const CONVENTIONS = {
   defaultErrorMessagePath: engineConventions.defaultErrorMessagePath,
   workflowPath: engineConventions.workflowPath,
   screenScopedAliases: engineConventions.screenScopedAliases ?? [],
+  persistPaths: engineConventions.persistPaths ?? [],
+  sortInputMap: engineConventions.sortInputMap ?? {},
+  defaultSortInput: engineConventions.defaultSortInput ?? { name: 'ASC' },
   graphqlEndpoint: engineConventions.graphqlEndpoint,
   graphqlHeaders: engineConventions.graphqlHeaders ?? {},
   graphqlCredentials: engineConventions.graphqlCredentials,
 };
+
+/** Build _conventions from config for computed values (config-driven via engineConventions.computedConventionKeys). */
+function buildConventionsForComputed(): Record<string, unknown> {
+  const keys = CONVENTIONS.computedConventionKeys;
+  const out: Record<string, unknown> = {};
+  const conv = CONVENTIONS as Record<string, unknown>;
+  for (const k of keys) {
+    const v = conv[k];
+    if (v !== undefined) out[k] = v;
+  }
+  return out;
+}
+
+/** Overlay variable store onto merged state; then add _conventions and run computed. */
+function finalizeMergedWithVariableStore(
+  merged: Record<string, unknown>,
+  vs: Record<string, unknown>
+): Record<string, unknown> {
+  let next: Record<string, unknown> = { ...merged };
+  for (const [key, val] of Object.entries(vs)) {
+    const mVal = merged[key];
+    if (
+      val !== null && typeof val === 'object' && !Array.isArray(val) &&
+      mVal !== null && typeof mVal === 'object' && !Array.isArray(mVal)
+    ) {
+      next[key] = { ...(mVal as object), ...(val as object) };
+    } else if (val !== undefined) {
+      next[key] = val;
+    }
+  }
+  next = setNestedValue(next, '_conventions', buildConventionsForComputed());
+  if (computedDefs.length > 0) {
+    next = runComputed(next, computedDefs as Parameters<typeof runComputed>[1], {});
+  }
+  return next;
+}
 
 function isScreenScopedPath(path: string, aliases: string[]): boolean {
   return aliases.some((a) => path === a || path.startsWith(`${a}.`));
@@ -209,12 +261,16 @@ export interface RouteConfig {
   dynamic?: boolean;
 }
 
+/** Ref for page to trigger fetch when searchParams change (avoids engine remount) */
+export const paramChangeRunActionRef: { current: ((action: string) => void) | null } = { current: null };
+
 interface SDUIEngineProps {
   config: SDUIConfig;
   configName?: string;
   actionsConfig?: ActionsConfig;
   engineConfig?: EngineConfig;
   routes?: RouteConfig[];
+  paramChangeAction?: string;
 }
 
 export function SDUIEngine({
@@ -223,6 +279,7 @@ export function SDUIEngine({
   actionsConfig = {},
   engineConfig,
   routes = [],
+  paramChangeAction,
 }: SDUIEngineProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -239,7 +296,8 @@ export function SDUIEngine({
         ...(config.state ?? {}),
         ...(meta ? { meta } : {}),
       } as Record<string, unknown>;
-      for (const path of Object.keys(state.data)) {
+      const dataPaths = Object.keys(state.data).sort((a, b) => a.split('.').length - b.split('.').length);
+      for (const path of dataPaths) {
         merged = setNestedValue(merged, path, state.data[path]);
       }
       for (const path of Object.keys(state.loading)) {
@@ -297,88 +355,25 @@ export function SDUIEngine({
   useEffect(() => {
     return store.subscribe(() => {
       const vs = store.getState().getFullState();
-      mergedStore.getState().setMerged((prev) => {
-        // Deep-merge one level: if both prev[key] and vs[key] are plain objects,
-        // spread them together so a partial vs.nav doesn't wipe prev.nav.collections
-        let next: Record<string, unknown> = { ...prev };
-        for (const [key, val] of Object.entries(vs)) {
-          const prevVal = prev[key];
-          if (
-            val !== null && typeof val === 'object' && !Array.isArray(val) &&
-            prevVal !== null && typeof prevVal === 'object' && !Array.isArray(prevVal)
-          ) {
-            next[key] = { ...(prevVal as object), ...(val as object) };
-          } else {
-            next[key] = val;
-          }
-        }
-        // Recompute when vs updates (e.g. collectionSkip) so collectionCurrentPage stays in sync with pagination
-        if (computedDefs.length > 0) {
-          next = runComputed(next, computedDefs as Parameters<typeof runComputed>[1], {});
-        }
-        return next;
-      });
+      mergedStore.getState().setMerged((prev) =>
+        finalizeMergedWithVariableStore(prev, vs)
+      );
     });
   }, [store, mergedStore]);
 
   useEffect(() => {
     return useSduiStore.subscribe(() => {
       const state = useSduiStore.getState();
-      const data = state.data;
-
-      const depsChanged =
-        computedDepPaths.length === 0 ||
-        computedDepPaths.some((p) => {
-          const prev = prevDepsRef.current;
-          const curr = getNestedValue(data, p);
-          if (prev == null) return true;
-          const i = computedDepPaths.indexOf(p);
-          return prev[i] !== curr;
-        });
-
-      let merged: Record<string, unknown>;
-      if (depsChanged && computedDepPaths.length > 0) {
-        merged = computeMergedState(state);
-        prevDepsRef.current = computedDepPaths.map((p) => getNestedValue(merged, p));
-        prevComputedRef.current = Object.fromEntries(
-          (computedDefs as { output: string }[]).map((d) => [d.output, getNestedValue(merged, d.output)])
-        );
-      } else {
-        const meta = (config as { meta?: Record<string, unknown> }).meta;
-        merged = {
-          ...(config.state ?? {}),
-          ...(meta ? { meta } : {}),
-        } as Record<string, unknown>;
-        for (const path of Object.keys(data)) {
-          merged = setNestedValue(merged, path, data[path]);
-        }
-        for (const path of Object.keys(state.loading)) {
-          const slice = path.split('.')[0];
-          merged = setNestedValue(merged, `${slice}.${CONVENTIONS.loadingSuffix}`, state.loading[path]);
-        }
-        for (const path of Object.keys(state.error)) {
-          const slice = path.split('.')[0];
-          merged = setNestedValue(merged, `${slice}.${CONVENTIONS.errorSuffix}`, state.error[path]);
-        }
-        for (const [outPath, value] of Object.entries(prevComputedRef.current)) {
-          merged = setNestedValue(merged, outPath, value);
-        }
-      }
-      // Merge: Zustand data (merged) as base; variable store (vs) overlays with deep merge
-      // so product.selectedOptions from vs is merged into product from Zustand.
+      const merged = computeMergedState(state);
       const vs = store.getState().getFullState();
-      let next: Record<string, unknown> = { ...merged };
-      for (const [key, val] of Object.entries(vs)) {
-        const mVal = merged[key];
-        if (
-          val !== null && typeof val === 'object' && !Array.isArray(val) &&
-          mVal !== null && typeof mVal === 'object' && !Array.isArray(mVal)
-        ) {
-          next[key] = { ...(mVal as object), ...(val as object) };
-        } else if (val !== undefined) {
-          next[key] = val;
-        }
-      }
+      const next = finalizeMergedWithVariableStore(merged, vs);
+      prevDepsRef.current =
+        computedDepPaths.length > 0
+          ? computedDepPaths.map((p) => getNestedValue(next, p))
+          : prevDepsRef.current;
+      prevComputedRef.current = Object.fromEntries(
+        (computedDefs as { output: string }[]).map((d) => [d.output, getNestedValue(next, d.output)])
+      );
       mergedStore.getState().setMerged(next);
     });
   }, [computeMergedState, config, mergedStore, store]);
@@ -607,7 +602,13 @@ export function SDUIEngine({
               for (const p of parts) data = (data as Record<string, unknown>)?.[p];
             }
             const skipStoreWhenNull = (actionDef as { skipStoreWhenNull?: boolean }).skipStoreWhenNull;
-            if (!skipStoreWhenNull || data != null) setData(storeIn, data);
+            if (!skipStoreWhenNull || data != null) {
+              const toStore =
+                data != null && typeof data === 'object' && !Array.isArray(data)
+                  ? JSON.parse(JSON.stringify(data))
+                  : data;
+              setData(storeIn, toStore);
+            }
             return;
           }
           setLoading(storeIn, true);
@@ -647,11 +648,17 @@ export function SDUIEngine({
               }
             }
             const addResult = data as { __typename?: string; errorCode?: string; message?: string } | undefined;
-            if (addResult?.errorCode) {
-              throw new Error(addResult.message ?? 'Operation failed');
+            if (addResult?.errorCode || addResult?.__typename === 'ErrorResult') {
+              throw new Error(addResult?.message ?? 'Operation failed');
             } else {
               const skipStoreWhenNull = (actionDef as { skipStoreWhenNull?: boolean }).skipStoreWhenNull;
-              if (!skipStoreWhenNull || data != null) setData(storeIn, data);
+              if (!skipStoreWhenNull || data != null) {
+                const toStore =
+                  data != null && typeof data === 'object' && !Array.isArray(data)
+                    ? JSON.parse(JSON.stringify(data))
+                    : data;
+                setData(storeIn, toStore);
+              }
               if (canCache) cacheSet(cacheTag!, cacheVars, rawResponse, cacheTTL);
               if (invalidateCache?.length) for (const t of invalidateCache) cacheInvalidate(t);
               const onSuccess = actionDef.onSuccess;
@@ -753,6 +760,42 @@ export function SDUIEngine({
           }
           return;
         }
+        if (actionDef?.type === 'restore') {
+          const path = (actionDef as { path?: string }).path ?? '';
+          const storageKey = ((actionDef as { storageKey?: string }).storageKey ?? path) as string;
+          if (path && typeof window !== 'undefined') {
+            try {
+              const raw = window.sessionStorage.getItem(storageKey);
+              if (raw != null && raw !== '') {
+                const value = raw.startsWith('{') || raw.startsWith('[') ? JSON.parse(raw) : raw;
+                setData(path, value);
+                if (!path.startsWith('screens.')) {
+                  store.getState().setState((prev) => setNestedValue(prev, path, value));
+                }
+              }
+            } catch (_) {}
+          }
+          return;
+        }
+        if (actionDef?.type === 'clearPersistedPaths') {
+          const pathsRaw = (actionDef as { paths?: string[] }).paths;
+          const paths = Array.isArray(pathsRaw) && pathsRaw.length > 0 ? pathsRaw : CONVENTIONS.persistPaths;
+          if (typeof window !== 'undefined' && paths.length > 0) {
+            try {
+              for (const p of paths) {
+                window.sessionStorage.removeItem(p);
+              }
+            } catch (_) {}
+          }
+          const onSuccess = actionDef.onSuccess;
+          if (onSuccess) {
+            const actions = Array.isArray(onSuccess) ? onSuccess : [onSuccess];
+            for (const a of actions) {
+              await runOne(a as SDUIAction);
+            }
+          }
+          return;
+        }
         if (actionDef?.type === 'set') {
           const path = actionDef.path ?? '';
           const rawValue = actionDef.value;
@@ -761,7 +804,18 @@ export function SDUIEngine({
             rawValue != null && typeof rawValue === 'object' && !Array.isArray(rawValue)
               ? resolveValue(rawValue, get, scope, fullState)
               : rawValue;
-          if (path) setData(path, value);
+          if (path) {
+            setData(path, value);
+            if (!path.startsWith('screens.')) {
+              store.getState().setState((prev) => setNestedValue(prev, path, value));
+            }
+            // Persist paths that survive refresh (from engineConventions.persistPaths)
+            if (CONVENTIONS.persistPaths.includes(path) && typeof value === 'string' && value) {
+              try {
+                if (typeof window !== 'undefined') window.sessionStorage.setItem(path, value);
+              } catch (_) {}
+            }
+          }
           const onSuccess = actionDef.onSuccess;
           if (onSuccess) {
             const actions = Array.isArray(onSuccess) ? onSuccess : [onSuccess];
@@ -836,7 +890,7 @@ export function SDUIEngine({
           }
           return;
         }
-        // mergeAtPath: merge one key-value into object at path (for product.selectedOptions)
+        // mergeAtPath: merge one key-value into object at path
         if (actionDef?.type === 'mergeAtPath') {
           const path = ((actionDef as { path?: string }).path ?? '') as string;
           const keyRaw = (actionDef as { key?: unknown }).key;
@@ -852,12 +906,12 @@ export function SDUIEngine({
         }
         // goToPage: set skip from page number, then run fetch (for pagination with page numbers)
         if (actionDef?.type === 'goToPage') {
-          const path = ((actionDef as { path?: string }).path ?? 'collectionSkip') as string;
+          const path = ((actionDef as { path?: string }).path ?? CONVENTIONS.defaultPaginationPath) as string;
           const pageRaw = (actionDef as { page?: unknown }).page;
           const page = resolveActionValue(pageRaw, get, scope, 1);
           const pageSizeRaw = (actionDef as { pageSize?: unknown }).pageSize;
           const pageSize = resolveActionValue(pageSizeRaw, get, scope, 12);
-          const fetchAction = ((actionDef as { fetchAction?: string }).fetchAction ?? 'fetchCollection') as string;
+          const fetchAction = ((actionDef as { fetchAction?: string }).fetchAction ?? CONVENTIONS.defaultPaginationFetchAction) as string;
           const skip = Math.max(0, (page - 1) * pageSize);
           store.getState().setState((prev) => setNestedValue(prev, path, skip));
           if (!path.startsWith('screens.')) {
@@ -891,11 +945,12 @@ export function SDUIEngine({
               ? get(String((urlRaw as { var: string }).var), scope)
               : urlRaw;
           const pathOrSlug = typeof urlVal === 'string' ? urlVal : (urlVal as { slug?: string })?.slug ?? '';
+          const prefix = CONVENTIONS.shareSlugPrefix ?? '/product';
           const url =
             typeof window !== 'undefined'
               ? pathOrSlug.startsWith('/')
                 ? `${window.location.origin}${pathOrSlug}`
-                : `${window.location.origin}/product/${pathOrSlug}`
+                : `${window.location.origin}${prefix}${pathOrSlug.startsWith('/') ? '' : '/'}${pathOrSlug}`
               : '';
           if (typeof navigator !== 'undefined' && navigator.share && title && url) {
             await navigator.share({ title, url }).catch(() => {});
@@ -906,7 +961,7 @@ export function SDUIEngine({
         if (actionDef?.type === 'setTheme') {
           const value = ((actionDef as { value?: string }).value ?? 'system') as 'light' | 'dark' | 'system';
           setColorScheme(value);
-          setData('nav.colorScheme', value);
+          setData(CONVENTIONS.themePath, value);
           return;
         }
 
@@ -1015,6 +1070,16 @@ export function SDUIEngine({
 
   const runActionRef = useRef(runActionStable);
   runActionRef.current = runActionStable;
+
+  useEffect(() => {
+    if (paramChangeAction) {
+      paramChangeRunActionRef.current = (action: string) =>
+        runActionRef.current({ action });
+      return () => {
+        paramChangeRunActionRef.current = null;
+      };
+    }
+  }, [paramChangeAction]);
 
   // initActions use ref so they always call the latest runAction (avoids stale closure)
   const variableStoreConfig = useMemo(

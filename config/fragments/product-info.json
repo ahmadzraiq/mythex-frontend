@@ -58,7 +58,7 @@
                   "children": [
                     {
                       "type": "Pressable",
-                      "condition": { "==": [{ "selectedOptionForGroup": [{ "var": "product.selectedOptions" }, { "var": "$parent.id" }] }, { "var": "$item.id" }] },
+                      "condition": { "==": [{ "getFromMap": [{ "var": "product.selectedOptions" }, { "var": "$parent.id" }] }, { "var": "$item.id" }] },
                       "props": {
                         "className": "flex items-center justify-center rounded-md border-2 border-[#1e293b] bg-[#1e293b]/5 px-4 py-3 transition-colors"
                       },
@@ -67,7 +67,7 @@
                     },
                     {
                       "type": "Pressable",
-                      "condition": { "!=": [{ "selectedOptionForGroup": [{ "var": "product.selectedOptions" }, { "var": "$parent.id" }] }, { "var": "$item.id" }] },
+                      "condition": { "!=": [{ "getFromMap": [{ "var": "product.selectedOptions" }, { "var": "$parent.id" }] }, { "var": "$item.id" }] },
                       "props": {
                         "className": "flex items-center justify-center rounded-md border-2 border-gray-200 bg-gray-50 px-4 py-3 hover:bg-gray-100 transition-colors"
                       },

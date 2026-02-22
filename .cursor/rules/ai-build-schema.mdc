@@ -118,6 +118,8 @@ When asked to build or add screens, layouts, modals, or features to this website
  - Theme: `config/theme.json` (colors, sections); use `var(--theme-*)` in classNames
  - GraphQL endpoint & headers: `engineConventions.graphqlEndpoint` + `engineConventions.graphqlHeaders` in `store.json`
  - Dynamic navigation: `{ "action": "navigate", "payload": { "routeConfig": "product", "slug": { "var": "$item.slug" } } }`—not hardcoded action names like `navigateToProduct`
+ - **searchParamSync**: Use `variableStorePath` and `triggersParamChange` in `store.json`; never hardcode paths in `page.tsx`. **paramChangeAction**: Must exactly match action name in `config/actions/`. See `sdui-computed-and-sync.mdc`.
+ - **Computed ops**: Use generic ops (`findItemById`, `findItemByOptionsMatch`, `getFromMap`, etc.); never domain-specific ops. See `sdui-computed-and-sync.mdc`.
  - **No Next.js API routes**: Data comes from external APIs (REST or GraphQL). Do not create `app/api/` routes.
 
 7. **UI/UX rules** (see `ui-ux-contrast.mdc`): No duplicate content, no dark-on-dark contrast, theme in JSON only, strong gradient + drop-shadow for text on images, light borders for outline buttons on dark backgrounds.

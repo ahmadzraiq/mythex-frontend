@@ -1,0 +1,86 @@
+---
+description: SDUI computed runner and searchParamSync - generic ops, config-driven, no hardcoding
+alwaysApply: true
+---
+
+# SDUI Computed & Search Param Sync
+
+## Computed Runner — Generic Operations Only
+
+**Rule:** `lib/sdui/computed-runner.ts` must only define **generic, parameterized** operations. No domain-specific logic (e.g. product, variant, collection).
+
+**Use these generic ops in `config/store.json` computed:**
+
+| Operation | Purpose | Example |
+|------------|---------|---------|
+| `findItemById` | Find item in array by id field | `{ "findItemById": [{ "var": "product.variants" }, { "var": "product.selectedVariantId" }] }` |
+| `findItemByOptionsMatch` | Find item whose options match selectedOptions | `{ "findItemByOptionsMatch": [variants, optionGroups, selectedOptions] }` |
+| `findFirstByPreference` | Find first item where preferPath exists, else first; return valuePath | `{ "findFirstByPreference": [{ "var": "product.collections" }] }` |
+| `filterExcludeByFieldAndSlice` | Filter where item[field] !== value, slice to limit | `{ "filterExcludeByFieldAndSlice": [items, "productId", excludeValue, 12] }` |
+| `getFromMap` | Lookup key in map (returns null if not found) | `{ "getFromMap": [{ "var": "product.selectedOptions" }, { "var": "$parent.id" }] }` |
+| `lookupMap` | Lookup key in map with default | `{ "lookupMap": [map, key, defaultVal] }` |
+| `lookupInArray` | Find item by key field, return display field | `{ "lookupInArray": [arr, keyField, keyValue, returnField] }` |
+| `at` | Get item at index | `{ "at": [arr, index] }` |
+| `paginationPages` | Page numbers with ellipsis | `{ "paginationPages": [totalItems, skip, pageSize, delta?] }` |
+
+**Never use:** `findVariantById`, `findMatchingVariantId`, `primaryCollectionSlug`, `filterRelatedProducts`, `selectedOptionForGroup` — these were removed; use the generic equivalents above.
+
+**When adding new computed logic:** Add a generic op with configurable params (field paths, keys, limits) in `computed-runner.ts`, then use it in `store.json`. Never hardcode app-specific field names in the runner.
+
+---
+
+## searchParamSync — Config-Driven, No Hardcoding in Page
+
+**Rule:** `app/[[...slug]]/page.tsx` must not hardcode paths like `route.q`, `collectionSkip`, etc. All sync behavior comes from `config/store.json` `searchParamSync`.
+
+**Optional fields per sync def:**
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `variableStorePath` | string | When set, also sync value to variable store at this path (e.g. `nav.searchQuery` when `route.q` changes, or `collectionSkip` for page) |
+| `triggersParamChange` | boolean | When true, URL change triggers `paramChangeAction` for the route |
+
+**Example:**
+```json
+"searchParamSync": [
+  { "param": "q", "path": "route.q", "default": "", "variableStorePath": "nav.searchQuery", "triggersParamChange": true },
+  { "param": "sort", "path": "route.sort", "default": "name-asc", "triggersParamChange": true },
+  { "param": "page", "path": "collectionSkip", "default": "1", "transform": "pageToSkip", "pageSize": 12, "variableStorePath": "collectionSkip" }
+]
+```
+
+**Never hardcode in page.tsx:** `if (def.path === 'route.q')`, `if (def.path === 'collectionSkip')`, or `['route.sort', 'route.facets'].includes(def.path)` — use `variableStorePath` and `triggersParamChange` in config instead.
+
+---
+
+## paramChangeAction — Must Match Actual Action Name
+
+**Problem:** Route has `paramChangeAction: "fetchSearch"` but the action is named `fetchSearchResults`. URL changes trigger nothing; wrong API or stale data.
+
+**Fix:** `paramChangeAction` must exactly match a key in the merged actions config:
+```json
+// routes.json
+{ "path": "/search", "config": "search", "paramChangeAction": "fetchSearchResults" }
+
+// config/actions/products.json must have:
+"fetchSearchResults": { "type": "graphql", ... }
+```
+
+**Rule:** When adding a route with URL-driven data (search, collection, etc.), set `paramChangeAction` to the **exact** action name. Verify the action exists in `config/actions/`.
+
+---
+
+## Engine & Variable Store — No Hardcoded Paths
+
+**Rule:** `lib/sdui/sdui-engine.tsx` and `lib/sdui/global-variable-store.ts` must not hardcode domain-specific paths. All paths and defaults come from `config/store.json`.
+
+**engineConventions (store.json):**
+
+| Key | Purpose | Default |
+|-----|---------|---------|
+| `themePath` | Path to persist theme (setTheme action) | `nav.colorScheme` |
+| `defaultPaginationPath` | Default path for goToPage (skip/offset) | `collectionSkip` |
+| `defaultPaginationFetchAction` | Default fetch action for goToPage | `fetchCollection` |
+| `shareSlugPrefix` | URL prefix when share url is a slug (e.g. `/product`) | `/product` |
+
+**variableStoreInitial (store.json):** Drives initial state for the global variable store. Define paths that need initial values (e.g. `collectionSkip`, `sortMenuOpen`, `product.selectedOptions`). Never hardcode these in `global-variable-store.ts`.
