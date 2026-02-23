@@ -101,6 +101,7 @@ When asked to build or add screens, layouts, modals, or features to this website
    - Screens without: use `ui` directly
    - Reusable UI: create fragments in `config/fragments/`, register in `fragments/index.ts`, use `$ref`
    - Modals: Form must wrap ModalBody + ModalFooter; FormSubmitButton must be inside Form
+   - **Button custom colors:** Use `className="!bg-blue-500 !text-white"` (or theme vars). Gluestack v3: Button auto-uses `action="default"` when className has bg-*/text-* so custom colors apply. See sdui-layout-pitfalls.mdc "Button — Custom Colors (Gluestack v3)".
    - Derived values: use `text: { expr: <JSON Logic>, suffix?, prefix? }` for cart count, subtotal, totals; use `formatCurrency` for money
 
 3. **Add routes** in `config/routes.json` and **import** new screens in `config/app.ts`.

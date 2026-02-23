@@ -1,10 +1,14 @@
 /**
  * Binds SDUI node actions to React event props (onPress, onChange, etc.)
+ * Uses onClick for View-based components (avoids "Unknown event handler onPress" on DOM).
+ * Uses onPress for Pressable-based components (Button, Link, Pressable).
  */
 
 import type React from 'react';
 
 type RunAction = (action: unknown, event?: unknown, scope?: Record<string, unknown>) => void | Promise<void>;
+
+const PRESS_HANDLER_TYPES = new Set(['Pressable', 'Button', 'Link', 'MenuItem', 'MenuItemLabel']);
 
 /**
  * Binds node.actions to event handler props.
@@ -14,7 +18,8 @@ export function bindActionsToProps(
   actions: Record<string, unknown> | undefined,
   runAction: RunAction,
   actionsConfig: Record<string, unknown> | undefined,
-  scope: Record<string, unknown> | undefined
+  scope: Record<string, unknown> | undefined,
+  componentType?: string
 ): Record<string, (...args: unknown[]) => void> {
   const result: Record<string, (...args: unknown[]) => void> = {};
   if (!actions) return result;
@@ -31,8 +36,11 @@ export function bindActionsToProps(
     };
 
     if (event === 'click') {
-      result.onPress = handler;
-      result.onClick = handler;
+      if (componentType && PRESS_HANDLER_TYPES.has(componentType)) {
+        result.onPress = handler;
+      } else {
+        result.onClick = handler;
+      }
     } else if (event === 'change') {
       result.onChangeText = handler;
       result.onChange = (e: unknown) => {

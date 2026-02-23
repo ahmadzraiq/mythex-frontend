@@ -3,6 +3,9 @@
  * Enables reusable fragments and layout composition without hardcoding
  */
 
+import { getVariantRef, LAYOUT_PART_REF_MAP } from '@/config/section-variants';
+import type { NavbarStructure } from '@/config/schema/layout-schema';
+
 /** Deep clone - uses structuredClone when available (faster), falls back to JSON round-trip */
 function deepClone<T>(obj: T): T {
   if (typeof structuredClone === 'function') {
@@ -13,6 +16,7 @@ function deepClone<T>(obj: T): T {
 
 export type SDUINodeLike = Record<string, unknown> & {
   type?: string;
+  id?: string;
   $ref?: string;
   $slot?: string;
   children?: SDUINodeLike[];
@@ -30,11 +34,21 @@ export type ConfigRegistry = {
   fragments: Record<string, FragmentNode>;
 };
 
+export type LayoutParts = {
+  navbar?: { structure?: NavbarStructure };
+  footer?: { variant?: string };
+};
+
+export type ResolveOptions = {
+  layoutParts?: LayoutParts;
+};
+
 /** Resolve $ref - returns the fragment, recursively resolving nested $refs */
 function resolveRef(
   refPath: string,
   registry: ConfigRegistry,
-  visited: Set<string> = new Set()
+  visited: Set<string>,
+  options?: ResolveOptions
 ): SDUINodeLike | null {
   if (visited.has(refPath)) {
     console.warn('[ConfigResolver] Circular $ref:', refPath);
@@ -42,7 +56,30 @@ function resolveRef(
   }
   visited.add(refPath);
 
-  const parts = refPath.split('#');
+  const refBase = refPath.split('#')[0];
+  const partKey = LAYOUT_PART_REF_MAP[refBase];
+  const part = partKey && options?.layoutParts?.[partKey as keyof typeof options.layoutParts];
+
+  if (partKey === 'navbar' && part && 'structure' in part && part.structure) {
+    return deepResolveNode(deepClone(part.structure) as SDUINodeLike, registry, visited, options);
+  }
+
+  let effectivePath = refPath;
+  if (partKey === 'navbar') {
+    effectivePath = 'fragments/layout/navbar';
+    if (refPath.includes('#')) {
+      effectivePath = `${effectivePath}#${refPath.split('#')[1]}`;
+    }
+  } else if (part && partKey) {
+    const variantRef = getVariantRef(partKey, (part as { variant?: string }).variant ?? 'default');
+    if (variantRef) {
+      effectivePath = refPath.includes('#')
+        ? `${variantRef}#${refPath.split('#')[1]}`
+        : variantRef;
+    }
+  }
+
+  const parts = effectivePath.split('#');
   const basePath = parts[0];
   const subPath = parts[1];
 
@@ -57,19 +94,21 @@ function resolveRef(
     }
   }
 
-  return deepResolveNode(deepClone(node), registry, visited);
+  const resolved = deepClone(node) as SDUINodeLike;
+  return deepResolveNode(resolved, registry, visited, options);
 }
 
 /** Deep resolve a node - replace $ref and recurse into children */
 function deepResolveNode(
   node: SDUINodeLike,
   registry: ConfigRegistry,
-  visited: Set<string>
+  visited: Set<string>,
+  options?: ResolveOptions
 ): SDUINodeLike {
   if (!node || typeof node !== 'object') return node;
 
   if ('$ref' in node && typeof node.$ref === 'string') {
-    const resolved = resolveRef(node.$ref, registry, visited);
+    const resolved = resolveRef(node.$ref, registry, visited, options);
     return resolved ?? node;
   }
 
@@ -79,7 +118,7 @@ function deepResolveNode(
 
   if (Array.isArray(result.children)) {
     result.children = result.children.map((child) =>
-      deepResolveNode(child as SDUINodeLike, registry, visited)
+      deepResolveNode(child as SDUINodeLike, registry, visited, options)
     );
   }
 
@@ -92,13 +131,16 @@ function injectSlot(
   slotName: string,
   content: SDUINodeLike | SDUINodeLike[],
   registry: ConfigRegistry,
-  visited: Set<string>
+  visited: Set<string>,
+  options?: ResolveOptions
 ): SDUINodeLike | SDUINodeLike[] {
   if (!node || typeof node !== 'object') return node;
 
   if ('$slot' in node && node.$slot === slotName) {
     const contentArr = Array.isArray(content) ? content : [content];
-    return contentArr.map((c) => deepResolveNode(deepClone(c) as SDUINodeLike, registry, visited));
+    return contentArr.map((c) =>
+      deepResolveNode(deepClone(c) as SDUINodeLike, registry, visited, options)
+    );
   }
 
   const result = { ...node };
@@ -107,7 +149,14 @@ function injectSlot(
   if (Array.isArray(result.children)) {
     const newChildren: SDUINodeLike[] = [];
     for (const child of result.children) {
-      const injected = injectSlot(child as SDUINodeLike, slotName, content, registry, visited);
+      const injected = injectSlot(
+        child as SDUINodeLike,
+        slotName,
+        content,
+        registry,
+        visited,
+        options
+      );
       if (Array.isArray(injected)) {
         newChildren.push(...injected);
       } else {
@@ -122,11 +171,17 @@ function injectSlot(
 
 /** Resolve a screen config - apply layout, $ref, $slot */
 export function resolveScreenConfig(
-  screen: Record<string, unknown> & { layout?: string; content?: SDUINodeLike; ui?: SDUINodeLike },
+  screen: Record<string, unknown> & {
+    layout?: string;
+    content?: SDUINodeLike;
+    ui?: SDUINodeLike;
+    layoutParts?: LayoutParts;
+  },
   registry: ConfigRegistry
 ): Record<string, unknown> {
-  const { layout, content, ui, ...rest } = screen;
+  const { layout, content, ui, layoutParts, ...rest } = screen;
   const contentNode = content ?? ui;
+  const options: ResolveOptions = layoutParts ? { layoutParts } : undefined;
 
   if (!contentNode) {
     return screen as Record<string, unknown>;
@@ -140,18 +195,20 @@ export function resolveScreenConfig(
       'content',
       contentNode as SDUINodeLike,
       registry,
-      new Set()
+      new Set(),
+      options
     );
     const resolved = Array.isArray(withSlot)
-      ? deepResolveNode({ type: 'Box', children: withSlot }, registry, new Set())
-      : deepResolveNode(withSlot, registry, new Set());
+      ? deepResolveNode({ type: 'Box', children: withSlot }, registry, new Set(), options)
+      : deepResolveNode(withSlot, registry, new Set(), options);
     return { ...rest, ui: resolved } as Record<string, unknown>;
   }
 
   const resolved = deepResolveNode(
     deepClone(contentNode) as SDUINodeLike,
     registry,
-    new Set()
+    new Set(),
+    options
   );
   return { ...rest, ui: resolved } as Record<string, unknown>;
 }

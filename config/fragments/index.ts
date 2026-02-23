@@ -18,6 +18,10 @@ import checkoutShippingStep from './checkout/shipping-step.json';
 import checkoutPaymentStep from './checkout/payment-step.json';
 import collectionLoadingSkeleton from './sections/collection-loading-skeleton.json';
 import searchLoadingSkeleton from './sections/search-loading-skeleton.json';
+import productCarousel from './sections/product-carousel.json';
+import hero from './sections/hero.json';
+import productGrid from './sections/product-grid.json';
+import featureGrid from './sections/feature-grid.json';
 
 export const fragments = {
   'fragments/layout/navbar': navbar,
@@ -34,4 +38,8 @@ export const fragments = {
   'fragments/checkout/payment-step': checkoutPaymentStep,
   'fragments/sections/collection-loading-skeleton': collectionLoadingSkeleton,
   'fragments/sections/search-loading-skeleton': searchLoadingSkeleton,
+  'fragments/sections/product-carousel': productCarousel,
+  'fragments/sections/hero': hero,
+  'fragments/sections/product-grid': productGrid,
+  'fragments/sections/feature-grid': featureGrid,
 } as const;

@@ -42,7 +42,11 @@ export function extractNodeDependencies(node: Pick<SDUINode, 'text' | 'props' | 
   }
   if (node.props) paths.push(...extractPathsFromObject(node.props));
   if (node.condition) paths.push(...extractPathsFromObject(node.condition));
-  if (node.map && typeof node.map === 'string') paths.push(node.map);
+  if (node.map) {
+    if (typeof node.map === 'string') paths.push(node.map);
+    else if (typeof node.map === 'object' && node.map !== null && 'expr' in node.map)
+      paths.push(...extractPathsFromObject((node.map as { expr: unknown }).expr));
+  }
   return [...new Set(paths)].filter((p): p is string => typeof p === 'string');
 }
 

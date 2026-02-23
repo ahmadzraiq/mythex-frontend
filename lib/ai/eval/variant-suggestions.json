@@ -1,0 +1,19 @@
+{
+  "cases": [
+    {
+      "id": "minimal",
+      "designMood": "minimal",
+      "match": "schema"
+    },
+    {
+      "id": "bold",
+      "designMood": "bold",
+      "match": "schema"
+    },
+    {
+      "id": "luxury",
+      "designMood": "luxury",
+      "match": "schema"
+    }
+  ]
+}

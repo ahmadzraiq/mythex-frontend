@@ -8,15 +8,21 @@
     "build:preview": "next build",
     "start": "next start",
     "lint": "npm run validate:json && next lint",
-    "validate:json": "node scripts/validate-json.js"
+    "validate:json": "node scripts/validate-json.js",
+    "fix:json": "node scripts/fix-json-trailing-commas.js",
+    "eval:ai": "npx tsx scripts/eval-ai.ts",
+    "test:visual-navbar": "npx tsx scripts/run-visual-navbar-test.ts",
+    "check:component-sync": "node scripts/check-component-sync.js"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.30",
     "@expo/html-elements": "^0.12.5",
     "@gluestack-ui/core": "^3.0.12",
     "@gluestack-ui/utils": "^3.0.13",
     "@gluestack/ui-next-adapter": "^3.0.3",
     "@gorhom/bottom-sheet": "^5.0.0-alpha.11",
     "@legendapp/motion": "^2.4.0",
+    "ai": "^6.0.97",
     "dom-helpers": "^5.2.1",
     "embla-carousel-react": "^8.6.0",
     "json-logic-js": "^2.0.5",
@@ -31,7 +37,9 @@
     "react-native-web": "^0.20.0",
     "react-stately": "^3.39.0",
     "sonner": "^2.0.7",
+    "tailwind-merge": "^1.14.0",
     "tailwind-variants": "^0.1.20",
+    "zod": "^4.3.6",
     "zustand": "^5.0.11"
   },
   "devDependencies": {
@@ -48,8 +56,11 @@
     "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
+    "json5": "^2.2.3",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5"
+    "typescript": "^5",
+    "tsx": "^4.7.0",
+    "playwright": "^1.49.0"
   }
 }

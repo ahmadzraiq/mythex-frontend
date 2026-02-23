@@ -42,3 +42,7 @@ next-env.d.ts
 
 #yalc
 .yalc
+
+# AI eval logs (local reference, do not commit)
+lib/ai/eval/ai-responses*.jsonl
+lib/ai/eval/failures.json

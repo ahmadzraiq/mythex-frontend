@@ -1,7 +1,7 @@
 {
   "type": "Pressable",
   "props": {
-    "className": "group block bg-white rounded-lg overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow"
+    "className": "group block bg-[var(--theme-content-bg)] rounded-lg overflow-hidden border border-[var(--border)] hover:shadow-lg transition-shadow"
   },
   "actions": {
     "click": {
@@ -18,7 +18,7 @@
     {
       "type": "Box",
       "props": {
-        "className": "aspect-square relative bg-gray-100"
+        "className": "aspect-square relative bg-[var(--theme-hero-bg)]"
       },
       "children": [
         {
@@ -34,7 +34,7 @@
         {
           "type": "Box",
           "props": {
-            "className": "w-full h-full flex items-center justify-center text-gray-500"
+            "className": "w-full h-full flex items-center justify-center text-[var(--theme-content-textMuted)]"
           },
           "condition": {
             "==": [
@@ -62,14 +62,14 @@
         {
           "type": "Text",
           "props": {
-            "className": "font-medium line-clamp-2 group-hover:text-[#1e293b] transition-colors"
+            "className": "font-medium line-clamp-2 group-hover:opacity-80 transition-colors text-[var(--theme-content-text)]"
           },
           "text": "{{$item.productName}}"
         },
         {
           "type": "Text",
           "props": {
-            "className": "text-lg font-bold"
+            "className": "text-lg font-bold text-[var(--theme-content-text)]"
           },
           "text": {
             "expr": {

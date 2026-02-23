@@ -213,10 +213,10 @@ module.exports = {
         xl: 'calc(var(--radius) + 4px)',
       },
       fontFamily: {
-        heading: undefined,
-        body: undefined,
+        heading: ['var(--font-heading)', 'var(--font-geist-sans)', 'system-ui', '-apple-system', 'sans-serif'],
+        body: ['var(--font-body)', 'var(--font-geist-sans)', 'system-ui', '-apple-system', 'sans-serif'],
         mono: undefined,
-        sans: ['var(--font-geist-sans)', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['var(--font-body)', 'var(--font-geist-sans)', 'system-ui', '-apple-system', 'sans-serif'],
         mono_base: ['var(--font-geist-mono)', 'monospace'],
         jakarta: ['var(--font-plus-jakarta-sans)'],
         roboto: ['var(--font-roboto)'],

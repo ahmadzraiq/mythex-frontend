@@ -82,5 +82,7 @@ const actions = {
 export default {
   ...routes,
   screens,
+  rawScreens,
+  registry,
   actions,
 } as const;

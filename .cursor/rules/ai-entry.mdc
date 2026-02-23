@@ -7,9 +7,16 @@ alwaysApply: true
 
 **Before building or modifying:**
 
+- **Fix root cause, not workarounds:** When a bug or visual issue occurs, identify and fix the underlying cause (e.g. component logic, merge order, schema) rather than patching symptoms (e.g. inline styles, extra wrappers). Update rules to document the fix so it is not repeated.
+
+- **When editing config/*.json:** Follow [json-syntax.mdc](./json-syntax.mdc) — no trailing commas, escape quotes in strings, run `npm run validate:json` after edits.
 - **JSON config** (screens, layouts, fragments, actions): Read [docs/AI-BUILD-GUIDE.md](../../docs/AI-BUILD-GUIDE.md) — structure, $ref/$slot, state paths, common patterns.
 - **Engine/renderer/actions** (lib/sdui/): Read [docs/CODE-ARCHITECTURE.md](../../docs/CODE-ARCHITECTURE.md) first — file map, data flow, where to add action types, **engine & performance patterns** (setNestedValue, useVariablePaths, computed memo, fetch cache LRU, searchParamSync routePrefix).
 
 **Also:** [docs/SCHEMA.md](../../docs/SCHEMA.md) for schema; [sdui-layout-pitfalls.mdc](./sdui-layout-pitfalls.mdc) for layout pitfalls; [nativewind-sdui-json.mdc](./nativewind-sdui-json.mdc) for Pressable/Box text (must use Text child).
 
-**JSON rules:** No trailing commas; escape quotes in strings; run `npm run validate:json` before commit.
+**Layout part overrides** (navbar, hero, footer, product-grid): Read [sdui-layout-part-overrides.mdc](./sdui-layout-part-overrides.mdc) — override types, schema, applicators, fragment IDs, how to add new parts.
+
+**Eval AI cost:** When modifying eval-ai or adding runners, follow [eval-ai-cost.mdc](./eval-ai-cost.mdc) — `--only-failures` must use cached output, never re-call the AI.
+
+**JSON rules:** See [json-syntax.mdc](./json-syntax.mdc). Run `npm run validate:json` after any JSON edit.

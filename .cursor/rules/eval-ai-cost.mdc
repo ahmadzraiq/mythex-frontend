@@ -1,0 +1,22 @@
+---
+description: Eval AI cost and retry behavior - avoid re-calling AI when retesting
+alwaysApply: false
+---
+
+# Eval AI Cost Rules
+
+## Do NOT re-call the AI when retesting failures
+
+When `npm run eval:ai -- --only-failures` runs, it re-tests cases that failed. **Use the cached output from failures.json** — do not call the AI API again. Each AI call costs money; retries should only re-run validation/visual tests with the same response.
+
+## Implementation
+
+- **failures.json** stores `actual` (the AI output) for each failed case
+- **--only-failures** loads failures and passes `cachedOutput: f.actual` to the runner
+- Runners (runNavbarCase, runLayoutCase, etc.) accept optional `cachedOutput`; when provided, skip the `generate*` call and use it instead
+
+## When adding new eval runners
+
+- Add `cachedOutput?: Record<string, unknown>` as the second parameter
+- When `cachedOutput` is provided: use it, do not call the AI
+- When not provided: call the AI as usual

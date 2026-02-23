@@ -1,0 +1,19 @@
+{
+  "cases": [
+    {
+      "id": "minimal-homepage",
+      "prompt": "Generate a minimal homepage",
+      "match": "schema"
+    },
+    {
+      "id": "bold-ecommerce",
+      "prompt": "Bold e-commerce with hero and product grid",
+      "match": "schema"
+    },
+    {
+      "id": "default-prompt",
+      "prompt": "Generate an e-commerce homepage",
+      "match": "schema"
+    }
+  ]
+}

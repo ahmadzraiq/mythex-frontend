@@ -14,6 +14,17 @@ export interface ValidationRule {
   message?: string;
 }
 
+/** Supported validation rule keys. Used by AI generators. */
+export const VALIDATION_RULE_KEYS = [
+  'required',
+  'minLength',
+  'maxLength',
+  'pattern',
+  'equals',
+  'equalsField',
+  'message',
+] as const;
+
 export interface ActionsConfig {
   [actionName: string]: {
     type: string;

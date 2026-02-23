@@ -6,11 +6,19 @@
   * {
     border-color: rgb(var(--border) / 1);
   }
+  :root {
+    --font-heading: var(--font-geist-sans);
+    --font-body: var(--font-geist-sans);
+  }
+  html,
   body {
     background-color: rgb(var(--background) / 1);
     color: rgb(var(--foreground) / 1);
-    font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+    font-family: var(--font-body, var(--font-geist-sans)), system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading, var(--font-geist-sans)), system-ui, -apple-system, sans-serif;
   }
 }

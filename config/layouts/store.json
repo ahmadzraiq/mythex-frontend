@@ -2,7 +2,7 @@
   "structure": {
     "type": "Box",
     "props": {
-      "className": "w-full flex flex-col min-h-screen bg-white"
+      "className": "w-full flex flex-col min-h-screen !bg-[rgb(var(--background)/1)]"
     },
     "children": [
       {
@@ -11,7 +11,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full flex-1 flex flex-col min-h-screen pt-16"
+          "className": "w-full flex-1 flex flex-col min-h-screen pt-16 bg-transparent"
         },
         "children": [
           {

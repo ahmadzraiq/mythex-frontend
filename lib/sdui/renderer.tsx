@@ -6,6 +6,7 @@
  */
 
 import React, { useEffect, memo } from 'react';
+import jsonLogic from 'json-logic-js';
 import { getComponent } from './component-registry';
 import { evaluateCondition, interpolate, resolveProps, resolveText } from './utils';
 import { createVariableStore, useVariablePaths, type VariableStoreConfig } from './variable-store';
@@ -72,12 +73,21 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope }
 
   if (!node) return null;
 
-  if (node.condition && !evaluateCondition(node.condition, sduiContext)) {
+  if (node.condition === false) return null;
+  if (node.condition != null && !evaluateCondition(node.condition, sduiContext)) {
     return null;
   }
 
   if (node.map) {
-    const arr = get(node.map) as unknown[];
+    let arr: unknown[];
+    if (typeof node.map === 'string') {
+      arr = (get(node.map) as unknown[]) ?? [];
+    } else if (node.map && typeof node.map === 'object' && 'expr' in node.map) {
+      const expr = (node.map as { expr: object }).expr;
+      arr = (jsonLogic.apply(expr, stateWithScope) as unknown[]) ?? [];
+    } else {
+      arr = [];
+    }
     if (!Array.isArray(arr)) return null;
     return (
       <>
@@ -103,6 +113,7 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope }
   const resolvedProps = resolveProps(
     {
       ...node.props,
+      ...(node.id && { id: node.id }),
       ...(className && { className }),
       ...(node.src && { src: node.src }),
       ...(node.alt && { alt: node.alt }),
@@ -116,7 +127,7 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope }
     Object.entries(resolvedProps).filter(([k]) => !k.startsWith('$') && k !== '_meta')
   ) as Record<string, unknown>;
 
-  Object.assign(cleanProps, bindActionsToProps(node.actions, runAction, actionsConfig, scope));
+  Object.assign(cleanProps, bindActionsToProps(node.actions, runAction, actionsConfig, scope, node.type));
 
   const textContent = node.text != null ? resolveText(node.text, sduiContext, scope) : undefined;
 

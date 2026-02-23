@@ -1,0 +1,109 @@
+{
+  "cases": [
+    {
+      "id": "add-button",
+      "prompt": "add a button",
+      "assert": { "noInvalidTypes": true },
+      "match": "schema",
+      "visualTest": { "deriveFrom": "addNodes", "fallback": "navbarVisible" }
+    },
+    {
+      "id": "add-link",
+      "prompt": "add a link that navigates to /shop",
+      "assert": { "noInvalidTypes": true },
+      "match": "schema",
+      "visualTest": { "deriveFrom": "addNodes", "fallback": "navbarVisible" }
+    },
+    {
+      "id": "add-icon",
+      "prompt": "add a search icon",
+      "assert": { "noInvalidTypes": true },
+      "match": "schema",
+      "visualTest": { "deriveFrom": "addNodes", "fallback": "navbarVisible" }
+    },
+    {
+      "id": "add-text",
+      "prompt": "add a text label",
+      "assert": { "noInvalidTypes": true },
+      "match": "schema",
+      "visualTest": { "deriveFrom": "addNodes", "fallback": "navbarVisible" }
+    },
+    {
+      "id": "add-heading",
+      "prompt": "add a heading",
+      "assert": { "noInvalidTypes": true },
+      "match": "schema",
+      "visualTest": { "deriveFrom": "addNodes", "fallback": "navbarVisible" }
+    },
+    {
+      "id": "hide-search",
+      "prompt": "hide search",
+      "expected": { "conditionOverrides": { "navbar-search": false } },
+      "match": "exact",
+      "visualTest": { "fallback": "navbarVisible" }
+    },
+    {
+      "id": "hide-collections",
+      "prompt": "hide collections",
+      "expected": { "conditionOverrides": { "navbar-collections": false } },
+      "match": "exact",
+      "visualTest": { "fallback": "navbarVisible" }
+    },
+    {
+      "id": "change-placeholder",
+      "prompt": "change search placeholder to Find products",
+      "expected": {
+        "propsOverrides": {
+          "navbar-search-field": { "placeholder": "Find products..." }
+        }
+      },
+      "match": "exact",
+      "visualTest": { "fallback": "navbarVisible" }
+    },
+    {
+      "id": "change-text",
+      "prompt": "change Sign in to Login",
+      "expected": { "textOverrides": { "navbar-sign-in": "Login" } },
+      "match": "exact",
+      "visualTest": { "fallback": "navbarVisible" }
+    },
+    {
+      "id": "remove-theme",
+      "prompt": "remove theme switcher",
+      "expected": { "removeNodes": ["navbar-theme"] },
+      "match": "exact",
+      "visualTest": { "fallback": "navbarVisible" }
+    },
+    {
+      "id": "child-order",
+      "prompt": "put cart before theme",
+      "expected": {
+        "childOrder": {
+          "navbar-actions": ["navbar-cart", "navbar-theme", "navbar-auth"]
+        }
+      },
+      "match": "exact",
+      "visualTest": { "fallback": "navbarVisible" }
+    },
+    {
+      "id": "className-override",
+      "prompt": "make navbar shorter",
+      "expected": { "classNameOverrides": { "navbar-row": "h-12" } },
+      "match": "exact",
+      "visualTest": { "fallback": "navbarVisible" }
+    },
+    {
+      "id": "cart-opens-drawer",
+      "prompt": "cart opens drawer",
+      "expected": {
+        "actionsOverrides": {
+          "navbar-cart-button": {
+            "click": { "action": "openCartDrawer" }
+          }
+        }
+      },
+      "match": "exact",
+      "visualTest": { "fallback": "navbarVisible" }
+    }
+  ]
+}

@@ -32,3 +32,8 @@ alwaysApply: true
 - **Avoid** dark borders on outline buttons over dark backgrounds (e.g. black border on hero).
 - **Do** use light borders: `!border-white/70` or `!border-white` for outline buttons on dark sections.
 - **Do** use explicit light colors when theme variables might resolve incorrectly.
+
+## 6. Root Layout Background (Dark Mode)
+- **Avoid** leaving the root layout Box without an explicit background—the Box base or merge can add `bg-white`, causing a white flash in dark mode.
+- **Do** add `!bg-[rgb(var(--background)/1)]` or `bg-transparent` to the root Box in `config/layouts/store.json` (and any layout used for the homepage).
+- **Apply to** layouts that wrap the main content area; ensures the theme background from `html`/`body` shows through.

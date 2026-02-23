@@ -54,6 +54,20 @@ Same for checkbox/value lists: use `flex flex-col gap-2` or `gap-3` on the value
 
 ---
 
+## Root Layout — Theme Background in Dark Mode
+
+**Problem:** The first child under `<main>` (the root layout Box) can inherit or receive `bg-white` from the Box base or Tailwind merge, causing a persistent white background in dark mode.
+
+**Fix:** Add an explicit theme-aware background to the root Box in the layout config:
+```json
+"props": { "className": "w-full flex flex-col min-h-screen !bg-[rgb(var(--background)/1)]" }
+```
+Or use `bg-transparent` if the parent already has the correct background. The `!` ensures it overrides any conflicting `bg-white`.
+
+**Applies to:** `config/layouts/store.json`, any layout used for the generated homepage.
+
+---
+
 ## Empty Space / Centering Issues
 
 **Problem:** `mx-auto` and `max-w-7xl` on content containers cause centering and unused right-side space when content sits beside a sidebar.
@@ -73,6 +87,21 @@ Same for checkbox/value lists: use `flex flex-col gap-2` or `gap-3` on the value
 ```json
 {"type":"Button","props":{"action":"primary","className":"!bg-[var(--theme-shop-button)] hover:!bg-[var(--theme-shop-buttonHover)] !text-white"},"text":"View Cart","actions":{"click":{...}}}
 ```
+
+---
+
+## Button — Custom Colors (Gluestack v3)
+
+**Problem:** Button with `className: "!bg-blue-500 !text-white"` renders wrong. Two causes: (1) variant injects `bg-primary-500` that overrides; (2) NativeWind may not apply className on Pressable without cssInterop.
+
+**Fix (classes only, no inline style):**
+1. **Variant:** Add `custom` action with no bg injection. When `className` has `bg-*`, use `action: 'custom'` so variant doesn't inject background.
+2. **Base:** Remove `bg-primary-500` from base; keep it only in `primary` variant.
+3. **Merge:** Use `mergeTailwindClasses(variantStyles, className)` so user className wins.
+4. **cssInterop:** `cssInterop(Root, { className: { target: 'style' } })` — tells NativeWind to resolve className to style on the Pressable root.
+5. **Safelist:** Add `!?(bg|text)-(blue|slate|gray|...)-(\d+)` so dynamic classes are compiled.
+
+**Rule:** Use `className="!bg-blue-500 !text-white"`. No inline style needed.
 
 ---
 
@@ -436,3 +465,13 @@ Use `equalsField` to compare confirm to password. When password changes, also cl
 - Per-field text: `{{errors.form.field}}` (alias works)
 - No global error box for validation-only screens (sign-in); use per-field only
 - API error box: condition on `lastAction === "mutationName"` so it only shows when the mutation ran and failed
+
+---
+
+## ThemePresetOverlay — Font Variables on Body, Not html
+
+**Problem:** `ThemePresetOverlay` injects font vars like `--font-heading: var(--font-space-grotesk)`. The `var(--font-space-grotesk)` references the Next.js font loader variable, which is set on the `body` via the layout's `className`. If font vars are set on `document.documentElement` (html), the reference may not resolve in all contexts.
+
+**Fix:** Set font variables on `document.body` (not `document.documentElement`), and in `buildCssFromGeneratedTheme` output use `body { ... }` instead of `:root { ... }` for the font block. This ensures the font loader vars and our overrides are on the same element.
+
+**Applies to:** `lib/ThemePresetOverlay.tsx` — when adding or modifying font injection logic.

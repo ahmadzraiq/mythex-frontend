@@ -79,6 +79,8 @@ alwaysApply: true
 
 The exact replacements depend on the app's design — always check `theme.json` and `globals.css` for the actual values.
 
+**Button/component colors:** Use Tailwind classes (e.g. `!bg-blue-500 !text-white`) in `className`. Gluestack v3: Button uses `action="custom"` when className has `bg-*` (no variant bg injection) + cssInterop on Root so NativeWind applies className. See sdui-layout-pitfalls.mdc "Button — Custom Colors (Gluestack v3)".
+
 ---
 
 ## 4. Layout — Always `w-full` + `flex-row` for Proper Width & Direction

@@ -6,6 +6,27 @@
  */
 
 import jsonLogic from 'json-logic-js';
+
+/** Custom JSON Logic ops. Used by AI generators. Add new ops here when extending. */
+export const JSON_LOGIC_CUSTOM_OPS = [
+  'ceil',
+  'floor',
+  'formatCurrency',
+  'lookupMap',
+  'at',
+  'findFirstByPreference',
+  'filterExcludeByFieldAndSlice',
+  'getFromMap',
+  'findItemById',
+  'findItemByOptionsMatch',
+  'lookupInArray',
+  'paginationPages',
+  'groupBy',
+  'toggleInArray',
+  'arrayIncludes',
+  'arrayLength',
+  'reverseArray',
+] as const;
 import { getNestedValue, setNestedValue } from './nested-utils';
 
 /** Memo cache: output -> { depsValues, outputValue }. Skip jsonLogic.apply when deps unchanged. */
@@ -216,6 +237,12 @@ jsonLogic.add_operation('arrayIncludes', (arr: unknown, value: unknown) => {
 // Generic: array length.
 jsonLogic.add_operation('arrayLength', (arr: unknown) => {
   return Array.isArray(arr) ? arr.length : 0;
+});
+
+// Generic: reverse array. Args: arr. Returns new array in reverse order.
+jsonLogic.add_operation('reverseArray', (arr: unknown) => {
+  const a = (arr as unknown[]) ?? [];
+  return [...a].reverse();
 });
 
 export type ComputedDef = {

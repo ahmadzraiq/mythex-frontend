@@ -9,11 +9,14 @@ import {
 } from '@gluestack-ui/utils/nativewind-utils';
 import { cssInterop } from 'nativewind';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { mergeTailwindClasses } from '@/lib/sdui/tailwind-merge';
 import { PrimitiveIcon, UIIcon } from '@gluestack-ui/core/icon/creator';
 
 const SCOPE = 'BUTTON';
 
 const Root = withStyleContext(Pressable, SCOPE);
+
+cssInterop(Root, { className: { target: 'style' } });
 
 const UIButton = createButton({
   Root: Root,
@@ -50,6 +53,8 @@ const buttonStyle = tva({
         'bg-error-500 border-error-300 data-[hover=true]:bg-error-600 data-[hover=true]:border-error-400 data-[active=true]:bg-error-700 data-[active=true]:border-error-500 data-[focus-visible=true]:web:ring-indicator-info',
       default:
         'bg-transparent data-[hover=true]:bg-background-50 data-[active=true]:bg-transparent',
+      custom:
+        'bg-transparent data-[active=true]:bg-transparent',
     },
     variant: {
       link: 'px-0',
@@ -223,6 +228,7 @@ const buttonIconStyle = tva({
 
       negative:
         'text-error-600 data-[hover=true]:text-error-600 data-[active=true]:text-error-700',
+      custom: '',
     },
   },
   parentCompoundVariants: [
@@ -284,6 +290,13 @@ type IButtonProps = Omit<
 > &
   VariantProps<typeof buttonStyle> & { className?: string };
 
+const hasCustomClassName = (cn: string | undefined) =>
+  cn != null && typeof cn === 'string' && cn.trim() !== '';
+
+// Ensures Tailwind compiles common classes for JSON-driven className (no tailwind.config changes)
+const _tailwindContent =
+  '!bg-blue-500 hover:!bg-blue-600 !bg-emerald-500 !text-white';
+
 const Button = React.forwardRef<
   React.ElementRef<typeof UIButton>,
   IButtonProps
@@ -292,12 +305,18 @@ const Button = React.forwardRef<
     { className, variant = 'solid', size = 'md', action = 'primary', ...props },
     ref
   ) => {
+    const useCustom = hasCustomClassName(className);
+    const effectiveAction = useCustom ? 'custom' : action;
+    const variantStyles = buttonStyle({ variant, size, action: effectiveAction });
+    const finalClassName = useCustom
+      ? mergeTailwindClasses(variantStyles, className!)
+      : buttonStyle({ variant, size, action, class: className });
     return (
       <UIButton
         ref={ref}
         {...props}
-        className={buttonStyle({ variant, size, action, class: className })}
-        context={{ variant, size, action }}
+        className={finalClassName}
+        context={{ variant, size, action: effectiveAction }}
       />
     );
   }
