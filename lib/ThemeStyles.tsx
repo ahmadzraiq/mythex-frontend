@@ -9,7 +9,7 @@
  * Colors in cssVariables are stored as hex in JSON and converted to RGB triplets
  * here so that tailwind.config.js can use them as `rgb(var(--primary)/<alpha-value>)`.
  */
-import themeConfig from '@/config/theme.json';
+import themeConfig from '@/config/theme';
 
 function hexToRgb(hex: string): string {
   const clean = hex.replace('#', '');

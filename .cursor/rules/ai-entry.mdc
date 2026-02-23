@@ -15,8 +15,8 @@ alwaysApply: true
 
 **Also:** [docs/SCHEMA.md](../../docs/SCHEMA.md) for schema; [sdui-layout-pitfalls.mdc](./sdui-layout-pitfalls.mdc) for layout pitfalls; [nativewind-sdui-json.mdc](./nativewind-sdui-json.mdc) for Pressable/Box text (must use Text child).
 
-**Layout part overrides** (navbar, hero, footer, product-grid): Read [sdui-layout-part-overrides.mdc](./sdui-layout-part-overrides.mdc) — override types, schema, applicators, fragment IDs, how to add new parts.
+**Layout part overrides & AI generators** (navbar, hero, page generator, section examples): Read [sdui-layout-part-overrides.mdc](./sdui-layout-part-overrides.mdc) — override types, schema, layout-generator vs page-generator, section examples, CountdownTimer conventions, how to add new parts.
 
-**Eval AI cost:** When modifying eval-ai or adding runners, follow [eval-ai-cost.mdc](./eval-ai-cost.mdc) — `--only-failures` must use cached output, never re-call the AI.
+**Eval AI cost & visual checker:** When modifying eval-ai, adding runners, or editing `lib/ai/visual-design-checker.ts`, follow [eval-ai-cost.mdc](./eval-ai-cost.mdc) — `--only-failures` must use cached output, never re-call the AI. Includes visual checker patterns: dev-server warm-up, `waitForFunction` arg vs options, responsive viewport resize. Current active eval focus: `fashion-homepage-full` in `lib/ai/eval/page.json`.
 
 **JSON rules:** See [json-syntax.mdc](./json-syntax.mdc). Run `npm run validate:json` after any JSON edit.

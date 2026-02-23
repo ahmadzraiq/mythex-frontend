@@ -11,7 +11,12 @@
     "validate:json": "node scripts/validate-json.js",
     "fix:json": "node scripts/fix-json-trailing-commas.js",
     "eval:ai": "npx tsx scripts/eval-ai.ts",
-    "test:visual-navbar": "npx tsx scripts/run-visual-navbar-test.ts",
+    "eval:page": "npx tsx scripts/eval-ai.ts --generator=page",
+    "eval:page:visual": "RUN_VISUAL=1 npx tsx scripts/eval-ai.ts --generator=page",
+    "eval:page:visual:retry": "RUN_VISUAL=1 npx tsx scripts/eval-ai.ts --generator=page --only-failures",
+    "eval:page:case": "npx tsx scripts/eval-ai.ts --generator=page --case=fashion-homepage-full",
+    "add-correction": "npx tsx scripts/add-correction.ts",
+    "test:visual-screen": "npx tsx scripts/run-visual-screen-test.ts",
     "check:component-sync": "node scripts/check-component-sync.js"
   },
   "dependencies": {

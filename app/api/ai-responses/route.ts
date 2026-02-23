@@ -32,6 +32,7 @@ function getResponsesFile(requestedFile?: string | null): string | null {
 type LogEntry = {
   timestamp: string;
   generator: string;
+  page?: string;
   input: Record<string, unknown>;
   output: unknown;
   source: 'api' | 'eval';
@@ -42,6 +43,7 @@ type LogEntry = {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const generator = searchParams.get('generator');
+  const page = searchParams.get('page');
   const file = searchParams.get('file');
 
   const files = listResponseFiles();
@@ -63,6 +65,7 @@ export async function GET(request: Request) {
       try {
         const entry = JSON.parse(line) as LogEntry;
         if (generator && !matchesGenerator(generator, entry.generator)) continue;
+        if (page && entry.page !== page) continue;
         if (entry.evalResult === 'FAIL') continue;
         entries.push(entry);
       } catch {

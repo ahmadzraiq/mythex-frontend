@@ -9,6 +9,7 @@ import { join } from 'path';
 export type AiResponseLogEntry = {
   timestamp: string;
   generator: string;
+  page?: string;
   input: Record<string, unknown>;
   output: unknown;
   source: 'api' | 'eval';
@@ -43,7 +44,7 @@ export function logAiResponse(
   generator: string,
   input: Record<string, unknown>,
   output: unknown,
-  options?: { source?: 'api' | 'eval'; evalResult?: 'PASS' | 'FAIL'; error?: string }
+  options?: { source?: 'api' | 'eval'; evalResult?: 'PASS' | 'FAIL'; error?: string; page?: string }
 ): void {
   if (!ENABLED) return;
 
@@ -52,6 +53,7 @@ export function logAiResponse(
     const entry: AiResponseLogEntry = {
       timestamp: new Date().toISOString(),
       generator,
+      page: options?.page,
       input,
       output,
       source: options?.source ?? 'api',

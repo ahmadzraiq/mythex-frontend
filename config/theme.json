@@ -97,13 +97,6 @@
         "shop": { "button": "#0f172a", "buttonHover": "#1e293b" }
       }
     },
-    "minimal": {
-      "sections": {
-        "hero": { "bg": "#fafafa" },
-        "header": { "border": "#f0f0f0" },
-        "shop": { "button": "#171923", "buttonHover": "#334155" }
-      }
-    },
     "luxury": {
       "sections": {
         "hero": { "bg": "#0f172a" },

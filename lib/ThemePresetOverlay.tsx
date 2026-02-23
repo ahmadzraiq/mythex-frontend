@@ -11,7 +11,7 @@
 
 import { useEffect } from 'react';
 import { useLayoutGeneratorStore } from '@/store/layout-generator-store';
-import themeConfig from '@/config/theme.json';
+import themeConfig from '@/config/theme';
 
 type PresetSections = Record<string, Record<string, string>>;
 type Preset = { sections?: PresetSections };
@@ -110,6 +110,14 @@ function buildVarsFromColorSet(colorSet: ColorSet): string[] {
 function buildCssFromGeneratedTheme(theme: Record<string, unknown>, mode?: string): string {
   const blocks: string[] = [];
 
+  const themeVars = theme.themeVars as Record<string, string> | undefined;
+  if (themeVars && Object.keys(themeVars).length > 0) {
+    const vars = Object.entries(themeVars)
+      .map(([name, value]) => `  ${name}: ${value}`)
+      .join(';\n');
+    blocks.push(`:root {\n${vars}\n}`);
+  }
+
   const colors = theme.colors as Record<string, unknown> | undefined;
   const lightPalette = colors?.light as ColorSet | undefined;
   const darkPalette = colors?.dark as ColorSet | undefined;
@@ -192,7 +200,10 @@ export function ThemePresetOverlay() {
   if (generatedTheme && typeof generatedTheme === 'object') {
     const mode = generatedTheme.mode as string | undefined;
     const colors = generatedTheme.colors as Record<string, unknown> | undefined;
-    const hasColors = colors && (colors.light || colors.dark || Object.keys(colors).length > 0);
+    const themeVars = generatedTheme.themeVars as Record<string, string> | undefined;
+    const hasColors =
+      (colors && (colors.light || colors.dark || Object.keys(colors).length > 0)) ||
+      (themeVars && Object.keys(themeVars).length > 0);
     const css = buildCssFromGeneratedTheme(generatedTheme, mode);
     if (hasColors && css) return <style dangerouslySetInnerHTML={{ __html: css }} />;
     if (css && !generatedStyle) return <style dangerouslySetInnerHTML={{ __html: css }} />;

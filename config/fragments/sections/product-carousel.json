@@ -18,7 +18,30 @@
           "text": "Featured Products"
         },
         {
+          "type": "Box",
+          "props": { "className": "flex flex-col items-center gap-4 py-20" },
+          "condition": { "!": [{ "var": "featured.products.0" }] },
+          "children": [
+            {
+              "type": "Text",
+              "props": { "className": "text-5xl" },
+              "text": "🛍️"
+            },
+            {
+              "type": "Heading",
+              "props": { "size": "xl", "className": "font-semibold text-center text-[var(--theme-content-text)]" },
+              "text": "No products yet"
+            },
+            {
+              "type": "Text",
+              "props": { "className": "text-center text-gray-500 dark:text-gray-400 max-w-sm" },
+              "text": "Connect your store to start displaying featured products here."
+            }
+          ]
+        },
+        {
           "type": "Carousel",
+          "condition": { "!!": [{ "var": "featured.products.0" }] },
           "props": {
             "loop": true,
             "align": "start",

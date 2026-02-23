@@ -1,1 +1,53 @@
-{"type":"Box","props":{"className":"py-12 md:py-16 bg-[var(--theme-content-bg)]"},"children":[{"type":"Box","props":{"className":"container mx-auto px-8"},"children":[{"type":"Heading","props":{"className":"text-3xl md:text-4xl font-bold mb-8 text-[var(--theme-content-text)]"},"text":"Featured Products"},{"type":"Box","props":{"className":"grid grid-cols-2 gap-4 lg:grid-cols-4"},"children":[{"type":"Box","map":"featured.products","key":"product","props":{"className":"contents"},"children":[{"$ref":"fragments/cards/product-card"}]}]}]}]}
+{
+  "type": "Box",
+  "props": { "className": "py-12 md:py-16 bg-[var(--theme-content-bg)]" },
+  "children": [
+    {
+      "type": "Box",
+      "props": { "className": "container mx-auto px-8" },
+      "children": [
+        {
+          "type": "Heading",
+          "props": { "className": "text-3xl md:text-4xl font-bold mb-8 text-[var(--theme-content-text)]" },
+          "text": "Featured Products"
+        },
+        {
+          "type": "Box",
+          "props": { "className": "grid grid-cols-2 gap-4 lg:grid-cols-4" },
+          "condition": { "!!": [{ "var": "featured.products.0" }] },
+          "children": [
+            {
+              "type": "Box",
+              "map": "featured.products",
+              "key": "product",
+              "props": { "className": "contents" },
+              "children": [{ "$ref": "fragments/cards/product-card" }]
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-col items-center gap-4 py-20" },
+          "condition": { "!": [{ "var": "featured.products.0" }] },
+          "children": [
+            {
+              "type": "Text",
+              "props": { "className": "text-5xl" },
+              "text": "🛍️"
+            },
+            {
+              "type": "Heading",
+              "props": { "size": "xl", "className": "font-semibold text-center text-[var(--theme-content-text)]" },
+              "text": "No products yet"
+            },
+            {
+              "type": "Text",
+              "props": { "className": "text-center text-gray-500 dark:text-gray-400 max-w-sm" },
+              "text": "Connect your store to start displaying featured products here."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

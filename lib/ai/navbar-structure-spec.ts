@@ -6,19 +6,25 @@
 import { ALLOWED_SDUI_TYPES } from '@/config/schema/layout-schema';
 import {
   buildNavbarThemeVarsContext,
-  buildNavbarActionsContext,
-  buildNavbarStateContext,
-  buildNavbarNodeIdsContext,
+  buildSduiReference,
 } from './sdui-config-context';
 import { buildCorrectionsContext } from './eval/corrections-builder';
-import { buildJsonSyntaxContext } from './sdui-config-context';
+import { buildDesignPrinciplesContext } from './design-principles';
+import { buildTechPatternsContext } from './tech-patterns';
 import { fragments } from '@/config/fragments';
 
 const navbarFragment = fragments['fragments/layout/navbar'] as Record<string, unknown>;
 const CANONICAL_REFERENCE = JSON.stringify(navbarFragment, null, 2);
 
-export function buildNavbarStructureSystemPrompt(): string {
+export type BuildNavbarPromptOptions = {
+  predefinedTheme?: { themeVars: Record<string, string> };
+};
+
+export function buildNavbarStructureSystemPrompt(
+  options?: BuildNavbarPromptOptions
+): string {
   const allowedTypesList = [...ALLOWED_SDUI_TYPES].join(', ');
+  const themeContext = buildNavbarThemeVarsContext(options?.predefinedTheme);
 
   return `You are a navbar builder. The user describes what they want for an e-commerce navbar. Create the ENTIRE navbar from scratch. Output ONLY valid JSON—no markdown, no explanation.
 
@@ -47,15 +53,15 @@ OTHER RULES:
 - No $ref in output—everything inline.
 - Pressable/Box cannot have raw text; wrap in Text child.
 
-${buildNavbarThemeVarsContext()}
+${themeContext}
 
-${buildNavbarActionsContext()}
+${buildDesignPrinciplesContext()}
 
-${buildNavbarStateContext()}
+${buildTechPatternsContext()}
 
-${buildNavbarNodeIdsContext()}
+FULL SDUI SCHEMA REFERENCE (screens, layouts, fragments, state, actions, routes, computed, validation):
+${buildSduiReference()}
 
-${buildJsonSyntaxContext()}
 ${buildCorrectionsContext('navbar')}
 Output valid JSON only.`;
 }

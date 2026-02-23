@@ -1,14 +1,8 @@
 /**
- * Layout registry - layout structures with $ref and $slot
- * Use with layout: "store" | "account" | "checkoutMinimal" in screen config
+ * Layout registry - re-exports from root.ts.
+ * Use with layout: "store" | "account" | "checkoutMinimal" in screen config.
  */
 
-import store from './store.json';
-import account from './account.json';
-import checkoutMinimal from './checkout-minimal.json';
+import root from '../root';
 
-export const layouts = {
-  store: store as { structure: object },
-  account: account as { structure: object },
-  checkoutMinimal: checkoutMinimal as { structure: object },
-} as const;
+export const layouts = root.layouts as Record<string, { structure: object }>;

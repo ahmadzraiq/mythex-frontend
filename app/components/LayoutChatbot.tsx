@@ -15,6 +15,8 @@ type Message = {
   question?: string;
 };
 
+type ChatbotMode = 'guided' | 'custom';
+
 const DEFAULT_SECTIONS = ['navbar', 'hero', 'product-grid', 'feature-grid', 'footer'];
 
 export function LayoutChatbot() {
@@ -23,6 +25,8 @@ export function LayoutChatbot() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sectionVariantsLoading, setSectionVariantsLoading] = useState(false);
+  const [chatbotMode, setChatbotMode] = useState<ChatbotMode>('guided');
+  const [customSpec, setCustomSpec] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const setGenerated = useLayoutGeneratorStore((s) => s.setGenerated);
@@ -239,11 +243,57 @@ export function LayoutChatbot() {
     }
   };
 
+  const handleGenerateCustom = async () => {
+    if (!customSpec.trim()) return;
+    setLoading(true);
+    setMessages((m) => [...m, { id: crypto.randomUUID(), role: 'user', prompt: customSpec.trim() }]);
+
+    try {
+      const res = await fetch('/api/generate-page', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: customSpec.trim(),
+          palette: selectedPalette ?? undefined,
+          fontPairing: selectedFontPairing ?? undefined,
+          pageName: 'home',
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMessages((m) => [
+          ...m,
+          { id: crypto.randomUUID(), role: 'assistant', error: data.error ?? 'Failed to generate' },
+        ]);
+        return;
+      }
+
+      setGenerated(data.screen, data.style ?? null, data.theme ?? null);
+      setMessages((m) => [
+        ...m,
+        { id: crypto.randomUUID(), role: 'assistant', success: true, style: data.style },
+      ]);
+    } catch (err) {
+      setMessages((m) => [
+        ...m,
+        {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          error: err instanceof Error ? err.message : 'Something went wrong',
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleClear = () => {
     setGenerated(null, null, null);
     resetConversation();
     setMessages([]);
     setInput('');
+    setCustomSpec('');
   };
 
   return (
@@ -266,6 +316,10 @@ export function LayoutChatbot() {
       sectionVariantsLoading={sectionVariantsLoading}
       paletteLoading={paletteLoading}
       fontPairingLoading={fontPairingLoading}
+      chatbotMode={chatbotMode}
+      setChatbotMode={setChatbotMode}
+      customSpec={customSpec}
+      setCustomSpec={setCustomSpec}
       onClear={handleClear}
       onSubmit={handleSubmit}
       onDesignMoodSelect={handleDesignMoodSelect}
@@ -279,6 +333,7 @@ export function LayoutChatbot() {
       onAiSuggestVariants={handleAiSuggestVariants}
       onAdvanceToSummary={handleAdvanceToSummary}
       onGenerate={handleGenerate}
+      onGenerateCustom={handleGenerateCustom}
       messagesEndRef={messagesEndRef}
     />
   );

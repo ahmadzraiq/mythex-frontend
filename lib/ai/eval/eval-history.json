@@ -1,0 +1,302 @@
+[
+  {
+    "timestamp": "2026-02-23T14:14:45.523Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Palette mood match: modern mood uses default fallback palette — model did not generate a unique palette | Design rules: Box with content must have Text child (id: unknown); Box with content must have Text child (id: unknown); Box with content must have Text child (id: unknown); Box with content must have Text child (id: unknown); Box with content must have Text child (id: unknown); Box with content must have Text child (id: unknown); Pressable with content must have Text child (id: unknown); Hardcoded Tailwind color in navbar (use var(--theme-*)): text-white font-semibold text-lg drop-shadow-sm...; Box with content must have Text child (id: unknown); Box with content must have Text child (id: unknown); Hardcoded Tailwind color in navbar (use var(--theme-*)): font-bold text-white...; Hardcoded Tailwind color in navbar (use var(--theme-*)): text-white font-mono text-lg font-bold...; Box with content must have Text child (id: unknown); Box with content must have Text child (id: unknown); Box with content must have Text child (id: unknown); Box with content must have Text child (id: unknown); Box with content must have Text child (id: unknown); Box with content must have Text child (id: unknown); Box with content must have Text child (id: unknown); Box with content must have Text child (id: unknown); Hardcoded Tailwind color in navbar (use var(--theme-*)): flex-1 !border-gray-300 dark:!border-gray-600 !bg-white dark...; Hardcoded Tailwind color in navbar (use var(--theme-*)): !text-gray-900 dark:!text-gray-100..."
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T14:15:55.459Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Palette mood match: modern mood uses default fallback palette — model did not generate a unique palette | Design rules: Hardcoded Tailwind color (use var(--theme-*)): text-white font-semibold text-lg drop-shadow-sm...; Hardcoded Tailwind color (use var(--theme-*)): font-bold text-white...; Hardcoded Tailwind color (use var(--theme-*)): text-white font-mono text-lg font-bold..."
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T14:16:22.145Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Palette mood match: modern mood uses default fallback palette — model did not generate a unique palette"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T14:18:01.367Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Palette mood match: modern mood uses default fallback palette — model did not generate a unique palette"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T14:18:57.754Z",
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": 100,
+    "failedCases": []
+  },
+  {
+    "timestamp": "2026-02-23T14:22:15.031Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Visual: Section \"announcement\" not visible in DOM: Not found. Tried: text=/free shipping/i, text=/announcement/i, [class*=\"announcement\"]; Section \"hero\" not visible in DOM: Not found. Tried: main h1, main h2, [data-hero]; Section \"categories\" not visible in DOM: Not found. Tried: text=/shop by category/i, text=/categories/i, text=/featured categories/i; Section \"flash-sale\" not visible in DOM: Not found. Tried: text=/flash sale/i, text=/flash/i; Section \"new-arrivals\" not visible in DOM: Not found. Tried: text=/new arrivals/i, text=/new arrival/i; Section \"best-sellers\" not visible in DOM: Not found. Tried: text=/best sellers/i, text=/best seller/i, text=/bestseller/i; Section \"brand-story\" not visible in DOM: Not found. Tried: text=/our story/i, text=/brand story/i, text=/about us/i; Section \"newsletter\" not visible in DOM: Not found. Tried: input[placeholder*=\"email\" i], input[placeholder*=\"subscribe\" i], text=/subscribe/i, text=/newsletter/i; Navbar (#navbar-root) is not visible; Hero heading (h1/h2 in main) is not visible; Color \"navbar-bg\" is transparent or unresolved (CSS var not applied); Color \"hero-bg\" is transparent or unresolved (CSS var not applied); Color \"hero-heading\" is transparent or unresolved (CSS var not applied); Color \"button-bg\" is transparent or unresolved (CSS var not applied); Responsive: Hero heading not visible on mobile viewport"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T14:26:38.543Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Visual: Section \"announcement\" not visible in DOM: Not found. Tried: text=/free shipping/i, text=/announcement/i, [class*=\"announcement\"]; Section \"hero\" not visible in DOM: Not found. Tried: main h1, main h2, [data-hero]; Section \"categories\" not visible in DOM: Not found. Tried: text=/shop by category/i, text=/categories/i, text=/featured categories/i; Section \"flash-sale\" not visible in DOM: Not found. Tried: text=/flash sale/i, text=/flash/i; Section \"new-arrivals\" not visible in DOM: Not found. Tried: text=/new arrivals/i, text=/new arrival/i; Section \"best-sellers\" not visible in DOM: Not found. Tried: text=/best sellers/i, text=/best seller/i, text=/bestseller/i; Section \"brand-story\" not visible in DOM: Not found. Tried: text=/our story/i, text=/brand story/i, text=/about us/i; Section \"newsletter\" not visible in DOM: Not found. Tried: input[placeholder*=\"email\" i], input[placeholder*=\"subscribe\" i], text=/subscribe/i, text=/newsletter/i; Navbar (#navbar-root) is not visible; Hero heading (h1/h2 in main) is not visible; Color \"navbar-bg\" is transparent or unresolved (CSS var not applied); Color \"hero-bg\" is transparent or unresolved (CSS var not applied); Color \"hero-heading\" is transparent or unresolved (CSS var not applied); Color \"button-bg\" is transparent or unresolved (CSS var not applied); Responsive: Hero heading not visible on mobile viewport"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T14:53:22.302Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Visual: Section \"announcement\" not visible in DOM: Not found. Tried: text=/free shipping/i, text=/announcement/i, [class*=\"announcement\"]; Section \"hero\" not visible in DOM: Not found. Tried: main h1, main h2, [data-hero]; Section \"flash-sale\" not visible in DOM: Not found. Tried: text=/flash sale/i, text=/flash/i; Section \"new-arrivals\" not visible in DOM: Not found. Tried: text=/new arrivals/i, text=/new arrival/i; Section \"best-sellers\" not visible in DOM: Not found. Tried: text=/best sellers/i, text=/best seller/i, text=/bestseller/i; Section \"brand-story\" not visible in DOM: Not found. Tried: text=/our story/i, text=/brand story/i, text=/about us/i; Section \"newsletter\" not visible in DOM: Not found. Tried: input[placeholder*=\"email\" i], input[placeholder*=\"subscribe\" i], text=/subscribe/i, text=/newsletter/i; Hero heading (h1/h2 in main) is not visible; Color \"hero-heading\" is transparent or unresolved (CSS var not applied); Responsive: Hero heading not visible on mobile viewport"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T14:57:56.320Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Visual: Section \"announcement\" not visible in DOM: Not found. Tried: text=/free shipping/i, text=/announcement/i, [class*=\"announcement\"]; Section \"hero\" not visible in DOM: Not found. Tried: main h1, main h2, [data-hero]; Section \"flash-sale\" not visible in DOM: Not found. Tried: text=/flash sale/i, text=/flash/i; Section \"new-arrivals\" not visible in DOM: Not found. Tried: text=/new arrivals/i, text=/new arrival/i; Section \"best-sellers\" not visible in DOM: Not found. Tried: text=/best sellers/i, text=/best seller/i, text=/bestseller/i; Section \"brand-story\" not visible in DOM: Not found. Tried: text=/our story/i, text=/brand story/i, text=/about us/i; Section \"newsletter\" not visible in DOM: Not found. Tried: input[placeholder*=\"email\" i], input[placeholder*=\"subscribe\" i], text=/subscribe/i, text=/newsletter/i; Hero heading (h1/h2 in main) is not visible; Color \"hero-heading\" is transparent or unresolved (CSS var not applied); Responsive: Hero heading not visible on mobile viewport"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T15:00:31.458Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Visual: Section \"announcement\" not visible in DOM: Not found. Tried: text=/free shipping/i, text=/announcement/i, [class*=\"announcement\"]; Section \"hero\" not visible in DOM: Not found. Tried: main h1, main h2, [data-hero]; Section \"flash-sale\" not visible in DOM: Not found. Tried: text=/flash sale/i, text=/flash/i; Section \"new-arrivals\" not visible in DOM: Not found. Tried: text=/new arrivals/i, text=/new arrival/i; Section \"best-sellers\" not visible in DOM: Not found. Tried: text=/best sellers/i, text=/best seller/i, text=/bestseller/i; Section \"brand-story\" not visible in DOM: Not found. Tried: text=/our story/i, text=/brand story/i, text=/about us/i; Section \"newsletter\" not visible in DOM: Not found. Tried: input[placeholder*=\"email\" i], input[placeholder*=\"subscribe\" i], text=/subscribe/i, text=/newsletter/i; Hero heading (h1/h2 in main) is not visible; Color \"hero-heading\" is transparent or unresolved (CSS var not applied); Responsive: Hero heading not visible on mobile viewport"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T15:04:44.467Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Visual: Section \"announcement\" not visible in DOM: Not found. Tried: text=/free shipping/i, text=/announcement/i, [class*=\"announcement\"]; Section \"hero\" not visible in DOM: Not found. Tried: main h1, main h2, [data-hero]; Section \"flash-sale\" not visible in DOM: Not found. Tried: text=/flash sale/i, text=/flash/i; Section \"new-arrivals\" not visible in DOM: Not found. Tried: text=/new arrivals/i, text=/new arrival/i; Section \"best-sellers\" not visible in DOM: Not found. Tried: text=/best sellers/i, text=/best seller/i, text=/bestseller/i; Section \"brand-story\" not visible in DOM: Not found. Tried: text=/our story/i, text=/brand story/i, text=/about us/i; Section \"newsletter\" not visible in DOM: Not found. Tried: input[placeholder*=\"email\" i], input[placeholder*=\"subscribe\" i], text=/subscribe/i, text=/newsletter/i; Hero heading (h1/h2 in main) is not visible; Color \"hero-heading\" is transparent or unresolved (CSS var not applied); Responsive: Hero heading not visible on mobile viewport"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T15:10:03.812Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Visual: page.waitForFunction: Timeout 20000ms exceeded."
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T15:10:10.498Z",
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": 100,
+    "failedCases": []
+  },
+  {
+    "timestamp": "2026-02-23T15:12:55.437Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Visual: Responsive: Responsive check error: page.waitForFunction: Timeout 20000ms exceeded."
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T15:15:22.720Z",
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": 100,
+    "failedCases": []
+  },
+  {
+    "timestamp": "2026-02-23T15:34:29.204Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Visual: Responsive: Responsive check error: page.waitForFunction: Timeout 20000ms exceeded."
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T15:35:19.638Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Visual: page.waitForFunction: Timeout 20000ms exceeded."
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T15:36:23.931Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Visual: page.waitForFunction: Timeout 30000ms exceeded."
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T15:37:56.057Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Visual: Responsive: Responsive check error: page.waitForFunction: Timeout 45000ms exceeded."
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T15:39:01.920Z",
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": 100,
+    "failedCases": []
+  },
+  {
+    "timestamp": "2026-02-23T15:41:59.070Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Visual: page.waitForFunction: Timeout 45000ms exceeded."
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T15:45:14.943Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Visual: page.waitForFunction: Timeout 60000ms exceeded."
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T15:50:52.729Z",
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": 100,
+    "failedCases": []
+  },
+  {
+    "timestamp": "2026-02-23T15:53:46.258Z",
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": 100,
+    "failedCases": []
+  }
+]

@@ -5,17 +5,19 @@
  * Import in navbar-structure-spec, layout-generator, etc.
  */
 
-import layoutActions from '@/config/actions/layout.json';
-import authActions from '@/config/actions/auth.json';
-import cartActions from '@/config/actions/cart.json';
-import checkoutActions from '@/config/actions/checkout.json';
-import accountActions from '@/config/actions/account.json';
-import productsActions from '@/config/actions/products.json';
-import routes from '@/config/routes.json';
-import storeJson from '@/config/store.json';
-import themeJson from '@/config/theme.json';
-import { fragments } from '@/config/fragments';
-import { layouts } from '@/config/layouts';
+import root from '@/config/root';
+
+const layoutActions = (root.actionsByFile as Record<string, Record<string, unknown>>)?.layout ?? {};
+const authActions = (root.actionsByFile as Record<string, Record<string, unknown>>)?.auth ?? {};
+const cartActions = (root.actionsByFile as Record<string, Record<string, unknown>>)?.cart ?? {};
+const checkoutActions = (root.actionsByFile as Record<string, Record<string, unknown>>)?.checkout ?? {};
+const accountActions = (root.actionsByFile as Record<string, Record<string, unknown>>)?.account ?? {};
+const productsActions = (root.actionsByFile as Record<string, Record<string, unknown>>)?.products ?? {};
+const routes = root.routes;
+const storeJson = root.store;
+const themeJson = root.theme;
+const fragments = root.fragments;
+const layouts = root.layouts;
 import { COMPONENT_NAMES } from '@/config/component-names';
 import { JSON_LOGIC_CUSTOM_OPS } from '@/lib/sdui/computed-runner';
 import { VALIDATION_RULE_KEYS } from '@/lib/sdui/engine-types';
@@ -67,6 +69,21 @@ export function buildJsonLogicContext(): string {
 - Custom ops: ${customOps}. Signatures: findItemById([arr, id]), findItemByOptionsMatch([variants, optionGroups, selectedOptions]), groupBy([arr, groupByField, keyField]), paginationPages([totalItems, skip, pageSize, delta?]), filterExcludeByFieldAndSlice([items, field, excludeValue, limit]), lookupMap([map, key, default]), getFromMap([map, key]), at([arr, index]), formatCurrency([num, currency]).`;
 }
 
+/** Build computed ops reference with real examples from codebase */
+export function buildComputedOpsContext(): string {
+  const customOps = [...JSON_LOGIC_CUSTOM_OPS].join(', ');
+  return `COMPUTED OPS (text.expr, condition, store.json computed):
+- Custom ops: ${customOps}
+- formatCurrency([num, currency]): { "formatCurrency": [{ "var": "cart.subTotalWithTax" }, "USD"] } for money display
+- findItemById([arr, id]): { "findItemById": [{ "var": "product.variants" }, { "var": "product.selectedVariantId" }] } for variant lookup
+- findItemByOptionsMatch([variants, optionGroups, selectedOptions]): match variant by selected options
+- groupBy([arr, groupByField, keyField]): { "groupBy": [{ "var": "collection.products" }, "optionGroupId", "id"] } for facet groups
+- paginationPages([totalItems, skip, pageSize, delta?]): page numbers with ellipsis for pagination UI
+- getFromMap([map, key]): { "getFromMap": [{ "var": "product.selectedOptions" }, { "var": "$parent.id" }] } for option value
+- lookupMap([map, key, default]): sort label lookup. at([arr, index]): get item at index
+- filterExcludeByFieldAndSlice([items, field, excludeValue, limit]): related products excluding current`;
+}
+
 /** Build validation rules reference */
 export function buildValidationContext(): string {
   const rules = [...VALIDATION_RULE_KEYS].join(', ');
@@ -99,13 +116,48 @@ export function buildLayoutContext(): string {
 /** Build layout part context (navbar structure, hero/footer overrides) */
 export function buildLayoutPartOverridesContext(): string {
   const addNodesTypes = [...ALLOWED_SDUI_TYPES].join(', ');
+  const nodeIds = [
+    'navbar-root',
+    'navbar-inner',
+    'navbar-row',
+    'navbar-left',
+    'navbar-right',
+    'navbar-search',
+    'navbar-actions',
+    'navbar-collections',
+    'navbar-theme',
+    'navbar-theme-button',
+    'navbar-cart',
+    'navbar-cart-badge',
+    'navbar-auth',
+    'navbar-sign-in',
+    'navbar-logo',
+    'navbar-logo-image',
+  ].join(', ');
   return `LAYOUT PARTS:
 - Navbar: full structure from scratch. Output { structure: <root node> }. Root must have id: "navbar-root". node.type: ${addNodesTypes} only.
+- Navbar node IDs (use for consistency): ${nodeIds}
 - Hero/Footer: use override pattern (variant + overrides) when implemented.`;
 }
 
-/** Build navbar-specific theme vars from theme.json - exact CSS var names for navbar */
-export function buildNavbarThemeVarsContext(): string {
+/** Build navbar-specific theme vars from theme.json or predefined random theme */
+export function buildNavbarThemeVarsContext(predefinedTheme?: {
+  themeVars: Record<string, string>;
+}): string {
+  if (predefinedTheme?.themeVars && Object.keys(predefinedTheme.themeVars).length > 0) {
+    const lines = Object.entries(predefinedTheme.themeVars)
+      .map(([name, value]) => `  ${name}: ${value}`)
+      .join('\n');
+    return `NAVBAR THEME VARS (predefined - use these exactly, do not change):
+\`\`\`
+${lines}
+\`\`\`
+- Use in className: bg-[var(--theme-header-bg)], text-[var(--theme-header-text)], border-[var(--theme-header-border)]
+- Cart badge: bg-[var(--theme-shop-button)], text-[var(--theme-shop-buttonText)]
+- Dropdown: border-[var(--border)], bg-[var(--theme-content-bg)]
+- Theme vars are predefined. Focus on navbar structure only.`;
+  }
+
   const sections = themeJson.sections as Record<string, Record<string, string>> | undefined;
   const vars: string[] = [];
   if (sections) {
@@ -211,7 +263,7 @@ export function buildThemeContext(): string {
   const sectionKeys = sections ? Object.keys(sections).join(', ') : 'header, footer, hero, content, shop';
   const colorKeys = 'heroBg, headerBg, headerText, headerBorder, button, buttonHover, buttonText, footerBg, footerText, footerTextMuted';
   const presets = themeJson.presets as Record<string, Record<string, unknown>> | undefined;
-  const presetKeys = presets ? Object.keys(presets).join(', ') : 'modern, minimal, luxury';
+  const presetKeys = presets ? Object.keys(presets).join(', ') : 'modern, luxury';
   return `THEME (config/theme.json):
 - Sections: ${sectionKeys}. Each has bg, text, textMuted, border, etc.
 - Use in className: bg-[var(--theme-header-bg)], text-[var(--theme-header-text)], etc.
@@ -268,7 +320,7 @@ export function buildEventHandlersContext(): string {
 - Clear field error on change: runMultiple with setState + clear errors path`;
 }
 
-/** Build state paths reference from store.json */
+/** Build state paths reference from store.json with nested paths */
 export function buildStateContext(): string {
   const initialData = storeJson.initialData as Record<string, unknown>;
   const topLevel = Object.keys(initialData ?? {}).join(', ');
@@ -277,11 +329,14 @@ export function buildStateContext(): string {
   const conventions = storeJson.engineConventions as Record<string, unknown> | undefined;
   const aliases = (conventions?.screenScopedAliases as string[])?.join(', ') ?? 'form, errors';
 
+  const nestedStr = `
+- Nested paths: auth.user, auth.token, cart.totalQuantity, cart.lines, cart.subTotalWithTax, nav.collections, nav.themeMenuOpen, nav.searchQuery, route.path, route.slug, route.q, route.facets, collectionSkip, searchSkip, layout.drawerOpen, layout.cartDrawerOpen, checkout.step, _workflow.lastAction, _workflow.lastError`;
+
   return `STATE (store.json):
 - Top-level: ${topLevel}.
 - Paths: ${pathMappings || 'authUser, routePath, routeSlug, etc.'}
 - Screen-scoped aliases: ${aliases}. Use {{form.field}} or {{screens.{name}.form.field}}.
-- Workflow: _workflow.lastAction, _workflow.lastError.`;
+- Workflow: _workflow.lastAction, _workflow.lastError.${nestedStr}`;
 }
 
 /** Build fragment keys reference for $ref */
@@ -377,6 +432,7 @@ export function buildSduiReference(): string {
     buildComponentPatternsContext(),
     buildEventHandlersContext(),
     buildJsonLogicContext(),
+    buildComputedOpsContext(),
     buildValidationContext(),
     buildStateContext(),
     buildEngineConventionsContext(),

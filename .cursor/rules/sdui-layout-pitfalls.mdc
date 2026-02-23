@@ -468,6 +468,44 @@ Use `equalsField` to compare confirm to password. When password changes, also cl
 
 ---
 
+## Category Card Background — Never Use `--theme-hero-bg` for Card Fills
+
+**Problem:** Using `bg-[var(--theme-hero-bg)]` as the background for category cards makes them invisible. `--theme-hero-bg` is typically white or off-white (the hero section background), and the card text is `text-white` — producing white-on-white.
+
+**Fix:** Use `bg-[var(--theme-shop-button)]` (the accent/action color) for category card backgrounds. It's always a visible, contrasting color that the theme author has already chosen for buttons.
+
+```json
+// ❌ BAD — hero-bg is white/off-white; card is invisible
+{ "type": "Pressable", "props": { "className": "... bg-[var(--theme-hero-bg)]" },
+  "children": [{ "type": "Text", "props": { "className": "text-white" }, "text": "Women" }] }
+
+// ✅ GOOD — shop-button is always a visible accent color
+{ "type": "Pressable", "props": { "className": "... bg-[var(--theme-shop-button)] hover:opacity-80" },
+  "children": [{ "type": "Text", "props": { "className": "text-[var(--theme-shop-buttonText)]" }, "text": "{{$item.name}}" }] }
+```
+
+**Applies to:** Category grid cards, collection tiles, any solid-color card that needs a visible background.
+
+---
+
+## AI Page Generator — Section Examples With Demo State (`_stateNote`)
+
+**Problem:** The AI copies section examples literally. If an example maps over `featured.categories` with empty state `[]`, the AI generates empty state too — the section heading renders but the grid is blank.
+
+**Fix:** Every section example that uses `map` must include a `_stateNote` documenting the required demo state. The AI reads this and includes the demo state in its output. `initActions` can then replace it with real API data.
+
+```typescript
+'featured-categories': {
+  _stateNote: 'Add to screen state: { "featured": { "categories": [ { "id": "1", "name": "Women", "slug": "women" }, ... ] } }',
+  type: 'Box',
+  // ... section structure
+}
+```
+
+**Rule:** If a section uses `map`, it MUST have demo state. No map without populated state = blank section in preview. The `_stateNote` field is stripped by the AI when generating output (it's a documentation hint, not rendered UI).
+
+---
+
 ## ThemePresetOverlay — Font Variables on Body, Not html
 
 **Problem:** `ThemePresetOverlay` injects font vars like `--font-heading: var(--font-space-grotesk)`. The `var(--font-space-grotesk)` references the Next.js font loader variable, which is set on the `body` via the layout's `className`. If font vars are set on `document.documentElement` (html), the reference may not resolve in all contexts.

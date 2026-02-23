@@ -147,4 +147,5 @@ export const COMPONENT_NAMES = [
   'Fab',
   'FabLabel',
   'FabIcon',
+  'CountdownTimer',
 ] as const;

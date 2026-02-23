@@ -6,7 +6,7 @@
  *
  * Flags (to avoid re-testing passed cases and save API cost):
  *   --only-failures   Re-run only cases from failures.json (uses cached AI output, no API calls)
- *   --generator=NAME  Run only this generator (navbar, layout, palettes, font-pairings, variant-suggestions)
+ *   --generator=NAME  Run only this generator (layout, palettes, font-pairings, variant-suggestions, screen, page)
  *   --case=ID         Run only this case ID
  *
  * Examples:
@@ -37,21 +37,214 @@ if (existsSync(envPath)) {
   }
 }
 
-import { generateNavbarStructure } from '../lib/ai/generate-navbar-structure';
 import { generateLayout } from '../lib/ai/layout-generator';
 import { generatePalettes } from '../lib/ai/generate-palettes';
 import { generateFontPairings } from '../lib/ai/generate-font-pairings';
 import { generateVariantSuggestions } from '../lib/ai/generate-variant-suggestions';
+import { generateScreen } from '../lib/ai/screen-generator';
+import { screenGeneratorOutputSchema } from '../lib/ai/screen-generator';
+import { generatePage, pageGeneratorOutputSchema } from '../lib/ai/page-generator';
 import { logAiResponse } from '../lib/ai/response-logger';
-import { navbarGeneratorOutputSchema } from '../config/schema/layout-schema';
 import { fullGenerationSchema } from '../config/schema/layout-schema';
 import { palettesResponseSchema } from '../lib/ai/palette-schema';
 import { fontPairingsResponseSchema } from '../lib/ai/font-pairing-schema';
-import { ALLOWED_SDUI_TYPES } from '../config/schema/layout-schema';
-import { runVisualNavbarTest, type VisualAssert } from '../lib/ai/visual-navbar-runner';
+import { runVisualScreenTest, type ScreenVisualAssert } from '../lib/ai/visual-screen-runner';
+import { schemaToScreen } from '../lib/ai/schema-to-screen';
+import { resolveScreenConfig } from '../lib/sdui/config-resolver';
+import root from '../config/root';
+import {
+  validateActions,
+  validateStatePaths,
+  validateTypes,
+  validateDesign,
+} from '../lib/ai/validators';
+import { COMPONENT_NAMES } from '../config/component-names';
+
+// ─── Page eval helpers ────────────────────────────────────────────────────────
+
+type CheckResult = { pass: boolean; label: string; detail?: string };
+
+/**
+ * Keyword map: section name → patterns to look for in the content tree.
+ * We search JSON-stringified content for these markers.
+ */
+const SECTION_MARKERS: Record<string, string[]> = {
+  announcement: ['announcement', 'free shipping', 'announcement-bg'],
+  hero: ['"hero"', '"hero-heading"', 'hero-bg', 'hero split', 'min-h-\\[90vh\\]'],
+  categories: ['categories', 'featured.categories', 'Shop by Category'],
+  'flash-sale': ['flash', 'CountdownTimer', 'flashSale'],
+  'new-arrivals': ['newArrivals', 'New Arrivals'],
+  'best-sellers': ['bestSellers', 'Best Sellers'],
+  'brand-story': ['brandStory', 'brand-story', 'Our Story', 'brand story'],
+  newsletter: ['newsletter', 'subscribeNewsletter', 'InputField'],
+};
+
+/**
+ * Check that all expected sections appear in the generated content tree.
+ */
+function sectionCoverageCheck(
+  prompt: string,
+  content: unknown,
+  expectedSections: string[]
+): CheckResult {
+  const contentStr = JSON.stringify(content);
+  const missing: string[] = [];
+
+  for (const section of expectedSections) {
+    const markers = SECTION_MARKERS[section] ?? [section];
+    const found = markers.some((m) => {
+      try {
+        return new RegExp(m, 'i').test(contentStr);
+      } catch {
+        return contentStr.toLowerCase().includes(m.toLowerCase());
+      }
+    });
+    if (!found) missing.push(section);
+  }
+
+  if (missing.length === 0) return { pass: true, label: 'Section coverage' };
+  return {
+    pass: false,
+    label: 'Section coverage',
+    detail: `Missing sections: ${missing.join(', ')}`,
+  };
+}
+
+/**
+ * Walk the UI tree and collect all "map" paths.
+ */
+function collectMapPaths(node: unknown, paths: Set<string> = new Set()): Set<string> {
+  if (!node || typeof node !== 'object') return paths;
+  if (Array.isArray(node)) {
+    for (const child of node) collectMapPaths(child, paths);
+    return paths;
+  }
+  const n = node as Record<string, unknown>;
+  if (typeof n.map === 'string') {
+    const topLevel = n.map.split('.')[0];
+    if (topLevel) paths.add(topLevel);
+  }
+  if (Array.isArray(n.children)) {
+    for (const child of n.children) collectMapPaths(child, paths);
+  }
+  return paths;
+}
+
+/**
+ * Check that every map path top-level key has a corresponding initAction.
+ * e.g. map:"testimonials.items" needs fetchTestimonials in initActions.
+ */
+function dataConsistencyCheck(
+  content: unknown,
+  initActions: Array<{ action?: string } | Record<string, unknown>>
+): CheckResult {
+  const mapPaths = collectMapPaths(content);
+  const actionNames = initActions
+    .map((a) => (typeof (a as Record<string, unknown>).action === 'string' ? (a as Record<string, unknown>).action as string : ''))
+    .filter(Boolean)
+    .join(' ');
+
+  const unmapped: string[] = [];
+  // These top-level keys are managed by global store or layout — no per-page initAction needed
+  const globalKeys = new Set(['nav', 'auth', 'cart', 'layout', 'route', 'screens']);
+
+  for (const path of mapPaths) {
+    if (globalKeys.has(path)) continue;
+    // Check if any initAction name contains the path namespace (case-insensitive)
+    const hasLoader = new RegExp(path, 'i').test(actionNames);
+    if (!hasLoader) unmapped.push(path);
+  }
+
+  if (unmapped.length === 0) return { pass: true, label: 'Data consistency' };
+  return {
+    pass: false,
+    label: 'Data consistency',
+    detail: `map paths without initAction: ${unmapped.join(', ')}`,
+  };
+}
+
+/**
+ * Convert a hex color string to HSL.
+ */
+function hexToHsl(hex: string): { h: number; s: number; l: number } | null {
+  const m = hex.replace('#', '').match(/^([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  if (!m) return null;
+  const r = parseInt(m[1], 16) / 255;
+  const g = parseInt(m[2], 16) / 255;
+  const b = parseInt(m[3], 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if (max === min) return { h: 0, s: 0, l: Math.round(l * 100) };
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h = 0;
+  if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+  else if (max === g) h = ((b - r) / d + 2) / 6;
+  else h = ((r - g) / d + 4) / 6;
+  return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+}
+
+/**
+ * Check that the palette matches the declared design mood.
+ */
+function paletteMoodCheck(themeHint: Record<string, unknown> | undefined): CheckResult {
+  if (!themeHint) return { pass: true, label: 'Palette mood match', detail: 'No themeHint' };
+
+  const mood = typeof themeHint.designMood === 'string' ? themeHint.designMood.toLowerCase() : null;
+  const palette = themeHint.palette as Record<string, unknown> | undefined;
+  const light = palette?.light as Record<string, string> | undefined;
+
+  if (!mood || !light) return { pass: true, label: 'Palette mood match', detail: 'No mood or palette' };
+
+  const primaryHsl = light.primary ? hexToHsl(light.primary) : null;
+  const accentHsl = light.accent ? hexToHsl(light.accent) : null;
+  const bgHsl = light.background ? hexToHsl(light.background) : null;
+
+  const issues: string[] = [];
+
+  if (mood === 'luxury') {
+    if (primaryHsl && primaryHsl.l > 35) {
+      issues.push(`luxury primary too light (L=${primaryHsl.l}%, expected <35%)`);
+    }
+    if (accentHsl && !(accentHsl.h >= 30 && accentHsl.h <= 60 && accentHsl.s > 40)) {
+      issues.push(`luxury accent should be gold/amber (hue 30-60°, sat >40%); got h=${accentHsl.h} s=${accentHsl.s}`);
+    }
+  } else if (mood === 'playful') {
+    if (accentHsl && accentHsl.s < 50) {
+      issues.push(`playful accent not saturated enough (S=${accentHsl.s}%, expected >50%)`);
+    }
+  } else if (mood === 'warm') {
+    if (primaryHsl && !(primaryHsl.h >= 5 && primaryHsl.h <= 50)) {
+      issues.push(`warm primary not in earth-tone range (hue 5-50°); got h=${primaryHsl.h}`);
+    }
+  } else if (mood === 'modern') {
+    // Modern: background should be light
+    if (bgHsl && bgHsl.l < 85) {
+      issues.push(`modern background too dark (L=${bgHsl.l}%, expected >85%)`);
+    }
+    // Modern should NOT look like a warm/luxury/playful page
+    if (primaryHsl && primaryHsl.s > 60 && primaryHsl.h > 60) {
+      issues.push(`modern primary too colorful (S=${primaryHsl.s}%, H=${primaryHsl.h}) — modern uses neutral grays or deep navy`);
+    }
+  }
+
+  if (issues.length === 0) return { pass: true, label: 'Palette mood match' };
+  return { pass: false, label: 'Palette mood match', detail: issues.join('; ') };
+}
+
+/**
+ * Print a formatted summary table row.
+ */
+function fmtRow(label: string, pass: boolean, detail?: string): string {
+  const status = pass ? '\x1b[32mPASS\x1b[0m' : '\x1b[31mFAIL\x1b[0m';
+  const detail_ = detail ? `  ${detail}` : '';
+  return `  ${label.padEnd(28)} ${status}${detail_}`;
+}
 
 const EVAL_DIR = join(process.cwd(), 'lib', 'ai', 'eval');
 const FAILURES_FILE = join(EVAL_DIR, 'failures.json');
+const PENDING_CORRECTIONS_FILE = join(EVAL_DIR, 'pending-corrections.json');
 
 function createVersionedResponsesFile(): string {
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
@@ -64,7 +257,7 @@ function createVersionedResponsesFile(): string {
 const ARGS = process.argv.slice(2);
 const ONLY_FAILURES = ARGS.includes('--only-failures');
 const STOP_ON_FIRST_PASS = ARGS.includes('--stop-on-first-pass');
-const GENERATOR_FILTER = ARGS.find((a) => a.startsWith('--generator='))?.split('=')[1] ?? 'navbar';
+const GENERATOR_FILTER = ARGS.find((a) => a.startsWith('--generator='))?.split('=')[1] ?? 'layout';
 const CASE_FILTER = ARGS.find((a) => a.startsWith('--case='))?.split('=')[1];
 
 type Failure = {
@@ -98,121 +291,6 @@ function jsonNormalize(obj: unknown): string {
   return JSON.stringify(sortKeys(obj));
 }
 
-function validateNavbarStructure(
-  output: Record<string, unknown>
-): { ok: boolean; error?: string } {
-  const parsed = navbarGeneratorOutputSchema.safeParse(output);
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.message };
-  }
-  return { ok: true };
-}
-
-async function runNavbarCase(
-  c: Record<string, unknown>,
-  cachedOutput?: Record<string, unknown>,
-  generatorName?: string
-): Promise<{ pass: boolean; actual?: unknown; error?: string }> {
-  const gen = generatorName ?? 'navbar';
-  const prompt = String(c.prompt ?? '');
-  const expected = c.expected as Record<string, unknown> | undefined;
-  const match = c.match as string;
-  const assert = c.assert as Record<string, unknown> | undefined;
-
-  try {
-    let output: Record<string, unknown>;
-    if (cachedOutput) {
-      output = { ...cachedOutput };
-    } else {
-      const result = await generateNavbarStructure(prompt);
-      output = { structure: result.structure };
-    }
-
-    const validateResult = validateNavbarStructure(output);
-    if (!validateResult.ok) {
-      logAiResponse(gen, { prompt }, output, {
-        source: 'eval',
-        evalResult: 'FAIL',
-        error: validateResult.error,
-      });
-      return { pass: false, actual: output, error: validateResult.error };
-    }
-
-    if (match === 'exact' && expected) {
-      const ok = jsonNormalize(output) === jsonNormalize(expected);
-      if (!ok) {
-        logAiResponse(gen, { prompt }, output, {
-          source: 'eval',
-          evalResult: 'FAIL',
-          error: 'Output did not match expected',
-        });
-        return { pass: false, actual: output, error: 'Output did not match expected' };
-      }
-    }
-
-    if (assert?.noInvalidTypes && output.structure) {
-      function checkTypes(node: unknown): string | null {
-        if (!node || typeof node !== 'object') return null;
-        const n = node as Record<string, unknown>;
-        const type = n.type;
-        if (type && typeof type === 'string' && !ALLOWED_SDUI_TYPES.includes(type as (typeof ALLOWED_SDUI_TYPES)[number])) {
-          return type;
-        }
-        const children = n.children;
-        if (Array.isArray(children)) {
-          for (const ch of children) {
-            const invalid = checkTypes(ch);
-            if (invalid) return invalid;
-          }
-        }
-        return null;
-      }
-      const invalid = checkTypes(output.structure);
-      if (invalid) {
-        logAiResponse(gen, { prompt }, output, {
-          source: 'eval',
-          evalResult: 'FAIL',
-          error: `Invalid type: ${invalid}`,
-        });
-        return { pass: false, actual: output, error: `Invalid type: ${invalid}` };
-      }
-    }
-
-    const visualAssert = c.visualAssert as VisualAssert | undefined;
-    const visualTest = c.visualTest as { fallback?: string } | undefined;
-    const assertToUse = visualAssert ?? (visualTest?.fallback === 'navbarVisible' ? { check: 'navbarVisible' as const } : { check: 'navbarVisible' as const });
-
-    const caseId = String(c.id ?? 'unknown');
-    console.log(`    [visual] Running visual test for ${caseId}...`);
-    const visualResult = await runVisualNavbarTest({
-      overrides: output,
-      visualAssert: assertToUse,
-    });
-    if (!visualResult.pass) {
-      logAiResponse(gen, { prompt }, output, {
-        source: 'eval',
-        evalResult: 'FAIL',
-        error: visualResult.error,
-      });
-      return { pass: false, actual: output, error: visualResult.error };
-    }
-
-    logAiResponse(gen, { prompt }, output, {
-      source: 'eval',
-      evalResult: 'PASS',
-    });
-    return { pass: true };
-  } catch (e) {
-    const err = e instanceof Error ? e.message : String(e);
-    logAiResponse(gen, { prompt }, null, {
-      source: 'eval',
-      evalResult: 'FAIL',
-      error: err,
-    });
-    return { pass: false, error: err };
-  }
-}
-
 async function runLayoutCase(
   c: Record<string, unknown>,
   cachedOutput?: Record<string, unknown>
@@ -228,7 +306,7 @@ async function runLayoutCase(
       output = { layout: result.layout, theme: result.theme };
     }
 
-    const parsed = fullGenerationSchema.safeParse({ layout: result.layout, theme: result.theme });
+    const parsed = fullGenerationSchema.safeParse(output);
     if (!parsed.success) {
       logAiResponse('layout', { prompt }, output, {
         source: 'eval',
@@ -237,7 +315,26 @@ async function runLayoutCase(
       });
       return { pass: false, actual: output, error: parsed.error.message };
     }
-    logAiResponse('layout', { prompt }, output, { source: 'eval', evalResult: 'PASS' });
+    logAiResponse('layout', { prompt }, output, { source: 'eval', evalResult: 'PASS', page: 'home' });
+
+    // Optional visual test (only when RUN_VISUAL=1 and case has visualAssert)
+    const visualAssert = c.visualAssert as ScreenVisualAssert | undefined;
+    if (process.env.RUN_VISUAL === '1' && visualAssert) {
+      const screen = schemaToScreen(parsed.data.layout) as Record<string, unknown>;
+      const screenshotsDir = join(EVAL_DIR, 'screenshots');
+      const visualResult = await runVisualScreenTest({
+        screen,
+        style: parsed.data.theme.style ?? null,
+        theme: parsed.data.theme as Record<string, unknown>,
+        visualAssert,
+        screenshotsDir,
+        label: String(c.id ?? 'screen'),
+      });
+      if (!visualResult.pass) {
+        return { pass: false, error: `Visual: ${visualResult.error}` };
+      }
+    }
+
     return { pass: true };
   } catch (e) {
     const err = e instanceof Error ? e.message : String(e);
@@ -245,6 +342,7 @@ async function runLayoutCase(
       source: 'eval',
       evalResult: 'FAIL',
       error: err,
+      page: 'home',
     });
     return { pass: false, error: err };
   }
@@ -317,6 +415,209 @@ async function runFontPairingsCase(
   }
 }
 
+async function runScreenCase(
+  c: Record<string, unknown>,
+  cachedOutput?: Record<string, unknown>
+): Promise<{ pass: boolean; actual?: unknown; error?: string }> {
+  const prompt = String(c.prompt ?? 'Generate a product listing page.');
+
+  try {
+    let output: Record<string, unknown>;
+    if (cachedOutput) {
+      output = { ...cachedOutput };
+    } else {
+      output = await generateScreen(prompt);
+    }
+
+    const parsed = screenGeneratorOutputSchema.safeParse(output);
+    if (!parsed.success) {
+      logAiResponse('screen', { prompt }, output, {
+        source: 'eval',
+        evalResult: 'FAIL',
+        error: parsed.error.message,
+      });
+      return { pass: false, actual: output, error: parsed.error.message };
+    }
+    logAiResponse('screen', { prompt }, output, { source: 'eval', evalResult: 'PASS' });
+    return { pass: true };
+  } catch (e) {
+    const err = e instanceof Error ? e.message : String(e);
+    logAiResponse('screen', { prompt }, null, {
+      source: 'eval',
+      evalResult: 'FAIL',
+      error: err,
+    });
+    return { pass: false, error: err };
+  }
+}
+
+async function runPageCase(
+  c: Record<string, unknown>,
+  cachedOutput?: Record<string, unknown>
+): Promise<{ pass: boolean; actual?: unknown; error?: string }> {
+  const prompt = String(c.prompt ?? 'Generate a modern e-commerce homepage.');
+  const checks: CheckResult[] = [];
+
+  try {
+    let output: Record<string, unknown>;
+    if (cachedOutput) {
+      output = { ...cachedOutput };
+    } else {
+      output = await generatePage(prompt) as Record<string, unknown>;
+    }
+
+    // ── 1. Schema validation ─────────────────────────────────────────────────
+    const parsed = pageGeneratorOutputSchema.safeParse(output);
+    if (!parsed.success) {
+      checks.push({ pass: false, label: 'Schema validation', detail: parsed.error.message });
+      printChecks(checks);
+      logAiResponse('page', { prompt }, output, {
+        source: 'eval',
+        evalResult: 'FAIL',
+        error: parsed.error.message,
+        page: 'home',
+      });
+      return { pass: false, actual: output, error: parsed.error.message };
+    }
+    checks.push({ pass: true, label: 'Schema validation' });
+
+    const screen = parsed.data;
+    const expect_ = c.expect as Record<string, unknown> | undefined;
+
+    // ── 2. hasInitActions ────────────────────────────────────────────────────
+    if (expect_?.hasInitActions) {
+      const ok = Array.isArray(screen.initActions) && screen.initActions.length > 0;
+      checks.push({ pass: ok, label: 'Has initActions', detail: ok ? undefined : 'initActions is empty' });
+    }
+
+    // ── 3. layoutIs ──────────────────────────────────────────────────────────
+    if (expect_?.layoutIs) {
+      const ok = screen.layout === expect_.layoutIs;
+      checks.push({
+        pass: ok,
+        label: 'Layout name',
+        detail: ok ? undefined : `Expected "${expect_.layoutIs}", got "${screen.layout}"`,
+      });
+    }
+
+    // ── 4. Section coverage ──────────────────────────────────────────────────
+    if (expect_?.sectionsPresent && Array.isArray(expect_.sectionsPresent)) {
+      const r = sectionCoverageCheck(prompt, screen.content, expect_.sectionsPresent as string[]);
+      checks.push(r);
+    }
+
+    // ── 5. Data consistency (map paths → initActions) ────────────────────────
+    if (expect_?.noMapWithoutInitAction) {
+      const r = dataConsistencyCheck(screen.content, screen.initActions ?? []);
+      checks.push(r);
+    }
+
+    // ── 6. Palette mood match ────────────────────────────────────────────────
+    if (expect_?.paletteMoodMatch) {
+      const r = paletteMoodCheck(screen.themeHint as Record<string, unknown> | undefined);
+      checks.push(r);
+    }
+
+    // ── 7. Type validator ────────────────────────────────────────────────────
+    const typeResult = validateTypes(screen.content as Parameters<typeof validateTypes>[0]);
+    checks.push({
+      pass: typeResult.pass,
+      label: 'Component types',
+      detail: typeResult.errors?.join('; '),
+    });
+
+    // ── 8. Design validator ──────────────────────────────────────────────────
+    const designResult = validateDesign(screen.content as Parameters<typeof validateDesign>[0]);
+    checks.push({
+      pass: designResult.pass,
+      label: 'Design rules',
+      detail: designResult.errors?.join('; '),
+    });
+
+    // ── Print semantic check summary ─────────────────────────────────────────
+    printChecks(checks);
+
+    const semanticFailed = checks.filter((r) => !r.pass);
+    if (semanticFailed.length > 0) {
+      const errorMsg = semanticFailed.map((r) => `${r.label}: ${r.detail ?? 'failed'}`).join(' | ');
+      logAiResponse('page', { prompt }, output, {
+        source: 'eval',
+        evalResult: 'FAIL',
+        error: errorMsg,
+        page: 'home',
+      });
+      return { pass: false, actual: output, error: errorMsg };
+    }
+
+    // ── 9. Visual design check ───────────────────────────────────────────────
+    const visualAssert = c.visualAssert as ScreenVisualAssert | undefined;
+    if (process.env.RUN_VISUAL === '1' && visualAssert) {
+      const screenshotsDir = join(EVAL_DIR, 'screenshots');
+      const pageName = String(c.id ?? 'page');
+
+      // Resolve $ref and layout slots — same as AiResponsePreviewOverlay does for 'page' generator
+      const registry = { layouts: root.layouts, fragments: root.fragments } as Parameters<typeof resolveScreenConfig>[1];
+      const resolvedScreen = resolveScreenConfig(
+        output as Parameters<typeof resolveScreenConfig>[0],
+        registry
+      ) as Record<string, unknown>;
+
+      // Build theme in the format the renderer expects: { designMood, colors: palette, fonts }
+      const themeHint = screen.themeHint as { designMood?: string; palette?: Record<string, unknown>; fonts?: { heading?: string; body?: string } } | undefined;
+      const style = themeHint?.designMood ?? null;
+      const theme = themeHint
+        ? { designMood: themeHint.designMood, colors: themeHint.palette, fonts: themeHint.fonts }
+        : undefined;
+
+      const visualResult = await runVisualScreenTest({
+        screen: resolvedScreen,
+        style,
+        theme: theme as Record<string, unknown> | undefined,
+        visualAssert,
+        label: pageName,
+        screenshotsDir,
+        prompt,
+      });
+
+      const visualChecks: CheckResult[] = [
+        { pass: visualResult.pass, label: 'Visual checks', detail: visualResult.error },
+      ];
+      if (visualResult.screenshotPath) {
+        console.log(`  Screenshot: ${visualResult.screenshotPath}`);
+      }
+      printChecks(visualChecks);
+
+      if (!visualResult.pass) {
+        logAiResponse('page', { prompt }, output, {
+          source: 'eval',
+          evalResult: 'FAIL',
+          error: `Visual: ${visualResult.error}`,
+          page: 'home',
+        });
+        return { pass: false, actual: output, error: `Visual: ${visualResult.error}` };
+      }
+    }
+
+    logAiResponse('page', { prompt }, output, { source: 'eval', evalResult: 'PASS', page: 'home' });
+    return { pass: true };
+  } catch (e) {
+    const err = e instanceof Error ? e.message : String(e);
+    logAiResponse('page', { prompt }, null, {
+      source: 'eval',
+      evalResult: 'FAIL',
+      error: err,
+      page: 'home',
+    });
+    return { pass: false, error: err };
+  }
+}
+
+function printChecks(checks: CheckResult[]): void {
+  for (const r of checks) {
+    console.log(fmtRow(r.label, r.pass, r.detail));
+  }
+}
+
 async function runVariantSuggestionsCase(
   c: Record<string, unknown>,
   cachedOutput?: Record<string, unknown>
@@ -328,6 +629,7 @@ async function runVariantSuggestionsCase(
       ? { ...cachedOutput }
       : { suggestions: await generateVariantSuggestions(designMood) };
 
+    const suggestions = (output as { suggestions?: unknown }).suggestions;
     if (typeof suggestions !== 'object' || suggestions === null) {
       logAiResponse('variant-suggestions', { designMood }, output, {
         source: 'eval',
@@ -358,11 +660,12 @@ const GENERATOR_CONFIG: Array<{
     generatorName?: string
   ) => Promise<{ pass: boolean; actual?: unknown; error?: string }>;
 }> = [
-  { generator: 'navbar', filename: 'navbar.json', runner: runNavbarCase },
   { generator: 'layout', filename: 'layout.json', runner: runLayoutCase },
   { generator: 'palettes', filename: 'palettes.json', runner: runPalettesCase },
   { generator: 'font-pairings', filename: 'font-pairings.json', runner: runFontPairingsCase },
   { generator: 'variant-suggestions', filename: 'variant-suggestions.json', runner: runVariantSuggestionsCase },
+  { generator: 'screen', filename: 'screen.json', runner: runScreenCase },
+  { generator: 'page', filename: 'page.json', runner: runPageCase },
 ];
 
 function shouldRunCase(generator: string, caseId: string): boolean {
@@ -481,8 +784,23 @@ async function main() {
     await run(generator, runner, caseData, cachedOutput);
   }
 
-  console.log('\n--- Summary ---');
-  console.log(`${passed}/${total} passed`);
+  // ── Final summary table ────────────────────────────────────────────────────
+  console.log('\n' + '─'.repeat(60));
+  console.log('  EVAL SUMMARY');
+  console.log('─'.repeat(60));
+
+  for (const { generator, runner: _r, caseData, cachedOutput: _c } of casesToRun) {
+    const id = String(caseData.id ?? 'unknown');
+    const failed = failures.find((f) => f.id === id && f.generator === generator);
+    const status = failed ? '\x1b[31mFAIL\x1b[0m' : '\x1b[32mPASS\x1b[0m';
+    const detail = failed ? `  ${failed.error.slice(0, 80)}` : '';
+    console.log(`  ${generator}/${id.padEnd(30)} ${status}${detail}`);
+  }
+
+  console.log('─'.repeat(60));
+  const passRate = total > 0 ? Math.round((passed / total) * 100) : 0;
+  console.log(`  ${passed}/${total} passed (${passRate}%)`);
+  console.log('─'.repeat(60) + '\n');
 
   if (ONLY_FAILURES && failures.length === 0) {
     console.log('All previously failed cases now pass.');
@@ -490,6 +808,66 @@ async function main() {
 
   writeFileSync(FAILURES_FILE, JSON.stringify(failures, null, 2), 'utf8');
   console.log(`Failures written to ${FAILURES_FILE}`);
+
+  // ── Auto-correction: write pending-corrections.json ────────────────────────
+  if (failures.length > 0) {
+    const pending = failures
+      .filter((f) => f.actual != null)
+      .map((f) => ({
+        id: `auto-${f.generator}-${f.id}-${Date.now()}`,
+        generator: f.generator,
+        caseId: f.id,
+        category: 'logic' as const,
+        prompt: f.prompt,
+        wrongOutput: f.actual,
+        failedCheck: f.error,
+        reason: f.error,
+        suggestedFix: `Review the "${f.id}" case output and add a corrected version to corrections.json["${f.generator}"]`,
+        needsManualCorrection: true,
+        createdAt: new Date().toISOString(),
+      }));
+
+    if (pending.length > 0) {
+      let existing: typeof pending = [];
+      if (existsSync(PENDING_CORRECTIONS_FILE)) {
+        try {
+          existing = JSON.parse(readFileSync(PENDING_CORRECTIONS_FILE, 'utf8'));
+        } catch {
+          /* ignore */
+        }
+      }
+      writeFileSync(
+        PENDING_CORRECTIONS_FILE,
+        JSON.stringify([...existing, ...pending], null, 2),
+        'utf8'
+      );
+      console.log(`Pending corrections appended to ${PENDING_CORRECTIONS_FILE}`);
+      console.log('  Review failing cases, add correctedOutput, then move to corrections.json.');
+    }
+  }
+
+  // ── Eval history (track pass rates over time) ──────────────────────────────
+  const EVAL_HISTORY_FILE = join(EVAL_DIR, 'eval-history.json');
+  let history: Array<Record<string, unknown>> = [];
+  if (existsSync(EVAL_HISTORY_FILE)) {
+    try {
+      history = JSON.parse(readFileSync(EVAL_HISTORY_FILE, 'utf8'));
+    } catch {
+      /* ignore */
+    }
+  }
+  history.push({
+    timestamp: new Date().toISOString(),
+    total,
+    passed,
+    failed: failures.length,
+    passRate,
+    failedCases: failures.map((f) => ({ id: f.id, generator: f.generator, error: f.error })),
+  });
+  // Keep last 50 runs
+  if (history.length > 50) history = history.slice(-50);
+  writeFileSync(EVAL_HISTORY_FILE, JSON.stringify(history, null, 2), 'utf8');
+
   console.log(`Responses logged to ${AI_RESPONSES_FILE}`);
 
   process.exit(failures.length > 0 ? 1 : 0);

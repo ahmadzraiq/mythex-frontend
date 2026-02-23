@@ -1,0 +1,25 @@
+{
+  "cases": [
+    {
+      "id": "fashion-homepage-full",
+      "prompt": "Modern Fashion Ecommerce Homepage. Sections: announcement bar (free shipping message), hero split layout (headline + Shop Now CTA + editorial image), featured categories 4-column grid, flash sale with countdown timer, new arrivals 4-column product grid, best sellers carousel, brand story split (image left / text right), newsletter signup (email input + subscribe button with 10% discount incentive).",
+      "expect": {
+        "hasInitActions": true,
+        "layoutIs": "store",
+        "sectionsPresent": ["announcement", "hero", "categories", "flash-sale", "new-arrivals", "best-sellers", "brand-story", "newsletter"],
+        "noMapWithoutInitAction": true,
+        "designMood": "modern",
+        "paletteMoodMatch": true
+      },
+      "visualAssert": {
+        "check": "pageVisible",
+        "screenshot": true,
+        "checkIcons": true,
+        "checkColors": true,
+        "checkContrast": true,
+        "checkResponsive": true,
+        "checkInteractivity": true
+      }
+    }
+  ]
+}

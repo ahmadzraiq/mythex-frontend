@@ -22,11 +22,14 @@ import type { Palette } from '@/lib/ai/palette-schema';
 import type { FontPairing } from '@/lib/ai/font-pairing-schema';
 import { FONT_IDS } from '@/lib/ai/font-pairing-schema';
 import {
-  buildActionContextCompact,
+  buildLayoutContext,
   buildLayoutPartOverridesContext,
   buildSectionContext,
+  buildThemeContext,
 } from '@/lib/ai/sdui-config-context';
 import { logAiResponse } from '@/lib/ai/response-logger';
+import { generateNavbarStructure } from '@/lib/ai/generate-navbar-structure';
+import { colorSetToNavbarThemeVars } from '@/lib/ai/navbar-theme-picker';
 
 /** Fonts supported by ThemePresetOverlay (FONT_IDS + extras) */
 const SUPPORTED_FONTS = [
@@ -61,24 +64,41 @@ export type FullBuildContext = {
   selectedFontPairing?: FontPairing | null;
 };
 
-function buildFromFullContext(ctx: FullBuildContext): FullGenerationResult {
+async function buildFromFullContext(ctx: FullBuildContext): Promise<FullGenerationResult> {
   const variants = ctx.sectionVariants ?? {};
+  const mood = ctx.designMood ?? 'modern';
   const sections = ctx.selectedSections.map((type) => {
-    const base = { type } as { type: string; variant?: string; columns?: number; items?: number; source?: 'featured' };
+    const base = { type } as { type: string; variant?: string; columns?: number; items?: number; source?: 'featured'; content?: Record<string, unknown> };
     const v = variants[type];
     if (v) base.variant = v;
     if (type === 'product-grid') return { ...base, columns: 4, source: 'featured' as const };
     if (type === 'product-carousel') return { ...base, source: 'featured' as const };
-    if (type === 'feature-grid') return { ...base, items: 3 };
+    if (type === 'feature-grid') {
+      return {
+        ...base,
+        items: 3,
+        content: {
+          features: [
+            { title: 'Free Shipping', description: 'On all orders over $50' },
+            { title: 'Easy Returns', description: '30-day hassle-free returns' },
+            { title: 'Secure Checkout', description: 'Your data is always protected' },
+          ],
+        },
+      };
+    }
+    if (type === 'hero') {
+      return {
+        ...base,
+        content: {
+          heading: mood.charAt(0).toUpperCase() + mood.slice(1) + ' Style Awaits',
+          subheading: 'Shop the latest collections with free shipping over $50',
+          ctaText: 'Shop Now',
+          ctaUrl: '/collection',
+        },
+      };
+    }
     return base;
   });
-
-  const layout: LayoutSchema = {
-    pageType: 'homepage',
-    style: ctx.designMood ?? 'modern',
-    sections,
-    layoutParts: undefined,
-  };
 
   const theme: FullGenerationResult['theme'] = {
     designMood: ctx.designMood,
@@ -100,6 +120,36 @@ function buildFromFullContext(ctx: FullBuildContext): FullGenerationResult {
     };
   }
 
+  // Generate AI navbar using palette + mood
+  let navbarStructure: LayoutSchema['layoutParts'] = undefined;
+  try {
+    const paletteColors = ctx.selectedPalette;
+    const themeVars = paletteColors
+      ? colorSetToNavbarThemeVars(paletteColors.light, paletteColors.dark)
+      : undefined;
+    const navbarPrompt = [
+      ctx.designMood ? `${ctx.designMood} style` : 'modern e-commerce',
+      ctx.selectedFontPairing ? `heading font: ${ctx.selectedFontPairing.heading}` : '',
+      ctx.mode ? `mode: ${ctx.mode}` : '',
+    ]
+      .filter(Boolean)
+      .join(', ');
+    const navbarResult = await generateNavbarStructure(
+      `Create a navbar for an e-commerce store with ${navbarPrompt} aesthetic`,
+      { skipLog: true, predefinedTheme: themeVars ? { themeVars } : undefined }
+    );
+    navbarStructure = { navbar: { structure: navbarResult.structure } };
+  } catch (e) {
+    console.error('[layout-generator] Failed to generate navbar, skipping:', e);
+  }
+
+  const layout: LayoutSchema = {
+    pageType: 'homepage',
+    style: ctx.designMood ?? 'modern',
+    sections: sections as LayoutSchema['sections'],
+    layoutParts: navbarStructure,
+  };
+
   return { layout, theme };
 }
 
@@ -111,9 +161,28 @@ const BASE_SYSTEM_PROMPT = `You are a layout designer for an e-commerce homepage
     "style": "modern",
     "sections": [
       { "type": "navbar" },
-      { "type": "hero", "style": "centered" },
+      {
+        "type": "hero",
+        "style": "centered",
+        "content": {
+          "heading": "Discover Your Style",
+          "subheading": "Shop the latest collections with free shipping over $50",
+          "ctaText": "Shop Now",
+          "ctaUrl": "/collection"
+        }
+      },
       { "type": "product-grid", "columns": 4, "source": "featured" },
-      { "type": "feature-grid", "items": 3 },
+      {
+        "type": "feature-grid",
+        "items": 3,
+        "content": {
+          "features": [
+            { "title": "Free Shipping", "description": "On all orders over $50" },
+            { "title": "Easy Returns", "description": "30-day hassle-free returns" },
+            { "title": "Secure Checkout", "description": "Your data is always protected" }
+          ]
+        }
+      },
       { "type": "footer" }
     ]
   },
@@ -138,12 +207,21 @@ const BASE_SYSTEM_PROMPT = `You are a layout designer for an e-commerce homepage
   }
 }
 
+IMPORTANT: hero and feature-grid sections MUST include a "content" field with real, brand-appropriate copy:
+- hero.content: { heading (short punchy headline), subheading (benefit statement), ctaText (action label), ctaUrl ("/collection") }
+- feature-grid.content: { features: [{ title, description }] } — 3 features matching the store's brand
+
 ${buildSectionContext()}
+
+${buildLayoutContext()}
+
+${buildThemeContext()}
+
 Order: navbar, hero, product-grid OR product-carousel (pick one), feature-grid, footer.
 layoutParts: omit (navbar uses default). For custom navbar, use navbar-structure generator separately.
 
 Theme options (all optional):
-- style: "modern" | "minimal" | "luxury" | "custom"
+- style: "modern" | "luxury" | "custom"
 - mood: "light" | "dark" | "both" | "warm" | "cool" (warm/cool = color temperature)
 - mode: "light" | "dark" | "both" (which palette to apply)
 - designMood: string (e.g. "professional", "playful")
@@ -194,7 +272,7 @@ export async function generateLayout(
     fullBuildContext.selectedPalette &&
     fullBuildContext.selectedFontPairing
   ) {
-    return buildFromFullContext(fullBuildContext);
+    return await buildFromFullContext(fullBuildContext);
   }
 
   const contextPrompt = context ? buildContextPrompt(context) : '';
@@ -209,7 +287,7 @@ export async function generateLayout(
     output: Output.json(),
   });
 
-  logAiResponse('layout', { prompt: fullPrompt, context }, output, { source: 'api' });
+  logAiResponse('layout', { prompt: fullPrompt, context }, output, { source: 'api', page: 'home' });
 
   const parsed = fullGenerationSchema.safeParse(output);
   if (!parsed.success) {

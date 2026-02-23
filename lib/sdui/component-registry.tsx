@@ -63,6 +63,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea, TextareaInput } from '@/components/ui/textarea';
 import { Carousel, CarouselSlide } from '@/lib/sdui/carousel';
 import { SearchForm } from '@/components/shared/search-form';
+import { CountdownTimer } from '@/lib/sdui/components/CountdownTimer';
 
 // Data display
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableData } from '@/components/ui/table';
@@ -305,6 +306,7 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   Fab,
   FabLabel,
   FabIcon,
+  CountdownTimer,
 };
 
 export function getComponent(type: string): RegistryComponent | null {

@@ -14,6 +14,34 @@
       "id": "default-prompt",
       "prompt": "Generate an e-commerce homepage",
       "match": "schema"
+    },
+    {
+      "id": "luxury-homepage",
+      "prompt": "Luxury fashion store homepage with dark mode palette and elegant hero",
+      "match": "schema",
+      "visualAssert": {
+        "check": "pageVisible",
+        "screenshot": true
+      }
+    },
+    {
+      "id": "playful-homepage",
+      "prompt": "Playful colorful e-commerce store for kids with bright palette",
+      "match": "schema",
+      "visualAssert": {
+        "check": "pageVisible",
+        "screenshot": true
+      }
+    },
+    {
+      "id": "professional-homepage",
+      "prompt": "Professional B2B store with clean minimal design and feature grid",
+      "match": "schema",
+      "visualAssert": {
+        "navbarVisible": true,
+        "heroVisible": true,
+        "screenshot": true
+      }
     }
   ]
 }

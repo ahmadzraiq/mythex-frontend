@@ -17,16 +17,23 @@ export type GenerateNavbarStructureResult = {
   structure: NavbarStructure;
 };
 
+export type GenerateNavbarStructureOptions = {
+  skipLog?: boolean;
+  predefinedTheme?: { themeVars: Record<string, string> };
+};
+
 export async function generateNavbarStructure(
   prompt: string,
-  options?: { skipLog?: boolean }
+  options?: GenerateNavbarStructureOptions
 ): Promise<GenerateNavbarStructureResult> {
-  const systemPrompt = buildNavbarStructureSystemPrompt();
+  const systemPrompt = buildNavbarStructureSystemPrompt({
+    predefinedTheme: options?.predefinedTheme,
+  });
 
   const result = await generateText({
     model: openai('gpt-4o-mini'),
     system: systemPrompt,
-    prompt: prompt.trim() || 'Create a minimal e-commerce navbar',
+    prompt: prompt.trim() || 'Create an e-commerce navbar',
     output: Output.json(),
     temperature: 0.95,
   });
@@ -51,7 +58,7 @@ export async function generateNavbarStructure(
   if (!options?.skipLog) {
     logAiResponse(
       'navbar',
-      { prompt: prompt.trim() || 'Create a minimal e-commerce navbar' },
+      { prompt: prompt.trim() || 'Create an e-commerce navbar' },
       raw,
       { source: 'api' }
     );

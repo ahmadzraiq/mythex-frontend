@@ -25,6 +25,19 @@ export function NavbarPreviewFromUrl() {
   const setGeneratedStyle = useLayoutGeneratorStore((s) => s.setGeneratedStyle);
   const setData = useSduiStore((s) => s.setData);
 
+  // Expose setGenerated on window for Playwright visual testing.
+  // Mirrors the exact same call the AiResponsePreviewOverlay "Apply" button makes.
+  useEffect(() => {
+    (window as unknown as Record<string, unknown>).__setGeneratedScreen = (
+      screen: Record<string, unknown>,
+      style: string | null,
+      theme?: Record<string, unknown>
+    ) => setGenerated(screen, style, theme);
+    return () => {
+      delete (window as unknown as Record<string, unknown>).__setGeneratedScreen;
+    };
+  }, [setGenerated]);
+
   useEffect(() => {
     const encoded = searchParams.get('navbarPreview');
     if (!encoded) return;

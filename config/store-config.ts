@@ -1,17 +1,21 @@
 /**
- * Store config - merges store.json with environment variables.
+ * Store config - reads from root.ts, merges with environment variables.
  * Use NEXT_PUBLIC_GRAPHQL_ENDPOINT and NEXT_PUBLIC_VENDURE_TOKEN for production.
  */
 
-import storeJson from './store.json';
+import root from './root';
 
-type StoreConfig = typeof storeJson;
+type StoreConfig = (typeof root)['store'];
 
-const envEndpoint = typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT : undefined;
-const envToken = typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_VENDURE_TOKEN : undefined;
+const storeJson = root.store as StoreConfig;
+const engineConventions = { ...storeJson.engineConventions } as NonNullable<
+  StoreConfig['engineConventions']
+>;
 
-const base = storeJson as StoreConfig;
-const engineConventions = { ...base.engineConventions } as NonNullable<StoreConfig['engineConventions']>;
+const envEndpoint =
+  typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT : undefined;
+const envToken =
+  typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_VENDURE_TOKEN : undefined;
 
 if (envEndpoint) {
   engineConventions.graphqlEndpoint = envEndpoint;
@@ -24,7 +28,7 @@ if (envToken) {
 }
 
 const storeConfig: StoreConfig = {
-  ...base,
+  ...storeJson,
   engineConventions,
 };
 

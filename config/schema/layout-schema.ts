@@ -15,6 +15,22 @@ export const sectionTypeEnum = z.enum([
   'footer',
 ]);
 
+export const sectionInlineContentSchema = z.object({
+  heading: z.string().optional(),
+  subheading: z.string().optional(),
+  ctaText: z.string().optional(),
+  ctaUrl: z.string().optional(),
+  features: z
+    .array(
+      z.object({
+        icon: z.string().optional(),
+        title: z.string().optional(),
+        description: z.string().optional(),
+      })
+    )
+    .optional(),
+});
+
 export const layoutSectionSchema = z.object({
   type: sectionTypeEnum,
   style: z.string().optional(),
@@ -25,6 +41,7 @@ export const layoutSectionSchema = z.object({
     (val) => (typeof val === 'string' && val.toLowerCase().trim() === 'featured' ? 'featured' : undefined),
     z.enum(['featured']).optional()
   ),
+  content: sectionInlineContentSchema.optional(),
 });
 
 export const ALLOWED_SDUI_TYPES = COMPONENT_NAMES;
@@ -170,7 +187,7 @@ const colorSetSchema = z.object({
 export const themeSchema = z.object({
   designMood: z.string().optional(),
   mode: z.enum(['light', 'dark', 'both']).optional(),
-  style: z.enum(['modern', 'minimal', 'luxury', 'custom']).optional(),
+  style: z.enum(['modern', 'luxury', 'custom']).optional(),
   mood: z
     .preprocess(
       (val) => {
@@ -213,6 +230,7 @@ export const fullGenerationSchema = z.object({
 
 export type NavbarOverrides = z.infer<typeof navbarOverrideSchema>;
 export type NavbarStructure = z.infer<typeof navbarStructureSchema>;
+export type SectionInlineContent = z.infer<typeof sectionInlineContentSchema>;
 export type LayoutSection = z.infer<typeof layoutSectionSchema>;
 export type LayoutSchema = z.infer<typeof layoutSchema>;
 export type ThemeConfig = z.infer<typeof themeSchema>;
