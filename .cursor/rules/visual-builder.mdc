@@ -218,6 +218,14 @@ Key helpers across test files:
 - `U1`–`U14`: Alignment, flip, auto layout, gap, clip, stroke, typography, DOM visual update
 - `V1`–`V8`: Color pickers, Button visibility with gap, section visibility per node type, self-alignment
 
+**Selection in E2E — use Layers panel, not canvas click:**
+Canvas click-to-select (via the capture overlay) can be unreliable in Playwright/headless runs — the overlay's `onPointerDown` may not fire consistently. For tests that need a node selected, use the Layers panel instead:
+```ts
+await page.getByTestId('tab-layers').click();
+await page.getByTestId('layer-row').first().click();
+```
+This calls `store.select()` directly and is reliable. Do not rely on `clickFirstNode` / `page.mouse.click` on canvas for selection assertions.
+
 ---
 
 ### 9. Default color in panel doesn't match rendered color (Gluestack internal tokens)

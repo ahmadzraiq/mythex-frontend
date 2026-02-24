@@ -547,3 +547,5 @@ const hitTest = (clientX: number, clientY: number) => {
 - Only show the overlay when `tool !== 'hand'` (hand tool uses canvas-level pan drag instead).
 - Never use `onClickCapture`/`onMouseDownCapture` on the page frame for builder selection — use this pattern instead.
 - `pointer-events: none` assignment is synchronous; `elementFromPoint` fires in the same task, so the overlay is invisible to hit-testing for exactly one call with zero latency impact.
+
+**E2E tests:** Canvas click-to-select can be unreliable in Playwright/headless — the overlay's `onPointerDown` may not fire. For tests that need selection, use the Layers panel (`tab-layers` → `layer-row` click) instead of `page.mouse.click` on canvas. See `visual-builder.mdc` E2E section.

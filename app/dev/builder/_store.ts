@@ -109,6 +109,15 @@ export interface GridOverlayConfig {
   color: string;
 }
 
+export type ViewportSize = 'mobile' | 'tablet' | 'laptop' | 'desktop';
+
+export const VIEWPORT_WIDTHS: Record<ViewportSize, number> = {
+  mobile:  390,
+  tablet:  768,
+  laptop:  1024,
+  desktop: 1280,
+};
+
 export interface BuilderStore {
   // ── Page state ──────────────────────────────────────────────────────────────
   pageNodes: SDUINode[];
@@ -132,6 +141,9 @@ export interface BuilderStore {
   panX: number;
   panY: number;
 
+  // ── Responsive viewport ──────────────────────────────────────────────────────
+  viewport: ViewportSize;
+
   // ── Grid overlay ─────────────────────────────────────────────────────────────
   gridOverlay: GridOverlayConfig;
 
@@ -152,6 +164,8 @@ export interface BuilderStore {
   duplicateNodes: (ids: string[]) => void;
   groupNodes: (ids: string[]) => void;
   moveSection: (fromIdx: number, toIdx: number) => void;
+  moveNodeUp: (id: string) => void;
+  moveNodeDown: (id: string) => void;
   patchProp: (id: string, propPath: string, value: unknown) => void;
   patchClassName: (id: string, oldToken: string, newToken: string) => void;
   renameNode: (id: string, newId: string) => void;
@@ -159,6 +173,8 @@ export interface BuilderStore {
   // Selection
   select: (id: string | null, multi?: boolean) => void;
   selectAll: () => void;
+  selectParent: (id: string) => void;
+  selectFirstChild: (id: string) => void;
   hover: (id: string | null) => void;
   setAltMode: (on: boolean) => void;
   setAltHovered: (id: string | null) => void;
@@ -174,6 +190,7 @@ export interface BuilderStore {
   // Viewport
   setZoom: (z: number) => void;
   setPan:  (x: number, y: number) => void;
+  setViewport: (v: ViewportSize) => void;
 
   // Grid overlay
   setGridOverlay: (cfg: Partial<GridOverlayConfig>) => void;
@@ -181,6 +198,11 @@ export interface BuilderStore {
   // Clipboard
   copyToClipboard: () => void;
   pasteFromClipboard: () => void;
+  pasteInPlace: () => void;
+
+  // Align / Distribute (reads live DOM rects, sets inline style.position/left/top)
+  alignNodes: (ids: string[], edge: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom') => void;
+  distributeNodes: (ids: string[], axis: 'h' | 'v') => void;
 
   // History
   undo: () => void;
@@ -206,6 +228,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   zoom: 0.75,
   panX: 0,
   panY: 0,
+  viewport: 'desktop',
   gridOverlay: { enabled: false, type: 'columns', count: 12, color: 'rgba(99,102,241,0.15)' },
   clipboard: [],
   history: [[]],
@@ -331,6 +354,60 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     get()._pushHistory();
   },
 
+  moveNodeUp: (id) => {
+    set(s => {
+      const parent = findParentNode(s.pageNodes, id);
+      const siblings: SDUINode[] = parent
+        ? (parent.children as SDUINode[])
+        : s.pageNodes;
+      const idx = siblings.findIndex(n => n.id === id);
+      if (idx <= 0) return s;
+      const newNodes = clone(s.pageNodes);
+      const swap = (arr: SDUINode[], i: number) => {
+        [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
+      };
+      if (!parent) {
+        swap(newNodes, idx);
+        return { pageNodes: newNodes };
+      }
+      return {
+        pageNodes: patchNodeById(newNodes, parent.id!, p => {
+          const ch = clone((p.children ?? []) as SDUINode[]);
+          swap(ch, idx);
+          return { ...p, children: ch };
+        }),
+      };
+    });
+    get()._pushHistory();
+  },
+
+  moveNodeDown: (id) => {
+    set(s => {
+      const parent = findParentNode(s.pageNodes, id);
+      const siblings: SDUINode[] = parent
+        ? (parent.children as SDUINode[])
+        : s.pageNodes;
+      const idx = siblings.findIndex(n => n.id === id);
+      if (idx < 0 || idx >= siblings.length - 1) return s;
+      const newNodes = clone(s.pageNodes);
+      const swap = (arr: SDUINode[], i: number) => {
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+      };
+      if (!parent) {
+        swap(newNodes, idx);
+        return { pageNodes: newNodes };
+      }
+      return {
+        pageNodes: patchNodeById(newNodes, parent.id!, p => {
+          const ch = clone((p.children ?? []) as SDUINode[]);
+          swap(ch, idx);
+          return { ...p, children: ch };
+        }),
+      };
+    });
+    get()._pushHistory();
+  },
+
   patchProp: (id, propPath, value) => {
     set(s => ({
       pageNodes: patchNodeById(s.pageNodes, id, node => {
@@ -388,6 +465,19 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     set({ selectedIds: ids });
   },
 
+  selectParent: (id) => {
+    const parent = findParentNode(get().pageNodes, id);
+    if (parent === undefined) return; // node not found
+    if (parent === null) { set({ selectedIds: [] }); return; } // root → deselect
+    if (parent.id) get().select(parent.id);
+  },
+
+  selectFirstChild: (id) => {
+    const node = findNode(get().pageNodes, id);
+    const first = (node?.children as SDUINode[] | undefined)?.[0];
+    if (first?.id) get().select(first.id);
+  },
+
   hover: (id) => set({ hoveredId: id }),
   setAltMode: (on) => set({ altMode: on }),
   setAltHovered: (id) => set({ altHoveredId: id }),
@@ -423,6 +513,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
 
   setZoom: (z) => set({ zoom: z }),
   setPan:  (x, y) => set({ panX: x, panY: y }),
+  setViewport: (v) => set({ viewport: v }),
 
   setGridOverlay: (cfg) => set(s => ({ gridOverlay: { ...s.gridOverlay, ...cfg } })),
 
@@ -454,6 +545,130 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
         selectedIds: pasted.map(n => n.id ?? '').filter(Boolean),
       };
     });
+    get()._pushHistory();
+  },
+
+  pasteInPlace: () => {
+    // Same as pasteFromClipboard but preserves the original style.left/top so
+    // the node lands at the exact same position (useful for "Paste in place").
+    const { clipboard, pageNodes } = get();
+    if (!clipboard.length) return;
+    const pasted = clipboard.map(n => {
+      const c = clone(n);
+      if (c.id) c.id = `${c.id}-pip-${Date.now()}`;
+      return c;
+    });
+    set(s => {
+      const nodes = clone(s.pageNodes);
+      nodes.splice(pageNodes.length, 0, ...pasted);
+      return {
+        pageNodes: nodes,
+        selectedIds: pasted.map(n => n.id ?? '').filter(Boolean),
+      };
+    });
+    get()._pushHistory();
+  },
+
+  alignNodes: (ids, edge) => {
+    if (ids.length < 2) return;
+    // Read live bounding rects for all selected nodes
+    const rects = ids.map(id => {
+      const el = document.querySelector(`[data-builder-id="${id}"]`);
+      return el ? el.getBoundingClientRect() : null;
+    });
+    if (rects.some(r => !r)) return;
+    const validRects = rects as DOMRect[];
+
+    let targetValue: number;
+    switch (edge) {
+      case 'left':   targetValue = Math.min(...validRects.map(r => r.left)); break;
+      case 'right':  targetValue = Math.max(...validRects.map(r => r.right)); break;
+      case 'center': targetValue = validRects.reduce((s, r) => s + r.left + r.width / 2, 0) / validRects.length; break;
+      case 'top':    targetValue = Math.min(...validRects.map(r => r.top)); break;
+      case 'bottom': targetValue = Math.max(...validRects.map(r => r.bottom)); break;
+      case 'middle': targetValue = validRects.reduce((s, r) => s + r.top + r.height / 2, 0) / validRects.length; break;
+    }
+
+    set(s => {
+      let nodes = clone(s.pageNodes);
+      ids.forEach((id, i) => {
+        const r = validRects[i];
+        const node = findNode(nodes, id);
+        if (!node) return;
+        const existingStyle = (node.props as { style?: Record<string, string> })?.style ?? {};
+        let newStyle: Record<string, string>;
+
+        if (edge === 'left')   newStyle = { ...existingStyle, position: 'absolute', left: `${targetValue - r.left + parseFloat(existingStyle.left ?? '0')}px` };
+        else if (edge === 'right')  newStyle = { ...existingStyle, position: 'absolute', left: `${targetValue - r.right + parseFloat(existingStyle.left ?? '0')}px` };
+        else if (edge === 'center') newStyle = { ...existingStyle, position: 'absolute', left: `${targetValue - r.left - r.width / 2 + parseFloat(existingStyle.left ?? '0')}px` };
+        else if (edge === 'top')    newStyle = { ...existingStyle, position: 'absolute', top: `${targetValue - r.top + parseFloat(existingStyle.top ?? '0')}px` };
+        else if (edge === 'bottom') newStyle = { ...existingStyle, position: 'absolute', top: `${targetValue - r.bottom + parseFloat(existingStyle.top ?? '0')}px` };
+        else                        newStyle = { ...existingStyle, position: 'absolute', top: `${targetValue - r.top - r.height / 2 + parseFloat(existingStyle.top ?? '0')}px` };
+
+        nodes = patchNodeById(nodes, id, n => ({
+          ...n,
+          props: { ...(n.props as object), style: newStyle },
+        }));
+      });
+      return { pageNodes: nodes };
+    });
+    get()._pushHistory();
+  },
+
+  distributeNodes: (ids, axis) => {
+    if (ids.length < 3) return;
+    const rects = ids.map(id => {
+      const el = document.querySelector(`[data-builder-id="${id}"]`);
+      return el ? { id, rect: el.getBoundingClientRect() } : null;
+    }).filter(Boolean) as { id: string; rect: DOMRect }[];
+
+    if (rects.length < 3) return;
+
+    if (axis === 'h') {
+      const sorted = [...rects].sort((a, b) => a.rect.left - b.rect.left);
+      const totalSpace = sorted[sorted.length - 1].rect.right - sorted[0].rect.left;
+      const totalWidth = sorted.reduce((s, { rect }) => s + rect.width, 0);
+      const gap = (totalSpace - totalWidth) / (sorted.length - 1);
+      let cursor = sorted[0].rect.left;
+      set(s => {
+        let nodes = clone(s.pageNodes);
+        sorted.forEach(({ id, rect }) => {
+          const node = findNode(nodes, id);
+          if (!node) return;
+          const existingStyle = (node.props as { style?: Record<string, string> })?.style ?? {};
+          const currentLeft = parseFloat(existingStyle.left ?? '0');
+          const deltaLeft = cursor - rect.left;
+          nodes = patchNodeById(nodes, id, n => ({
+            ...n,
+            props: { ...(n.props as object), style: { ...existingStyle, position: 'absolute', left: `${currentLeft + deltaLeft}px` } },
+          }));
+          cursor += rect.width + gap;
+        });
+        return { pageNodes: nodes };
+      });
+    } else {
+      const sorted = [...rects].sort((a, b) => a.rect.top - b.rect.top);
+      const totalSpace = sorted[sorted.length - 1].rect.bottom - sorted[0].rect.top;
+      const totalHeight = sorted.reduce((s, { rect }) => s + rect.height, 0);
+      const gap = (totalSpace - totalHeight) / (sorted.length - 1);
+      let cursor = sorted[0].rect.top;
+      set(s => {
+        let nodes = clone(s.pageNodes);
+        sorted.forEach(({ id, rect }) => {
+          const node = findNode(nodes, id);
+          if (!node) return;
+          const existingStyle = (node.props as { style?: Record<string, string> })?.style ?? {};
+          const currentTop = parseFloat(existingStyle.top ?? '0');
+          const deltaTop = cursor - rect.top;
+          nodes = patchNodeById(nodes, id, n => ({
+            ...n,
+            props: { ...(n.props as object), style: { ...existingStyle, position: 'absolute', top: `${currentTop + deltaTop}px` } },
+          }));
+          cursor += rect.height + gap;
+        });
+        return { pageNodes: nodes };
+      });
+    }
     get()._pushHistory();
   },
 

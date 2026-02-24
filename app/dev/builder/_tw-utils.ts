@@ -112,6 +112,11 @@ export const DISPLAY_TOKENS = ['block','inline-block','inline','flex','inline-fl
 // Overflow
 export const OVERFLOW_TOKENS = ['overflow-auto','overflow-hidden','overflow-visible','overflow-scroll','overflow-x-auto','overflow-y-auto'];
 
+// Grid columns / rows (JIT-scannable so NativeWind compiles them)
+export const GRID_COLS_TOKENS = ['grid-cols-1','grid-cols-2','grid-cols-3','grid-cols-4','grid-cols-5','grid-cols-6','grid-cols-7','grid-cols-8','grid-cols-9','grid-cols-10','grid-cols-11','grid-cols-12'] as const;
+export const GRID_ROWS_TOKENS = ['grid-rows-1','grid-rows-2','grid-rows-3','grid-rows-4','grid-rows-5','grid-rows-6'] as const;
+export const COL_SPAN_TOKENS  = ['col-span-1','col-span-2','col-span-3','col-span-4','col-span-6','col-span-full'] as const;
+
 // ─── Core utilities ───────────────────────────────────────────────────────────
 
 /**

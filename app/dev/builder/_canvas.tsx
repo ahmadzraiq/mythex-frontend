@@ -12,12 +12,13 @@
  */
 
 import React, { useRef, useEffect, useCallback, useMemo, useState } from 'react';
-import { useBuilderStore, findNode, findParentNode } from './_store';
+import { useBuilderStore, findNode, findParentNode, VIEWPORT_WIDTHS } from './_store';
 import BuilderOverlay, { type ResizeHandle } from './_overlay';
 import { SDUIEngine } from '@/lib/sdui/sdui-engine';
 import appConfig from '@/config/app';
 import type { SDUIConfig } from '@/lib/sdui/types';
 import type { SDUINode } from '@/lib/sdui/types/node';
+import { computeSnap, snapResizeSize, type SnapGuide, type ContentRect } from './_snap-engine';
 
 /** Node types that act as containers and accept dropped children. */
 const CONTAINER_TYPES = new Set(['Box', 'VStack', 'HStack', 'ScrollView', 'View', 'Card', 'SafeAreaView', 'Pressable']);
@@ -25,8 +26,63 @@ const CONTAINER_TYPES = new Set(['Box', 'VStack', 'HStack', 'ScrollView', 'View'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const app = appConfig as any;
 
-const VIEWPORT_W   = 1280;
 const VIEWPORT_H   = 900;
+
+// ─── Canvas context menu ──────────────────────────────────────────────────────
+
+interface CanvasCtxMenuProps {
+  x: number; y: number;
+  nodeId: string | null;
+  onClose: () => void;
+}
+
+function CanvasContextMenu({ x, y, nodeId, onClose }: CanvasCtxMenuProps) {
+  const store = useBuilderStore();
+
+  useEffect(() => {
+    const close = (e: MouseEvent) => { if (!(e.target as Element).closest('[data-canvas-ctx-menu]')) onClose(); };
+    window.addEventListener('mousedown', close);
+    return () => window.removeEventListener('mousedown', close);
+  }, [onClose]);
+
+  const nodeItems = nodeId ? [
+    { label: 'Copy',         action: () => { store.select(nodeId); store.copyToClipboard(); } },
+    { label: 'Duplicate',    action: () => store.duplicateNodes([nodeId]) },
+    { label: 'Move Up',      action: () => store.moveNodeUp(nodeId) },
+    { label: 'Move Down',    action: () => store.moveNodeDown(nodeId) },
+    { label: 'Select Parent',action: () => store.selectParent(nodeId) },
+    null,
+    { label: 'Delete', action: () => store.deleteNodes([nodeId]), danger: true },
+  ] : [
+    { label: 'Select All',    action: () => store.selectAll() },
+    { label: 'Paste',         action: () => store.pasteFromClipboard() },
+    { label: 'Paste in Place',action: () => store.pasteInPlace() },
+  ];
+
+  return (
+    <div
+      data-canvas-ctx-menu="1"
+      data-testid={nodeId ? 'canvas-node-ctx-menu' : 'canvas-empty-ctx-menu'}
+      style={{ position: 'fixed', left: x, top: y, background: '#1f2937', border: '1px solid #374151', borderRadius: 6, zIndex: 99999, minWidth: 160, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.6)' }}
+    >
+      {nodeItems.map((item, i) =>
+        item === null ? (
+          <div key={i} style={{ height: 1, background: '#374151', margin: '2px 0' }} />
+        ) : (
+          <button
+            key={item.label}
+            style={{ display: 'block', width: '100%', padding: '7px 14px', background: 'none', border: 'none', color: (item as { danger?: boolean }).danger ? '#f87171' : '#d1d5db', fontSize: 12, fontFamily: 'system-ui', textAlign: 'left', cursor: 'pointer' }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#374151')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            onClick={() => { item.action(); onClose(); }}
+          >
+            {item.label}
+          </button>
+        )
+      )}
+    </div>
+  );
+}
 const MIN_ZOOM     = 0.1;
 const MAX_ZOOM     = 4;
 const DRAG_THRESHOLD = 4;
@@ -64,6 +120,7 @@ export default function BuilderCanvas() {
     altMode,
     tool,
     zoom, panX, panY,
+    viewport,
     setZoom, setPan,
     gridOverlay,
     select,
@@ -76,6 +133,35 @@ export default function BuilderCanvas() {
     patchProp,
     _pushHistory,
   } = useBuilderStore();
+
+  // ── Dynamic viewport width ────────────────────────────────────────────────
+  const vpWidth = VIEWPORT_WIDTHS[viewport];
+
+  // ── Absolute-position drag state ─────────────────────────────────────────
+  // When dragging a node that has `position: absolute` (or fixed), bypass the
+  // normal drop-zone reorder and instead track cursor coords so we can write
+  // style.left / style.top on drop.
+  //
+  // absDragPos state drives the crosshair UI indicator.
+  // absDragPosRef is the always-current mirror used by onDrop — React state
+  // updates are async so onDrop would read stale null if it used the state
+  // value directly (dragover → setAbsDragPos → drop fires before re-render).
+  const [absDragPos, setAbsDragPos] = useState<{
+    x: number; y: number;             // content-space px (relative to parent)
+    clientX: number; clientY: number; // screen px for tooltip placement
+  } | null>(null);
+  const absDragPosRef = useRef<typeof absDragPos>(null);
+
+  // ── Snap guides ───────────────────────────────────────────────────────────
+  // Guide lines shown during absolute-node drag and resize.
+  const [snapGuides, setSnapGuides] = useState<SnapGuide[]>([]);
+
+  // ── Marquee selection ─────────────────────────────────────────────────────
+  const [marquee, setMarquee] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const marqueeStartRef = useRef<{ clientX: number; clientY: number } | null>(null);
+
+  // ── Canvas right-click context menu ───────────────────────────────────────
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; nodeId: string | null } | null>(null);
 
   // ── Inline text editing ───────────────────────────────────────────────────
   const [editingId,  setEditingId]  = useState<string | null>(null);
@@ -125,6 +211,14 @@ export default function BuilderCanvas() {
   const draggingNodeIdRef = useRef<string | null>(null);
 
   /**
+   * When dragging an absolute-positioned node, record WHERE inside the element
+   * the user grabbed (screen-px offset from the element's top-left).  Subtracting
+   * this from the drop clientX/clientY keeps the element under the cursor instead
+   * of jumping its top-left to the cursor position.
+   */
+  const grabOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  /**
    * Computed target for the next drop: where in the tree to insert.
    * Kept in a ref so onDrop can read the latest value without re-creating handlers.
    */
@@ -139,8 +233,9 @@ export default function BuilderCanvas() {
   const fitToCanvas = useCallback(() => {
     const c = canvasRef.current;
     if (!c) return;
-    const z  = Math.min(c.clientWidth / VIEWPORT_W, c.clientHeight / VIEWPORT_H) * 0.9;
-    const px = (c.clientWidth  - VIEWPORT_W * z) / 2;
+    const w  = VIEWPORT_WIDTHS[useBuilderStore.getState().viewport];
+    const z  = Math.min(c.clientWidth / w, c.clientHeight / VIEWPORT_H) * 0.9;
+    const px = (c.clientWidth  - w * z) / 2;
     const py = (c.clientHeight - VIEWPORT_H * z) / 2;
     setZoom(z); setPan(px, py);
   }, [setZoom, setPan]);
@@ -153,7 +248,7 @@ export default function BuilderCanvas() {
     state: {},
     ui: {
       type: 'Box',
-      props: { className: 'flex flex-col w-full min-h-screen' },
+      props: { className: 'flex flex-col w-full min-h-screen items-start relative' },
       children: pageNodes,
     } as SDUIConfig['ui'],
   }), [pageNodes]);
@@ -232,8 +327,14 @@ export default function BuilderCanvas() {
       // subsequent click event before the capture overlay's onClick can fire.
       (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
       e.preventDefault();
+    } else if (e.button === 0 && tool === 'select') {
+      // Check if pointer is on empty canvas area → start marquee
+      const hit = hitTest(e.clientX, e.clientY);
+      if (hit.kind === 'empty') {
+        marqueeStartRef.current = { clientX: e.clientX, clientY: e.clientY };
+      }
     }
-  }, [tool]);
+  }, [tool, hitTest]);
 
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const d = dragRef.current;
@@ -242,6 +343,20 @@ export default function BuilderCanvas() {
     const dy = e.clientY - d.startY;
     if (!d.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
     d.moved = true;
+
+    // Marquee drag — update dimensions
+    if (marqueeStartRef.current) {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const cr = canvas.getBoundingClientRect();
+      const sx = marqueeStartRef.current.clientX - cr.left;
+      const sy = marqueeStartRef.current.clientY - cr.top;
+      const cx = e.clientX - cr.left;
+      const cy = e.clientY - cr.top;
+      setMarquee({ x: Math.min(sx, cx), y: Math.min(sy, cy), w: Math.abs(cx - sx), h: Math.abs(cy - sy) });
+      return;
+    }
+
     if (tool === 'hand' || e.buttons === 4) {
       // Start capturing now that we confirmed it's a pan drag
       if (!e.currentTarget.hasPointerCapture(e.pointerId)) {
@@ -253,6 +368,41 @@ export default function BuilderCanvas() {
 
   const onPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const d = dragRef.current;
+
+    // ── Marquee: finish selection ────────────────────────────────────────────
+    if (marqueeStartRef.current) {
+      const canvas = canvasRef.current;
+      if (canvas && marquee) {
+        const cr = canvas.getBoundingClientRect();
+        // Normalise marquee to absolute client rect
+        const mx1 = cr.left + Math.min(marquee.x, marquee.x + marquee.w);
+        const mx2 = cr.left + Math.max(marquee.x, marquee.x + marquee.w);
+        const my1 = cr.top  + Math.min(marquee.y, marquee.y + marquee.h);
+        const my2 = cr.top  + Math.max(marquee.y, marquee.y + marquee.h);
+
+        const matched: string[] = [];
+        document.querySelectorAll('[data-builder-id]').forEach(el => {
+          const r = el.getBoundingClientRect();
+          if (r.left < mx2 && r.right > mx1 && r.top < my2 && r.bottom > my1) {
+            const id = (el as HTMLElement).dataset.builderId;
+            if (id) matched.push(id);
+          }
+        });
+        if (matched.length) {
+          matched.forEach((id, i) => select(id, i > 0));
+        } else {
+          select(null);
+        }
+      } else {
+        // Click on empty canvas with no drag movement → deselect
+        select(null);
+      }
+      marqueeStartRef.current = null;
+      setMarquee(null);
+      dragRef.current.active = false;
+      return;
+    }
+
     if (d.active && !d.moved) {
       // Simple click (no drag) — handle selection here so it works regardless
       // of whether the capture overlay's onClick fired or not.
@@ -267,7 +417,7 @@ export default function BuilderCanvas() {
       }
     }
     dragRef.current.active = false;
-  }, [hitTest, select]);
+  }, [hitTest, select, marquee]);
 
   // ── Capture overlay hover ─────────────────────────────────────────────────
 
@@ -312,15 +462,90 @@ export default function BuilderCanvas() {
     return null;
   }, []);
 
+  /**
+   * Collect all sibling rects inside `parentEl` (excluding `excludeId`),
+   * converted to content space (divided by zoom).
+   */
+  function getAllSiblingRects(excludeId: string, parentEl: HTMLElement, z: number): ContentRect[] {
+    const pr = parentEl.getBoundingClientRect();
+    const els = parentEl.querySelectorAll<HTMLElement>('[data-builder-id]');
+    const rects: ContentRect[] = [];
+    for (const el of els) {
+      const id = el.dataset.builderId!;
+      if (id === excludeId) continue;
+      // Only direct children in the same positioning context
+      if ((el.parentElement?.closest('[data-builder-id]') as HTMLElement | null)?.dataset.builderId === excludeId) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 && r.height === 0) continue;
+      rects.push({
+        id,
+        x: (r.left - pr.left) / z,
+        y: (r.top  - pr.top)  / z,
+        w: r.width  / z,
+        h: r.height / z,
+      });
+    }
+    return rects;
+  }
+
   const onDragOver = useCallback((e: React.DragEvent) => {
     const hasData = e.dataTransfer.types.includes('text/variant-id') ||
                     e.dataTransfer.types.includes('text/primitive-node') ||
-                    e.dataTransfer.types.includes('text/canvas-node-id');
+                    e.dataTransfer.types.includes('text/canvas-node-id') ||
+                    // In CDP-simulated drags (e.g. Playwright) dataTransfer.types is
+                    // empty; treat as a canvas-node move when a node is already active.
+                    !!draggingNodeIdRef.current;
     if (!hasData) return;
     e.preventDefault();
-    // 'move' for canvas-node reordering; 'copy' for panel items (effectAllowed='copy')
-    e.dataTransfer.dropEffect = e.dataTransfer.types.includes('text/canvas-node-id') ? 'move' : 'copy';
+    const isCanvasMove = e.dataTransfer.types.includes('text/canvas-node-id') || !!draggingNodeIdRef.current;
+    e.dataTransfer.dropEffect = isCanvasMove ? 'move' : 'copy';
     setIsDroppingVariant(true);
+
+    // ── Absolute node: free-form positioning, skip drop-zone logic ────────────
+    const draggingId = draggingNodeIdRef.current;
+    if (draggingId) {
+      const draggedNode = findNode(useBuilderStore.getState().pageNodes, draggingId);
+      const cls = (draggedNode?.props as { className?: string })?.className ?? '';
+      const isAbsPos = /\babsolute\b/.test(cls) || /\bfixed\b/.test(cls);
+      if (isAbsPos) {
+        // Position relative to the nearest positioned parent, or the page frame
+        const parentNode = findParentNode(useBuilderStore.getState().pageNodes, draggingId);
+        const parentEl = parentNode?.id
+          ? (document.querySelector(`[data-builder-id="${parentNode.id}"]`) as HTMLElement | null)
+          : (document.querySelector('[data-builder-page-frame]') as HTMLElement | null);
+        if (parentEl) {
+          const pr   = parentEl.getBoundingClientRect();
+          const z    = zoomRef.current;
+          const grab = grabOffsetRef.current;
+          // Subtract the grab offset so the element stays under the cursor
+          // rather than snapping its top-left to the cursor position.
+          const rawX = Math.round((e.clientX - pr.left - grab.x) / z);
+          const rawY = Math.round((e.clientY - pr.top  - grab.y) / z);
+
+          // ── Snap to siblings ──────────────────────────────────────────────
+          const nodeEl = document.querySelector(`[data-builder-id="${draggingId}"]`) as HTMLElement | null;
+          const nodeW  = nodeEl ? nodeEl.getBoundingClientRect().width  / z : 0;
+          const nodeH  = nodeEl ? nodeEl.getBoundingClientRect().height / z : 0;
+          const siblings = getAllSiblingRects(draggingId, parentEl, z);
+          const dragged: ContentRect = { id: draggingId, x: rawX, y: rawY, w: nodeW, h: nodeH };
+          const { x, y, guides } = computeSnap(dragged, siblings);
+          setSnapGuides(guides);
+
+          const pos = { x, y, clientX: e.clientX, clientY: e.clientY };
+          absDragPosRef.current = pos;
+          setAbsDragPos(pos);
+        }
+        // Don't show any flow drop indicators
+        setDropZoneIdx(null);
+        setDropContainerId(null);
+        dropTargetRef.current = null;
+        return;
+      }
+    }
+    // Clear any stale absolute state when dragging a normal node
+    absDragPosRef.current = null;
+    setAbsDragPos(null);
+    setSnapGuides([]);
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -390,6 +615,9 @@ export default function BuilderCanvas() {
     setIsDroppingVariant(false);
     setDropZoneIdx(null);
     setDropContainerId(null);
+    absDragPosRef.current = null;
+    setAbsDragPos(null);
+    setSnapGuides([]);
     dropTargetRef.current = null;
   }, []);
 
@@ -405,7 +633,28 @@ export default function BuilderCanvas() {
     const primitive    = e.dataTransfer.getData('text/primitive-node');
 
     if (canvasNodeId) {
-      // Moving an existing canvas node to a new position
+      // ── Absolute node: apply style.left / style.top, don't reorder ──────────
+      // Read from the ref (always current) rather than state (async, may be stale
+      // when drop fires synchronously right after dragover).
+      const pos = absDragPosRef.current;
+      const draggedNode = findNode(useBuilderStore.getState().pageNodes, canvasNodeId);
+      const cls = (draggedNode?.props as { className?: string })?.className ?? '';
+      if (pos && (/\babsolute\b/.test(cls) || /\bfixed\b/.test(cls))) {
+        const existingStyle = (draggedNode?.props as { style?: Record<string, string> })?.style ?? {};
+        patchProp(canvasNodeId, 'props.style', {
+          ...existingStyle,
+          left: `${pos.x}px`,
+          top:  `${pos.y}px`,
+        });
+        _pushHistory();
+        absDragPosRef.current = null;
+        setAbsDragPos(null);
+        setSnapGuides([]);
+        draggingNodeIdRef.current = null;
+        setDropZoneIdx(null);
+        return;
+      }
+      // Moving an existing canvas node to a new position (flow)
       moveNode(canvasNodeId, target.parentId, target.index);
     } else if (primitive) {
       try {
@@ -422,7 +671,7 @@ export default function BuilderCanvas() {
 
     setDropZoneIdx(null);
     draggingNodeIdRef.current = null;
-  }, [addNode, addSection, moveNode]);
+  }, [addNode, addSection, moveNode, patchProp, _pushHistory]);
 
   // ── Resize: pointer-capture drag on handle ───────────────────────────────
   //
@@ -458,6 +707,13 @@ export default function BuilderCanvas() {
       if (handle.includes('w')) newW = Math.max(20, Math.round(startW - dx));
       if (handle.includes('n')) newH = Math.max(20, Math.round(startH - dy));
 
+      // Snap to sibling sizes
+      const siblings = getAllSiblingRects(id, frame as HTMLElement, z);
+      const snapped = snapResizeSize(newW, newH, handle, siblings);
+      newW = snapped.w;
+      newH = snapped.h;
+      setSnapGuides(snapped.guides);
+
       // Use inline style instead of Tailwind classes — avoids JIT compilation
       // requirement and always takes effect immediately at highest specificity.
       const node = (() => {
@@ -483,6 +739,7 @@ export default function BuilderCanvas() {
     const onUp = () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup',   onUp);
+      setSnapGuides([]);
       useBuilderStore.getState()._pushHistory();
     };
 
@@ -504,6 +761,12 @@ export default function BuilderCanvas() {
 
   const cursorStyle = tool === 'hand' ? 'grab' : 'default';
 
+  const handleContextMenu = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const hit = hitTest(e.clientX, e.clientY);
+    setCtxMenu({ x: e.clientX, y: e.clientY, nodeId: hit.kind === 'node' ? hit.id : null });
+  }, [hitTest]);
+
   return (
     <div
       ref={canvasRef}
@@ -515,6 +778,7 @@ export default function BuilderCanvas() {
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
+      onContextMenu={handleContextMenu}
     >
       {/* Figma-style dot grid */}
       <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.25 }}>
@@ -527,7 +791,12 @@ export default function BuilderCanvas() {
       </svg>
 
       {/* Page frame drop shadow */}
-      <div style={{ position: 'absolute', left: panX - 6, top: panY - 6, width: VIEWPORT_W * zoom + 12, height: VIEWPORT_H * zoom + 12, borderRadius: 4, boxShadow: '0 8px 40px rgba(0,0,0,0.6)', background: 'rgba(0,0,0,0.3)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', left: panX - 6, top: panY - 6, width: vpWidth * zoom + 12, height: VIEWPORT_H * zoom + 12, borderRadius: 4, boxShadow: '0 8px 40px rgba(0,0,0,0.6)', background: 'rgba(0,0,0,0.3)', pointerEvents: 'none' }} />
+
+      {/* Viewport width label */}
+      <div style={{ position: 'absolute', left: panX, top: panY - 20, fontSize: 10, color: '#6b7280', pointerEvents: 'none', userSelect: 'none', fontFamily: 'monospace' }}>
+        {vpWidth}px
+      </div>
 
       {/* ── Page frame: direct SDUI render ── */}
       <div
@@ -537,7 +806,7 @@ export default function BuilderCanvas() {
           position: 'absolute',
           left: panX,
           top: panY,
-          width: VIEWPORT_W,
+          width: vpWidth,
           height: VIEWPORT_H,
           transformOrigin: '0 0',
           transform: `scale(${zoom})`,
@@ -618,8 +887,17 @@ export default function BuilderCanvas() {
               if (hit.kind === 'node') select(hit.id, e.shiftKey);
             }}
             onDragStart={e => {
-              // Find the canvas node under the cursor when drag starts
-              const hit = hitTest(e.clientX, e.clientY);
+              // Find the canvas node under the cursor when drag starts.
+              // Fallback to the selected node when hitTest misses — this handles
+              // CDP-simulated drag events (e.g. Playwright) where clientX/clientY
+              // may be 0, and also lets users drag from any part of the overlay.
+              let hit = hitTest(e.clientX, e.clientY);
+              if (hit.kind !== 'node') {
+                const { selectedIds } = useBuilderStore.getState();
+                if (selectedIds.length > 0) {
+                  hit = { kind: 'node' as const, id: selectedIds[0] };
+                }
+              }
               if (hit.kind !== 'node') {
                 e.preventDefault();
                 return;
@@ -652,18 +930,28 @@ export default function BuilderCanvas() {
               draggingNodeIdRef.current = dragId;
               e.dataTransfer.setData('text/canvas-node-id', dragId);
               e.dataTransfer.effectAllowed = 'move';
-              // Use the node's DOM element as the drag ghost image
+              // Use the node's DOM element as the drag ghost image and record
+              // the grab offset (where inside the element the drag started).
               const nodeEl = document.querySelector(`[data-builder-id="${dragId}"]`) as HTMLElement | null;
               if (nodeEl) {
                 const nr = nodeEl.getBoundingClientRect();
-                e.dataTransfer.setDragImage(nodeEl, e.clientX - nr.left, e.clientY - nr.top);
+                const ox = e.clientX - nr.left;
+                const oy = e.clientY - nr.top;
+                e.dataTransfer.setDragImage(nodeEl, ox, oy);
+                grabOffsetRef.current = { x: ox, y: oy };
+              } else {
+                grabOffsetRef.current = { x: 0, y: 0 };
               }
             }}
             onDragEnd={() => {
               draggingNodeIdRef.current = null;
+              absDragPosRef.current = null;
+              grabOffsetRef.current = { x: 0, y: 0 };
               setIsDroppingVariant(false);
               setDropContainerId(null);
               setDropZoneIdx(null);
+              setAbsDragPos(null);
+              setSnapGuides([]);
             }}
           />
         )}
@@ -700,6 +988,24 @@ export default function BuilderCanvas() {
         />
       )}
 
+      {/* ── Marquee selection rectangle ── */}
+      {marquee && (
+        <div
+          data-testid="marquee-rect"
+          style={{
+            position: 'absolute',
+            left:   marquee.x,
+            top:    marquee.y,
+            width:  marquee.w,
+            height: marquee.h,
+            border: '1px solid #3b82f6',
+            background: 'rgba(59,130,246,0.1)',
+            pointerEvents: 'none',
+            zIndex: 99990,
+          }}
+        />
+      )}
+
       {/* ── Overlay ── */}
       <BuilderOverlay
         zoom={zoom}
@@ -718,6 +1024,103 @@ export default function BuilderCanvas() {
         onResizeStart={onResizeStart}
       />
 
+      {/* ── Context menu ── */}
+      {ctxMenu && (
+        <CanvasContextMenu
+          x={ctxMenu.x}
+          y={ctxMenu.y}
+          nodeId={ctxMenu.nodeId}
+          onClose={() => setCtxMenu(null)}
+        />
+      )}
+
+      {/* ── Snap guide lines ── */}
+      {snapGuides.map((g, i) =>
+        g.axis === 'x' ? (
+          // Vertical guide line (marks an X-axis alignment: edges / centers)
+          <div
+            key={`sg-${i}`}
+            data-testid="snap-guide"
+            data-snap-type={g.type}
+            data-snap-axis="x"
+            style={{
+              position: 'absolute',
+              left:   panX + g.position * zoom,
+              top:    panY + g.start    * zoom,
+              width:  1,
+              height: Math.max(1, (g.end - g.start) * zoom),
+              background: g.type === 'center' ? '#a78bfa' : g.type === 'spacing' ? '#34d399' : '#f43f5e',
+              pointerEvents: 'none',
+              zIndex: 9999,
+            }}
+          />
+        ) : (
+          // Horizontal guide line (marks a Y-axis alignment: edges / centers)
+          <div
+            key={`sg-${i}`}
+            data-testid="snap-guide"
+            data-snap-type={g.type}
+            data-snap-axis="y"
+            style={{
+              position: 'absolute',
+              left:   panX + g.start    * zoom,
+              top:    panY + g.position * zoom,
+              width:  Math.max(1, (g.end - g.start) * zoom),
+              height: 1,
+              background: g.type === 'center' ? '#a78bfa' : g.type === 'spacing' ? '#34d399' : '#f43f5e',
+              pointerEvents: 'none',
+              zIndex: 9999,
+            }}
+          />
+        )
+      )}
+
+      {/* ── Absolute-drag crosshair + position tooltip ── */}
+      {absDragPos && (
+        <>
+          {/* Vertical line */}
+          <div style={{
+            position: 'absolute',
+            left: panX + absDragPos.x * zoom,
+            top: panY,
+            bottom: 0,
+            width: 1,
+            background: 'rgba(99,179,237,0.55)',
+            pointerEvents: 'none',
+            zIndex: 9998,
+          }} />
+          {/* Horizontal line */}
+          <div style={{
+            position: 'absolute',
+            left: panX,
+            right: 0,
+            top: panY + absDragPos.y * zoom,
+            height: 1,
+            background: 'rgba(99,179,237,0.55)',
+            pointerEvents: 'none',
+            zIndex: 9998,
+          }} />
+          {/* Coordinates tooltip near the cursor */}
+          <div style={{
+            position: 'fixed',
+            left: absDragPos.clientX + 14,
+            top:  absDragPos.clientY - 28,
+            background: '#1e293b',
+            color: '#93c5fd',
+            padding: '2px 7px',
+            borderRadius: 4,
+            fontSize: 10,
+            fontFamily: 'monospace',
+            pointerEvents: 'none',
+            zIndex: 99999,
+            border: '1px solid #334155',
+            whiteSpace: 'nowrap',
+          }}>
+            {absDragPos.x} × {absDragPos.y}
+          </div>
+        </>
+      )}
+
       {/* ── Zoom controls ── */}
       <div style={{ position: 'absolute', bottom: 16, right: 16, display: 'flex', gap: 4, background: '#1f2937', border: '1px solid #374151', borderRadius: 6, padding: '4px 6px', pointerEvents: 'all' }}>
         <ZoomBtn label="−" testId="zoom-out" onClick={() => setZoom(Math.max(MIN_ZOOM, zoom / 1.25))} />
@@ -729,6 +1132,7 @@ export default function BuilderCanvas() {
     </div>
   );
 }
+
 
 function ZoomBtn({ label, testId, onClick }: { label: string; testId?: string; onClick: () => void }) {
   return (

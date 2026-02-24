@@ -22,8 +22,12 @@ async function dropButton(page: Page) {
   const item = page.locator('[draggable="true"]').filter({ hasText: 'Button' }).first();
   await expect(item).toBeVisible({ timeout: 8_000 });
   const frame = page.locator('[data-builder-page-frame]');
-  await item.dragTo(frame);
-  await page.waitForSelector('[data-builder-id]', { timeout: 10_000 });
+  for (let i = 0; i < 3; i++) {
+    await item.dragTo(frame);
+    const found = await page.locator('[data-builder-id]').first().waitFor({ state: 'visible', timeout: 5_000 }).then(() => true).catch(() => false);
+    if (found) break;
+    if (i === 2) throw new Error('Failed to drop Button onto canvas after 3 attempts');
+  }
   await page.waitForTimeout(300);
 }
 
@@ -45,6 +49,14 @@ async function scrollTo(page: Page, testId: string) {
     }, testId);
   }
   await page.waitForTimeout(50);
+}
+
+/** Switch Padding section to combined mode (H/V inputs). Default is individual. */
+async function switchToCombinedPadding(page: Page) {
+  await scrollTo(page, 'section-padding');
+  const toggle = page.locator('[data-testid="section-padding"]').locator('button').filter({ hasText: /^[⊞□]$/ });
+  await toggle.click();
+  await page.waitForTimeout(100);
 }
 
 async function selectViaLayers(page: Page) {
@@ -345,6 +357,7 @@ test.describe('Button — all right-panel controls', () => {
   // ── Padding ───────────────────────────────────────────────────────────────────
 
   test('BP-18: Padding H=8 — button stays visible', async ({ page }) => {
+    await switchToCombinedPadding(page);
     await scrollTo(page, 'input-pad-h');
     await page.locator('[data-testid="input-pad-h"]').fill('8');
     await page.waitForTimeout(200);
@@ -352,6 +365,7 @@ test.describe('Button — all right-panel controls', () => {
   });
 
   test('BP-19: Padding V=8 — button stays visible', async ({ page }) => {
+    await switchToCombinedPadding(page);
     await scrollTo(page, 'input-pad-v');
     await page.locator('[data-testid="input-pad-v"]').fill('8');
     await page.waitForTimeout(200);
@@ -359,13 +373,7 @@ test.describe('Button — all right-panel controls', () => {
   });
 
   test('BP-20: Padding individual sides — button stays visible', async ({ page }) => {
-    await scrollTo(page, 'input-pad-h');
-    // Switch to individual mode by clicking the ⊞ toggle in Padding header
-    const toggleBtn = page.locator('button').filter({ hasText: /^[⊞□]$/ }).first();
-    await toggleBtn.evaluate(el => el.scrollIntoView({ block: 'nearest' }));
-    await toggleBtn.click();
-    await page.waitForTimeout(150);
-
+    // Default padMode is individual — use individual inputs directly
     for (const testId of ['input-pad-top', 'input-pad-right', 'input-pad-bottom', 'input-pad-left']) {
       await scrollTo(page, testId);
       await page.locator(`[data-testid="${testId}"]`).fill('12');
@@ -627,6 +635,7 @@ test.describe('Button — all right-panel controls', () => {
 
   test('BP-35: Padding H=1 — button stays visible with non-transparent background', async ({ page }) => {
     // This was the regression: any non-empty className triggered action='custom' → bg-transparent
+    await switchToCombinedPadding(page);
     await scrollTo(page, 'input-pad-h');
     const padH = page.locator('[data-testid="input-pad-h"]');
     await padH.fill('1');

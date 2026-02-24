@@ -56,6 +56,8 @@ import {
   Z_INDEX_TOKENS,
   CURSOR_TOKENS,
   DISPLAY_TOKENS,
+  GRID_COLS_TOKENS,
+  GRID_ROWS_TOKENS,
   expandPadding,
   applyPadding,
   expandMargin,
@@ -351,7 +353,7 @@ function DesignTab({ node }: { node: SDUINode }) {
   const textDecor  = TEXT_DECORATION_TOKENS.find(t => cls.includes(t)) ?? 'no-underline';
   const textTransform = TEXT_TRANSFORM_TOKENS.find(t => cls.includes(t)) ?? 'normal-case';
 
-  const [padMode, setPadMode] = useState<'combined' | 'individual'>('combined');
+  const [padMode, setPadMode] = useState<'combined' | 'individual'>('individual');
 
   // ── Selection colors ─────────────────────────────────────────────────────────
 
@@ -405,6 +407,7 @@ function DesignTab({ node }: { node: SDUINode }) {
         <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
           <SelectInput
             label="Position"
+            testId="select-position"
             value={positionToken}
             options={POSITION_TOKENS}
             onChange={v => {
@@ -444,6 +447,28 @@ function DesignTab({ node }: { node: SDUINode }) {
             commitHistory();
           }} />
         </div>
+
+        {/* ── Inset controls (shown when position is absolute / fixed / sticky) ── */}
+        {(positionToken === 'absolute' || positionToken === 'fixed' || positionToken === 'sticky') && (
+          <>
+            <div style={{ marginTop: 6, marginBottom: 2, fontSize: 10, color: '#6b7280' }}>Inset</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+              {(['top','right','bottom','left'] as const).map(side => (
+                <NumberInput
+                  key={side}
+                  label={side.charAt(0).toUpperCase() + side.slice(1)}
+                  testId={`input-inset-${side}`}
+                  value={parseInt((node.props as { style?: Record<string, string> })?.style?.[side] ?? '') || 0}
+                  onChange={px => {
+                    const s = (node.props as { style?: Record<string, string> })?.style ?? {};
+                    store.patchProp(nodeId, 'props.style', { ...s, [side]: `${px}px` });
+                    commitHistory();
+                  }}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── W/H Resize modes ── */}
@@ -657,6 +682,32 @@ function DesignTab({ node }: { node: SDUINode }) {
               </div>
             </div>
           </div>
+
+          {/* Grid columns / rows (only visible when 'grid' layout is selected) */}
+          {isGrid && (
+            <div style={{ display: 'flex', gap: 6 }}>
+              <SelectInput
+                label="Columns"
+                value={GRID_COLS_TOKENS.find(t => cls.includes(t)) ?? 'grid-cols-1'}
+                options={[...GRID_COLS_TOKENS]}
+                onChange={v => {
+                  let next = cls;
+                  GRID_COLS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                  patchCls(`${next} ${v}`.trim());
+                }}
+              />
+              <SelectInput
+                label="Rows"
+                value={GRID_ROWS_TOKENS.find(t => cls.includes(t)) ?? 'grid-rows-1'}
+                options={[...GRID_ROWS_TOKENS]}
+                onChange={v => {
+                  let next = cls;
+                  GRID_ROWS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                  patchCls(`${next} ${v}`.trim());
+                }}
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -1016,6 +1067,7 @@ function PropsTab({ node }: { node: SDUINode }) {
         <div key={key} style={{ marginBottom: 8 }}>
           <span style={{ fontSize: 10, color: '#6b7280', display: 'block', marginBottom: 2 }}>{key}</span>
           <input
+            type="text"
             value={val}
             onChange={e => setLocalProps(prev => ({ ...prev, [key]: e.target.value }))}
             onBlur={() => commitProp(key, localProps[key])}
@@ -1078,7 +1130,12 @@ export default function PanelRight() {
         ))}
       </div>
 
-      {!selectedNode && (
+      {/* Multi-select: show align/distribute panel instead of single-node design panel */}
+      {selectedIds.length > 1 && (
+        <AlignDistributePanel ids={selectedIds} />
+      )}
+
+      {!selectedNode && selectedIds.length <= 1 && (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4b5563', fontSize: 12, textAlign: 'center', padding: 16 }}>
           Select a node to edit its properties
         </div>
@@ -1087,6 +1144,62 @@ export default function PanelRight() {
       {selectedNode && tab === 'design' && <DesignTab node={selectedNode} />}
       {selectedNode && tab === 'props'  && <PropsTab  node={selectedNode} />}
       {selectedNode && tab === 'json'   && <JsonTab   node={selectedNode} />}
+    </div>
+  );
+}
+
+// ─── Align / Distribute Panel ─────────────────────────────────────────────────
+
+function AlignDistributePanel({ ids }: { ids: string[] }) {
+  const store = useBuilderStore();
+
+  const ALIGN_BTNS: Array<{ label: string; icon: string; edge: Parameters<typeof store.alignNodes>[1]; testId: string }> = [
+    { label: 'Align Left',    icon: '⊢', edge: 'left',   testId: 'align-left' },
+    { label: 'Align Center H',icon: '↔', edge: 'center', testId: 'align-center-h' },
+    { label: 'Align Right',   icon: '⊣', edge: 'right',  testId: 'align-right' },
+    { label: 'Align Top',     icon: '⊤', edge: 'top',    testId: 'align-top' },
+    { label: 'Align Middle V',icon: '↕', edge: 'middle', testId: 'align-middle-v' },
+    { label: 'Align Bottom',  icon: '⊥', edge: 'bottom', testId: 'align-bottom' },
+  ];
+
+  const DIST_BTNS: Array<{ label: string; icon: string; axis: 'h' | 'v'; testId: string }> = [
+    { label: 'Distribute Horizontal', icon: '⇔', axis: 'h', testId: 'distribute-h' },
+    { label: 'Distribute Vertical',   icon: '⇕', axis: 'v', testId: 'distribute-v' },
+  ];
+
+  return (
+    <div style={{ padding: 12, overflowY: 'auto', flex: 1 }}>
+      <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 8 }}>{ids.length} nodes selected</div>
+
+      <SectionHeader title="Align" />
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 12, marginTop: 6 }}>
+        {ALIGN_BTNS.map(({ label, icon, edge, testId }) => (
+          <button
+            key={edge}
+            title={label}
+            data-testid={testId}
+            onClick={() => store.alignNodes(ids, edge)}
+            style={{ width: 32, height: 28, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#d1d5db', cursor: 'pointer', fontSize: 14 }}
+          >
+            {icon}
+          </button>
+        ))}
+      </div>
+
+      <SectionHeader title="Distribute" />
+      <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
+        {DIST_BTNS.map(({ label, icon, axis, testId }) => (
+          <button
+            key={axis}
+            title={label}
+            data-testid={testId}
+            onClick={() => store.distributeNodes(ids, axis)}
+            style={{ width: 32, height: 28, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#d1d5db', cursor: 'pointer', fontSize: 14 }}
+          >
+            {icon}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

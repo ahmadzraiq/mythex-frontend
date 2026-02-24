@@ -26,15 +26,30 @@
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { useBuilderStore } from './_store';
+import { useBuilderStore, VIEWPORT_WIDTHS, type ViewportSize } from './_store';
 import BuilderCanvas from './_canvas';
 import PanelLeft from './_panel-left';
 import PanelRight from './_panel-right';
 
+void useRef; void useCallback; // suppress unused-import lint
+
 // ─── Top Bar ──────────────────────────────────────────────────────────────────
 
+const VIEWPORT_LABELS: Record<ViewportSize, string> = {
+  mobile:  '390',
+  tablet:  '768',
+  laptop:  '1024',
+  desktop: '1280',
+};
+const VIEWPORT_ICONS: Record<ViewportSize, string> = {
+  mobile:  '📱',
+  tablet:  '📟',
+  laptop:  '💻',
+  desktop: '🖥',
+};
+
 function TopBar() {
-  const { tool, setTool, undo, redo, historyIdx, history, selectedIds, pageNodes } = useBuilderStore();
+  const { tool, setTool, undo, redo, historyIdx, history, selectedIds, pageNodes, viewport, setViewport } = useBuilderStore();
   const canUndo = historyIdx > 0;
   const canRedo = historyIdx < history.length - 1;
 
@@ -74,6 +89,34 @@ function TopBar() {
       {/* History */}
       <TopBarBtn disabled={!canUndo} onClick={undo} title="Undo (⌘Z)"   testId="btn-undo">↩</TopBarBtn>
       <TopBarBtn disabled={!canRedo} onClick={redo} title="Redo (⌘⇧Z)" testId="btn-redo">↪</TopBarBtn>
+
+      <div style={{ flex: 1 }} />
+
+      {/* ── Responsive viewport breakpoints ── */}
+      <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+        {(Object.keys(VIEWPORT_WIDTHS) as ViewportSize[]).map(v => (
+          <button
+            key={v}
+            data-testid={`viewport-${v}`}
+            onClick={() => setViewport(v)}
+            title={`${v} (${VIEWPORT_LABELS[v]}px)`}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 3,
+              padding: '3px 7px',
+              background: viewport === v ? '#1d4ed8' : 'transparent',
+              border: `1px solid ${viewport === v ? '#3b82f6' : 'transparent'}`,
+              borderRadius: 4,
+              color: viewport === v ? '#fff' : '#6b7280',
+              cursor: 'pointer',
+              fontSize: 10,
+              fontFamily: 'system-ui',
+            }}
+          >
+            <span>{VIEWPORT_ICONS[v]}</span>
+            <span>{VIEWPORT_LABELS[v]}</span>
+          </button>
+        ))}
+      </div>
 
       <div style={{ flex: 1 }} />
 
@@ -219,7 +262,17 @@ export default function BuilderPage() {
         return;
       }
 
-      if (e.key === 'Escape') { store.select(null); return; }
+      // Escape: walk up to parent, or deselect when already at root
+      if (e.key === 'Escape') {
+        if (store.selectedIds.length > 0) store.selectParent(store.selectedIds[0]);
+        else store.select(null);
+        return;
+      }
+      // Enter: dive into first child of selected node
+      if (e.key === 'Enter' && store.selectedIds.length > 0) {
+        store.selectFirstChild(store.selectedIds[0]);
+        return;
+      }
       if (e.key === 'h' || e.key === 'H') { store.setTool(store.tool === 'hand' ? 'select' : 'hand'); return; }
       if ((e.key === 'v' || e.key === 'V') && !isCmd) { store.setTool('select'); return; }
     };

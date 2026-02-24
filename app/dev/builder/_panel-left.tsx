@@ -56,6 +56,9 @@ interface ContextMenuProps {
 function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps) {
   const store = useBuilderStore();
   const items = [
+    { label: 'Move Up',   action: () => store.moveNodeUp(nodeId) },
+    { label: 'Move Down', action: () => store.moveNodeDown(nodeId) },
+    null,
     { label: 'Duplicate', action: () => store.duplicateNodes([nodeId]) },
     { label: 'Copy',      action: () => { store.select(nodeId); store.copyToClipboard(); } },
     { label: 'Paste',     action: () => store.pasteFromClipboard() },
@@ -317,27 +320,32 @@ function LayerTree({
 
 const PRIMITIVE_COMPONENTS: Record<string, { type: string; label: string; icon: string; defaultNode: object }[]> = {
   Layout: [
-    { type: 'Box',    label: 'Box',    icon: '□', defaultNode: { type: 'Box',    props: { className: 'flex flex-col p-4 gap-4' } } },
-    { type: 'Box',    label: 'Row',    icon: '⬌', defaultNode: { type: 'Box',    props: { className: 'flex flex-row gap-4 p-4' } } },
-    { type: 'VStack', label: 'VStack', icon: '⬇', defaultNode: { type: 'VStack', props: { className: 'gap-4 p-4' } } },
-    { type: 'HStack', label: 'HStack', icon: '➡', defaultNode: { type: 'HStack', props: { className: 'gap-4 p-4' } } },
+    // Containers keep w-full — they are meant to fill their parent
+    { type: 'Box',    label: 'Box',    icon: '□', defaultNode: { type: 'Box',    props: { className: 'flex flex-col p-4 gap-4 w-full min-h-[80px]' } } },
+    { type: 'Box',    label: 'Row',    icon: '⬌', defaultNode: { type: 'Box',    props: { className: 'flex flex-row gap-4 p-4 w-full min-h-[60px] items-center' } } },
+    { type: 'VStack', label: 'VStack', icon: '⬇', defaultNode: { type: 'VStack', props: { className: 'gap-4 p-4 w-full min-h-[80px]' } } },
+    { type: 'HStack', label: 'HStack', icon: '➡', defaultNode: { type: 'HStack', props: { className: 'gap-4 p-4 w-full min-h-[60px] items-center' } } },
   ],
   Typography: [
-    { type: 'Text',    label: 'Text',    icon: 'T', defaultNode: { type: 'Text',    text: 'Text block', props: {} } },
-    { type: 'Heading', label: 'Heading', icon: 'H', defaultNode: { type: 'Heading', text: 'Heading',    props: { className: 'text-2xl font-bold' } } },
+    // Text elements size to their content
+    { type: 'Text',    label: 'Text',    icon: 'T', defaultNode: { type: 'Text',    text: 'Text block', props: { className: 'text-base text-gray-800' } } },
+    { type: 'Heading', label: 'Heading', icon: 'H', defaultNode: { type: 'Heading', text: 'Heading',    props: { className: 'text-2xl font-bold text-gray-900' } } },
   ],
   Interactive: [
-    { type: 'Button',    label: 'Button',    icon: '◻', defaultNode: { type: 'Button', props: {}, children: [{ type: 'ButtonText', text: 'Button' }] } },
-    { type: 'Pressable', label: 'Pressable', icon: '●', defaultNode: { type: 'Pressable', props: { className: 'p-4' }, children: [{ type: 'Text', text: 'Press me' }] } },
+    // Button/Pressable: natural auto size
+    { type: 'Button',    label: 'Button',    icon: '◻', defaultNode: { type: 'Button', props: { size: 'md' }, children: [{ type: 'ButtonText', text: 'Button' }] } },
+    { type: 'Pressable', label: 'Pressable', icon: '●', defaultNode: { type: 'Pressable', props: { className: 'px-4 py-2 items-center justify-center' }, children: [{ type: 'Text', text: 'Press me' }] } },
   ],
   Form: [
-    { type: 'Input',    label: 'Input',    icon: '▭', defaultNode: { type: 'Input', props: { variant: 'outline' }, children: [{ type: 'InputField', props: { placeholder: 'Enter text…' } }] } },
-    { type: 'Switch',   label: 'Switch',   icon: '⏻', defaultNode: { type: 'Switch',   props: {} } },
-    { type: 'Checkbox', label: 'Checkbox', icon: '☑', defaultNode: { type: 'Checkbox', props: {} } },
+    // Input: fixed readable width, not full-width
+    { type: 'Input',    label: 'Input',    icon: '▭', defaultNode: { type: 'Input', props: { variant: 'outline', size: 'md', className: 'w-64' }, children: [{ type: 'InputField', props: { placeholder: 'Enter text…' } }] } },
+    { type: 'Switch',   label: 'Switch',   icon: '⏻', defaultNode: { type: 'Switch',   props: { defaultValue: false } } },
+    { type: 'Checkbox', label: 'Checkbox', icon: '☑', defaultNode: { type: 'Checkbox', props: { defaultIsChecked: false }, children: [{ type: 'CheckboxIndicator', children: [{ type: 'CheckboxIcon' }] }, { type: 'CheckboxLabel', text: 'Label' }] } },
   ],
   Media: [
-    { type: 'Image',   label: 'Image', icon: '🖼', defaultNode: { type: 'Image', props: { className: 'w-full h-48 object-cover' }, src: 'https://placehold.co/600x400' } },
-    { type: 'NavIcon', label: 'Icon',  icon: '✦', defaultNode: { type: 'NavIcon', props: { icon: 'Star', size: 24 } } },
+    // Image stays w-full — images naturally fill their container
+    { type: 'Image',   label: 'Image', icon: '🖼', defaultNode: { type: 'Image', props: { className: 'w-full h-48 object-cover rounded-md' }, src: 'https://placehold.co/600x400' } },
+    { type: 'NavIcon', label: 'Icon',  icon: '✦', defaultNode: { type: 'NavIcon', props: { icon: 'Star', size: 24, color: '#6b7280' } } },
   ],
 };
 
