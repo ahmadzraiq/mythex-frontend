@@ -306,7 +306,10 @@ const Button = React.forwardRef<
     ref
   ) => {
     const useCustom = hasCustomClassName(className);
-    const effectiveAction = useCustom ? 'custom' : action;
+    // Only override action to 'custom' when the className explicitly sets a background color.
+    // Otherwise padding, opacity, border, etc. changes should keep the original action's bg.
+    const hasBg = useCustom && /\bbg-/.test(className!);
+    const effectiveAction = hasBg ? 'custom' : action;
     const variantStyles = buttonStyle({ variant, size, action: effectiveAction });
     const finalClassName = useCustom
       ? mergeTailwindClasses(variantStyles, className!)

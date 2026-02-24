@@ -1,0 +1,279 @@
+---
+description: Visual page builder at /dev/builder — architecture, design panel patterns, known bugs & fixes
+alwaysApply: false
+---
+
+# Visual Builder (`/dev/builder`)
+
+A Figma-like visual page builder that renders SDUI components directly in the same React tree (no iframe). Built at `app/dev/builder/`.
+
+---
+
+## File Map
+
+| File | Purpose |
+|---|---|
+| `page.tsx` | Top-level layout: left panel + canvas + right panel. Exposes `window.__builderStore` for Playwright. |
+| `_store.ts` | Zustand store: `pageNodes`, `selectedIds`, `hoveredId`, history (undo/redo), clipboard, locked/hidden sets. Also exports `findNode`, `findParentNode`. |
+| `_canvas.tsx` | Renders the page frame and SDUI node tree in `builderMode`. Handles drop targets, drag-and-drop reordering, click-to-select. |
+| `_overlay.tsx` | Renders visual overlays: selection box, hover outline, crosshair lines, padding fills, gap fills, distance lines, drop zone indicators. All overlays use `data-testid` for Playwright. |
+| `_panel-left.tsx` | Left panel: Layers tree tab + Components palette tab. Draggable primitives with `defaultNode` definitions. |
+| `_panel-right.tsx` | Right panel: Design / Props / JSON tabs. Full design properties panel. |
+| `_tw-utils.ts` | Tailwind class utilities: token tables, parse/replace/remove helpers, spacing helpers, border-radius helpers, alignment helpers. |
+| `e2e/builder.spec.ts` | Main Playwright E2E test suite (selection, DnD, overlays). |
+| `e2e/test-dnd.spec.ts` | DnD and right-panel property tests (T*, U*, V* series). |
+| `e2e/button-panel.spec.ts` | Exhaustive Button right-panel tests (BP-00 to BP-35+). |
+
+---
+
+## Architecture: Direct Rendering (No Iframe)
+
+Components render directly in the React tree. The canvas uses a `data-builder-page-frame` wrapper at a fixed `zoom` scale. Overlay positions are computed via `getBoundingClientRect()` against the page frame.
+
+**Key DOM attributes:**
+- `data-builder-id` — injected via ref callback on every SDUI node; used for hit-testing, selection, overlay positioning
+- `data-builder-type` — node type string
+- `data-builder-page-frame` — marks the canvas viewport
+- `data-builder-overlay` — marks overlay elements (excluded from selection hit-testing)
+- `data-builder-hidden` — nodes marked hidden
+
+**`builderMode`**: a flag passed to the SDUI renderer that disables action execution and enables builder-specific ref callbacks.
+
+---
+
+## Design Panel Sections (Right Panel)
+
+Full section list in render order:
+
+0. **Content** *(Text/Heading/ButtonText + Button)* — Textarea to edit `node.text` directly. For Button, edits the first `ButtonText` child. Shown before Position & Size.
+1. **Position & Size** — X/Y (read-only DOM metrics), W/H (inline `style.width/height` + `minWidth/minHeight: 0`)
+2. **Dimensions** — W mode: Hug (`w-fit`) / Fill (`w-full`) / Fixed (removes fit/full). H mode: same with `h-*`. Also: Min W / Max W / Min H / Max H (inline `style.minWidth/maxWidth/minHeight/maxHeight`).
+3. **Self Alignment** — How this node aligns inside its parent flex container: `self-auto/start/center/end/stretch/baseline`
+4. **Transform** — Rotation (inline `style.transform = rotate(Ndeg)`), Flip H (`-scale-x-100`), Flip V (`-scale-y-100`)
+5. **Alignment** *(containers only)* — 9-cell grid (items-* + justify-*). Only shown for Box/VStack/HStack/Pressable.
+6. **Auto Layout** *(containers only)* — Flex direction, wrap, gap (inline `style.gap`), space-between mode
+7. **Padding** — Exact pixel values via inline `style.paddingLeft/Right/Top/Bottom`. Combined H/V or individual toggle.
+8. **Margin** — Exact pixel values via inline `style.marginLeft/Right/Top/Bottom`. Combined H/V or individual toggle.
+9. **Display & Interaction** — Display type (`block/flex/grid/hidden`), Cursor (`cursor-pointer` etc.)
+10. **Clip content** — Toggle `overflow-hidden`
+11. **Fill** — Background color (inline `style.backgroundColor`, initialized from computed DOM color) + bg-opacity slider
+12. **Stroke** — Border color (inline `style.borderColor`, initialized from computed DOM color), border width, border style
+13. **Effects** — Drop shadow (`shadow-*` class)
+14. **Typography** *(Text/Heading/ButtonText only)* — Size, Weight, Leading, Tracking, Text alignment, Decoration, Transform, Text color (inline `style.color`, initialized from computed DOM color)
+15. **Border Radius** — 4-corner selects. All equal → single global token. Mixed → per-corner tokens.
+16. **Opacity** — Inline `style.opacity` (0–1). Slider min=5.
+17. **Selection colors** — Hex swatches from className
+18. **Layout Guide** — Grid overlay toggle
+
+---
+
+## Critical Bug Fixes (Do Not Repeat)
+
+### 1. Button disappears when any className is added
+
+**Root cause:** `components/ui/button/index.tsx` used `hasCustomClassName(className)` — any non-empty className (even `py-0 px-0` from padding) triggered `effectiveAction = 'custom'` → `bg-transparent`.
+
+**Fix:** Only switch to `'custom'` action when className contains a `bg-*` token:
+```tsx
+const hasBg = useCustom && /\bbg-/.test(className!);
+const effectiveAction = hasBg ? 'custom' : action;
+```
+**Rule:** Adding padding, margin, border-radius, opacity, or any non-color class to a Button must NOT override its background color.
+
+---
+
+### 2. Opacity uses inline `style.opacity`, never `opacity-N` class
+
+**Root cause:** NativeWind does not compile dynamically applied `opacity-95`, `opacity-50` etc. (they're not in the source at build time).
+
+**Fix:** Store opacity as `style.opacity` (decimal 0–1). The slider `min=5` prevents accidental 0%. At 100%, `style.opacity` is removed entirely.
+
+**Rule:** Never add `opacity-N` classes dynamically. Always use `patchStyle({ opacity: String(val/100) })`.
+
+---
+
+### 3. Rotation uses inline `style.transform`, never `rotate-[Ndeg]` class
+
+**Root cause:** Same NativeWind dynamic class compilation issue.
+
+**Fix:** Store rotation as `style.transform = rotate(Ndeg)`.
+
+**Rule:** Never add `rotate-[...]` classes dynamically. Use `patchStyle({ transform: \`rotate(\${deg}deg)\` })`.
+
+---
+
+### 4. Colors use inline `style.backgroundColor / color / borderColor`
+
+**Root cause:** NativeWind doesn't reliably compile arbitrary `bg-[#hex]` classes set dynamically at runtime.
+
+**Fix:** All color picker changes use `patchStyle({ backgroundColor: hex })`, `patchStyle({ color: hex })`, `patchStyle({ borderColor: hex })`.
+
+---
+
+### 5. Flip H/V toggle-off didn't work (`\b` regex bug)
+
+**Root cause:** `removeTwToken(cls, '-scale-x-')` generated regex `\b-scale-x-\S*`. The `\b` (word boundary) never fires before `-` (non-word char), so `-scale-x-100` could never be removed.
+
+**Fix:** `removeTwToken` detects when prefix starts with a non-word char and uses `(?:^|\s)` boundary instead:
+```ts
+if (/^\w/.test(prefix)) {
+  return className.replace(new RegExp(`\\b${escaped}\\S*`, 'g'), '')...
+}
+return className.replace(new RegExp(`(?:^|\\s)${escaped}\\S*`, 'g'), ' ')...
+```
+**Rule:** Any Tailwind utility starting with `-` (negated scale, negated rotate) requires the `(?:^|\s)` boundary, not `\b`.
+
+---
+
+### 6. Border radius: per-corner tokens vs global tokens
+
+**Root cause:** The old `applyBorderRadius` emitted `rounded-lg rounded-none rounded-none rounded-none` (all global, last one wins → all corners = none). `expandBorderRadius` returned per-corner tokens like `rounded-tl-lg` which don't match any `ROUNDED_TOKENS` select option.
+
+**Fix:**
+- `expandBorderRadius`: parse per-corner tokens via regex `\brounded-tl(?:-\S+)?`, convert back to global format (`rounded-tl-lg` → `rounded-lg`) for select display.
+- `applyBorderRadius`: when corners differ, emit per-corner tokens (`rounded-tl-lg rounded-tr-none…`); when equal, emit single global token.
+- Helper `globalToCornerToken('rounded-lg', 'tl')` → `'rounded-tl-lg'`.
+
+**Rule:** Never concatenate four global `rounded-*` tokens for mixed corners. Always convert to `rounded-{corner}-{size}`.
+
+---
+
+### 7. Padding / Margin / Gap — exact pixel values via inline style
+
+**Root cause:** Using Tailwind spacing scale (`pxToSpacingScale`) forced values to snap to 2px increments. Input `1` → rounded to `0` → no margin. Input `3` → `mx-0.5` (not compiled in older safelist).
+
+**Fix:** All three use `patchStyle` with direct CSS properties:
+- Padding: `style.paddingLeft/Right/Top/Bottom`
+- Margin: `style.marginLeft/Right/Top/Bottom`
+- Gap: `style.gap`
+
+**Rule:** Never use `patchCls(applyPadding/applyMargin/pxToTw)` for user-entered spacing values in the builder. Use `patchStyle` with exact `px` strings so any value the user types is applied exactly.
+
+---
+
+### 8. `pxToSpacingScale` ties round UP
+
+When a px value is equally distant between two scale values (e.g. `1` ties between `0` and `2`), round UP:
+```ts
+.reduce((a, b) => Math.abs(b - px) <= Math.abs(a - px) ? b : a);
+```
+Previously used `<` which always rounded down → `1` → `0` → no spacing.
+
+---
+
+## `_tw-utils.ts` — Key Utilities
+
+### `removeTwToken(className, prefix)`
+Removes all tokens matching prefix. Uses `\b` for word-char prefixes (`p-`, `gap-`, `rounded-`). Uses `(?:^|\s)` for non-word-char prefixes (`-scale-x-`, `-rotate-`).
+
+### `replaceTwToken(className, prefix, newToken)`
+Replaces the first matching token, or appends if none found. Uses `(?:^|\s)` boundary with space-preserving replacement.
+
+### `parseTwToken(className, prefix)`
+Returns the first token matching `\b{prefix}\S*`, or `null`.
+
+### `expandPadding / expandBorderRadius / expandMargin`
+Parse className into structured px/token values for display in inputs. These are ONLY used for reading initial values (display). Writing always uses `patchStyle`.
+
+### `applyAlignment(className, cellIdx)`
+Maps 0–8 cell index → `items-*` + `justify-*` classes. Used by the 9-cell grid.
+
+### `globalToCornerToken(global, corner)`
+`'rounded-lg'` + `'tl'` → `'rounded-tl-lg'`. Used in `applyBorderRadius` for mixed-corner case.
+
+---
+
+## Tailwind Safelist (`tailwind.config.js`)
+
+All dynamically applied builder classes must be in the safelist. Current coverage:
+- Spacing: `p/px/py/pt/pr/pb/pl-{scale}` (includes decimals like `1.5`)
+- Margin: `m/mx/my/mt/mr/mb/ml-{scale|auto}` (includes decimals)
+- Gap, W, H, max-w, opacity, rounded, text-*, font-*, leading, tracking
+- Flex: direction, items, justify, wrap
+- Rotate (including negated and arbitrary): `-?rotate-(N|[...])`, `-?scale-x/y-*`
+- Position: `static/relative/absolute/fixed/sticky`
+- Z-index: `z-0/10/20/30/40/50/auto`
+- Cursor, display, overflow, text-align, text-decoration, text-transform, self-*
+
+**Rule:** Any new class dynamically applied by the builder must be added to the safelist OR stored as an inline style property.
+
+---
+
+## E2E Tests
+
+Tests use `window.__builderStore` (exposed in `page.tsx`) to read Zustand state directly.
+
+Key helpers across test files:
+- `gotoBuilder(page)` — navigate to `/dev/builder`, wait for frame + tabs
+- `dropButton(page)` — drag Button from component palette to canvas (with retry)
+- `selectViaLayers(page)` — click Layers tab → first layer-row → Design tab
+- `assertButtonVisible(page, nodeId, step)` — checks bounding box AND `backgroundColor !== rgba(0,0,0,0)`
+- `getNodeClassName(page, nodeId)` — reads `node.props.className` from store
+- `getNodeStyle(page, nodeId)` — reads `node.props.style` from store
+- `scrollTo(page, testId)` — scrolls element into view inside overflow panel container
+
+**Test series:**
+- `BP-00` to `BP-44`: Button panel exhaustive tests (latest: Hug/Fill/Fixed W+H, Min/Max W+H, default bg color)
+- `T1`–`T11`: Dimension, rotate, NumberInput, moveNode, drop zone, opacity
+- `U1`–`U14`: Alignment, flip, auto layout, gap, clip, stroke, typography, DOM visual update
+- `V1`–`V8`: Color pickers, Button visibility with gap, section visibility per node type, self-alignment
+
+---
+
+### 9. Default color in panel doesn't match rendered color (Gluestack internal tokens)
+
+**Root cause:** Gluestack components like Button apply colors via internal CSS class tokens (`bg-primary-500`). These aren't extractable from `node.props.className`, so the color pickers showed `#ffffff` / `#000000` as defaults even when the component rendered blue.
+
+**Fix:** Use a `useEffect` in `DesignTab` to read `window.getComputedStyle()` from the live DOM element after each render, then convert `rgb(r,g,b)` → hex. Store in local state (`computedBgColor`, `computedTextColor`, `computedBorderColor`). Pass these as the default values to `ColorInput`.
+
+**Rule:** Never hardcode `#ffffff` as the default for a color input. Always read the real computed style from the DOM. Transparent (`rgba(0,0,0,0)`) should fall back to `#ffffff`.
+
+---
+
+### 10. Inline text editing — double-click on canvas
+
+**Feature:** Double-clicking a `Text`, `Heading`, or `ButtonText` node on the canvas opens a floating `<textarea>` positioned exactly over the element. The font size scales with the current zoom level. On blur or Escape the edit is committed/cancelled.
+
+**Implementation:** `_canvas.tsx` tracks `editingId`, `editingText`, `editingRect`. The capture overlay's `onDoubleClick` handler walks up the DOM tree looking for a node whose type is in `TEXT_NODE_TYPES`. The textarea is rendered with `position: absolute` within the canvas div using the node's `getBoundingClientRect()` minus the canvas rect.
+
+**Rule:** When `editingId` is set, the capture overlay's `onPointerDown` commits the edit and returns early (so clicking outside saves and exits).
+
+---
+
+### 11. Content section in right panel (text editing)
+
+**Feature:** When a Text, Heading, or ButtonText node is selected, a "Content" section appears at the top of the Design panel with a `<textarea>` that edits `node.text` via `patchProp(nodeId, 'text', value)`. For Button nodes, it finds the first `ButtonText` child and edits that instead.
+
+**Rule:** Use `patchProp(id, 'text', value)` not `patchProp(id, 'props.text', value)` — the `text` field is at the node root level, not inside `props`.
+
+---
+
+### 13. Hug / Fill does nothing when node was previously resized
+
+**Root cause:** Clicking Hug (`w-fit`) or Fill (`w-full`) only patched `className`. But if the node was resized via drag handles or the W/H number input, it has `style.width: "100px"` as an inline style. Inline styles have higher CSS specificity than any class, so `w-full` / `w-fit` were silently ignored.
+
+**Fix:** Hug and Fill click handlers now call `patchStyle({ width: '', minWidth: '' })` (or `height/minHeight`) in addition to updating the className. Fixed mode intentionally does NOT clear the inline style — it preserves the user's explicit size.
+
+**Rule:** Any time you add a layout-mode class (`w-fit`, `w-full`, `h-fit`, `h-full`) you must also clear the corresponding inline style property. Otherwise the inline style wins.
+
+---
+
+### 12. Min/Max Width and Height
+
+**Feature:** Dimensions section now includes 4 extra NumberInputs (Min W, Max W, Min H, Max H) that set `style.minWidth`, `style.maxWidth`, `style.minHeight`, `style.maxHeight` as pixel values. Setting to 0 clears the constraint.
+
+**Rule:** Use inline style for these (not Tailwind `min-w-*` tokens) to allow exact pixel values.
+
+---
+
+## Component Type Classification (Right Panel)
+
+```ts
+const isContainer  = ['Box', 'VStack', 'HStack', 'Pressable'].includes(node.type);
+const isTextNode   = ['Text', 'Heading', 'ButtonText'].includes(node.type);
+const isLeafWidget = ['Button', 'Input', 'Switch', 'Checkbox', 'NavIcon', 'Image'].includes(node.type);
+const showPadding  = !isTextNode;
+const showLayout   = isContainer;  // Auto Layout + Alignment sections
+```
+
+**Rule:** Never show Auto Layout / Gap / Alignment sections for Button or other leaf widgets. Adding gap to a Button corrupts its internal Gluestack layout and makes it disappear.

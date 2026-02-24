@@ -22,7 +22,7 @@ import { join } from 'path';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const BASE_URL = process.env.NEXT_PUBLIC_URL ?? 'http://localhost:3000';
+const BASE_URL = process.env.NEXT_PUBLIC_URL ?? 'http://localhost:3001';
 const MANIFEST_URL = `${BASE_URL}/api/dev/section-preview/manifest`;
 const LAYOUT_PARTS_MANIFEST_URL = `${BASE_URL}/api/dev/layout-part-preview/manifest`;
 const RENDER_URL = `${BASE_URL}/dev/sections/render`;

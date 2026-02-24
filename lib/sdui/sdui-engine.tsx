@@ -7,6 +7,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BuilderContext } from './builder-context';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useColorScheme } from 'nativewind';
 import { create } from 'zustand';
@@ -41,6 +42,7 @@ export function SDUIEngine({
   engineConfig,
   routes = [],
   paramChangeAction,
+  builderMode = false,
 }: SDUIEngineProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -314,8 +316,10 @@ export function SDUIEngine({
   }, [config.initActions]); // runActionRef.current always has latest runAction
 
   return (
-    <RunActionProvider value={runActionStable}>
-      <SDURenderer node={config.ui} context={context} />
-    </RunActionProvider>
+    <BuilderContext.Provider value={{ builderMode }}>
+      <RunActionProvider value={runActionStable}>
+        <SDURenderer node={config.ui} context={context} />
+      </RunActionProvider>
+    </BuilderContext.Provider>
   );
 }

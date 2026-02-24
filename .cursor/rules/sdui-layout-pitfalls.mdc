@@ -513,3 +513,37 @@ Use `equalsField` to compare confirm to password. When password changes, also cl
 **Fix:** Set font variables on `document.body` (not `document.documentElement`), and in `buildCssFromGeneratedTheme` output use `body { ... }` instead of `:root { ... }` for the font block. This ensures the font loader vars and our overrides are on the same element.
 
 **Applies to:** `lib/ThemePresetOverlay.tsx` — when adding or modifying font injection logic.
+
+---
+
+## Visual Builder — Transparent Capture Overlay (Not React Capture Events)
+
+**Problem:** Using `onClickCapture` / `onMouseDownCapture` on the page frame div does NOT reliably intercept events on Gluestack/NativeWind interactive elements (buttons, inputs, links). Gluestack's `Button` and `Input` components have native DOM event handlers that fire at the browser level before React's synthetic event system; calling `stopPropagation()` in a React capture handler cannot prevent those native handlers.
+
+**Fix:** Place a transparent `position: absolute; inset: 0; z-index: 9999` div **inside** the page frame, on top of all SDUI content. This overlay receives every pointer event because it is physically in front. To identify what's underneath without the overlay interfering, temporarily set `overlay.style.pointerEvents = 'none'`, call `document.elementFromPoint(x, y)`, then restore `pointerEvents = ''`.
+
+```tsx
+// Inside page frame:
+<div
+  ref={captureOverlayRef}
+  style={{ position: 'absolute', inset: 0, zIndex: 9999, cursor: 'default' }}
+  onClick={handleOverlayClick}
+  onMouseMove={handleOverlayMouseMove}
+  onMouseLeave={handleOverlayMouseLeave}
+/>
+
+// Hit-test helper:
+const hitTest = (clientX: number, clientY: number) => {
+  const overlay = captureOverlayRef.current;
+  if (overlay) overlay.style.pointerEvents = 'none';
+  const el = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
+  if (overlay) overlay.style.pointerEvents = '';
+  return el?.closest('[data-builder-id]') as HTMLElement | null ?? null;
+};
+```
+
+**Rules:**
+- The page frame must use `overflow: hidden` (not `overflow: auto`) so the overlay covers the full frame.
+- Only show the overlay when `tool !== 'hand'` (hand tool uses canvas-level pan drag instead).
+- Never use `onClickCapture`/`onMouseDownCapture` on the page frame for builder selection — use this pattern instead.
+- `pointer-events: none` assignment is synchronous; `elementFromPoint` fires in the same task, so the overlay is invisible to hit-testing for exactly one call with zero latency impact.

@@ -67,4 +67,7 @@ export interface SDUIEngineProps {
   engineConfig?: EngineConfig;
   routes?: RouteConfig[];
   paramChangeAction?: string;
+  /** When true, annotates every rendered node with data-builder-* attributes
+   *  and bypasses condition evaluation (shows all nodes). Used by /dev/builder. */
+  builderMode?: boolean;
 }

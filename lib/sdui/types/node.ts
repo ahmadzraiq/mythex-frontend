@@ -166,6 +166,8 @@ export interface SDUIAction {
 /** Single UI node in the JSON tree */
 export interface SDUINode {
   type: SDUIComponentType;
+  /** Stable identifier — used by visual builder for selection & annotation */
+  id?: string;
   key?: string;
   condition?: JsonLogicRules;
   map?: string;

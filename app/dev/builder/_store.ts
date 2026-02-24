@@ -1,0 +1,488 @@
+'use client';
+
+/**
+ * Builder Store — Zustand state for the visual page builder.
+ *
+ * Owns:
+ *  - pageNodes: the SDUI node tree being edited
+ *  - selection, hover, alt-hover
+ *  - clipboard, locked/hidden sets
+ *  - history (full snapshots, max 50, debounced for continuous edits)
+ *
+ * No iframe / DomNode / postMessage state — the builder renders directly in
+ * the same React tree and queries the DOM via getBoundingClientRect() on demand.
+ */
+
+import { create } from 'zustand';
+import type { SDUINode } from '@/lib/sdui/types/node';
+
+const MAX_HISTORY = 50;
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function clone<T>(v: T): T {
+  return structuredClone(v);
+}
+
+export function findNode(nodes: SDUINode[], targetId: string): SDUINode | null {
+  for (const node of nodes) {
+    if (node.id === targetId) return node;
+    if (node.children?.length) {
+      const found = findNode(node.children as SDUINode[], targetId);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/**
+ * Returns the parent node of `targetId`, or null if it is a root node.
+ * Returns undefined if `targetId` is not found anywhere.
+ */
+export function findParentNode(
+  nodes: SDUINode[],
+  targetId: string,
+  _parent: SDUINode | null = null
+): SDUINode | null | undefined {
+  for (const node of nodes) {
+    if (node.id === targetId) return _parent;
+    if (node.children?.length) {
+      const result = findParentNode(node.children as SDUINode[], targetId, node);
+      if (result !== undefined) return result;
+    }
+  }
+  return undefined;
+}
+
+function patchNodeById(
+  nodes: SDUINode[],
+  targetId: string,
+  patcher: (n: SDUINode) => SDUINode
+): SDUINode[] {
+  return nodes.map(node => {
+    if (node.id === targetId) return patcher(node);
+    if (node.children?.length) {
+      return { ...node, children: patchNodeById(node.children as SDUINode[], targetId, patcher) };
+    }
+    return node;
+  });
+}
+
+function removeNodesByIds(nodes: SDUINode[], ids: Set<string>): SDUINode[] {
+  return nodes
+    .filter(n => !ids.has(n.id ?? ''))
+    .map(n => ({
+      ...n,
+      children: n.children?.length
+        ? removeNodesByIds(n.children as SDUINode[], ids)
+        : n.children,
+    }));
+}
+
+/** Insert `newNode` as a child of `parentId`, or at root level if parentId is null */
+function insertNode(
+  nodes: SDUINode[],
+  newNode: SDUINode,
+  parentId: string | null,
+  atIdx?: number
+): SDUINode[] {
+  if (!parentId) {
+    const copy = clone(nodes);
+    const idx = atIdx !== undefined ? atIdx : copy.length;
+    copy.splice(idx, 0, newNode);
+    return copy;
+  }
+  return patchNodeById(nodes, parentId, parent => {
+    const children = clone((parent.children ?? []) as SDUINode[]);
+    const idx = atIdx !== undefined ? atIdx : children.length;
+    children.splice(idx, 0, newNode);
+    return { ...parent, children };
+  });
+}
+
+// ─── Store shape ──────────────────────────────────────────────────────────────
+
+export interface GridOverlayConfig {
+  enabled: boolean;
+  type: 'columns' | 'rows' | 'grid';
+  count: number;
+  color: string;
+}
+
+export interface BuilderStore {
+  // ── Page state ──────────────────────────────────────────────────────────────
+  pageNodes: SDUINode[];
+
+  // ── Selection ───────────────────────────────────────────────────────────────
+  selectedIds: string[];
+  hoveredId: string | null;
+  altHoveredId: string | null;
+  altMode: boolean;
+
+  // ── Layer state ─────────────────────────────────────────────────────────────
+  lockedIds: Set<string>;
+  hiddenIds: Set<string>;
+  expandedIds: Set<string>;
+
+  // ── Tool ────────────────────────────────────────────────────────────────────
+  tool: 'select' | 'hand';
+
+  // ── Viewport (zoom / pan) ───────────────────────────────────────────────────
+  zoom: number;
+  panX: number;
+  panY: number;
+
+  // ── Grid overlay ─────────────────────────────────────────────────────────────
+  gridOverlay: GridOverlayConfig;
+
+  // ── Clipboard ───────────────────────────────────────────────────────────────
+  clipboard: SDUINode[];
+
+  // ── History ─────────────────────────────────────────────────────────────────
+  history: SDUINode[][];
+  historyIdx: number;
+
+  // ── Actions ─────────────────────────────────────────────────────────────────
+
+  // Page mutations
+  addSection: (variantId: string, node: SDUINode, atIdx?: number) => void;
+  addNode: (node: SDUINode, parentId?: string | null, atIdx?: number) => void;
+  moveNode: (nodeId: string, newParentId: string | null, atIdx: number) => void;
+  deleteNodes: (ids: string[]) => void;
+  duplicateNodes: (ids: string[]) => void;
+  groupNodes: (ids: string[]) => void;
+  moveSection: (fromIdx: number, toIdx: number) => void;
+  patchProp: (id: string, propPath: string, value: unknown) => void;
+  patchClassName: (id: string, oldToken: string, newToken: string) => void;
+  renameNode: (id: string, newId: string) => void;
+
+  // Selection
+  select: (id: string | null, multi?: boolean) => void;
+  selectAll: () => void;
+  hover: (id: string | null) => void;
+  setAltMode: (on: boolean) => void;
+  setAltHovered: (id: string | null) => void;
+
+  // Layer toggles
+  toggleVisibility: (id: string) => void;
+  toggleLock: (id: string) => void;
+  toggleExpanded: (id: string) => void;
+
+  // Tool
+  setTool: (t: 'select' | 'hand') => void;
+
+  // Viewport
+  setZoom: (z: number) => void;
+  setPan:  (x: number, y: number) => void;
+
+  // Grid overlay
+  setGridOverlay: (cfg: Partial<GridOverlayConfig>) => void;
+
+  // Clipboard
+  copyToClipboard: () => void;
+  pasteFromClipboard: () => void;
+
+  // History
+  undo: () => void;
+  redo: () => void;
+
+  // Internal (debounce wrapper)
+  _pushHistory: () => void;
+  _setPageNodes: (nodes: SDUINode[]) => void;
+}
+
+// ─── Store ────────────────────────────────────────────────────────────────────
+
+export const useBuilderStore = create<BuilderStore>((set, get) => ({
+  pageNodes: [],
+  selectedIds: [],
+  hoveredId: null,
+  altHoveredId: null,
+  altMode: false,
+  lockedIds: new Set(),
+  hiddenIds: new Set(),
+  expandedIds: new Set(),
+  tool: 'select',
+  zoom: 0.75,
+  panX: 0,
+  panY: 0,
+  gridOverlay: { enabled: false, type: 'columns', count: 12, color: 'rgba(99,102,241,0.15)' },
+  clipboard: [],
+  history: [[]],
+  historyIdx: 0,
+
+  // ── Page mutations ──────────────────────────────────────────────────────────
+
+  addSection: (variantId, node, atIdx) => {
+    set(s => {
+      const nodes = clone(s.pageNodes);
+      const idx = atIdx !== undefined ? atIdx : nodes.length;
+      nodes.splice(idx, 0, node);
+      return { pageNodes: nodes };
+    });
+    get()._pushHistory();
+  },
+
+  addNode: (node, parentId = null, atIdx) => {
+    set(s => ({
+      pageNodes: insertNode(s.pageNodes, node, parentId ?? null, atIdx),
+      selectedIds: node.id ? [node.id] : s.selectedIds,
+    }));
+    get()._pushHistory();
+  },
+
+  moveNode: (nodeId, newParentId, atIdx) => {
+    set(s => {
+      const node = findNode(s.pageNodes, nodeId);
+      if (!node) return s;
+
+      // Prevent dropping a node into itself or its own descendant
+      if (newParentId === nodeId) return s;
+      if (newParentId && findNode((findNode(s.pageNodes, nodeId)?.children ?? []) as SDUINode[], newParentId)) return s;
+
+      // Find current parent to correctly adjust the target index
+      const currentParent = findParentNode(s.pageNodes, nodeId);
+      const currentParentId = currentParent?.id ?? null;
+      const currentSiblings = currentParent
+        ? (currentParent.children as SDUINode[])
+        : s.pageNodes;
+      const currentIdx = currentSiblings.findIndex(n => n.id === nodeId);
+
+      // When moving within the same parent to a later slot, subtract 1 because
+      // removing the node shifts every subsequent index down by 1.
+      let adjustedIdx = atIdx;
+      if (newParentId === currentParentId && atIdx > currentIdx) {
+        adjustedIdx = atIdx - 1;
+      }
+
+      const withoutNode = removeNodesByIds(clone(s.pageNodes), new Set([nodeId]));
+      const newNodes = insertNode(withoutNode, clone(node), newParentId, adjustedIdx);
+      return { pageNodes: newNodes, selectedIds: [nodeId] };
+    });
+    get()._pushHistory();
+  },
+
+  deleteNodes: (ids) => {
+    const idSet = new Set(ids);
+    set(s => ({
+      pageNodes: removeNodesByIds(s.pageNodes, idSet),
+      selectedIds: s.selectedIds.filter(id => !idSet.has(id)),
+    }));
+    get()._pushHistory();
+  },
+
+  duplicateNodes: (ids) => {
+    set(s => {
+      const nodes = clone(s.pageNodes);
+      const newNodes: SDUINode[] = [];
+      for (const id of ids) {
+        const found = findNode(nodes, id);
+        if (found) {
+          const dup = clone(found);
+          if (dup.id) dup.id = dup.id + '-copy';
+          newNodes.push(dup);
+        }
+      }
+      const lastIdx = nodes.findIndex(n => ids.includes(n.id ?? ''));
+      const insertAt = lastIdx >= 0 ? lastIdx + 1 : nodes.length;
+      nodes.splice(insertAt, 0, ...newNodes);
+      return {
+        pageNodes: nodes,
+        selectedIds: newNodes.map(n => n.id ?? '').filter(Boolean),
+      };
+    });
+    get()._pushHistory();
+  },
+
+  groupNodes: (ids) => {
+    set(s => {
+      const idSet = new Set(ids);
+      const toGroup = s.pageNodes.filter(n => idSet.has(n.id ?? ''));
+      if (!toGroup.length) return s;
+
+      const groupNode: SDUINode = {
+        type: 'Box',
+        id: `group-${Date.now()}`,
+        props: { className: 'flex flex-col' },
+        children: clone(toGroup),
+      } as SDUINode;
+
+      let inserted = false;
+      const newNodes = s.pageNodes
+        .map(n => {
+          if (idSet.has(n.id ?? '') && !inserted) { inserted = true; return groupNode; }
+          if (idSet.has(n.id ?? '')) return null;
+          return n;
+        })
+        .filter(Boolean) as SDUINode[];
+
+      return { pageNodes: newNodes, selectedIds: [groupNode.id!] };
+    });
+    get()._pushHistory();
+  },
+
+  moveSection: (fromIdx, toIdx) => {
+    set(s => {
+      const nodes = clone(s.pageNodes);
+      const [moved] = nodes.splice(fromIdx, 1);
+      nodes.splice(toIdx, 0, moved);
+      return { pageNodes: nodes };
+    });
+    get()._pushHistory();
+  },
+
+  patchProp: (id, propPath, value) => {
+    set(s => ({
+      pageNodes: patchNodeById(s.pageNodes, id, node => {
+        const parts = propPath.split('.');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const patched: any = clone(node);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let obj: any = patched;
+        for (let i = 0; i < parts.length - 1; i++) {
+          if (!(parts[i] in obj)) obj[parts[i]] = {};
+          obj = obj[parts[i]];
+        }
+        obj[parts[parts.length - 1]] = value;
+        return patched;
+      }),
+    }));
+  },
+
+  patchClassName: (id, oldToken, newToken) => {
+    set(s => ({
+      pageNodes: patchNodeById(s.pageNodes, id, node => {
+        const cls: string = (node.props as { className?: string })?.className ?? '';
+        const newCls = oldToken
+          ? cls.replace(new RegExp(`\\b${oldToken.replace('*', '[^\\s]+')}\\b`, 'g'), newToken).trim()
+          : `${cls} ${newToken}`.trim();
+        return { ...node, props: { ...(node.props as object), className: newCls } };
+      }),
+    }));
+  },
+
+  renameNode: (id, newId) => {
+    set(s => ({
+      pageNodes: patchNodeById(s.pageNodes, id, node => ({ ...node, id: newId })),
+      selectedIds: s.selectedIds.map(sid => (sid === id ? newId : sid)),
+    }));
+    get()._pushHistory();
+  },
+
+  // ── Selection ───────────────────────────────────────────────────────────────
+
+  select: (id, multi = false) => {
+    if (id === null) { set({ selectedIds: [] }); return; }
+    if (get().lockedIds.has(id)) return;
+    set(s => {
+      if (multi) {
+        const already = s.selectedIds.includes(id);
+        return { selectedIds: already ? s.selectedIds.filter(sid => sid !== id) : [...s.selectedIds, id] };
+      }
+      return { selectedIds: [id] };
+    });
+  },
+
+  selectAll: () => {
+    const ids = get().pageNodes.map(n => n.id ?? '').filter(Boolean);
+    set({ selectedIds: ids });
+  },
+
+  hover: (id) => set({ hoveredId: id }),
+  setAltMode: (on) => set({ altMode: on }),
+  setAltHovered: (id) => set({ altHoveredId: id }),
+
+  // ── Layer toggles ────────────────────────────────────────────────────────────
+
+  toggleVisibility: (id) => {
+    set(s => {
+      const next = new Set(s.hiddenIds);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return { hiddenIds: next };
+    });
+  },
+
+  toggleLock: (id) => {
+    set(s => {
+      const next = new Set(s.lockedIds);
+      next.has(id) ? next.delete(id) : next.add(id);
+      const selectedIds = next.has(id) ? s.selectedIds.filter(sid => sid !== id) : s.selectedIds;
+      return { lockedIds: next, selectedIds };
+    });
+  },
+
+  toggleExpanded: (id) => {
+    set(s => {
+      const next = new Set(s.expandedIds);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return { expandedIds: next };
+    });
+  },
+
+  setTool: (t) => set({ tool: t }),
+
+  setZoom: (z) => set({ zoom: z }),
+  setPan:  (x, y) => set({ panX: x, panY: y }),
+
+  setGridOverlay: (cfg) => set(s => ({ gridOverlay: { ...s.gridOverlay, ...cfg } })),
+
+  // ── Clipboard ────────────────────────────────────────────────────────────────
+
+  copyToClipboard: () => {
+    const { selectedIds, pageNodes } = get();
+    const nodes = selectedIds.map(id => findNode(pageNodes, id)).filter(Boolean) as SDUINode[];
+    set({ clipboard: clone(nodes) });
+  },
+
+  pasteFromClipboard: () => {
+    const { clipboard, selectedIds, pageNodes } = get();
+    if (!clipboard.length) return;
+    const pasted = clipboard.map(n => {
+      const c = clone(n);
+      if (c.id) c.id = `${c.id}-paste-${Date.now()}`;
+      return c;
+    });
+    const lastIdx = selectedIds.length
+      ? pageNodes.findIndex(n => selectedIds.includes(n.id ?? ''))
+      : -1;
+    const insertAt = lastIdx >= 0 ? lastIdx + 1 : pageNodes.length;
+    set(s => {
+      const nodes = clone(s.pageNodes);
+      nodes.splice(insertAt, 0, ...pasted);
+      return {
+        pageNodes: nodes,
+        selectedIds: pasted.map(n => n.id ?? '').filter(Boolean),
+      };
+    });
+    get()._pushHistory();
+  },
+
+  // ── History ──────────────────────────────────────────────────────────────────
+
+  _setPageNodes: (nodes) => set({ pageNodes: nodes }),
+
+  _pushHistory: () => {
+    set(s => {
+      const snap = clone(s.pageNodes);
+      const prev = s.history.slice(0, s.historyIdx + 1);
+      const next = [...prev, snap].slice(-MAX_HISTORY);
+      return { history: next, historyIdx: next.length - 1 };
+    });
+  },
+
+  undo: () => {
+    set(s => {
+      if (s.historyIdx <= 0) return s;
+      const idx = s.historyIdx - 1;
+      return { pageNodes: clone(s.history[idx]), historyIdx: idx, selectedIds: [] };
+    });
+  },
+
+  redo: () => {
+    set(s => {
+      if (s.historyIdx >= s.history.length - 1) return s;
+      const idx = s.historyIdx + 1;
+      return { pageNodes: clone(s.history[idx]), historyIdx: idx, selectedIds: [] };
+    });
+  },
+}));

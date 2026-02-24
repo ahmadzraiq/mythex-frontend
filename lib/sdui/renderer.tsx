@@ -15,6 +15,7 @@ import type { SDUINode, SDUIContext } from './types';
 import { isScreenScopedPath } from './path-utils';
 import { createGet } from './create-get';
 import { bindActionsToProps } from './action-binding';
+import { useBuilderMode } from './builder-context';
 
 interface RendererContext {
   store: ReturnType<typeof createVariableStore>;
@@ -32,6 +33,8 @@ interface RendererProps {
   node: SDUINode;
   context: RendererContext;
   scope?: Record<string, unknown>;
+  /** Stable tree path string used for builder node IDs (e.g. "0", "0-1", "0-1-2") */
+  builderPath?: string;
 }
 
 /** Wrapper that fetches data when mounted */
@@ -50,7 +53,8 @@ function DataSourceWrapper({
   return <>{children}</>;
 }
 
-const SDURendererInner = memo(function SDURendererInner({ node, context, scope }: RendererProps) {
+const SDURendererInner = memo(function SDURendererInner({ node, context, scope, builderPath = '0' }: RendererProps) {
+  const { builderMode } = useBuilderMode();
   const { store, mergedStore, storeConfig, mergedState, runAction, fetchData, actionsConfig, screenName, screenScopedAliases = [] } = context;
   const merged = mergedStore?.getState().merged ?? mergedState;
   const rawDeps = extractNodeDependencies(node);
@@ -73,9 +77,12 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope }
 
   if (!node) return null;
 
-  if (node.condition === false) return null;
-  if (node.condition != null && !evaluateCondition(node.condition, sduiContext)) {
-    return null;
+  // In builder mode: bypass conditions — show all nodes but flag hidden ones
+  if (!builderMode) {
+    if (node.condition === false) return null;
+    if (node.condition != null && !evaluateCondition(node.condition, sduiContext)) {
+      return null;
+    }
   }
 
   if (node.map) {
@@ -97,6 +104,7 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope }
             node={{ ...node, map: undefined, key: node.key ? `${node.key}-${index}` : String(index) }}
             context={context}
             scope={{ ...scope, $item: item, $index: index, $parent: scope?.$item }}
+            builderPath={`${builderPath}-m${index}`}
           />
         ))}
       </>
@@ -129,6 +137,38 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope }
 
   Object.assign(cleanProps, bindActionsToProps(node.actions, runAction, actionsConfig, scope, node.type));
 
+  // Builder mode: annotate nodes via a ref callback that writes directly onto
+  // the real DOM element. We cannot use cleanProps['data-builder-id'] because
+  // Gluestack/NativeWind's cssInterop chain strips unknown data-* props before
+  // they reach the DOM. A ref callback bypasses all that and is guaranteed to
+  // land on the actual rendered element.
+  //
+  // Nodes without an explicit id (e.g. the synthetic root Box from pageConfig.ui)
+  // get NO data-builder-id so clicking the page background correctly deselects.
+  if (builderMode) {
+    if (node.id) {
+      const _bId   = node.id;
+      const _bType = node.type;
+      const _prevRef = cleanProps.ref as React.Ref<unknown> | undefined;
+      cleanProps.ref = (el: unknown) => {
+        if (el && typeof (el as Element).setAttribute === 'function') {
+          (el as Element).setAttribute('data-builder-id',   _bId);
+          (el as Element).setAttribute('data-builder-type', _bType);
+        }
+        // Compose with any existing ref on the node
+        if (typeof _prevRef === 'function') {
+          _prevRef(el);
+        } else if (_prevRef && typeof _prevRef === 'object' && 'current' in _prevRef) {
+          (_prevRef as React.MutableRefObject<unknown>).current = el;
+        }
+      };
+    }
+    // Flag nodes whose condition would be false in normal rendering
+    if (node.condition != null && !evaluateCondition(node.condition, sduiContext)) {
+      cleanProps['data-builder-hidden'] = 'true';
+    }
+  }
+
   const textContent = node.text != null ? resolveText(node.text, sduiContext, scope) : undefined;
 
   let children: React.ReactNode = null;
@@ -138,7 +178,7 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope }
       const childKey = child.key;
       const isScopeVar = childKey === '$index' || childKey === '$item';
       const key = childKey && !isScopeVar ? childKey : `child-${i}`;
-      return <SDURendererInner key={key} node={child} context={context} scope={scope} />;
+      return <SDURendererInner key={key} node={child} context={context} scope={scope} builderPath={`${builderPath}-${i}`} />;
     });
   } else if (textContent !== undefined) {
     children = textContent;

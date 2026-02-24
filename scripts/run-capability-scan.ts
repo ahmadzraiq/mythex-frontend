@@ -211,7 +211,7 @@ const agentTools = {
     execute: async ({ prompt, reason }) => {
       try {
         console.log(`\n  🧪 Testing pipeline: "${prompt.slice(0, 60)}"...`);
-        const res = await fetch('http://localhost:3000/api/generate-page', {
+        const res = await fetch('http://localhost:300a/api/generate-page', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt, pageName: 'home' }),
