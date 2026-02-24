@@ -25,7 +25,8 @@ export function interpolate(
   });
 }
 
-/** Resolve text: string (interpolate), { var } (path lookup), or { expr, suffix?, prefix?, template? } (inline JSON Logic) */
+/** Resolve text: string (interpolate), { var } (path lookup), { expr, suffix?, prefix?, template? } (inline JSON Logic),
+ *  or any other object treated as a bare JSON Logic expression (e.g. { "formatCurrency": [...] }) */
 export function resolveText(
   text: string | { expr?: object; var?: string | [string, unknown]; suffix?: string; prefix?: string; template?: string } | undefined,
   context: SDUIContext,
@@ -49,6 +50,18 @@ export function resolveText(
       if (template != null) return template.replace('{0}', str);
       return prefix + str + suffix;
     }
+    // Fallback: treat the entire object as a bare JSON Logic expression.
+    // This handles AI-generated patterns like { "formatCurrency": { "var": "..." } }
+    // where the "expr" wrapper was omitted. Prevents raw JSON from appearing on screen.
+    try {
+      const result = jsonLogic.apply(text as unknown as object, context.state ?? {});
+      if (result !== undefined && result !== null && typeof result !== 'object') {
+        return String(result);
+      }
+    } catch {
+      // Not a valid JSON Logic op — fall through to empty string
+    }
+    return '';
   }
   return String(text);
 }

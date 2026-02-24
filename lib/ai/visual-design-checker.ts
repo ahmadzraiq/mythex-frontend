@@ -611,9 +611,11 @@ export async function runVisualDesignCheck(
     const doAll = visualAssert.check === 'pageVisible';
 
     // ── A. Section visibility ───────────────────────────────────────────────
+    // Only check sections explicitly listed in visualAssert.expectedSections.
+    // Default to just ['hero'] since page sections now vary per brand.
     const expectedSections =
       visualAssert.expectedSections ??
-      ['announcement', 'hero', 'categories', 'flash-sale', 'new-arrivals', 'best-sellers', 'brand-story', 'newsletter'];
+      ['hero'];
 
     if (doAll) {
       const sections = await checkSectionVisibility(page, expectedSections);

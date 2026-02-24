@@ -17,7 +17,19 @@
     "eval:page:case": "npx tsx scripts/eval-ai.ts --generator=page --case=fashion-homepage-full",
     "add-correction": "npx tsx scripts/add-correction.ts",
     "test:visual-screen": "npx tsx scripts/run-visual-screen-test.ts",
-    "check:component-sync": "node scripts/check-component-sync.js"
+    "check:component-sync": "node scripts/check-component-sync.js",
+    "train": "npx tsx scripts/training-loop.ts",
+    "train:dry-run": "npx tsx scripts/training-loop.ts --dry-run",
+    "eval:page:full": "RUN_VISUAL=1 npx tsx scripts/eval-ai.ts --generator=page && npx tsx scripts/training-loop.ts",
+    "capability-scan": "npx tsx scripts/run-capability-scan.ts",
+    "capability-scan:dry-run": "npx tsx scripts/run-capability-scan.ts --dry-run",
+    "supervisor": "npx tsx scripts/run-supervisor.ts",
+    "supervisor:dry-run": "npx tsx scripts/run-supervisor.ts --dry-run",
+    "snapshot:sections": "npx tsx scripts/snapshot-sections.ts",
+    "snapshot:sections:dark": "npx tsx scripts/snapshot-sections.ts --dark",
+    "snapshot:layout-parts": "npx tsx scripts/snapshot-sections.ts --layout-parts",
+    "snapshot:all": "npx tsx scripts/snapshot-sections.ts --with-layout-parts",
+    "sections:browser": "echo 'Open http://localhost:3000/dev/sections in your browser (requires npm run dev)'"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.30",

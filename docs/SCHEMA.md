@@ -82,6 +82,31 @@ Every UI node has:
 | actions | object | Event handlers: click, change, etc. |
 | $ref | string | Reference fragment: "fragments/modals/createProduct" |
 | $slot | string | Layout placeholder: "content" |
+| id | string | **Anchor ID** — stable identifier for element-level edits (Tier 1–2). Required on key nodes in section library variants. See Section Library below. |
+
+### Anchor ID Convention (Section Library)
+
+When building or editing section library variants (`lib/ai/section-library/variants/`), **key nodes must carry a stable `id` attribute** so the 4-tier edit system can locate them without AI.
+
+**Standard IDs by section:**
+
+| Section | Required IDs |
+|---------|-------------|
+| Hero | `hero-section`, `hero-heading`, `hero-subheading`, `hero-image`, `hero-cta-primary` |
+| Product Grid | `product-grid-section`, `product-grid-title`, `product-grid-view-all` |
+| Carousel | `product-carousel-section`, `carousel-title`, `carousel-card` |
+| Categories | `categories-section`, `categories-title`, `category-card` |
+| Newsletter | `newsletter-section`, `newsletter-heading`, `newsletter-input`, `newsletter-submit` |
+| Testimonials | `testimonials-section`, `testimonials-title`, `testimonial-card` |
+| Flash Sale | `flash-sale-section`, `flash-sale-title`, `flash-sale-timer` |
+| Brand Story | `brand-story-section`, `brand-story-heading`, `brand-story-body` |
+
+**The `id` field on a node is NOT rendered as HTML `id`** — it's used by the node locator (`lib/ai/editing/node-locator.ts`) to traverse the JSON tree programmatically.
+
+**Rules:**
+- `id` values must be unique within a page
+- Use kebab-case with section-type prefix: `hero-cta-primary`, `newsletter-input`
+- Do NOT add `id` to every node — only key anchor points (headings, CTAs, images, section roots, form inputs)
 
 ### Interpolation & inline expr
 

@@ -34,7 +34,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const palettes = await generatePalettes(designMood.trim(), mode);
+    const colorMood = body?.colorMood ?? designMood.trim();
+    const palettes = await generatePalettes(designMood.trim(), colorMood, mode);
     return NextResponse.json({ palettes });
   } catch (err) {
     console.error('[generate-palettes]', err);

@@ -182,6 +182,60 @@ Use this order on every UI node for predictable AI scanning:
 | [.cursor/rules/sdui-computed-and-sync.mdc](../.cursor/rules/sdui-computed-and-sync.mdc) | Computed ops, searchParamSync |
 | [.cursor/rules/nativewind-sdui-json.mdc](../.cursor/rules/nativewind-sdui-json.mdc) | Icons, Input, Select, layout, Pressable/Box text must use Text child |
 | [.cursor/rules/ai-build-schema.mdc](../.cursor/rules/ai-build-schema.mdc) | Migration and build order |
+| [.cursor/rules/ai-section-library.mdc](../.cursor/rules/ai-section-library.mdc) | Section library, anchor IDs, 4-tier edit system |
+
+---
+
+## 10. Section Library Architecture
+
+The page generator uses a **Select + Inject** pattern instead of generating 500+ lines of SDUI JSON from scratch.
+
+### How it works
+
+```
+User request → BriefAgent (section types) → StructureAgent (picks variant IDs)
+             → SectionLibrary.instantiate() (fills [[SLOT]] markers)
+             → Full SDUI page JSON assembled in milliseconds
+```
+
+### Key files
+
+| File | Purpose |
+|------|---------|
+| `lib/ai/section-library/types.ts` | Shared types: `SectionVariant`, `ManifestEntry`, `SectionSelection` |
+| `lib/ai/section-library/manifest.ts` | Compact manifest for AI prompts (`buildManifestContext()`) |
+| `lib/ai/section-library/index.ts` | `SectionLibrary` class: `getVariants()`, `instantiate()`, `collectInitActions()` |
+| `lib/ai/section-library/variants/` | 35 section types × 2-5 variants each (~72 total) |
+| `lib/ai/section-library/customizer.ts` | Edit operations: swap, add, remove, style patch, subtree edit |
+| `lib/ai/editing/intent-classifier.ts` | Routes user edit requests to Tier 1–4 |
+| `lib/ai/editing/style-interpreter.ts` | Tier 1: zero-AI Tailwind class mutations |
+| `lib/ai/editing/node-locator.ts` | Find nodes by anchor ID or dot path |
+| `lib/ai/agents/edit-agent.ts` | Tier 2: micro-AI on 5-40 line subtrees only |
+
+### Slot syntax
+
+- `[[SLOT_NAME]]` — replaced at instantiation (library level)
+- `{{state.path}}` — SDUI runtime interpolation (do NOT confuse them)
+
+### 35 supported section types
+
+Hero/Above-fold, Product Discovery, Brand & Story, Social Proof, Engagement — see `ai-section-library.mdc` for the full taxonomy.
+
+### Adding a new variant
+
+1. Add to `lib/ai/section-library/variants/*.ts`
+2. Register in `lib/ai/section-library/index.ts`
+3. Add compact entry to `lib/ai/section-library/manifest.ts`
+4. Tag key nodes with stable `id` attributes (anchor IDs)
+
+### 4-Tier Edit System
+
+| Tier | When | Mechanism |
+|------|------|-----------|
+| 1 | Color, padding, text, remove | `StyleInterpreter` — regex rules, zero AI |
+| 2 | Add elements, change actions | `EditAgent` — AI sees only 5-40 line subtree |
+| 3 | Swap variant | `SectionCustomizer.swapSection()` — no AI |
+| 4 | New page / new section | Full pipeline |
 
 ---
 

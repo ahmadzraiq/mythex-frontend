@@ -139,6 +139,54 @@ export const PREDEFINED_PALETTES: PaletteInput[] = [
     light: { primary: '#0d9488', secondary: '#14b8a6', accent: '#2dd4bf', background: '#f0fdfa', textPrimary: '#134e4a', textSecondary: '#0f766e' },
     dark: { primary: '#2dd4bf', secondary: '#5eead4', accent: '#99f6e4', background: '#134e4a', textPrimary: '#ccfbf1', textSecondary: '#5eead4' },
   },
+  {
+    name: 'Terracotta',
+    description: 'Earthy, artisan, hand-crafted. Suits pottery, candles, home goods, organic beauty.',
+    light: { primary: '#9c4221', secondary: '#c05a2e', accent: '#6b7c4b', background: '#fdf6f0', textPrimary: '#3d1a0a', textSecondary: '#7c4a2e' },
+    dark: { primary: '#e8825a', secondary: '#f0a070', accent: '#a3b870', background: '#1e0f08', textPrimary: '#fdf0e8', textSecondary: '#c08060' },
+  },
+  {
+    name: 'Cobalt',
+    description: 'Electric, editorial, bold. Suits streetwear, sneakers, tech accessories.',
+    light: { primary: '#1a3bcc', secondary: '#2952e3', accent: '#6b8ef5', background: '#f5f7ff', textPrimary: '#0a1550', textSecondary: '#3a5080' },
+    dark: { primary: '#6b8ef5', secondary: '#8ba8ff', accent: '#b4c6ff', background: '#04082e', textPrimary: '#eef0ff', textSecondary: '#8a9ec8' },
+  },
+  {
+    name: 'Coral',
+    description: 'High-contrast, vibrant, bold. Suits activewear, sports, youth brands.',
+    light: { primary: '#1a1a2e', secondary: '#2d2d44', accent: '#ff4757', background: '#ffffff', textPrimary: '#0d0d1a', textSecondary: '#555570' },
+    dark: { primary: '#ff4757', secondary: '#ff6b78', accent: '#ff9da5', background: '#0d0d1a', textPrimary: '#ffffff', textSecondary: '#a0a0b8' },
+  },
+  {
+    name: 'Sage',
+    description: 'Calm, natural, grounded. Suits wellness, yoga, sustainable fashion, skincare.',
+    light: { primary: '#4a6741', secondary: '#5e8054', accent: '#c8a96e', background: '#f8f5ee', textPrimary: '#1e2d1a', textSecondary: '#6a7d5e' },
+    dark: { primary: '#90b888', secondary: '#b0d0a8', accent: '#e0c898', background: '#131a10', textPrimary: '#eef4ec', textSecondary: '#7a9870' },
+  },
+  {
+    name: 'Burgundy',
+    description: 'Romantic, refined, editorial. Suits wine, perfume, luxury lingerie, fine dining.',
+    light: { primary: '#6b1e3a', secondary: '#8b2a50', accent: '#c4788a', background: '#fdf5f7', textPrimary: '#2d0a16', textSecondary: '#8a4a5e' },
+    dark: { primary: '#d4809a', secondary: '#e8a0b4', accent: '#f0c0cc', background: '#1a0810', textPrimary: '#fdf0f4', textSecondary: '#b07080' },
+  },
+  {
+    name: 'Nordic',
+    description: 'Clean, Scandinavian, architectural. Suits furniture, interiors, homeware, minimalist fashion.',
+    light: { primary: '#2c3e50', secondary: '#4a6580', accent: '#7aafc8', background: '#f7f9fb', textPrimary: '#1a252f', textSecondary: '#5a7080' },
+    dark: { primary: '#a8c8e0', secondary: '#c0daf0', accent: '#d8ecf8', background: '#0c1520', textPrimary: '#eef4f8', textSecondary: '#7a9ab0' },
+  },
+  {
+    name: 'Amber',
+    description: 'Rich, warm, premium. Suits whiskey, coffee, leather goods, artisan crafts.',
+    light: { primary: '#92400e', secondary: '#b45309', accent: '#d97706', background: '#fffbf0', textPrimary: '#3d1a00', textSecondary: '#855030' },
+    dark: { primary: '#fbbf24', secondary: '#fcd34d', accent: '#fde68a', background: '#1c1000', textPrimary: '#fff8e0', textSecondary: '#c8922a' },
+  },
+  {
+    name: 'Graphite',
+    description: 'Technical, edgy, modern dark. Suits electronics, gaming, fintech, SaaS.',
+    light: { primary: '#1c1c1e', secondary: '#3a3a3c', accent: '#00d4aa', background: '#f5f5f7', textPrimary: '#1c1c1e', textSecondary: '#636366' },
+    dark: { primary: '#e8e8ea', secondary: '#aeaeb2', accent: '#00d4aa', background: '#1c1c1e', textPrimary: '#f5f5f7', textSecondary: '#8e8e93' },
+  },
 ];
 
 export const PALETTE_IDS = PREDEFINED_PALETTES.map((p) => p.name) as readonly string[];

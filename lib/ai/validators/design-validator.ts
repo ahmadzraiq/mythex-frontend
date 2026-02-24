@@ -24,8 +24,52 @@ const STRUCTURAL_CHILDREN = new Set([
   'CountdownTimer', 'HStack', 'VStack', 'Center', 'Grid', 'GridItem',
 ]);
 
+const LARGE_HEADING_SIZES = new Set(['2xl', '3xl', '4xl', '5xl', '6xl', '7xl', '8xl']);
+
+/**
+ * Returns true if the node looks like a hero section.
+ * Checks (any level up to depth 4):
+ * - node.id or className contains "hero"
+ * - a large Heading component exists (size 2xl+) — with OR without explicit size
+ * - an Image/NextImage exists alongside text (common hero pattern)
+ */
+function nodeIsHeroSection(node: UiNode, depth = 0): boolean {
+  if (!node || depth > 4) return false;
+  const id = (node.id ?? '').toLowerCase();
+  const cls = (node.props?.className as string ?? '').toLowerCase();
+  if (id.includes('hero') || cls.includes('hero')) return true;
+  const type = node.type ?? '';
+  // Any Heading component at depth 1-4 is a likely hero (hero always has a headline)
+  if (type === 'Heading') {
+    const size = String(node.props?.size ?? '');
+    if (!size || LARGE_HEADING_SIZES.has(size)) return true;
+  }
+  const children = (node.children ?? []) as UiNode[];
+  for (const child of children) {
+    if (nodeIsHeroSection(child, depth + 1)) return true;
+  }
+  return false;
+}
+
+/**
+ * Returns true if the node looks like an announcement bar or thin promotional strip.
+ * These are always allowed to precede the hero section.
+ */
+function nodeIsAnnouncementBar(node: UiNode): boolean {
+  const id = (node.id ?? '').toLowerCase();
+  const cls = (node.props?.className as string ?? '').toLowerCase();
+  // Explicit announcement id/class
+  if (id.includes('announcement') || cls.includes('announcement')) return true;
+  // Thin strip heuristic: py-2 or py-1 with text-center — classic promotional bar
+  if ((cls.includes('py-2') || cls.includes('py-1')) && cls.includes('text-center')) return true;
+  // Single Text child with no sub-sections — simple banner
+  const children = (node.children ?? []) as UiNode[];
+  if (children.length === 1 && (children[0].type === 'Text' || children[0].type === 'Heading')) return true;
+  return false;
+}
+
 function walkNodes(node: UiNode, errors: string[], ctx: { hasResponsive: boolean }): void {
-  const className = (node.props?.className as string) ?? '';
+  const className = typeof node.props?.className === 'string' ? node.props.className : '';
 
   if (className) {
     if (HEX_REGEX.test(className)) {
@@ -45,6 +89,11 @@ function walkNodes(node: UiNode, errors: string[], ctx: { hasResponsive: boolean
 
   const type = node.type ?? '';
   const children = (node.children ?? []) as UiNode[];
+
+  // mx-auto on a Box without w-full collapses to content width in NativeWind
+  if (type === 'Box' && className.includes('mx-auto') && !className.includes('w-full')) {
+    errors.push(`Box with mx-auto must also have w-full (className: ${className.slice(0, 80)})`);
+  }
 
   if (type === 'Pressable' || type === 'Box') {
     const hasTextChild = children.some(
@@ -90,7 +139,7 @@ function walkNodes(node: UiNode, errors: string[], ctx: { hasResponsive: boolean
 }
 
 /**
- * Validate design rules on navbar/structure node tree.
+ * Validate design rules on the content node tree.
  */
 export function validateDesign(structure: UiNode): ValidationResult {
   const errors: string[] = [];
@@ -98,7 +147,22 @@ export function validateDesign(structure: UiNode): ValidationResult {
   walkNodes(structure, errors, ctx);
 
   if (!ctx.hasResponsive) {
-    errors.push('Navbar should have at least one responsive class (md:, lg:, or sm:)');
+    errors.push('Page should have at least one responsive class (md:, lg:, or sm:)');
+  }
+
+  // Hero must be the first or second content section.
+  // An announcement bar (promotional strip) is explicitly allowed before the hero.
+  const topChildren = (structure.children ?? []) as UiNode[];
+  if (topChildren.length > 0) {
+    const first = topChildren[0];
+    const second = topChildren[1];
+    const heroIsFirst = nodeIsHeroSection(first);
+    const heroIsSecondAfterAnnouncement = nodeIsAnnouncementBar(first) && second != null && nodeIsHeroSection(second);
+    if (!heroIsFirst && !heroIsSecondAfterAnnouncement) {
+      errors.push(
+        'Hero section must be the first child of content (or second if preceded by an announcement bar) — move the hero before all other sections'
+      );
+    }
   }
 
   return {

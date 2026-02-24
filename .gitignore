@@ -46,3 +46,5 @@ next-env.d.ts
 # AI eval logs (local reference, do not commit)
 lib/ai/eval/ai-responses*.jsonl
 lib/ai/eval/failures.json
+lib/ai/eval/pending-corrections.json
+lib/ai/eval/screenshots/

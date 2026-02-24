@@ -92,7 +92,7 @@ Used by the **Custom Spec** chatbot tab. Takes a free-form page description and 
 - **Output shape**: `{ meta, state, layout: "store", content, initActions, themeHint, layoutParts? }`
 - **`themeHint.palette`**: must have 6 keys per mode: `primary, secondary, accent, background, textPrimary, textSecondary` — maps directly to all `--theme-*` CSS vars via `ThemePresetOverlay`
 - **`content`**: root Box with all sections as direct children. No footer, no navbar (layout shell provides them).
-- **Section examples**: `lib/ai/section-examples.ts` — one concrete JSON example per section type, injected into the system prompt. This is the reliability mechanism — "show don't tell".
+- **Section library**: `lib/ai/section-library/` — pre-built, validated SDUI JSON variants for 35+ section types. The StructureAgent now operates in two modes: (1) classic — generates full JSON from scratch; (2) library mode — picks variant IDs + fills [[SLOT]] markers, then `SectionLibrary.instantiate()` assembles the final JSON. Library mode is faster, less error-prone, and produces more combinatorial variety. See `ai-section-library.mdc` for the full pattern.
 - **CountdownTimer**: always use `target="{{flashSale.endsAt}}"` prop (renderer interpolates from screen state). Never `targetPath`.
 - **Footer**: never in content — `store` layout already has one. Adding it duplicates the footer.
 - **API**: `POST /api/generate-page` → `{ prompt, palette?, fontPairing?, pageName? }` → `{ screen, style, theme }`

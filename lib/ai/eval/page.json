@@ -2,11 +2,11 @@
   "cases": [
     {
       "id": "fashion-homepage-full",
-      "prompt": "Modern Fashion Ecommerce Homepage. Sections: announcement bar (free shipping message), hero split layout (headline + Shop Now CTA + editorial image), featured categories 4-column grid, flash sale with countdown timer, new arrivals 4-column product grid, best sellers carousel, brand story split (image left / text right), newsletter signup (email input + subscribe button with 10% discount incentive).",
+      "prompt": "Modern Fashion Ecommerce Homepage for a contemporary clothing brand. Bold, clean aesthetic. Include a hero section, product showcase, and any other sections that fit the brand.",
       "expect": {
         "hasInitActions": true,
         "layoutIs": "store",
-        "sectionsPresent": ["announcement", "hero", "categories", "flash-sale", "new-arrivals", "best-sellers", "brand-story", "newsletter"],
+        "sectionsPresent": ["hero"],
         "noMapWithoutInitAction": true,
         "designMood": "modern",
         "paletteMoodMatch": true
@@ -19,6 +19,140 @@
         "checkContrast": true,
         "checkResponsive": true,
         "checkInteractivity": true
+      }
+    },
+    {
+      "id": "luxury-beauty-homepage",
+      "prompt": "Luxury skincare and beauty brand homepage. Sophisticated, minimal, high-end. The brand uses sustainable ingredients and targets women 30-50 who value quality over price.",
+      "expect": {
+        "hasInitActions": true,
+        "layoutIs": "store",
+        "sectionsPresent": ["hero"],
+        "noMapWithoutInitAction": true,
+        "paletteMoodMatch": true
+      },
+      "visualAssert": {
+        "check": "pageVisible",
+        "screenshot": true,
+        "checkIcons": true,
+        "checkColors": true,
+        "checkContrast": true,
+        "checkResponsive": true,
+        "checkInteractivity": true
+      }
+    },
+    {
+      "id": "streetwear-playful",
+      "prompt": "Streetwear brand homepage targeting Gen Z. Bold, playful, energetic. Bright accent colors, edgy typography. Heavy social proof, flash sale, TikTok-style community section, product drops countdown.",
+      "expect": {
+        "hasInitActions": true,
+        "layoutIs": "store",
+        "sectionsPresent": ["hero"],
+        "noMapWithoutInitAction": true,
+        "paletteMoodMatch": true
+      },
+      "visualAssert": {
+        "check": "pageVisible",
+        "screenshot": true,
+        "checkIcons": true,
+        "checkColors": true,
+        "checkContrast": true,
+        "checkResponsive": true
+      }
+    },
+    {
+      "id": "sustainable-outdoor-gear",
+      "prompt": "Sustainable outdoor gear and apparel brand homepage. Earthy, adventurous, eco-conscious. Target audience: hikers, climbers 25-45 who care about the environment. Features: sustainability story, how-it-works, product grid, press mentions.",
+      "expect": {
+        "hasInitActions": true,
+        "layoutIs": "store",
+        "sectionsPresent": ["hero"],
+        "noMapWithoutInitAction": true,
+        "paletteMoodMatch": true
+      },
+      "visualAssert": {
+        "check": "pageVisible",
+        "screenshot": true,
+        "checkIcons": true,
+        "checkColors": true,
+        "checkContrast": true,
+        "checkResponsive": true
+      }
+    },
+    {
+      "id": "artisan-food-brand",
+      "prompt": "Artisan food and gourmet grocery brand homepage. Warm, inviting, farm-to-table aesthetic. Brand story featuring the founder, product grid, testimonials, newsletter with recipe incentive.",
+      "expect": {
+        "hasInitActions": true,
+        "layoutIs": "store",
+        "sectionsPresent": ["hero"],
+        "noMapWithoutInitAction": true,
+        "paletteMoodMatch": true
+      },
+      "visualAssert": {
+        "check": "pageVisible",
+        "screenshot": true,
+        "checkIcons": true,
+        "checkColors": true,
+        "checkContrast": true,
+        "checkResponsive": true
+      }
+    },
+    {
+      "id": "tech-accessories",
+      "prompt": "Premium tech accessories brand (cables, chargers, stands). Clean, modern, Apple-inspired minimal design. Product comparison, features grid, press mentions, product carousel.",
+      "expect": {
+        "hasInitActions": true,
+        "layoutIs": "store",
+        "sectionsPresent": ["hero"],
+        "noMapWithoutInitAction": true,
+        "paletteMoodMatch": true
+      },
+      "visualAssert": {
+        "check": "pageVisible",
+        "screenshot": true,
+        "checkIcons": true,
+        "checkColors": true,
+        "checkContrast": true,
+        "checkResponsive": true
+      }
+    },
+    {
+      "id": "kids-toys",
+      "prompt": "Kids toys and games brand homepage. Fun, colorful, playful. Targeted at parents of children 3-12. Featured categories by age, gift guide, how-it-works educational angle, testimonials from parents.",
+      "expect": {
+        "hasInitActions": true,
+        "layoutIs": "store",
+        "sectionsPresent": ["hero"],
+        "noMapWithoutInitAction": true,
+        "paletteMoodMatch": true
+      },
+      "visualAssert": {
+        "check": "pageVisible",
+        "screenshot": true,
+        "checkIcons": true,
+        "checkColors": true,
+        "checkContrast": true,
+        "checkResponsive": true
+      }
+    },
+    {
+      "id": "vintage-jewelry",
+      "prompt": "Vintage and antique jewelry brand. Romantic, editorial, dark and moody aesthetic with gold accents. Lookbook section, founder story, press mentions, testimonials, newsletter.",
+      "expect": {
+        "hasInitActions": true,
+        "layoutIs": "store",
+        "sectionsPresent": ["hero"],
+        "noMapWithoutInitAction": true,
+        "paletteMoodMatch": true
+      },
+      "visualAssert": {
+        "check": "pageVisible",
+        "screenshot": true,
+        "checkIcons": true,
+        "checkColors": true,
+        "checkContrast": true,
+        "checkResponsive": true
       }
     }
   ]

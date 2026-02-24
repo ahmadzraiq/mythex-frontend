@@ -1,0 +1,182 @@
+---
+description: Section Library architecture, variant IDs, anchor ID convention, and 4-tier edit system
+globs: ["lib/ai/section-library/**", "lib/ai/editing/**", "lib/ai/agents/edit-agent.ts", "lib/ai/agents/structure-agent.ts"]
+---
+
+# AI Section Library — Architecture & Conventions
+
+## Core Pattern: Select + Inject, Not Generate
+
+Instead of generating 500+ lines of SDUI JSON from scratch (error-prone, slow), the section library stores pre-validated JSON variants. The AI's only job is:
+1. Pick a `variantId` from the manifest
+2. Fill a small set of `[[SLOT_NAME]]` values (optional, most have defaults)
+
+```typescript
+// AI output (compact — ~100 tokens)
+{ variantId: "hero.overlay-centered", params: { CTA_PATH: "/shop" } }
+
+// SectionLibrary assembles the full SDUI node (pre-validated, instant)
+const node = sectionLibrary.instantiate("hero.overlay-centered", { CTA_PATH: "/shop" });
+```
+
+## File Structure
+
+```
+lib/ai/section-library/
+  types.ts              — shared types (SectionVariant, SlotName, ManifestEntry, etc.)
+  manifest.ts           — compact manifest + buildManifestContext() for AI prompts
+  index.ts              — SectionLibrary class (getManifest, getVariants, instantiate)
+  customizer.ts         — edit operations (swapSection, addSection, applyStylePatch)
+  variants/
+    hero.ts             — 5 hero variants
+    product-grid.ts     — 4 product grid variants
+    featured-categories.ts — 3 category variants
+    newsletter.ts       — 3 newsletter variants
+    testimonials.ts     — 3 testimonials variants
+    features-grid.ts    — 3 features variants
+    announcement-bar.ts — 1 variant
+    brand-story.ts      — 3 variants
+    flash-sale.ts       — 2 variants
+    product-carousel.ts — 3 variants
+    lookbook.ts         — 2 variants
+    press-mentions.ts   — 2 variants
+    sustainability.ts   — 2 variants
+    video-feature.ts    — 2 variants
+    new-sections.ts     — remaining 20+ variants (shop-the-look, loyalty, quiz, blog, etc.)
+
+lib/ai/editing/
+  intent-classifier.ts  — maps user text → EditIntent (tier 1-4)
+  style-interpreter.ts  — rule-based Tailwind class manipulation (no AI)
+  node-locator.ts       — find node by anchor ID or path
+  patcher.ts            — apply patches to full page JSON
+
+lib/ai/agents/
+  edit-agent.ts         — Tier 2 micro-AI: receives 5-40 line subtree, outputs patched subtree
+```
+
+## 35 Section Types (All Valid variantId Prefixes)
+
+| Category | Section Types |
+|---|---|
+| Hero / Above Fold | `hero`, `hero-carousel`, `hero-video`, `announcement-bar`, `countdown-banner` |
+| Product Discovery | `featured-categories`, `product-grid`, `product-carousel`, `flash-sale`, `shop-the-look`, `gift-guide`, `bundle-builder`, `product-comparison`, `recently-viewed` |
+| Brand & Story | `brand-story`, `video-feature`, `lookbook`, `founder-story`, `sustainability`, `how-it-works`, `awards-certifications` |
+| Social Proof | `testimonials`, `press-mentions`, `features-grid`, `social-proof`, `community-section`, `ambassador-section` |
+| Engagement | `newsletter`, `quiz-finder`, `loyalty-program`, `blog-articles`, `waitlist`, `gift-card-promo`, `referral-program`, `tiktok-feed` |
+
+## Slot Syntax
+
+- `[[SLOT_NAME]]` in variant JSON strings = replaced at instantiation time
+- `{{state.path}}` in variant JSON strings = SDUI runtime interpolation (NOT replaced by library)
+- Most variants have only optional slots with sensible defaults
+- Required slots (if any) are listed in `_meta.requiredSlots`
+
+**Common slots:**
+- `[[CTA_PATH]]` — navigation destination (default: `/shop`)
+- `[[SECTION_TITLE]]` — section heading (default varies per section)
+- `[[HEADLINE]]` — for press/awards sections
+
+## Anchor ID Convention
+
+Every key node in a section variant carries a stable `id` attribute for element-level editing. This is the anchor the edit system uses to find nodes for Tier 1 and Tier 2 edits.
+
+**Standard anchor IDs per section type:**
+
+```
+Hero:         hero-section, hero-heading, hero-subheading, hero-image, hero-cta-primary
+Product Grid: product-grid-section, product-grid-title, product-grid-view-all, product-card
+Carousel:     product-carousel-section, carousel-title, carousel-card
+Categories:   categories-section, categories-title, category-card
+Newsletter:   newsletter-section, newsletter-heading, newsletter-input, newsletter-submit
+Testimonials: testimonials-section, testimonials-title, testimonial-card, testimonial-review
+Features:     features-section, feature-item-0, feature-item-1, feature-item-2
+Brand Story:  brand-story-section, brand-story-heading, brand-story-body, brand-story-image
+Flash Sale:   flash-sale-section, flash-sale-title, flash-sale-timer
+Navbar:       navbar-root, navbar-inner, navbar-left, navbar-right, navbar-cart, navbar-auth
+```
+
+**When adding a new variant:** Tag these key elements with `id` attributes:
+- Section root node
+- Main heading
+- Primary image (if any)
+- Primary CTA button
+- Each repeated item card
+
+## 4-Tier Edit System
+
+When a user requests a UI change, route to the cheapest possible operation:
+
+| Tier | Name | Trigger | Time | AI? |
+|------|------|---------|------|-----|
+| 1 | StyleInterpreter | Color, padding, text, remove, show/hide | <100ms | No |
+| 2 | EditAgent | Add dropdown, change actions, add element | 1-2s | Micro-AI on subtree only |
+| 3 | Section Swap | "Change hero layout", "use horizontal grid" | <100ms | No |
+| 4 | Full Regen | New page, new section type | 10-15s | Full pipeline |
+
+### Tier 1 examples (auto-detected by regex):
+- "make it blue" → `!bg-blue-500` on className
+- "more padding" → bump padding class
+- "remove this" → delete node from parent
+- "change text to X" → update `text` field
+- "make it bold" → add `font-bold`
+- "rounded corners" → add `rounded-xl`
+
+### Tier 2 examples (EditAgent sees only 5-40 lines):
+- "add a dropdown to the navbar" → EditAgent sees navbar subtree only
+- "when I click this, open cart" → EditAgent sees button's `actions` object (5 lines)
+- "add a badge that says SALE" → EditAgent sees hero subtree (40 lines)
+
+### Tier 3 examples (SectionLibrary.instantiate(), no AI):
+- "swap to horizontal product grid" → `sectionLibrary.instantiate("product-grid.horizontal", existingParams)`
+- "use the minimal newsletter" → `sectionLibrary.instantiate("newsletter.minimal", {})`
+
+## How to Add a New Section Variant
+
+1. Create or update a file in `lib/ai/section-library/variants/`
+2. Export a `SectionVariant` object with `_meta` and `node`
+3. Register it in `lib/ai/section-library/index.ts` ALL_VARIANTS array
+4. Add a compact `ManifestEntry` to `lib/ai/section-library/manifest.ts`
+5. Tag key elements with stable anchor IDs
+
+## SectionLibrary API
+
+```typescript
+import { sectionLibrary } from '@/lib/ai/section-library';
+
+// Get all variants for a section type
+const heroVariants = sectionLibrary.getVariants('hero');
+
+// Instantiate a variant with slots filled
+const node = sectionLibrary.instantiate('hero.overlay-centered', { CTA_PATH: '/collection' });
+
+// Collect all initActions needed for a page
+const actions = sectionLibrary.collectInitActions(['hero.overlay-centered', 'product-grid.4col']);
+// Returns: ['fetchNewArrivals'] (hero needs no initActions)
+```
+
+## SectionCustomizer API
+
+```typescript
+import { sectionCustomizer } from '@/lib/ai/section-library/customizer';
+
+// Swap section at index 2 with a new variant
+const updated = sectionCustomizer.swapSection(page, {
+  sectionIndex: 2,
+  newVariantId: 'product-grid.horizontal',
+  params: { SECTION_TITLE: 'Shop All' },
+});
+
+// Apply a Tier 2 AI patch (from EditAgent)
+const patched = sectionCustomizer.applySubtreeEdit(page, {
+  nodePath: 'content.children[0]',
+  updatedSubtree: editAgentOutput.patchedSubtree,
+});
+```
+
+## Rules
+
+1. **NEVER generate SDUI JSON from scratch for content sections** when a library variant exists. Always check the manifest first.
+2. **Always use [[SLOT_NAME]] for library slots**, never `{{state.path}}` (that's SDUI runtime interpolation).
+3. **Always add anchor IDs to key nodes** when creating new variants.
+4. **Tier 2 edits must use minimal subtrees** — extract with `extractEditableSubtree()`, not the full page.
+5. **Validate before applying** — call `validateSubtree()` from `edit-agent.ts` before splicing in an EditAgent result.

@@ -298,5 +298,196 @@
     "failed": 0,
     "passRate": 100,
     "failedCases": []
+  },
+  {
+    "timestamp": "2026-02-23T16:16:25.215Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "DesignDirectorAgent: Invalid output schema — [\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"visualDirection\"\n    ],\n    \"message\": \"Invalid input: expected string, received undefined\"\n  },\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"layoutStyle\"\n    ],\n    \"message\": \"Invalid input: expected string, received undefined\"\n  },\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"typographyStyle\"\n    ],\n    \"message\": \"Invalid input: expected string, received undefined\"\n  },\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"colorMood\"\n    ],\n    \"message\": \"Invalid input: expected string, received undefined\"\n  },\n  {\n    \"expected\": \"array\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"sectionsOrder\"\n    ],\n    \"message\": \"Invalid input: expected array, received undefined\"\n  },\n  {\n    \"expected\": \"array\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"competitorRefs\"\n    ],\n    \"message\": \"Invalid input: expected array, received undefined\"\n  },\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"brandPersonality\"\n    ],\n    \"message\": \"Invalid input: expected string, received undefined\"\n  },\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"suggestedBrandName\"\n    ],\n    \"message\": \"Invalid input: expected string, received undefined\"\n  },\n  {\n    \"code\": \"invalid_value\",\n    \"values\": [\n      \"fashion\",\n      \"electronics\",\n      \"food\",\n      \"beauty\",\n      \"home\",\n      \"sports\",\n      \"jewelry\",\n      \"general\"\n    ],\n    \"path\": [\n      \"industryType\"\n    ],\n    \"message\": \"Invalid option: expected one of \\\"fashion\\\"|\\\"electronics\\\"|\\\"food\\\"|\\\"beauty\\\"|\\\"home\\\"|\\\"sports\\\"|\\\"jewelry\\\"|\\\"general\\\"\"\n  }\n]"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T16:17:35.377Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Invalid schema for response_format 'response': In context=('properties', 'announcement'), 'required' is required to be supplied and to be an array including every key in properties. Missing 'ctaLabel'."
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T16:22:10.281Z",
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": 100,
+    "failedCases": []
+  },
+  {
+    "timestamp": "2026-02-23T20:16:39.333Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Data consistency: map paths without initAction: featured, flashSaleProducts, newArrivals, bestSellers | Design rules: Hero section must be the first child of content — move the hero (id containing \"hero\" or Heading size 2xl+) before all other sections"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T20:22:26.986Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Section coverage: Missing sections: hero, best-sellers | Data consistency: map paths without initAction: flashSaleProducts"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T20:27:59.843Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Visual: Section \"best-sellers\" not visible in DOM: Not found. Tried: text=/best sellers/i, text=/best seller/i, text=/bestseller/i; Section \"brand-story\" not visible in DOM: Not found. Tried: text=/our story/i, text=/brand story/i, text=/about us/i; Contrast ratio for \"hero-heading\" is 1.05:1 (WCAG AA requires 4.5:1 for normal text)"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T20:38:53.388Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Visual: Section \"brand-story\" not visible in DOM: Not found. Tried: text=/our story/i, text=/brand story/i, text=/about us/i"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T20:53:19.963Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Palette mood match: modern primary too colorful (S=77%, H=229) — modern uses neutral grays or deep navy"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T21:06:38.050Z",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Section coverage: Missing sections: best-sellers | Palette mood match: modern primary too colorful (S=89%, H=199) — modern uses neutral grays or deep navy"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T21:19:29.791Z",
+    "total": 2,
+    "passed": 0,
+    "failed": 2,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Failed after 3 attempts. Last error: Request too large for gpt-4o in organization org-ykA6zrRdlsMvxnAzdX3V5Gg3 on tokens per min (TPM): Limit 30000, Requested 30590. The input or output tokens must be reduced in order to run successfully. Visit https://platform.openai.com/account/rate-limits to learn more."
+      },
+      {
+        "id": "luxury-beauty-homepage",
+        "generator": "page",
+        "error": "Failed after 3 attempts. Last error: Request too large for gpt-4o in organization org-ykA6zrRdlsMvxnAzdX3V5Gg3 on tokens per min (TPM): Limit 30000, Requested 30396. The input or output tokens must be reduced in order to run successfully. Visit https://platform.openai.com/account/rate-limits to learn more."
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T21:34:34.132Z",
+    "total": 2,
+    "passed": 0,
+    "failed": 2,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Visual: Section \"categories\" not visible in DOM: Not found. Tried: text=/shop by category/i, text=/categories/i, text=/featured categories/i; Section \"flash-sale\" not visible in DOM: Not found. Tried: text=/flash sale/i, text=/flash/i; Section \"new-arrivals\" not visible in DOM: Not found. Tried: text=/new arrivals/i, text=/new arrival/i; Section \"best-sellers\" not visible in DOM: Not found. Tried: text=/best sellers/i, text=/best seller/i, text=/bestseller/i; Section \"brand-story\" not visible in DOM: Not found. Tried: text=/our story/i, text=/brand story/i, text=/about us/i"
+      },
+      {
+        "id": "luxury-beauty-homepage",
+        "generator": "page",
+        "error": "Data consistency: map paths without initAction: lookbook"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T21:35:52.069Z",
+    "total": 2,
+    "passed": 0,
+    "failed": 2,
+    "passRate": 0,
+    "failedCases": [
+      {
+        "id": "fashion-homepage-full",
+        "generator": "page",
+        "error": "Failed after 3 attempts. Last error: Rate limit reached for gpt-4o in organization org-ykA6zrRdlsMvxnAzdX3V5Gg3 on tokens per min (TPM): Limit 30000, Used 7734, Requested 25098. Please try again in 5.664s. Visit https://platform.openai.com/account/rate-limits to learn more."
+      },
+      {
+        "id": "luxury-beauty-homepage",
+        "generator": "page",
+        "error": "className.includes is not a function"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-02-23T21:49:29.798Z",
+    "total": 2,
+    "passed": 1,
+    "failed": 1,
+    "passRate": 50,
+    "failedCases": [
+      {
+        "id": "luxury-beauty-homepage",
+        "generator": "page",
+        "error": "Palette mood match: luxury accent should be gold/amber (hue 30-60°, sat >40%); got h=346 s=39"
+      }
+    ]
   }
 ]

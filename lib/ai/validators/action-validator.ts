@@ -26,6 +26,31 @@ const INLINE_ACTION_TYPES = new Set([
   'setTheme',
 ]);
 
+/**
+ * Named actions used in section library variants that are valid page-generator
+ * conventions but may not be defined in every project's actions config.
+ * These are intentional placeholders — the section examples reference them
+ * so the generated page is wired correctly once the action is added to config.
+ */
+const PAGE_GENERATOR_ACTIONS = new Set([
+  'subscribeNewsletter',
+  'submitNewsletter',
+  'submitContactForm',
+  'fetchNavCollections',
+  'fetchCart',
+  'fetchFeaturedCategories',
+  'fetchNewArrivals',
+  'fetchBestSellers',
+  'fetchFlashSale',
+  'fetchTestimonials',
+  'addToCart',
+  'addToWishlist',
+  'openCart',
+  'logout',
+  'goToCart',
+  'goToCheckout',
+]);
+
 function extractActionRefs(obj: unknown, refs: Set<string>): void {
   if (obj == null) return;
   if (typeof obj === 'object' && !Array.isArray(obj)) {
@@ -74,7 +99,7 @@ export function validateActions(structure: UiNode): ValidationResult {
 
   const invalid: string[] = [];
   for (const name of refs) {
-    if (!VALID_ACTION_NAMES.has(name)) {
+    if (!VALID_ACTION_NAMES.has(name) && !PAGE_GENERATOR_ACTIONS.has(name)) {
       invalid.push(`Unknown action: "${name}"`);
     }
   }

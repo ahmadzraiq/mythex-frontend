@@ -63,13 +63,25 @@ jsonLogic.add_operation('ceil', (n: unknown) => Math.ceil(Number(n) || 0));
 jsonLogic.add_operation('floor', (n: unknown) => Math.floor(Number(n) || 0));
 
 // Custom ops for formatting (json-logic has no built-in round/format)
-jsonLogic.add_operation('formatCurrency', (num: unknown, currency: unknown) => {
-  const n = Number(num) || 0;
-  const c = String(currency ?? 'USD').trim();
+// Supports two call forms:
+//   formatCurrency([valueInCents, 100])       → divides by 100, formats as USD e.g. "$29.99"
+//   formatCurrency([value, "USD"])             → formats value directly as USD
+// When the second arg is a number, it is treated as a divisor (cents → dollars).
+// When it is a string, it is treated as a currency code.
+jsonLogic.add_operation('formatCurrency', (num: unknown, divisorOrCurrency: unknown) => {
+  let n = Number(num) || 0;
+  let currencyCode = 'USD';
+
+  if (typeof divisorOrCurrency === 'number' && divisorOrCurrency > 0) {
+    n = n / divisorOrCurrency;
+  } else if (typeof divisorOrCurrency === 'string' && divisorOrCurrency.trim()) {
+    currencyCode = divisorOrCurrency.trim();
+  }
+
   try {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: c || 'USD' }).format(n);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(n);
   } catch {
-    return c ? `${c} ${n}` : String(n);
+    return `$${n.toFixed(2)}`;
   }
 });
 

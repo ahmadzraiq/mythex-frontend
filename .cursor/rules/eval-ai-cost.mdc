@@ -59,7 +59,7 @@ console.log('Restored', failures.length, 'failures');
 
 ### Dev server warm-up before Playwright
 
-**Problem:** When `eval-ai.ts` runs a fresh AI generation (~2 min), the Next.js dev server may trigger a hot-reload caused by TSX compiling imported modules (e.g. `section-examples.ts`). If Playwright opens a page immediately after the AI call, the server is mid-recompile and `window.__setGeneratedScreen` is never exposed — causing `waitForFunction` to time out even with a 60s timeout.
+**Problem:** When `eval-ai.ts` runs a fresh AI generation (~2 min), the Next.js dev server may trigger a hot-reload caused by TSX compiling imported modules (e.g. section library variants). If Playwright opens a page immediately after the AI call, the server is mid-recompile and `window.__setGeneratedScreen` is never exposed — causing `waitForFunction` to time out even with a 60s timeout.
 
 **Fix:** Before launching the Playwright browser, send one plain HTTP request to the dev server. This forces the hot-reload to complete before the headless Chrome session starts:
 

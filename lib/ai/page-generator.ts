@@ -1,30 +1,35 @@
 /**
- * AI page generator - takes a free-form page spec (e.g. "Modern Fashion Homepage")
- * and generates a complete SDUI screen config with all sections inline.
+ * AI page generator — entry point for the multi-agent pipeline.
  *
- * Unlike layout-generator (which uses a schema intermediary), this outputs a
- * ready-to-render SDUI screen config directly. The section-examples guide the AI
- * on correct component patterns so it doesn't improvise.
+ * Orchestrates: DesignDirector → Brief → (Content + Theme) → Structure →
+ *               Validate+retry → QA Review
+ *
+ * TWO MODES:
+ *   1. Classic (default): StructureAgent generates full SDUI JSON in one call.
+ *   2. Library mode (useLibrary: true): StructureAgent picks variant IDs from
+ *      the section library manifest; SectionLibrary.instantiate() assembles
+ *      the final JSON. Faster, fewer errors, more combinatorial variety.
+ *
+ * For backward compatibility the schema types and `pageGeneratorOutputSchema`
+ * are re-exported here.
  */
 
-import { generateText, Output } from 'ai';
-import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
-import {
-  buildSduiReference,
-  buildThemeContext,
-} from '@/lib/ai/sdui-config-context';
-import { buildDesignPrinciplesContext } from '@/lib/ai/design-principles';
-import { buildTechPatternsContext } from '@/lib/ai/tech-patterns';
-import { buildCorrectionsContext } from '@/lib/ai/eval/corrections-builder';
-import { buildSectionExamplesContext } from '@/lib/ai/section-examples';
-import { logAiResponse } from '@/lib/ai/response-logger';
-import { generateNavbarStructure } from '@/lib/ai/generate-navbar-structure';
-import { colorSetToNavbarThemeVars } from '@/lib/ai/navbar-theme-picker';
+import { runPipeline } from '@/lib/ai/agents/manager-agent';
 import type { Palette } from '@/lib/ai/palette-schema';
 import type { FontPairing } from '@/lib/ai/font-pairing-schema';
+import { sectionLibrary } from '@/lib/ai/section-library';
+import type { SectionSelection } from '@/lib/ai/section-library/types';
 
-// ─── Output schema ──────────────────────────────────────────────────────────
+// ─── Output schema (re-exported for use by agents and eval scripts) ──────────
+
+// Normalise children: accept array (correct) or a single-object mistake from the AI
+const normaliseChildren = (val: unknown): unknown[] | undefined => {
+  if (val == null) return undefined;
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'object') return [val]; // single node mistake
+  return undefined;
+};
 
 const uiNodeSchema: z.ZodType<Record<string, unknown>> = z.lazy(() =>
   z.object({
@@ -34,9 +39,9 @@ const uiNodeSchema: z.ZodType<Record<string, unknown>> = z.lazy(() =>
     key: z.string().optional(),
     props: z.record(z.string(), z.unknown()).optional(),
     text: z.union([z.string(), z.record(z.string(), z.unknown())]).optional(),
-    actions: z.record(z.string(), z.unknown()).optional(),
+    actions: z.union([z.record(z.string(), z.unknown()), z.array(z.unknown())]).optional(),
     condition: z.unknown().optional(),
-    children: z.array(uiNodeSchema).optional(),
+    children: z.preprocess(normaliseChildren, z.array(uiNodeSchema)).optional(),
     $ref: z.string().optional(),
     $slot: z.string().optional(),
   }).passthrough()
@@ -76,190 +81,97 @@ export const pageGeneratorOutputSchema = z.object({
         .optional(),
     })
     .optional(),
+  layoutParts: z
+    .object({
+      navbar: z.object({ structure: uiNodeSchema }).optional(),
+      footer: z.object({ structure: uiNodeSchema }).optional(),
+    })
+    .optional(),
 });
 
 export type PageGeneratorOutput = z.infer<typeof pageGeneratorOutputSchema>;
 
-// ─── System prompt ──────────────────────────────────────────────────────────
-
-function buildSystemPrompt(palette?: Palette | null, fontPairing?: FontPairing | null): string {
-  const paletteHint = palette
-    ? `\nUSE THIS PALETTE:\nLight: ${JSON.stringify(palette.light)}\nDark: ${JSON.stringify(palette.dark)}\nReflect these in themeHint.palette and use matching theme vars in classNames.`
-    : '';
-  const fontHint = fontPairing
-    ? `\nUSE THESE FONTS: heading="${fontPairing.heading}", body="${fontPairing.body}" — reflect in themeHint.fonts.`
-    : '';
-
-  return `You are a senior SDUI page builder. Given a free-form page description (e.g. "Modern Fashion Homepage with hero, product grid, flash sale, newsletter"), generate a complete, production-ready SDUI screen config.
-
-OUTPUT SHAPE:
-{
-  "meta": { "title": "Page Title", "description": "..." },
-  "state": {
-    "form": { "email": "" },
-    "hero": { "heading": "...", "subheading": "...", "imageUrl": "/images/hero.jpg" },
-    "flashSale": { "endsAt": "2026-04-01T00:00:00Z" }
-  },
-  "layout": "store",
-  "content": {
-    "type": "Box",
-    "props": { "className": "w-full flex flex-col" },
-    "children": [ /* all sections as direct children — NO footer, NO navbar */ ]
-  },
-  "initActions": [
-    { "action": "fetchNavCollections" },
-    { "action": "fetchCart" }
-    /* add section-specific actions: fetchFeaturedProducts, fetchNewArrivals, fetchBestSellers, etc. */
-  ],
-  "themeHint": {
-    "designMood": "luxury",
-    "palette": {
-      "light": {
-        "primary": "#1e293b",
-        "secondary": "#334155",
-        "accent": "#f59e0b",
-        "background": "#f8fafc",
-        "textPrimary": "#0f172a",
-        "textSecondary": "#64748b"
-      },
-      "dark": {
-        "primary": "#f8fafc",
-        "secondary": "#e2e8f0",
-        "accent": "#f59e0b",
-        "background": "#0f172a",
-        "textPrimary": "#f8fafc",
-        "textSecondary": "#94a3b8"
-      }
-    },
-    "fonts": { "heading": "geist", "body": "geist" }
-  }
-}
-${paletteHint}
-${fontHint}
-
-THEME HINT — CRITICAL:
-themeHint.palette MUST have ALL 6 keys in both light and dark: primary, secondary, accent, background, textPrimary, textSecondary.
-Choose colors that match the page's design mood — NOT the same defaults every time:
-- "luxury" → dark navy/gold accents, near-white background
-- "playful" → vibrant primaries (coral, teal, yellow), light background
-- "modern" → slate/zinc grays, white background, bold accent
-- "professional" → deep blue/charcoal, light gray background
-- "warm" → earth tones (terracotta, warm beige, olive), cream background
-All colors must be valid hex strings (#rrggbb). The palette drives every CSS variable on the page.
-
-STATE CONVENTIONS:
-- Inline content (hero headings, brand story copy) lives in screen state, referenced via {{path}} in text nodes
-- Form fields: state.form.email, etc. — always use full path screens.{pageName}.form.{field} in setState actions
-- CountdownTimer: pass target="{{flashSale.endsAt}}" as a prop (the renderer interpolates it from screen state)
-- Product data: loaded by initActions (fetchFeaturedProducts etc.) into Zustand store, mapped via "map": "storePath"
-
-INIT ACTIONS — add for each section that needs data:
-- fetchNavCollections + fetchCart: always include first
-- fetchFeaturedProducts → maps to featured.products
-- fetchNewArrivals → maps to newArrivals.products  
-- fetchBestSellers → maps to bestSellers.products
-- fetchFeaturedCategories → maps to featured.categories
-- fetchFlashSale → maps to flashSale.products + flashSale.endsAt
-- fetchTestimonials → maps to testimonials.items
-- subscribeNewsletter → for newsletter submit
-
-${buildSectionExamplesContext()}
-
-${buildDesignPrinciplesContext()}
-
-${buildTechPatternsContext()}
-
-THEME VARS AVAILABLE:
-- --theme-announcement-bg / --theme-announcement-text
-- --theme-header-bg / --theme-header-text / --theme-header-border
-- --theme-hero-bg / --theme-hero-text
-- --theme-content-bg / --theme-content-text / --theme-content-textMuted
-- --theme-shop-button / --theme-shop-buttonHover / --theme-shop-buttonText
-- --theme-footer-bg / --theme-footer-text / --theme-footer-textMuted
-
-${buildThemeContext()}
-
-SDUI REFERENCE:
-${buildSduiReference()}
-
-${buildCorrectionsContext('page')}
-
-RULES:
-- Output valid JSON only — no markdown, no comments
-- All sections are direct children of the root content Box (w-full flex flex-col)
-- Use section examples above as exact patterns — never invent new component types
-- Always include announcement-bar if user mentions one (first child)
-- Do NOT include a footer in content — the "store" layout shell already provides navbar + footer. Adding one duplicates it.
-- Do NOT add a navbar section in content — the layout shell already includes it
-- For any section type not in the examples, build it using Box/Heading/Text/Button/NextImage/Carousel/NavIcon only
-- CountdownTimer: always use target="{{flashSale.endsAt}}" prop — never targetPath
-- themeHint.palette must have all 6 keys per mode — this is required for any colors to appear on the page
-- themeHint.designMood should match the overall vibe (e.g. "luxury", "playful", "modern", "warm")`;
-}
-
-// ─── Generator ──────────────────────────────────────────────────────────────
+// ─── Generator (delegates to multi-agent pipeline) ──────────────────────────
 
 export interface PageGeneratorOptions {
   palette?: Palette | null;
   fontPairing?: FontPairing | null;
   pageName?: string;
+  /** Set true to skip the visual QA review step (faster, no screenshot needed) */
+  skipQA?: boolean;
+  /** Set true to skip the Playwright screenshot step (QA falls back to text-only) */
+  skipScreenshot?: boolean;
+  /**
+   * Use the new section library assembly mode.
+   * AI picks variant IDs; SectionLibrary assembles the JSON.
+   * Faster, fewer errors, more variety.
+   * Default: false (backward compat)
+   */
+  useLibrary?: boolean;
+}
+
+// ─── Library assembly utility ────────────────────────────────────────────────
+
+/**
+ * Assemble a page's content children from a list of section selections.
+ * Used by the library mode pipeline.
+ *
+ * Any section with an unknown variantId is skipped with a warning.
+ */
+export function assembleSectionsFromLibrary(
+  sections: SectionSelection[]
+): Record<string, unknown>[] {
+  const nodes: Record<string, unknown>[] = [];
+
+  for (const selection of sections) {
+    try {
+      const node = sectionLibrary.instantiate(selection.variantId, selection.params ?? {});
+      nodes.push(node);
+    } catch (err) {
+      console.warn(`assembleSectionsFromLibrary: Skipping "${selection.variantId}" — ${(err as Error).message}`);
+    }
+  }
+
+  return nodes;
+}
+
+/**
+ * Collect all initActions needed for a list of section selections.
+ * Always includes fetchNavCollections and fetchCart as base actions.
+ */
+export function collectInitActionsForSections(selections: SectionSelection[]): Array<{ action: string }> {
+  const variantIds = selections.map(s => s.variantId);
+  const sectionActions = sectionLibrary.collectInitActions(variantIds);
+
+  const BASE_ACTIONS = ['fetchNavCollections', 'fetchCart'];
+  const all = [...BASE_ACTIONS, ...sectionActions];
+  const unique = [...new Set(all)];
+
+  return unique.map(action => ({ action }));
 }
 
 /**
  * Generate a complete SDUI screen from a free-form page description.
- * Also generates a custom navbar structure matching the page's palette and mood.
+ * Delegates to the multi-agent pipeline (Manager Agent).
+ *
+ * Pipeline: DesignDirector → Brief → (Content + Theme) → Structure →
+ *           Validate+retry → Screenshot (Playwright) → QA Review (GPT-4V)
  */
 export async function generatePage(
   prompt: string,
   options: PageGeneratorOptions = {}
 ): Promise<PageGeneratorOutput> {
-  const { palette, fontPairing, pageName = 'home' } = options;
+  const { palette, fontPairing, pageName = 'home', skipQA = false, skipScreenshot = false } = options;
 
-  const systemPrompt = buildSystemPrompt(palette, fontPairing);
   const userPrompt = prompt.trim() || 'Generate a modern e-commerce homepage with hero, categories, product grid, and newsletter.';
 
-  const { output } = await generateText({
-    model: openai('gpt-4o'),
-    system: systemPrompt,
-    prompt: userPrompt,
-    output: Output.json(),
+  const result = await runPipeline(userPrompt, {
+    palette,
+    fontPairing: fontPairing ?? undefined,
+    pageName,
+    skipQA,
+    skipScreenshot,
   });
 
-  const parsed = pageGeneratorOutputSchema.safeParse(output);
-  if (!parsed.success) {
-    throw new Error(`Invalid page schema: ${parsed.error.message}`);
-  }
-
-  const result = parsed.data;
-
-  // Generate a custom navbar that matches the page's palette and mood
-  try {
-    const hint = result.themeHint;
-    const effectivePalette = palette ?? (hint?.palette?.light ? { light: hint.palette.light, dark: hint.palette.dark } : null);
-    const themeVars = effectivePalette?.light
-      ? colorSetToNavbarThemeVars(
-          effectivePalette.light as Parameters<typeof colorSetToNavbarThemeVars>[0],
-          effectivePalette.dark as Parameters<typeof colorSetToNavbarThemeVars>[1]
-        )
-      : undefined;
-
-    const navbarPrompt = [
-      hint?.designMood ? `${hint.designMood} style` : 'modern e-commerce',
-      fontPairing?.heading ? `heading font: ${fontPairing.heading}` : hint?.fonts?.heading ? `heading font: ${hint.fonts.heading}` : '',
-    ].filter(Boolean).join(', ');
-
-    const navbarResult = await generateNavbarStructure(
-      `Create a navbar for an e-commerce store with ${navbarPrompt} aesthetic`,
-      { skipLog: true, predefinedTheme: themeVars ? { themeVars } : undefined }
-    );
-
-    (result as Record<string, unknown>).layoutParts = { navbar: { structure: navbarResult.structure } };
-  } catch (e) {
-    console.error('[page-generator] Failed to generate navbar, using default:', e);
-  }
-
-  // Log after navbar is added so the log entry contains the complete output
-  logAiResponse('page', { prompt: userPrompt, pageName }, result as unknown, { source: 'api', page: pageName });
-
-  return result;
+  return result.screen;
 }

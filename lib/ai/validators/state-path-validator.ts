@@ -87,6 +87,29 @@ const RESERVED_TOP_LEVEL = new Set([
 ]);
 
 /**
+ * Screen-local state keys the page generator always injects into screen.state.
+ * These are valid but not present in root.store.initialData (global store).
+ */
+const PAGE_GENERATOR_STATE_KEYS = new Set([
+  'hero',
+  'featured',
+  'newArrivals',
+  'bestSellers',
+  'flashSale',
+  'flashSaleProducts',
+  'testimonials',
+  'brandStory',
+  'social',
+  'features',
+  'announcement',
+  'newsletter',
+  'categories',
+  'lookbook',
+  'pressMentions',
+  'sustainability',
+]);
+
+/**
  * Validate that all state path references have valid top-level keys.
  */
 export function validateStatePaths(structure: UiNode): ValidationResult {
@@ -95,11 +118,18 @@ export function validateStatePaths(structure: UiNode): ValidationResult {
 
   const invalid: string[] = [];
   for (const path of paths) {
-    if (RESERVED_TOP_LEVEL.has(path)) continue;
+    // Extract the top-level key first, then check against all allowed sets
     const top = getTopLevelKey(path);
-    if (top !== 'screens' && top !== '_workflow' && !TOP_LEVEL_KEYS.has(top)) {
-      invalid.push(`Unknown state path top-level: "${top}" (from "${path}")`);
+    if (RESERVED_TOP_LEVEL.has(top)) continue;
+    if (PAGE_GENERATOR_STATE_KEYS.has(top)) continue;
+    if (top === 'screens' || top === '_workflow') continue;
+    if (TOP_LEVEL_KEYS.has(top)) continue;
+    // Special hint for "state" prefix mistake
+    if (top === 'state') {
+      invalid.push(`Do NOT use "state." prefix in paths — access screen state directly: use "hero.heading" not "state.hero.heading"`);
+      continue;
     }
+    invalid.push(`Unknown state path top-level: "${top}" (from "${path}")`);
   }
 
   return {

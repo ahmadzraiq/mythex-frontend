@@ -47,6 +47,12 @@ COMPUTED / EXPR:
 - Auth: { "==": [{ "var": "auth.user" }, null] } for Sign in, { "!=": [{ "var": "auth.user" }, null] } for logged-in UI (Profile, Sign out).
 - Logged-in greeting: {{auth.user.firstName}} in Text interpolation.
 
+LOGO RULES:
+- NEVER use NextImage with a brand-specific path like /brand-logo.svg or /velour-logo.svg — these files do not exist on the server and will show a broken image.
+- Safe options: (1) A Text or Heading node with the brand name as text — ALWAYS works. (2) NextImage with src="/logo.svg" or src="/vendure.svg" ONLY if you are adapting the canonical reference above and the brand name matches.
+- Default to the text approach: { "type": "Heading", "props": { "size": "lg", "className": "font-bold text-[var(--theme-header-text)]" }, "text": "<BrandName>" }
+- If the user prompt implies a logo image exists (e.g. "use the uploaded logo"), you may use NextImage, otherwise always use text.
+
 OTHER RULES:
 - Button with text: use ButtonText child. Include !bg-* and !text-* in className for visibility.
 - props.style values: strings only. No JSON Logic in styles.

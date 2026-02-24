@@ -108,7 +108,14 @@ export default function DynamicRoutePage() {
   const registry = (app as { registry?: ConfigRegistry }).registry;
   let config: Record<string, unknown> | undefined;
   if (useGenerated) {
-    config = generatedScreen as Record<string, unknown>;
+    // Resolve layout + layoutParts when the generated screen declares a layout
+    // (e.g. layout: "store"). Without this the $slot is never filled and the page is blank.
+    const genRaw = generatedScreen as Record<string, unknown>;
+    if (registry && genRaw.layout) {
+      config = resolveScreenConfig(genRaw as Parameters<typeof resolveScreenConfig>[0], registry) as Record<string, unknown>;
+    } else {
+      config = genRaw;
+    }
   } else if (navbar && rawScreens && registry && configName in rawScreens) {
     const raw = rawScreens[configName] as Record<string, unknown>;
     const structure =

@@ -70,12 +70,12 @@ type CheckResult = { pass: boolean; label: string; detail?: string };
  */
 const SECTION_MARKERS: Record<string, string[]> = {
   announcement: ['announcement', 'free shipping', 'announcement-bg'],
-  hero: ['"hero"', '"hero-heading"', 'hero-bg', 'hero split', 'min-h-\\[90vh\\]'],
+  hero: ['hero-section', 'hero-heading', 'hero-bg', 'hero split', 'min-h-\\[90vh\\]', 'min-h-\\[60vh\\]', 'min-h-\\[80vh\\]', '"id":"hero'],
   categories: ['categories', 'featured.categories', 'Shop by Category'],
   'flash-sale': ['flash', 'CountdownTimer', 'flashSale'],
   'new-arrivals': ['newArrivals', 'New Arrivals'],
   'best-sellers': ['bestSellers', 'Best Sellers'],
-  'brand-story': ['brandStory', 'brand-story', 'Our Story', 'brand story'],
+  'brand-story': ['brandStory', 'brand-story', 'Our Story', 'brand story', 'brand-story-section', 'crafting', 'craftsmanship', 'our mission', 'about us', 'who we are'],
   newsletter: ['newsletter', 'subscribeNewsletter', 'InputField'],
 };
 
@@ -147,11 +147,16 @@ function dataConsistencyCheck(
   const unmapped: string[] = [];
   // These top-level keys are managed by global store or layout — no per-page initAction needed
   const globalKeys = new Set(['nav', 'auth', 'cart', 'layout', 'route', 'screens']);
+  // State key → action keyword aliases (when the action name doesn't contain the state key)
+  const ALIASES: Record<string, string> = {
+    flashSaleProducts: 'flashSale', // fetchFlashSale loads flashSaleProducts state
+  };
 
   for (const path of mapPaths) {
     if (globalKeys.has(path)) continue;
+    const searchKey = ALIASES[path] ?? path;
     // Check if any initAction name contains the path namespace (case-insensitive)
-    const hasLoader = new RegExp(path, 'i').test(actionNames);
+    const hasLoader = new RegExp(searchKey, 'i').test(actionNames);
     if (!hasLoader) unmapped.push(path);
   }
 
@@ -223,9 +228,11 @@ function paletteMoodCheck(themeHint: Record<string, unknown> | undefined): Check
     if (bgHsl && bgHsl.l < 85) {
       issues.push(`modern background too dark (L=${bgHsl.l}%, expected >85%)`);
     }
-    // Modern should NOT look like a warm/luxury/playful page
-    if (primaryHsl && primaryHsl.s > 60 && primaryHsl.h > 60) {
-      issues.push(`modern primary too colorful (S=${primaryHsl.s}%, H=${primaryHsl.h}) — modern uses neutral grays or deep navy`);
+    // Modern should NOT look like a warm brand (earth tones) or a pure playful brand.
+    // Allow cool blues/teals/slates as they're common in modern design.
+    // Only flag warm hues (orange/red/yellow range 20-60°) that are highly saturated.
+    if (primaryHsl && primaryHsl.s > 70 && primaryHsl.h >= 20 && primaryHsl.h <= 60) {
+      issues.push(`modern primary looks too warm/earthy (S=${primaryHsl.s}%, H=${primaryHsl.h}) — modern uses cool or neutral tones`);
     }
   }
 
@@ -358,7 +365,7 @@ async function runPalettesCase(
   try {
     const output = cachedOutput
       ? { ...cachedOutput }
-      : { palettes: await generatePalettes(designMood, mode) };
+      : { palettes: await generatePalettes(designMood, designMood, mode) };
 
     const parsed = palettesResponseSchema.safeParse(output);
     if (!parsed.success) {

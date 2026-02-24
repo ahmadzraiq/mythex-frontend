@@ -31,7 +31,8 @@ export function extractPathsFromObject(obj: unknown): string[] {
  * Scans: text (string templates, expr), props (nested), condition (JSON Logic), map.
  * Returns unique paths; filters out reduce internals (current, accumulator).
  */
-export function extractNodeDependencies(node: Pick<SDUINode, 'text' | 'props' | 'condition' | 'map'>): string[] {
+export function extractNodeDependencies(node: Pick<SDUINode, 'text' | 'props' | 'condition' | 'map'> | null | undefined): string[] {
+  if (node == null) return [];
   const paths: string[] = [];
   if (node.text != null) {
     if (typeof node.text === 'string') paths.push(...extractPathsFromTemplate(node.text));

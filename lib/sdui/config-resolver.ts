@@ -36,7 +36,7 @@ export type ConfigRegistry = {
 
 export type LayoutParts = {
   navbar?: { structure?: NavbarStructure };
-  footer?: { variant?: string };
+  footer?: { structure?: unknown; variant?: string };
 };
 
 export type ResolveOptions = {
@@ -61,6 +61,10 @@ function resolveRef(
   const part = partKey && options?.layoutParts?.[partKey as keyof typeof options.layoutParts];
 
   if (partKey === 'navbar' && part && 'structure' in part && part.structure) {
+    return deepResolveNode(deepClone(part.structure) as SDUINodeLike, registry, visited, options);
+  }
+
+  if (partKey === 'footer' && part && 'structure' in part && part.structure) {
     return deepResolveNode(deepClone(part.structure) as SDUINodeLike, registry, visited, options);
   }
 

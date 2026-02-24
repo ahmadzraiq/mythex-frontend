@@ -134,6 +134,7 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope }
   let children: React.ReactNode = null;
   if (node.children?.length) {
     children = node.children.map((child, i) => {
+      if (child == null) return null;
       const childKey = child.key;
       const isScopeVar = childKey === '$index' || childKey === '$item';
       const key = childKey && !isScopeVar ? childKey : `child-${i}`;
