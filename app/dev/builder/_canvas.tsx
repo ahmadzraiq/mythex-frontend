@@ -18,7 +18,7 @@ import { SDUIEngine } from '@/lib/sdui/sdui-engine';
 import appConfig from '@/config/app';
 import type { SDUIConfig } from '@/lib/sdui/types';
 import type { SDUINode } from '@/lib/sdui/types/node';
-import { computeSnap, snapResizeSize, type SnapGuide, type ContentRect } from './_snap-engine';
+import { computeSnap, snapResizeSize, SNAP_THRESHOLD, type SnapGuide, type ContentRect } from './_snap-engine';
 
 /** Node types that act as containers and accept dropped children. */
 const CONTAINER_TYPES = new Set(['Box', 'VStack', 'HStack', 'ScrollView', 'View', 'Card', 'SafeAreaView', 'Pressable']);
@@ -217,6 +217,23 @@ export default function BuilderCanvas() {
    * of jumping its top-left to the cursor position.
    */
   const grabOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  /**
+   * Snap stickiness — Figma-style hysteresis.
+   *
+   * When a snap fires on an axis the snapped position is stored here.
+   * On subsequent drag-over events the element stays "glued" to that position
+   * until the cursor travels more than SNAP_STICKY_RELEASE content-px away from
+   * the snap target.  This lets the user linger on the alignment without the
+   * node jumping away the instant they overshoot by a single pixel.
+   */
+  const stickySnapRef = useRef<{ x: number | null; y: number | null }>({ x: null, y: null });
+
+  /**
+   * Original inline style recorded at drag-start for absolute nodes.
+   * Used to revert the element's position when the drag is cancelled (no drop).
+   */
+  const dragStartStyleRef = useRef<{ left: string; top: string } | null>(null);
 
   /**
    * Computed target for the next drop: where in the tree to insert.
@@ -522,14 +539,52 @@ export default function BuilderCanvas() {
           const rawX = Math.round((e.clientX - pr.left - grab.x) / z);
           const rawY = Math.round((e.clientY - pr.top  - grab.y) / z);
 
-          // ── Snap to siblings ──────────────────────────────────────────────
+          // ── Snap to siblings (with Figma-style stickiness) ────────────────
           const nodeEl = document.querySelector(`[data-builder-id="${draggingId}"]`) as HTMLElement | null;
           const nodeW  = nodeEl ? nodeEl.getBoundingClientRect().width  / z : 0;
           const nodeH  = nodeEl ? nodeEl.getBoundingClientRect().height / z : 0;
           const siblings = getAllSiblingRects(draggingId, parentEl, z);
-          const dragged: ContentRect = { id: draggingId, x: rawX, y: rawY, w: nodeW, h: nodeH };
+
+          // Stickiness: once snapped, the element stays "glued" to the snap
+          // position until the cursor travels SNAP_STICKY_RELEASE px past it.
+          // This gives the Figma "micro-pause" feel — the user can linger on an
+          // alignment without the element jumping away on the next pixel.
+          const SNAP_STICKY_RELEASE = SNAP_THRESHOLD * 2;
+          const sticky = stickySnapRef.current;
+
+          // Determine effective input position (may override rawX/Y while stuck)
+          let effectiveX = rawX;
+          let effectiveY = rawY;
+          if (sticky.x !== null) {
+            if (Math.abs(rawX - sticky.x) <= SNAP_STICKY_RELEASE) {
+              effectiveX = sticky.x; // stay glued
+            } else {
+              sticky.x = null;       // cursor escaped → release
+            }
+          }
+          if (sticky.y !== null) {
+            if (Math.abs(rawY - sticky.y) <= SNAP_STICKY_RELEASE) {
+              effectiveY = sticky.y;
+            } else {
+              sticky.y = null;
+            }
+          }
+
+          const dragged: ContentRect = { id: draggingId, x: effectiveX, y: effectiveY, w: nodeW, h: nodeH };
           const { x, y, guides } = computeSnap(dragged, siblings);
+
+          // Record newly snapped positions so stickiness activates next frame
+          if (x !== effectiveX) sticky.x = x;
+          if (y !== effectiveY) sticky.y = y;
+
           setSnapGuides(guides);
+
+          // Push the snapped position directly to the DOM element so it tracks
+          // the snap line in real-time (no browser ghost drift).
+          if (nodeEl) {
+            nodeEl.style.left = `${x}px`;
+            nodeEl.style.top  = `${y}px`;
+          }
 
           const pos = { x, y, clientX: e.clientX, clientY: e.clientY };
           absDragPosRef.current = pos;
@@ -618,6 +673,7 @@ export default function BuilderCanvas() {
     absDragPosRef.current = null;
     setAbsDragPos(null);
     setSnapGuides([]);
+    stickySnapRef.current = { x: null, y: null };
     dropTargetRef.current = null;
   }, []);
 
@@ -650,6 +706,8 @@ export default function BuilderCanvas() {
         absDragPosRef.current = null;
         setAbsDragPos(null);
         setSnapGuides([]);
+        stickySnapRef.current = { x: null, y: null };
+        dragStartStyleRef.current = null;
         draggingNodeIdRef.current = null;
         setDropZoneIdx(null);
         return;
@@ -930,23 +988,59 @@ export default function BuilderCanvas() {
               draggingNodeIdRef.current = dragId;
               e.dataTransfer.setData('text/canvas-node-id', dragId);
               e.dataTransfer.effectAllowed = 'move';
-              // Use the node's DOM element as the drag ghost image and record
-              // the grab offset (where inside the element the drag started).
+
               const nodeEl = document.querySelector(`[data-builder-id="${dragId}"]`) as HTMLElement | null;
-              if (nodeEl) {
-                const nr = nodeEl.getBoundingClientRect();
-                const ox = e.clientX - nr.left;
-                const oy = e.clientY - nr.top;
-                e.dataTransfer.setDragImage(nodeEl, ox, oy);
-                grabOffsetRef.current = { x: ox, y: oy };
+              const nr = nodeEl?.getBoundingClientRect();
+              const ox = nr ? e.clientX - nr.left : 0;
+              const oy = nr ? e.clientY - nr.top  : 0;
+              grabOffsetRef.current = { x: ox, y: oy };
+
+              // For absolute/fixed nodes: suppress the browser ghost so the real
+              // element serves as the live preview and can track the snap position
+              // frame-by-frame in onDragOver.  Record the original style so we can
+              // revert if the user cancels the drag (dragend without drop).
+              const draggedNodeData = findNode(useBuilderStore.getState().pageNodes, dragId);
+              const nodeClasses = (draggedNodeData?.props as { className?: string })?.className ?? '';
+              const isAbsPos = /\babsolute\b/.test(nodeClasses) || /\bfixed\b/.test(nodeClasses);
+              if (isAbsPos) {
+                const storedStyle = (draggedNodeData?.props as { style?: Record<string, string> })?.style ?? {};
+                dragStartStyleRef.current = {
+                  left: storedStyle.left ?? '',
+                  top:  storedStyle.top  ?? '',
+                };
+                // Invisible 1×1 offscreen element as ghost → browser shows nothing,
+                // the real element stays in place and we move it ourselves.
+                const ghost = document.createElement('div');
+                ghost.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;';
+                document.body.appendChild(ghost);
+                e.dataTransfer.setDragImage(ghost, 0, 0);
+                requestAnimationFrame(() => document.body.removeChild(ghost));
               } else {
-                grabOffsetRef.current = { x: 0, y: 0 };
+                dragStartStyleRef.current = null;
+                if (nodeEl) {
+                  e.dataTransfer.setDragImage(nodeEl, ox, oy);
+                }
               }
             }}
             onDragEnd={() => {
+              const prevDragId = draggingNodeIdRef.current;
+
+              // If we were dragging an absolute node and there was no drop (drag
+              // cancelled / pressed Esc), restore the element to its original
+              // position so it doesn't appear stuck at the last dragover position.
+              if (prevDragId && dragStartStyleRef.current) {
+                const el = document.querySelector(`[data-builder-id="${prevDragId}"]`) as HTMLElement | null;
+                if (el) {
+                  el.style.left = dragStartStyleRef.current.left;
+                  el.style.top  = dragStartStyleRef.current.top;
+                }
+              }
+              dragStartStyleRef.current = null;
+
               draggingNodeIdRef.current = null;
               absDragPosRef.current = null;
               grabOffsetRef.current = { x: 0, y: 0 };
+              stickySnapRef.current = { x: null, y: null };
               setIsDroppingVariant(false);
               setDropContainerId(null);
               setDropZoneIdx(null);
