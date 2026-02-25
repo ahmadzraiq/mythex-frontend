@@ -1330,4 +1330,80 @@ test.describe('BF – Builder Features', () => {
       canvas?.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, clientX: dx, clientY: dy, dataTransfer: new DataTransfer() }));
     }, [dstX, dstY] as [number, number]);
   });
+
+  // ─── Page management ─────────────────────────────────────────────────────────
+
+  // BF-50 — No duplicate pages
+  //
+  // The builder initialises with one page per route from routes.json. Adding a
+  // route that already exists (either via predefined route list or custom input)
+  // must NOT create a second page for the same route; the page count stays the
+  // same and the existing page becomes active instead.
+  test('BF-50: Adding an existing route does not create a duplicate page', async ({ page }) => {
+    await page.getByTestId('tab-pages').click();
+    await page.waitForTimeout(200);
+
+    // Read the initial page list from the store
+    type StorePages = Array<{ id: string; route: string; name: string }>;
+    const stateBefore = await getBuilderStore(page) as { pages: StorePages; currentPageId: string } | null;
+    if (!stateBefore) return;
+    const countBefore = stateBefore.pages.length;
+    expect(countBefore).toBeGreaterThan(0);
+
+    // Pick the route of the FIRST existing page and attempt to add it again
+    const existingRoute = stateBefore.pages[0].route;
+
+    // Try adding via the custom-route text input (the predefined list disables dupes in UI,
+    // but the store guard must also hold for the custom input path).
+    const addBtn = page.getByTestId('add-page-btn');
+    await addBtn.click();
+    await page.waitForTimeout(200);
+
+    const customInput = page.locator('input[placeholder="/my-page"]');
+    await customInput.fill(existingRoute);
+    await customInput.press('Enter');
+    await page.waitForTimeout(300);
+
+    // Page count must be unchanged — no duplicate was created
+    const stateAfter = await getBuilderStore(page) as { pages: StorePages; currentPageId: string } | null;
+    expect(stateAfter?.pages.length, 'Page count should not increase when adding a duplicate route').toBe(countBefore);
+
+    // The existing page should now be the active page (navigated to it)
+    expect(
+      stateAfter?.currentPageId,
+      'Existing page should become active after attempting to add duplicate',
+    ).toBe(stateBefore.pages[0].id);
+  });
+
+  // BF-51 — Clicking a page row in the Pages panel navigates the canvas to it
+  //
+  // The builder starts with all routes as pages. Clicking a page that is NOT
+  // already active must (a) make it the currentPageId and (b) shift panX so
+  // the canvas centers on that page frame (panX changes from its pre-click value).
+  test('BF-51: Clicking a page row navigates the canvas to that page', async ({ page }) => {
+    await page.getByTestId('tab-pages').click();
+    await page.waitForTimeout(200);
+
+    type StoreState = { pages: Array<{ id: string; route: string }>; currentPageId: string; panX: number };
+    const before = await getBuilderStore(page) as StoreState | null;
+    if (!before || before.pages.length < 2) return; // need at least 2 pages
+
+    // Find a page that is NOT currently active
+    const targetPage = before.pages.find(p => p.id !== before.currentPageId);
+    if (!targetPage) return;
+
+    // Click its row in the panel
+    const row = page.getByTestId(`page-row-${targetPage.id}`);
+    await expect(row).toBeVisible({ timeout: 5_000 });
+    await row.click();
+    await page.waitForTimeout(500); // allow fit-to-canvas animation
+
+    const after = await getBuilderStore(page) as StoreState | null;
+
+    // The active page must have changed
+    expect(after?.currentPageId, 'currentPageId should switch to the clicked page').toBe(targetPage.id);
+
+    // panX must have changed — the canvas scrolled to the new page
+    expect(after?.panX, 'panX should change when navigating to a different page').not.toBe(before.panX);
+  });
 });

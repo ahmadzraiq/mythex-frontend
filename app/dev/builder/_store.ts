@@ -15,6 +15,7 @@
 
 import { create } from 'zustand';
 import type { SDUINode } from '@/lib/sdui/types/node';
+import routesConfig from '@/config/routes.json';
 
 const MAX_HISTORY = 50;
 
@@ -118,8 +119,19 @@ export const VIEWPORT_WIDTHS: Record<ViewportSize, number> = {
   desktop: 1280,
 };
 
+export interface BuilderPage {
+  id: string;
+  name: string;
+  route: string;
+  nodes: SDUINode[];
+}
+
 export interface BuilderStore {
-  // ── Page state ──────────────────────────────────────────────────────────────
+  // ── Multi-page state ────────────────────────────────────────────────────────
+  pages: BuilderPage[];
+  currentPageId: string;
+
+  // ── Page state (active page working copy) ───────────────────────────────────
   pageNodes: SDUINode[];
 
   // ── Selection ───────────────────────────────────────────────────────────────
@@ -209,6 +221,18 @@ export interface BuilderStore {
   undo: () => void;
   redo: () => void;
 
+  // Pages
+  addPage: (route: string, name?: string) => void;
+  switchPage: (pageId: string) => void;
+  /** Switch to a page AND signal the canvas to pan/zoom to it. */
+  navigatePage: (pageId: string) => void;
+  renamePage: (pageId: string, name: string) => void;
+  removePage: (pageId: string) => void;
+
+  // Canvas navigation trigger (set by navigatePage, consumed by _canvas.tsx)
+  pendingFitToPage: boolean;
+  clearPendingFit: () => void;
+
   // Internal (debounce wrapper)
   _pushHistory: () => void;
   _setPageNodes: (nodes: SDUINode[]) => void;
@@ -216,7 +240,18 @@ export interface BuilderStore {
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
+// Initialise one page per route so all app pages are visible on the canvas by default.
+const INITIAL_PAGES: BuilderPage[] = (routesConfig as { routes: Array<{ path: string; config: string }> })
+  .routes.map(r => ({
+    id: `page-${r.config}`,
+    name: r.config,
+    route: r.path,
+    nodes: [],
+  }));
+
 export const useBuilderStore = create<BuilderStore>((set, get) => ({
+  pages: INITIAL_PAGES,
+  currentPageId: INITIAL_PAGES[0]?.id ?? 'page-home',
   pageNodes: [],
   selectedIds: [],
   hoveredId: null,
@@ -234,6 +269,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   clipboard: [],
   history: [[]],
   historyIdx: 0,
+  pendingFitToPage: false,
 
   // ── Page mutations ──────────────────────────────────────────────────────────
 
@@ -790,7 +826,11 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
       const snap = clone(s.pageNodes);
       const prev = s.history.slice(0, s.historyIdx + 1);
       const next = [...prev, snap].slice(-MAX_HISTORY);
-      return { history: next, historyIdx: next.length - 1 };
+      // Sync current pageNodes back to the pages array so switching pages preserves work
+      const pages = s.pages.map(p =>
+        p.id === s.currentPageId ? { ...p, nodes: clone(s.pageNodes) } : p
+      );
+      return { history: next, historyIdx: next.length - 1, pages };
     });
   },
 
@@ -798,7 +838,11 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     set(s => {
       if (s.historyIdx <= 0) return s;
       const idx = s.historyIdx - 1;
-      return { pageNodes: clone(s.history[idx]), historyIdx: idx, selectedIds: [] };
+      const nodes = clone(s.history[idx]);
+      const pages = s.pages.map(p =>
+        p.id === s.currentPageId ? { ...p, nodes } : p
+      );
+      return { pageNodes: nodes, historyIdx: idx, selectedIds: [], pages };
     });
   },
 
@@ -806,7 +850,119 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     set(s => {
       if (s.historyIdx >= s.history.length - 1) return s;
       const idx = s.historyIdx + 1;
-      return { pageNodes: clone(s.history[idx]), historyIdx: idx, selectedIds: [] };
+      const nodes = clone(s.history[idx]);
+      const pages = s.pages.map(p =>
+        p.id === s.currentPageId ? { ...p, nodes } : p
+      );
+      return { pageNodes: nodes, historyIdx: idx, selectedIds: [], pages };
+    });
+  },
+
+  // ── Page management ──────────────────────────────────────────────────────────
+
+  addPage: (route, name) => {
+    set(s => {
+      // Guard: don't add a page for a route that already exists
+      const existing = s.pages.find(p => p.route === route);
+      if (existing) return s; // duplicate — caller should use navigatePage instead
+
+      // Persist current page nodes before switching
+      const savedPages = s.pages.map(p =>
+        p.id === s.currentPageId ? { ...p, nodes: clone(s.pageNodes) } : p
+      );
+      const newPage: BuilderPage = {
+        id: `page-${Date.now()}`,
+        name: name ?? route,
+        route,
+        nodes: [],
+      };
+      return {
+        pages: [...savedPages, newPage],
+        currentPageId: newPage.id,
+        pageNodes: [],
+        selectedIds: [],
+        hoveredId: null,
+        history: [[]],
+        historyIdx: 0,
+        pendingFitToPage: true,
+      };
+    });
+  },
+
+  switchPage: (pageId) => {
+    set(s => {
+      const target = s.pages.find(p => p.id === pageId);
+      if (!target || target.id === s.currentPageId) return s;
+      // Persist current page nodes
+      const savedPages = s.pages.map(p =>
+        p.id === s.currentPageId ? { ...p, nodes: clone(s.pageNodes) } : p
+      );
+      const newNodes = clone(target.nodes);
+      return {
+        pages: savedPages,
+        currentPageId: pageId,
+        pageNodes: newNodes,
+        selectedIds: [],
+        hoveredId: null,
+        history: [clone(newNodes)],
+        historyIdx: 0,
+      };
+    });
+  },
+
+  navigatePage: (pageId) => {
+    // Switch to the page (same logic as switchPage) and trigger canvas fit
+    set(s => {
+      const target = s.pages.find(p => p.id === pageId);
+      if (!target) return s;
+      if (target.id === s.currentPageId) {
+        // Already on this page — just trigger a re-fit to scroll it into view
+        return { pendingFitToPage: true };
+      }
+      const savedPages = s.pages.map(p =>
+        p.id === s.currentPageId ? { ...p, nodes: clone(s.pageNodes) } : p
+      );
+      const newNodes = clone(target.nodes);
+      return {
+        pages: savedPages,
+        currentPageId: pageId,
+        pageNodes: newNodes,
+        selectedIds: [],
+        hoveredId: null,
+        history: [clone(newNodes)],
+        historyIdx: 0,
+        pendingFitToPage: true,
+      };
+    });
+  },
+
+  clearPendingFit: () => set({ pendingFitToPage: false }),
+
+  renamePage: (pageId, name) => {
+    set(s => ({
+      pages: s.pages.map(p => p.id === pageId ? { ...p, name } : p),
+    }));
+  },
+
+  removePage: (pageId) => {
+    set(s => {
+      if (s.pages.length <= 1) return s; // must keep at least one page
+      const remaining = s.pages.filter(p => p.id !== pageId);
+      if (s.currentPageId !== pageId) {
+        return { pages: remaining };
+      }
+      // Switching to the previous page (or first remaining)
+      const removedIdx = s.pages.findIndex(p => p.id === pageId);
+      const fallback = remaining[Math.max(0, removedIdx - 1)];
+      return {
+        pages: remaining,
+        currentPageId: fallback.id,
+        pageNodes: clone(fallback.nodes),
+        selectedIds: [],
+        hoveredId: null,
+        history: [clone(fallback.nodes)],
+        historyIdx: 0,
+      };
     });
   },
 }));

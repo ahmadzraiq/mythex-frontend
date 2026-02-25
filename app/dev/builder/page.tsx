@@ -21,7 +21,6 @@
  *   Delete / Backspace  — delete selected
  *   Escape              — deselect
  *   Alt (held)          — alt-hover distance mode
- *   H                   — toggle hand tool
  *   Nudge: Arrow keys   — move (not yet wired to pixels; placeholder)
  */
 
@@ -49,12 +48,13 @@ const VIEWPORT_ICONS: Record<ViewportSize, string> = {
 };
 
 function TopBar() {
-  const { tool, setTool, undo, redo, historyIdx, history, selectedIds, pageNodes, viewport, setViewport } = useBuilderStore();
+  const { tool, setTool, undo, redo, historyIdx, history, selectedIds, pageNodes, viewport, setViewport, pages, currentPageId, renamePage } = useBuilderStore();
   const canUndo = historyIdx > 0;
   const canRedo = historyIdx < history.length - 1;
 
-  const [pageName, setPageName] = useState('Untitled page');
+  const currentPage = pages.find(p => p.id === currentPageId);
   const [editingName, setEditingName] = useState(false);
+  const [draftName, setDraftName] = useState('');
 
   return (
     <div
@@ -77,12 +77,6 @@ function TopBar() {
       >
         ← Sections
       </a>
-
-      <div style={{ width: 1, height: 20, background: '#1f2937' }} />
-
-      {/* Tool toggle */}
-      <ToolButton icon="↖" label="Select (V)" active={tool === 'select'} onClick={() => setTool('select')} testId="tool-select" />
-      <ToolButton icon="✋" label="Hand (H)"   active={tool === 'hand'}   onClick={() => setTool('hand')}   testId="tool-hand" />
 
       <div style={{ width: 1, height: 20, background: '#1f2937' }} />
 
@@ -120,24 +114,39 @@ function TopBar() {
 
       <div style={{ flex: 1 }} />
 
-      {/* Page name */}
-      {editingName ? (
-        <input
-          autoFocus
-          value={pageName}
-          onChange={e => setPageName(e.target.value)}
-          onBlur={() => setEditingName(false)}
-          onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') setEditingName(false); }}
-          style={{ fontSize: 12, fontWeight: 600, color: '#f3f4f6', background: '#1f2937', border: '1px solid #3b82f6', borderRadius: 4, padding: '2px 8px', textAlign: 'center', width: 180 }}
-        />
-      ) : (
-        <span
-          style={{ fontSize: 12, fontWeight: 600, color: '#f3f4f6', cursor: 'pointer', padding: '2px 8px' }}
-          onDoubleClick={() => setEditingName(true)}
-        >
-          {pageName}
+      {/* Page name + route */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+        {editingName ? (
+          <input
+            autoFocus
+            value={draftName}
+            onChange={e => setDraftName(e.target.value)}
+            onBlur={() => {
+              if (currentPage && draftName.trim()) renamePage(currentPage.id, draftName.trim());
+              setEditingName(false);
+            }}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                if (currentPage && draftName.trim()) renamePage(currentPage.id, draftName.trim());
+                setEditingName(false);
+              }
+              if (e.key === 'Escape') setEditingName(false);
+            }}
+            style={{ fontSize: 12, fontWeight: 600, color: '#f3f4f6', background: '#1f2937', border: '1px solid #3b82f6', borderRadius: 4, padding: '2px 8px', textAlign: 'center', width: 160 }}
+          />
+        ) : (
+          <span
+            style={{ fontSize: 12, fontWeight: 600, color: '#f3f4f6', cursor: 'default', padding: '0 8px' }}
+            onDoubleClick={() => { setDraftName(currentPage?.name ?? ''); setEditingName(true); }}
+            title="Double-click to rename"
+          >
+            {currentPage?.name ?? 'Untitled'}
+          </span>
+        )}
+        <span style={{ fontSize: 9, color: '#4b5563', fontFamily: 'monospace', letterSpacing: '0.02em' }}>
+          {currentPage?.route ?? '/'}
         </span>
-      )}
+      </div>
 
       <div style={{ flex: 1 }} />
 
@@ -273,7 +282,6 @@ export default function BuilderPage() {
         store.selectFirstChild(store.selectedIds[0]);
         return;
       }
-      if (e.key === 'h' || e.key === 'H') { store.setTool(store.tool === 'hand' ? 'select' : 'hand'); return; }
       if ((e.key === 'v' || e.key === 'V') && !isCmd) { store.setTool('select'); return; }
     };
 

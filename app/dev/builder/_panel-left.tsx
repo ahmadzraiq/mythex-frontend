@@ -20,9 +20,10 @@
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useBuilderStore, findParentNode, findNode } from './_store';
-import type { BuilderStore } from './_store';
+import type { BuilderStore, BuilderPage } from './_store';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import { sectionLibrary } from '@/lib/ai/section-library';
+import routes from '@/config/routes.json';
 
 // ─── Icons (inline SVG stubs) ─────────────────────────────────────────────────
 
@@ -579,10 +580,305 @@ function DraggableVariant({ variantId, label }: { variantId: string; label: stri
   );
 }
 
+// ─── Pages Tab ────────────────────────────────────────────────────────────────
+
+function PagesTab() {
+  const { pages, currentPageId, addPage, navigatePage, renamePage, removePage } = useBuilderStore();
+  const [showRouteMenu, setShowRouteMenu] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [customRoute, setCustomRoute] = useState('');
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close route picker on outside click
+  useEffect(() => {
+    if (!showRouteMenu) return;
+    const close = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowRouteMenu(false);
+        setCustomRoute('');
+      }
+    };
+    window.addEventListener('mousedown', close);
+    return () => window.removeEventListener('mousedown', close);
+  }, [showRouteMenu]);
+
+  const allRoutes = (routes as { routes: Array<{ path: string; config: string }> }).routes;
+
+  const commitRename = useCallback(() => {
+    if (renamingId && renameValue.trim()) {
+      renamePage(renamingId, renameValue.trim());
+    }
+    setRenamingId(null);
+    setRenameValue('');
+  }, [renamingId, renameValue, renamePage]);
+
+  const handleAddCustomRoute = useCallback(() => {
+    const r = customRoute.trim();
+    if (!r) return;
+    const path = r.startsWith('/') ? r : `/${r}`;
+    // If this route already exists, navigate to it instead of adding a duplicate
+    const existing = pages.find((p: BuilderPage) => p.route === path);
+    if (existing) {
+      navigatePage(existing.id);
+    } else {
+      addPage(path, path);
+    }
+    setCustomRoute('');
+    setShowRouteMenu(false);
+  }, [customRoute, pages, addPage, navigatePage]);
+
+  return (
+    <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+      {/* Page list */}
+      <div style={{ flex: 1, overflow: 'auto', padding: '6px 0' }}>
+        {pages.map((page: BuilderPage) => {
+          const isActive = page.id === currentPageId;
+          const isRenaming = renamingId === page.id;
+          return (
+            <div
+              key={page.id}
+              data-testid={`page-row-${page.id}`}
+              onClick={() => !isRenaming && navigatePage(page.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '7px 10px',
+                cursor: 'pointer',
+                background: isActive ? 'rgba(59,130,246,0.15)' : 'transparent',
+                borderLeft: isActive ? '2px solid #3b82f6' : '2px solid transparent',
+                borderRadius: 4,
+                margin: '1px 6px',
+                userSelect: 'none',
+              }}
+              onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+              onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+            >
+              {/* Page icon */}
+              <span style={{ fontSize: 13, flexShrink: 0, opacity: 0.6 }}>📄</span>
+
+              {/* Name / rename input */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {isRenaming ? (
+                  <input
+                    autoFocus
+                    value={renameValue}
+                    onChange={e => setRenameValue(e.target.value)}
+                    onBlur={commitRename}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') commitRename();
+                      if (e.key === 'Escape') { setRenamingId(null); setRenameValue(''); }
+                      e.stopPropagation();
+                    }}
+                    onClick={e => e.stopPropagation()}
+                    style={{
+                      width: '100%',
+                      background: '#1f2937',
+                      border: '1px solid #3b82f6',
+                      borderRadius: 3,
+                      color: '#f3f4f6',
+                      fontSize: 11,
+                      padding: '1px 5px',
+                      boxSizing: 'border-box',
+                      outline: 'none',
+                    }}
+                  />
+                ) : (
+                  <>
+                    <div style={{
+                      fontSize: 11,
+                      color: isActive ? '#f3f4f6' : '#d1d5db',
+                      fontWeight: isActive ? 600 : 400,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                    onDoubleClick={e => {
+                      e.stopPropagation();
+                      setRenamingId(page.id);
+                      setRenameValue(page.name);
+                    }}
+                    >
+                      {page.name}
+                    </div>
+                    <div style={{ fontSize: 9, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {page.route}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Delete button — only show when >1 page */}
+              {pages.length > 1 && !isRenaming && (
+                <button
+                  title="Remove page"
+                  onClick={e => { e.stopPropagation(); removePage(page.id); }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#6b7280',
+                    cursor: 'pointer',
+                    fontSize: 13,
+                    lineHeight: 1,
+                    padding: '2px 4px',
+                    borderRadius: 3,
+                    flexShrink: 0,
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
+                  onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Add page button + route picker */}
+      <div style={{ padding: '8px 10px', borderTop: '1px solid #1f2937', flexShrink: 0, position: 'relative' }} ref={menuRef}>
+        <button
+          data-testid="add-page-btn"
+          onClick={() => setShowRouteMenu(v => !v)}
+          style={{
+            width: '100%',
+            padding: '7px 0',
+            background: showRouteMenu ? '#1d4ed8' : '#1f2937',
+            border: `1px solid ${showRouteMenu ? '#3b82f6' : '#374151'}`,
+            borderRadius: 5,
+            color: '#d1d5db',
+            fontSize: 11,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+          }}
+        >
+          <span style={{ fontSize: 14, lineHeight: 1 }}>+</span>
+          Add page
+        </button>
+
+        {/* Route picker dropdown */}
+        {showRouteMenu && (
+          <div style={{
+            position: 'absolute',
+            bottom: '100%',
+            left: 10,
+            right: 10,
+            background: '#1f2937',
+            border: '1px solid #374151',
+            borderRadius: 6,
+            boxShadow: '0 -4px 20px rgba(0,0,0,0.5)',
+            zIndex: 9999,
+            maxHeight: 300,
+            overflow: 'hidden',
+            marginBottom: 4,
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+            {/* Custom route input */}
+            <div style={{ padding: '8px 10px', borderBottom: '1px solid #374151', flexShrink: 0 }}>
+              <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 5, letterSpacing: '0.04em' }}>CUSTOM ROUTE</div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input
+                  autoFocus
+                  placeholder="/my-page"
+                  value={customRoute}
+                  onChange={e => setCustomRoute(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') handleAddCustomRoute();
+                    if (e.key === 'Escape') { setShowRouteMenu(false); setCustomRoute(''); }
+                    e.stopPropagation();
+                  }}
+                  style={{
+                    flex: 1,
+                    background: '#111827',
+                    border: '1px solid #374151',
+                    borderRadius: 4,
+                    color: '#f3f4f6',
+                    fontSize: 11,
+                    padding: '4px 8px',
+                    outline: 'none',
+                    fontFamily: 'monospace',
+                  }}
+                />
+                <button
+                  onClick={handleAddCustomRoute}
+                  disabled={!customRoute.trim()}
+                  style={{
+                    padding: '4px 10px',
+                    background: customRoute.trim() ? '#1d4ed8' : '#374151',
+                    border: 'none',
+                    borderRadius: 4,
+                    color: customRoute.trim() ? '#fff' : '#6b7280',
+                    fontSize: 11,
+                    cursor: customRoute.trim() ? 'pointer' : 'default',
+                    fontFamily: 'system-ui',
+                    flexShrink: 0,
+                  }}
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+
+            {/* Predefined routes from routes.json */}
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              <div style={{ padding: '6px 10px 4px', fontSize: 10, color: '#6b7280', letterSpacing: '0.04em' }}>
+                APP ROUTES
+              </div>
+              {allRoutes.map(r => {
+                const alreadyAdded = pages.some((p: BuilderPage) => p.route === r.path);
+                return (
+                  <button
+                    key={r.config}
+                    disabled={alreadyAdded}
+                    onClick={() => {
+                      if (alreadyAdded) return;
+                      addPage(r.path, r.config);
+                      setShowRouteMenu(false);
+                    }}
+                    style={{
+                      display: 'flex',
+                      width: '100%',
+                      alignItems: 'baseline',
+                      gap: 6,
+                      padding: '6px 10px',
+                      background: 'none',
+                      border: 'none',
+                      color: alreadyAdded ? '#4b5563' : '#d1d5db',
+                      fontSize: 11,
+                      textAlign: 'left',
+                      cursor: alreadyAdded ? 'default' : 'pointer',
+                      fontFamily: 'system-ui',
+                    }}
+                    onMouseEnter={e => { if (!alreadyAdded) e.currentTarget.style.background = 'rgba(59,130,246,0.15)'; }}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                  >
+                    <span style={{ fontFamily: 'monospace', fontSize: 10, color: alreadyAdded ? '#374151' : '#60a5fa', flexShrink: 0 }}>
+                      {r.path}
+                    </span>
+                    <span style={{ opacity: alreadyAdded ? 0.35 : 0.6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {r.config}
+                    </span>
+                    {alreadyAdded && <span style={{ marginLeft: 'auto', fontSize: 9, color: '#374151', flexShrink: 0 }}>✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Panel ───────────────────────────────────────────────────────────────
 
 export default function PanelLeft() {
-  const [tab, setTab] = useState<'layers' | 'components'>('components');
+  const [tab, setTab] = useState<'layers' | 'components' | 'pages'>('components');
   const [search, setSearch] = useState('');
   const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [layerDrag, setLayerDrag] = useState<LayerDragState>({ dragId: null, dropTargetId: null, dropPosition: 'above' });
@@ -661,7 +957,7 @@ export default function PanelLeft() {
     <div style={{ width: 240, display: 'flex', flexDirection: 'column', background: '#111827', borderRight: '1px solid #1f2937', overflow: 'hidden' }}>
       {/* Tab bar */}
       <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-        {(['layers', 'components'] as const).map(t => (
+        {(['layers', 'components', 'pages'] as const).map(t => (
           <button
             key={t}
             data-testid={`tab-${t}`}
@@ -730,6 +1026,8 @@ export default function PanelLeft() {
       )}
 
       {tab === 'components' && <ComponentsTab />}
+
+      {tab === 'pages' && <PagesTab />}
 
       {/* Context menu */}
       {contextMenu && (

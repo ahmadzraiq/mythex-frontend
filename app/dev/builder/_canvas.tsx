@@ -83,7 +83,7 @@ function CanvasContextMenu({ x, y, nodeId, onClose }: CanvasCtxMenuProps) {
     </div>
   );
 }
-const MIN_ZOOM     = 0.1;
+const MIN_ZOOM     = 0.01;
 const MAX_ZOOM     = 4;
 const DRAG_THRESHOLD = 4;
 
@@ -142,10 +142,24 @@ export default function BuilderCanvas() {
     moveNodes,
     patchProp,
     _pushHistory,
+    pages,
+    currentPageId,
+    switchPage,
+    pendingFitToPage,
+    clearPendingFit,
   } = useBuilderStore();
 
   // ── Dynamic viewport width ────────────────────────────────────────────────
   const vpWidth = VIEWPORT_WIDTHS[viewport];
+
+  /** Horizontal gap (content-px) between page frames on the canvas. */
+  const PAGE_GAP = 80;
+
+  /** Index of the active page frame. */
+  const activePageIdx = pages.findIndex(p => p.id === currentPageId);
+
+  /** Canvas-space left offset of the ACTIVE page frame. */
+  const activePanX = panX + activePageIdx * (vpWidth + PAGE_GAP) * zoom;
 
   // ── Absolute-position drag state ─────────────────────────────────────────
   // When dragging a node that has `position: absolute` (or fixed), bypass the
@@ -201,6 +215,9 @@ export default function BuilderCanvas() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [editingId]);
+
+  // Track the last page frame hovered during a panel drag (prevents redundant switchPage calls)
+  const lastDragHoverPageRef = useRef<string | null>(null);
 
   // Keep refs in sync for wheel handler (avoids stale closure)
   const zoomRef = useRef(zoom);
@@ -281,14 +298,30 @@ export default function BuilderCanvas() {
   const fitToCanvas = useCallback(() => {
     const c = canvasRef.current;
     if (!c) return;
-    const w  = VIEWPORT_WIDTHS[useBuilderStore.getState().viewport];
-    const z  = Math.min(c.clientWidth / w, c.clientHeight / VIEWPORT_H) * 0.9;
-    const px = (c.clientWidth  - w * z) / 2;
+    const w        = VIEWPORT_WIDTHS[useBuilderStore.getState().viewport];
+    const gap      = PAGE_GAP;
+    const pgs      = useBuilderStore.getState().pages;
+    const activeId = useBuilderStore.getState().currentPageId;
+    const activeIdx = Math.max(0, pgs.findIndex(p => p.id === activeId));
+    // Fit zoom so the active page fills ~85% of the canvas
+    const z        = Math.min(c.clientWidth / w, c.clientHeight / VIEWPORT_H) * 0.85;
+    // Center the active page frame horizontally
+    const pageOffsetX = activeIdx * (w + gap); // content-space left edge of active page
+    const px = (c.clientWidth - w * z) / 2 - pageOffsetX * z;
     const py = (c.clientHeight - VIEWPORT_H * z) / 2;
     setZoom(z); setPan(px, py);
   }, [setZoom, setPan]);
 
   useEffect(() => { fitToCanvas(); }, [fitToCanvas]);
+
+  // Respond to explicit "navigate to page" requests from the pages panel.
+  // When pendingFitToPage is set, the active page has already been switched
+  // (currentPageId is up-to-date), so fitToCanvas will center on it correctly.
+  useEffect(() => {
+    if (!pendingFitToPage) return;
+    fitToCanvas();
+    clearPendingFit();
+  }, [pendingFitToPage, fitToCanvas, clearPendingFit]);
 
   // ── Build SDUI config ────────────────────────────────────────────────────
 
@@ -307,8 +340,9 @@ export default function BuilderCanvas() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
       if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
+        // Pinch-to-zoom or Ctrl+scroll → zoom around cursor
         const delta   = -e.deltaY * 0.001;
         const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoomRef.current * (1 + delta * 3)));
         const rect    = canvas.getBoundingClientRect();
@@ -320,8 +354,8 @@ export default function BuilderCanvas() {
         setZoom(newZoom);
         setPan(newPX, newPY);
       } else {
-        const pf = pageFrameRef.current;
-        if (pf) { pf.scrollTop += e.deltaY; pf.scrollLeft += e.deltaX; }
+        // Two-finger trackpad swipe (or plain scroll wheel) → pan the canvas
+        setPan(panXRef.current - e.deltaX, panYRef.current - e.deltaY);
       }
     };
     canvas.addEventListener('wheel', onWheel, { passive: false });
@@ -344,6 +378,8 @@ export default function BuilderCanvas() {
     for (const el of all) {
       if (el === capOverlay || capOverlay?.contains(el)) continue;
       if (el.hasAttribute('data-builder-overlay') || el.closest('[data-builder-overlay]')) continue;
+      // Skip the inactive-frame click catchers
+      if (el.hasAttribute('data-builder-inactive-frame') || el.closest('[data-builder-inactive-frame]')) continue;
 
       const builderEl = el.hasAttribute('data-builder-id')
         ? el
@@ -477,20 +513,34 @@ export default function BuilderCanvas() {
     }
 
     if (d.active && !d.moved) {
-      // Simple click (no drag) — handle selection here so it works regardless
-      // of whether the capture overlay's onClick fired or not.
-      const insidePage = (e.target as Element).closest('[data-builder-page-frame]');
-      if (insidePage) {
+      const insideAnyPage = (e.target as Element).closest('[data-builder-page-id]');
+      if (insideAnyPage) {
         const hit = hitTest(e.clientX, e.clientY);
-        if (hit.kind === 'node')       select(hit.id, e.shiftKey || e.metaKey);
-        else if (hit.kind === 'empty') select(null);
+        if (hit.kind === 'node') {
+          // If this node lives on a different page, auto-switch to it first
+          const nodeEl = document.querySelector(`[data-builder-id="${hit.id}"]`);
+          const pageEl = nodeEl?.closest('[data-builder-page-id]') as HTMLElement | null;
+          const nodePageId = pageEl?.dataset.builderPageId;
+          if (nodePageId && nodePageId !== useBuilderStore.getState().currentPageId) {
+            switchPage(nodePageId);
+          }
+          select(hit.id, e.shiftKey || e.metaKey);
+        } else {
+          // Clicked empty space inside any page → just switch focus if needed
+          const clickedPageEl = (e.target as Element).closest('[data-builder-page-id]') as HTMLElement | null;
+          const pageId = clickedPageEl?.dataset.builderPageId;
+          if (pageId && pageId !== useBuilderStore.getState().currentPageId) {
+            switchPage(pageId);
+          }
+          select(null);
+        }
       } else {
         // Clicked on the dark canvas background → deselect
         select(null);
       }
     }
     dragRef.current.active = false;
-  }, [hitTest, select, marquee]);
+  }, [hitTest, select, marquee, switchPage]);
 
   // ── Capture overlay hover ─────────────────────────────────────────────────
 
@@ -528,9 +578,11 @@ export default function BuilderCanvas() {
     for (const el of all) {
       if (el === capOverlay || capOverlay?.contains(el)) continue;
       if (el.hasAttribute('data-builder-overlay') || el.closest('[data-builder-overlay]')) continue;
-      if (el.hasAttribute('data-builder-id')) return el;
-      const closest = el.closest('[data-builder-id]') as HTMLElement | null;
-      if (closest) return closest;
+      if (el.hasAttribute('data-builder-inactive-frame') || el.closest('[data-builder-inactive-frame]')) continue;
+      const candidate = el.hasAttribute('data-builder-id')
+        ? el
+        : (el.closest('[data-builder-id]') as HTMLElement | null);
+      if (candidate) return candidate;
     }
     return null;
   }, []);
@@ -547,6 +599,7 @@ export default function BuilderCanvas() {
   ): HTMLElement | null => {
     const capOverlay = captureOverlayRef.current;
     const all = document.elementsFromPoint(clientX, clientY) as HTMLElement[];
+    const activePgId = useBuilderStore.getState().currentPageId;
     for (const el of all) {
       if (el === capOverlay || capOverlay?.contains(el)) continue;
       if (el.hasAttribute('data-builder-overlay') || el.closest('[data-builder-overlay]')) continue;
@@ -557,6 +610,9 @@ export default function BuilderCanvas() {
       if (!builderEl) continue;
       // Skip nodes being dragged so the parent container is found instead
       if (skipIds.has(builderEl.dataset.builderId ?? '')) continue;
+      // Only target nodes inside the active page
+      const pageFrame = builderEl.closest('[data-builder-page-id]') as HTMLElement | null;
+      if (pageFrame && pageFrame.dataset.builderPageId !== activePgId) continue;
       return builderEl;
     }
     return null;
@@ -644,6 +700,26 @@ export default function BuilderCanvas() {
     const isCanvasMove = e.dataTransfer.types.includes('text/canvas-node-id') || !!draggingNodeIdRef.current;
     e.dataTransfer.dropEffect = isCanvasMove ? 'move' : 'copy';
     setIsDroppingVariant(true);
+
+    // ── Panel drops: auto-switch active page as cursor moves between frames ───
+    // Canvas-node moves stay within their source page (cross-page moves aren't
+    // supported because moveNode only operates on the current pageNodes tree).
+    if (!isCanvasMove) {
+      const els = document.elementsFromPoint(e.clientX, e.clientY) as HTMLElement[];
+      for (const el of els) {
+        const pgEl = el.closest('[data-builder-page-id]') as HTMLElement | null;
+        if (pgEl?.dataset.builderPageId) {
+          const hovPageId = pgEl.dataset.builderPageId;
+          if (hovPageId !== lastDragHoverPageRef.current) {
+            lastDragHoverPageRef.current = hovPageId;
+            if (hovPageId !== useBuilderStore.getState().currentPageId) {
+              useBuilderStore.getState().switchPage(hovPageId);
+            }
+          }
+          break;
+        }
+      }
+    }
 
     // ── Absolute node: free-form positioning, skip drop-zone logic ────────────
     // Exception 1: multi-drag — when multiple nodes are selected and dragged
@@ -907,6 +983,7 @@ export default function BuilderCanvas() {
   }, [findBuilderElAt]);
 
   const onDragLeave = useCallback(() => {
+    lastDragHoverPageRef.current = null;
     setIsDroppingVariant(false);
     setDropLineY(null);
     setDropContainerId(null);
@@ -1008,6 +1085,7 @@ export default function BuilderCanvas() {
 
     setDropLineY(null);
     draggingNodeIdRef.current = null;
+    lastDragHoverPageRef.current = null;
   }, [addNode, addSection, moveNode, moveNodes, patchProp, _pushHistory]);
 
   // ── Resize: pointer-capture drag on handle ───────────────────────────────
@@ -1127,28 +1205,91 @@ export default function BuilderCanvas() {
         <rect width="100%" height="100%" fill="url(#builder-grid)" />
       </svg>
 
-      {/* Page frame drop shadow */}
-      <div style={{ position: 'absolute', left: panX - 6, top: panY - 6, width: vpWidth * zoom + 12, height: VIEWPORT_H * zoom + 12, borderRadius: 4, boxShadow: '0 8px 40px rgba(0,0,0,0.6)', background: 'rgba(0,0,0,0.3)', pointerEvents: 'none' }} />
+      {/* ── All page frames except the active one (rendered behind active so active's overlay wins) ── */}
+      {pages.filter(p => p.id !== currentPageId).map(page => {
+        const absIdx = pages.findIndex(pg => pg.id === page.id);
+        const frameLeft = panX + absIdx * (vpWidth + PAGE_GAP) * zoom;
+        const cfg: SDUIConfig = {
+          state: {},
+          ui: {
+            type: 'Box',
+            props: { className: 'flex flex-col w-full min-h-screen items-start relative' },
+            children: page.nodes,
+          } as SDUIConfig['ui'],
+        };
+        return (
+          <React.Fragment key={page.id}>
+            {/* Page name label */}
+            <div style={{ position: 'absolute', left: frameLeft, top: panY - 26, fontSize: 11, color: '#9ca3af', pointerEvents: 'none', userSelect: 'none', fontFamily: 'system-ui', whiteSpace: 'nowrap', display: 'flex', gap: 6, alignItems: 'baseline' }}>
+              <span style={{ fontWeight: 500 }}>{page.name}</span>
+              <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#4b5563' }}>{page.route}</span>
+              <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#374151' }}>{vpWidth}px</span>
+            </div>
+            {/* Frame — same style as active, just no blue ring */}
+            <div
+              data-builder-page-id={page.id}
+              style={{
+                position: 'absolute',
+                left: frameLeft,
+                top: panY,
+                width: vpWidth,
+                minHeight: VIEWPORT_H,
+                transformOrigin: '0 0',
+                transform: `scale(${zoom})`,
+                background: '#ffffff',
+                overflow: 'visible',
+                boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
+              }}
+            >
+              {page.nodes.length === 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: VIEWPORT_H, gap: 8, color: '#9ca3af', fontFamily: 'system-ui', userSelect: 'none' }}>
+                  <div style={{ fontSize: 24, opacity: 0.3 }}>+</div>
+                  <div style={{ fontSize: 12 }}>Empty page</div>
+                </div>
+              ) : (
+                <SDUIEngine
+                  key={`pg-${page.id}`}
+                  config={cfg}
+                  configName={page.route.replace(/[^a-zA-Z0-9]/g, '_') || 'page'}
+                  actionsConfig={app.actions ?? {}}
+                  routes={app.routes ?? []}
+                  builderMode
+                />
+              )}
+              {/* Fold line */}
+              <div data-builder-overlay="fold-line" style={{ position: 'absolute', left: 0, right: 0, top: VIEWPORT_H, height: 0, borderTop: '1.5px dashed rgba(99,130,246,0.3)', pointerEvents: 'none', zIndex: 9990 }} />
+            </div>
+          </React.Fragment>
+        );
+      })}
 
-      {/* Viewport width label */}
-      <div style={{ position: 'absolute', left: panX, top: panY - 20, fontSize: 10, color: '#6b7280', pointerEvents: 'none', userSelect: 'none', fontFamily: 'monospace' }}>
-        {vpWidth}px
+      {/* ── Active (last-interacted) page — label ── */}
+      <div style={{ position: 'absolute', left: activePanX, top: panY - 26, fontSize: 11, color: '#d1d5db', pointerEvents: 'none', userSelect: 'none', fontFamily: 'system-ui', whiteSpace: 'nowrap', display: 'flex', gap: 6, alignItems: 'baseline' }}>
+        {(() => { const pg = pages.find(p => p.id === currentPageId); return (
+          <>
+            <span style={{ fontWeight: 600, color: '#f3f4f6' }}>{pg?.name ?? 'Page'}</span>
+            <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#6b7280' }}>{pg?.route ?? '/'}</span>
+            <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#4b5563' }}>{vpWidth}px</span>
+          </>
+        ); })()}
       </div>
 
-      {/* ── Page frame: direct SDUI render ── */}
+      {/* ── Active page frame: direct SDUI render (capture overlay lives here) ── */}
       <div
         ref={pageFrameRef}
         data-builder-page-frame="1"
+        data-builder-page-id={currentPageId}
         style={{
           position: 'absolute',
-          left: panX,
+          left: activePanX,
           top: panY,
           width: vpWidth,
-          height: VIEWPORT_H,
+          minHeight: VIEWPORT_H,
           transformOrigin: '0 0',
           transform: `scale(${zoom})`,
           background: '#ffffff',
-          overflow: 'hidden',
+          overflow: 'visible',
+          boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
         }}
       >
         {pageNodes.length === 0 ? (
@@ -1163,6 +1304,36 @@ export default function BuilderCanvas() {
             builderMode
           />
         )}
+
+        {/* Viewport fold line — dashed line marking where the viewport ends.
+            Content below this line exists on the page but is not visible
+            without scrolling in the real browser. */}
+        <div
+          data-builder-overlay="fold-line"
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: VIEWPORT_H,
+            height: 0,
+            borderTop: '1.5px dashed rgba(99, 130, 246, 0.45)',
+            pointerEvents: 'none',
+            zIndex: 9990,
+          }}
+        >
+          <span style={{
+            position: 'absolute',
+            right: 10,
+            top: 4,
+            fontSize: 9,
+            color: 'rgba(99, 130, 246, 0.65)',
+            userSelect: 'none',
+            fontFamily: 'monospace',
+            letterSpacing: '0.02em',
+          }}>
+            {VIEWPORT_H}px — viewport
+          </span>
+        </div>
 
         {/* Transparent capture overlay — sits above all SDUI content.
             Intercepts ALL pointer events so buttons/inputs/links never fire.
@@ -1482,7 +1653,7 @@ export default function BuilderCanvas() {
       {/* ── Overlay ── */}
       <BuilderOverlay
         zoom={zoom}
-        panX={panX}
+        panX={activePanX}
         panY={panY}
         canvasRef={canvasRef}
         selectedIds={selectedIds}
@@ -1519,7 +1690,7 @@ export default function BuilderCanvas() {
             data-snap-axis="x"
             style={{
               position: 'absolute',
-              left:   panX + g.position * zoom,
+              left:   activePanX + g.position * zoom,
               top:    panY + g.start    * zoom,
               width:  1,
               height: Math.max(1, (g.end - g.start) * zoom),
@@ -1537,7 +1708,7 @@ export default function BuilderCanvas() {
             data-snap-axis="y"
             style={{
               position: 'absolute',
-              left:   panX + g.start    * zoom,
+              left:   activePanX + g.start    * zoom,
               top:    panY + g.position * zoom,
               width:  Math.max(1, (g.end - g.start) * zoom),
               height: 1,
@@ -1555,7 +1726,7 @@ export default function BuilderCanvas() {
           {/* Vertical line */}
           <div style={{
             position: 'absolute',
-            left: panX + absDragPos.x * zoom,
+            left: activePanX + absDragPos.x * zoom,
             top: panY,
             bottom: 0,
             width: 1,
@@ -1566,7 +1737,7 @@ export default function BuilderCanvas() {
           {/* Horizontal line */}
           <div style={{
             position: 'absolute',
-            left: panX,
+            left: activePanX,
             right: 0,
             top: panY + absDragPos.y * zoom,
             height: 1,
