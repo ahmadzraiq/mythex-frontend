@@ -183,7 +183,7 @@ function ColorInput({ label, value, onChange, testId }: { label: string; value: 
 function ToggleBtn({ active, onClick, title, children, 'data-testid': testId }: { active?: boolean; onClick: () => void; title?: string; children: React.ReactNode; 'data-testid'?: string }) {
   return (
     <button
-      onClick={onClick} title={title} data-testid={testId}
+      onClick={onClick} title={title} data-testid={testId} data-active={String(!!active)}
       style={{ padding: '3px 7px', fontSize: 11, background: active ? '#3b82f6' : '#1f2937', border: `1px solid ${active ? '#3b82f6' : '#374151'}`, color: active ? '#fff' : '#9ca3af', borderRadius: 4, cursor: 'pointer', lineHeight: 1 }}
     >
       {children}
@@ -678,7 +678,7 @@ function DesignTab({ node }: { node: SDUINode }) {
               <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Mode</span>
               <div style={{ display: 'flex', gap: 2 }}>
                 <ToggleBtn active={!isSpaceBetween} onClick={() => patchCls(removeTwToken(cls, 'justify-between'))}>Fixed</ToggleBtn>
-                <ToggleBtn active={isSpaceBetween} onClick={() => patchCls(replaceTwToken(cls, 'justify-', 'justify-between'))}>⇔</ToggleBtn>
+                <ToggleBtn data-testid="gap-mode-space-between" active={isSpaceBetween} onClick={() => patchCls(replaceTwToken(cls, 'justify-', 'justify-between'))}>⇔</ToggleBtn>
               </div>
             </div>
           </div>
@@ -729,7 +729,8 @@ function DesignTab({ node }: { node: SDUINode }) {
                 onChange={px => {
                   patchStyle({ paddingLeft: `${px}px`, paddingRight: `${px}px`, paddingInline: undefined as unknown as string });
                   const cleaned = removeTwToken(removeTwToken(removeTwToken(cls, 'px-'), 'pl-'), 'pr-');
-                  if (cleaned !== cls) patchCls(cleaned);
+                  const token = px > 0 ? `px-[${px}px]` : '';
+                  patchCls(token ? `${cleaned} ${token}`.trim() : cleaned);
                 }} />
               <NumberInput label="V (pt/pb)" testId="input-pad-v"
                 value={parseInt(nodeStyle.paddingTop ?? nodeStyle.paddingBlock ?? String(padding.top))}
@@ -863,7 +864,11 @@ function DesignTab({ node }: { node: SDUINode }) {
           label="Color"
           testId="input-stroke-color"
           value={computedBorderColor}
-          onChange={hex => patchStyle({ borderColor: hex })}
+          onChange={hex => {
+            const cleaned = cls.replace(/\bborder-\[[^\]]+\]/g, '').replace(/\s+/g, ' ').trim();
+            patchCls(hex ? `${cleaned} border-[${hex}]`.trim() : cleaned);
+            patchStyle({ borderColor: hex || '' });
+          }}
         />
         <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
           <SelectInput
@@ -933,11 +938,15 @@ function DesignTab({ node }: { node: SDUINode }) {
               patchCls(v === 'normal-case' ? next : `${next} ${v}`.trim());
             }} />
           </div>
-          <ColorInput
+            <ColorInput
             label="Color"
             testId="input-text-color"
             value={computedTextColor}
-            onChange={hex => patchStyle({ color: hex })}
+            onChange={hex => {
+              const cleaned = cls.replace(/\btext-\[[^\]]+\]/g, '').replace(/\s+/g, ' ').trim();
+              patchCls(hex ? `${cleaned} text-[${hex}]`.trim() : cleaned);
+              patchStyle({ color: hex || '' });
+            }}
           />
         </div>
       )}

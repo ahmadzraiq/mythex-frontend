@@ -107,6 +107,15 @@ function ensureIds(node: SDUINode): SDUINode {
 /** Node types whose `text` property is directly editable via double-click. */
 const TEXT_NODE_TYPES = new Set(['Text', 'Heading', 'ButtonText']);
 
+/**
+ * Certain container types only accept specific child types.
+ * Dropping anything else into them will crash the renderer.
+ * Key = parent type, Value = allowed child types (empty Set = allow all).
+ */
+const ALLOWED_CHILDREN: Record<string, Set<string>> = {
+  Button: new Set(['ButtonText', 'NavIcon']),
+};
+
 export default function BuilderCanvas() {
   const canvasRef          = useRef<HTMLDivElement>(null);
   const pageFrameRef       = useRef<HTMLDivElement>(null);
@@ -130,6 +139,7 @@ export default function BuilderCanvas() {
     addSection,
     addNode,
     moveNode,
+    moveNodes,
     patchProp,
     _pushHistory,
   } = useBuilderStore();
@@ -203,12 +213,33 @@ export default function BuilderCanvas() {
   // ── Drop state ────────────────────────────────────────────────────────────
 
   const [isDroppingVariant, setIsDroppingVariant] = React.useState(false);
-  const [dropZoneIdx, setDropZoneIdx]               = React.useState<number | null>(null);
-  /** ID of the container node being targeted for "drop inside" */
+  /**
+   * Canvas-div-relative Y (px) of the active insert-line indicator.
+   * Works for both root-level and in-container drops. null = hidden.
+   */
+  const [dropLineY, setDropLineY] = React.useState<number | null>(null);
+  /** ID of the container node being targeted for "drop inside" (shows blue border) */
   const [dropContainerId, setDropContainerId]       = React.useState<string | null>(null);
 
   /** ID of the canvas node currently being dragged (null = dragging from panel) */
   const draggingNodeIdRef = useRef<string | null>(null);
+
+  /** Tracks whether a canvas node is currently being dragged (drives overlay hide). */
+  const [isDragging, setIsDragging] = React.useState(false);
+
+  /**
+   * The DOM elements faded out at drag-start (one per selected node for multi-drag).
+   * Stored separately from draggingNodeIdRef so opacity can always be restored
+   * even when draggingNodeIdRef is cleared early (e.g. onDrop clears it before
+   * onDragEnd fires on a successful drop).
+   */
+  const draggedElRef = useRef<HTMLElement[]>([]);
+
+  /**
+   * All node IDs being dragged (equals selectedIds when all are selected and one
+   * is grabbed; equals [dragId] for single-node drags).
+   */
+  const multiDragIdsRef = useRef<string[]>([]);
 
   /**
    * When dragging an absolute-positioned node, record WHERE inside the element
@@ -345,10 +376,35 @@ export default function BuilderCanvas() {
       (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
       e.preventDefault();
     } else if (e.button === 0 && tool === 'select') {
-      // Check if pointer is on empty canvas area → start marquee
+      // Check if pointer is on empty canvas area → start marquee selection.
+      // hitTest skips the overlay and finds underlying SDUI nodes, so 'empty'
+      // genuinely means no node at this position.
       const hit = hitTest(e.clientX, e.clientY);
       if (hit.kind === 'empty') {
-        marqueeStartRef.current = { clientX: e.clientX, clientY: e.clientY };
+        // Don't start marquee when the cursor is inside the selection bounding box —
+        // clicking there means the user intends to drag the selected nodes.
+        // Use the UNION bounding rect of all selected nodes, not individual rects,
+        // because the selection box drawn by the overlay covers the whole union area
+        // (including gaps between nodes and the border itself).
+        const selIds = useBuilderStore.getState().selectedIds;
+        let inSelectionBox = false;
+        if (selIds.length > 0) {
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          for (const id of selIds) {
+            const el = document.querySelector(`[data-builder-id="${id}"]`);
+            if (!el) continue;
+            const r = el.getBoundingClientRect();
+            if (r.left   < minX) minX = r.left;
+            if (r.top    < minY) minY = r.top;
+            if (r.right  > maxX) maxX = r.right;
+            if (r.bottom > maxY) maxY = r.bottom;
+          }
+          inSelectionBox = e.clientX >= minX && e.clientX <= maxX &&
+                           e.clientY >= minY && e.clientY <= maxY;
+        }
+        if (!inSelectionBox) {
+          marqueeStartRef.current = { clientX: e.clientX, clientY: e.clientY };
+        }
       }
     }
   }, [tool, hitTest]);
@@ -480,6 +536,77 @@ export default function BuilderCanvas() {
   }, []);
 
   /**
+   * Like findBuilderElAt but skips any node whose ID is in `skipIds`.
+   * Used during drag-over so the dragged node (opacity 0.3, still in DOM)
+   * doesn't block hit-testing of the container it lives in.
+   */
+  const findDropTargetElAt = useCallback((
+    clientX: number,
+    clientY: number,
+    skipIds: Set<string>,
+  ): HTMLElement | null => {
+    const capOverlay = captureOverlayRef.current;
+    const all = document.elementsFromPoint(clientX, clientY) as HTMLElement[];
+    for (const el of all) {
+      if (el === capOverlay || capOverlay?.contains(el)) continue;
+      if (el.hasAttribute('data-builder-overlay') || el.closest('[data-builder-overlay]')) continue;
+      // Resolve to nearest ancestor with data-builder-id
+      const builderEl = el.hasAttribute('data-builder-id')
+        ? el
+        : (el.closest('[data-builder-id]') as HTMLElement | null);
+      if (!builderEl) continue;
+      // Skip nodes being dragged so the parent container is found instead
+      if (skipIds.has(builderEl.dataset.builderId ?? '')) continue;
+      return builderEl;
+    }
+    return null;
+  }, []);
+
+  /**
+   * Nearest-gap algorithm: given a list of siblings (at any nesting level) and
+   * the current cursor Y (screen px), find the closest insert position and
+   * return both the index and the canvas-div-relative Y for the drop line.
+   *
+   * Boundary rules (so first/last positions are always reachable):
+   *  - Gap 0 (before first): gapMid = first node's top
+   *  - Gap N (after last):   gapMid = last node's bottom
+   *  - Inner gaps:           gapMid = (prevEl.bottom + nextEl.top) / 2
+   */
+  function nearestGap(
+    siblings: SDUINode[],
+    cursorY: number,
+    canvasEl: HTMLElement,
+    canvasRect: DOMRect,
+  ): { insertIdx: number; lineY: number } {
+    let insertIdx = siblings.length;
+    let lineY     = panYRef.current;
+    let minDist   = Infinity;
+
+    for (let gi = 0; gi <= siblings.length; gi++) {
+      const prevEl = gi > 0
+        ? canvasEl.querySelector(`[data-builder-id="${siblings[gi - 1].id}"]`)
+        : null;
+      const nextEl = gi < siblings.length
+        ? canvasEl.querySelector(`[data-builder-id="${siblings[gi].id}"]`)
+        : null;
+      const rawPrevBottom = prevEl?.getBoundingClientRect().bottom;
+      const rawNextTop    = nextEl?.getBoundingClientRect().top;
+      // Symmetric fallback keeps boundaries reachable
+      const prevBottom = rawPrevBottom ?? rawNextTop ?? (canvasRect.top + panYRef.current);
+      const nextTop    = rawNextTop    ?? rawPrevBottom ?? (canvasRect.top + panYRef.current);
+      const gapMid = (prevBottom + nextTop) / 2;
+      const dist   = Math.abs(cursorY - gapMid);
+      if (dist < minDist) {
+        minDist   = dist;
+        insertIdx = gi;
+        // Line sits at the actual boundary between the two elements
+        lineY = (rawPrevBottom ?? rawNextTop ?? (canvasRect.top + panYRef.current)) - canvasRect.top;
+      }
+    }
+    return { insertIdx, lineY };
+  }
+
+  /**
    * Collect all sibling rects inside `parentEl` (excluding `excludeId`),
    * converted to content space (divided by zoom).
    */
@@ -519,81 +646,176 @@ export default function BuilderCanvas() {
     setIsDroppingVariant(true);
 
     // ── Absolute node: free-form positioning, skip drop-zone logic ────────────
+    // Exception 1: multi-drag — when multiple nodes are selected and dragged
+    // together, ALL must move as a flow group (absolute path only moves one node).
+    // Exception 2: reparenting — if cursor is over a DIFFERENT container, fall
+    // through to normal flow-drop so the node can be reparented.
     const draggingId = draggingNodeIdRef.current;
+    // Compute multiDrag set early so the absolute-path check can use it.
+    const earlyAllDraggingIds = multiDragIdsRef.current.length > 0
+      ? multiDragIdsRef.current
+      : (draggingId ? [draggingId] : []);
     if (draggingId) {
       const draggedNode = findNode(useBuilderStore.getState().pageNodes, draggingId);
       const cls = (draggedNode?.props as { className?: string })?.className ?? '';
       const isAbsPos = /\babsolute\b/.test(cls) || /\bfixed\b/.test(cls);
-      if (isAbsPos) {
-        // Position relative to the nearest positioned parent, or the page frame
-        const parentNode = findParentNode(useBuilderStore.getState().pageNodes, draggingId);
-        const parentEl = parentNode?.id
-          ? (document.querySelector(`[data-builder-id="${parentNode.id}"]`) as HTMLElement | null)
-          : (document.querySelector('[data-builder-page-frame]') as HTMLElement | null);
-        if (parentEl) {
-          const pr   = parentEl.getBoundingClientRect();
-          const z    = zoomRef.current;
-          const grab = grabOffsetRef.current;
-          // Subtract the grab offset so the element stays under the cursor
-          // rather than snapping its top-left to the cursor position.
-          const rawX = Math.round((e.clientX - pr.left - grab.x) / z);
-          const rawY = Math.round((e.clientY - pr.top  - grab.y) / z);
+      // Only use the absolute-positioning path for single-node drags.
+      // For multi-drags the flow-drop path handles all nodes together.
+      if (isAbsPos && earlyAllDraggingIds.length <= 1) {
+        // Absolute nodes always follow the cursor absolutely — no drop-line mode.
+        // The "effective parent" (container the node will land in) is resolved
+        // dynamically from whatever is under the cursor right now:
+        //   • cursor over a named container  → use that container as parent
+        //   • cursor over a leaf node        → use that leaf's parent
+        //   • cursor over empty space        → use root (null)
+        // Position is always computed relative to the effective parent, so the
+        // node previews exactly where it will land.  On drop, onDrop reparents
+        // first (if the parent changed) then sets left/top.
+        const absCanvas = canvasRef.current;
+        const absRect   = absCanvas?.getBoundingClientRect();
+        if (absCanvas && absRect) {
+          const currentParentNode = findParentNode(useBuilderStore.getState().pageNodes, draggingId);
+          const currentParentId   = currentParentNode?.id ?? null;
 
-          // ── Snap to siblings (with Figma-style stickiness) ────────────────
-          const nodeEl = document.querySelector(`[data-builder-id="${draggingId}"]`) as HTMLElement | null;
-          const nodeW  = nodeEl ? nodeEl.getBoundingClientRect().width  / z : 0;
-          const nodeH  = nodeEl ? nodeEl.getBoundingClientRect().height / z : 0;
-          const siblings = getAllSiblingRects(draggingId, parentEl, z);
+          // Find the deepest element under cursor (excluding the dragged node).
+          const hoveredEl  = findDropTargetElAt(e.clientX, e.clientY, new Set([draggingId]));
+          let effectiveParentId: string | null = null;
+          let effectiveParentEl: HTMLElement | null = null;
 
-          // Stickiness: once snapped, the element stays "glued" to the snap
-          // position until the cursor travels SNAP_STICKY_RELEASE px past it.
-          // This gives the Figma "micro-pause" feel — the user can linger on an
-          // alignment without the element jumping away on the next pixel.
-          const SNAP_STICKY_RELEASE = SNAP_THRESHOLD * 2;
-          const sticky = stickySnapRef.current;
+          if (hoveredEl) {
+            const hovId   = hoveredEl.dataset.builderId!;
+            const hovType = hoveredEl.dataset.builderType ?? '';
+            const hovNode = findNode(useBuilderStore.getState().pageNodes, hovId);
+            const hovIsContainer = CONTAINER_TYPES.has(hovType) ||
+              ((hovNode?.children?.length ?? 0) > 0);
+            // If the hovered node is itself absolute/fixed it is a sibling, not a
+            // parent container — dropping "into" it makes no sense for an abs drag.
+            const hovCls = (hovNode?.props as { className?: string })?.className ?? '';
+            const hovIsAbs = /\b(absolute|fixed)\b/.test(hovCls);
 
-          // Determine effective input position (may override rawX/Y while stuck)
-          let effectiveX = rawX;
-          let effectiveY = rawY;
-          if (sticky.x !== null) {
-            if (Math.abs(rawX - sticky.x) <= SNAP_STICKY_RELEASE) {
-              effectiveX = sticky.x; // stay glued
+            if (hovIsContainer && !hovIsAbs) {
+              // Cursor is directly over a flow container → use it as parent.
+              effectiveParentId = hovId;
+              effectiveParentEl = hoveredEl;
             } else {
-              sticky.x = null;       // cursor escaped → release
+              // Cursor over a leaf node OR an absolute node → use that node's parent.
+              // Also walk up past any absolute/fixed ancestors (e.g. cursor is on
+              // ButtonText whose parent is an abs Button — still a sibling, not a
+              // container we want to drop into).
+              const pNodes = useBuilderStore.getState().pageNodes;
+              let resolvedParent = findParentNode(pNodes, hovId);
+              while (resolvedParent?.id) {
+                const pCls = (resolvedParent.props as { className?: string })?.className ?? '';
+                if (/\b(absolute|fixed)\b/.test(pCls)) {
+                  resolvedParent = findParentNode(pNodes, resolvedParent.id);
+                } else {
+                  break;
+                }
+              }
+              effectiveParentId = resolvedParent?.id ?? null;
+              effectiveParentEl = resolvedParent?.id
+                ? (document.querySelector(`[data-builder-id="${resolvedParent.id}"]`) as HTMLElement | null)
+                : null;
             }
           }
-          if (sticky.y !== null) {
-            if (Math.abs(rawY - sticky.y) <= SNAP_STICKY_RELEASE) {
-              effectiveY = sticky.y;
-            } else {
-              sticky.y = null;
+          // effectiveParentId === null means root level (cursor over empty space).
+
+          // Reset sticky snap state when the effective parent changes so stale
+          // snap offsets from the old container don't pollute the new one.
+          if (effectiveParentId !== currentParentId) {
+            stickySnapRef.current = { x: null, y: null };
+          }
+
+          // Record which container we'd reparent into on drop.
+          dropTargetRef.current = { parentId: effectiveParentId, index: 0 };
+
+          // Resolve the DOM element to measure position against.
+          if (!effectiveParentEl) {
+            effectiveParentEl = effectiveParentId
+              ? (document.querySelector(`[data-builder-id="${effectiveParentId}"]`) as HTMLElement | null)
+              : (document.querySelector('[data-builder-page-frame]') as HTMLElement | null);
+          }
+
+          if (effectiveParentEl) {
+            const pr   = effectiveParentEl.getBoundingClientRect();
+            const z    = zoomRef.current;
+            const grab = grabOffsetRef.current;
+            const rawX = Math.round((e.clientX - pr.left - grab.x) / z);
+            const rawY = Math.round((e.clientY - pr.top  - grab.y) / z);
+
+            // ── Snap to siblings within the effective parent ──────────────────
+            const nodeEl = document.querySelector(`[data-builder-id="${draggingId}"]`) as HTMLElement | null;
+            const nodeW  = nodeEl ? nodeEl.getBoundingClientRect().width  / z : 0;
+            const nodeH  = nodeEl ? nodeEl.getBoundingClientRect().height / z : 0;
+            const siblings = getAllSiblingRects(draggingId, effectiveParentEl, z);
+
+            const SNAP_STICKY_RELEASE = SNAP_THRESHOLD * 2;
+            const sticky = stickySnapRef.current;
+
+            let effectiveX = rawX;
+            let effectiveY = rawY;
+            if (sticky.x !== null) {
+              if (Math.abs(rawX - sticky.x) <= SNAP_STICKY_RELEASE) {
+                effectiveX = sticky.x;
+              } else {
+                sticky.x = null;
+              }
             }
+            if (sticky.y !== null) {
+              if (Math.abs(rawY - sticky.y) <= SNAP_STICKY_RELEASE) {
+                effectiveY = sticky.y;
+              } else {
+                sticky.y = null;
+              }
+            }
+
+            const dragged: ContentRect = { id: draggingId, x: effectiveX, y: effectiveY, w: nodeW, h: nodeH };
+            const { x, y, guides } = computeSnap(dragged, siblings);
+
+            if (x !== effectiveX) sticky.x = x;
+            if (y !== effectiveY) sticky.y = y;
+
+            setSnapGuides(guides);
+
+            if (nodeEl) {
+              // x/y are in the effective parent's coordinate space — correct for
+              // the eventual drop.  But for the live DOM preview the node is still
+              // inside its ACTUAL parent, so we must offset by the difference
+              // between the two parents' viewport origins.
+              let liveLeft = x;
+              let liveTop  = y;
+              if (effectiveParentId !== currentParentId) {
+                const actualParentEl = currentParentId
+                  ? (document.querySelector(`[data-builder-id="${currentParentId}"]`) as HTMLElement | null)
+                  : (document.querySelector('[data-builder-page-frame]') as HTMLElement | null);
+                if (actualParentEl) {
+                  const ar = actualParentEl.getBoundingClientRect();
+                  liveLeft = x + (pr.left - ar.left) / z;
+                  liveTop  = y + (pr.top  - ar.top)  / z;
+                }
+              }
+              nodeEl.style.left = `${liveLeft}px`;
+              nodeEl.style.top  = `${liveTop}px`;
+            }
+
+            const pos = { x, y, clientX: e.clientX, clientY: e.clientY };
+            absDragPosRef.current = pos;
+            setAbsDragPos(pos);
           }
 
-          const dragged: ContentRect = { id: draggingId, x: effectiveX, y: effectiveY, w: nodeW, h: nodeH };
-          const { x, y, guides } = computeSnap(dragged, siblings);
-
-          // Record newly snapped positions so stickiness activates next frame
-          if (x !== effectiveX) sticky.x = x;
-          if (y !== effectiveY) sticky.y = y;
-
-          setSnapGuides(guides);
-
-          // Push the snapped position directly to the DOM element so it tracks
-          // the snap line in real-time (no browser ghost drift).
-          if (nodeEl) {
-            nodeEl.style.left = `${x}px`;
-            nodeEl.style.top  = `${y}px`;
-          }
-
-          const pos = { x, y, clientX: e.clientX, clientY: e.clientY };
-          absDragPosRef.current = pos;
-          setAbsDragPos(pos);
+          // No drop line, but highlight the target container (blue dashed border)
+          // whenever the node would be reparented into a different container.
+          setDropLineY(null);
+          setDropContainerId(
+            effectiveParentId !== null && effectiveParentId !== currentParentId
+              ? effectiveParentId
+              : null,
+          );
+          return;
         }
-        // Don't show any flow drop indicators
-        setDropZoneIdx(null);
+        // absCanvas unavailable — clear any stale indicators
+        setDropLineY(null);
         setDropContainerId(null);
-        dropTargetRef.current = null;
         return;
       }
     }
@@ -606,8 +828,19 @@ export default function BuilderCanvas() {
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
 
-    // Find the SDUI node under cursor
-    const hovEl = findBuilderElAt(e.clientX, e.clientY);
+    // Build the set of all node IDs currently being dragged (primary + multi).
+    // We treat these nodes as transparent for drop-target purposes so the line
+    // never appears "on themselves" and the nearest-gap algorithm is used instead.
+    const activeDragId = draggingNodeIdRef.current;
+    const allDraggingIds = multiDragIdsRef.current.length > 0
+      ? multiDragIdsRef.current
+      : (activeDragId ? [activeDragId] : []);
+    const draggingIdSet = new Set(allDraggingIds);
+
+    // Find the SDUI node under cursor. Dragged nodes (opacity 0.3, still in DOM)
+    // are skipped so we always resolve to their parent container instead of
+    // treating the cursor position as empty/root-level.
+    const hovEl = findDropTargetElAt(e.clientX, e.clientY, draggingIdSet);
 
     if (hovEl) {
       const nodeId   = hovEl.dataset.builderId!;
@@ -619,56 +852,63 @@ export default function BuilderCanvas() {
       const nodeInTree = findNode(useBuilderStore.getState().pageNodes, nodeId);
       const isContainer = CONTAINER_TYPES.has(nodeType) || (nodeInTree?.children?.length ?? 0) > 0;
 
-      // Prevent a node from being dropped into itself
-      const draggingId = draggingNodeIdRef.current;
-      const isDroppingSelf = draggingId === nodeId;
-      const isDroppingIntoSelf = draggingId && isContainer &&
-        !!findNode((nodeInTree?.children ?? []) as SDUINode[], draggingId);
+      // Prevent cycle drops: the hover container (nodeId) must NOT be inside the
+      // subtree of any dragged node (which would create a parent → descendant cycle).
+      // NOTE: the OLD check was inverted — it searched for dragged-id inside hovEl's
+      // children, which is NORMAL for re-ordering within a container and must be allowed.
+      const isDroppingIntoSelf = isContainer &&
+        allDraggingIds.some(id => {
+          const draggedNode = findNode(useBuilderStore.getState().pageNodes, id);
+          if (!draggedNode?.children?.length) return false;
+          // True only if the hover container lives inside the dragged node's subtree
+          return !!findNode((draggedNode.children as SDUINode[]), nodeId);
+        });
 
-      if (isContainer && !isDroppingSelf && !isDroppingIntoSelf && relY > 0.2 && relY < 0.8) {
+      // When hovering over the dragged node's own parent container, the edge
+      // zones (relY < 0.2 or > 0.8) would normally send the node to the parent's
+      // parent — but the user is trying to reorder within the same container.
+      // Skip the edge-zone check in that case so the node always stays inside.
+      const isHomeCont = isContainer && allDraggingIds.some(id => {
+        const p = findParentNode(useBuilderStore.getState().pageNodes, id);
+        return p?.id === nodeId;
+      });
+      const inDropZone = isHomeCont ? true : (relY > 0.2 && relY < 0.8);
+
+      if (isContainer && !isDroppingIntoSelf && inDropZone) {
         // ── Drop INSIDE the container ──
+        // Find the nearest gap within the container's children so we insert at
+        // the correct position and show the line exactly there.
         const children = (nodeInTree?.children ?? []) as SDUINode[];
+        const { insertIdx, lineY } = nearestGap(children, e.clientY, canvas, rect);
         setDropContainerId(nodeId);
-        setDropZoneIdx(null);
-        dropTargetRef.current = { parentId: nodeId, index: children.length };
+        setDropLineY(lineY);
+        dropTargetRef.current = { parentId: nodeId, index: insertIdx };
       } else {
         // ── Drop BEFORE / AFTER this node in its parent ──
-        const parent = findParentNode(useBuilderStore.getState().pageNodes, nodeId);
+        const parent   = findParentNode(useBuilderStore.getState().pageNodes, nodeId);
         const parentId = parent?.id ?? null;
-        const siblings = parent ? (parent.children as SDUINode[]) : useBuilderStore.getState().pageNodes;
-        const idxInParent = siblings.findIndex(n => n.id === nodeId);
-        const insertIdx = relY < 0.5 ? idxInParent : idxInParent + 1;
-
+        const siblings: SDUINode[] = parent
+          ? (parent.children as SDUINode[])
+          : useBuilderStore.getState().pageNodes;
+        const { insertIdx, lineY } = nearestGap(siblings, e.clientY, canvas, rect);
         setDropContainerId(null);
+        setDropLineY(lineY);
         dropTargetRef.current = { parentId, index: insertIdx };
-
-        if (!parentId) {
-          setDropZoneIdx(insertIdx);
-        } else {
-          setDropZoneIdx(null);
-        }
       }
     } else {
-      // ── No node under cursor: drop at root level ──
-      const y = (e.clientY - rect.top - panYRef.current) / zoomRef.current;
+      // ── No node under cursor (or cursor is over a dragged node): use
+      //    nearest-gap on root-level nodes.
       const nodes = useBuilderStore.getState().pageNodes;
-      let zoneIdx = nodes.length;
-      for (let i = 0; i < nodes.length; i++) {
-        const el = canvas.querySelector(`[data-builder-id="${nodes[i].id}"]`);
-        if (!el) continue;
-        const nr   = el.getBoundingClientRect();
-        const midY = (nr.top - rect.top + nr.height / 2) / zoomRef.current;
-        if (y < midY) { zoneIdx = i; break; }
-      }
+      const { insertIdx, lineY } = nearestGap(nodes, e.clientY, canvas, rect);
       setDropContainerId(null);
-      setDropZoneIdx(zoneIdx);
-      dropTargetRef.current = { parentId: null, index: zoneIdx };
+      setDropLineY(lineY);
+      dropTargetRef.current = { parentId: null, index: insertIdx };
     }
   }, [findBuilderElAt]);
 
   const onDragLeave = useCallback(() => {
     setIsDroppingVariant(false);
-    setDropZoneIdx(null);
+    setDropLineY(null);
     setDropContainerId(null);
     absDragPosRef.current = null;
     setAbsDragPos(null);
@@ -681,6 +921,11 @@ export default function BuilderCanvas() {
     e.preventDefault();
     setIsDroppingVariant(false);
     setDropContainerId(null);
+    // Restore all faded source elements immediately on drop (onDragEnd fires
+    // after drop but draggingNodeIdRef is already null by then).
+    for (const el of draggedElRef.current) el.style.opacity = '';
+    draggedElRef.current = [];
+    setIsDragging(false);
 
     const target   = dropTargetRef.current ?? { parentId: null, index: useBuilderStore.getState().pageNodes.length };
     // getData may return '' in CDP-simulated drags; fall back to the ref set in onDragStart
@@ -695,28 +940,62 @@ export default function BuilderCanvas() {
       const pos = absDragPosRef.current;
       const draggedNode = findNode(useBuilderStore.getState().pageNodes, canvasNodeId);
       const cls = (draggedNode?.props as { className?: string })?.className ?? '';
-      if (pos && (/\babsolute\b/.test(cls) || /\bfixed\b/.test(cls))) {
-        const existingStyle = (draggedNode?.props as { style?: Record<string, string> })?.style ?? {};
-        patchProp(canvasNodeId, 'props.style', {
-          ...existingStyle,
-          left: `${pos.x}px`,
-          top:  `${pos.y}px`,
-        });
-        _pushHistory();
+      const isAbsNode = /\babsolute\b/.test(cls) || /\bfixed\b/.test(cls);
+      // For multi-drags: skip the absolute path and use the flow path for all nodes.
+      const isMultiDrag = multiDragIdsRef.current.length > 1;
+      if (isAbsNode && !isMultiDrag) {
+        const currentParent  = findParentNode(useBuilderStore.getState().pageNodes, canvasNodeId);
+        const targetParentId = target.parentId;   // set by onDragOver abs path
+        const isSameParent   = targetParentId === (currentParent?.id ?? null);
+
+        // Reparent first (if the container changed), keeping the 'absolute' class.
+        // The node stays absolutely positioned relative to its new parent.
+        if (!isSameParent) {
+          moveNode(canvasNodeId, targetParentId, target.index);
+        }
+
+        // Apply the exact pixel position the user dragged to.
+        if (pos) {
+          const existingStyle = (draggedNode?.props as { style?: Record<string, string> })?.style ?? {};
+          patchProp(canvasNodeId, 'props.style', {
+            ...existingStyle,
+            left: `${pos.x}px`,
+            top:  `${pos.y}px`,
+          });
+        }
+
+        if (!isSameParent || pos) _pushHistory();
         absDragPosRef.current = null;
         setAbsDragPos(null);
         setSnapGuides([]);
         stickySnapRef.current = { x: null, y: null };
         dragStartStyleRef.current = null;
         draggingNodeIdRef.current = null;
-        setDropZoneIdx(null);
+        setDropLineY(null);
         return;
       }
-      // Moving an existing canvas node to a new position (flow)
-      moveNode(canvasNodeId, target.parentId, target.index);
+      // Moving an existing canvas node (or a group of selected nodes) to a new position
+      const allIds = multiDragIdsRef.current;
+      if (allIds.length > 1) {
+        moveNodes(allIds, target.parentId, target.index);
+      } else {
+        moveNode(canvasNodeId, target.parentId, target.index);
+      }
+      multiDragIdsRef.current = [];
     } else if (primitive) {
       try {
         const node = ensureIds(JSON.parse(primitive) as SDUINode);
+        // Guard: some containers only accept specific child types (e.g. Button → ButtonText).
+        if (target.parentId) {
+          const parentNode = findNode(useBuilderStore.getState().pageNodes, target.parentId);
+          const allowed = parentNode ? ALLOWED_CHILDREN[parentNode.type] : undefined;
+          if (allowed && !allowed.has(node.type)) {
+            console.warn(`Cannot drop "${node.type}" into "${parentNode?.type}" — incompatible child type.`);
+            setDropLineY(null);
+            draggingNodeIdRef.current = null;
+            return;
+          }
+        }
         addNode(node, target.parentId, target.index);
       } catch (err) { console.warn('Primitive drop failed:', err); }
     } else if (variantId) {
@@ -727,9 +1006,9 @@ export default function BuilderCanvas() {
       } catch (err) { console.warn('Section drop failed:', err); }
     }
 
-    setDropZoneIdx(null);
+    setDropLineY(null);
     draggingNodeIdRef.current = null;
-  }, [addNode, addSection, moveNode, patchProp, _pushHistory]);
+  }, [addNode, addSection, moveNode, moveNodes, patchProp, _pushHistory]);
 
   // ── Resize: pointer-capture drag on handle ───────────────────────────────
   //
@@ -938,13 +1217,33 @@ export default function BuilderCanvas() {
             onPointerDown={e => {
               // If we're in text-edit mode and the user clicks outside the textarea, commit
               if (editingId) { commitInlineEdit(); return; }
-              // Select the node immediately on pointer-down so selectedIds is
-              // populated by the time onDragStart fires (which runs after mousemove).
               if (e.button !== 0) return;
               const hit = hitTest(e.clientX, e.clientY);
-              if (hit.kind === 'node') select(hit.id, e.shiftKey);
+              if (hit.kind === 'node') {
+                const { selectedIds: curIds } = useBuilderStore.getState();
+                // Immediately pre-select so visual feedback is instant AND so that
+                // onDragStart fires with the correct selectedIds already set.
+                // Rules:
+                //  • shift-click / cmd-click: skip here — onPointerUp adds/removes ONCE
+                //    (calling select(id, true) twice toggles back to original → net no-op)
+                //  • already selected: skip — preserve multi-selection for potential drag
+                //    (onPointerUp will reduce to single-select if no drag actually happens)
+                //  • new node, no modifier: select immediately for instant feedback
+                if (!e.shiftKey && !e.metaKey && !curIds.includes(hit.id)) {
+                  select(hit.id, false);
+                }
+              }
             }}
             onDragStart={e => {
+              // If marqueeStartRef is set it means onPointerDown decided this is a
+              // marquee gesture (cursor on empty space, outside the selection box).
+              // Cancel the HTML5 drag so the pointer events continue and the marquee
+              // can update in onPointerMove → onPointerUp.
+              if (marqueeStartRef.current) {
+                e.preventDefault();
+                return;
+              }
+
               // Find the canvas node under the cursor when drag starts.
               // Fallback to the selected node when hitTest misses — this handles
               // CDP-simulated drag events (e.g. Playwright) where clientX/clientY
@@ -989,20 +1288,29 @@ export default function BuilderCanvas() {
               e.dataTransfer.setData('text/canvas-node-id', dragId);
               e.dataTransfer.effectAllowed = 'move';
 
+              // Collect all IDs being dragged: if the grabbed node is part of the
+              // current selection, drag ALL selected nodes together; otherwise drag only it.
+              const allDragIds = selectedIds.includes(dragId) && selectedIds.length > 1
+                ? [...selectedIds]
+                : [dragId];
+              multiDragIdsRef.current = allDragIds;
+
               const nodeEl = document.querySelector(`[data-builder-id="${dragId}"]`) as HTMLElement | null;
               const nr = nodeEl?.getBoundingClientRect();
               const ox = nr ? e.clientX - nr.left : 0;
               const oy = nr ? e.clientY - nr.top  : 0;
               grabOffsetRef.current = { x: ox, y: oy };
 
-              // For absolute/fixed nodes: suppress the browser ghost so the real
-              // element serves as the live preview and can track the snap position
-              // frame-by-frame in onDragOver.  Record the original style so we can
-              // revert if the user cancels the drag (dragend without drop).
+              // For absolute/fixed nodes dragged SOLO: suppress the browser ghost
+              // so the real element serves as the live CSS preview (tracks the cursor
+              // via onDragOver).  Record the original style for cancel-rollback.
+              // For MULTI-drags: always use the composite ghost path regardless of
+              // whether the primary node is absolute — all nodes must move together
+              // and the invisible-ghost path never fades/tracks the other nodes.
               const draggedNodeData = findNode(useBuilderStore.getState().pageNodes, dragId);
               const nodeClasses = (draggedNodeData?.props as { className?: string })?.className ?? '';
               const isAbsPos = /\babsolute\b/.test(nodeClasses) || /\bfixed\b/.test(nodeClasses);
-              if (isAbsPos) {
+              if (isAbsPos && allDragIds.length <= 1) {
                 const storedStyle = (draggedNodeData?.props as { style?: Record<string, string> })?.style ?? {};
                 dragStartStyleRef.current = {
                   left: storedStyle.left ?? '',
@@ -1014,20 +1322,87 @@ export default function BuilderCanvas() {
                 ghost.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;';
                 document.body.appendChild(ghost);
                 e.dataTransfer.setDragImage(ghost, 0, 0);
-                requestAnimationFrame(() => document.body.removeChild(ghost));
+                requestAnimationFrame(() => {
+                  document.body.removeChild(ghost);
+                  // Hide selection overlays (padding fills, crosshairs, resize
+                  // handles) while the abs node is being dragged live.
+                  setIsDragging(true);
+                });
               } else {
                 dragStartStyleRef.current = null;
-                if (nodeEl) {
-                  e.dataTransfer.setDragImage(nodeEl, ox, oy);
+
+                // Build a composite ghost image from all dragged elements.
+                // We place it OUTSIDE the canvas container so it is not affected
+                // by the canvas CSS scale(zoom), keeping the ghost at the correct
+                // logical size. For multiple selected nodes the ghost shows all of
+                // them at their relative positions — just like Figma.
+                const rects = allDragIds
+                  .map(id => ({
+                    id,
+                    el:   document.querySelector(`[data-builder-id="${id}"]`) as HTMLElement | null,
+                    rect: (document.querySelector(`[data-builder-id="${id}"]`) as HTMLElement | null)
+                            ?.getBoundingClientRect() ?? null,
+                  }))
+                  .filter((r): r is typeof r & { el: HTMLElement; rect: DOMRect } => !!r.el && !!r.rect);
+
+                if (rects.length > 0) {
+                  const minX = Math.min(...rects.map(r => r.rect.left));
+                  const minY = Math.min(...rects.map(r => r.rect.top));
+                  const maxX = Math.max(...rects.map(r => r.rect.right));
+                  const maxY = Math.max(...rects.map(r => r.rect.bottom));
+
+                  // Ghost lives in body (no canvas transform) so divide screen px by
+                  // zoom to get the correct logical CSS size.
+                  const ghostW = (maxX - minX) / zoom;
+                  const ghostH = (maxY - minY) / zoom;
+
+                  const ghostEl = document.createElement('div');
+                  ghostEl.style.cssText = `position:fixed;left:-9999px;top:-9999px;pointer-events:none;width:${ghostW}px;height:${ghostH}px;`;
+                  document.body.appendChild(ghostEl);
+
+                  for (const { el, rect } of rects) {
+                    const clone = el.cloneNode(true) as HTMLElement;
+                    clone.style.position = 'absolute';
+                    clone.style.left     = `${(rect.left - minX) / zoom}px`;
+                    clone.style.top      = `${(rect.top  - minY) / zoom}px`;
+                    clone.style.width    = `${rect.width  / zoom}px`;
+                    clone.style.height   = `${rect.height / zoom}px`;
+                    clone.style.margin   = '0';
+                    clone.style.transform = '';
+                    clone.style.opacity  = '1';
+                    ghostEl.appendChild(clone);
+                  }
+
+                  // Cursor hotspot relative to the ghost's top-left corner
+                  const ghostOx = (e.clientX - minX) / zoom;
+                  const ghostOy = (e.clientY - minY) / zoom;
+                  e.dataTransfer.setDragImage(ghostEl, ghostOx, ghostOy);
+
+                  requestAnimationFrame(() => {
+                    document.body.removeChild(ghostEl);
+                    // Fade originals after the ghost snapshot is captured
+                    const faded: HTMLElement[] = [];
+                    for (const { el: fadeEl } of rects) {
+                      fadeEl.style.opacity = '0.3';
+                      faded.push(fadeEl);
+                    }
+                    draggedElRef.current = faded;
+                    setIsDragging(true);
+                  });
                 }
               }
             }}
             onDragEnd={() => {
-              const prevDragId = draggingNodeIdRef.current;
+              // Restore all faded source elements (multi-drag may have faded several).
+              for (const el of draggedElRef.current) el.style.opacity = '';
+              draggedElRef.current = [];
+              multiDragIdsRef.current = [];
+              setIsDragging(false);
 
               // If we were dragging an absolute node and there was no drop (drag
               // cancelled / pressed Esc), restore the element to its original
               // position so it doesn't appear stuck at the last dragover position.
+              const prevDragId = draggingNodeIdRef.current;
               if (prevDragId && dragStartStyleRef.current) {
                 const el = document.querySelector(`[data-builder-id="${prevDragId}"]`) as HTMLElement | null;
                 if (el) {
@@ -1041,9 +1416,13 @@ export default function BuilderCanvas() {
               absDragPosRef.current = null;
               grabOffsetRef.current = { x: 0, y: 0 };
               stickySnapRef.current = { x: null, y: null };
+              // Safety-net: clear any stale marquee left by onPointerDown not
+              // being matched by onPointerUp (browser eats pointer events during drag)
+              marqueeStartRef.current = null;
+              setMarquee(null);
               setIsDroppingVariant(false);
               setDropContainerId(null);
-              setDropZoneIdx(null);
+              setDropLineY(null);
               setAbsDragPos(null);
               setSnapGuides([]);
             }}
@@ -1111,11 +1490,12 @@ export default function BuilderCanvas() {
         altHoveredId={altHoveredId}
         altMode={altMode}
         isDroppingVariant={isDroppingVariant}
-        dropZoneIdx={dropZoneIdx}
+        dropLineY={dropLineY}
         dropContainerId={dropContainerId}
         pageNodes={pageNodes}
         gridOverlay={gridOverlay}
         onResizeStart={onResizeStart}
+        isDragging={isDragging}
       />
 
       {/* ── Context menu ── */}

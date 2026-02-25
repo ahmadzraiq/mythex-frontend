@@ -8,7 +8,7 @@
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
-export const SNAP_THRESHOLD = 1; // content-space px
+export const SNAP_THRESHOLD = 6; // content-space px
 
 export interface ContentRect {
   id: string;

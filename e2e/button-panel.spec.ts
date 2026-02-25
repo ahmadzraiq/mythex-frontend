@@ -22,11 +22,12 @@ async function dropButton(page: Page) {
   const item = page.locator('[draggable="true"]').filter({ hasText: 'Button' }).first();
   await expect(item).toBeVisible({ timeout: 8_000 });
   const frame = page.locator('[data-builder-page-frame]');
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     await item.dragTo(frame);
     const found = await page.locator('[data-builder-id]').first().waitFor({ state: 'visible', timeout: 5_000 }).then(() => true).catch(() => false);
     if (found) break;
-    if (i === 2) throw new Error('Failed to drop Button onto canvas after 3 attempts');
+    if (i === 4) throw new Error('Failed to drop Button onto canvas after 5 attempts');
+    await page.waitForTimeout(300);
   }
   await page.waitForTimeout(300);
 }

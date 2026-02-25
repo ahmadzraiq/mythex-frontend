@@ -29,12 +29,15 @@ export interface OverlayProps {
   altHoveredId: string | null;
   altMode: boolean;
   isDroppingVariant: boolean;
-  dropZoneIdx: number | null;
+  /** Canvas-div-relative Y (px) of the active insert line. Works for root and in-container. */
+  dropLineY: number | null;
   /** ID of the container node that will receive the drop (shown with blue border) */
   dropContainerId?: string | null;
   pageNodes: SDUINode[];
   gridOverlay: GridOverlayConfig;
   onResizeStart: (nodeId: string, handle: ResizeHandle, e: React.PointerEvent) => void;
+  /** When true, hides selection rings and resize handles so they don't float over the drag ghost. */
+  isDragging?: boolean;
 }
 
 // ─── DOM helpers ─────────────────────────────────────────────────────────────
@@ -58,6 +61,23 @@ function getComputedPadding(id: string, canvasEl: HTMLElement) {
     bottom: parseFloat(cs.paddingBottom) || 0,
     left:   parseFloat(cs.paddingLeft)   || 0,
   };
+}
+
+/** Returns true if a node is absolutely / fixed positioned (out of normal flow). */
+function isAbsoluteNode(id: string, pageNodes: SDUINode[]): boolean {
+  const find = (nodes: SDUINode[]): SDUINode | null => {
+    for (const n of nodes) {
+      if (n.id === id) return n;
+      if (n.children?.length) {
+        const found = find(n.children as SDUINode[]);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+  const node = find(pageNodes);
+  const cls = (node?.props as { className?: string })?.className ?? '';
+  return /\b(absolute|fixed)\b/.test(cls);
 }
 
 function getComputedFlex(id: string, canvasEl: HTMLElement) {
@@ -193,9 +213,14 @@ function GapFills({ nodeId, canvasEl, canvasRect }: {
 
   const parent = canvasEl.querySelector(`[data-builder-id="${nodeId}"]`);
   if (!parent) return null;
-  const directChildren = Array.from(parent.children).filter(
-    c => (c as HTMLElement).dataset?.builderId
-  ) as HTMLElement[];
+  // Only include in-flow children — absolute/fixed nodes are out of the flow
+  // and their positions are unrelated to the flex gap.
+  const directChildren = Array.from(parent.children).filter(c => {
+    const el = c as HTMLElement;
+    if (!el.dataset?.builderId) return false;
+    const pos = window.getComputedStyle(el).position;
+    return pos !== 'absolute' && pos !== 'fixed';
+  }) as HTMLElement[];
   if (directChildren.length < 2) return null;
 
   const fills: React.ReactNode[] = [];
@@ -313,11 +338,12 @@ export default function BuilderOverlay({
   altHoveredId,
   altMode,
   isDroppingVariant,
-  dropZoneIdx,
+  dropLineY,
   dropContainerId,
   pageNodes,
   gridOverlay,
   onResizeStart,
+  isDragging = false,
 }: OverlayProps) {
   // RAF loop keeps overlay in sync with scroll/animation
   const [tick, setTick] = useState(0);
@@ -366,23 +392,7 @@ export default function BuilderOverlay({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvasEl, altMode, altHoveredId, tick]);
 
-  const dropZoneYs = useMemo(() => {
-    if (!canvasEl || !isDroppingVariant) return [];
-    const ys: number[] = [];
-    for (let i = 0; i <= pageNodes.length; i++) {
-      if (i === 0) { ys.push(panY); continue; }
-      const prevNode = pageNodes[i - 1];
-      const el = prevNode.id ? canvasEl.querySelector(`[data-builder-id="${prevNode.id}"]`) : null;
-      if (el) {
-        const r = el.getBoundingClientRect();
-        ys.push(r.bottom - canvasDomRect.top);
-      } else {
-        ys.push(panY + i * 50 * zoom);
-      }
-    }
-    return ys;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDroppingVariant, pageNodes, canvasEl, panY, zoom, tick]);
+  // dropLineY is computed in onDragOver and passed in directly — no local memo needed.
 
   if (!canvasEl) return null;
 
@@ -392,30 +402,33 @@ export default function BuilderOverlay({
       {/* Grid overlay */}
       <GridOverlay panX={panX} panY={panY} zoom={zoom} config={gridOverlay} />
 
-      {/* Hover outline */}
-      {hoverRect && (() => {
+      {/* Hover outline — hidden while dragging to avoid floating labels */}
+      {!isDragging && hoverRect && (() => {
         const el = canvasEl.querySelector(`[data-builder-id="${hoveredId}"]`) as HTMLElement | null;
         const type = el?.dataset.builderType ?? 'node';
         const label = `${type}  ${Math.round(hoverRect.w / zoom)} × ${Math.round(hoverRect.h / zoom)}`;
         return <HoverOutline rect={hoverRect} label={label} />;
       })()}
 
-      {/* Single selection */}
-      {selectedRects.length === 1 && firstSel && (() => {
-        const padding = getComputedPadding(firstSel.id, canvasEl);
+      {/* Single selection — hidden while dragging so resize handles don't float over the ghost */}
+      {!isDragging && selectedRects.length === 1 && firstSel && (() => {
+        const isAbs = isAbsoluteNode(firstSel.id, pageNodes);
+        const padding = isAbs ? null : getComputedPadding(firstSel.id, canvasEl);
         return (
           <>
-            <CrosshairLines rect={firstSel.rect} />
+            {/* Crosshair alignment lines and gap fills are flow-layout concepts —
+                skip them for absolutely positioned nodes */}
+            {!isAbs && <CrosshairLines rect={firstSel.rect} />}
             <SelectionBox rect={firstSel.rect} nodeId={firstSel.id} onResizeStart={onResizeStart} />
             <DimensionTooltip rect={firstSel.rect} zoom={zoom} />
             {padding && <PaddingFills rect={firstSel.rect} padding={padding} zoom={zoom} />}
-            <GapFills nodeId={firstSel.id} canvasEl={canvasEl} zoom={zoom} canvasRect={canvasDomRect} />
+            {!isAbs && <GapFills nodeId={firstSel.id} canvasEl={canvasEl} zoom={zoom} canvasRect={canvasDomRect} />}
           </>
         );
       })()}
 
       {/* Multi-select: highlights + bounding box */}
-      {selectedRects.length > 1 && (
+      {!isDragging && selectedRects.length > 1 && (
         <>
           {selectedRects.map(({ id, rect }) => (
             <div key={id} data-testid="selection-ring" style={{ position: 'absolute', left: rect.x, top: rect.y, width: rect.w, height: rect.h, border: '1px solid #3b82f6', background: 'rgba(59,130,246,0.05)', pointerEvents: 'none' }} />
@@ -434,10 +447,10 @@ export default function BuilderOverlay({
         <DistanceLines selRect={firstSel.rect} tgtRect={altRect} />
       )}
 
-      {/* Drop zone lines (root-level) */}
-      {isDroppingVariant && dropZoneYs.map((y, i) => (
-        <DropZoneLine key={i} y={y} width={canvasEl.clientWidth} active={dropZoneIdx === i} />
-      ))}
+      {/* Insert indicator line — shown for any drop position (root or in-container) */}
+      {isDroppingVariant && dropLineY !== null && (
+        <DropZoneLine y={dropLineY} width={canvasEl.clientWidth} active={true} />
+      )}
 
       {/* Container drop highlight — blue border when dragging INTO a container */}
       {dropContainerId && (() => {

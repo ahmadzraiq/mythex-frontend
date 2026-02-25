@@ -160,6 +160,7 @@ export interface BuilderStore {
   addSection: (variantId: string, node: SDUINode, atIdx?: number) => void;
   addNode: (node: SDUINode, parentId?: string | null, atIdx?: number) => void;
   moveNode: (nodeId: string, newParentId: string | null, atIdx: number) => void;
+  moveNodes: (nodeIds: string[], newParentId: string | null, atIdx: number) => void;
   deleteNodes: (ids: string[]) => void;
   duplicateNodes: (ids: string[]) => void;
   groupNodes: (ids: string[]) => void;
@@ -263,6 +264,22 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
       if (newParentId === nodeId) return s;
       if (newParentId && findNode((findNode(s.pageNodes, nodeId)?.children ?? []) as SDUINode[], newParentId)) return s;
 
+      // Context-dependent nodes must stay inside their required parent type.
+      // e.g. ButtonText can only live inside a Button — moving it out crashes
+      // the renderer (useStyleContext returns undefined → destructure error).
+      const REQUIRED_PARENT: Record<string, string> = { ButtonText: 'Button' };
+      if (node.type && REQUIRED_PARENT[node.type]) {
+        const requiredType = REQUIRED_PARENT[node.type];
+        const newParent = newParentId ? findNode(s.pageNodes, newParentId) : null;
+        if (!newParent || newParent.type !== requiredType) return s;
+      }
+      // Also guard the destination: only allowed child types may enter certain parents.
+      if (newParentId) {
+        const ALLOWED: Record<string, Set<string>> = { Button: new Set(['ButtonText', 'NavIcon']) };
+        const newParent = findNode(s.pageNodes, newParentId);
+        if (newParent && ALLOWED[newParent.type] && !ALLOWED[newParent.type].has(node.type)) return s;
+      }
+
       // Find current parent to correctly adjust the target index
       const currentParent = findParentNode(s.pageNodes, nodeId);
       const currentParentId = currentParent?.id ?? null;
@@ -281,6 +298,60 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
       const withoutNode = removeNodesByIds(clone(s.pageNodes), new Set([nodeId]));
       const newNodes = insertNode(withoutNode, clone(node), newParentId, adjustedIdx);
       return { pageNodes: newNodes, selectedIds: [nodeId] };
+    });
+    get()._pushHistory();
+  },
+
+  moveNodes: (nodeIds, newParentId, atIdx) => {
+    set(s => {
+      // Guard: refuse to drop the selection into one of the nodes being moved.
+      // The UI's onDragOver should prevent this, but defend here too.
+      const nodeIdSet0 = new Set(nodeIds);
+      if (newParentId && nodeIdSet0.has(newParentId)) return s;
+
+      // Keep only the "topmost" IDs — if a node's ancestor is also in the list,
+      // skip it: it will be carried along as part of its ancestor's subtree.
+      // This prevents ButtonText (child of Button) from being inserted as an
+      // independent node when both Button and ButtonText happen to be selected.
+      const nodeIdSet = new Set(nodeIds);
+      const topMostIds = nodeIds.filter(id => {
+        let parent = findParentNode(s.pageNodes, id);
+        while (parent !== null && parent !== undefined) {
+          if (nodeIdSet.has(parent.id ?? '')) return false;
+          parent = findParentNode(s.pageNodes, parent.id ?? '');
+        }
+        return true;
+      });
+
+      // Collect valid nodes to move (filter out invalid/cyclic cases)
+      const nodesToMove: SDUINode[] = [];
+      for (const id of topMostIds) {
+        const found = findNode(s.pageNodes, id);
+        if (!found?.id) continue;
+        if (newParentId === found.id) continue;
+        if (newParentId && findNode((found.children ?? []) as SDUINode[], newParentId)) continue;
+        nodesToMove.push(clone(found));
+      }
+      if (nodesToMove.length === 0) return s;
+
+      // Count how many of the moving nodes are already in the target parent
+      // at indices BEFORE atIdx — these will be removed, shifting the target left.
+      const targetChildren = newParentId
+        ? ((findNode(s.pageNodes, newParentId)?.children ?? []) as SDUINode[])
+        : s.pageNodes;
+      const movingIds = new Set(nodesToMove.map(n => n.id!));
+      let removedBeforeTarget = 0;
+      for (let i = 0; i < atIdx && i < targetChildren.length; i++) {
+        if (movingIds.has(targetChildren[i].id ?? '')) removedBeforeTarget++;
+      }
+      const adjustedIdx = Math.max(0, atIdx - removedBeforeTarget);
+
+      // Remove all nodes in one pass, then insert consecutively at the target
+      let result = removeNodesByIds(clone(s.pageNodes), movingIds);
+      for (let i = 0; i < nodesToMove.length; i++) {
+        result = insertNode(result, nodesToMove[i], newParentId, adjustedIdx + i);
+      }
+      return { pageNodes: result, selectedIds: [...movingIds] };
     });
     get()._pushHistory();
   },
@@ -361,19 +432,38 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
         ? (parent.children as SDUINode[])
         : s.pageNodes;
       const idx = siblings.findIndex(n => n.id === id);
-      if (idx <= 0) return s;
+      if (idx < 0) return s;
+
+      const isAbsCls = (n: SDUINode) =>
+        /\b(absolute|fixed)\b/.test((n.props as { className?: string })?.className ?? '');
+      const currentIsAbs = isAbsCls(siblings[idx]);
+
+      // Absolute "Move Up" = bring forward = higher stacking = later DOM index.
+      // Flow    "Move Up" = earlier DOM index, skipping any abs siblings above.
+      let targetIdx: number;
+      if (currentIsAbs) {
+        if (idx >= siblings.length - 1) return s; // already on top
+        targetIdx = idx + 1;
+      } else {
+        if (idx <= 0) return s;
+        targetIdx = idx - 1;
+        while (targetIdx >= 0 && isAbsCls(siblings[targetIdx])) targetIdx--;
+        if (targetIdx < 0) return s;
+      }
+
       const newNodes = clone(s.pageNodes);
-      const swap = (arr: SDUINode[], i: number) => {
-        [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
+      const move = (arr: SDUINode[], from: number, to: number) => {
+        const [item] = arr.splice(from, 1);
+        arr.splice(to, 0, item);
       };
       if (!parent) {
-        swap(newNodes, idx);
+        move(newNodes, idx, targetIdx);
         return { pageNodes: newNodes };
       }
       return {
         pageNodes: patchNodeById(newNodes, parent.id!, p => {
           const ch = clone((p.children ?? []) as SDUINode[]);
-          swap(ch, idx);
+          move(ch, idx, targetIdx);
           return { ...p, children: ch };
         }),
       };
@@ -388,19 +478,38 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
         ? (parent.children as SDUINode[])
         : s.pageNodes;
       const idx = siblings.findIndex(n => n.id === id);
-      if (idx < 0 || idx >= siblings.length - 1) return s;
+      if (idx < 0) return s;
+
+      const isAbsCls = (n: SDUINode) =>
+        /\b(absolute|fixed)\b/.test((n.props as { className?: string })?.className ?? '');
+      const currentIsAbs = isAbsCls(siblings[idx]);
+
+      // Absolute "Move Down" = send backward = earlier DOM index (lower z-index).
+      // Flow    "Move Down" = later DOM index, skipping any abs siblings below.
+      let targetIdx: number;
+      if (currentIsAbs) {
+        if (idx <= 0) return s; // already at bottom of stacking
+        targetIdx = idx - 1;
+      } else {
+        if (idx >= siblings.length - 1) return s;
+        targetIdx = idx + 1;
+        while (targetIdx < siblings.length && isAbsCls(siblings[targetIdx])) targetIdx++;
+        if (targetIdx >= siblings.length) return s;
+      }
+
       const newNodes = clone(s.pageNodes);
-      const swap = (arr: SDUINode[], i: number) => {
-        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+      const move = (arr: SDUINode[], from: number, to: number) => {
+        const [item] = arr.splice(from, 1);
+        arr.splice(to, 0, item);
       };
       if (!parent) {
-        swap(newNodes, idx);
+        move(newNodes, idx, targetIdx);
         return { pageNodes: newNodes };
       }
       return {
         pageNodes: patchNodeById(newNodes, parent.id!, p => {
           const ch = clone((p.children ?? []) as SDUINode[]);
-          swap(ch, idx);
+          move(ch, idx, targetIdx);
           return { ...p, children: ch };
         }),
       };

@@ -274,6 +274,544 @@ This calls `store.select()` directly and is reliable. Do not rely on `clickFirst
 
 ---
 
+### 14. Drag ghost: original element visible during drag (double-image)
+
+**Root cause:** When dragging a non-absolute node, the browser shows a ghost copy following the cursor AND the original element stays fully opaque in place — creating a duplicate.
+
+**Fix:** In `onDragStart` (non-absolute path), one `requestAnimationFrame` after calling `setDragImage` (so the ghost snapshot is captured at full opacity), set `nodeEl.style.opacity = '0.3'` for all dragged elements and store them in `draggedElRef = useRef<HTMLElement[]>([])`. Restore in both `onDrop` and `onDragEnd` by iterating `draggedElRef.current`.
+
+**Key subtlety — `onDrop` clears the ref first:** `onDrop` sets `draggingNodeIdRef.current = null` before `onDragEnd` fires. So `onDragEnd` cannot query by node ID to restore opacity. Fix: use a dedicated `draggedElRef` (array of DOM elements) that is independent of `draggingNodeIdRef`. Both `onDrop` and `onDragEnd` clear it — whichever fires first wins, the second is a no-op.
+
+**Rule:** Never restore drag opacity via `draggingNodeIdRef` — that ref is cleared in `onDrop` before `onDragEnd` fires. Always use `draggedElRef` (the actual DOM elements captured at drag-start).
+
+**Ghost size inflation (canvas zoom) + composite ghost for multi-drag:**
+
+`setDragImage(nodeEl, ox, oy)` where `nodeEl` is inside a `transform: scale(zoom)` container captures the element at its SCREEN size (= CSS size × zoom). At zoom > 1 the ghost is inflated.
+
+Fix: build a ghost `div` appended to `document.body` (outside the scaled canvas) from clones of all dragged elements, positioned at their relative screen-space positions divided by `zoom`:
+
+```ts
+const rects = allDragIds.map(id => ({
+  el:   document.querySelector(`[data-builder-id="${id}"]`) as HTMLElement,
+  rect: document.querySelector(`[data-builder-id="${id}"]`)?.getBoundingClientRect(),
+})).filter(r => r.el && r.rect);
+
+const minX = Math.min(...rects.map(r => r.rect.left));
+const minY = Math.min(...rects.map(r => r.rect.top));
+
+const ghostEl = document.createElement('div');
+ghostEl.style.cssText = `position:fixed;left:-9999px;top:-9999px;pointer-events:none;width:${(maxX-minX)/zoom}px;height:${(maxY-minY)/zoom}px;`;
+document.body.appendChild(ghostEl);
+
+for (const { el, rect } of rects) {
+  const clone = el.cloneNode(true) as HTMLElement;
+  clone.style.position = 'absolute';
+  clone.style.left  = `${(rect.left - minX) / zoom}px`;
+  clone.style.top   = `${(rect.top  - minY) / zoom}px`;
+  clone.style.width  = `${rect.width  / zoom}px`;
+  clone.style.height = `${rect.height / zoom}px`;
+  clone.style.transform = '';
+  ghostEl.appendChild(clone);
+}
+
+e.dataTransfer.setDragImage(ghostEl, (e.clientX - minX) / zoom, (e.clientY - minY) / zoom);
+requestAnimationFrame(() => { document.body.removeChild(ghostEl); /* then fade originals */ });
+```
+
+**Rules:**
+- Always divide screen coordinates by `zoom` when building a ghost that lives outside the canvas.
+- For multi-drag, always build the composite ghost from ALL `allDragIds`, not just the primary node — this shows all selected elements moving together (Figma-style).
+
+---
+
+### 15. Resize handles float over the drag ghost
+
+**Root cause:** `BuilderOverlay` was not aware that a drag was in progress, so it kept rendering selection rings and resize handles on top of the ghost image.
+
+**Fix:** Added `isDragging: boolean` state to `_canvas.tsx` — set to `true` inside the `requestAnimationFrame` of `onDragStart`, cleared in both `onDrop` and `onDragEnd`. Pass `isDragging` as a prop to `BuilderOverlay`. In the overlay, gate the hover outline, single-selection ring, resize handles, multi-select highlights, crosshairs, and dimension tooltip behind `!isDragging`.
+
+**Rule:** Any new overlay element that would look wrong while dragging (e.g. labels, handles, distance lines) must also be gated with `!isDragging`.
+
+---
+
+### 18. Stale marquee-select after drag from empty canvas space
+
+**Root cause:** `onPointerDown` (canvas background) sets `marqueeStartRef.current` whenever a click lands on empty canvas (no node under cursor). When you then drag nodes that are already selected (via the `selectedIds` fallback in `onDragStart`), the HTML5 drag takes over and the browser stops firing pointer events — so `onPointerUp` (which normally clears `marqueeStartRef`) **never fires**. On the next mouse-move the engine still thinks a marquee is active and draws the selection rectangle.
+
+**Fix:**
+1. `onDragStart` — at the very top, clear `marqueeStartRef.current` and call `setMarquee(null)`.
+2. `onDragEnd` — clear them again as a safety net.
+
+```ts
+// onDragStart (first lines):
+if (marqueeStartRef.current) {
+  marqueeStartRef.current = null;
+  setMarquee(null);
+}
+```
+
+**Rule:** Any code path that transitions from pointer-down → HTML5 drag must clear `marqueeStartRef` immediately in `onDragStart`, because the browser eats the `pointerup` event that would normally do the cleanup.
+
+---
+
+### 16. Multi-select drag: clicking a selected node deselects others before drag starts
+
+**Root cause:** The capture overlay's `onPointerDown` called `select(hit.id, e.shiftKey)` unconditionally. Without shift, this replaced the entire multi-selection with just the clicked node — so by the time `onDragStart` fired, `selectedIds` only ever had one entry.
+
+**Fix:** Guard in `onPointerDown`:
+```tsx
+if (hit.kind === 'node') {
+  const { selectedIds: curIds } = useBuilderStore.getState();
+  // Only change selection if the node isn't already selected (or shift is held).
+  // Preserve multi-selection for drag; onPointerUp reduces it if no drag occurred.
+  if (!curIds.includes(hit.id) || e.shiftKey) {
+    select(hit.id, e.shiftKey);
+  }
+}
+```
+`onPointerUp` already handles reducing multi-selection to single on a plain click with no drag.
+
+**Rule:** `onPointerDown` on the capture overlay must NEVER replace an existing multi-selection when the clicked node is already selected without shift — doing so destroys multi-select drag before it starts.
+
+---
+
+### 17. Multi-select drag: only one node moves on drop
+
+**Root cause:** `onDrop` always called `moveNode(singleId, ...)` — no path for moving multiple selected nodes.
+
+**Fix:**
+1. Added `moveNodes(nodeIds[], newParentId, atIdx)` to `_store.ts` — removes all specified nodes in one pass, then inserts them consecutively at the target. Adjusts `atIdx` by counting how many of the moved nodes were already before the target index in the destination parent.
+2. In `onDragStart`, computed `allDragIds = selectedIds.includes(dragId) && selectedIds.length > 1 ? [...selectedIds] : [dragId]` and stored it in `multiDragIdsRef`.
+3. In `onDrop`, when `multiDragIdsRef.current.length > 1`, call `moveNodes(allIds, ...)` instead of `moveNode`.
+4. All nodes in `allDragIds` are faded (opacity 0.3) during drag; all are restored on `onDrop`/`onDragEnd`.
+
+**Rule:** Any drag-and-drop operation that could involve multiple selected nodes must use `moveNodes` (not repeated `moveNode` calls). Repeated single moves cause index drift and incorrect ordering.
+
+**Additional guard — topmost-only filter:** `moveNodes` must filter `nodeIds` to only the topmost nodes before moving. If a marquee-selection includes both a parent (e.g. `Button`) and its child (e.g. `ButtonText`), naively moving both independently inserts `ButtonText` as a sibling of `Button` — outside Gluestack's Button context — causing a hard crash (`useStyleContext` returns undefined). Fix: before collecting `nodesToMove`, walk each node's ancestor chain; if any ancestor is also in the move set, skip that node (it will ride along inside its ancestor's cloned subtree).
+
+```typescript
+const nodeIdSet = new Set(nodeIds);
+const topMostIds = nodeIds.filter(id => {
+  let parent = findParentNode(s.pageNodes, id);
+  while (parent !== null && parent !== undefined) {
+    if (nodeIdSet.has(parent.id ?? '')) return false; // ancestor also moving
+    parent = findParentNode(s.pageNodes, parent.id ?? '');
+  }
+  return true;
+});
+// use topMostIds instead of nodeIds for nodesToMove
+```
+
+---
+
+## §19 Multi-Drag Self-Drop Guard
+
+**Root cause:** The `isDroppingSelf` / `isDroppingIntoSelf` checks in `onDragOver` only examined `draggingNodeIdRef.current` — a single ID (the primary drag handle node). When dragging two buttons (btn-a primary, btn-b secondary), hovering over btn-b passed both checks and registered btn-b as a valid "drop inside" container — allowing the user to drop the selection into one of the selected nodes themselves.
+
+**Fix — `onDragOver` (UI layer):**
+Build a `Set` from `multiDragIdsRef.current` and check every dragged ID:
+```typescript
+const allDraggingIds = multiDragIdsRef.current.length > 0
+  ? multiDragIdsRef.current
+  : (draggingId ? [draggingId] : []);
+const draggingIdSet = new Set(allDraggingIds);
+
+const isDroppingSelf = draggingIdSet.has(nodeId);          // target is one of the dragged nodes
+const isDroppingIntoSelf = isContainer &&
+  allDraggingIds.some(id => !!findNode((nodeInTree?.children ?? []) as SDUINode[], id));
+```
+When `isDroppingSelf` is true the hover falls through to the before/after reorder path instead (still valid behaviour).
+
+**Fix — `moveNodes` (store layer, defense-in-depth):**
+Before any tree mutation, bail out early if `newParentId` is one of the nodes being moved:
+```typescript
+const nodeIdSet0 = new Set(nodeIds);
+if (newParentId && nodeIdSet0.has(newParentId)) return s; // cyclic drop → no-op
+```
+
+**Rule:** Both the UI guard (`onDragOver`) and the store guard (`moveNodes`) must reject cyclic drops. The UI guard prevents the drop indicator from showing; the store guard prevents any caller from accidentally completing the operation.
+
+---
+
+## §20 Drop-Line Tracking: Nearest-Gap Algorithm + Dragged-Node Transparency
+
+**Root cause — two related bugs:**
+
+1. **Line on self (multi-select):** After the §19 fix, `isDroppingSelf` fell through to the before/after path and still showed the blue indicator at the dragged node's own boundary. The cursor had to travel past the dragged node before seeing the correct indicator.
+
+2. **Line position lag (single drag):** The `insertIdx = relY < 0.5 ? idxInParent : idxInParent + 1` threshold jumps from "above node" to "below node" at the 50% midpoint — placing the line up to `H/2` pixels from the cursor for tall nodes, making it feel imprecise.
+
+**Fix — `onDragOver` in `_canvas.tsx`:**
+
+**a) Make dragged nodes transparent to hover:** Before the `if (hovEl)` branch, skip any hovered element whose ID is in `draggingIdSet`:
+```typescript
+const rawHovEl = findBuilderElAt(e.clientX, e.clientY);
+const hovEl = rawHovEl && draggingIdSet.has(rawHovEl.dataset.builderId ?? '')
+  ? null   // treat dragged nodes as transparent — fall through to nearest-gap path
+  : rawHovEl;
+```
+This eliminates the "line on self" bug and routes the cursor over a dragged node to the better nearest-gap algorithm below.
+
+**b) Nearest-gap algorithm for both paths:** When hovering over a non-container (or when no `hovEl`), compute the Y-midpoint of every adjacent gap between siblings and find the closest gap to the cursor:
+```typescript
+const gapMidpoints: number[] = [];
+for (let gi = 0; gi <= siblings.length; gi++) {
+  const prevBottom = prevEl?.getBoundingClientRect().bottom ?? rect.top + panYRef.current;
+  const nextTop    = nextEl?.getBoundingClientRect().top    ?? rect.top + panYRef.current;
+  gapMidpoints.push((prevBottom + nextTop) / 2);
+}
+let insertIdx = siblings.length, minDist = Infinity;
+for (let gi = 0; gi <= siblings.length; gi++) {
+  const dist = Math.abs(e.clientY - gapMidpoints[gi]);
+  if (dist < minDist) { minDist = dist; insertIdx = gi; }
+}
+```
+The blue line snaps to whichever gap the cursor is physically closest to — not a fixed 50% threshold within the hovered node.
+
+**`moveNodes` index convention:** `atIdx` is the original-tree index before which to insert. `moveNodes` subtracts `removedBeforeTarget` (nodes being moved that appear before `atIdx` in the original list) to get the final insert position after removal.
+- e.g. `moveNodes(['b0'], null, 3)` on `[b0,b1,b2,b3]` → b0 removed (was at 0<3, so subtract 1) → insert at 2 in `[b1,b2,b3]` → `[b1,b2,b0,b3]` ✓
+
+**Rule:** The `isDroppingSelf` check is now handled implicitly by treating dragged nodes as transparent. Never fall through to the before/after path for a dragged node — always use the nearest-gap algorithm.
+
+---
+
+## §23 Drop-Line Works in Containers (`dropLineY` replaces `dropZoneIdx`)
+
+**Root cause:** `dropZoneIdx` was an index into `dropZoneYs` — a useMemo that only enumerated ROOT-LEVEL node gaps. All in-container drops set `setDropZoneIdx(null)`, so no line was shown. Additionally, the "drop inside container" path always appended to `children.length` regardless of cursor position.
+
+**Fix — `_canvas.tsx`:** Replace `dropZoneIdx: number | null` and all `setDropZoneIdx` calls with `dropLineY: number | null` — a **direct canvas-div-relative Y pixel** position. Extract a shared `nearestGap(siblings, cursorY, canvas, canvasRect)` helper that returns `{insertIdx, lineY}` and call it from ALL three paths:
+1. **Drop inside container** (relY 0.2–0.8): call `nearestGap(children, ...)` to find the correct insert index and line Y within the container children. Sets both `dropContainerId` (blue border) and `dropLineY` (exact line).
+2. **Before/after** (edge of any node): call `nearestGap(siblings, ...)` — now works for sibling lists at any nesting level, not just root.
+3. **No hovered node** (empty space): call `nearestGap(pageNodes, ...)` — unchanged behaviour.
+
+**Fix — `_overlay.tsx`:** Remove `dropZoneYs` useMemo entirely. Add `dropLineY: number | null` prop. Render one `<DropZoneLine>` when `isDroppingVariant && dropLineY !== null`.
+
+**`nearestGap` helper contract:**
+```typescript
+function nearestGap(
+  siblings: SDUINode[],
+  cursorY: number,        // screen px (e.clientY)
+  canvasEl: HTMLElement,
+  canvasRect: DOMRect,    // canvas.getBoundingClientRect()
+): { insertIdx: number; lineY: number }
+// lineY = (prevEl?.bottom ?? nextEl?.top ?? canvasRect.top + panY) - canvasRect.top
+```
+
+**Rule:** Any time you add a new drop path or new container type, use `nearestGap` — never set `dropLineY` to a raw index or compute it from `dropZoneYs`.
+
+**§21 Gap Midpoint Boundary Fix (last/first position always reachable)**
+
+**Root cause:** When computing gap midpoints, the boundary fallback for a missing element was `rect.top + panYRef.current` (the top of the page frame). For the *last* gap (`nextEl = null`), this placed the midpoint near the page-frame top — far above the last node's bottom — making the "after last node" position unreachable by nearest-gap scoring.
+
+**Fix:** Use symmetric fallbacks: when `prevEl` is null use `nextEl.top`; when `nextEl` is null use `prevEl.bottom`. This anchors boundary gaps at the actual node edges:
+```typescript
+const rawPrevBottom = prevEl?.getBoundingClientRect().bottom;
+const rawNextTop    = nextEl?.getBoundingClientRect().top;
+const prevBottom = rawPrevBottom ?? rawNextTop ?? (rect.top + panYRef.current);
+const nextTop    = rawNextTop    ?? rawPrevBottom ?? (rect.top + panYRef.current);
+```
+Apply this pattern to **both** the `hovEl` siblings path and the root-level `nodes` path in `onDragOver`.
+
+**§22 Drop-Zone Lines — Show Only the Active Line**
+
+**Root cause:** The overlay rendered ALL `N+1` drop-zone lines (one per gap), with inactive ones shown as `rgba(59,130,246,0.4)` height-1 bars. Users saw a row of faint blue dashes instead of a single clear indicator.
+
+**Fix:** Render only the single active line:
+```tsx
+{/* Before (wrong): renders all N+1 lines, inactive ones are dim */}
+{isDroppingVariant && dropZoneYs.map((y, i) => (
+  <DropZoneLine key={i} y={y} width={...} active={dropZoneIdx === i} />
+))}
+
+{/* After (correct): renders only the one active line */}
+{isDroppingVariant && dropZoneIdx !== null && dropZoneYs[dropZoneIdx] !== undefined && (
+  <DropZoneLine y={dropZoneYs[dropZoneIdx]} width={...} active={true} />
+)}
+```
+**Rule:** Never render inactive drop-zone lines. The overlay should show at most one insert indicator at any time.
+
+---
+
+**§23 Drop-Line Works in Containers (`dropLineY` replaces `dropZoneIdx`)**
+
+**Root cause:** The old `dropZoneIdx` state encoded a position as an index into a list of pre-computed Y values. Those values were only calculated for root-level nodes; dragging inside a container always produced a null line or wrong position.
+
+**Fix:** Replace `dropZoneIdx` and `dropZoneYs` with `dropLineY: number | null` (canvas-relative Y). The `nearestGap` helper is called for ALL drop scenarios — root-level, before/after a node, and inside a container's children. The overlay receives `dropLineY` and renders one `<DropZoneLine>` when non-null.
+
+**Rule:** Any time you add a new drop scenario, call `nearestGap(siblings, e.clientY, canvas, rect)` and write the returned `lineY` to `dropLineY`. Never compute drop positions outside `nearestGap`.
+
+---
+
+**§24 Drag-Within-Container Stays in Container**
+
+**Root cause (two bugs):**
+1. `findBuilderElAt` returned the dragged node itself (still in DOM at 0.3 opacity). After replacing it with `hovEl = null`, the root-level `nearestGap` was used — placing the node at the canvas root.
+2. `isDroppingIntoSelf` was checking `findNode(hovEl.children, draggedId)` — TRUE when the dragged node IS a child of the hover container, which is the NORMAL re-order case. It should check the OPPOSITE direction: does the hover container live inside the dragged node's subtree (cycle prevention)?
+
+**Fix:**
+1. `findDropTargetElAt(x, y, skipIds)` — iterates past elements in `skipIds` (dragging IDs) to find the real container beneath.
+2. "Home container" skips the 0.2–0.8 relY edge-zone so a node always stays inside when hovering its own parent:
+```typescript
+const isHomeCont = isContainer && allDraggingIds.some(id => {
+  const p = findParentNode(pageNodes, id);
+  return p?.id === nodeId;
+});
+const inDropZone = isHomeCont ? true : (relY > 0.2 && relY < 0.8);
+```
+3. `isDroppingIntoSelf` correctly checks for cycles (hover container inside dragged subtree):
+```typescript
+const isDroppingIntoSelf = isContainer && allDraggingIds.some(id => {
+  const draggedNode = findNode(pageNodes, id);
+  if (!draggedNode?.children?.length) return false;
+  return !!findNode(draggedNode.children as SDUINode[], nodeId); // hover target inside dragged subtree?
+});
+```
+**Rule:** Never use `hovEl = null` when the dragged node is the top hit result. `isDroppingIntoSelf` must check "is the hover target a descendant of the dragged node?" NOT "is the dragged node a descendant of the hover target?".
+
+---
+
+**§27 Marquee vs Drag-From-Selection-Box**
+
+**Root cause:** `onPointerDown` set `marqueeStartRef` for ALL empty-space clicks — including clicks within the selection bounding box (where the user intends to drag the selection, not marquee). Then `onDragStart` would see `marqueeStartRef` set and cancel the drag.
+
+**Fix:**
+1. In `onPointerDown`, only set `marqueeStartRef` when the cursor is NOT inside any selected node's bounding box:
+```typescript
+const insideSelection = selectedIds.some(id => {
+  const r = document.querySelector(`[data-builder-id="${id}"]`)?.getBoundingClientRect();
+  return r && clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom;
+});
+if (!insideSelection) marqueeStartRef.current = { clientX, clientY };
+```
+2. In `onDragStart`, cancel the drag when `marqueeStartRef` is set (cursor is outside all selection bounds → user intends marquee, not drag):
+```typescript
+if (marqueeStartRef.current) { e.preventDefault(); return; }
+```
+
+**Rule:** The draggable capture overlay conflicts with pointer-based marquee. Always check `insideSelection` before setting `marqueeStartRef` so drags from the selection box are not mistakenly blocked.
+
+---
+
+**§28 Cmd-Click (metaKey) Multi-Select**
+
+**Root cause:** The capture overlay's `onPointerDown` pre-select guard checked `!e.shiftKey` but NOT `!e.metaKey`. A cmd-click on an unselected node would call `select(id, false)` (destroying the existing multi-selection), and then `onPointerUp` would call `select(id, true)` (toggle removes it) — net deselect.
+
+**Fix:** Guard with both `!e.shiftKey && !e.metaKey`:
+```typescript
+if (!e.shiftKey && !e.metaKey && !curIds.includes(hit.id)) {
+  select(hit.id, false); // instant pre-select for new node only
+}
+```
+**Rule:** Any modifier key that triggers a multi/toggle selection must be excluded from the `onPointerDown` immediate-select guard. Only a plain unmodified click on a NEW node should pre-select.
+
+---
+
+**§25 Click-to-Select — Single `select()` Call, No Double-Toggle**
+
+**Root cause:** The capture overlay's `onPointerDown` AND the canvas `onPointerUp` both called `select(id, shiftKey)`. Since `select(id, true)` **toggles** membership, two consecutive shift-clicks cancel each other — net no-op. Also, removing the `onPointerDown` call entirely broke visual feedback when drag started before `pointerup` fired.
+
+**Fix:**
+- Capture overlay `onPointerDown`: call `select(id, false)` **only** when the node is NOT already selected AND `!e.shiftKey`. This gives instant visual feedback for new clicks and ensures `selectedIds` is correct before `onDragStart` fires.
+- Shift-clicks (`e.shiftKey === true`): skip in `onPointerDown`, handle **once** in `onPointerUp` → single toggle.
+- Already-selected nodes: skip in `onPointerDown` to preserve multi-selection; `onPointerUp` reduces to single if no drag occurred.
+
+```typescript
+// onPointerDown (overlay):
+if (!e.shiftKey && !curIds.includes(hit.id)) {
+  select(hit.id, false);   // instant pre-select; idempotent on pointerup
+}
+// onPointerUp (canvas div):
+if (hit.kind === 'node') select(hit.id, e.shiftKey || e.metaKey); // shift toggles once
+```
+
+---
+
+**§26 Absolute Node + Multi-Select Drag**
+
+**Root cause:** The absolute-positioning path in `onDragOver` / `onDrop` checked only the PRIMARY dragged node's `className` for `absolute`. When the user had multiple nodes selected (including an absolute one) and dragged, the code entered the absolute path and moved ONLY that one node; all other selected nodes stayed in place.
+
+**Fix:** Guard the absolute path with `earlyAllDraggingIds.length <= 1`:
+```typescript
+if (isAbsPos && earlyAllDraggingIds.length <= 1) {
+  // single absolute node: free-form reposition
+  ...
+  return;
+}
+// Multi-drag: fall through to flow-drop path so all selected nodes move together
+```
+Same guard in `onDrop`: `if (isAbsNode && !isMultiDrag)`.
+
+**Rule:** The absolute-positioning path must never activate during multi-drag. All nodes in a multi-selection must move as a flow group.
+
+---
+
+---
+
+## §29 ButtonText Crash Guard — REQUIRED_PARENT + ALLOWED_CHILDREN
+
+**Root cause:** `ButtonText` uses `useStyleContext(SCOPE)` to read `variant/size/action` from its parent `Button`. Moving it outside a `Button` (via canvas DnD, layers DnD, or context menu) makes that context `undefined` → hard crash.
+
+**Fix:** `moveNode` in `_store.ts` validates both directions before any tree mutation:
+```typescript
+// Node requires a specific parent type
+const REQUIRED_PARENT: Record<string, string> = { ButtonText: 'Button' };
+if (REQUIRED_PARENT[node.type]) {
+  const newParent = newParentId ? findNode(s.pageNodes, newParentId) : null;
+  if (!newParent || newParent.type !== REQUIRED_PARENT[node.type]) return s;
+}
+// Parent only accepts specific child types
+const ALLOWED: Record<string, Set<string>> = { Button: new Set(['ButtonText', 'NavIcon']) };
+if (newParentId) {
+  const newParent = findNode(s.pageNodes, newParentId);
+  if (newParent && ALLOWED[newParent.type] && !ALLOWED[newParent.type].has(node.type)) return s;
+}
+```
+
+**Rule:** Any time you add a Gluestack compound component (like `CheckboxIndicator`, `RadioIndicator`, etc.) that uses `useStyleContext`, add it to `REQUIRED_PARENT` and the parent type to `ALLOWED` in `_store.ts`. The crash will occur even in the live preview — the guard must be in the store, not just the UI.
+
+---
+
+## §30 Layers Panel — Drag-to-Reorder + Drop-into-Empty-Container
+
+**Features implemented:**
+- Every `LayerRow` has `draggable` and full HTML5 DnD handlers (`onDragStart`, `onDragOver`, `onDrop`, `onDragEnd`).
+- `LayerDragState` tracks `{ dragId, dropTargetId, dropPosition: 'above' | 'inside' | 'below' }`.
+- Container rows use **thirds**: top 33% = above (blue top border), middle 34% = inside (blue outline), bottom 33% = below (blue bottom border). Non-container rows use top/bottom halves only.
+- `handleLayerDrop` handles all three positions:
+  - `'above'` / `'below'` → insert at `targetIdx` / `targetIdx + 1` in target's parent
+  - `'inside'` → `moveNode(dragId, dropTargetId, childCount)` — works even when the container has zero children
+- Chevron icon size increased from 8px → 13px.
+
+**Click-to-deselect:** The scrollable tree wrapper (`data-testid="layers-tree"`) has an `onClick` that calls `store.select(null)` when the click doesn't land on any `[data-layer-row]` element. Every `LayerRow` root `div` has `data-layer-row` to enable this check.
+
+**Multi-select in layers:** When `dragId` is in the current `selectedIds` AND `selectedIds.length > 1`, `handleLayerDrop` calls `moveNodes(selectedIds, ...)` instead of `moveNode`.
+
+**Rule:** `LAYER_CONTAINER_TYPES` (same set as `CONTAINER_TYPES` in `_canvas.tsx`) drives the thirds/halves decision. Keep it in sync when adding new container types.
+
+---
+
+## §31 moveNodeUp / moveNodeDown for Absolute Nodes
+
+**Root cause:** Absolute nodes use DOM order as their stacking axis (later = higher z-index). So "Move Up" = bring forward = higher DOM index, and "Move Down" = send backward = lower DOM index. This is the OPPOSITE of flow nodes.
+
+The old code had a shared early-return **before** checking `isAbsCls`:
+- `moveNodeUp`:   `if (idx <= 0) return s` — blocked the FIRST abs node from bringing forward.
+- `moveNodeDown`: `if (idx < 0 || idx >= siblings.length - 1) return s` — blocked the LAST abs node from sending backward.
+
+**Fix:** Move `isAbsCls` check BEFORE the boundary guard, then use per-branch boundary conditions:
+```typescript
+const isAbsCls = (n: SDUINode) => /\b(absolute|fixed)\b/.test(...);
+const currentIsAbs = isAbsCls(siblings[idx]);
+
+// moveNodeDown:
+if (currentIsAbs) {
+  if (idx <= 0) return s;          // already at bottom of stacking order
+  targetIdx = idx - 1;             // send backward = lower DOM index
+} else {
+  if (idx >= siblings.length - 1) return s;
+  targetIdx = idx + 1;             // move later, skipping abs siblings
+}
+
+// moveNodeUp (inverted):
+if (currentIsAbs) {
+  if (idx >= siblings.length - 1) return s;  // already on top
+  targetIdx = idx + 1;                        // bring forward = higher DOM index
+} else {
+  if (idx <= 0) return s;
+  targetIdx = idx - 1;            // move earlier, skipping abs siblings
+}
+```
+
+For flow nodes, the target index additionally skips over any `absolute`/`fixed` siblings in the chosen direction, so the user's reorder produces a visible layout change.
+
+**Rule:** Always compute `currentIsAbs` before any early return in `moveNodeUp`/`moveNodeDown`. The correct boundary for an abs node in "Move Down" is `idx <= 0` (not `idx >= length-1`).
+
+---
+
+## §32 Overlay — Suppress Flow Indicators for Absolute Nodes
+
+**No crosshairs / padding fills / gap fills for absolute nodes:**
+- Crosshair alignment lines are a flow-layout concept; abs nodes don't participate in flex layout.
+- Padding fills and gap fills computed from sibling rects are meaningless for abs-positioned children.
+
+**Fix in `_overlay.tsx`:**
+1. `isAbsoluteNode(id, pageNodes)` helper — regex-checks `absolute|fixed` in the node's `className`.
+2. For single selection: skip `CrosshairLines`, `PaddingFills`, and `GapFills` when `isAbs`.
+3. `GapFills` component: filter `directChildren` to exclude `absolute`/`fixed` positioned elements (checked via `window.getComputedStyle(el).position`). Prevents phantom gap fills in containers that mix flow and abs children.
+
+**Fix in `_canvas.tsx` (`onDragStart`):**
+`setIsDragging(true)` was only called in the composite-ghost path (multi-drag). Added it to the single absolute node path too (inside the `requestAnimationFrame` that removes the ghost), so all overlay indicators are hidden during live abs drag.
+
+**Rule:** Before rendering any flow-layout overlay (crosshairs, gap fills, padding fills, drop-zone lines), check `isAbsoluteNode`. Absolute nodes only need the selection box, resize handles, and dimension tooltip.
+
+---
+
+## §33 Abs Drag Hover — Correct Effective Parent Resolution
+
+**Root cause (two cases):**
+
+**Case A:** Hovering over another absolute node (e.g. dragging abs-button1 over abs-button2). If button2 has a `ButtonText` child, `hovIsContainer = true`. The code set `effectiveParentId = hovId` (button2), treating it as a drop container. When the cursor touched button2's top edge and briefly exited, `effectiveParentId` flipped to `null` (same as `currentParentId`), clearing the container highlight.
+
+**Fix A:** After computing `hovIsContainer`, also check if the hovered node is itself `absolute`/`fixed`. If it is, skip the container path:
+```typescript
+const hovCls = (hovNode?.props as { className?: string })?.className ?? '';
+const hovIsAbs = /\b(absolute|fixed)\b/.test(hovCls);
+if (hovIsContainer && !hovIsAbs) {
+  effectiveParentId = hovId; // flow container → valid drop target
+} else {
+  // leaf OR abs node → use its parent
+}
+```
+
+**Case B:** Cursor moves over `ButtonText` (inside an abs `Button`). `ButtonText` is not abs, so `hovIsAbs = false`. Resolving `leafParent = Button` returns the abs Button as parent — same problem.
+
+**Fix B:** In the `else` branch, walk up the ancestor chain until finding a non-absolute parent:
+```typescript
+let resolvedParent = findParentNode(pNodes, hovId);
+while (resolvedParent?.id) {
+  const pCls = (resolvedParent.props as { className?: string })?.className ?? '';
+  if (/\b(absolute|fixed)\b/.test(pCls)) {
+    resolvedParent = findParentNode(pNodes, resolvedParent.id); // keep walking up
+  } else {
+    break;
+  }
+}
+effectiveParentId = resolvedParent?.id ?? null;
+```
+
+**Rule:** When resolving the effective drop parent for an absolute drag, always walk up past any absolute/fixed ancestors. An absolute node is a sibling in stacking space, never a drop container.
+
+---
+
+## §34 Abs Drag Live Preview — Cross-Container Position Correction
+
+**Root cause:** When dragging an absolute node and hovering over a DIFFERENT container (not its current parent), the position `x/y` is computed relative to the *effective (target) parent*:
+```typescript
+rawX = (e.clientX - pr.left - grab.x) / z  // pr = effective parent's rect
+```
+Then `nodeEl.style.left = x` is applied immediately. But the node is still in its ACTUAL DOM parent (not reparented yet). CSS `left/top` for an absolute element is relative to its nearest positioned ancestor — the actual parent. The two containers have different viewport origins → the node jumps.
+
+**Fix:** Keep `x/y` unchanged for the drop (they're correct for the target parent after reparenting). For the live DOM update only, offset by the difference between the two containers' viewport origins:
+```typescript
+let liveLeft = x, liveTop = y;
+if (effectiveParentId !== currentParentId) {
+  const actualParentEl = currentParentId
+    ? document.querySelector(`[data-builder-id="${currentParentId}"]`)
+    : document.querySelector('[data-builder-page-frame]');
+  if (actualParentEl) {
+    const ar = actualParentEl.getBoundingClientRect();
+    liveLeft = x + (pr.left - ar.left) / z;
+    liveTop  = y + (pr.top  - ar.top)  / z;
+  }
+}
+nodeEl.style.left = `${liveLeft}px`;
+nodeEl.style.top  = `${liveTop}px`;
+```
+
+**Rule:** When applying a live DOM position preview during an abs drag across container boundaries, ALWAYS adjust by `(effectiveParent.origin - actualParent.origin) / zoom`. The drop coordinates (`x/y`) remain in effective-parent space and are applied correctly after `moveNode` reparents the node on drop.
+
+---
+
 ## Component Type Classification (Right Panel)
 
 ```ts
@@ -285,3 +823,92 @@ const showLayout   = isContainer;  // Auto Layout + Alignment sections
 ```
 
 **Rule:** Never show Auto Layout / Gap / Alignment sections for Button or other leaf widgets. Adding gap to a Button corrupts its internal Gluestack layout and makes it disappear.
+
+---
+
+## E2E Tests — Known Patterns and Pitfalls
+
+### Color Inputs: Write to BOTH className and style
+
+**Problem:** Text color and stroke (border) color pickers write to `className` as Tailwind arbitrary classes (`text-[hex]`, `border-[hex]`). Tests that check `style.color` or `style.borderColor` will fail.
+
+**Fix:** Always write to BOTH when handling color changes:
+```tsx
+// Stroke color (input-stroke-color)
+onChange={hex => {
+  const cleaned = cls.replace(/\bborder-\[[^\]]+\]/g, '').replace(/\s+/g, ' ').trim();
+  patchCls(hex ? `${cleaned} border-[${hex}]`.trim() : cleaned);
+  patchStyle({ borderColor: hex || '' });   // also update inline style
+}}
+
+// Text color (input-text-color)
+onChange={hex => {
+  const cleaned = cls.replace(/\btext-\[[^\]]+\]/g, '').replace(/\s+/g, ' ').trim();
+  patchCls(hex ? `${cleaned} text-[${hex}]`.trim() : cleaned);
+  patchStyle({ color: hex || '' });   // also update inline style
+}}
+```
+
+---
+
+### Gap Mode ⇔ Button: Use data-testid, Not getByText
+
+**Problem:** For Box nodes, there are THREE `⇔` icons in the right panel: (1) `self-stretch` in Self Alignment, (2) `Flip H` in Transform, (3) `Space-between` in Auto Layout Gap Mode. Using `getByText('⇔').nth(1)` hits Flip H, not Gap Mode.
+
+**Fix:** The Gap Mode space-between button has `data-testid="gap-mode-space-between"`. Always use it:
+```typescript
+await page.locator('[data-testid="gap-mode-space-between"]').click();
+```
+
+---
+
+### Alignment / Gap: Requires Container Node in Tests
+
+**Problem:** Auto Layout (Gap) and Alignment sections only render when `showLayout = true` (container nodes). Tests that drop a `Button` and then look for `input-gap` or `alignment-cell` will time out because these elements don't render for leaf widgets.
+
+**Fix:** Drop a `Box` (or `VStack`/`HStack`) when testing alignment or gap:
+```typescript
+await dropComponent(page, 'Box');   // NOT 'Button'
+await selectFirstRootNodeViaLayers(page);
+// Now alignment-cell and input-gap are visible
+```
+
+---
+
+### Drag From Left Panel Into Container: Use dispatchEvent
+
+**Problem:** `dragTo(containerEl)` fails when targeting an element inside the canvas page frame because the transparent capture overlay (`data-builder-overlay="capture"`) intercepts Playwright's synthetic mouse events, preventing the drop from landing.
+
+**Fix:** Use `dispatchEvent` to fire HTML5 DnD events directly on the canvas. The canvas `onDrop` handler reads `text/primitive-node` from `dataTransfer`:
+```typescript
+const containerBox = await page.locator('[data-builder-id="my-box"]').boundingBox();
+const cx = containerBox.x + containerBox.width / 2;
+const cy = containerBox.y + containerBox.height / 2;
+
+await page.evaluate(async ({ cx, cy, primitiveStr }) => {
+  const canvas = document.querySelector('[data-testid="builder-canvas"]') as HTMLElement;
+  const dt = new DataTransfer();
+  dt.items.add(primitiveStr, 'text/primitive-node');
+  canvas?.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt, clientX: cx, clientY: cy }));
+  await new Promise(r => setTimeout(r, 150));  // let dragover settle the dropTargetRef
+  canvas?.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt, clientX: cx, clientY: cy }));
+}, { cx, cy, primitiveStr: JSON.stringify(primitiveNode) });
+```
+
+**Note:** `dragTo(frame)` (targeting the whole page frame) still works for dropping at root level — only targeting specific elements inside the frame fails.
+
+---
+
+### Padding Inputs Write to Style, Not className
+
+**Rule:** Individual padding inputs (`input-pad-top`, `input-pad-right`, etc.) write to `props.style` via `patchStyle`. Tests must check `style.paddingTop` etc., not `className`.
+
+**Exception:** `input-pad-h` (combined H padding) also writes `px-[${px}px]` to `className` (for the BP-35 regression test: verifying Button background stays non-transparent when className is set).
+
+---
+
+### Flaky dropButton / dropComponent: Increase Retries
+
+**Problem:** When running 280 tests with 5 workers, `dropButton` and `dropComponent` occasionally time out on `waitFor('[data-builder-id]')` due to resource contention.
+
+**Fix:** `dropButton` in `button-panel.spec.ts` retries up to 5 times with a 300ms wait between retries. Similarly, always run the full suite with `--retries=1` in CI to handle environment-level flakiness gracefully.

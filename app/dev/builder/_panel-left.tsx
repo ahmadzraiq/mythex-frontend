@@ -19,7 +19,8 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { useBuilderStore } from './_store';
+import { useBuilderStore, findParentNode, findNode } from './_store';
+import type { BuilderStore } from './_store';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import { sectionLibrary } from '@/lib/ai/section-library';
 
@@ -108,6 +109,23 @@ function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps) {
   );
 }
 
+// ─── Layer drag state (shared across the whole tree) ─────────────────────────
+
+// Container types that can receive children in the layers panel
+const LAYER_CONTAINER_TYPES = new Set([
+  'Box','VStack','HStack','ScrollView','View','Card','SafeAreaView','Pressable',
+]);
+
+interface LayerDragState {
+  dragId: string | null;
+  /** ID of the row currently under the cursor */
+  dropTargetId: string | null;
+  /** 'above' = insert before, 'inside' = nest into container, 'below' = insert after */
+  dropPosition: 'above' | 'inside' | 'below';
+}
+
+const LAYER_DRAG_KEY = 'text/layer-node-id';
+
 // ─── Layer Row ────────────────────────────────────────────────────────────────
 
 interface LayerRowProps {
@@ -119,6 +137,10 @@ interface LayerRowProps {
   isHidden: boolean;
   isLocked: boolean;
   hasChildren: boolean;
+  isContainer: boolean;        // can receive children
+  isDragOverAbove: boolean;    // blue insert-line above this row
+  isDragOverBelow: boolean;    // blue insert-line below this row
+  isDragOverInside: boolean;   // blue outline = drop inside (empty container)
   onSelect: (id: string, multi: boolean) => void;
   onHover: (id: string | null) => void;
   onToggleExpand: (id: string) => void;
@@ -126,6 +148,9 @@ interface LayerRowProps {
   onRename: (id: string, newId: string) => void;
   onToggleVisibility: (id: string) => void;
   onToggleLock: (id: string) => void;
+  onLayerDragStart: (id: string) => void;
+  onLayerDragOver: (id: string, pos: 'above' | 'inside' | 'below') => void;
+  onLayerDrop: () => void;
 }
 
 function LayerRow({
@@ -137,6 +162,10 @@ function LayerRow({
   isHidden,
   isLocked,
   hasChildren,
+  isContainer,
+  isDragOverAbove,
+  isDragOverBelow,
+  isDragOverInside,
   onSelect,
   onHover,
   onToggleExpand,
@@ -144,6 +173,9 @@ function LayerRow({
   onRename,
   onToggleVisibility,
   onToggleLock,
+  onLayerDragStart,
+  onLayerDragOver,
+  onLayerDrop,
 }: LayerRowProps) {
   const nodeId = (node as { id?: string }).id ?? node.type;
   const [editing, setEditing] = useState(false);
@@ -177,7 +209,9 @@ function LayerRow({
   return (
     <div
       data-testid="layer-row"
+      data-layer-row
       data-node-id={nodeId}
+      draggable
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -186,21 +220,52 @@ function LayerRow({
         paddingRight: 4,
         height: 28,
         background: bg,
-        cursor: 'pointer',
+        cursor: 'grab',
         opacity: isHidden ? 0.4 : 1,
         userSelect: 'none',
         borderRadius: 3,
         margin: '1px 4px',
+        position: 'relative',
+        borderTop:    isDragOverAbove  ? '2px solid #3b82f6' : '2px solid transparent',
+        borderBottom: isDragOverBelow  ? '2px solid #3b82f6' : '2px solid transparent',
+        outline:      isDragOverInside ? '2px solid #3b82f6' : 'none',
+        outlineOffset: '-2px',
       }}
       onClick={e => onSelect(nodeId, e.shiftKey || e.metaKey)}
       onMouseEnter={() => onHover(nodeId)}
       onMouseLeave={() => onHover(null)}
       onDoubleClick={startEdit}
       onContextMenu={e => { e.preventDefault(); onContextMenu(nodeId, e.clientX, e.clientY); }}
+      onDragStart={e => {
+        e.dataTransfer.setData(LAYER_DRAG_KEY, nodeId);
+        e.dataTransfer.effectAllowed = 'move';
+        onLayerDragStart(nodeId);
+      }}
+      onDragOver={e => {
+        if (!e.dataTransfer.types.includes(LAYER_DRAG_KEY)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        const relY = (e.clientY - rect.top) / rect.height;
+        // For containers: top-third = above, middle = inside, bottom-third = below.
+        // For leaf nodes: top-half = above, bottom-half = below.
+        let pos: 'above' | 'inside' | 'below';
+        if (isContainer) {
+          pos = relY < 0.33 ? 'above' : relY < 0.67 ? 'inside' : 'below';
+        } else {
+          pos = relY < 0.5 ? 'above' : 'below';
+        }
+        onLayerDragOver(nodeId, pos);
+      }}
+      onDrop={e => {
+        e.preventDefault();
+        onLayerDrop();
+      }}
+      onDragEnd={() => onLayerDrop()}
     >
-      {/* Expand chevron */}
+      {/* Expand chevron — bigger, easier to click */}
       <span
-        style={{ fontSize: 8, width: 12, color: '#6b7280', cursor: 'pointer', flexShrink: 0 }}
+        style={{ fontSize: 13, width: 14, color: '#9ca3af', cursor: 'pointer', flexShrink: 0, lineHeight: 1, textAlign: 'center' }}
         onClick={e => { e.stopPropagation(); if (hasChildren) onToggleExpand(nodeId); }}
       >
         {hasChildren ? (isExpanded ? '▾' : '▸') : ''}
@@ -221,7 +286,7 @@ function LayerRow({
             onClick={e => e.stopPropagation()}
           />
         ) : (
-          <span style={{ fontSize: 11, color: isSelected ? '#fff' : '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: 11, color: isSelected ? '#fff' : '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
             {nodeId}
           </span>
         )}
@@ -264,13 +329,19 @@ function LayerTree({
   depth = 0,
   store,
   contextMenuHandlers,
+  dragState,
+  onLayerDragStart,
+  onLayerDragOver,
+  onLayerDrop,
 }: {
   nodes: SDUINode[];
   depth?: number;
-  store: ReturnType<typeof useBuilderStore>;
-  contextMenuHandlers: {
-    show: (id: string, x: number, y: number) => void;
-  };
+  store: BuilderStore;
+  contextMenuHandlers: { show: (id: string, x: number, y: number) => void };
+  dragState: LayerDragState;
+  onLayerDragStart: (id: string) => void;
+  onLayerDragOver: (id: string, pos: 'above' | 'inside' | 'below') => void;
+  onLayerDrop: () => void;
 }) {
   if (!nodes?.length) return null;
 
@@ -281,6 +352,10 @@ function LayerTree({
         const children = node.children as SDUINode[] | undefined;
         const hasChildren = !!(children?.length);
         const isExpanded = store.expandedIds.has(nodeId);
+        const isContainer = LAYER_CONTAINER_TYPES.has(node.type) || hasChildren;
+        const isDragOverAbove  = dragState.dropTargetId === nodeId && dragState.dropPosition === 'above';
+        const isDragOverBelow  = dragState.dropTargetId === nodeId && dragState.dropPosition === 'below';
+        const isDragOverInside = dragState.dropTargetId === nodeId && dragState.dropPosition === 'inside';
 
         return (
           <React.Fragment key={nodeId}>
@@ -292,7 +367,11 @@ function LayerTree({
               isExpanded={isExpanded}
               isHidden={store.hiddenIds.has(nodeId)}
               isLocked={store.lockedIds.has(nodeId)}
-              hasChildren={hasChildren}
+          hasChildren={hasChildren}
+            isContainer={isContainer}
+            isDragOverAbove={isDragOverAbove}
+            isDragOverBelow={isDragOverBelow}
+            isDragOverInside={isDragOverInside}
               onSelect={store.select}
               onHover={store.hover}
               onToggleExpand={store.toggleExpanded}
@@ -300,6 +379,9 @@ function LayerTree({
               onRename={store.renameNode}
               onToggleVisibility={store.toggleVisibility}
               onToggleLock={store.toggleLock}
+              onLayerDragStart={onLayerDragStart}
+              onLayerDragOver={onLayerDragOver}
+              onLayerDrop={onLayerDrop}
             />
             {hasChildren && isExpanded && (
               <LayerTree
@@ -307,6 +389,10 @@ function LayerTree({
                 depth={depth + 1}
                 store={store}
                 contextMenuHandlers={contextMenuHandlers}
+                dragState={dragState}
+                onLayerDragStart={onLayerDragStart}
+                onLayerDragOver={onLayerDragOver}
+                onLayerDrop={onLayerDrop}
               />
             )}
           </React.Fragment>
@@ -499,8 +585,58 @@ export default function PanelLeft() {
   const [tab, setTab] = useState<'layers' | 'components'>('components');
   const [search, setSearch] = useState('');
   const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [layerDrag, setLayerDrag] = useState<LayerDragState>({ dragId: null, dropTargetId: null, dropPosition: 'above' });
 
   const store = useBuilderStore();
+
+  const handleLayerDragStart = useCallback((id: string) => {
+    setLayerDrag({ dragId: id, dropTargetId: null, dropPosition: 'above' });
+  }, []);
+
+  const handleLayerDragOver = useCallback((hoverId: string, pos: 'above' | 'inside' | 'below') => {
+    setLayerDrag(prev => {
+      if (!prev.dragId || prev.dragId === hoverId) return prev;
+      if (prev.dropTargetId === hoverId && prev.dropPosition === pos) return prev;
+      return { ...prev, dropTargetId: hoverId, dropPosition: pos };
+    });
+  }, []);
+
+  const handleLayerDrop = useCallback(() => {
+    const { dragId, dropTargetId, dropPosition } = layerDrag;
+    if (dragId && dropTargetId && dragId !== dropTargetId) {
+      const { pageNodes, moveNode, moveNodes, selectedIds } = store;
+
+      if (dropPosition === 'inside') {
+        // Nest into the target node as its last child
+        const targetNode = findNode(pageNodes, dropTargetId);
+        const childCount = (targetNode?.children as SDUINode[] | undefined)?.length ?? 0;
+        if (selectedIds.includes(dragId) && selectedIds.length > 1) {
+          moveNodes(selectedIds, dropTargetId, childCount);
+        } else {
+          moveNode(dragId, dropTargetId, childCount);
+        }
+      } else {
+        // Insert before or after target in target's parent
+        const targetParent = findParentNode(pageNodes, dropTargetId);
+        const siblings: SDUINode[] = targetParent
+          ? (targetParent.children as SDUINode[])
+          : pageNodes;
+        const targetIdx = siblings.findIndex(n => (n as { id?: string }).id === dropTargetId);
+
+        if (targetIdx >= 0) {
+          const insertIdx = dropPosition === 'above' ? targetIdx : targetIdx + 1;
+          const targetParentId = (targetParent as { id?: string } | null)?.id ?? null;
+
+          if (selectedIds.includes(dragId) && selectedIds.length > 1) {
+            moveNodes(selectedIds, targetParentId, insertIdx);
+          } else {
+            moveNode(dragId, targetParentId, insertIdx);
+          }
+        }
+      }
+    }
+    setLayerDrag({ dragId: null, dropTargetId: null, dropPosition: 'above' });
+  }, [layerDrag, store]);
 
   const filteredNodes = useMemo(() => {
     if (!search.trim()) return store.pageNodes;
@@ -570,11 +706,24 @@ export default function PanelLeft() {
           )}
 
           {/* Tree */}
-          <div style={{ flex: 1, overflow: 'auto', padding: '4px 0' }}>
+          <div
+            data-testid="layers-tree"
+            style={{ flex: 1, overflow: 'auto', padding: '4px 0' }}
+            onClick={e => {
+              // Deselect when clicking on empty space (not on a layer row)
+              if (!(e.target as HTMLElement).closest('[data-layer-row]')) {
+                store.select(null);
+              }
+            }}
+          >
             <LayerTree
               nodes={filteredNodes as SDUINode[]}
               store={store}
               contextMenuHandlers={ctxHandlers}
+              dragState={layerDrag}
+              onLayerDragStart={handleLayerDragStart}
+              onLayerDragOver={handleLayerDragOver}
+              onLayerDrop={handleLayerDrop}
             />
           </div>
         </>
