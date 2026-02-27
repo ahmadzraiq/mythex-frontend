@@ -104,11 +104,34 @@ function SectionHeader({ title, children }: { title: string; children?: React.Re
   );
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/**
+ * Read the current style object for a node directly from the Zustand store.
+ * Used in patchStyle's debounced flush so the merge always uses the LATEST
+ * committed style (not a stale React-render closure value). This prevents a
+ * direct store.patchProp call (e.g. rotate) from being wiped when the debounce
+ * timer fires with an outdated nodeStyle from a previous render cycle.
+ */
+function readNodeStyle(nodeId: string): Record<string, string> {
+  function find(nodes: unknown[]): Record<string, string> | null {
+    for (const n of nodes as Array<{ id?: string; props?: { style?: Record<string, string> }; children?: unknown[] }>) {
+      if (n.id === nodeId) return n.props?.style ?? {};
+      if (n.children?.length) {
+        const f = find(n.children);
+        if (f !== null) return f;
+      }
+    }
+    return null;
+  }
+  return find(useBuilderStore.getState().pageNodes) ?? {};
+}
+
 // ─── Inputs ───────────────────────────────────────────────────────────────────
 
 function NumberInput({
-  label, value, onChange, min = 0, max = 9999, step = 1, testId,
-}: { label: string; value: number | string; onChange: (v: number) => void; min?: number; max?: number; step?: number; testId?: string }) {
+  label, value, onChange, min = 0, max = 9999, step = 1, testId, onFocus,
+}: { label: string; value: number | string; onChange: (v: number) => void; min?: number; max?: number; step?: number; testId?: string; onFocus?: () => void }) {
   const [local, setLocal] = useState(String(value));
   useEffect(() => setLocal(String(value)), [value]);
 
@@ -127,6 +150,7 @@ function NumberInput({
         data-testid={testId}
         type="number" min={min} max={max} step={step} value={local}
         onChange={e => handleChange(e.target.value)}
+        onFocus={onFocus}
         onBlur={() => {
           // Only fire if the user actually changed the value from what the store has.
           // This prevents spurious patchProp calls (e.g. gap → 'gap-0') when the
@@ -209,11 +233,67 @@ function DesignTab({ node }: { node: SDUINode }) {
     () => (node.props as { style?: Record<string, string> })?.style ?? {},
     [node]
   );
-  const patchStyle = useCallback((patch: Record<string, string>) => {
-    store.patchProp(nodeId, 'props.style', { ...nodeStyle, ...patch });
-    commitHistory();
+  const pendingStyleRef   = useRef<Record<string, string>>({});
+  const pendingNodeIdRef  = useRef<string>(nodeId);
+  const styleFlushTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // When user blurs an input by clicking another element, React may re-render with the NEW
+  // selection before blur fires. We capture the node on focus; delay the nodeId-sync so
+  // blur-triggered commits use the correct (pre-focus) node.
+  const editingNodeIdRef  = useRef<string>(nodeId);
+  useEffect(() => {
+    const t = setTimeout(() => { editingNodeIdRef.current = nodeId; }, 0);
+    return () => clearTimeout(t);
+  }, [nodeId]);
+
+  const patchStyle = useCallback((patch: Record<string, string>, overrideNodeId?: string) => {
+    const targetId = overrideNodeId ?? editingNodeIdRef.current ?? nodeId;
+    pendingNodeIdRef.current = targetId;
+
+    // 1. Apply directly to DOM — zero React re-renders during rapid input
+    const el = document.querySelector(`[data-builder-id="${targetId}"]`) as HTMLElement | null;
+    if (el) {
+      for (const [k, v] of Object.entries(patch)) {
+        (el.style as unknown as Record<string, string>)[k] = v ?? '';
+      }
+    }
+    // 2. Trigger an immediate overlay ring update via the store callback
+    useBuilderStore.getState()._requestOverlayUpdate();
+
+    // 3. Accumulate and debounce the Zustand commit (one re-render after gesture settles).
+    pendingStyleRef.current = { ...pendingStyleRef.current, ...patch };
+    if (styleFlushTimer.current) clearTimeout(styleFlushTimer.current);
+    styleFlushTimer.current = setTimeout(() => {
+      const id = pendingNodeIdRef.current;
+      const latestStyle = readNodeStyle(id);
+      const merged = { ...latestStyle, ...pendingStyleRef.current };
+      const filtered = Object.fromEntries(Object.entries(merged).filter(([, v]) => v !== '' && v !== undefined));
+      store.patchProp(id, 'props.style', filtered);
+      pendingStyleRef.current = {};
+      styleFlushTimer.current = null;
+      commitHistory();
+    }, 80);
+  // nodeStyle intentionally excluded from deps — we read live from store in the timer
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodeId, nodeStyle, store]);
+  }, [nodeId, store, commitHistory]);
+
+  // Flush any pending style patch immediately when the selected node changes.
+  useEffect(() => {
+    return () => {
+      if (styleFlushTimer.current) {
+        clearTimeout(styleFlushTimer.current);
+        if (Object.keys(pendingStyleRef.current).length > 0) {
+          const id = pendingNodeIdRef.current;
+          const latestStyle = readNodeStyle(id);
+          const merged = { ...latestStyle, ...pendingStyleRef.current };
+          const filtered = Object.fromEntries(Object.entries(merged).filter(([, v]) => v !== '' && v !== undefined));
+          store.patchProp(id, 'props.style', filtered);
+          pendingStyleRef.current = {};
+        }
+        styleFlushTimer.current = null;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodeId]);
 
   const patchCls = useCallback((newCls: string) => {
     store.patchProp(nodeId, 'props.className', newCls);
@@ -283,9 +363,13 @@ function DesignTab({ node }: { node: SDUINode }) {
   // ── Component type classification ────────────────────────────────────────────
   // Controls which panel sections are shown. Only show relevant controls
   // per node type to avoid corrupting Gluestack's internal layout.
-  const isContainer  = ['Box', 'VStack', 'HStack', 'Pressable'].includes(node.type);
-  const isTextNode   = ['Text', 'Heading', 'ButtonText'].includes(node.type);
-  const isLeafWidget = ['Button', 'Input', 'Switch', 'Checkbox', 'NavIcon', 'Image'].includes(node.type);
+  // Containers: show Auto Layout + Alignment sections so children can be rearranged.
+  // Includes Gluestack compounds whose children ARE real SDUI nodes (Checkbox, Radio, Badge, Avatar, Fab).
+  const isContainer  = ['Box', 'VStack', 'HStack', 'Center', 'Grid', 'GridItem', 'Card', 'Pressable', 'Checkbox', 'CheckboxGroup', 'Radio', 'RadioGroup', 'Badge', 'Avatar', 'Fab', 'Skeleton', 'Alert', 'Link', 'Modal', 'ModalContent', 'ModalHeader', 'ModalBody', 'ModalFooter', 'Tooltip', 'AlertDialog', 'AlertDialogContent', 'AlertDialogHeader', 'AlertDialogBody', 'AlertDialogFooter'].includes(node.type);
+  // CheckboxLabel / RadioLabel etc. are text nodes — show Typography section when selected
+  const isTextNode   = ['Text', 'Heading', 'ButtonText', 'CheckboxLabel', 'RadioLabel', 'BadgeText', 'FabLabel', 'AvatarFallbackText', 'SkeletonText', 'AlertText', 'LinkText', 'TooltipText', 'ModalCloseButton'].includes(node.type);
+  // Leaf widgets: Gluestack components with no SDUI children — no Auto Layout / Alignment.
+  const isLeafWidget = ['Input', 'NavIcon', 'Image', 'NextImage', 'Textarea', 'Select', 'Slider', 'Progress', 'Spinner', 'DatePicker', 'TimePicker', 'DateTimePicker', 'ColorPicker', 'FileUpload', 'Iframe', 'SvgViewer', 'JsonViewer', 'Chart', 'QRCodeWidget', 'MarkdownViewer', 'GoogleMap', 'GoogleMapPlaces'].includes(node.type);
   // Padding/border-radius make sense for containers + button-like widgets, not raw text
   const showPadding  = !isTextNode;
   // Auto Layout (flex dir, gap) and Alignment only make sense for flex containers
@@ -361,15 +445,19 @@ function DesignTab({ node }: { node: SDUINode }) {
 
   // ── Text content helpers ─────────────────────────────────────────────────────
   // For Text / Heading / ButtonText nodes we expose their `text` prop directly.
-  // For Button we find the first ButtonText child and edit that instead.
+  // For Button find the first ButtonText child; for other containers (e.g. Pressable)
+  // find the first Text/Heading child so primitive buttons get a Content section too.
   const hasDirectText = isTextNode && (node as { text?: string }).text !== undefined;
-  const buttonTextChild = node.type === 'Button'
-    ? (node.children as SDUINode[] | undefined)?.find(c => c.type === 'ButtonText')
-    : null;
+  const buttonTextChild =
+    node.type === 'Button'
+      ? (node.children as SDUINode[] | undefined)?.find(c => c.type === 'ButtonText')
+      : isContainer
+        ? (node.children as SDUINode[] | undefined)?.find(c => c.type === 'Text' || c.type === 'Heading')
+        : null;
   const hasContent = hasDirectText || !!buttonTextChild;
 
   return (
-    <div style={{ flex: 1, overflow: 'auto' }}>
+    <div style={{ flex: 1, overflow: 'auto' }} onFocus={() => { editingNodeIdRef.current = nodeId; }}>
 
       {/* ── Content (text value) — shown for text nodes and buttons ── */}
       {hasContent && (
@@ -433,18 +521,14 @@ function DesignTab({ node }: { node: SDUINode }) {
             if (styleW) return parseInt(styleW) || domMetrics.w;
             return domMetrics.w;
           })()} onChange={px => {
-            const s = (node.props as { style?: Record<string, string> })?.style ?? {};
-            store.patchProp(nodeId, 'props.style', { ...s, width: `${px}px`, minWidth: '0' });
-            commitHistory();
+            patchStyle({ width: `${px}px`, minWidth: '0' });
           }} />
           <NumberInput label="H" testId="input-pos-h" value={(() => {
             const styleH = (node.props as { style?: Record<string, string> })?.style?.height;
             if (styleH) return parseInt(styleH) || domMetrics.h;
             return domMetrics.h;
           })()} onChange={px => {
-            const s = (node.props as { style?: Record<string, string> })?.style ?? {};
-            store.patchProp(nodeId, 'props.style', { ...s, height: `${px}px`, minHeight: '0' });
-            commitHistory();
+            patchStyle({ height: `${px}px`, minHeight: '0' });
           }} />
         </div>
 
@@ -460,9 +544,7 @@ function DesignTab({ node }: { node: SDUINode }) {
                   testId={`input-inset-${side}`}
                   value={parseInt((node.props as { style?: Record<string, string> })?.style?.[side] ?? '') || 0}
                   onChange={px => {
-                    const s = (node.props as { style?: Record<string, string> })?.style ?? {};
-                    store.patchProp(nodeId, 'props.style', { ...s, [side]: `${px}px` });
-                    commitHistory();
+                    patchStyle({ [side]: `${px}px` });
                   }}
                 />
               ))}
@@ -586,19 +668,10 @@ function DesignTab({ node }: { node: SDUINode }) {
             value={rotateDeg}
             min={-180} max={180}
             onChange={deg => {
-              // Apply rotation as inline style.transform so it always renders visually
-              const s = (node.props as { style?: Record<string, string> })?.style ?? {};
               const newTransform = deg !== 0 ? `rotate(${deg}deg)` : '';
-              // Remove old rotate-* className tokens (backward compat cleanup)
               const newCls = removeTwToken(removeTwToken(cls, 'rotate-'), '-rotate-');
               if (newCls !== cls) patchCls(newCls);
-              if (newTransform) {
-                store.patchProp(nodeId, 'props.style', { ...s, transform: newTransform });
-              } else {
-                const { transform: _, ...rest } = s as Record<string, string>;
-                store.patchProp(nodeId, 'props.style', rest);
-              }
-              commitHistory();
+              patchStyle({ transform: newTransform });
             }}
           />
           <div style={{ display: 'flex', gap: 4 }}>
@@ -904,7 +977,7 @@ function DesignTab({ node }: { node: SDUINode }) {
       </div>
 
       {/* ── Typography (text nodes only) ── */}
-      {['Text', 'Heading', 'ButtonText'].includes(node.type) && (
+      {isTextNode && (
         <div style={SECTION_STYLE}>
           <SectionHeader title="Typography" />
           <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>

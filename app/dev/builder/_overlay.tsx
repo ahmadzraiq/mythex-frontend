@@ -9,7 +9,7 @@
  * space (already scaled).
  */
 
-import React, { useMemo, useRef, useEffect, useState } from 'react';
+import React, { useMemo, useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import type { GridOverlayConfig } from './_store';
 
@@ -29,8 +29,10 @@ export interface OverlayProps {
   altHoveredId: string | null;
   altMode: boolean;
   isDroppingVariant: boolean;
-  /** Canvas-div-relative Y (px) of the active insert line. Works for root and in-container. */
+  /** Canvas-div-relative Y (px) of the active insert line. Used for column containers. */
   dropLineY: number | null;
+  /** Canvas-div-relative X (px) of the active insert line. Used for row containers (HStack, flex-row). */
+  dropLineX?: number | null;
   /** ID of the container node that will receive the drop (shown with blue border) */
   dropContainerId?: string | null;
   pageNodes: SDUINode[];
@@ -38,6 +40,25 @@ export interface OverlayProps {
   onResizeStart: (nodeId: string, handle: ResizeHandle, e: React.PointerEvent) => void;
   /** When true, hides selection rings and resize handles so they don't float over the drag ghost. */
   isDragging?: boolean;
+  /**
+   * Ref that canvas populates with a `notify()` function.
+   * Canvas calls `notifyRef.current()` whenever it moves (scroll, pan-drag, edit) to
+   * trigger a burst of overlay measurement ticks. The overlay stops its RAF loop
+   * automatically after it detects the canvas has been idle for ~200 ms.
+   */
+  notifyRef?: React.MutableRefObject<(() => void) | null>;
+  /**
+   * Ref that canvas populates with an instant synchronous update function.
+   * Called directly inside `applyWorldTransform` (same frame as the CSS transform change)
+   * so the selection ring tracks pan/zoom with zero lag — no React re-render needed.
+   */
+  overlayInstantUpdateRef?: React.MutableRefObject<(() => void) | null>;
+  /**
+   * Live zoom ref from canvas — always holds the current zoom value during a gesture,
+   * even before Zustand is updated (debounced). Used to compute padding fill sizes
+   * correctly during zoom without waiting for a React re-render.
+   */
+  liveZoomRef?: React.MutableRefObject<number>;
 }
 
 // ─── DOM helpers ─────────────────────────────────────────────────────────────
@@ -61,6 +82,19 @@ function getComputedPadding(id: string, canvasEl: HTMLElement) {
     bottom: parseFloat(cs.paddingBottom) || 0,
     left:   parseFloat(cs.paddingLeft)   || 0,
   };
+}
+
+function getComputedMargin(id: string, canvasEl: HTMLElement) {
+  const el = canvasEl.querySelector(`[data-builder-id="${id}"]`) as HTMLElement | null;
+  if (!el) return null;
+  const cs = window.getComputedStyle(el);
+  const top    = parseFloat(cs.marginTop)    || 0;
+  const right  = parseFloat(cs.marginRight)  || 0;
+  const bottom = parseFloat(cs.marginBottom) || 0;
+  const left   = parseFloat(cs.marginLeft)   || 0;
+  // Only return when at least one side is non-zero to avoid rendering empty fills.
+  if (top === 0 && right === 0 && bottom === 0 && left === 0) return null;
+  return { top, right, bottom, left };
 }
 
 /** Returns true if a node is absolutely / fixed positioned (out of normal flow). */
@@ -93,89 +127,76 @@ function getComputedFlex(id: string, canvasEl: HTMLElement) {
 
 // ─── Selection box + resize handles ──────────────────────────────────────────
 
-function SelectionBox({ rect, nodeId, onResizeStart }: {
+/**
+ * Handle positions use CSS anchors (top/right/bottom/left + transform) instead of
+ * calculated pixel offsets from rect.w/h. This means handles auto-reposition when
+ * the ring div's size is updated imperatively (without a React re-render).
+ */
+const HANDLE_STYLE: Record<ResizeHandle, React.CSSProperties> = {
+  nw: { top: -5, left: -5,                                              cursor: 'nw-resize' },
+  n:  { top: -5, left: '50%', transform: 'translateX(-50%)',            cursor: 'n-resize'  },
+  ne: { top: -5, right: -5,                                             cursor: 'ne-resize' },
+  e:  { top: '50%', right: -5, transform: 'translateY(-50%)',           cursor: 'e-resize'  },
+  se: { bottom: -5, right: -5,                                          cursor: 'se-resize' },
+  s:  { bottom: -5, left: '50%', transform: 'translateX(-50%)',         cursor: 's-resize'  },
+  sw: { bottom: -5, left: -5,                                           cursor: 'sw-resize' },
+  w:  { top: '50%', left: -5, transform: 'translateY(-50%)',            cursor: 'w-resize'  },
+};
+
+function SelectionBox({ rect, nodeId, onResizeStart, zoom, ringRef }: {
   rect: CanvasRect;
   nodeId: string;
   onResizeStart: OverlayProps['onResizeStart'];
+  zoom: number;
+  ringRef?: React.Ref<HTMLDivElement>;
 }) {
   const handles: ResizeHandle[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
-  const pos: Record<ResizeHandle, { top: string; left: string; cursor: string }> = {
-    nw: { top: '-5px',                 left: '-5px',                 cursor: 'nw-resize' },
-    n:  { top: '-5px',                 left: `${rect.w / 2 - 5}px`, cursor: 'n-resize'  },
-    ne: { top: '-5px',                 left: `${rect.w - 5}px`,     cursor: 'ne-resize' },
-    e:  { top: `${rect.h / 2 - 5}px`, left: `${rect.w - 5}px`,     cursor: 'e-resize'  },
-    se: { top: `${rect.h - 5}px`,     left: `${rect.w - 5}px`,     cursor: 'se-resize' },
-    s:  { top: `${rect.h - 5}px`,     left: `${rect.w / 2 - 5}px`, cursor: 's-resize'  },
-    sw: { top: `${rect.h - 5}px`,     left: '-5px',                 cursor: 'sw-resize' },
-    w:  { top: `${rect.h / 2 - 5}px`, left: '-5px',                 cursor: 'w-resize'  },
-  };
-
-  return (
-    <div data-testid="selection-ring" style={{ position: 'absolute', left: rect.x, top: rect.y, width: rect.w, height: rect.h, border: '2px solid #3b82f6', pointerEvents: 'none', boxSizing: 'border-box' }}>
-      {handles.map(h => (
-        <div
-          key={h}
-          data-testid="resize-handle"
-          data-handle={h}
-          style={{ position: 'absolute', top: pos[h].top, left: pos[h].left, width: 10, height: 10, background: '#fff', border: '2px solid #3b82f6', borderRadius: 2, cursor: pos[h].cursor, pointerEvents: 'all', zIndex: 10 }}
-          onPointerDown={e => { e.stopPropagation(); onResizeStart(nodeId, h, e); }}
-        />
-      ))}
-    </div>
-  );
-}
-
-// ─── Dimension tooltip ────────────────────────────────────────────────────────
-
-function DimensionTooltip({ rect, zoom }: { rect: CanvasRect; zoom: number }) {
   const w = Math.round(rect.w / zoom);
   const h = Math.round(rect.h / zoom);
+
   return (
-    <div style={{
-      position: 'absolute',
-      left: rect.x + rect.w / 2,
-      top: rect.y + rect.h + 8,
-      transform: 'translateX(-50%)',
-      background: '#3b82f6',
-      color: '#fff',
-      fontSize: 10,
-      fontFamily: 'system-ui',
-      padding: '2px 7px',
-      borderRadius: 3,
-      whiteSpace: 'nowrap',
-      pointerEvents: 'none',
-      zIndex: 20,
-    }}>
-      {w} × {h}
+    <div
+      ref={ringRef}
+      data-testid="selection-ring"
+      style={{ position: 'absolute', left: rect.x, top: rect.y, width: rect.w, height: rect.h, border: '2px solid #3b82f6', pointerEvents: 'none', boxSizing: 'border-box' }}
+    >
+      {handles.map(handle => (
+        <div
+          key={handle}
+          data-testid="resize-handle"
+          data-handle={handle}
+          style={{ position: 'absolute', width: 10, height: 10, background: '#fff', border: '2px solid #3b82f6', borderRadius: 2, pointerEvents: 'all', zIndex: 10, boxSizing: 'border-box', ...HANDLE_STYLE[handle] }}
+          onPointerDown={e => { e.stopPropagation(); onResizeStart(nodeId, handle, e); }}
+        />
+      ))}
+      {/* Tooltip lives inside the ring so it auto-follows imperative position updates.
+          data-dim-tooltip lets overlayInstantUpdateRef update the text imperatively
+          using liveZoomRef so the numbers are always accurate during zoom gestures. */}
+      <div
+        data-dim-tooltip
+        style={{
+          position: 'absolute',
+          bottom: -26,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#3b82f6',
+          color: '#fff',
+          fontSize: 10,
+          fontFamily: 'system-ui',
+          padding: '2px 7px',
+          borderRadius: 3,
+          whiteSpace: 'nowrap',
+          pointerEvents: 'none',
+          zIndex: 20,
+        }}
+      >
+        {w} × {h}
+      </div>
     </div>
-  );
-}
-
-// ─── Crosshair center lines ───────────────────────────────────────────────────
-
-function CrosshairLines({ rect }: { rect: CanvasRect }) {
-  const cx = rect.x + rect.w / 2;
-  const cy = rect.y + rect.h / 2;
-  return (
-    <>
-      <div data-testid="crosshair-h" style={{ position: 'absolute', left: 0, top: cy, width: '100%', height: 0, borderTop: '1px dashed rgba(59,130,246,0.5)', pointerEvents: 'none' }} />
-      <div data-testid="crosshair-v" style={{ position: 'absolute', left: cx, top: 0, width: 0, height: '100%', borderLeft: '1px dashed rgba(59,130,246,0.5)', pointerEvents: 'none' }} />
-    </>
   );
 }
 
 // ─── Hover outline + label ────────────────────────────────────────────────────
-
-function HoverOutline({ rect, label }: { rect: CanvasRect; label: string }) {
-  return (
-    <>
-      <div data-testid="hover-outline" style={{ position: 'absolute', left: rect.x, top: rect.y, width: rect.w, height: rect.h, border: '1px dashed rgba(59,130,246,0.7)', pointerEvents: 'none', boxSizing: 'border-box' }} />
-      <div style={{ position: 'absolute', left: rect.x, top: Math.max(0, rect.y - 22), background: '#3b82f6', color: '#fff', fontSize: 10, fontFamily: 'system-ui', padding: '2px 6px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 20 }}>
-        {label}
-      </div>
-    </>
-  );
-}
 
 // ─── Padding fills (teal) ────────────────────────────────────────────────────
 
@@ -190,10 +211,30 @@ function PaddingFills({ rect, padding, zoom }: {
   const border = '1px dashed rgba(0,200,180,0.6)';
   return (
     <>
-      {top    > 0 && <div data-testid="padding-fill" style={{ position: 'absolute', left: rect.x, top: rect.y,                           width: rect.w,                            height: top   * zoom, background: color, pointerEvents: 'none', borderBottom: border }} />}
-      {bottom > 0 && <div data-testid="padding-fill" style={{ position: 'absolute', left: rect.x, top: rect.y + rect.h - bottom * zoom, width: rect.w,                            height: bottom* zoom, background: color, pointerEvents: 'none', borderTop:    border }} />}
-      {left   > 0 && <div data-testid="padding-fill" style={{ position: 'absolute', left: rect.x, top: rect.y + top * zoom,             width: left  * zoom, height: rect.h - (top + bottom) * zoom, background: color, pointerEvents: 'none', borderRight:  border }} />}
-      {right  > 0 && <div data-testid="padding-fill" style={{ position: 'absolute', left: rect.x + rect.w - right * zoom, top: rect.y + top * zoom, width: right * zoom, height: rect.h - (top + bottom) * zoom, background: color, pointerEvents: 'none', borderLeft: border }} />}
+      {top    > 0 && <div data-testid="padding-fill" data-padding-side="top"    style={{ position: 'absolute', left: rect.x, top: rect.y,                           width: rect.w,                            height: top   * zoom, background: color, pointerEvents: 'none', borderBottom: border }} />}
+      {bottom > 0 && <div data-testid="padding-fill" data-padding-side="bottom" style={{ position: 'absolute', left: rect.x, top: rect.y + rect.h - bottom * zoom, width: rect.w,                            height: bottom* zoom, background: color, pointerEvents: 'none', borderTop:    border }} />}
+      {left   > 0 && <div data-testid="padding-fill" data-padding-side="left"   style={{ position: 'absolute', left: rect.x, top: rect.y + top * zoom,             width: left  * zoom, height: rect.h - (top + bottom) * zoom, background: color, pointerEvents: 'none', borderRight:  border }} />}
+      {right  > 0 && <div data-testid="padding-fill" data-padding-side="right"  style={{ position: 'absolute', left: rect.x + rect.w - right * zoom, top: rect.y + top * zoom, width: right * zoom, height: rect.h - (top + bottom) * zoom, background: color, pointerEvents: 'none', borderLeft: border }} />}
+    </>
+  );
+}
+
+// ─── Margin fills (orange) ───────────────────────────────────────────────────
+
+function MarginFills({ rect, margin, zoom }: {
+  rect: CanvasRect;
+  margin: { top: number; right: number; bottom: number; left: number };
+  zoom: number;
+}) {
+  const { top, right, bottom, left } = margin;
+  const color  = 'rgba(255,165,0,0.25)';
+  const border = '1px dashed rgba(255,165,0,0.6)';
+  return (
+    <>
+      {top    > 0 && <div data-testid="margin-fill" data-margin-side="top"    style={{ position: 'absolute', left: rect.x,              top:  rect.y - top * zoom,        width: rect.w,              height: top    * zoom, background: color, pointerEvents: 'none', borderBottom: border }} />}
+      {bottom > 0 && <div data-testid="margin-fill" data-margin-side="bottom" style={{ position: 'absolute', left: rect.x,              top:  rect.y + rect.h,            width: rect.w,              height: bottom * zoom, background: color, pointerEvents: 'none', borderTop:    border }} />}
+      {left   > 0 && <div data-testid="margin-fill" data-margin-side="left"   style={{ position: 'absolute', left: rect.x - left * zoom, top:  rect.y - top * zoom,        width: left    * zoom, height: rect.h + (top + bottom) * zoom, background: color, pointerEvents: 'none', borderRight:  border }} />}
+      {right  > 0 && <div data-testid="margin-fill" data-margin-side="right"  style={{ position: 'absolute', left: rect.x + rect.w,     top:  rect.y - top * zoom,        width: right   * zoom, height: rect.h + (top + bottom) * zoom, background: color, pointerEvents: 'none', borderLeft:   border }} />}
     </>
   );
 }
@@ -231,12 +272,12 @@ function GapFills({ nodeId, canvasEl, canvasRect }: {
       const x1 = a.right - canvasRect.left, x2 = b.left - canvasRect.left;
       const y  = Math.min(a.top, b.top) - canvasRect.top;
       const h  = Math.max(a.height, b.height);
-      fills.push(<div key={i} data-testid="gap-fill" style={{ position: 'absolute', left: x1, top: y, width: Math.max(0, x2 - x1), height: h, background: color, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 9, color: '#f87171', fontFamily: 'system-ui' }}>{Math.round(flex.gap)}px</span></div>);
+      fills.push(<div key={i} data-testid="gap-fill" data-gap-fill-index={i} data-gap-fill-dir="row" style={{ position: 'absolute', left: x1, top: y, width: Math.max(0, x2 - x1), height: h, background: color, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 9, color: '#f87171', fontFamily: 'system-ui' }}>{Math.round(flex.gap)}px</span></div>);
     } else {
       const y1 = a.bottom - canvasRect.top, y2 = b.top - canvasRect.top;
       const x  = Math.min(a.left, b.left) - canvasRect.left;
       const w  = Math.max(a.width, b.width);
-      fills.push(<div key={i} data-testid="gap-fill" style={{ position: 'absolute', left: x, top: y1, width: w, height: Math.max(0, y2 - y1), background: color, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 9, color: '#f87171', fontFamily: 'system-ui' }}>{Math.round(flex.gap)}px</span></div>);
+      fills.push(<div key={i} data-testid="gap-fill" data-gap-fill-index={i} data-gap-fill-dir="col" style={{ position: 'absolute', left: x, top: y1, width: w, height: Math.max(0, y2 - y1), background: color, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 9, color: '#f87171', fontFamily: 'system-ui' }}>{Math.round(flex.gap)}px</span></div>);
     }
   }
   return <>{fills}</>;
@@ -277,12 +318,40 @@ function DistanceLines({ selRect, tgtRect }: { selRect: CanvasRect; tgtRect: Can
 
 // ─── Drop zone line ───────────────────────────────────────────────────────────
 
-function DropZoneLine({ y, width, active }: { y: number; width: number; active: boolean }) {
-  return (
-    <div data-testid="drop-zone-line" data-active={String(active)} style={{ position: 'absolute', left: 0, top: y - 1, width, height: active ? 3 : 1, background: active ? '#3b82f6' : 'rgba(59,130,246,0.4)', pointerEvents: 'none' }}>
-      {active && <div style={{ position: 'absolute', left: -5, top: -4, width: 10, height: 10, borderRadius: '50%', background: '#3b82f6' }} />}
-    </div>
-  );
+function DropZoneLine({
+  y, x, width, height, active,
+}: {
+  y?: number | null;
+  x?: number | null;
+  width: number;
+  height: number;
+  active: boolean;
+}) {
+  if (x != null) {
+    // Vertical line — for row / horizontal containers
+    return (
+      <div
+        data-testid="drop-zone-line"
+        data-active={String(active)}
+        style={{ position: 'absolute', left: x - 1, top: 0, width: active ? 3 : 1, height, background: active ? '#3b82f6' : 'rgba(59,130,246,0.4)', pointerEvents: 'none' }}
+      >
+        {active && <div style={{ position: 'absolute', left: -4, top: -5, width: 10, height: 10, borderRadius: '50%', background: '#3b82f6' }} />}
+      </div>
+    );
+  }
+  if (y != null) {
+    // Horizontal line — for column / vertical containers (original behaviour)
+    return (
+      <div
+        data-testid="drop-zone-line"
+        data-active={String(active)}
+        style={{ position: 'absolute', left: 0, top: y - 1, width, height: active ? 3 : 1, background: active ? '#3b82f6' : 'rgba(59,130,246,0.4)', pointerEvents: 'none' }}
+      >
+        {active && <div style={{ position: 'absolute', left: -5, top: -4, width: 10, height: 10, borderRadius: '50%', background: '#3b82f6' }} />}
+      </div>
+    );
+  }
+  return null;
 }
 
 // ─── Grid overlay ─────────────────────────────────────────────────────────────
@@ -339,32 +408,362 @@ export default function BuilderOverlay({
   altMode,
   isDroppingVariant,
   dropLineY,
+  dropLineX,
   dropContainerId,
   pageNodes,
   gridOverlay,
   onResizeStart,
   isDragging = false,
+  notifyRef,
+  overlayInstantUpdateRef,
+  liveZoomRef,
 }: OverlayProps) {
-  // RAF loop keeps overlay in sync with scroll/animation
+  // ── Event-driven RAF loop ────────────────────────────────────────────────
+  //
+  // The loop only runs during active interaction (scroll, pan, hover, edit).
+  // Canvas calls notifyRef.current() to trigger a burst of ticks. After
+  // ~200 ms of inactivity the loop stops automatically — zero idle CPU.
   const [tick, setTick] = useState(0);
-  const rafRef = useRef<number | undefined>(undefined);
+  const rafRef        = useRef<number | undefined>(undefined);
+  const idleTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isRunningRef  = useRef(false);
 
-  useEffect(() => {
-    if (selectedIds.length === 0 && !hoveredId && !dropContainerId) return;
-    const loop = () => { setTick(t => t + 1); rafRef.current = requestAnimationFrame(loop); };
+  const startRAF = useCallback(() => {
+    if (isRunningRef.current) return;
+    isRunningRef.current = true;
+    const loop = () => {
+      setTick(t => t + 1);
+      rafRef.current = requestAnimationFrame(loop);
+    };
     rafRef.current = requestAnimationFrame(loop);
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [selectedIds.length, hoveredId]);
+  }, []);
+
+  const stopRAF = useCallback(() => {
+    isRunningRef.current = false;
+    if (rafRef.current !== undefined) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = undefined;
+    }
+  }, []);
+
+  /** Called by canvas on every scroll/pan/edit event. */
+  const notify = useCallback(() => {
+    startRAF();
+    // Reset idle timer — stop the loop 200 ms after the last notify
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(stopRAF, 200);
+  }, [startRAF, stopRAF]);
+
+  // Register notify with the canvas via notifyRef
+  useEffect(() => {
+    if (notifyRef) notifyRef.current = notify;
+    return () => { if (notifyRef) notifyRef.current = null; };
+  }, [notifyRef, notify]);
+
+  // Also run during hover/selection changes (same short burst pattern)
+  useEffect(() => {
+    if (selectedIds.length === 0 && !hoveredId && !dropContainerId) { stopRAF(); return; }
+    notify();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedIds.length, hoveredId, dropContainerId]);
+
+  // Cleanup on unmount
+  useEffect(() => () => {
+    stopRAF();
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+  }, [stopRAF]);
 
   // All hooks must run unconditionally
   const canvasEl = canvasRef.current;
-  const canvasDomRect = canvasEl?.getBoundingClientRect() ?? { top: 0, left: 0, bottom: 0, right: 0, width: 0, height: 0, x: 0, y: 0 };
 
-  const hoverRect = useMemo(() => {
-    if (!canvasEl || !hoveredId || selectedIds.includes(hoveredId) || altMode) return null;
-    return getCanvasRect(hoveredId, canvasEl);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canvasEl, hoveredId, selectedIds, altMode, tick]);
+  // Cache the canvas bounding rect — only update on resize, never on every RAF tick.
+  // getBoundingClientRect() forces layout; calling it at 60fps causes significant jank.
+  const canvasDomRectRef = useRef<DOMRect | null>(null);
+  useEffect(() => {
+    if (!canvasEl) return;
+    canvasDomRectRef.current = canvasEl.getBoundingClientRect();
+    const ro = new ResizeObserver(() => {
+      canvasDomRectRef.current = canvasEl.getBoundingClientRect();
+    });
+    ro.observe(canvasEl);
+    return () => ro.disconnect();
+  }, [canvasEl]);
+  const canvasDomRect = canvasDomRectRef.current ?? { top: 0, left: 0, bottom: 0, right: 0, width: 0, height: 0, x: 0, y: 0 };
+
+  // ── Hover outline (imperative) ────────────────────────────────────────────
+  //
+  // Position the hover outline elements whenever the hovered element changes.
+  // During pan/zoom, overlayInstantUpdateRef also updates them for zero-lag tracking.
+  useEffect(() => {
+    const hId   = hoveredId;
+    const show  = !!(hId && !selectedIds.includes(hId) && !altMode && canvasEl && !isDragging);
+    if (!show) {
+      if (imperativeHoverBorderRef.current) imperativeHoverBorderRef.current.style.display = 'none';
+      if (imperativeHoverLabelRef.current)  imperativeHoverLabelRef.current.style.display  = 'none';
+      return;
+    }
+    const hEl = canvasEl!.querySelector(`[data-builder-id="${hId}"]`) as HTMLElement | null;
+    const cr  = canvasDomRectRef.current;
+    if (!hEl || !cr) return;
+    const hR   = hEl.getBoundingClientRect();
+    const hx   = hR.left - cr.left;
+    const hy   = hR.top  - cr.top;
+    const hType = hEl.dataset.builderType ?? 'node';
+    const logW  = hEl.offsetWidth;
+    const logH  = hEl.offsetHeight;
+    if (imperativeHoverBorderRef.current) {
+      const b = imperativeHoverBorderRef.current;
+      b.style.left    = `${hx}px`;
+      b.style.top     = `${hy}px`;
+      b.style.width   = `${hR.width}px`;
+      b.style.height  = `${hR.height}px`;
+      b.style.display = '';
+    }
+    if (imperativeHoverLabelRef.current) {
+      const l = imperativeHoverLabelRef.current;
+      l.style.left      = `${hx}px`;
+      l.style.top       = `${Math.max(0, hy - 22)}px`;
+      l.style.display   = '';
+      l.textContent     = `${hType}  ${logW} × ${logH}`;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hoveredId, selectedIds, altMode, isDragging, canvasEl]);
+
+  // ── Instant synchronous update (zero-lag pan tracking) ──────────────────
+  //
+  // Canvas calls overlayInstantUpdateRef.current() directly inside
+  // applyWorldTransform — same JS task as the CSS transform change.
+  // getBoundingClientRect() forces a layout reflow that already accounts for
+  // the new transform, giving us the true current position with no React lag.
+  //
+  // Two elements are updated:
+  //  1. selectionRingRef — ring div position / size set individually.
+  //  2. singleSelLayerRef — a wrapper for padding fills, gap fills, crosshair
+  //     lines. Its CSS translate is set to (currentPos - lastReactRenderedPos)
+  //     so all children shift by the same delta as the ring.
+  //
+  // After each React re-render (tick), useLayoutEffect resets the layer
+  // translate to '' (positions are fresh from BCR) and records the new
+  // ring position as the next "last rendered" baseline.
+  const selectionRingRef      = useRef<HTMLDivElement>(null);
+  const paddingFillsLayerRef  = useRef<HTMLDivElement>(null);   // padding fills (full recompute)
+  const gapFillsLayerRef      = useRef<HTMLDivElement>(null);   // gap fills (full recompute from children BCR)
+  const marginFillsLayerRef   = useRef<HTMLDivElement>(null);   // margin fills (full recompute)
+  // Crosshairs — fully imperative (like hover outline) so they track during pan/zoom with zero lag.
+  const imperativeCrosshairHRef = useRef<HTMLDivElement | null>(null);
+  const imperativeCrosshairVRef = useRef<HTMLDivElement | null>(null);
+
+  // Hover outline — imperative refs so position updates in sync with pan/zoom
+  // without waiting for a React re-render (eliminates the 1-frame "dancing" lag).
+  const hoveredIdRef             = useRef(hoveredId);
+  const altModeRef               = useRef(altMode);
+  const imperativeHoverBorderRef = useRef<HTMLDivElement | null>(null);
+  const imperativeHoverLabelRef  = useRef<HTMLDivElement | null>(null);
+  useEffect(() => { hoveredIdRef.current = hoveredId; }, [hoveredId]);
+  useEffect(() => { altModeRef.current   = altMode;   }, [altMode]);
+
+  // After every React tick re-render, correct everything before paint.
+  //
+  // The problem with zoom: React re-renders with the stale Zustand `zoom` prop
+  // (debounced 80 ms), so indicator fills paint wrong sizes. useLayoutEffect runs
+  // *before* the browser paints, so we re-run the instant update here to apply
+  // the correct live zoom — eliminating the single-frame flash entirely.
+  useLayoutEffect(() => {
+    // Re-run instant update immediately — before paint — so ring, crosshairs, and fills
+    // use liveZoomRef (not the stale Zustand zoom prop).
+    overlayInstantUpdateRef?.current?.();
+  }, [tick]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!overlayInstantUpdateRef) return;
+    overlayInstantUpdateRef.current = () => {
+      if (!canvasEl) return;
+      const cr = canvasDomRectRef.current;
+      if (!cr) return;
+
+      // ── Selection ring (single selection only) ──────────────────────────
+      if (selectedIds.length !== 1) {
+        // Multi-select or nothing selected — hide crosshairs, skip ring, update hover below.
+        if (imperativeCrosshairHRef.current) imperativeCrosshairHRef.current.style.display = 'none';
+        if (imperativeCrosshairVRef.current) imperativeCrosshairVRef.current.style.display = 'none';
+      } else {
+      const el = canvasEl.querySelector(`[data-builder-id="${selectedIds[0]}"]`);
+      if (el) {
+      const r  = el.getBoundingClientRect();
+      const currX = r.left  - cr.left;
+      const currY = r.top   - cr.top;
+      const currW = r.width;
+      const currH = r.height;
+      const z     = liveZoomRef?.current ?? zoom;
+
+      // 1. Update ring (position + size)
+      if (selectionRingRef.current) {
+        selectionRingRef.current.style.left   = `${currX}px`;
+        selectionRingRef.current.style.top    = `${currY}px`;
+        selectionRingRef.current.style.width  = `${currW}px`;
+        selectionRingRef.current.style.height = `${currH}px`;
+        // Also update the dimension tooltip text using live zoom so it never
+        // shows stale values during a zoom gesture (Zustand zoom lags ~80 ms).
+        const tooltipEl = selectionRingRef.current.querySelector<HTMLElement>('[data-dim-tooltip]');
+        if (tooltipEl) {
+          tooltipEl.textContent = `${Math.round(currW / z)} × ${Math.round(currH / z)}`;
+        }
+      }
+
+      // 2. Crosshairs — fully imperative (position updated directly, zero lag during pan/zoom)
+      const isAbs = Array.isArray(pageNodes) && pageNodes.length > 0
+        ? isAbsoluteNode(selectedIds[0], pageNodes)
+        : false;
+      if (!isAbs) {
+        const cx = currX + currW / 2;
+        const cy = currY + currH / 2;
+        if (imperativeCrosshairHRef.current) {
+          imperativeCrosshairHRef.current.style.top = `${cy}px`;
+          imperativeCrosshairHRef.current.style.display = '';
+        }
+        if (imperativeCrosshairVRef.current) {
+          imperativeCrosshairVRef.current.style.left = `${cx}px`;
+          imperativeCrosshairVRef.current.style.display = '';
+        }
+      } else {
+        if (imperativeCrosshairHRef.current) imperativeCrosshairHRef.current.style.display = 'none';
+        if (imperativeCrosshairVRef.current) imperativeCrosshairVRef.current.style.display = 'none';
+      }
+
+      // 3. Padding fills — read fresh from DOM every call (no cache).
+      //    Stale cache was the root cause of padding not updating after right-panel edits.
+      const padding = getComputedPadding(selectedIds[0], canvasEl);
+      if (paddingFillsLayerRef.current && padding) {
+        const fills = paddingFillsLayerRef.current.querySelectorAll<HTMLElement>('[data-padding-side]');
+        fills.forEach(fill => {
+          const side = fill.dataset.paddingSide;
+          if (side === 'top') {
+            fill.style.left   = `${currX}px`;
+            fill.style.top    = `${currY}px`;
+            fill.style.width  = `${currW}px`;
+            fill.style.height = `${padding.top * z}px`;
+          } else if (side === 'bottom') {
+            fill.style.left   = `${currX}px`;
+            fill.style.top    = `${currY + currH - padding.bottom * z}px`;
+            fill.style.width  = `${currW}px`;
+            fill.style.height = `${padding.bottom * z}px`;
+          } else if (side === 'left') {
+            fill.style.left   = `${currX}px`;
+            fill.style.top    = `${currY + padding.top * z}px`;
+            fill.style.width  = `${padding.left * z}px`;
+            fill.style.height = `${currH - (padding.top + padding.bottom) * z}px`;
+          } else if (side === 'right') {
+            fill.style.left   = `${currX + currW - padding.right * z}px`;
+            fill.style.top    = `${currY + padding.top * z}px`;
+            fill.style.width  = `${padding.right * z}px`;
+            fill.style.height = `${currH - (padding.top + padding.bottom) * z}px`;
+          }
+        });
+      }
+
+      // 4. Gap fills — full recompute from each child's BCR (fresh, no cache).
+      const flex = getComputedFlex(selectedIds[0], canvasEl);
+      const flexInfo = (flex && flex.gap && flex.display === 'flex')
+        ? { isRow: flex.flexDirection === 'row' || flex.flexDirection === 'row-reverse' }
+        : null;
+      if (gapFillsLayerRef.current && flexInfo) {
+        const parent = canvasEl.querySelector(`[data-builder-id="${selectedIds[0]}"]`);
+        if (parent) {
+          const directChildren = Array.from(parent.children).filter(c => {
+            const childEl = c as HTMLElement;
+            if (!childEl.dataset?.builderId) return false;
+            const pos = window.getComputedStyle(childEl).position;
+            return pos !== 'absolute' && pos !== 'fixed';
+          }) as HTMLElement[];
+          const gapFills = gapFillsLayerRef.current.querySelectorAll<HTMLElement>('[data-gap-fill-index]');
+          gapFills.forEach(fill => {
+            const idx = parseInt(fill.dataset.gapFillIndex ?? '0', 10);
+            const a = directChildren[idx]?.getBoundingClientRect();
+            const b = directChildren[idx + 1]?.getBoundingClientRect();
+            if (!a || !b) return;
+            if (flexInfo.isRow) {
+              const x1 = a.right - cr.left, x2 = b.left - cr.left;
+              const y  = Math.min(a.top, b.top) - cr.top;
+              const h  = Math.max(a.height, b.height);
+              fill.style.left   = `${x1}px`;
+              fill.style.top    = `${y}px`;
+              fill.style.width  = `${Math.max(0, x2 - x1)}px`;
+              fill.style.height = `${h}px`;
+            } else {
+              const y1 = a.bottom - cr.top, y2 = b.top - cr.top;
+              const x  = Math.min(a.left, b.left) - cr.left;
+              const w  = Math.max(a.width, b.width);
+              fill.style.left   = `${x}px`;
+              fill.style.top    = `${y1}px`;
+              fill.style.width  = `${w}px`;
+              fill.style.height = `${Math.max(0, y2 - y1)}px`;
+            }
+          });
+        }
+      }
+
+      // 5. Margin fills — read fresh from DOM every call (same rationale as padding).
+      const margin = getComputedMargin(selectedIds[0], canvasEl);
+      if (marginFillsLayerRef.current && margin) {
+        const fills = marginFillsLayerRef.current.querySelectorAll<HTMLElement>('[data-margin-side]');
+        fills.forEach(fill => {
+          const side = fill.dataset.marginSide;
+          if (side === 'top') {
+            fill.style.left   = `${currX}px`;
+            fill.style.top    = `${currY - margin.top * z}px`;
+            fill.style.width  = `${currW}px`;
+            fill.style.height = `${margin.top * z}px`;
+          } else if (side === 'bottom') {
+            fill.style.left   = `${currX}px`;
+            fill.style.top    = `${currY + currH}px`;
+            fill.style.width  = `${currW}px`;
+            fill.style.height = `${margin.bottom * z}px`;
+          } else if (side === 'left') {
+            fill.style.left   = `${currX - margin.left * z}px`;
+            fill.style.top    = `${currY - margin.top * z}px`;
+            fill.style.width  = `${margin.left * z}px`;
+            fill.style.height = `${currH + (margin.top + margin.bottom) * z}px`;
+          } else if (side === 'right') {
+            fill.style.left   = `${currX + currW}px`;
+            fill.style.top    = `${currY - margin.top * z}px`;
+            fill.style.width  = `${margin.right * z}px`;
+            fill.style.height = `${currH + (margin.top + margin.bottom) * z}px`;
+          }
+        });
+      }
+      } // end if (el) — selection ring section
+      } // end else — selectedIds.length === 1
+
+      // ── Hover outline (imperative, all selection states) ────────────────
+      // Updated in sync with applyWorldTransform so the outline never lags
+      // behind the canvas content during zoom/pan (eliminates dancing).
+      const hId  = hoveredIdRef.current;
+      const hAlt = altModeRef.current;
+      if (hId && !selectedIds.includes(hId) && !hAlt) {
+        const hEl = canvasEl.querySelector(`[data-builder-id="${hId}"]`) as HTMLElement | null;
+        if (hEl) {
+          const hR = hEl.getBoundingClientRect();
+          if (imperativeHoverBorderRef.current) {
+            imperativeHoverBorderRef.current.style.left   = `${hR.left - cr.left}px`;
+            imperativeHoverBorderRef.current.style.top    = `${hR.top  - cr.top }px`;
+            imperativeHoverBorderRef.current.style.width  = `${hR.width}px`;
+            imperativeHoverBorderRef.current.style.height = `${hR.height}px`;
+          }
+          if (imperativeHoverLabelRef.current) {
+            imperativeHoverLabelRef.current.style.left = `${hR.left - cr.left}px`;
+            imperativeHoverLabelRef.current.style.top  = `${Math.max(0, hR.top - cr.top - 22)}px`;
+          }
+        }
+      }
+    };
+    // Trigger immediate update so crosshairs/ring show on mount when something is selected
+    overlayInstantUpdateRef?.current?.();
+    return () => { if (overlayInstantUpdateRef) overlayInstantUpdateRef.current = null; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvasEl, selectedIds, overlayInstantUpdateRef, zoom, pageNodes]);
+
+  // hoverRect is no longer used for rendering — hover outline is now fully imperative.
+  // The RAF tick still drives padding/margin/gap fill updates for the selection ring.
 
   const selectedRects = useMemo(() => {
     if (!canvasEl) return [] as { id: string; rect: CanvasRect }[];
@@ -402,27 +801,81 @@ export default function BuilderOverlay({
       {/* Grid overlay */}
       <GridOverlay panX={panX} panY={panY} zoom={zoom} config={gridOverlay} />
 
-      {/* Hover outline — hidden while dragging to avoid floating labels */}
-      {!isDragging && hoverRect && (() => {
-        const el = canvasEl.querySelector(`[data-builder-id="${hoveredId}"]`) as HTMLElement | null;
-        const type = el?.dataset.builderType ?? 'node';
-        const label = `${type}  ${Math.round(hoverRect.w / zoom)} × ${Math.round(hoverRect.h / zoom)}`;
-        return <HoverOutline rect={hoverRect} label={label} />;
-      })()}
+      {/* Hover outline — fully imperative (updated via overlayInstantUpdateRef + hoveredId useEffect).
+          Always mounted; shown/hidden via style.display so refs are always valid. */}
+      <div
+        ref={imperativeHoverBorderRef}
+        data-testid="hover-outline"
+        style={{
+          position: 'absolute', display: 'none',
+          border: '1px dashed rgba(59,130,246,0.7)',
+          pointerEvents: 'none', boxSizing: 'border-box',
+        }}
+      />
+      <div
+        ref={imperativeHoverLabelRef}
+        style={{
+          position: 'absolute', display: 'none',
+          background: '#3b82f6', color: '#fff', fontSize: 10, fontFamily: 'system-ui',
+          padding: '2px 6px', borderRadius: 3, whiteSpace: 'nowrap',
+          pointerEvents: 'none', zIndex: 20,
+        }}
+      />
+
+      {/* Crosshairs — fully imperative (position updated in overlayInstantUpdateRef) */}
+      <div
+        ref={imperativeCrosshairHRef}
+        data-testid="crosshair-h"
+        style={{
+          position: 'absolute', left: 0, width: '100%', height: 0,
+          borderTop: '1px dashed rgba(59,130,246,0.5)', pointerEvents: 'none',
+          display: 'none',
+        }}
+      />
+      <div
+        ref={imperativeCrosshairVRef}
+        data-testid="crosshair-v"
+        style={{
+          position: 'absolute', top: 0, width: 0, height: '100%',
+          borderLeft: '1px dashed rgba(59,130,246,0.5)', pointerEvents: 'none',
+          display: 'none',
+        }}
+      />
 
       {/* Single selection — hidden while dragging so resize handles don't float over the ghost */}
       {!isDragging && selectedRects.length === 1 && firstSel && (() => {
-        const isAbs = isAbsoluteNode(firstSel.id, pageNodes);
+        const isAbs = Array.isArray(pageNodes) && pageNodes.length > 0
+          ? isAbsoluteNode(firstSel.id, pageNodes)
+          : false;
         const padding = isAbs ? null : getComputedPadding(firstSel.id, canvasEl);
+        const margin  = isAbs ? null : getComputedMargin(firstSel.id, canvasEl);
         return (
           <>
-            {/* Crosshair alignment lines and gap fills are flow-layout concepts —
-                skip them for absolutely positioned nodes */}
-            {!isAbs && <CrosshairLines rect={firstSel.rect} />}
-            <SelectionBox rect={firstSel.rect} nodeId={firstSel.id} onResizeStart={onResizeStart} />
-            <DimensionTooltip rect={firstSel.rect} zoom={zoom} />
-            {padding && <PaddingFills rect={firstSel.rect} padding={padding} zoom={zoom} />}
-            {!isAbs && <GapFills nodeId={firstSel.id} canvasEl={canvasEl} zoom={zoom} canvasRect={canvasDomRect} />}
+            {/* ringRef enables zero-lag imperative position sync during pan/zoom */}
+            <SelectionBox rect={firstSel.rect} nodeId={firstSel.id} onResizeStart={onResizeStart} zoom={zoom} ringRef={selectionRingRef} />
+
+            {/* Gap fills — separate layer, fully recomputed each frame from each child's BCR.
+                Children move by different amounts during zoom, so translate alone is wrong. */}
+            {!isAbs && (
+              <div ref={gapFillsLayerRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+                <GapFills nodeId={firstSel.id} canvasEl={canvasEl} zoom={zoom} canvasRect={canvasDomRect} />
+              </div>
+            )}
+
+            {/* Padding fills — separate layer, fully recomputed each frame via instant update.
+                Both position AND size depend on live zoom, so translate alone is insufficient. */}
+            {padding && (
+              <div ref={paddingFillsLayerRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+                <PaddingFills rect={firstSel.rect} padding={padding} zoom={zoom} />
+              </div>
+            )}
+
+            {/* Margin fills (orange) — outside the selection ring, also fully recomputed. */}
+            {margin && (
+              <div ref={marginFillsLayerRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+                <MarginFills rect={firstSel.rect} margin={margin} zoom={zoom} />
+              </div>
+            )}
           </>
         );
       })()}
@@ -436,7 +889,9 @@ export default function BuilderOverlay({
           {multiBBox && (
             <>
               <div style={{ position: 'absolute', left: multiBBox.x, top: multiBBox.y, width: multiBBox.w, height: multiBBox.h, border: '1px dashed #3b82f6', pointerEvents: 'none' }} />
-              <DimensionTooltip rect={multiBBox} zoom={zoom} />
+              <div style={{ position: 'absolute', left: multiBBox.x + multiBBox.w / 2, top: multiBBox.y + multiBBox.h + 8, transform: 'translateX(-50%)', background: '#3b82f6', color: '#fff', fontSize: 10, fontFamily: 'system-ui', padding: '2px 7px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 20 }}>
+                {Math.round(multiBBox.w / zoom)} × {Math.round(multiBBox.h / zoom)}
+              </div>
             </>
           )}
         </>
@@ -447,9 +902,15 @@ export default function BuilderOverlay({
         <DistanceLines selRect={firstSel.rect} tgtRect={altRect} />
       )}
 
-      {/* Insert indicator line — shown for any drop position (root or in-container) */}
-      {isDroppingVariant && dropLineY !== null && (
-        <DropZoneLine y={dropLineY} width={canvasEl.clientWidth} active={true} />
+      {/* Insert indicator line — horizontal for columns, vertical for rows */}
+      {isDroppingVariant && (dropLineY !== null || dropLineX !== null) && (
+        <DropZoneLine
+          y={dropLineY}
+          x={dropLineX}
+          width={canvasEl.clientWidth}
+          height={canvasEl.clientHeight}
+          active={true}
+        />
       )}
 
       {/* Container drop highlight — blue border when dragging INTO a container */}

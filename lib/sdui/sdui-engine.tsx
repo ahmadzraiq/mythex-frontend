@@ -315,8 +315,10 @@ export function SDUIEngine({
     config.initActions?.forEach((action) => runActionRef.current(action));
   }, [config.initActions]); // runActionRef.current always has latest runAction
 
+  const builderContextValue = useMemo(() => ({ builderMode }), [builderMode]);
+
   return (
-    <BuilderContext.Provider value={{ builderMode }}>
+    <BuilderContext.Provider value={builderContextValue}>
       <RunActionProvider value={runActionStable}>
         <SDURenderer node={config.ui} context={context} />
       </RunActionProvider>

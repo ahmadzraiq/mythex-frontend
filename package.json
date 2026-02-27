@@ -32,7 +32,7 @@
     "sections:browser": "echo 'Open http://localhost:3000/dev/sections in your browser (requires npm run dev)'",
     "test:builder": "npx playwright test e2e/builder.spec.ts",
     "test:builder:ui": "npx playwright test e2e/builder.spec.ts --ui",
-    "test:builder:all": "npx playwright test e2e/test-dnd.spec.ts e2e/button-panel.spec.ts e2e/builder.spec.ts e2e/builder-features.spec.ts e2e/snap-engine.spec.ts"
+    "test:builder:all": "npx playwright test e2e/builder.spec.ts e2e/builder-features.spec.ts e2e/test-dnd.spec.ts e2e/panel-interactive.spec.ts e2e/panel-form.spec.ts e2e/panel-display.spec.ts e2e/panel-media.spec.ts e2e/panel-layout.spec.ts e2e/snap-engine.spec.ts e2e/panel-overlays.spec.ts e2e/panel-charts.spec.ts builder-bugfixes.spec.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.30",
@@ -42,6 +42,7 @@
     "@gluestack/ui-next-adapter": "^3.0.3",
     "@gorhom/bottom-sheet": "^5.0.0-alpha.11",
     "@legendapp/motion": "^2.4.0",
+    "@react-google-maps/api": "^2.20.8",
     "ai": "^6.0.97",
     "dom-helpers": "^5.2.1",
     "embla-carousel-react": "^8.6.0",
@@ -49,13 +50,16 @@
     "lucide-react-native": "^0.510.0",
     "nativewind": "^4.1.23",
     "next": "15.3.8",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.1",
     "react-aria": "^3.41.1",
     "react-dom": "^19.2.1",
+    "react-markdown": "^10.1.0",
     "react-native-safe-area-context": "^5.6.1",
     "react-native-svg": "^15.12.0",
     "react-native-web": "^0.20.0",
     "react-stately": "^3.39.0",
+    "recharts": "^3.7.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^1.14.0",
     "tailwind-variants": "^0.1.20",

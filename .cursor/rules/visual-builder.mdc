@@ -13,16 +13,22 @@ A Figma-like visual page builder that renders SDUI components directly in the sa
 
 | File | Purpose |
 |---|---|
-| `page.tsx` | Top-level layout: left panel + canvas + right panel. Exposes `window.__builderStore` for Playwright. |
-| `_store.ts` | Zustand store: `pageNodes`, `selectedIds`, `hoveredId`, history (undo/redo), clipboard, locked/hidden sets. Also exports `findNode`, `findParentNode`. |
+| `page.tsx` | Top-level layout: left panel + canvas + right panel. |
+| `_store.ts` | Zustand store: `pageNodes`, `selectedIds`, `hoveredId`, history (undo/redo), clipboard, locked/hidden sets. Exposes `window.__builderStore` at module level (before React hydration) for Playwright. Also exports `findNode`, `findParentNode`, `REQUIRED_PARENT`, `ALLOWED_CHILDREN`. |
 | `_canvas.tsx` | Renders the page frame and SDUI node tree in `builderMode`. Handles drop targets, drag-and-drop reordering, click-to-select. |
 | `_overlay.tsx` | Renders visual overlays: selection box, hover outline, crosshair lines, padding fills, gap fills, distance lines, drop zone indicators. All overlays use `data-testid` for Playwright. |
-| `_panel-left.tsx` | Left panel: Layers tree tab + Components palette tab. Draggable primitives with `defaultNode` definitions. |
-| `_panel-right.tsx` | Right panel: Design / Props / JSON tabs. Full design properties panel. |
+| `_panel-left.tsx` | Left panel: Layers tree tab + Components palette tab. `PRIMITIVE_COMPONENTS` defines all palette groups and `defaultNode` templates. |
+| `_panel-right.tsx` | Right panel: Design / Props / JSON tabs. Full design properties panel. Node classifications: `isContainer`, `isTextNode`, `isLeafWidget`. |
 | `_tw-utils.ts` | Tailwind class utilities: token tables, parse/replace/remove helpers, spacing helpers, border-radius helpers, alignment helpers. |
 | `e2e/builder.spec.ts` | Main Playwright E2E test suite (selection, DnD, overlays). |
-| `e2e/test-dnd.spec.ts` | DnD and right-panel property tests (T*, U*, V* series). |
-| `e2e/button-panel.spec.ts` | Exhaustive Button right-panel tests (BP-00 to BP-35+). |
+| `e2e/test-dnd.spec.ts` | DnD, right-panel property tests (T*, U*, V* series), drop-line direction tests (DI-01..04). |
+| `e2e/panel-interactive.spec.ts` | Exhaustive right-panel tests for Pressable-based buttons (BP-00 to BP-44+) and Content section (PI-01..03). Supersedes deleted `button-panel.spec.ts`. |
+| `e2e/panel-form.spec.ts` | Right-panel tests for Input, Textarea, Checkbox, Toggle, Switch, DatePicker, TimePicker, DateTimePicker, ColorPicker, FileUpload (PF-01..31). |
+| `e2e/panel-display.spec.ts` | Right-panel tests for Heading, Badge, Avatar, Chip, StarRating, Breadcrumbs, Tabs, Stepper, Pagination, Accordion, JsonViewer (PD-01..26). |
+| `e2e/panel-media.spec.ts` | Right-panel tests for NextImage and NavIcon/Icon Tap (PM-01..10). |
+| `e2e/panel-layout.spec.ts` | Right-panel tests for Card, Center, Grid, Link, ScrollView, Table, Iframe, SvgViewer, Chart, MarkdownViewer, QRCode, GoogleMap (PL-01..23). |
+| `e2e/panel-overlays.spec.ts` | Right-panel tests for Modal, Tooltip, AlertDialog — isContainer + REQUIRED_PARENT guards (PO-01..09). |
+| `e2e/panel-charts.spec.ts` | Chart (bar/line/pie), QRCodeWidget, MarkdownViewer, GoogleMap, GoogleMapPlaces — isLeafWidget + render checks (PC-01..14). |
 
 ---
 
@@ -39,13 +45,164 @@ Components render directly in the React tree. The canvas uses a `data-builder-pa
 
 **`builderMode`**: a flag passed to the SDUI renderer that disables action execution and enables builder-specific ref callbacks.
 
+**Preview** (`↗ Preview` button / `⌘P`): Serializes `pageNodes` + `viewport` + page metadata to `localStorage` (key: `BUILDER_PREVIEW_KEY`) then opens `/dev/builder/preview` in a new tab. The preview page (`app/dev/builder/preview/page.tsx`) reads from localStorage and renders **only** `SDUIEngine` with no builder chrome — exactly as a real website. No overlays, no toolbar, no labels.
+
+---
+
+## Palette — Primitive Components (`_panel-left.tsx`)
+
+All components in the palette are **primitives**: they use `Box`, `Text`, `Pressable`, and `NavIcon` as building blocks, giving users full `className`-based control over styling. Gluestack compound components (Slider, Select, etc.) are used when no plain-primitive equivalent exists.
+
+**Groups and key `defaultNode` patterns:**
+
+| Group | Component | Type(s) | Notes |
+|---|---|---|---|
+| Layout | Box | `Box` `flex flex-col` | Column container |
+| Layout | Row | `Box` `flex flex-row` | Horizontal container |
+| Layout | VStack | `VStack` | Gluestack VStack (column) |
+| Layout | HStack | `HStack` | Gluestack HStack (row) |
+| Layout | Center | `Center` | Centers children horizontally & vertically |
+| Layout | Grid | `Grid` (empty, `grid-cols-2 gap-4`) | CSS grid container; `isContainer`; drop `GridItem` children into it |
+| Layout | Card | `Card` + `Heading`/`Text` children | Bordered surface container; `isContainer` |
+| Layout | Divider | `Box` `h-px bg-border` | Horizontal rule |
+| Typography | Text | `Text` | Text node (Typography section) |
+| Typography | Heading | `Heading` | Text node (Typography section) |
+| Typography | Label | `Text` `text-sm font-medium` | Text node |
+| Typography | Caption | `Text` `text-xs` | Text node |
+| Typography | Link | `Link` + `LinkText` child | Navigable link; `isContainer` |
+| Buttons | Btn Solid | `Pressable` + `Text` child | `bg-primary text-primary-foreground` |
+| Buttons | Btn Destructive | `Pressable` + `Text` child | `bg-destructive text-destructive-foreground` |
+| Buttons | Btn Outline | `Pressable` + `Text` child | `border border-primary` |
+| Buttons | Btn Ghost | `Pressable` + `Text` child | No bg, no border |
+| Buttons | Btn + Icon L | `Pressable` + `NavIcon` + `Text` | Icon left of label |
+| Buttons | Btn + Icon R | `Pressable` + `Text` + `NavIcon` | Icon right of label |
+| Buttons | Icon Btn | `Pressable` + `NavIcon` | Square icon button |
+| Buttons | Icon Btn Round | `Pressable` + `NavIcon` | Circular icon button |
+| Buttons | Link Btn | `Pressable` + `Text` + `NavIcon` | Underlined link-style |
+| Buttons | Pressable | `Pressable` | Bare interactive container |
+| Buttons | FAB | `Fab` + `FabIcon` + `FabLabel` | Floating action button; `isContainer` |
+| Form | Input | `Input` | `InputWithField` composite; supports `forwardRef`; `isLeafWidget` |
+| Form | Input Search | `Input` + `InputSlot` + `InputField` | Input with leading search icon |
+| Form | Textarea | `Textarea` | Multi-line input; `isLeafWidget` |
+| Form | Select | `Select` + `SelectTrigger`/`SelectPortal` | Dropdown picker; `isLeafWidget` |
+| Form | Slider | `Slider` + `SliderTrack`/`SliderThumb` | Range input; `isLeafWidget` |
+| Form | Radio | `Radio` + `RadioIndicator` + `RadioLabel` | Single radio option; `isContainer` |
+| Form | Radio Group | `RadioGroup` wrapping `Radio` children | Mutually exclusive group; `isContainer` |
+| Form | Progress | `Progress` + `ProgressFilledTrack` | Progress bar; `isLeafWidget` |
+| Form | Toggle | `Pressable` + `Box` thumb | Primitive toggle (track + thumb); `isContainer` |
+| Form | Checkbox | `Checkbox` + `CheckboxIndicator` + `CheckboxLabel` | Checkbox; `isContainer` |
+| Media | Image | `NextImage` | Custom `img` wrapper; `isLeafWidget` |
+| Media | Icon | `NavIcon` | Lucide icon; `forwardRef` via `span`; `isLeafWidget` |
+| Media | Icon Tap | `Pressable` + `NavIcon` | Icon in a circle |
+| Display | Badge | `Badge` + `BadgeText` child | `isContainer` |
+| Display | Avatar | `Avatar` + `AvatarFallbackText` child | `isContainer` |
+| Display | Spinner | `Spinner` | Animated loading indicator; `isLeafWidget` |
+| Display | Skeleton | `Skeleton` + `SkeletonText` | Loading placeholder; `isContainer` |
+| Display | Alert | `Alert` + `NavIcon` + `AlertText` | Informational callout; `isContainer` |
+| Form | Switch | `Pressable` (track) + `Box` (thumb) | Primitive toggle; fully styleable sub-parts; `isContainer` |
+| Form | Switch On | `Pressable` + `Box` (right) | Same but active state |
+| Form | DatePicker | `DatePicker` | Native `<input type="date">`; `isLeafWidget` |
+| Form | TimePicker | `TimePicker` | Native `<input type="time">`; `isLeafWidget` |
+| Form | Date & Time | `DateTimePicker` | Native `<input type="datetime-local">`; `isLeafWidget` |
+| Form | Color Picker | `ColorPicker` | Color swatch + `<input type="color">`; `isLeafWidget` |
+| Form | File Upload | `FileUpload` | Dashed drop zone + hidden file input; `isLeafWidget` |
+| Form | Autocomplete | `Box` + `Input` + dropdown `Box` | Primitive search-with-dropdown; `isContainer` |
+| Layout | ScrollView | `Box` `overflow-auto` | Scrollable container; `isContainer` |
+| Composite | Chip | `Pressable` + `Text` + `NavIcon X` | Removable tag; `isContainer` |
+| Composite | Tag | `Box` `rounded-full` + `Text` | Static tag; `isContainer` |
+| Composite | Tabs | `Box` + tab bar + content | `isContainer` |
+| Composite | Stepper | `Box` + circle nodes + connectors | Step progress; `isContainer` |
+| Composite | Pagination | `Box` + Prev/Next + pages | Page nav bar; `isContainer` |
+| Composite | Star Rating | `Box` + 5× `NavIcon Star` | Rating display; `isContainer` |
+| Composite | Breadcrumbs | `Box` + `Text` + separators | Nav path; `isContainer` |
+| Composite | Accordion | `Box` + `Pressable` header + body | Collapsible section; `isContainer` |
+| Composite | Table | `Box` + header row + data rows | Flex-based table; `isContainer` |
+| Composite | Snackbar | `Box` + `NavIcon` + `Text` | Bottom notification bar; `isContainer` |
+| Overlays | Modal | `Modal` (`isOpen: true`) + backdrop + content | Gluestack portal dialog; `isContainer` |
+| Overlays | Tooltip | `Tooltip` (`isOpen: true`) + trigger + content | Hover popup; `isContainer` |
+| Overlays | Alert Dialog | `AlertDialog` (`isOpen: true`) + backdrop + content | Confirmation dialog; `isContainer` |
+| Data & Media | Iframe | `Iframe` | `<iframe>` with placeholder; `isLeafWidget` |
+| Data & Media | SVG Viewer | `SvgViewer` | `dangerouslySetInnerHTML` SVG; `isLeafWidget` |
+| Data & Media | JSON Viewer | `JsonViewer` | Syntax-colored JSON pre block; `isLeafWidget` |
+| Data & Media | Chart | `Chart` | recharts Line/Bar/Pie; `isLeafWidget` |
+| Data & Media | QR Code | `QRCodeWidget` | qrcode.react SVG; `isLeafWidget` |
+| Data & Media | Markdown | `MarkdownViewer` | react-markdown; `isLeafWidget` |
+| Data & Media | Google Map | `GoogleMap` | Embedded map; placeholder without `apiKey`; `isLeafWidget` |
+| Data & Media | Places Search | `GoogleMapPlaces` | Places search input; `isLeafWidget` |
+
+**Primitive-first rule:** Every component that CAN be composed from `Box`, `Pressable`, `Text`, `NavIcon` MUST be. Exceptions: Gluestack overlay compounds (Modal, Tooltip, AlertDialog) manage DOM portals; HTML input wrappers (DatePicker, ColorPicker, etc.) wrap native elements for semantic/accessibility reasons.
+
+**Rule:** When adding a new palette entry, prefer `Pressable`/`Box`/`Text`/`NavIcon` primitives. Use Gluestack compound components only when no primitive equivalent exists. All new Gluestack compound sub-components need `REQUIRED_PARENT` / `ALLOWED_CHILDREN` entries in `_store.ts`.
+
+---
+
+## Crash Guards (`REQUIRED_PARENT` / `ALLOWED_CHILDREN` in `_store.ts`)
+
+Context-dependent Gluestack sub-components crash when orphaned (they use `useStyleContext` which throws without a parent provider). The builder enforces nesting rules:
+
+- **`REQUIRED_PARENT`**: maps a sub-component type → its required parent type. Dragging out is blocked.
+- **`ALLOWED_CHILDREN`**: maps a container type → allowed child types. Dropping incompatible children is blocked.
+
+**Current guards include:** `InputField`, `InputSlot`, `SelectItem`, `SelectInput`, `SelectTrigger`, `SelectIcon`, `SelectPortal`, `SelectBackdrop`, `SelectContent`, `BadgeText`, `BadgeIcon`, `AvatarFallbackText`, `AvatarImage`, `CheckboxIndicator`, `CheckboxLabel`, `RadioIndicator`, `RadioLabel`, `FabLabel`, `FabIcon`, `SliderTrack`, `SliderFilledTrack`, `SliderThumb`, `SkeletonText`, `AlertText`, `AlertIcon`, `LinkText`, `ProgressFilledTrack`, `TextareaInput`.
+
+**Rule:** When adding any new Gluestack sub-component to the palette, also add its `REQUIRED_PARENT` and parent's `ALLOWED_CHILDREN` entry.
+
+---
+
+## Right Panel — Node Classification (`_panel-right.tsx`)
+
+Three booleans control which design sections are shown:
+
+| Variable | Includes | Controls |
+|---|---|---|
+| `isContainer` | `Box`, `VStack`, `HStack`, `Center`, `Grid`, `GridItem`, `Card`, `Pressable`, `Checkbox`, `Radio`, `RadioGroup`, `Badge`, `Avatar`, `Fab`, `Skeleton`, `Alert`, `Link` | Alignment grid, Auto Layout section |
+| `isTextNode` | `Text`, `Heading`, `ButtonText`, `BadgeText`, `AvatarFallbackText`, `CheckboxLabel`, `RadioLabel`, `FabLabel`, `SkeletonText`, `AlertText`, `LinkText` | Typography section |
+| `isLeafWidget` | `Input`, `NavIcon`, `Image`, `NextImage`, `Textarea`, `Select`, `Slider`, `Progress`, `Spinner` | Hides Auto Layout + Alignment |
+
+**Content section:** shown for `isTextNode` nodes (edits `node.text`) and for `isContainer` nodes that have a `Text` or `Heading` child (edits the first such child's `text`).
+
+**Rule:** Any new component that the user should be able to layout children inside must be in `isContainer`. Text-only nodes that need font/color controls must be in `isTextNode`. Leaf widgets that have no layout children should be in `isLeafWidget`.
+
+---
+
+## `NextImage` Custom Component (`lib/sdui/components/NextImage.tsx`)
+
+Wraps a plain `<img>` tag (NOT `next/image`) inside a `div`, using `React.forwardRef` so the `div` receives `data-builder-id`:
+
+- **Gray placeholder** when `src` is empty or `'/'`.
+- **No domain restrictions** — works with any URL without modifying `next.config.mjs`.
+- **Fill mode** — wraps in `position: relative; width: 100%; height: 100%` div when `fill` prop is true.
+- **Default mode** — `inline-block; overflow: hidden; style={width, height}` div with `img` inside.
+
+**Rule:** Never use Gluestack's `Image` component (`UIImage`) in the builder palette — it uses `source={{ uri }}` (React Native API), applies `style={{ height: 'revert-layer' }}` conflicting with Tailwind, and cannot forward refs. Always use `NextImage`.
+
+---
+
+## `NavIcon` forwardRef (`lib/sdui/icons.tsx`)
+
+`NavIcon` is wrapped in `React.forwardRef` using an `inline-flex span` as the ref target:
+
+```tsx
+export const NavIcon = React.forwardRef<HTMLSpanElement, NavIconProps>(
+  function NavIcon(props, ref) {
+    return (
+      <span ref={ref} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+        <IconComponent ... />
+      </span>
+    );
+  }
+);
+```
+
+This ensures `data-builder-id` is set on the span so icons are selectable/resizable in the builder.
+
 ---
 
 ## Design Panel Sections (Right Panel)
 
 Full section list in render order:
 
-0. **Content** *(Text/Heading/ButtonText + Button)* — Textarea to edit `node.text` directly. For Button, edits the first `ButtonText` child. Shown before Position & Size.
+0. **Content** *(Text/Heading + any container with Text/Heading child)* — Textarea to edit `node.text` directly. Shown before Position & Size.
 1. **Position & Size** — X/Y (read-only DOM metrics), W/H (inline `style.width/height` + `minWidth/minHeight: 0`)
 2. **Dimensions** — W mode: Hug (`w-fit`) / Fill (`w-full`) / Fixed (removes fit/full). H mode: same with `h-*`. Also: Min W / Max W / Min H / Max H (inline `style.minWidth/maxWidth/minHeight/maxHeight`).
 3. **Self Alignment** — How this node aligns inside its parent flex container: `self-auto/start/center/end/stretch/baseline`
@@ -64,6 +221,133 @@ Full section list in render order:
 16. **Opacity** — Inline `style.opacity` (0–1). Slider min=5.
 17. **Selection colors** — Hex swatches from className
 18. **Layout Guide** — Grid overlay toggle
+
+---
+
+## Canvas Performance — Re-render Prevention
+
+Excessive re-renders in the builder canvas are the most common performance issue. The following root causes have been identified and fixed:
+
+### Cause 1: Pan/Zoom calls `setZoom`/`setPan` on every scroll event → full `BuilderCanvas` re-render
+
+**Problem:** `BuilderCanvas` subscribes to `useBuilderStore()` (full store, no selector). Every wheel event called `setZoom`/`setPan` → Zustand notified all subscribers → `BuilderCanvas` re-rendered entirely (dot grid, all page frames, overlay, snap guides) at 60+ fps.
+
+**Fix — World container + imperative transforms:**
+
+1. A single `worldRef` div wraps **all page frames**. Its CSS transform (`translate + scale`) is applied imperatively via ref, never through React state.
+2. The wheel handler and pan-drag pointer handler update `worldRef.current.style.transform` directly — zero React re-renders.
+3. Zustand is synced once after the gesture settles via a debounced `scheduleStoreSync` (~80 ms).
+4. A `useEffect([panX, panY, zoom])` syncs the world container when state changes *externally* (fitToPage, toolbar zoom buttons).
+5. The dot-grid SVG `<pattern>` is updated via `gridPatternRef` with `setAttribute` calls — same imperative approach.
+
+**Result:** Scroll is 0 React re-renders. Only the CSS transform on one DOM node changes. Buttery smooth.
+
+**Rules:**
+- NEVER call `setZoom`/`setPan` inside the wheel event handler — always go through `applyWorldTransform` + `scheduleStoreSync`.
+- NEVER put `left: panX + ...` inline styles on individual page frames — they must be at world coordinates inside the `worldRef` container.
+- The overlay, snap guides, and abs-drag tooltip live OUTSIDE the worldRef (canvas space) and use Zustand's `panX`/`zoom` (which lag by ~80 ms during scroll — acceptable since they're empty during bare scroll).
+
+### Cause 2: SDUI tree re-renders on every pan/zoom/hover
+
+**Problem:** `SDUIEngine` (the entire SDUI component tree) re-rendered on every scroll frame.
+
+**Fix:** Wrap the active page's `SDUIEngine` in a `React.memo`-d `PageEngine` component:
+
+```typescript
+const PageEngine = memo(function PageEngine({ pageConfig }: { pageConfig: SDUIConfig }) {
+  if (!pageConfig.ui) return <EmptyCanvas />;
+  return <SDUIEngine key="builder-engine" config={pageConfig} ... />;
+});
+```
+
+`pageConfig` only changes when `pageNodes` changes (user edits), not on pan/zoom/hover. The world container fix (Cause 1) eliminates the re-render trigger entirely; `PageEngine` memo is a belt-and-suspenders guard.
+
+### Cause 3: Unstable `BuilderContext.Provider` value
+
+**Problem:** `sdui-engine.tsx` creates `{ builderMode }` inline in JSX → new object reference every render → all `SDURendererInner` children see a new context and re-render.
+
+**Fix:** Memoize the context value in `sdui-engine.tsx`:
+```typescript
+const builderContextValue = useMemo(() => ({ builderMode }), [builderMode]);
+<BuilderContext.Provider value={builderContextValue}>
+```
+
+### Cause 4: `hover()` fires on every mouse pixel
+
+**Problem:** `handleOverlayMouseMove` calls `hover(id)` (Zustand `set`) on every `mousemove` event, even when the hovered node hasn't changed. This triggers a Zustand subscription update every frame.
+
+**Fix:** Guard with a `useRef` that tracks the last dispatched `hoveredId`:
+
+```typescript
+// _canvas.tsx
+const lastHoveredIdRef = useRef<string | null>(null);
+
+const handleOverlayMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+  const hit = hitTest(e.clientX, e.clientY);
+  const id = hit.kind === 'node' ? hit.id : null;
+  if (id !== lastHoveredIdRef.current) {   // Only dispatch when id actually changes
+    lastHoveredIdRef.current = id;
+    hover(id);
+  }
+}, [hitTest, hover]);
+
+const handleOverlayMouseLeave = useCallback(() => {
+  lastHoveredIdRef.current = null;
+  hover(null);
+}, [hover]);
+```
+
+**Rule:** Any future canvas state subscription (e.g. new overlay modes) must follow the same guard pattern. Never call Zustand `set` in a `mousemove` handler without a change guard.
+
+---
+
+## Showcase Nodes — Every Node Must Have an `id` (use `ensureIds`)
+
+**Problem:** Inner children of showcase cards (e.g. "John Doe" text inside a Profile Card) cannot be clicked/selected in the builder. They appear invisible to the hit-test — clicking them selects the outer card wrapper instead.
+
+**Root cause:** The SDUI renderer only stamps `data-builder-id` on nodes that have an explicit `id` field (see `renderer.tsx` line `if (node.id)`). Inline child objects written without `id: uid()` never get `data-builder-id`, so `hitTest`'s `closest('[data-builder-id]')` walk falls back to the nearest ancestor that has one — typically the outer container.
+
+**Fix:** Add a recursive `ensureIds` helper in `_showcase.ts` and apply it to the root nodes before export:
+
+```ts
+function ensureIds(node: SDUINode): SDUINode {
+  return {
+    ...node,
+    id: node.id ?? uid(),
+    children: node.children?.map(ensureIds),
+  };
+}
+
+// At the bottom:
+export const showcaseNodes: SDUINode[] = showcaseRaw.map(ensureIds);
+```
+
+**Rule:** Any time you add nodes to the showcase (or any builder page config) that are defined inline without `id` fields, wrap the root array with `ensureIds`. Never export showcase nodes directly without this pass — inner nodes without `id` are permanently unselectable in the builder.
+
+---
+
+## Showcase / Preview — Grid Layout Must Have `w-full`
+
+**Problem:** The showcase `row()` grid (`grid grid-cols-3 gap-6 items-start`) renders correctly in the builder canvas but shows the wrong number of columns in the preview tab.
+
+**Root cause:** NativeWind's `Box` → React Native `View` does **not** auto-expand to fill its parent. Without `w-full`, the grid container collapses to its content size. CSS `grid-template-columns: repeat(3, 1fr)` computes `1fr` relative to the container's actual width — if the container is content-sized, each `1fr` equals one item's natural width, letting many items pack per row instead of exactly 3.
+
+In the builder canvas the page frame has a fixed pixel `width` set via inline style, which forces children to stretch. In the preview tab there is no such frame, so the collapsed grid becomes visible.
+
+**Fix:**
+1. Add `w-full` to every grid container in `_showcase.ts` `row()`:
+   ```ts
+   props: { className: 'grid grid-cols-3 gap-6 items-start w-full' }
+   ```
+2. Add `grid-cols-*` to the Tailwind safelist in `tailwind.config.js`:
+   ```js
+   { pattern: /^grid-cols-(\d+)$/ },
+   { pattern: /^grid-rows-(\d+)$/ },
+   { pattern: /^col-span-(\d+)$/ },
+   { pattern: /^row-span-(\d+)$/ },
+   ```
+
+**Rule:** Every `grid` container in the showcase (and in any SDUI screen) must include `w-full`. Without it, the grid will look correct only when the parent has an explicit fixed width (like the builder canvas frame), and will break in the actual preview/page context.
 
 ---
 
@@ -138,7 +422,36 @@ return className.replace(new RegExp(`(?:^|\\s)${escaped}\\S*`, 'g'), ' ')...
 
 ---
 
-### 7. Padding / Margin / Gap — exact pixel values via inline style
+### 7. CONTAINER_TYPES Must Stay in Sync Across Three Files
+
+**Root cause:** `CONTAINER_TYPES` in `_canvas.tsx` and `LAYER_CONTAINER_TYPES` in `_panel-left.tsx` only contained 8 types (`Box`, `VStack`, `HStack`, `ScrollView`, `View`, `Card`, `SafeAreaView`, `Pressable`). Any type NOT in this set is treated as a leaf — you cannot drop children into it when it's empty (the `children.length > 0` fallback only helps non-empty containers).
+
+**Impact:** `Center`, `Grid`, `GridItem`, and all Gluestack compound containers were non-droppable when first placed on the canvas.
+
+**Fix:** All three sets must include the **same container types**:
+- `_canvas.tsx` → `CONTAINER_TYPES` (controls drag-over hit logic)
+- `_panel-left.tsx` → `LAYER_CONTAINER_TYPES` (controls layers-panel expand icon)
+- `_panel-right.tsx` → `isContainer` array (controls Auto Layout design panel section)
+
+**Rule:** Whenever you add a new container component to the palette, add its `type` string to all three locations. The canonical list is in `_panel-right.tsx`'s `isContainer` array.
+
+---
+
+### 8. defaultNode className Must Include All Implicit Style Tokens
+
+**Root cause:** The right panel reads layout/alignment tokens (`flex-row`, `flex-col`, `items-*`, `justify-*`) exclusively from `props.className`. Gluestack compound components (Center, VStack, HStack, etc.) apply these tokens internally via their `tva` base styles — NOT from `props.className`. So when a component is freshly dropped, the panel shows no direction selected and no alignment cell highlighted even though the component visually centers/stacks correctly.
+
+**Fix:** Always include all layout-defining tokens explicitly in `defaultNode.props.className`:
+- `Center` → `flex flex-col items-center justify-center`
+- `VStack` → `flex flex-col`
+- `HStack` → `flex flex-row`
+- Any other container with an implicit flex direction or alignment → add those tokens to `className`
+
+**Rule:** If a component has implicit `flex-*`, `items-*`, or `justify-*` built into its component style, mirror those tokens in `defaultNode.className` so the right panel reflects the actual visual behavior immediately on drop.
+
+---
+
+### 9. Padding / Margin / Gap — exact pixel values via inline style
 
 **Root cause:** Using Tailwind spacing scale (`pxToSpacingScale`) forced values to snap to 2px increments. Input `1` → rounded to `0` → no margin. Input `3` → `mx-0.5` (not compiled in older safelist).
 
@@ -201,30 +514,76 @@ All dynamically applied builder classes must be in the safelist. Current coverag
 
 ## E2E Tests
 
-Tests use `window.__builderStore` (exposed in `page.tsx`) to read Zustand state directly.
+Tests use `window.__builderStore` (exposed at **module level** in `_store.ts`, NOT in a `useEffect`) to read/write Zustand state directly. Available as soon as the JS bundle loads, before React hydration completes.
 
-Key helpers across test files:
-- `gotoBuilder(page)` — navigate to `/dev/builder`, wait for frame + tabs
-- `dropButton(page)` — drag Button from component palette to canvas (with retry)
+**`gotoBuilder` pattern:**
+```ts
+async function gotoBuilder(page: Page) {
+  await page.goto('/dev/builder');
+  await page.waitForSelector('[data-builder-page-frame]', { timeout: 30_000 });
+  await page.waitForSelector('[data-testid="tab-components"]', { timeout: 15_000 });
+  await page.waitForFunction(
+    () => !!(window as unknown as Record<string, unknown>).__builderStore,
+    { timeout: 20_000, polling: 100 }
+  );
+}
+```
+
+**`injectNodes` pattern** (preferred over drag-and-drop):
+```ts
+async function injectNodes(page: Page, nodes: unknown[]) {
+  await page.evaluate((n) => {
+    (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>)
+      .__builderStore.getState()._setPageNodes(n);
+  }, nodes);
+  // ALL nodes must have `id` for data-builder-id to be set
+  await page.waitForSelector(`[data-builder-id="${(nodes[0] as {id: string}).id}"]`, { timeout: 8_000 });
+}
+```
+
+**Key helpers:**
+- `gotoBuilder(page)` — navigate to `/dev/builder`, wait for frame + tabs + store
+- `injectNodes(page, nodes)` — set page nodes directly via store (bypasses flaky drag-and-drop)
 - `selectViaLayers(page)` — click Layers tab → first layer-row → Design tab
-- `assertButtonVisible(page, nodeId, step)` — checks bounding box AND `backgroundColor !== rgba(0,0,0,0)`
 - `getNodeClassName(page, nodeId)` — reads `node.props.className` from store
 - `getNodeStyle(page, nodeId)` — reads `node.props.style` from store
 - `scrollTo(page, testId)` — scrolls element into view inside overflow panel container
 
+**`beforeAll` / `beforeEach` pattern** (used in all panel spec files for performance):
+```ts
+let page: Page;
+test.beforeAll(async ({ browser }) => { page = await browser.newPage(); await gotoBuilder(page); });
+test.beforeEach(async () => {
+  // clear canvas between tests instead of re-navigating
+  await page.evaluate(() => {
+    (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>)
+      .__builderStore.getState()._setPageNodes([]);
+  });
+});
+```
+
 **Test series:**
-- `BP-00` to `BP-44`: Button panel exhaustive tests (latest: Hug/Fill/Fixed W+H, Min/Max W+H, default bg color)
-- `T1`–`T11`: Dimension, rotate, NumberInput, moveNode, drop zone, opacity
-- `U1`–`U14`: Alignment, flip, auto layout, gap, clip, stroke, typography, DOM visual update
-- `V1`–`V8`: Color pickers, Button visibility with gap, section visibility per node type, self-alignment
+- `BP-00`–`BP-44` (in `panel-interactive.spec.ts`): Pressable-based button, all right-panel controls. Replaces old `button-panel.spec.ts` (deleted).
+- `PI-01`–`PI-03`: Content section for Pressable with Text children.
+- `PF-01`–`PF-16` (in `panel-form.spec.ts`): Input, Textarea, Checkbox, Toggle.
+- `PD-01`–`PD-11` (in `panel-display.spec.ts`): Heading, Badge, Avatar.
+- `PM-01`–`PM-10` (in `panel-media.spec.ts`): NextImage (placeholder, resize, src), NavIcon (size/color), Icon Tap.
+- `T1`–`T11`: Dimension, rotate, NumberInput, moveNode, drop zone, opacity.
+- `U1`–`U14`: Alignment, flip, auto layout, gap, clip, stroke, typography, DOM visual update.
+- `V1`–`V8`: Color pickers, visibility with gap, section visibility per node type, self-alignment.
+- `DI-01`–`DI-04`: Drop indicator direction — vertical line for row/HStack, horizontal for column.
+- `Fix-DropLine-1/2`: Drop line not shown over dragged node, moveNode correct index placement.
 
 **Selection in E2E — use Layers panel, not canvas click:**
-Canvas click-to-select (via the capture overlay) can be unreliable in Playwright/headless runs — the overlay's `onPointerDown` may not fire consistently. For tests that need a node selected, use the Layers panel instead:
+Canvas click-to-select can be unreliable in Playwright/headless — the capture overlay's `onPointerDown` may not fire. For tests that need a node selected, use the Layers panel instead:
 ```ts
 await page.getByTestId('tab-layers').click();
 await page.getByTestId('layer-row').first().click();
 ```
-This calls `store.select()` directly and is reliable. Do not rely on `clickFirstNode` / `page.mouse.click` on canvas for selection assertions.
+
+**Injected nodes must have `id` fields:** Without `id`, the renderer does not set `data-builder-id`, making `waitForSelector('[data-builder-id="..."]')` time out.
+
+**Timeout:** Global Playwright timeout is `120_000`ms. All `test.setTimeout` calls use `120_000`ms. The dev server must be running on port 3001 (`npx next dev -p 3001`).
 
 ---
 
@@ -240,19 +599,46 @@ This calls `store.select()` directly and is reliable. Do not rely on `clickFirst
 
 ### 10. Inline text editing — double-click on canvas
 
-**Feature:** Double-clicking a `Text`, `Heading`, or `ButtonText` node on the canvas opens a floating `<textarea>` positioned exactly over the element. The font size scales with the current zoom level. On blur or Escape the edit is committed/cancelled.
+**Feature:** Double-clicking a `Text`, `Heading`, `ButtonText`, or any text-type node on the canvas activates **contentEditable directly on the rendered DOM element**. No floating textarea — the user edits the actual node in place. Fonts, size, color, and layout remain identical to the design.
 
-**Implementation:** `_canvas.tsx` tracks `editingId`, `editingText`, `editingRect`. The capture overlay's `onDoubleClick` handler walks up the DOM tree looking for a node whose type is in `TEXT_NODE_TYPES`. The textarea is rendered with `position: absolute` within the canvas div using the node's `getBoundingClientRect()` minus the canvas rect.
+**Implementation:** `_canvas.tsx` tracks only `editingId`. On double-click, the handler walks up the DOM tree (then down into children as fallback) to find a node whose type is in `TEXT_NODE_TYPES`. It then:
+1. Sets `el.contentEditable = "true"` and adds a blue `outline` to the element.
+2. Stores the original `innerText` in `editingOrigText` ref.
+3. Attaches `paste` handler (plain-text only, strips HTML) and `keydown` handler (Enter = commit, Escape = cancel).
+4. Focuses the element and selects all text via `Selection` API.
 
-**Rule:** When `editingId` is set, the capture overlay's `onPointerDown` commits the edit and returns early (so clicking outside saves and exits).
+The **capture overlay** gets `pointerEvents: 'none'` while `editingId` is set, so all pointer/keyboard events reach the contenteditable element. Clicking outside the element commits (detected via `onPointerDown` on the overlay, which is still handled because the click propagates to the canvas div).
+
+**Commit:** Reads `el.innerText` (strips trailing newline), calls `patchProp(editingId, 'text', newText)`, removes `contentEditable` + styling.
+
+**Cancel (Escape):** Restores `el.innerText` to original, removes `contentEditable` + styling, does NOT call `patchProp`.
+
+**Rule:** NEVER use a floating `<textarea>` for inline editing — it causes font mismatch and overlap issues. Always use contentEditable on the actual element.
 
 ---
 
 ### 11. Content section in right panel (text editing)
 
-**Feature:** When a Text, Heading, or ButtonText node is selected, a "Content" section appears at the top of the Design panel with a `<textarea>` that edits `node.text` via `patchProp(nodeId, 'text', value)`. For Button nodes, it finds the first `ButtonText` child and edits that instead.
+**Feature:** When a `Text`, `Heading`, or any `isTextNode` is selected, a "Content" section appears at the top of the Design panel. For `isContainer` nodes (e.g. `Pressable`) that have a `Text` or `Heading` child, the section edits the first such child's `text`. Edits via `patchProp(nodeId, 'text', value)`.
 
-**Rule:** Use `patchProp(id, 'text', value)` not `patchProp(id, 'props.text', value)` — the `text` field is at the node root level, not inside `props`.
+**Rule:** Use `patchProp(id, 'text', value)` not `patchProp(id, 'props.text', value)` — the `text` field is at the node root level, not inside `props`. The Pressable→Text child pattern (primitive button) is fully supported.
+
+---
+
+### 19. Drop indicator direction — vertical for row containers
+
+**Root cause:** The drop indicator (blue line) was always rendered horizontally (`dropLineY` only), even when dragging over a horizontal container (`HStack` or `Box flex-row`). Users saw the insertion cue in the wrong axis.
+
+**Fix:**
+1. `isRowContainer(node)` helper in `_canvas.tsx` — returns `true` for `HStack` type OR any node whose `className` contains `flex-row`.
+2. `nearestGapH(clientX, container, children)` — mirrors `nearestGap()` but calculates insertion position along the X axis (returns `lineX`).
+3. `dropLineX` state in `_canvas.tsx` — holds the horizontal pixel position for the vertical indicator line.
+4. `onDragOver` now calls `nearestGapH + setDropLineX` for row containers and `nearestGap + setDropLineY` for column containers. Both states are always reset together (only one is active at a time).
+5. `DropZoneLine` in `_overlay.tsx` accepts both `x` (vertical line) and `y` (horizontal line). When `x` is set, renders a `2px × height` vertical bar; when `y` is set, renders a `width × 2px` horizontal bar.
+
+**Tests:** `DI-01`–`DI-04` in `test-dnd.spec.ts`.
+
+**Rule:** Any container whose `type === 'HStack'` or whose `className` contains `flex-row` is a row container — the insertion indicator must be vertical. All other containers use the existing horizontal line.
 
 ---
 

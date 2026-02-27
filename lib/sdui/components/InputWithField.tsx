@@ -1,5 +1,6 @@
 /**
- * Input wrapper: with children renders real Input; without children auto-injects InputField
+ * Input wrapper: with children renders real Input; without children auto-injects InputField.
+ * Uses forwardRef so the builder can attach data-builder-id via a ref callback.
  */
 
 import React from 'react';
@@ -14,16 +15,19 @@ type InputWithFieldProps = {
   [k: string]: unknown;
 };
 
-export function InputWithField(props: InputWithFieldProps) {
+export const InputWithField = React.forwardRef<
+  React.ComponentRef<typeof Input>,
+  InputWithFieldProps
+>(function InputWithField(props, ref) {
   const { placeholder, value, onChange, onChangeText, children, ...rest } = props;
 
   if (children) {
-    return <Input {...(rest as React.ComponentProps<typeof Input>)}>{children}</Input>;
+    return <Input ref={ref} {...(rest as React.ComponentProps<typeof Input>)}>{children}</Input>;
   }
 
   const handleChange = onChange ?? onChangeText;
   return (
-    <Input {...(rest as React.ComponentProps<typeof Input>)}>
+    <Input ref={ref} {...(rest as React.ComponentProps<typeof Input>)}>
       <InputField
         placeholder={placeholder as string}
         value={value ?? ''}
@@ -32,4 +36,4 @@ export function InputWithField(props: InputWithFieldProps) {
       />
     </Input>
   );
-}
+});

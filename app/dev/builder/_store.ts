@@ -16,6 +16,7 @@
 import { create } from 'zustand';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import routesConfig from '@/config/routes.json';
+import { showcaseNodes } from './_showcase';
 
 const MAX_HISTORY = 50;
 
@@ -122,7 +123,8 @@ export const VIEWPORT_WIDTHS: Record<ViewportSize, number> = {
 export interface BuilderPage {
   id: string;
   name: string;
-  route: string;
+  /** App route path — omitted for builder-internal canvases (e.g. Component Showcase). */
+  route?: string;
   nodes: SDUINode[];
 }
 
@@ -221,6 +223,9 @@ export interface BuilderStore {
   undo: () => void;
   redo: () => void;
 
+  // Cross-page move — removes node from a source page and inserts into the current page
+  moveNodeFromPage: (nodeId: string, fromPageId: string, parentId: string | null, atIdx: number) => void;
+
   // Pages
   addPage: (route: string, name?: string) => void;
   switchPage: (pageId: string) => void;
@@ -236,12 +241,22 @@ export interface BuilderStore {
   // Internal (debounce wrapper)
   _pushHistory: () => void;
   _setPageNodes: (nodes: SDUINode[]) => void;
+  // Overlay update callback — set by _canvas.tsx, called by _panel-right.tsx for imperative ring updates
+  _requestOverlayUpdate: () => void;
+  _setOverlayUpdateCallback: (fn: (() => void) | null) => void;
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
+// Component Showcase — builder-internal canvas only, not an app route.
+const SHOWCASE_PAGE: BuilderPage = {
+  id: 'page-showcase',
+  name: '✦ Component Showcase',
+  nodes: showcaseNodes,
+};
+
 // Initialise one page per route so all app pages are visible on the canvas by default.
-const INITIAL_PAGES: BuilderPage[] = (routesConfig as { routes: Array<{ path: string; config: string }> })
+const ROUTE_PAGES: BuilderPage[] = (routesConfig as { routes: Array<{ path: string; config: string }> })
   .routes.map(r => ({
     id: `page-${r.config}`,
     name: r.config,
@@ -249,10 +264,12 @@ const INITIAL_PAGES: BuilderPage[] = (routesConfig as { routes: Array<{ path: st
     nodes: [],
   }));
 
+const INITIAL_PAGES: BuilderPage[] = [SHOWCASE_PAGE, ...ROUTE_PAGES];
+
 export const useBuilderStore = create<BuilderStore>((set, get) => ({
   pages: INITIAL_PAGES,
-  currentPageId: INITIAL_PAGES[0]?.id ?? 'page-home',
-  pageNodes: [],
+  currentPageId: SHOWCASE_PAGE.id,
+  pageNodes: showcaseNodes,
   selectedIds: [],
   hoveredId: null,
   altHoveredId: null,
@@ -267,7 +284,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   viewport: 'desktop',
   gridOverlay: { enabled: false, type: 'columns', count: 12, color: 'rgba(99,102,241,0.15)' },
   clipboard: [],
-  history: [[]],
+  history: [clone(showcaseNodes)],
   historyIdx: 0,
   pendingFitToPage: false,
 
@@ -301,9 +318,59 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
       if (newParentId && findNode((findNode(s.pageNodes, nodeId)?.children ?? []) as SDUINode[], newParentId)) return s;
 
       // Context-dependent nodes must stay inside their required parent type.
-      // e.g. ButtonText can only live inside a Button — moving it out crashes
-      // the renderer (useStyleContext returns undefined → destructure error).
-      const REQUIRED_PARENT: Record<string, string> = { ButtonText: 'Button' };
+      // Moving them out crashes the renderer (useStyleContext returns undefined → destructure error).
+      const REQUIRED_PARENT: Record<string, string> = {
+        ButtonText:         'Button',
+        ButtonIcon:         'Button',
+        InputField:         'Input',
+        InputSlot:          'Input',
+        InputIcon:          'Input',
+        CheckboxIndicator:  'Checkbox',
+        CheckboxIcon:       'Checkbox',
+        CheckboxLabel:      'Checkbox',
+        RadioIndicator:     'Radio',
+        RadioLabel:         'Radio',
+        RadioIcon:          'Radio',
+        SelectInput:        'Select',
+        SelectIcon:         'Select',
+        SelectTrigger:      'Select',
+        SelectItem:         'Select',
+        SelectContent:      'Select',
+        SelectPortal:       'Select',
+        SelectBackdrop:     'Select',
+        AccordionItem:      'Accordion',
+        AccordionTrigger:   'Accordion',
+        AccordionContent:   'Accordion',
+        AccordionHeader:    'Accordion',
+        SliderThumb:        'Slider',
+        SliderTrack:        'Slider',
+        SliderFilledTrack:  'Slider',
+        BadgeText:          'Badge',
+        BadgeIcon:          'Badge',
+        FabLabel:           'Fab',
+        AvatarImage:        'Avatar',
+        AvatarFallbackText: 'Avatar',
+        ProgressFilledTrack: 'Progress',
+        TextareaInput:      'Textarea',
+        SkeletonText:       'Skeleton',
+        AlertText:          'Alert',
+        LinkText:           'Link',
+        Radio:              'RadioGroup',
+        ModalBackdrop:      'Modal',
+        ModalContent:       'Modal',
+        ModalHeader:        'ModalContent',
+        ModalBody:          'ModalContent',
+        ModalFooter:        'ModalContent',
+        ModalCloseButton:   'ModalContent',
+        TooltipContent:     'Tooltip',
+        TooltipText:        'TooltipContent',
+        AlertDialogBackdrop:  'AlertDialog',
+        AlertDialogContent:   'AlertDialog',
+        AlertDialogHeader:    'AlertDialogContent',
+        AlertDialogBody:      'AlertDialogContent',
+        AlertDialogFooter:    'AlertDialogContent',
+        AlertDialogCloseButton: 'AlertDialogContent',
+      };
       if (node.type && REQUIRED_PARENT[node.type]) {
         const requiredType = REQUIRED_PARENT[node.type];
         const newParent = newParentId ? findNode(s.pageNodes, newParentId) : null;
@@ -311,7 +378,31 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
       }
       // Also guard the destination: only allowed child types may enter certain parents.
       if (newParentId) {
-        const ALLOWED: Record<string, Set<string>> = { Button: new Set(['ButtonText', 'NavIcon']) };
+        const ALLOWED: Record<string, Set<string>> = {
+          Button:   new Set(['ButtonText', 'ButtonIcon', 'NavIcon']),
+          Input:    new Set(['InputField', 'InputSlot', 'InputIcon']),
+          Checkbox: new Set(['CheckboxIndicator', 'CheckboxIcon', 'CheckboxLabel']),
+          Radio:    new Set(['RadioIndicator', 'RadioLabel', 'RadioIcon']),
+          Select:   new Set(['SelectTrigger', 'SelectInput', 'SelectIcon', 'SelectPortal', 'SelectBackdrop', 'SelectContent', 'SelectItem']),
+          Accordion: new Set(['AccordionItem', 'AccordionTrigger', 'AccordionContent', 'AccordionHeader']),
+          Slider:   new Set(['SliderTrack', 'SliderThumb', 'SliderFilledTrack']),
+          Badge:         new Set(['BadgeText', 'BadgeIcon']),
+          Fab:           new Set(['FabLabel', 'FabIcon', 'NavIcon', 'Text']),
+          Avatar:        new Set(['AvatarImage', 'AvatarFallbackText']),
+          Progress:      new Set(['ProgressFilledTrack']),
+          Textarea:      new Set(['TextareaInput']),
+          Skeleton:      new Set(['SkeletonText']),
+          Alert:         new Set(['AlertIcon', 'AlertText', 'NavIcon']),
+          Link:          new Set(['LinkText']),
+        RadioGroup:    new Set(['Radio']),
+        CheckboxGroup: new Set(['Checkbox']),
+        Modal:         new Set(['ModalBackdrop', 'ModalContent']),
+        ModalContent:  new Set(['ModalHeader', 'ModalBody', 'ModalFooter', 'ModalCloseButton']),
+        Tooltip:       new Set(['TooltipContent', 'Pressable', 'Box', 'Text']),
+        TooltipContent: new Set(['TooltipText']),
+        AlertDialog:   new Set(['AlertDialogBackdrop', 'AlertDialogContent']),
+        AlertDialogContent: new Set(['AlertDialogHeader', 'AlertDialogBody', 'AlertDialogFooter', 'AlertDialogCloseButton']),
+        };
         const newParent = findNode(s.pageNodes, newParentId);
         if (newParent && ALLOWED[newParent.type] && !ALLOWED[newParent.type].has(node.type)) return s;
       }
@@ -388,6 +479,34 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
         result = insertNode(result, nodesToMove[i], newParentId, adjustedIdx + i);
       }
       return { pageNodes: result, selectedIds: [...movingIds] };
+    });
+    get()._pushHistory();
+  },
+
+  moveNodeFromPage: (nodeId, fromPageId, parentId, atIdx) => {
+    set(s => {
+      // Find the source page
+      const srcPage = s.pages.find(p => p.id === fromPageId);
+      if (!srcPage) return s;
+
+      // Find the node in the source page
+      const node = findNode(srcPage.nodes as SDUINode[], nodeId);
+      if (!node) return s;
+
+      // Remove from source page
+      const updatedSrcNodes = removeNodesByIds(clone(srcPage.nodes as SDUINode[]), new Set([nodeId]));
+      const updatedPages = s.pages.map(p =>
+        p.id === fromPageId ? { ...p, nodes: updatedSrcNodes } : p
+      );
+
+      // Insert into current page
+      const newPageNodes = insertNode(clone(s.pageNodes), node, parentId, atIdx);
+
+      return {
+        pages: updatedPages,
+        pageNodes: newPageNodes,
+        selectedIds: node.id ? [node.id] : s.selectedIds,
+      };
     });
     get()._pushHistory();
   },
@@ -820,6 +939,8 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   // ── History ──────────────────────────────────────────────────────────────────
 
   _setPageNodes: (nodes) => set({ pageNodes: nodes }),
+  _requestOverlayUpdate: () => {},
+  _setOverlayUpdateCallback: (fn) => set({ _requestOverlayUpdate: fn ?? (() => {}) }),
 
   _pushHistory: () => {
     set(s => {
@@ -966,3 +1087,9 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     });
   },
 }));
+
+// Expose store for E2E tests as early as possible (module-level, not useEffect)
+// so it's available as soon as the JS bundle loads — before React hydration.
+if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+  (window as unknown as Record<string, unknown>).__builderStore = useBuilderStore;
+}

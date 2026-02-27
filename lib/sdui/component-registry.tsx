@@ -58,7 +58,7 @@ import { Menu, MenuItem, MenuItemLabel, MenuSeparator } from '@/components/ui/me
 
 // Form
 import { Input, InputField, InputIcon, InputSlot } from '@/components/ui/input';
-import { Checkbox, CheckboxIndicator, CheckboxIcon, CheckboxLabel } from '@/components/ui/checkbox';
+import { Checkbox, CheckboxGroup, CheckboxIndicator, CheckboxIcon, CheckboxLabel } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Textarea, TextareaInput } from '@/components/ui/textarea';
 import { Carousel, CarouselSlide } from '@/lib/sdui/carousel';
@@ -82,6 +82,19 @@ import { Icon } from '@/components/ui/icon';
 import { View } from '@/components/ui/view';
 import { NavIcon } from './icons';
 import { NextImage, HtmlContent, InputWithField } from './components';
+import DatePicker from './components/DatePicker';
+import TimePicker from './components/TimePicker';
+import DateTimePicker from './components/DateTimePicker';
+import ColorPicker from './components/ColorPicker';
+import FileUpload from './components/FileUpload';
+import Iframe from './components/Iframe';
+import SvgViewer from './components/SvgViewer';
+import JsonViewer from './components/JsonViewer';
+import Chart from './components/Chart';
+import QRCodeWidget from './components/QRCodeWidget';
+import MarkdownViewer from './components/MarkdownViewer';
+import GoogleMap from './components/GoogleMap';
+import GoogleMapPlaces from './components/GoogleMapPlaces';
 import { SocialIcon } from '@/components/ui/social-icon';
 
 
@@ -224,6 +237,7 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   TableHead,
   TableData,
   Checkbox,
+  CheckboxGroup,
   CheckboxIndicator,
   CheckboxIcon,
   CheckboxLabel,
@@ -307,6 +321,21 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   FabLabel,
   FabIcon,
   CountdownTimer,
+  // Tier 3 — HTML input wrappers
+  DatePicker,
+  TimePicker,
+  DateTimePicker,
+  ColorPicker,
+  FileUpload,
+  Iframe,
+  SvgViewer,
+  JsonViewer,
+  // Tier 4 — Library-dependent
+  Chart,
+  QRCodeWidget,
+  MarkdownViewer,
+  GoogleMap,
+  GoogleMapPlaces,
 };
 
 export function getComponent(type: string): RegistryComponent | null {

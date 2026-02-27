@@ -26,7 +26,9 @@ export function GluestackUIProvider({
     <View
       style={[
         config[colorScheme!],
-        { flex: 1, height: '100%', width: '100%' },
+        // On web, React Native View defaults to overflow:hidden which clips page content.
+        // overflow:'visible' lets the page grow naturally and allows window scrolling.
+        { flex: 1, width: '100%', overflow: 'visible' },
         props.style,
       ]}
     >

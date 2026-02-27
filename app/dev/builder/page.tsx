@@ -22,6 +22,7 @@
  *   Escape              — deselect
  *   Alt (held)          — alt-hover distance mode
  *   Nudge: Arrow keys   — move (not yet wired to pixels; placeholder)
+ *   Cmd+P               — toggle preview
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
@@ -30,7 +31,10 @@ import BuilderCanvas from './_canvas';
 import PanelLeft from './_panel-left';
 import PanelRight from './_panel-right';
 
-void useRef; void useCallback; // suppress unused-import lint
+void useRef; void useState; // suppress unused-import lint
+
+/** localStorage key used to hand off page data to the preview tab. */
+export const BUILDER_PREVIEW_KEY = 'builder_preview';
 
 // ─── Top Bar ──────────────────────────────────────────────────────────────────
 
@@ -47,8 +51,8 @@ const VIEWPORT_ICONS: Record<ViewportSize, string> = {
   desktop: '🖥',
 };
 
-function TopBar() {
-  const { tool, setTool, undo, redo, historyIdx, history, selectedIds, pageNodes, viewport, setViewport, pages, currentPageId, renamePage } = useBuilderStore();
+function TopBar({ onPreview }: { onPreview: () => void }) {
+  const { undo, redo, historyIdx, history, selectedIds, pageNodes, viewport, setViewport, pages, currentPageId, renamePage } = useBuilderStore();
   const canUndo = historyIdx > 0;
   const canRedo = historyIdx < history.length - 1;
 
@@ -143,12 +147,38 @@ function TopBar() {
             {currentPage?.name ?? 'Untitled'}
           </span>
         )}
-        <span style={{ fontSize: 9, color: '#4b5563', fontFamily: 'monospace', letterSpacing: '0.02em' }}>
-          {currentPage?.route ?? '/'}
-        </span>
+        {currentPage?.route && (
+          <span style={{ fontSize: 9, color: '#4b5563', fontFamily: 'monospace', letterSpacing: '0.02em' }}>
+            {currentPage.route}
+          </span>
+        )}
       </div>
 
       <div style={{ flex: 1 }} />
+
+      {/* Preview button — saves to localStorage then opens /dev/builder/preview in new tab */}
+      <button
+        data-testid="btn-preview"
+        onClick={onPreview}
+        title="Preview in new tab (⌘P)"
+        style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          padding: '4px 12px',
+          background: '#10b981',
+          border: 'none',
+          borderRadius: 5,
+          color: '#fff',
+          cursor: 'pointer',
+          fontSize: 11,
+          fontWeight: 600,
+          fontFamily: 'system-ui',
+          letterSpacing: '0.02em',
+        }}
+      >
+        ↗ Preview
+      </button>
+
+      <div style={{ width: 1, height: 20, background: '#1f2937' }} />
 
       {/* Node count */}
       <span style={{ fontSize: 10, color: '#4b5563' }}>
@@ -164,31 +194,6 @@ function TopBar() {
   );
 }
 
-function ToolButton({ icon, label, active, onClick, testId }: { icon: string; label: string; active: boolean; onClick: () => void; testId?: string }) {
-  return (
-    <button
-      onClick={onClick}
-      title={label}
-      data-testid={testId}
-      data-active={active ? 'true' : 'false'}
-      style={{
-        width: 28,
-        height: 28,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: active ? '#1d4ed8' : 'transparent',
-        border: active ? '1px solid #3b82f6' : '1px solid transparent',
-        borderRadius: 5,
-        color: active ? '#fff' : '#9ca3af',
-        cursor: 'pointer',
-        fontSize: 14,
-      }}
-    >
-      {icon}
-    </button>
-  );
-}
 
 function TopBarBtn({
   children,
@@ -233,11 +238,19 @@ function TopBarBtn({
 export default function BuilderPage() {
   const store = useBuilderStore();
 
-  // Expose store for E2E tests (dev only)
-  useEffect(() => {
-    if (process.env.NODE_ENV !== 'production') {
-      (window as unknown as Record<string, unknown>).__builderStore = useBuilderStore;
-    }
+  // __builderStore is exposed at module level in _store.ts for E2E tests
+
+  /** Serialize current page to localStorage then open preview in a new tab. */
+  const openPreview = useCallback(() => {
+    const { pageNodes, viewport, pages, currentPageId } = useBuilderStore.getState();
+    const currentPage = pages.find(p => p.id === currentPageId);
+    localStorage.setItem(BUILDER_PREVIEW_KEY, JSON.stringify({
+      nodes: pageNodes,
+      viewport,
+      pageName: currentPage?.name ?? 'Untitled',
+      pageRoute: currentPage?.route ?? '/',
+    }));
+    window.open('/dev/builder/preview', '_blank');
   }, []);
 
   // ── Keyboard shortcuts ────────────────────────────────────────────────────────
@@ -246,7 +259,11 @@ export default function BuilderPage() {
     const onKeyDown = (e: KeyboardEvent) => {
       const isCmd = e.metaKey || e.ctrlKey;
       const tag = (document.activeElement as HTMLElement)?.tagName?.toLowerCase();
-      const isInput = tag === 'input' || tag === 'textarea' || tag === 'select';
+      const isInput = tag === 'input' || tag === 'textarea' || tag === 'select'
+        || (document.activeElement as HTMLElement)?.isContentEditable === true;
+
+      // Cmd+P → preview in new tab (before isInput guard so it always fires)
+      if (isCmd && e.key === 'p') { e.preventDefault(); openPreview(); return; }
 
       // Alt mode
       if (e.key === 'Alt') {
@@ -271,13 +288,11 @@ export default function BuilderPage() {
         return;
       }
 
-      // Escape: walk up to parent, or deselect when already at root
       if (e.key === 'Escape') {
         if (store.selectedIds.length > 0) store.selectParent(store.selectedIds[0]);
         else store.select(null);
         return;
       }
-      // Enter: dive into first child of selected node
       if (e.key === 'Enter' && store.selectedIds.length > 0) {
         store.selectFirstChild(store.selectedIds[0]);
         return;
@@ -295,7 +310,7 @@ export default function BuilderPage() {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [store]);
+  }, [store, openPreview]);
 
   return (
     <div
@@ -309,7 +324,7 @@ export default function BuilderPage() {
         fontFamily: 'system-ui, -apple-system, sans-serif',
       }}
     >
-      <TopBar />
+      <TopBar onPreview={openPreview} />
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         <PanelLeft />

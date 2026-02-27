@@ -11,7 +11,7 @@
  * correct canvas-relative X/Y coordinates.
  */
 
-import React, { useRef, useEffect, useCallback, useMemo, useState } from 'react';
+import React, { useRef, useEffect, useCallback, useMemo, useState, memo } from 'react';
 import { useBuilderStore, findNode, findParentNode, VIEWPORT_WIDTHS } from './_store';
 import BuilderOverlay, { type ResizeHandle } from './_overlay';
 import { SDUIEngine } from '@/lib/sdui/sdui-engine';
@@ -21,7 +21,16 @@ import type { SDUINode } from '@/lib/sdui/types/node';
 import { computeSnap, snapResizeSize, SNAP_THRESHOLD, type SnapGuide, type ContentRect } from './_snap-engine';
 
 /** Node types that act as containers and accept dropped children. */
-const CONTAINER_TYPES = new Set(['Box', 'VStack', 'HStack', 'ScrollView', 'View', 'Card', 'SafeAreaView', 'Pressable']);
+// Keep in sync with isContainer in _panel-right.tsx
+const CONTAINER_TYPES = new Set([
+  'Box', 'VStack', 'HStack', 'Center', 'Grid', 'GridItem',
+  'ScrollView', 'View', 'Card', 'SafeAreaView', 'Pressable',
+  'Checkbox', 'CheckboxGroup', 'Radio', 'RadioGroup',
+  'Badge', 'Avatar', 'Fab', 'Skeleton', 'Alert', 'Link',
+  'Modal', 'ModalContent', 'ModalHeader', 'ModalBody', 'ModalFooter',
+  'Tooltip', 'AlertDialog', 'AlertDialogContent',
+  'AlertDialogHeader', 'AlertDialogBody', 'AlertDialogFooter',
+]);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const app = appConfig as any;
@@ -104,8 +113,18 @@ function ensureIds(node: SDUINode): SDUINode {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-/** Node types whose `text` property is directly editable via double-click. */
-const TEXT_NODE_TYPES = new Set(['Text', 'Heading', 'ButtonText']);
+/**
+ * Node types whose `text` property is directly editable via double-click.
+ * Any node type listed here must store its display text on the `text` prop.
+ */
+const TEXT_NODE_TYPES = new Set([
+  'Text', 'Heading', 'ButtonText',
+  'CheckboxLabel', 'RadioLabel',
+  'TabTitle', 'AccordionTitle',
+  'SelectItem', 'SelectInput',
+  'AlertTitle', 'AlertDescription',
+  'ToastTitle', 'ToastDescription',
+]);
 
 /**
  * Certain container types only accept specific child types.
@@ -116,10 +135,86 @@ const ALLOWED_CHILDREN: Record<string, Set<string>> = {
   Button: new Set(['ButtonText', 'NavIcon']),
 };
 
+/**
+ * Memoized wrapper around SDUIEngine for the active page.
+ * Prevents the entire SDUI tree from re-rendering when the canvas pan/zoom/hover
+ * state changes — those updates only affect the canvas transforms and overlays,
+ * not the page content.
+ */
+const PageEngine = memo(function PageEngine({ pageConfig }: { pageConfig: SDUIConfig }) {
+  if (!pageConfig.ui) return <EmptyCanvas />;
+  return (
+    <SDUIEngine
+      key="builder-engine"
+      config={pageConfig}
+      configName="builder"
+      actionsConfig={app.actions}
+      routes={app.routes}
+      builderMode
+    />
+  );
+});
+
+/**
+ * Memoized wrapper around SDUIEngine for inactive (background) pages.
+ * Receives a stable `nodes` reference — only re-renders when that page's
+ * node tree actually changes, not on every pan/zoom/hover update.
+ */
+const InactivePageEngine = memo(function InactivePageEngine({
+  pageId,
+  configName,
+  nodes,
+}: {
+  pageId: string;
+  configName: string;
+  nodes: SDUINode[];
+}) {
+  if (!nodes.length) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: VIEWPORT_H, gap: 8, color: '#9ca3af', fontFamily: 'system-ui', userSelect: 'none' }}>
+        <div style={{ fontSize: 24, opacity: 0.3 }}>+</div>
+        <div style={{ fontSize: 12 }}>Empty page</div>
+      </div>
+    );
+  }
+  const cfg: SDUIConfig = {
+    state: {},
+    ui: {
+      type: 'Box',
+      props: { className: 'flex flex-col w-full min-h-screen items-start relative' },
+      children: nodes,
+    } as SDUIConfig['ui'],
+  };
+  return (
+    <SDUIEngine
+      key={`pg-${pageId}`}
+      config={cfg}
+      configName={configName}
+      actionsConfig={app.actions ?? {}}
+      routes={app.routes ?? []}
+      builderMode
+    />
+  );
+});
+
 export default function BuilderCanvas() {
   const canvasRef          = useRef<HTMLDivElement>(null);
   const pageFrameRef       = useRef<HTMLDivElement>(null);
   const captureOverlayRef  = useRef<HTMLDivElement>(null);
+  // Track the last hovered id so we skip Zustand updates when it hasn't changed.
+  const lastHoveredIdRef   = useRef<string | null>(null);
+  // World container and dot-grid pattern — updated imperatively during pan/zoom
+  // so React never re-renders just because the viewport moved.
+  const worldRef           = useRef<HTMLDivElement>(null);
+  const gridPatternRef     = useRef<SVGPatternElement>(null);
+  // Debounce timer for syncing pan/zoom state back to Zustand after gesture ends.
+  const syncTimerRef       = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Ref populated by BuilderOverlay — call to trigger a burst of measurement ticks.
+  const overlayNotifyRef          = useRef<(() => void) | null>(null);
+  // Ref populated by BuilderOverlay — synchronous BCR update, zero lag during pan.
+  const overlayInstantUpdateRef   = useRef<(() => void) | null>(null);
+  // Tracks the page a canvas-node drag originated from, so cross-page drops work correctly.
+  const dragSourcePageIdRef       = useRef<string | null>(null);
 
   const {
     pageNodes,
@@ -140,6 +235,7 @@ export default function BuilderCanvas() {
     addNode,
     moveNode,
     moveNodes,
+    moveNodeFromPage,
     patchProp,
     _pushHistory,
     pages,
@@ -148,6 +244,44 @@ export default function BuilderCanvas() {
     pendingFitToPage,
     clearPendingFit,
   } = useBuilderStore();
+
+  // ── World transform helpers ───────────────────────────────────────────────
+  //
+  // Applies pan/zoom directly to the DOM world container and the dot grid
+  // pattern WITHOUT going through React state → zero re-renders during scroll.
+
+  /** Apply pan/zoom directly to the world container and dot-grid pattern. */
+  const applyWorldTransform = useCallback((px: number, py: number, z: number) => {
+    if (worldRef.current) {
+      worldRef.current.style.transform = `translate(${px}px, ${py}px) scale(${z})`;
+    }
+    if (gridPatternRef.current) {
+      const size = 20 * z;
+      gridPatternRef.current.setAttribute('x', String(px % size));
+      gridPatternRef.current.setAttribute('y', String(py % size));
+      gridPatternRef.current.setAttribute('width', String(size));
+      gridPatternRef.current.setAttribute('height', String(size));
+    }
+    // Synchronously reposition the selection ring — getBoundingClientRect() called
+    // here forces a layout reflow that already accounts for the new transform, so
+    // the ring updates in the same frame with zero React re-render lag.
+    overlayInstantUpdateRef.current?.();
+    // Also kick the async RAF for hover rings, padding fills, etc.
+    overlayNotifyRef.current?.();
+  }, []);
+
+  /**
+   * Debounced Zustand sync — called after a scroll/pan gesture settles.
+   * Triggers exactly one React re-render per gesture instead of one per frame.
+   */
+  const scheduleStoreSync = useCallback((px: number, py: number, z: number) => {
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(() => {
+      setZoom(z);
+      setPan(px, py);
+      syncTimerRef.current = null;
+    }, 80);
+  }, [setZoom, setPan]);
 
   // ── Dynamic viewport width ────────────────────────────────────────────────
   const vpWidth = VIEWPORT_WIDTHS[viewport];
@@ -187,54 +321,181 @@ export default function BuilderCanvas() {
   // ── Canvas right-click context menu ───────────────────────────────────────
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; nodeId: string | null } | null>(null);
 
-  // ── Inline text editing ───────────────────────────────────────────────────
-  const [editingId,  setEditingId]  = useState<string | null>(null);
-  const [editingText, setEditingText] = useState('');
-  const [editingRect, setEditingRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
-  const editingTextareaRef = useRef<HTMLTextAreaElement>(null);
+  // ── Inline text editing (contentEditable) ────────────────────────────────
+  //
+  // We edit directly on the rendered DOM element — no floating textarea,
+  // no overlap. The element gets contentEditable="true" and a blue outline;
+  // blur / Enter commits, Escape restores the original text.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const editingElRef        = useRef<HTMLElement | null>(null);
+  const editingOrigText     = useRef<string>('');
+  // Saves the element's fixed inline width/height before we release them during editing.
+  // Allows the element to grow naturally while the user types, and lets commitInlineEdit
+  // persist the new natural size back to props.style.
+  const editingOrigStyleRef = useRef<{ width: string; height: string }>({ width: '', height: '' });
 
+  /** Commit: read innerText from the contenteditable element, save, clean up. */
   const commitInlineEdit = useCallback(() => {
-    if (!editingId) return;
-    patchProp(editingId, 'text', editingText);
+    const el = editingElRef.current;
+    if (!el || !editingId) return;
+    const newText = el.innerText.replace(/\n$/, ''); // strip trailing newline browsers add
+
+    // If the node previously had a fixed width/height (from a resize), read the
+    // element's natural size NOW (while style.width is still 'auto') and persist it
+    // so the element doesn't snap back to the old smaller dimensions after commit.
+    const origStyle = editingOrigStyleRef.current;
+    if (origStyle.width || origStyle.height) {
+      const r = el.getBoundingClientRect();
+      const currentNode = findNode(useBuilderStore.getState().pageNodes, editingId);
+      const existingStyle = (currentNode?.props as { style?: Record<string, string> })?.style ?? {};
+      patchProp(editingId, 'props.style', {
+        ...existingStyle,
+        ...(origStyle.width  ? { width:  `${Math.round(r.width)}px`  } : {}),
+        ...(origStyle.height ? { height: `${Math.round(r.height)}px` } : {}),
+      });
+    }
+
+    el.contentEditable = 'false';
+    el.style.outline   = '';
+    el.style.cursor    = '';
+    el.style.minWidth  = '';
+    el.removeAttribute('data-builder-editing');
+    editingElRef.current = null;
+    patchProp(editingId, 'text', newText);
     _pushHistory();
     setEditingId(null);
-    setEditingRect(null);
-  }, [editingId, editingText, patchProp, _pushHistory]);
+    overlayNotifyRef.current?.();
+  }, [editingId, patchProp, _pushHistory]);
 
-  // Auto-focus the textarea when it appears
-  useEffect(() => {
-    if (editingId) editingTextareaRef.current?.focus();
-  }, [editingId]);
+  /** Cancel: restore original text and dimensions, clean up without saving. */
+  const cancelInlineEdit = useCallback(() => {
+    const el = editingElRef.current;
+    if (!el) return;
+    el.innerText       = editingOrigText.current;
+    // Restore the original fixed dimensions that were released on edit start.
+    el.style.width     = editingOrigStyleRef.current.width;
+    el.style.height    = editingOrigStyleRef.current.height;
+    el.style.minWidth  = '';
+    el.contentEditable = 'false';
+    el.style.outline   = '';
+    el.style.cursor    = '';
+    el.removeAttribute('data-builder-editing');
+    editingElRef.current = null;
+    setEditingId(null);
+  }, []);
 
-  // Escape cancels, Enter (without Shift) commits
+  // Activate contentEditable when editingId is set
   useEffect(() => {
     if (!editingId) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { setEditingId(null); setEditingRect(null); }
+    const el = document.querySelector(`[data-builder-id="${editingId}"]`) as HTMLElement | null;
+    if (!el) return;
+
+    editingOrigText.current  = el.innerText;
+    editingElRef.current     = el;
+
+    // Release any fixed inline width/height so the element can expand as the user
+    // types long text. minWidth keeps it from shrinking below its original size.
+    editingOrigStyleRef.current = { width: el.style.width, height: el.style.height };
+    el.style.width  = 'auto';
+    el.style.height = 'auto';
+    if (editingOrigStyleRef.current.width) el.style.minWidth = editingOrigStyleRef.current.width;
+
+    el.contentEditable       = 'true';
+    el.style.outline         = '2px solid #3b82f6';
+    el.style.outlineOffset   = '2px';
+    el.style.borderRadius    = '2px';
+    el.style.cursor          = 'text';
+    el.setAttribute('data-builder-editing', 'true');
+
+    // Focus and select all
+    el.focus();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+
+    // Prevent paste from inserting HTML — plain text only
+    const onPaste = (ev: ClipboardEvent) => {
+      ev.preventDefault();
+      const text = ev.clipboardData?.getData('text/plain') ?? '';
+      document.execCommand('insertText', false, text);
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [editingId]);
+
+    // Enter commits, Escape cancels, prevent Shift+Enter newlines for single-line nodes
+    const onKeyDown = (ev: KeyboardEvent) => {
+      if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); commitInlineEdit(); }
+      if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); cancelInlineEdit(); }
+    };
+
+    // Fix 6: commit when clicking outside the editing element.
+    // Using document mousedown (not the capture overlay, which has pointerEvents:none
+    // during editing) so we catch every click outside, including on the canvas bg.
+    const onDocMouseDown = (ev: MouseEvent) => {
+      if (el && !el.contains(ev.target as Node)) {
+        commitInlineEdit();
+      }
+    };
+
+    // Fix 7: update selection ring on every keystroke so it expands with the text.
+    const onInput = () => {
+      overlayInstantUpdateRef.current?.();
+    };
+
+    el.addEventListener('paste',   onPaste);
+    el.addEventListener('keydown', onKeyDown);
+    el.addEventListener('input',   onInput);
+    document.addEventListener('mousedown', onDocMouseDown);
+    return () => {
+      el.removeEventListener('paste',   onPaste);
+      el.removeEventListener('keydown', onKeyDown);
+      el.removeEventListener('input',   onInput);
+      document.removeEventListener('mousedown', onDocMouseDown);
+      // Safety restore in case editing ends via an unexpected path (e.g. node deletion)
+      el.style.width    = editingOrigStyleRef.current.width;
+      el.style.height   = editingOrigStyleRef.current.height;
+      el.style.minWidth = '';
+    };
+  }, [editingId, commitInlineEdit, cancelInlineEdit]);
+
+  // Fix 8: expose overlayInstantUpdateRef to _panel-right.tsx via store callback.
+  // This lets the right panel trigger an immediate ring update after a style DOM
+  // patch without going through Zustand state (zero re-renders during rapid input).
+  useEffect(() => {
+    useBuilderStore.getState()._setOverlayUpdateCallback(() => overlayInstantUpdateRef.current?.());
+    return () => useBuilderStore.getState()._setOverlayUpdateCallback(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Track the last page frame hovered during a panel drag (prevents redundant switchPage calls)
   const lastDragHoverPageRef = useRef<string | null>(null);
 
-  // Keep refs in sync for wheel handler (avoids stale closure)
+  // Keep refs in sync for wheel/drag handlers (avoids stale closure).
+  // Also update the world container and dot grid when store values change
+  // externally (e.g. fitToPage, toolbar zoom buttons).
   const zoomRef = useRef(zoom);
   const panXRef = useRef(panX);
   const panYRef = useRef(panY);
-  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
-  useEffect(() => { panXRef.current = panX; }, [panX]);
-  useEffect(() => { panYRef.current = panY; }, [panY]);
+  useEffect(() => {
+    zoomRef.current = zoom;
+    panXRef.current = panX;
+    panYRef.current = panY;
+    applyWorldTransform(panX, panY, zoom);
+  }, [zoom, panX, panY, applyWorldTransform]);
 
   // ── Drop state ────────────────────────────────────────────────────────────
 
   const [isDroppingVariant, setIsDroppingVariant] = React.useState(false);
   /**
    * Canvas-div-relative Y (px) of the active insert-line indicator.
-   * Works for both root-level and in-container drops. null = hidden.
+   * Used for column/vertical containers. null = hidden.
    */
   const [dropLineY, setDropLineY] = React.useState<number | null>(null);
+  /**
+   * Canvas-div-relative X (px) of the active insert-line indicator.
+   * Used for row/horizontal containers (HStack, Box with flex-row). null = hidden.
+   */
+  const [dropLineX, setDropLineX] = React.useState<number | null>(null);
   /** ID of the container node being targeted for "drop inside" (shows blue border) */
   const [dropContainerId, setDropContainerId]       = React.useState<string | null>(null);
 
@@ -314,6 +575,14 @@ export default function BuilderCanvas() {
 
   useEffect(() => { fitToCanvas(); }, [fitToCanvas]);
 
+  // When page content changes (prop edits, position changes, etc.) the selected
+  // node may have moved. Re-measure immediately so the ring and handles don't
+  // linger at the old position (e.g. after switching a node from static → absolute).
+  useEffect(() => {
+    overlayInstantUpdateRef.current?.();
+    overlayNotifyRef.current?.();
+  }, [pageNodes]);
+
   // Respond to explicit "navigate to page" requests from the pages panel.
   // When pendingFitToPage is set, the active page has already been switched
   // (currentPageId is up-to-date), so fitToCanvas will center on it correctly.
@@ -334,33 +603,47 @@ export default function BuilderCanvas() {
     } as SDUIConfig['ui'],
   }), [pageNodes]);
 
-  // ── Wheel: Ctrl/Meta = zoom, else scroll page ─────────────────────────────
+  // ── Wheel: Ctrl/Meta = zoom, else pan ─────────────────────────────────────
+  //
+  // Pan/zoom are applied DIRECTLY to the world container DOM element — no
+  // React state update, no re-render.  Zustand is synced once after the
+  // gesture settles via scheduleStoreSync (debounced ~80 ms).
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+      let newPX = panXRef.current;
+      let newPY = panYRef.current;
+      let newZoom = zoomRef.current;
+
       if (e.ctrlKey || e.metaKey) {
-        // Pinch-to-zoom or Ctrl+scroll → zoom around cursor
-        const delta   = -e.deltaY * 0.001;
-        const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoomRef.current * (1 + delta * 3)));
-        const rect    = canvas.getBoundingClientRect();
-        const cx = e.clientX - rect.left;
-        const cy = e.clientY - rect.top;
+        const delta = -e.deltaY * 0.002;
+        newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom * (1 + delta * 3)));
+        const rect  = canvas.getBoundingClientRect();
+        const cx    = e.clientX - rect.left;
+        const cy    = e.clientY - rect.top;
         const ratio = newZoom / zoomRef.current;
-        const newPX = cx - ratio * (cx - panXRef.current);
-        const newPY = cy - ratio * (cy - panYRef.current);
-        setZoom(newZoom);
-        setPan(newPX, newPY);
+        newPX = cx - ratio * (cx - panXRef.current);
+        newPY = cy - ratio * (cy - panYRef.current);
       } else {
-        // Two-finger trackpad swipe (or plain scroll wheel) → pan the canvas
-        setPan(panXRef.current - e.deltaX, panYRef.current - e.deltaY);
+        newPX = panXRef.current - e.deltaX;
+        newPY = panYRef.current - e.deltaY;
       }
+
+      panXRef.current = newPX;
+      panYRef.current = newPY;
+      zoomRef.current = newZoom;
+
+      // Instant visual update — zero React re-renders
+      applyWorldTransform(newPX, newPY, newZoom);
+      // Sync Zustand once the gesture settles
+      scheduleStoreSync(newPX, newPY, newZoom);
     };
     canvas.addEventListener('wheel', onWheel, { passive: false });
     return () => canvas.removeEventListener('wheel', onWheel);
-  }, [setZoom, setPan]);
+  }, [applyWorldTransform, scheduleStoreSync]);
 
   // ── Hit-test (must be defined before pointer handlers) ───────────────────
 
@@ -375,20 +658,40 @@ export default function BuilderCanvas() {
     const capOverlay = captureOverlayRef.current;
     const all = document.elementsFromPoint(clientX, clientY) as HTMLElement[];
 
-    for (const el of all) {
-      if (el === capOverlay || capOverlay?.contains(el)) continue;
-      if (el.hasAttribute('data-builder-overlay') || el.closest('[data-builder-overlay]')) continue;
-      // Skip the inactive-frame click catchers
-      if (el.hasAttribute('data-builder-inactive-frame') || el.closest('[data-builder-inactive-frame]')) continue;
+    const checkElements = (elements: HTMLElement[]) => {
+      for (const el of elements) {
+        if (el === capOverlay || capOverlay?.contains(el)) continue;
+        if (el.hasAttribute('data-builder-overlay') || el.closest('[data-builder-overlay]')) continue;
+        // Skip the inactive-frame click catchers
+        if (el.hasAttribute('data-builder-inactive-frame') || el.closest('[data-builder-inactive-frame]')) continue;
 
-      const builderEl = el.hasAttribute('data-builder-id')
-        ? el
-        : (el.closest('[data-builder-id]') as HTMLElement | null);
+        const builderEl = el.hasAttribute('data-builder-id')
+          ? el
+          : (el.closest('[data-builder-id]') as HTMLElement | null);
 
-      if (builderEl?.dataset.builderId) {
-        return { kind: 'node' as const, id: builderEl.dataset.builderId };
+        if (builderEl?.dataset.builderId) {
+          return builderEl.dataset.builderId;
+        }
+      }
+      return null;
+    };
+
+    const found = checkElements(all);
+    if (found) return { kind: 'node' as const, id: found };
+
+    // At very low zoom, elements may be sub-pixel — expand the hit radius to
+    // cover ~3 logical pixels in screen space so clicks still register.
+    const liveZ = zoomRef.current;
+    if (liveZ < 0.12) {
+      const r = Math.ceil(3 / liveZ);
+      const offsets: [number, number][] = [[-r,0],[r,0],[0,-r],[0,r],[-r,-r],[r,-r],[-r,r],[r,r]];
+      for (const [dx, dy] of offsets) {
+        const nearby = document.elementsFromPoint(clientX + dx, clientY + dy) as HTMLElement[];
+        const nearbyFound = checkElements(nearby);
+        if (nearbyFound) return { kind: 'node' as const, id: nearbyFound };
       }
     }
+
     return { kind: 'empty' as const };
   }, []);
 
@@ -471,7 +774,12 @@ export default function BuilderCanvas() {
       if (!e.currentTarget.hasPointerCapture(e.pointerId)) {
         e.currentTarget.setPointerCapture(e.pointerId);
       }
-      setPan(d.startPX + dx, d.startPY + dy);
+      const newPX = d.startPX + dx;
+      const newPY = d.startPY + dy;
+      panXRef.current = newPX;
+      panYRef.current = newPY;
+      applyWorldTransform(newPX, newPY, zoomRef.current);
+      scheduleStoreSync(newPX, newPY, zoomRef.current);
     }
   }, [tool, setPan]);
 
@@ -547,11 +855,18 @@ export default function BuilderCanvas() {
   const handleOverlayMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const hit = hitTest(e.clientX, e.clientY);
     const id = hit.kind === 'node' ? hit.id : null;
-    hover(id);
-    if (altMode) setAltHovered(id);
+    // Skip the Zustand update when the hovered node hasn't changed — avoids a
+    // full BuilderCanvas re-render on every pixel of mouse movement.
+    if (id !== lastHoveredIdRef.current) {
+      lastHoveredIdRef.current = id;
+      hover(id);
+      if (altMode) setAltHovered(id);
+      overlayNotifyRef.current?.();
+    }
   }, [hitTest, hover, altMode, setAltHovered]);
 
   const handleOverlayMouseLeave = useCallback(() => {
+    lastHoveredIdRef.current = null;
     hover(null);
     setAltHovered(null);
   }, [hover, setAltHovered]);
@@ -660,6 +975,53 @@ export default function BuilderCanvas() {
       }
     }
     return { insertIdx, lineY };
+  }
+
+  /**
+   * Returns true when a node lays out its children horizontally (flex-row).
+   * Checks the component type (HStack) and the className for `flex-row`.
+   */
+  function isRowContainer(node: SDUINode | null | undefined): boolean {
+    if (!node) return false;
+    if (node.type === 'HStack') return true;
+    const cls = (node.props as Record<string, unknown> | undefined)?.className as string | undefined;
+    return !!(cls && cls.includes('flex-row'));
+  }
+
+  /**
+   * Nearest-gap algorithm for HORIZONTAL containers (HStack / Box flex-row).
+   * Uses cursor X and sibling left/right bounds instead of Y / top/bottom.
+   */
+  function nearestGapH(
+    siblings: SDUINode[],
+    cursorX: number,
+    canvasEl: HTMLElement,
+    canvasRect: DOMRect,
+  ): { insertIdx: number; lineX: number } {
+    let insertIdx = siblings.length;
+    let lineX     = panXRef.current ?? 0;
+    let minDist   = Infinity;
+
+    for (let gi = 0; gi <= siblings.length; gi++) {
+      const prevEl = gi > 0
+        ? canvasEl.querySelector(`[data-builder-id="${siblings[gi - 1].id}"]`)
+        : null;
+      const nextEl = gi < siblings.length
+        ? canvasEl.querySelector(`[data-builder-id="${siblings[gi].id}"]`)
+        : null;
+      const rawPrevRight = prevEl?.getBoundingClientRect().right;
+      const rawNextLeft  = nextEl?.getBoundingClientRect().left;
+      const prevRight = rawPrevRight ?? rawNextLeft ?? (canvasRect.left + (panXRef.current ?? 0));
+      const nextLeft  = rawNextLeft  ?? rawPrevRight ?? (canvasRect.left + (panXRef.current ?? 0));
+      const gapMid = (prevRight + nextLeft) / 2;
+      const dist   = Math.abs(cursorX - gapMid);
+      if (dist < minDist) {
+        minDist   = dist;
+        insertIdx = gi;
+        lineX = (rawPrevRight ?? rawNextLeft ?? (canvasRect.left + (panXRef.current ?? 0))) - canvasRect.left;
+      }
+    }
+    return { insertIdx, lineX };
   }
 
   /**
@@ -882,6 +1244,7 @@ export default function BuilderCanvas() {
           // No drop line, but highlight the target container (blue dashed border)
           // whenever the node would be reparented into a different container.
           setDropLineY(null);
+          setDropLineX(null);
           setDropContainerId(
             effectiveParentId !== null && effectiveParentId !== currentParentId
               ? effectiveParentId
@@ -891,6 +1254,7 @@ export default function BuilderCanvas() {
         }
         // absCanvas unavailable — clear any stale indicators
         setDropLineY(null);
+        setDropLineX(null);
         setDropContainerId(null);
         return;
       }
@@ -955,10 +1319,19 @@ export default function BuilderCanvas() {
         // Find the nearest gap within the container's children so we insert at
         // the correct position and show the line exactly there.
         const children = (nodeInTree?.children ?? []) as SDUINode[];
-        const { insertIdx, lineY } = nearestGap(children, e.clientY, canvas, rect);
-        setDropContainerId(nodeId);
-        setDropLineY(lineY);
-        dropTargetRef.current = { parentId: nodeId, index: insertIdx };
+        if (isRowContainer(nodeInTree)) {
+          const { insertIdx, lineX } = nearestGapH(children, e.clientX, canvas, rect);
+          setDropContainerId(nodeId);
+          setDropLineX(lineX);
+          setDropLineY(null);
+          dropTargetRef.current = { parentId: nodeId, index: insertIdx };
+        } else {
+          const { insertIdx, lineY } = nearestGap(children, e.clientY, canvas, rect);
+          setDropContainerId(nodeId);
+          setDropLineY(lineY);
+          setDropLineX(null);
+          dropTargetRef.current = { parentId: nodeId, index: insertIdx };
+        }
       } else {
         // ── Drop BEFORE / AFTER this node in its parent ──
         const parent   = findParentNode(useBuilderStore.getState().pageNodes, nodeId);
@@ -966,18 +1339,28 @@ export default function BuilderCanvas() {
         const siblings: SDUINode[] = parent
           ? (parent.children as SDUINode[])
           : useBuilderStore.getState().pageNodes;
-        const { insertIdx, lineY } = nearestGap(siblings, e.clientY, canvas, rect);
-        setDropContainerId(null);
-        setDropLineY(lineY);
-        dropTargetRef.current = { parentId, index: insertIdx };
+        if (isRowContainer(parent)) {
+          const { insertIdx, lineX } = nearestGapH(siblings, e.clientX, canvas, rect);
+          setDropContainerId(null);
+          setDropLineX(lineX);
+          setDropLineY(null);
+          dropTargetRef.current = { parentId, index: insertIdx };
+        } else {
+          const { insertIdx, lineY } = nearestGap(siblings, e.clientY, canvas, rect);
+          setDropContainerId(null);
+          setDropLineY(lineY);
+          setDropLineX(null);
+          dropTargetRef.current = { parentId, index: insertIdx };
+        }
       }
     } else {
       // ── No node under cursor (or cursor is over a dragged node): use
-      //    nearest-gap on root-level nodes.
+      //    nearest-gap on root-level nodes (always column at root level).
       const nodes = useBuilderStore.getState().pageNodes;
       const { insertIdx, lineY } = nearestGap(nodes, e.clientY, canvas, rect);
       setDropContainerId(null);
       setDropLineY(lineY);
+      setDropLineX(null);
       dropTargetRef.current = { parentId: null, index: insertIdx };
     }
   }, [findBuilderElAt]);
@@ -986,6 +1369,7 @@ export default function BuilderCanvas() {
     lastDragHoverPageRef.current = null;
     setIsDroppingVariant(false);
     setDropLineY(null);
+    setDropLineX(null);
     setDropContainerId(null);
     absDragPosRef.current = null;
     setAbsDragPos(null);
@@ -1049,11 +1433,19 @@ export default function BuilderCanvas() {
         dragStartStyleRef.current = null;
         draggingNodeIdRef.current = null;
         setDropLineY(null);
+        setDropLineX(null);
         return;
       }
       // Moving an existing canvas node (or a group of selected nodes) to a new position
       const allIds = multiDragIdsRef.current;
-      if (allIds.length > 1) {
+      const srcPage = dragSourcePageIdRef.current;
+      const curPage = useBuilderStore.getState().currentPageId;
+      dragSourcePageIdRef.current = null;
+
+      if (srcPage && srcPage !== curPage) {
+        // Cross-page drag: node lives in a different page's nodes — use cross-page move
+        moveNodeFromPage(canvasNodeId, srcPage, target.parentId, target.index);
+      } else if (allIds.length > 1) {
         moveNodes(allIds, target.parentId, target.index);
       } else {
         moveNode(canvasNodeId, target.parentId, target.index);
@@ -1069,6 +1461,7 @@ export default function BuilderCanvas() {
           if (allowed && !allowed.has(node.type)) {
             console.warn(`Cannot drop "${node.type}" into "${parentNode?.type}" — incompatible child type.`);
             setDropLineY(null);
+            setDropLineX(null);
             draggingNodeIdRef.current = null;
             return;
           }
@@ -1084,9 +1477,11 @@ export default function BuilderCanvas() {
     }
 
     setDropLineY(null);
+    setDropLineX(null);
     draggingNodeIdRef.current = null;
+    dragSourcePageIdRef.current = null;
     lastDragHoverPageRef.current = null;
-  }, [addNode, addSection, moveNode, moveNodes, patchProp, _pushHistory]);
+  }, [addNode, addSection, moveNode, moveNodes, moveNodeFromPage, patchProp, _pushHistory]);
 
   // ── Resize: pointer-capture drag on handle ───────────────────────────────
   //
@@ -1099,7 +1494,7 @@ export default function BuilderCanvas() {
     e.stopPropagation();
     e.preventDefault();
 
-    const el    = document.querySelector(`[data-builder-id="${id}"]`);
+    const el    = document.querySelector(`[data-builder-id="${id}"]`) as HTMLElement | null;
     const frame = document.querySelector('[data-builder-page-frame]');
     if (!el || !frame) return;
 
@@ -1110,6 +1505,24 @@ export default function BuilderCanvas() {
     const startY    = e.clientY;
     const startW    = r.width  / z;   // unscaled px
     const startH    = r.height / z;
+
+    // Read existing style once — we apply size imperatively during the drag
+    // and only commit to Zustand on pointerup (same pattern as pan/zoom world container).
+    const node = (() => {
+      function find(nodes: SDUINode[], targetId: string): SDUINode | null {
+        for (const n of nodes) {
+          if (n.id === targetId) return n;
+          if (n.children?.length) { const f = find(n.children as SDUINode[], targetId); if (f) return f; }
+        }
+        return null;
+      }
+      return find(useBuilderStore.getState().pageNodes, id);
+    })();
+    const existingStyle = (node?.props as { style?: Record<string, string> })?.style ?? {};
+
+    // Track final committed size for the onUp handler
+    let lastW = startW;
+    let lastH = startH;
 
     const onMove = (ev: PointerEvent) => {
       const dx = (ev.clientX - startX) / z;
@@ -1128,33 +1541,30 @@ export default function BuilderCanvas() {
       newW = snapped.w;
       newH = snapped.h;
       setSnapGuides(snapped.guides);
+      lastW = newW;
+      lastH = newH;
 
-      // Use inline style instead of Tailwind classes — avoids JIT compilation
-      // requirement and always takes effect immediately at highest specificity.
-      const node = (() => {
-        function find(nodes: SDUINode[], targetId: string): SDUINode | null {
-          for (const n of nodes) {
-            if (n.id === targetId) return n;
-            if (n.children?.length) { const f = find(n.children as SDUINode[], targetId); if (f) return f; }
-          }
-          return null;
-        }
-        return find(useBuilderStore.getState().pageNodes, id);
-      })();
-      if (!node) return;
+      // Apply size directly to DOM — zero React re-renders during the drag gesture.
+      // Zustand is committed once on pointerup (same strategy as pan/zoom world container).
+      el.style.width  = `${newW}px`;
+      el.style.height = `${newH}px`;
 
-      const existingStyle = (node.props as { style?: Record<string, string> })?.style ?? {};
-      useBuilderStore.getState().patchProp(id, 'props.style', {
-        ...existingStyle,
-        width:  `${newW}px`,
-        height: `${newH}px`,
-      });
+      // Synchronous ring update so handles track the new size in the same frame
+      overlayInstantUpdateRef.current?.();
+      overlayNotifyRef.current?.();
     };
 
     const onUp = () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup',   onUp);
       setSnapGuides([]);
+
+      // Commit final size to Zustand so the JSON config stays in sync
+      useBuilderStore.getState().patchProp(id, 'props.style', {
+        ...existingStyle,
+        width:  `${lastW}px`,
+        height: `${lastH}px`,
+      });
       useBuilderStore.getState()._pushHistory();
     };
 
@@ -1195,115 +1605,97 @@ export default function BuilderCanvas() {
       onDrop={onDrop}
       onContextMenu={handleContextMenu}
     >
-      {/* Figma-style dot grid */}
+      {/* Figma-style dot grid — pattern offsets updated imperatively via gridPatternRef */}
       <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.25 }}>
         <defs>
-          <pattern id="builder-grid" x={panX % (20 * zoom)} y={panY % (20 * zoom)} width={20 * zoom} height={20 * zoom} patternUnits="userSpaceOnUse">
+          <pattern ref={gridPatternRef} id="builder-grid" x={panX % (20 * zoom)} y={panY % (20 * zoom)} width={20 * zoom} height={20 * zoom} patternUnits="userSpaceOnUse">
             <circle cx={1} cy={1} r={0.8} fill="#6b7280" />
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#builder-grid)" />
       </svg>
 
-      {/* ── All page frames except the active one (rendered behind active so active's overlay wins) ── */}
-      {pages.filter(p => p.id !== currentPageId).map(page => {
-        const absIdx = pages.findIndex(pg => pg.id === page.id);
-        const frameLeft = panX + absIdx * (vpWidth + PAGE_GAP) * zoom;
-        const cfg: SDUIConfig = {
-          state: {},
-          ui: {
-            type: 'Box',
-            props: { className: 'flex flex-col w-full min-h-screen items-start relative' },
-            children: page.nodes,
-          } as SDUIConfig['ui'],
-        };
-        return (
-          <React.Fragment key={page.id}>
-            {/* Page name label */}
-            <div style={{ position: 'absolute', left: frameLeft, top: panY - 26, fontSize: 11, color: '#9ca3af', pointerEvents: 'none', userSelect: 'none', fontFamily: 'system-ui', whiteSpace: 'nowrap', display: 'flex', gap: 6, alignItems: 'baseline' }}>
-              <span style={{ fontWeight: 500 }}>{page.name}</span>
-              <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#4b5563' }}>{page.route}</span>
-              <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#374151' }}>{vpWidth}px</span>
-            </div>
-            {/* Frame — same style as active, just no blue ring */}
-            <div
-              data-builder-page-id={page.id}
-              style={{
-                position: 'absolute',
-                left: frameLeft,
-                top: panY,
-                width: vpWidth,
-                minHeight: VIEWPORT_H,
-                transformOrigin: '0 0',
-                transform: `scale(${zoom})`,
-                background: '#ffffff',
-                overflow: 'visible',
-                boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
-              }}
-            >
-              {page.nodes.length === 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: VIEWPORT_H, gap: 8, color: '#9ca3af', fontFamily: 'system-ui', userSelect: 'none' }}>
-                  <div style={{ fontSize: 24, opacity: 0.3 }}>+</div>
-                  <div style={{ fontSize: 12 }}>Empty page</div>
-                </div>
-              ) : (
-                <SDUIEngine
-                  key={`pg-${page.id}`}
-                  config={cfg}
-                  configName={page.route.replace(/[^a-zA-Z0-9]/g, '_') || 'page'}
-                  actionsConfig={app.actions ?? {}}
-                  routes={app.routes ?? []}
-                  builderMode
-                />
-              )}
-              {/* Fold line */}
-              <div data-builder-overlay="fold-line" style={{ position: 'absolute', left: 0, right: 0, top: VIEWPORT_H, height: 0, borderTop: '1.5px dashed rgba(99,130,246,0.3)', pointerEvents: 'none', zIndex: 9990 }} />
-            </div>
-          </React.Fragment>
-        );
-      })}
-
-      {/* ── Active (last-interacted) page — label ── */}
-      <div style={{ position: 'absolute', left: activePanX, top: panY - 26, fontSize: 11, color: '#d1d5db', pointerEvents: 'none', userSelect: 'none', fontFamily: 'system-ui', whiteSpace: 'nowrap', display: 'flex', gap: 6, alignItems: 'baseline' }}>
-        {(() => { const pg = pages.find(p => p.id === currentPageId); return (
-          <>
-            <span style={{ fontWeight: 600, color: '#f3f4f6' }}>{pg?.name ?? 'Page'}</span>
-            <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#6b7280' }}>{pg?.route ?? '/'}</span>
-            <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#4b5563' }}>{vpWidth}px</span>
-          </>
-        ); })()}
-      </div>
-
-      {/* ── Active page frame: direct SDUI render (capture overlay lives here) ── */}
+      {/* ── World container — all page frames live here.
+           transform (translate + scale) is applied imperatively via worldRef
+           during scroll/pan so React never re-renders just for viewport movement. ── */}
       <div
-        ref={pageFrameRef}
-        data-builder-page-frame="1"
-        data-builder-page-id={currentPageId}
+        ref={worldRef}
         style={{
           position: 'absolute',
-          left: activePanX,
-          top: panY,
-          width: vpWidth,
-          minHeight: VIEWPORT_H,
+          left: 0,
+          top: 0,
           transformOrigin: '0 0',
-          transform: `scale(${zoom})`,
-          background: '#ffffff',
-          overflow: 'visible',
-          boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
+          // Initial transform — kept in sync by the useEffect([zoom,panX,panY]) above
+          transform: `translate(${panX}px, ${panY}px) scale(${zoom})`,
         }}
       >
-        {pageNodes.length === 0 ? (
-          <EmptyCanvas />
-        ) : (
-          <SDUIEngine
-            key="builder-engine"
-            config={pageConfig}
-            configName="builder"
-            actionsConfig={app.actions ?? {}}
-            routes={app.routes ?? []}
-            builderMode
-          />
-        )}
+        {/* ── All inactive page frames (behind the active one) ── */}
+        {pages.filter(p => p.id !== currentPageId).map(page => {
+          const absIdx = pages.findIndex(pg => pg.id === page.id);
+          const worldLeft = absIdx * (vpWidth + PAGE_GAP);
+          return (
+            <React.Fragment key={page.id}>
+              {/* Page name label */}
+              <div style={{ position: 'absolute', left: worldLeft, top: -26, fontSize: 11, color: '#9ca3af', pointerEvents: 'none', userSelect: 'none', fontFamily: 'system-ui', whiteSpace: 'nowrap', display: 'flex', gap: 6, alignItems: 'baseline' }}>
+                <span style={{ fontWeight: 500 }}>{page.name}</span>
+                {page.route && <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#4b5563' }}>{page.route}</span>}
+                <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#374151' }}>{vpWidth}px</span>
+              </div>
+              {/* Frame */}
+              <div
+                data-builder-page-id={page.id}
+                style={{
+                  position: 'absolute',
+                  left: worldLeft,
+                  top: 0,
+                  width: vpWidth,
+                  minHeight: VIEWPORT_H,
+                  background: '#ffffff',
+                  overflow: 'visible',
+                  boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
+                }}
+              >
+                <InactivePageEngine
+                  pageId={page.id}
+                  configName={(page.route ?? '').replace(/[^a-zA-Z0-9]/g, '_') || 'page'}
+                  nodes={page.nodes as SDUINode[]}
+                />
+                {/* Fold line */}
+                <div data-builder-overlay="fold-line" style={{ position: 'absolute', left: 0, right: 0, top: VIEWPORT_H, height: 0, borderTop: '1.5px dashed rgba(99,130,246,0.3)', pointerEvents: 'none', zIndex: 9990 }} />
+              </div>
+            </React.Fragment>
+          );
+        })}
+
+        {/* ── Active page — label ── */}
+        {(() => {
+          const pg = pages.find(p => p.id === currentPageId);
+          return (
+            <div style={{ position: 'absolute', left: activePageIdx * (vpWidth + PAGE_GAP), top: -26, fontSize: 11, color: '#d1d5db', pointerEvents: 'none', userSelect: 'none', fontFamily: 'system-ui', whiteSpace: 'nowrap', display: 'flex', gap: 6, alignItems: 'baseline' }}>
+              <span style={{ fontWeight: 600, color: '#f3f4f6' }}>{pg?.name ?? 'Page'}</span>
+              {pg?.route && <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#6b7280' }}>{pg.route}</span>}
+              <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#4b5563' }}>{vpWidth}px</span>
+            </div>
+          );
+        })()}
+
+        {/* ── Active page frame: direct SDUI render (capture overlay lives here) ── */}
+        <div
+          ref={pageFrameRef}
+          data-builder-page-frame="1"
+          data-builder-page-id={currentPageId}
+          style={{
+            position: 'absolute',
+            left: activePageIdx * (vpWidth + PAGE_GAP),
+            top: 0,
+            width: vpWidth,
+            minHeight: VIEWPORT_H,
+            background: '#ffffff',
+            overflow: 'visible',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
+          }}
+        >
+        <PageEngine pageConfig={pageConfig} />
 
         {/* Viewport fold line — dashed line marking where the viewport ends.
             Content below this line exists on the page but is not visible
@@ -1348,6 +1740,8 @@ export default function BuilderCanvas() {
               inset: 0,
               zIndex: 9999,
               cursor: 'default',
+              // Let pointer events through to the contenteditable element while editing
+              pointerEvents: editingId ? 'none' : undefined,
             }}
             onMouseMove={handleOverlayMouseMove}
             onMouseLeave={handleOverlayMouseLeave}
@@ -1355,7 +1749,7 @@ export default function BuilderCanvas() {
               const hit = hitTest(e.clientX, e.clientY);
               if (hit.kind !== 'node') return;
 
-              // Walk up to find a text-editable node (Text, Heading, ButtonText)
+              // 1. Walk UP the DOM from the hit element to find a text-editable node
               let editId: string | null = null;
               let el: HTMLElement | null = document.querySelector(`[data-builder-id="${hit.id}"]`);
               while (el) {
@@ -1366,28 +1760,35 @@ export default function BuilderCanvas() {
                 }
                 el = el.parentElement?.closest('[data-builder-id]') as HTMLElement | null;
               }
+
+              // 2. Fallback: if hit node is a container, find first text-type direct child
+              if (!editId) {
+                const hitNode = findNode(useBuilderStore.getState().pageNodes, hit.id);
+                if (hitNode) {
+                  const findTextChild = (node: typeof hitNode): string | null => {
+                    for (const child of (node.children ?? [])) {
+                      if (TEXT_NODE_TYPES.has(child.type) && 'text' in child) return child.id as string;
+                      const deep = findTextChild(child);
+                      if (deep) return deep;
+                    }
+                    return null;
+                  };
+                  editId = findTextChild(hitNode);
+                }
+              }
+
               if (!editId) return;
-
-              const targetEl = document.querySelector(`[data-builder-id="${editId}"]`);
-              const canvasEl = canvasRef.current;
-              if (!targetEl || !canvasEl) return;
-
-              const tr = targetEl.getBoundingClientRect();
-              const cr = canvasEl.getBoundingClientRect();
-
               setEditingId(editId);
-              const node = findNode(useBuilderStore.getState().pageNodes, editId);
-              setEditingText((node as { text?: string })?.text ?? '');
-              setEditingRect({
-                left:   tr.left - cr.left,
-                top:    tr.top  - cr.top,
-                width:  Math.max(tr.width,  40),
-                height: Math.max(tr.height, 28),
-              });
             }}
             onPointerDown={e => {
-              // If we're in text-edit mode and the user clicks outside the textarea, commit
-              if (editingId) { commitInlineEdit(); return; }
+              // If we're in text-edit mode and the user clicks outside the editing element, commit
+              if (editingId) {
+                const editingEl = editingElRef.current;
+                if (editingEl && !editingEl.contains(e.target as Node)) {
+                  commitInlineEdit();
+                }
+                return;
+              }
               if (e.button !== 0) return;
               const hit = hitTest(e.clientX, e.clientY);
               if (hit.kind === 'node') {
@@ -1456,6 +1857,7 @@ export default function BuilderCanvas() {
               }
 
               draggingNodeIdRef.current = dragId;
+              dragSourcePageIdRef.current = useBuilderStore.getState().currentPageId;
               e.dataTransfer.setData('text/canvas-node-id', dragId);
               e.dataTransfer.effectAllowed = 'move';
 
@@ -1584,6 +1986,7 @@ export default function BuilderCanvas() {
               dragStartStyleRef.current = null;
 
               draggingNodeIdRef.current = null;
+              dragSourcePageIdRef.current = null;
               absDragPosRef.current = null;
               grabOffsetRef.current = { x: 0, y: 0 };
               stickySnapRef.current = { x: null, y: null };
@@ -1594,43 +1997,16 @@ export default function BuilderCanvas() {
               setIsDroppingVariant(false);
               setDropContainerId(null);
               setDropLineY(null);
+              setDropLineX(null);
               setAbsDragPos(null);
               setSnapGuides([]);
             }}
           />
         )}
       </div>
-
-      {/* ── Inline text editor (floats over the canvas at the node's position) ── */}
-      {editingId && editingRect && (
-        <textarea
-          ref={editingTextareaRef}
-          data-testid="inline-text-editor"
-          value={editingText}
-          onChange={e => setEditingText(e.target.value)}
-          onBlur={commitInlineEdit}
-          style={{
-            position: 'absolute',
-            left:   editingRect.left,
-            top:    editingRect.top,
-            width:  editingRect.width,
-            height: editingRect.height,
-            zIndex: 99999,
-            fontSize: Math.round(14 * zoom),
-            fontFamily: 'inherit',
-            padding: 2,
-            background: 'rgba(30, 41, 59, 0.92)',
-            color: '#fff',
-            border: '2px solid #3b82f6',
-            borderRadius: 3,
-            resize: 'both',
-            outline: 'none',
-            overflow: 'hidden',
-            lineHeight: 1.4,
-            boxSizing: 'border-box',
-          }}
-        />
-      )}
+      {/* ── End active page frame ── */}
+      </div>
+      {/* ── End world container ── */}
 
       {/* ── Marquee selection rectangle ── */}
       {marquee && (
@@ -1662,11 +2038,15 @@ export default function BuilderCanvas() {
         altMode={altMode}
         isDroppingVariant={isDroppingVariant}
         dropLineY={dropLineY}
+        dropLineX={dropLineX}
         dropContainerId={dropContainerId}
         pageNodes={pageNodes}
         gridOverlay={gridOverlay}
         onResizeStart={onResizeStart}
         isDragging={isDragging}
+        notifyRef={overlayNotifyRef}
+        overlayInstantUpdateRef={overlayInstantUpdateRef}
+        liveZoomRef={zoomRef}
       />
 
       {/* ── Context menu ── */}
