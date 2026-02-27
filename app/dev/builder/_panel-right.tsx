@@ -36,10 +36,13 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useBuilderStore } from './_store';
 import type { SDUINode } from '@/lib/sdui/types/node';
+import { FigmaColorPicker } from './_color-picker';
 import {
   parseTwToken,
+  parseTwArbitrary,
   replaceTwToken,
   removeTwToken,
+  styleToClassName,
   TEXT_SIZE_TOKENS,
   FONT_WEIGHT_TOKENS,
   LEADING_TOKENS,
@@ -106,26 +109,6 @@ function SectionHeader({ title, children }: { title: string; children?: React.Re
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/**
- * Read the current style object for a node directly from the Zustand store.
- * Used in patchStyle's debounced flush so the merge always uses the LATEST
- * committed style (not a stale React-render closure value). This prevents a
- * direct store.patchProp call (e.g. rotate) from being wiped when the debounce
- * timer fires with an outdated nodeStyle from a previous render cycle.
- */
-function readNodeStyle(nodeId: string): Record<string, string> {
-  function find(nodes: unknown[]): Record<string, string> | null {
-    for (const n of nodes as Array<{ id?: string; props?: { style?: Record<string, string> }; children?: unknown[] }>) {
-      if (n.id === nodeId) return n.props?.style ?? {};
-      if (n.children?.length) {
-        const f = find(n.children);
-        if (f !== null) return f;
-      }
-    }
-    return null;
-  }
-  return find(useBuilderStore.getState().pageNodes) ?? {};
-}
 
 // ─── Inputs ───────────────────────────────────────────────────────────────────
 
@@ -264,10 +247,28 @@ function DesignTab({ node }: { node: SDUINode }) {
     if (styleFlushTimer.current) clearTimeout(styleFlushTimer.current);
     styleFlushTimer.current = setTimeout(() => {
       const id = pendingNodeIdRef.current;
-      const latestStyle = readNodeStyle(id);
-      const merged = { ...latestStyle, ...pendingStyleRef.current };
-      const filtered = Object.fromEntries(Object.entries(merged).filter(([, v]) => v !== '' && v !== undefined));
-      store.patchProp(id, 'props.style', filtered);
+      // Read the current className + style from the store (live, not from the render closure)
+      function readNodeData(nodes: unknown[]): { className: string; style: Record<string, string> } | null {
+        for (const n of nodes as Array<{ id?: string; props?: { className?: string; style?: Record<string, string> }; children?: unknown[] }>) {
+          if (n.id === id) return { className: n.props?.className ?? '', style: n.props?.style ?? {} };
+          if (n.children?.length) {
+            const f = readNodeData(n.children);
+            if (f !== null) return f;
+          }
+        }
+        return null;
+      }
+      const nodeData = readNodeData(useBuilderStore.getState().pageNodes) ?? { className: '', style: {} };
+      // Also write className for export portability (arbitrary value classes as Tailwind tokens)
+      const newCls = styleToClassName(pendingStyleRef.current, nodeData.className);
+      store.patchProp(id, 'props.className', newCls);
+      // Keep props.style for reliable rendering — Tailwind's safelist can't pre-compile
+      // runtime-only arbitrary values (e.g. w-[317px], rotate-[23deg]). Inline style
+      // guarantees correct display in both the canvas and the preview page.
+      const mergedStyle = Object.fromEntries(
+        Object.entries({ ...nodeData.style, ...pendingStyleRef.current }).filter(([, v]) => v !== ''),
+      );
+      store.patchProp(id, 'props.style', mergedStyle);
       pendingStyleRef.current = {};
       styleFlushTimer.current = null;
       commitHistory();
@@ -283,10 +284,20 @@ function DesignTab({ node }: { node: SDUINode }) {
         clearTimeout(styleFlushTimer.current);
         if (Object.keys(pendingStyleRef.current).length > 0) {
           const id = pendingNodeIdRef.current;
-          const latestStyle = readNodeStyle(id);
-          const merged = { ...latestStyle, ...pendingStyleRef.current };
-          const filtered = Object.fromEntries(Object.entries(merged).filter(([, v]) => v !== '' && v !== undefined));
-          store.patchProp(id, 'props.style', filtered);
+          function readNodeDataFlush(nodes: unknown[]): { className: string; style: Record<string, string> } | null {
+            for (const n of nodes as Array<{ id?: string; props?: { className?: string; style?: Record<string, string> }; children?: unknown[] }>) {
+              if (n.id === id) return { className: n.props?.className ?? '', style: n.props?.style ?? {} };
+              if (n.children?.length) { const f = readNodeDataFlush(n.children); if (f !== null) return f; }
+            }
+            return null;
+          }
+          const nodeData = readNodeDataFlush(useBuilderStore.getState().pageNodes) ?? { className: '', style: {} };
+          const newCls = styleToClassName(pendingStyleRef.current, nodeData.className);
+          store.patchProp(id, 'props.className', newCls);
+          const mergedStyle = Object.fromEntries(
+            Object.entries({ ...nodeData.style, ...pendingStyleRef.current }).filter(([, v]) => v !== ''),
+          );
+          store.patchProp(id, 'props.style', mergedStyle);
           pendingStyleRef.current = {};
         }
         styleFlushTimer.current = null;
@@ -382,20 +393,24 @@ function DesignTab({ node }: { node: SDUINode }) {
   const activeCell  = getAlignCellIndex(cls);
   const flexDir     = parseTwToken(cls, 'flex-') ?? 'flex-col';
   const gapToken    = parseTwToken(cls, 'gap-') ?? 'gap-0';
-  const gapPx       = parseInt(gapToken.replace('gap-', '') || '0') * 4;
+  // parseTwArbitrary handles gap-[12px]; scale tokens fall back to the 4px grid
+  const gapPx       = parseTwArbitrary(cls, 'gap-') ?? (parseInt(gapToken.replace('gap-', '') || '0') * 4);
   const textSize    = parseTwToken(cls, 'text-') ?? 'text-base';
   const fontWeight  = parseTwToken(cls, 'font-') ?? 'font-normal';
   const leading     = parseTwToken(cls, 'leading-') ?? 'leading-normal';
   const tracking    = parseTwToken(cls, 'tracking-') ?? 'tracking-normal';
-  // Opacity is stored as inline style.opacity (0–1) for reliable cross-browser rendering.
-  // NativeWind doesn't compile dynamic opacity-N classes, so we avoid them entirely.
-  const opacityVal = nodeStyle.opacity !== undefined
-    ? Math.round(parseFloat(String(nodeStyle.opacity)) * 100)
-    : (() => {
-        // Migrate legacy opacity-N className to style if present
-        const token = parseTwToken(cls, 'opacity-');
-        return token ? parseInt(token.replace('opacity-', '') || '100') : 100;
-      })();
+  // Opacity is stored as opacity-[0.5] arbitrary class (or legacy style.opacity for old nodes).
+  const opacityVal = (() => {
+    // Legacy: still in props.style (old nodes before migration)
+    if (nodeStyle.opacity !== undefined) return Math.round(parseFloat(String(nodeStyle.opacity)) * 100);
+    const token = parseTwToken(cls, 'opacity-');
+    if (!token) return 100;
+    // Arbitrary value: opacity-[0.5]
+    const arb = token.match(/^opacity-\[([0-9.]+)\]$/);
+    if (arb) return Math.round(parseFloat(arb[1]) * 100);
+    // Scale token: opacity-50
+    return parseInt(token.replace('opacity-', '') || '100');
+  })();
   const shadowToken = parseTwToken(cls, 'shadow') ?? 'shadow-none';
   const borderWidth = parseTwToken(cls, 'border') ?? 'border-0';
   const borderStyle = BORDER_STYLE_TOKENS.find(t => cls.includes(t)) ?? 'border-solid';
@@ -517,14 +532,19 @@ function DesignTab({ node }: { node: SDUINode }) {
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <NumberInput label="W" testId="input-pos-w" value={(() => {
-            const styleW = (node.props as { style?: Record<string, string> })?.style?.width;
+            // Read from className arbitrary token first, then legacy style, then DOM
+            const clsW = parseTwArbitrary(cls, 'w-');
+            if (clsW !== null) return clsW;
+            const styleW = nodeStyle.width;
             if (styleW) return parseInt(styleW) || domMetrics.w;
             return domMetrics.w;
           })()} onChange={px => {
             patchStyle({ width: `${px}px`, minWidth: '0' });
           }} />
           <NumberInput label="H" testId="input-pos-h" value={(() => {
-            const styleH = (node.props as { style?: Record<string, string> })?.style?.height;
+            const clsH = parseTwArbitrary(cls, 'h-');
+            if (clsH !== null) return clsH;
+            const styleH = nodeStyle.height;
             if (styleH) return parseInt(styleH) || domMetrics.h;
             return domMetrics.h;
           })()} onChange={px => {
@@ -542,7 +562,7 @@ function DesignTab({ node }: { node: SDUINode }) {
                   key={side}
                   label={side.charAt(0).toUpperCase() + side.slice(1)}
                   testId={`input-inset-${side}`}
-                  value={parseInt((node.props as { style?: Record<string, string> })?.style?.[side] ?? '') || 0}
+                  value={parseTwArbitrary(cls, `${side}-`) ?? parseInt(nodeStyle[side] ?? '') || 0}
                   onChange={px => {
                     patchStyle({ [side]: `${px}px` });
                   }}
@@ -607,25 +627,25 @@ function DesignTab({ node }: { node: SDUINode }) {
           <NumberInput
             label="Min W"
             testId="input-min-w"
-            value={parseInt(nodeStyle.minWidth ?? '0') || 0}
+            value={parseTwArbitrary(cls, 'min-w-') ?? parseInt(nodeStyle.minWidth ?? '0') || 0}
             onChange={px => patchStyle({ minWidth: px > 0 ? `${px}px` : '' })}
           />
           <NumberInput
             label="Max W"
             testId="input-max-w"
-            value={nodeStyle.maxWidth ? parseInt(nodeStyle.maxWidth) || 0 : 0}
+            value={parseTwArbitrary(cls, 'max-w-') ?? (nodeStyle.maxWidth ? parseInt(nodeStyle.maxWidth) || 0 : 0)}
             onChange={px => patchStyle({ maxWidth: px > 0 ? `${px}px` : '' })}
           />
           <NumberInput
             label="Min H"
             testId="input-min-h"
-            value={parseInt(nodeStyle.minHeight ?? '0') || 0}
+            value={parseTwArbitrary(cls, 'min-h-') ?? parseInt(nodeStyle.minHeight ?? '0') || 0}
             onChange={px => patchStyle({ minHeight: px > 0 ? `${px}px` : '' })}
           />
           <NumberInput
             label="Max H"
             testId="input-max-h"
-            value={nodeStyle.maxHeight ? parseInt(nodeStyle.maxHeight) || 0 : 0}
+            value={parseTwArbitrary(cls, 'max-h-') ?? (nodeStyle.maxHeight ? parseInt(nodeStyle.maxHeight) || 0 : 0)}
             onChange={px => patchStyle({ maxHeight: px > 0 ? `${px}px` : '' })}
           />
         </div>
@@ -669,8 +689,6 @@ function DesignTab({ node }: { node: SDUINode }) {
             min={-180} max={180}
             onChange={deg => {
               const newTransform = deg !== 0 ? `rotate(${deg}deg)` : '';
-              const newCls = removeTwToken(removeTwToken(cls, 'rotate-'), '-rotate-');
-              if (newCls !== cls) patchCls(newCls);
               patchStyle({ transform: newTransform });
             }}
           />
@@ -738,12 +756,9 @@ function DesignTab({ node }: { node: SDUINode }) {
             <NumberInput
               label="Gap"
               testId="input-gap"
-              value={nodeStyle.gap ? parseInt(nodeStyle.gap) : gapPx}
+              value={gapPx}
               onChange={px => {
                 patchStyle({ gap: px > 0 ? `${px}px` : undefined as unknown as string });
-                // Also clean up any legacy gap-* className token
-                const cleaned = removeTwToken(cls, 'gap-');
-                if (cleaned !== cls) patchCls(cleaned);
               }}
             />
             {/* Gap mode: Fixed vs Space-between */}
@@ -798,34 +813,29 @@ function DesignTab({ node }: { node: SDUINode }) {
           {padMode === 'combined' ? (
             <div style={{ display: 'flex', gap: 6 }}>
               <NumberInput label="H (px/py)" testId="input-pad-h"
-                value={parseInt(nodeStyle.paddingLeft ?? nodeStyle.paddingInline ?? String(padding.left))}
+                value={padding.left}
                 onChange={px => {
                   patchStyle({ paddingLeft: `${px}px`, paddingRight: `${px}px`, paddingInline: undefined as unknown as string });
-                  const cleaned = removeTwToken(removeTwToken(removeTwToken(cls, 'px-'), 'pl-'), 'pr-');
-                  const token = px > 0 ? `px-[${px}px]` : '';
-                  patchCls(token ? `${cleaned} ${token}`.trim() : cleaned);
                 }} />
               <NumberInput label="V (pt/pb)" testId="input-pad-v"
-                value={parseInt(nodeStyle.paddingTop ?? nodeStyle.paddingBlock ?? String(padding.top))}
+                value={padding.top}
                 onChange={px => {
                   patchStyle({ paddingTop: `${px}px`, paddingBottom: `${px}px`, paddingBlock: undefined as unknown as string });
-                  const cleaned = removeTwToken(removeTwToken(removeTwToken(cls, 'py-'), 'pt-'), 'pb-');
-                  if (cleaned !== cls) patchCls(cleaned);
                 }} />
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
               <NumberInput label="Top"    testId="input-pad-top"
-                value={parseInt(nodeStyle.paddingTop ?? String(padding.top))}
+                value={padding.top}
                 onChange={px => patchStyle({ paddingTop: `${px}px` })} />
               <NumberInput label="Right"  testId="input-pad-right"
-                value={parseInt(nodeStyle.paddingRight ?? String(padding.right))}
+                value={padding.right}
                 onChange={px => patchStyle({ paddingRight: `${px}px` })} />
               <NumberInput label="Bottom" testId="input-pad-bottom"
-                value={parseInt(nodeStyle.paddingBottom ?? String(padding.bottom))}
+                value={padding.bottom}
                 onChange={px => patchStyle({ paddingBottom: `${px}px` })} />
               <NumberInput label="Left"   testId="input-pad-left"
-                value={parseInt(nodeStyle.paddingLeft ?? String(padding.left))}
+                value={padding.left}
                 onChange={px => patchStyle({ paddingLeft: `${px}px` })} />
             </div>
           )}
@@ -845,26 +855,22 @@ function DesignTab({ node }: { node: SDUINode }) {
         {marginMode === 'combined' ? (
           <div style={{ display: 'flex', gap: 6 }}>
             <NumberInput label="H (mx)"
-              value={parseInt(nodeStyle.marginLeft ?? nodeStyle.marginInline ?? String(margin.left))}
+              value={margin.left}
               onChange={px => {
                 patchStyle({ marginLeft: `${px}px`, marginRight: `${px}px`, marginInline: undefined as unknown as string });
-                const cleaned = removeTwToken(removeTwToken(removeTwToken(cls, 'mx-'), 'ml-'), 'mr-');
-                if (cleaned !== cls) patchCls(cleaned);
               }} />
             <NumberInput label="V (my)"
-              value={parseInt(nodeStyle.marginTop ?? nodeStyle.marginBlock ?? String(margin.top))}
+              value={margin.top}
               onChange={px => {
                 patchStyle({ marginTop: `${px}px`, marginBottom: `${px}px`, marginBlock: undefined as unknown as string });
-                const cleaned = removeTwToken(removeTwToken(removeTwToken(cls, 'my-'), 'mt-'), 'mb-');
-                if (cleaned !== cls) patchCls(cleaned);
               }} />
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-            <NumberInput label="Top"    value={parseInt(nodeStyle.marginTop    ?? String(margin.top))}    onChange={px => patchStyle({ marginTop:    `${px}px` })} />
-            <NumberInput label="Right"  value={parseInt(nodeStyle.marginRight  ?? String(margin.right))}  onChange={px => patchStyle({ marginRight:  `${px}px` })} />
-            <NumberInput label="Bottom" value={parseInt(nodeStyle.marginBottom ?? String(margin.bottom))} onChange={px => patchStyle({ marginBottom: `${px}px` })} />
-            <NumberInput label="Left"   value={parseInt(nodeStyle.marginLeft   ?? String(margin.left))}   onChange={px => patchStyle({ marginLeft:   `${px}px` })} />
+            <NumberInput label="Top"    value={margin.top}    onChange={px => patchStyle({ marginTop:    `${px}px` })} />
+            <NumberInput label="Right"  value={margin.right}  onChange={px => patchStyle({ marginRight:  `${px}px` })} />
+            <NumberInput label="Bottom" value={margin.bottom} onChange={px => patchStyle({ marginBottom: `${px}px` })} />
+            <NumberInput label="Left"   value={margin.left}   onChange={px => patchStyle({ marginLeft:   `${px}px` })} />
           </div>
         )}
       </div>
@@ -909,11 +915,14 @@ function DesignTab({ node }: { node: SDUINode }) {
       {/* ── Fill ── */}
       <div style={SECTION_STYLE}>
         <SectionHeader title="Fill" />
-        <ColorInput
+        <FigmaColorPicker
           label="Background"
           testId="input-bg-color"
           value={computedBgColor}
-          onChange={hex => patchStyle({ backgroundColor: hex })}
+          onChange={hex => {
+            const cleaned = cls.replace(/\bbg-\[#[0-9a-fA-F]{3,8}\]/g, '').replace(/\s+/g, ' ').trim();
+            patchCls(hex ? `${cleaned} bg-[${hex}]`.trim() : cleaned);
+          }}
         />
         <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ fontSize: 9, color: '#6b7280' }}>Opacity</span>
@@ -933,14 +942,15 @@ function DesignTab({ node }: { node: SDUINode }) {
       {/* ── Stroke ── */}
       <div style={SECTION_STYLE}>
         <SectionHeader title="Stroke" />
-        <ColorInput
+        <FigmaColorPicker
           label="Color"
           testId="input-stroke-color"
           value={computedBorderColor}
           onChange={hex => {
-            const cleaned = cls.replace(/\bborder-\[[^\]]+\]/g, '').replace(/\s+/g, ' ').trim();
+            // Write directly to className; styleToClassName also handles this via patchStyle
+            // but writing className immediately avoids the 80ms debounce lag for color pickers.
+            const cleaned = cls.replace(/\bborder-\[#[0-9a-fA-F]{3,8}\]/g, '').replace(/\s+/g, ' ').trim();
             patchCls(hex ? `${cleaned} border-[${hex}]`.trim() : cleaned);
-            patchStyle({ borderColor: hex || '' });
           }}
         />
         <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
@@ -1011,14 +1021,13 @@ function DesignTab({ node }: { node: SDUINode }) {
               patchCls(v === 'normal-case' ? next : `${next} ${v}`.trim());
             }} />
           </div>
-            <ColorInput
+            <FigmaColorPicker
             label="Color"
             testId="input-text-color"
             value={computedTextColor}
             onChange={hex => {
-              const cleaned = cls.replace(/\btext-\[[^\]]+\]/g, '').replace(/\s+/g, ' ').trim();
+              const cleaned = cls.replace(/\btext-\[#[0-9a-fA-F]{3,8}\]/g, '').replace(/\s+/g, ' ').trim();
               patchCls(hex ? `${cleaned} text-[${hex}]`.trim() : cleaned);
-              patchStyle({ color: hex || '' });
             }}
           />
         </div>

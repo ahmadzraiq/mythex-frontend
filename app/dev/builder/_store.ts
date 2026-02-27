@@ -20,6 +20,108 @@ import { showcaseNodes } from './_showcase';
 
 const MAX_HISTORY = 50;
 
+/**
+ * Convert a hex color string to a space-separated RGB triplet,
+ * which is the format ThemeStyles uses for CSS custom properties
+ * so that Tailwind's `rgb(var(--X) / alpha)` syntax works.
+ * Non-hex values (font strings, 'inherit', etc.) are passed through unchanged.
+ */
+function hexToRgbTriplet(value: string): string {
+  if (!value.startsWith('#')) return value;
+  const clean = value.replace('#', '');
+  const full = clean.length === 3
+    ? clean.split('').map(c => c + c).join('')
+    : clean;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  return `${r} ${g} ${b}`;
+}
+
+/**
+ * Managed <style> tag helpers.
+ *
+ * WHY style tags instead of inline styles:
+ *   Inline styles on document.documentElement have the highest specificity and
+ *   override EVERY CSS rule — including `.dark {}` rules. This breaks dark mode
+ *   because the light-mode inline values win even when the `dark` class is active.
+ *
+ *   Using :root {} and .dark {} style tags instead keeps everything at the same
+ *   specificity (0,1,0). The builder's style tags are appended AFTER ThemeStyles
+ *   in the <head>, so they win by DOM order. And our dark override tag comes after
+ *   our light override tag, so .dark {} correctly wins in dark mode. ✓
+ */
+function _getManagedStyle(id: string): HTMLStyleElement {
+  if (typeof document === 'undefined') return {} as HTMLStyleElement;
+  let el = document.getElementById(id) as HTMLStyleElement | null;
+  if (!el) {
+    el = document.createElement('style');
+    el.id = id;
+    document.head.appendChild(el);
+  }
+  return el;
+}
+
+/**
+ * Injects light-mode overrides.
+ *
+ * Colors (hex/RGB values) go into `html:not(.dark) {}` so they are
+ * invisible to dark-mode CSS — dark overrides in `.dark {}` take over
+ * without any specificity fight.
+ *
+ * Non-color values (fonts, radius) go into `:root {}` so they apply in
+ * both light AND dark mode.
+ */
+/**
+ * Gluestack's Checkbox, Radio, Switch etc. use internal `--color-primary-*`
+ * tokens set as inline styles via NativeWind vars(). We bridge them to our
+ * `--primary` variable using `!important`, which (per the CSS spec) is the
+ * only way to override inline-style custom properties from a stylesheet rule.
+ */
+const GLUESTACK_PRIMARY_BRIDGE = [
+  '  --color-primary-400: var(--primary) !important;',
+  '  --color-primary-500: var(--primary) !important;',
+  '  --color-primary-600: var(--primary) !important;',
+  '  --color-primary-700: var(--primary) !important;',
+  '  --color-primary-800: var(--primary) !important;',
+].join('\n');
+
+function _applyLightOverrides(overrides: Record<string, string>) {
+  const el = _getManagedStyle('builder-light-overrides');
+
+  const colorLines: string[] = [];
+  const baseLines: string[]  = [];
+
+  for (const [k, v] of Object.entries(overrides)) {
+    if (v.startsWith('#')) {
+      // hex color → convert to RGB triplet, scope to light mode only
+      colorLines.push(`  --${k}: ${hexToRgbTriplet(v)};`);
+    } else {
+      // font family string, rem value, etc. → applies in both modes
+      baseLines.push(`  --${k}: ${v};`);
+    }
+  }
+
+  const parts: string[] = [];
+  if (baseLines.length) parts.push(`:root {\n${baseLines.join('\n')}\n}`);
+  // Always include the bridge so Gluestack components follow the active --primary
+  parts.push(`html:not(.dark) {\n${colorLines.join('\n')}${colorLines.length ? '\n' : ''}${GLUESTACK_PRIMARY_BRIDGE}\n}`);
+  el.textContent = parts.join('\n\n');
+}
+
+/**
+ * Injects dark-mode overrides as `html.dark { }` (specificity 0,1,1) so they
+ * beat ThemeStyles's `.dark { }` (specificity 0,1,0) without relying on DOM order.
+ * Also bridges Gluestack's internal primary tokens to `--primary` with !important.
+ */
+function _applyDarkOverrides(overrides: Record<string, string>) {
+  const el = _getManagedStyle('builder-dark-overrides');
+  const vars = Object.entries(overrides)
+    .map(([k, v]) => `  --${k}: ${hexToRgbTriplet(v)};`)
+    .join('\n');
+  el.textContent = `html.dark {\n${vars ? vars + '\n' : ''}${GLUESTACK_PRIMARY_BRIDGE}\n}`;
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function clone<T>(v: T): T {
@@ -238,6 +340,30 @@ export interface BuilderStore {
   pendingFitToPage: boolean;
   clearPendingFit: () => void;
 
+  // ── Theme overrides ──────────────────────────────────────────────────────────
+  /** Light-mode CSS variable overrides (key = var name without --) */
+  themeOverrides: Record<string, string>;
+  /** Dark-mode CSS variable overrides (key = var name without --) */
+  themeDarkOverrides: Record<string, string>;
+  /**
+   * Apply a CSS variable override for the given mode.
+   * Light-mode vars are set inline on :root; dark-mode vars are injected into
+   * a managed <style id="builder-dark-overrides"> rule so they only apply when
+   * document.documentElement has the `dark` class.
+   * Values are stored as hex in state; CSS vars are set as RGB triplets so
+   * `rgb(var(--X))` syntax in the showcase works correctly.
+   */
+  /** Install the Gluestack primary token bridge on page mount (no-op if already installed). */
+  initTheme: () => void;
+  patchTheme: (cssVar: string, value: string, mode?: 'light' | 'dark') => void;
+  resetTheme: () => void;
+  /** Apply a complete theme preset atomically — light colors, dark colors, and fonts. */
+  applyThemePreset: (
+    light: Record<string, string>,
+    dark: Record<string, string>,
+    fonts?: { heading?: string; body?: string },
+  ) => void;
+
   // Internal (debounce wrapper)
   _pushHistory: () => void;
   _setPageNodes: (nodes: SDUINode[]) => void;
@@ -287,6 +413,8 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   history: [clone(showcaseNodes)],
   historyIdx: 0,
   pendingFitToPage: false,
+  themeOverrides: {},
+  themeDarkOverrides: {},
 
   // ── Page mutations ──────────────────────────────────────────────────────────
 
@@ -1058,6 +1186,46 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   },
 
   clearPendingFit: () => set({ pendingFitToPage: false }),
+
+  // ── Theme overrides ──────────────────────────────────────────────────────────
+
+  initTheme: () => {
+    // Install bridge style tags immediately so Gluestack components respect
+    // the active --primary even before the user picks a preset.
+    const { themeOverrides, themeDarkOverrides } = get();
+    _applyLightOverrides(themeOverrides);
+    _applyDarkOverrides(themeDarkOverrides);
+  },
+
+  patchTheme: (cssVar, value, mode = 'light') => {
+    if (mode === 'light') {
+      // Read current state first, then apply DOM change, then commit to store
+      const next = { ...get().themeOverrides, [cssVar]: value };
+      _applyLightOverrides(next);
+      set({ themeOverrides: next });
+    } else {
+      const next = { ...get().themeDarkOverrides, [cssVar]: value };
+      _applyDarkOverrides(next);
+      set({ themeDarkOverrides: next });
+    }
+  },
+
+  resetTheme: () => {
+    _applyLightOverrides({});
+    _applyDarkOverrides({});
+    set({ themeOverrides: {}, themeDarkOverrides: {} });
+  },
+
+  applyThemePreset: (light, dark, fonts) => {
+    const fullLight = {
+      ...light,
+      ...(fonts?.heading ? { 'font-heading': fonts.heading } : {}),
+      ...(fonts?.body    ? { 'font-body':    fonts.body    } : {}),
+    };
+    _applyLightOverrides(fullLight);
+    _applyDarkOverrides(dark);
+    set({ themeOverrides: fullLight, themeDarkOverrides: dark });
+  },
 
   renamePage: (pageId, name) => {
     set(s => ({

@@ -139,27 +139,29 @@ export function replaceTwToken(className: string, prefix: string, newToken: stri
 
 /**
  * Remove all tokens matching a prefix from className.
- * Handles tokens that start with non-word characters (e.g. '-scale-x-100', '-rotate-45')
- * where \b word boundary doesn't work.
+ * Always anchors to start-of-string or whitespace so single-letter prefixes
+ * like 'w-' and 'h-' do NOT match inside compound tokens like 'min-w-0', 'max-h-full'.
+ * (Using \b was wrong: the '-' before 'w' in 'min-w-' is a non-word char so \b
+ * fires there, stripping 'w-0' and leaving a stray 'min-'.)
  */
 export function removeTwToken(className: string, prefix: string): string {
   const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  if (/^\w/.test(prefix)) {
-    // Word boundary works when the token starts with a word character
-    return className.replace(new RegExp(`\\b${escaped}\\S*`, 'g'), '').replace(/\s+/g, ' ').trim();
-  }
-  // For tokens starting with '-' or other non-word chars, match at start-of-string or after whitespace
-  return className.replace(new RegExp(`(?:^|\\s)${escaped}\\S*`, 'g'), ' ').replace(/\s+/g, ' ').trim();
+  return className
+    .replace(new RegExp(`(?:^|(?<=\\s))${escaped}\\S*`, 'g'), '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /**
  * Extract the first token matching a prefix, returns null if not found.
  * e.g. parseTwToken("p-6 text-sm", "p-") → "p-6"
+ * Anchors to start-of-string or whitespace to avoid matching partial tokens
+ * e.g. parseTwToken("min-h-0", "h-") must return null, not "h-0".
  */
 export function parseTwToken(className: string, prefix: string): string | null {
   const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = className.match(new RegExp(`\\b${escaped}\\S*`));
-  return match ? match[0] : null;
+  const match = className.match(new RegExp(`(?:^|(?<=\\s))(${escaped}\\S*)`));
+  return match ? match[1] : null;
 }
 
 /**
@@ -190,13 +192,171 @@ export function pxToTw(px: number, prefix: string): string {
 
 /**
  * Convert a Tailwind spacing token to px.
- * e.g. twToPx("p-4") → 16
+ * Handles both named scale tokens (pt-4 → 16) and arbitrary tokens (pt-[13px] → 13).
  */
 export function twToPx(token: string): number {
+  // Arbitrary value: pt-[13px] or pt-[13.5px]
+  const arb = token.match(/\[(\d+(?:\.\d+)?)px\]/);
+  if (arb) return parseFloat(arb[1]);
+  // Named scale: pt-4 → scale 4 → 16px
   const match = token.match(/-([\d.]+)$/);
   if (!match) return 0;
   const scale = parseFloat(match[1]);
   return SPACING_PX[scale] ?? 0;
+}
+
+/**
+ * Extract the numeric px value from an arbitrary-value Tailwind token.
+ * e.g. parseTwArbitrary("flex w-[320px] h-[180px]", "w-") → 320
+ * Returns null if the token is not present or is not an arbitrary pixel value.
+ */
+export function parseTwArbitrary(className: string, prefix: string): number | null {
+  const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = className.match(new RegExp(`\\b${escaped}\\[(\\d+(?:\\.\\d+)?)px\\]`));
+  return match ? parseFloat(match[1]) : null;
+}
+
+/**
+ * Convert a flat `props.style` dict into Tailwind arbitrary-value className tokens,
+ * merged into the existing className string.
+ *
+ * Only handles the properties produced by patchStyle(); other style keys are ignored.
+ * Removes any existing token for the same property before appending the new one,
+ * so repeated edits never accumulate duplicate tokens.
+ */
+export function styleToClassName(
+  style: Record<string, string>,
+  existingCls: string,
+): string {
+  let cls = existingCls;
+
+  const set = (prefix: string, value: string) => {
+    if (!value && value !== '0') return;
+    // Remove all existing tokens for this prefix (both scale and arbitrary)
+    cls = removeTwToken(cls, prefix);
+    cls = `${cls} ${prefix}[${value}]`.trim();
+  };
+
+  const px = (v: string) => {
+    const n = parseFloat(v);
+    return Number.isNaN(n) ? null : `${n}px`;
+  };
+
+  // ── Colors ──────────────────────────────────────────────────────────────────
+  if (style.backgroundColor) {
+    cls = removeTwToken(cls, 'bg-');
+    // Keep non-arbitrary bg tokens (e.g. bg-primary) but replace arbitrary hex
+    cls = cls.replace(/\bbg-\[#[0-9a-fA-F]{3,8}\]/g, '').replace(/\s+/g, ' ').trim();
+    cls = `${cls} bg-[${style.backgroundColor}]`.trim();
+  }
+  if (style.color) {
+    // Only replace arbitrary hex text colors; leave semantic text-* tokens alone
+    cls = cls.replace(/\btext-\[#[0-9a-fA-F]{3,8}\]/g, '').replace(/\s+/g, ' ').trim();
+    cls = `${cls} text-[${style.color}]`.trim();
+  }
+  if (style.borderColor) {
+    cls = cls.replace(/\bborder-\[#[0-9a-fA-F]{3,8}\]/g, '').replace(/\s+/g, ' ').trim();
+    cls = `${cls} border-[${style.borderColor}]`.trim();
+  }
+
+  // ── Dimensions ──────────────────────────────────────────────────────────────
+  if (style.width !== undefined && style.width !== '') {
+    cls = removeTwToken(cls, 'w-');
+    if (style.width) cls = `${cls} w-[${style.width}]`.trim();
+  }
+  if (style.height !== undefined && style.height !== '') {
+    cls = removeTwToken(cls, 'h-');
+    if (style.height) cls = `${cls} h-[${style.height}]`.trim();
+  }
+
+  if (style.minWidth !== undefined) {
+    cls = removeTwToken(cls, 'min-w-');
+    if (style.minWidth === '0') cls = `${cls} min-w-0`.trim();
+    else if (style.minWidth) cls = `${cls} min-w-[${style.minWidth}]`.trim();
+  }
+  if (style.maxWidth !== undefined) {
+    cls = removeTwToken(cls, 'max-w-');
+    if (style.maxWidth) cls = `${cls} max-w-[${style.maxWidth}]`.trim();
+  }
+  if (style.minHeight !== undefined) {
+    cls = removeTwToken(cls, 'min-h-');
+    if (style.minHeight) cls = `${cls} min-h-[${style.minHeight}]`.trim();
+  }
+  if (style.maxHeight !== undefined) {
+    cls = removeTwToken(cls, 'max-h-');
+    if (style.maxHeight) cls = `${cls} max-h-[${style.maxHeight}]`.trim();
+  }
+
+  // ── Padding ──────────────────────────────────────────────────────────────────
+  const padMap: [string, string][] = [
+    ['paddingTop',    'pt-'],
+    ['paddingRight',  'pr-'],
+    ['paddingBottom', 'pb-'],
+    ['paddingLeft',   'pl-'],
+    ['paddingBlock',  'py-'],
+    ['paddingInline', 'px-'],
+  ];
+  for (const [key, pfx] of padMap) {
+    if (style[key] !== undefined) {
+      cls = removeTwToken(cls, pfx);
+      const p = px(style[key]);
+      if (p) cls = `${cls} ${pfx}[${p}]`.trim();
+    }
+  }
+
+  // ── Margin ───────────────────────────────────────────────────────────────────
+  const marMap: [string, string][] = [
+    ['marginTop',    'mt-'],
+    ['marginRight',  'mr-'],
+    ['marginBottom', 'mb-'],
+    ['marginLeft',   'ml-'],
+  ];
+  for (const [key, pfx] of marMap) {
+    if (style[key] !== undefined) {
+      cls = removeTwToken(cls, pfx);
+      const p = px(style[key]);
+      if (p) cls = `${cls} ${pfx}[${p}]`.trim();
+    }
+  }
+
+  // ── Gap ──────────────────────────────────────────────────────────────────────
+  if (style.gap !== undefined) {
+    cls = removeTwToken(cls, 'gap-');
+    const p = px(style.gap);
+    if (p) cls = `${cls} gap-[${p}]`.trim();
+  }
+
+  // ── Opacity ──────────────────────────────────────────────────────────────────
+  if (style.opacity !== undefined) {
+    cls = removeTwToken(cls, 'opacity-');
+    const o = parseFloat(style.opacity);
+    if (!Number.isNaN(o)) {
+      // Store as opacity-[0.5] (arbitrary) so round-trips are lossless
+      cls = `${cls} opacity-[${o}]`.trim();
+    }
+  }
+
+  // ── Transform (rotation) ─────────────────────────────────────────────────────
+  if (style.transform !== undefined) {
+    cls = removeTwToken(cls, 'rotate-');
+    cls = removeTwToken(cls, '-rotate-');
+    const deg = style.transform.match(/rotate\(([-\d.]+)deg\)/);
+    if (deg && deg[1] !== '0') {
+      const n = parseFloat(deg[1]);
+      cls = `${cls} rotate-[${n}deg]`.trim();
+    }
+  }
+
+  // ── Inset (top / right / bottom / left) ──────────────────────────────────────
+  for (const side of ['top', 'right', 'bottom', 'left'] as const) {
+    if (style[side] !== undefined) {
+      cls = removeTwToken(cls, `${side}-`);
+      const p = px(style[side]);
+      if (p) cls = `${cls} ${side}-[${p}]`.trim();
+    }
+  }
+
+  return cls.replace(/\s+/g, ' ').trim();
 }
 
 // ─── Four-sided spacing helpers ───────────────────────────────────────────────

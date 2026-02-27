@@ -549,15 +549,54 @@ async function injectNodes(page: Page, nodes: unknown[]) {
 - `getNodeStyle(page, nodeId)` — reads `node.props.style` from store
 - `scrollTo(page, testId)` — scrolls element into view inside overflow panel container
 
-**`beforeAll` / `beforeEach` pattern** (used in all panel spec files for performance):
+**`sharedPage` + `resetBuilder` pattern** (mandatory for ALL spec files — navigate once, reset between tests):
+
 ```ts
-let page: Page;
-test.beforeAll(async ({ browser }) => { page = await browser.newPage(); await gotoBuilder(page); });
-test.beforeEach(async () => {
-  // clear canvas between tests instead of re-navigating
-  await page.evaluate(() => {
-    (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>)
-      .__builderStore.getState()._setPageNodes([]);
+import { test, expect, Page, Browser } from '@playwright/test';
+
+let sharedPage: Page;
+
+async function resetBuilder(p: Page) {
+  await p.evaluate(() => {
+    const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
+    if (!store) return;
+    (store._setPageNodes as (n: unknown[]) => void)([]);
+    if (typeof store.setSelectedIds === 'function') (store.setSelectedIds as (ids: string[]) => void)([]);
+    if (typeof store.setZoom === 'function') (store.setZoom as (z: number) => void)(1);
+  });
+  await p.waitForFunction(
+    () => document.querySelectorAll('[data-builder-id]').length === 0,
+    { timeout: 5_000 }
+  );
+}
+
+// File-level (outside any describe) — opens ONE page for the entire file
+test.beforeAll(async ({ browser }: { browser: Browser }) => {
+  sharedPage = await browser.newPage();
+  await gotoBuilder(sharedPage);
+});
+test.afterAll(async () => { await sharedPage?.close(); });
+test.beforeEach(async () => { await resetBuilder(sharedPage); }); // only if no describe-level beforeEach
+
+// Inside a describe block — same pattern:
+test.describe('My Group', () => {
+  test.beforeEach(async () => { await resetBuilder(sharedPage); });
+  test('my test', async () => {
+    const page = sharedPage; // alias so existing code works unchanged
+    // ...
+  });
+});
+```
+
+**Why `resetBuilder` instead of `gotoBuilder`:** Full page navigation costs 5–15s per test. `resetBuilder` clears nodes/selection/zoom via the store in <100ms. Always prefer `resetBuilder` in `beforeEach`; reserve `gotoBuilder` only for cases that require a fresh undo history (e.g. History/Undo tests in `builder.spec.ts`).
+
+**History tests exception:** `_setPageNodes([])` does NOT clear the undo stack. Tests that test undo/redo must use `gotoBuilder(page)` (the Playwright fixture page, not `sharedPage`) so each gets a clean history:
+```ts
+test.describe('History (Undo / Redo)', () => {
+  // No beforeEach here — each test uses its own page fixture
+  test('undo after drop removes the node', async ({ page }) => {
+    await gotoBuilder(page); // fresh page = clean history
+    // ...
   });
 });
 ```
@@ -583,7 +622,7 @@ await page.getByTestId('layer-row').first().click();
 
 **Injected nodes must have `id` fields:** Without `id`, the renderer does not set `data-builder-id`, making `waitForSelector('[data-builder-id="..."]')` time out.
 
-**Timeout:** Global Playwright timeout is `120_000`ms. All `test.setTimeout` calls use `120_000`ms. The dev server must be running on port 3001 (`npx next dev -p 3001`).
+**Timeout:** Global Playwright timeout is `30_000`ms (fail fast). The dev server must be running on port 3001 (`npx next dev -p 3001`). The `webServer` startup timeout is `60_000`ms. Workers are set to `10` (matching CPU count) so all 12 spec files run simultaneously.
 
 ---
 
@@ -1298,3 +1337,52 @@ await page.evaluate(async ({ cx, cy, primitiveStr }) => {
 **Problem:** When running 280 tests with 5 workers, `dropButton` and `dropComponent` occasionally time out on `waitFor('[data-builder-id]')` due to resource contention.
 
 **Fix:** `dropButton` in `button-panel.spec.ts` retries up to 5 times with a 300ms wait between retries. Similarly, always run the full suite with `--retries=1` in CI to handle environment-level flakiness gracefully.
+
+---
+
+## Theme Panel + FigmaColorPicker
+
+### ThemePanel (`_theme-panel.tsx`)
+
+A collapsible panel rendered in the "Theme" tab of the left panel. Sections:
+- **Global Colors** — semantic CSS vars: `background`, `foreground`, `primary`, `secondary`, `muted`, `accent`, `destructive`, `border`, `ring`
+- **Section Colors** — grouped by section (Header, Footer, Hero, Content, Shop); each color editable live
+- **Typography** — heading/body font pickers (Google Fonts injected on-demand via `<link>` into `document.head`)
+- **Border Radius** — preset tiles that write to `--radius` CSS var
+
+All changes go through `patchTheme(cssVar, value)` in `_store.ts`, which:
+1. Calls `document.documentElement.style.setProperty(`--${cssVar}`, value)` for live canvas update
+2. Stores the override in `themeOverrides: Record<string, string>` (Zustand)
+
+`resetTheme()` removes all `setProperty` overrides and clears `themeOverrides`.
+
+**Rule:** Font changes also use `patchTheme('font-heading', fontValue)`. Google Fonts are injected via a `<link>` element only if the URL is not already in the document head.
+
+---
+
+### FigmaColorPicker (`_color-picker.tsx`)
+
+Replaces the old `ColorInput` component in the Design tab (Fill, Stroke, Typography sections).
+
+**Props:**
+```typescript
+interface FigmaColorPickerProps {
+  value: string;           // current hex
+  onChange: (hex: string) => void;
+  label?: string;          // "Background", "Color", etc.
+  testId?: string;
+}
+```
+
+**Popover layout:**
+1. **Theme Colors** — 6-column swatch grid (Global: Primary, Secondary, Muted, etc.)
+2. **Section Colors** — 6-column swatch grid (Header bg, Footer bg, Shop btn, etc.)
+3. **Custom** — native `<input type="color">` + hex text field
+
+**Swatch behavior:** Clicking a swatch resolves the CSS variable via `getComputedStyle(document.documentElement).getPropertyValue(`--${cssVar}`)` to the current hex (respecting any live `themeOverrides`), then calls `onChange(hex)`. The resolved hex is stored as an inline style value — consistent with the existing builder pattern (colors always stored as hex strings, never as CSS var references).
+
+**Popover close:** `mousedown` handler on `document`; popover stays open during `<input type="color">` interactions.
+
+**Rule:** Never store `var(--primary)` etc. as inline style values — always resolve to hex before calling `onChange`. The rest of the builder pipeline (serialize → preview → SDUI engine) handles hex only.
+
+**Rule:** `FigmaColorPicker` is used for Fill (background), Stroke (border), and Typography (text color) in `_panel-right.tsx`. The old `ColorInput` function remains in `_panel-right.tsx` only as a backup but is no longer rendered.

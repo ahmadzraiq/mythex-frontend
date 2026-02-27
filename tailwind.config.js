@@ -53,6 +53,23 @@ module.exports = {
     { pattern: /^(no-underline|underline|line-through|overline)$/ },
     { pattern: /^(normal-case|uppercase|lowercase|capitalize)$/ },
     { pattern: /^self-(auto|start|center|end|stretch|baseline)$/ },
+    // ── Builder: arbitrary-value classes produced by styleToClassName() ─────────
+    // Colors (hex, 3–8 char) — bg, text, border
+    { pattern: /^bg-\[#[0-9a-fA-F]{3,8}\]$/ },
+    { pattern: /^text-\[#[0-9a-fA-F]{3,8}\]$/ },
+    { pattern: /^border-\[#[0-9a-fA-F]{3,8}\]$/ },
+    // Dimensions (w, h, min/max)
+    { pattern: /^(w|h)-\[\d+(\.\d+)?px\]$/ },
+    { pattern: /^(min-w|max-w|min-h|max-h)-\[\d+(\.\d+)?px\]$/ },
+    'min-w-0',
+    // Spacing — padding, margin, gap
+    { pattern: /^(pt|pr|pb|pl|px|py)-\[\d+(\.\d+)?px\]$/ },
+    { pattern: /^(mt|mr|mb|ml|mx|my)-\[\d+(\.\d+)?px\]$/ },
+    { pattern: /^gap(-x|-y)?-\[\d+(\.\d+)?px\]$/ },
+    // Opacity (e.g. opacity-[0.5])
+    { pattern: /^opacity-\[0?\.?\d+\]$/ },
+    // Rotation
+    { pattern: /^-?rotate-\[-?\d+deg\]$/ },
   ],
   theme: {
     extend: {

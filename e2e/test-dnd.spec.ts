@@ -8,7 +8,7 @@
  *   the node being dragged, and the canvas onDragOver/onDrop handle the rest.
  */
 
-import { test, expect, Page } from '@playwright/test';
+import { test, expect, Page, Browser } from '@playwright/test';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -101,10 +101,43 @@ async function getNodeChildren(page: Page, nodeId: string): Promise<Array<{ type
   }, nodeId);
 }
 
+
+// ─── Shared page setup ──────────────────────────────────────────────────────
+// Navigate once; every test resets state via resetBuilder() in beforeEach.
+// V7 (Typography visibility) reloads sharedPage directly — that stays valid
+// because the page stays at /dev/builder after reload.
+
+let sharedPage: Page;
+
+test.beforeAll(async ({ browser }: { browser: Browser }) => {
+  sharedPage = await browser.newPage();
+  await gotoBuilder(sharedPage);
+});
+
+test.afterAll(async () => {
+  await sharedPage?.close();
+});
+
+async function resetBuilder(p: Page) {
+  await p.evaluate(() => {
+    const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
+    if (!store) return;
+    (store._setPageNodes as (n: unknown[]) => void)([]);
+    if (typeof store.setSelectedIds === 'function') (store.setSelectedIds as (ids: string[]) => void)([]);
+    if (typeof store.setZoom === 'function') (store.setZoom as (z: number) => void)(1);
+  });
+  await p.waitForFunction(
+    () => document.querySelectorAll('[data-builder-id]').length === 0,
+    { timeout: 5_000 }
+  );
+}
+
+test.beforeEach(async () => { await resetBuilder(sharedPage); });
+
 // ─── Tests: store-level (verify moveNode action directly) ────────────────────
 
-test('DnD-1: moveNode — Text becomes child of VStack', async ({ page }) => {
-  await gotoBuilder(page);
+test('DnD-1: moveNode — Text becomes child of VStack', async () => {
+  const page = sharedPage;
 
   await dropComponent(page, 'VStack');
   await dropComponent(page, 'Text');
@@ -143,8 +176,8 @@ test('DnD-1: moveNode — Text becomes child of VStack', async ({ page }) => {
   console.log('✅ moveNode correctly places Text inside VStack');
 });
 
-test('DnD-2: moveNode — Pressable-Button moves BEFORE VStack (index 0)', async ({ page }) => {
-  await gotoBuilder(page);
+test('DnD-2: moveNode — Pressable-Button moves BEFORE VStack (index 0)', async () => {
+  const page = sharedPage;
 
   await dropComponent(page, 'VStack');
   await dropComponent(page, 'Btn Solid');
@@ -189,8 +222,8 @@ test('DnD-2: moveNode — Pressable-Button moves BEFORE VStack (index 0)', async
   expect(vstackStillExists).toBe(true);
 });
 
-test('DnD-3: moveNode — cannot drop node into itself (no-op)', async ({ page }) => {
-  await gotoBuilder(page);
+test('DnD-3: moveNode — cannot drop node into itself (no-op)', async () => {
+  const page = sharedPage;
 
   await dropComponent(page, 'VStack');
 
@@ -267,8 +300,8 @@ async function getNodeStyle(page: Page, nodeId: string): Promise<Record<string, 
 
 test.describe('Fix-1: Drop from left panel into container', () => {
 
-  test('Fix-1a: Button dropped onto Box center lands inside Box (not at root)', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-1a: Button dropped onto Box center lands inside Box (not at root)', async () => {
+    const page = sharedPage;
 
     // Inject a large Box so it is a clear drop target
     await page.evaluate(() => {
@@ -305,8 +338,8 @@ test.describe('Fix-1: Drop from left panel into container', () => {
     expect(children.some(c => c.type === 'Pressable')).toBe(true);
   });
 
-  test('Fix-1b: Text dropped onto VStack center lands inside VStack', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-1b: Text dropped onto VStack center lands inside VStack', async () => {
+    const page = sharedPage;
 
     // Inject a VStack with known size
     await page.evaluate(() => {
@@ -341,8 +374,8 @@ test.describe('Fix-1: Drop from left panel into container', () => {
     expect(children.some(c => c.type === 'Text')).toBe(true);
   });
 
-  test('Fix-1c: Drop zone container highlight shows when dragging over Box center', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-1c: Drop zone container highlight shows when dragging over Box center', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
 
     const boxEl = page.locator('[data-builder-type="Box"]').first();
@@ -374,8 +407,8 @@ test.describe('Fix-1: Drop from left panel into container', () => {
 
 test.describe('Fix-2: Fixed button removes sizing class', () => {
 
-  test('Fix-2a: W Fill then Fixed removes w-full', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-2a: W Fill then Fixed removes w-full', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNode(page);
     const nodeId = await getFirstRootNodeId(page);
@@ -394,8 +427,8 @@ test.describe('Fix-2: Fixed button removes sizing class', () => {
     expect(clsAfterFixed).not.toContain('w-fit');
   });
 
-  test('Fix-2b: H Fill then Fixed removes h-full', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-2b: H Fill then Fixed removes h-full', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNode(page);
     const nodeId = await getFirstRootNodeId(page);
@@ -414,8 +447,8 @@ test.describe('Fix-2: Fixed button removes sizing class', () => {
     expect(clsAfterFixed).not.toContain('h-fit');
   });
 
-  test('Fix-2c: W Hug then Fixed removes w-fit', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-2c: W Hug then Fixed removes w-fit', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNode(page);
     const nodeId = await getFirstRootNodeId(page);
@@ -434,8 +467,8 @@ test.describe('Fix-2: Fixed button removes sizing class', () => {
     expect(clsAfterFixed).not.toContain('w-full');
   });
 
-  test('Fix-2d: Fixed W button shows data-active=true when no w-fit/w-full present', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-2d: Fixed W button shows data-active=true when no w-fit/w-full present', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNode(page);
 
@@ -459,8 +492,8 @@ test.describe('Fix-2: Fixed button removes sizing class', () => {
 
 test.describe('Fix-3: Rotate value reflects on canvas', () => {
 
-  test('Fix-3a: Rotate=45 sets style.transform=rotate(45deg) on canvas element', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-3a: Rotate=45 sets style.transform=rotate(45deg) on canvas element', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNode(page);
     const nodeId = await getFirstRootNodeId(page);
@@ -476,8 +509,8 @@ test.describe('Fix-3: Rotate value reflects on canvas', () => {
     expect(transform).toContain('rotate(45deg)');
   });
 
-  test('Fix-3b: Rotate=−90 sets style.transform=rotate(-90deg)', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-3b: Rotate=−90 sets style.transform=rotate(-90deg)', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNode(page);
     const nodeId = await getFirstRootNodeId(page);
@@ -492,8 +525,8 @@ test.describe('Fix-3: Rotate value reflects on canvas', () => {
     expect(transform).toContain('rotate(-90deg)');
   });
 
-  test('Fix-3c: Rotate=0 results in no visible rotation on canvas element', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-3c: Rotate=0 results in no visible rotation on canvas element', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNode(page);
     const nodeId = await getFirstRootNodeId(page);
@@ -515,8 +548,8 @@ test.describe('Fix-3: Rotate value reflects on canvas', () => {
     expect(transform === '' || transform === 'rotate(0deg)').toBe(true);
   });
 
-  test('Fix-3d: Rotate value in store is in props.style, not in className', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-3d: Rotate value in store is in props.style, not in className', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNode(page);
     const nodeId = await getFirstRootNodeId(page);
@@ -542,8 +575,8 @@ test.describe('Fix-3: Rotate value reflects on canvas', () => {
 
 test.describe('Fix-4: NumberInput commits on blur without Enter', () => {
 
-  test('Fix-4a: W (position) commits via Tab/blur', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-4a: W (position) commits via Tab/blur', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNode(page);
     const nodeId = await getFirstRootNodeId(page);
@@ -556,8 +589,8 @@ test.describe('Fix-4: NumberInput commits on blur without Enter', () => {
     expect(style.width).toBe('250px');
   });
 
-  test('Fix-4b: H (position) commits via Tab/blur', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-4b: H (position) commits via Tab/blur', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNode(page);
     const nodeId = await getFirstRootNodeId(page);
@@ -570,8 +603,8 @@ test.describe('Fix-4: NumberInput commits on blur without Enter', () => {
     expect(style.height).toBe('180px');
   });
 
-  test('Fix-4c: Rotate commits via Tab/blur', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-4c: Rotate commits via Tab/blur', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNode(page);
     const nodeId = await getFirstRootNodeId(page);
@@ -585,8 +618,8 @@ test.describe('Fix-4: NumberInput commits on blur without Enter', () => {
     expect(style.transform).toContain('rotate(15deg)');
   });
 
-  test('Fix-4d: Gap commits via Tab/blur', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-4d: Gap commits via Tab/blur', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNode(page);
     const nodeId = await getFirstRootNodeId(page);
@@ -599,8 +632,8 @@ test.describe('Fix-4: NumberInput commits on blur without Enter', () => {
     expect(cls).toContain('gap-4');
   });
 
-  test('Fix-4e: Padding Top commits via Tab/blur', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-4e: Padding Top commits via Tab/blur', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNode(page);
     const nodeId = await getFirstRootNodeId(page);
@@ -627,8 +660,8 @@ test.describe('Fix-4: NumberInput commits on blur without Enter', () => {
     expect(style.paddingTop).toBeTruthy();
   });
 
-  test('Fix-4f: W value commits when clicking elsewhere (mouse blur)', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-4f: W value commits when clicking elsewhere (mouse blur)', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNode(page);
     const nodeId = await getFirstRootNodeId(page);
@@ -645,8 +678,8 @@ test.describe('Fix-4: NumberInput commits on blur without Enter', () => {
 
 // ─── DnD-UI: visual drag with synthetic events ───────────────────────────────
 
-test('DnD-UI-1: Drag from canvas triggers dragstart on capture overlay', async ({ page }) => {
-  await gotoBuilder(page);
+test('DnD-UI-1: Drag from canvas triggers dragstart on capture overlay', async () => {
+  const page = sharedPage;
 
   await dropComponent(page, 'Text');
   const textEl = page.locator('[data-builder-type="Text"]').first();
@@ -662,8 +695,8 @@ test('DnD-UI-1: Drag from canvas triggers dragstart on capture overlay', async (
   console.log('Page frame box:', vstackBox);
 });
 
-test('DnD-4: Container drop highlight appears when dragging over VStack center', async ({ page }) => {
-  await gotoBuilder(page);
+test('DnD-4: Container drop highlight appears when dragging over VStack center', async () => {
+  const page = sharedPage;
 
   await dropComponent(page, 'VStack');
   await dropComponent(page, 'Text');
@@ -723,8 +756,8 @@ async function selectFirstRootNodeViaLayers(page: Page) {
 
 // ─── T1–T4: W/H Dimension buttons ────────────────────────────────────────────
 
-test('T1: W Fill button adds w-full class', async ({ page }) => {
-  await gotoBuilder(page);
+test('T1: W Fill button adds w-full class', async () => {
+  const page = sharedPage;
   await dropComponent(page, 'Btn Solid');
   await selectFirstRootNodeViaLayers(page);
 
@@ -741,8 +774,8 @@ test('T1: W Fill button adds w-full class', async ({ page }) => {
   console.log('✅ W Fill adds w-full');
 });
 
-test('T2: W Fixed button removes w-fit and w-full (bug fix)', async ({ page }) => {
-  await gotoBuilder(page);
+test('T2: W Fixed button removes w-fit and w-full (bug fix)', async () => {
+  const page = sharedPage;
   await dropComponent(page, 'Btn Solid');
   await selectFirstRootNodeViaLayers(page);
 
@@ -766,8 +799,8 @@ test('T2: W Fixed button removes w-fit and w-full (bug fix)', async ({ page }) =
   console.log('✅ Fixed correctly removes width tokens');
 });
 
-test('T3: W Hug button adds w-fit class', async ({ page }) => {
-  await gotoBuilder(page);
+test('T3: W Hug button adds w-fit class', async () => {
+  const page = sharedPage;
   await dropComponent(page, 'Btn Solid');
   await selectFirstRootNodeViaLayers(page);
 
@@ -782,8 +815,8 @@ test('T3: W Hug button adds w-fit class', async ({ page }) => {
   expect(cls).toContain('w-fit');
 });
 
-test('T4: H Fixed button removes h-fit and h-full (bug fix)', async ({ page }) => {
-  await gotoBuilder(page);
+test('T4: H Fixed button removes h-fit and h-full (bug fix)', async () => {
+  const page = sharedPage;
   await dropComponent(page, 'Btn Solid');
   await selectFirstRootNodeViaLayers(page);
 
@@ -811,8 +844,8 @@ test('T4: H Fixed button removes h-fit and h-full (bug fix)', async ({ page }) =
 
 // ─── T5–T6: Rotate ───────────────────────────────────────────────────────────
 
-test('T5: Rotate input 45 applies style.transform = rotate(45deg)', async ({ page }) => {
-  await gotoBuilder(page);
+test('T5: Rotate input 45 applies style.transform = rotate(45deg)', async () => {
+  const page = sharedPage;
   await dropComponent(page, 'Btn Solid');
   await selectFirstRootNodeViaLayers(page);
 
@@ -843,8 +876,8 @@ test('T5: Rotate input 45 applies style.transform = rotate(45deg)', async ({ pag
   console.log('✅ Rotate 45 sets style.transform = rotate(45deg)');
 });
 
-test('T6: Rotate input 0 clears style.transform', async ({ page }) => {
-  await gotoBuilder(page);
+test('T6: Rotate input 0 clears style.transform', async () => {
+  const page = sharedPage;
   await dropComponent(page, 'Btn Solid');
   await selectFirstRootNodeViaLayers(page);
 
@@ -885,8 +918,8 @@ test('T6: Rotate input 0 clears style.transform', async ({ page }) => {
 
 // ─── T7: NumberInput live update (no Enter needed) ───────────────────────────
 
-test('T7: NumberInput applies value immediately on change (no Enter needed)', async ({ page }) => {
-  await gotoBuilder(page);
+test('T7: NumberInput applies value immediately on change (no Enter needed)', async () => {
+  const page = sharedPage;
   await dropComponent(page, 'Box');
   await selectFirstRootNodeViaLayers(page);
 
@@ -921,8 +954,8 @@ test('T7: NumberInput applies value immediately on change (no Enter needed)', as
 
 // ─── T8–T10: Container drag & drop ───────────────────────────────────────────
 
-test('T8: moveNode — drag Text out of VStack back to root', async ({ page }) => {
-  await gotoBuilder(page);
+test('T8: moveNode — drag Text out of VStack back to root', async () => {
+  const page = sharedPage;
   await dropComponent(page, 'VStack');
   await dropComponent(page, 'Text');
 
@@ -958,8 +991,8 @@ test('T8: moveNode — drag Text out of VStack back to root', async ({ page }) =
   console.log('✅ Text moved out of VStack back to root');
 });
 
-test('T9: moveNode — two Text nodes inside VStack, reorder them', async ({ page }) => {
-  await gotoBuilder(page);
+test('T9: moveNode — two Text nodes inside VStack, reorder them', async () => {
+  const page = sharedPage;
   await dropComponent(page, 'VStack');
   await dropComponent(page, 'Text');
   await dropComponent(page, 'Btn Solid');
@@ -1001,8 +1034,8 @@ test('T9: moveNode — two Text nodes inside VStack, reorder them', async ({ pag
 
 // ─── T10: Drop zone indicator visual ─────────────────────────────────────────
 
-test('T10: Drop zone line appears when dragover fires at top of a sibling', async ({ page }) => {
-  await gotoBuilder(page);
+test('T10: Drop zone line appears when dragover fires at top of a sibling', async () => {
+  const page = sharedPage;
   await dropComponent(page, 'VStack');
   await dropComponent(page, 'Btn Solid');
 
@@ -1032,8 +1065,8 @@ test('T10: Drop zone line appears when dragover fires at top of a sibling', asyn
 
 // ─── T11: Right-panel changes reflect on canvas ───────────────────────────────
 
-test('T11: Changing opacity in right panel reflects in node className', async ({ page }) => {
-  await gotoBuilder(page);
+test('T11: Changing opacity in right panel reflects in node className', async () => {
+  const page = sharedPage;
   await dropComponent(page, 'Btn Solid');
   await selectFirstRootNodeViaLayers(page);
 
@@ -1059,8 +1092,8 @@ test('T11: Changing opacity in right panel reflects in node className', async ({
 test.describe('Group U — Right Panel: All Properties', () => {
 
   // U1: Alignment cell 4 (center) → items-center + justify-center, node still in DOM
-  test('U1: Alignment cell 4 adds items-center justify-center, button still exists', async ({ page }) => {
-    await gotoBuilder(page);
+  test('U1: Alignment cell 4 adds items-center justify-center, button still exists', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNodeViaLayers(page);
 
@@ -1081,8 +1114,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
   });
 
   // U2: Alignment cell 0 (top-left) → items-start + justify-start, node still in DOM
-  test('U2: Alignment cell 0 adds items-start justify-start, button still exists', async ({ page }) => {
-    await gotoBuilder(page);
+  test('U2: Alignment cell 0 adds items-start justify-start, button still exists', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNodeViaLayers(page);
 
@@ -1101,8 +1134,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
   });
 
   // U3: Flip V toggle → -scale-y-100 in className
-  test('U3: Flip V toggle adds -scale-y-100', async ({ page }) => {
-    await gotoBuilder(page);
+  test('U3: Flip V toggle adds -scale-y-100', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNodeViaLayers(page);
 
@@ -1118,8 +1151,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
   });
 
   // U4: Auto Layout Row Wrap → flex-row + flex-wrap in className
-  test('U4: Auto Layout Row Wrap adds flex-row and flex-wrap', async ({ page }) => {
-    await gotoBuilder(page);
+  test('U4: Auto Layout Row Wrap adds flex-row and flex-wrap', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNodeViaLayers(page);
 
@@ -1136,8 +1169,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
   });
 
   // U5: Auto Layout Grid → grid in className
-  test('U5: Auto Layout Grid adds grid class', async ({ page }) => {
-    await gotoBuilder(page);
+  test('U5: Auto Layout Grid adds grid class', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNodeViaLayers(page);
 
@@ -1153,8 +1186,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
   });
 
   // U6: Gap Mode Space-between → justify-between in className
-  test('U6: Gap Mode Space-between adds justify-between', async ({ page }) => {
-    await gotoBuilder(page);
+  test('U6: Gap Mode Space-between adds justify-between', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNodeViaLayers(page);
 
@@ -1171,8 +1204,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
   });
 
   // U7: Clip content toggle ON → overflow-hidden in className
-  test('U7: Clip content toggle ON adds overflow-hidden', async ({ page }) => {
-    await gotoBuilder(page);
+  test('U7: Clip content toggle ON adds overflow-hidden', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNodeViaLayers(page);
 
@@ -1188,8 +1221,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
   });
 
   // U8: Clip content toggle OFF (second click) → overflow-hidden removed
-  test('U8: Clip content toggle OFF removes overflow-hidden', async ({ page }) => {
-    await gotoBuilder(page);
+  test('U8: Clip content toggle OFF removes overflow-hidden', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNodeViaLayers(page);
 
@@ -1212,8 +1245,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
   });
 
   // U9: Stroke color → border-[#ff0000] in className
-  test('U9: Stroke color input adds border-[hex] to className', async ({ page }) => {
-    await gotoBuilder(page);
+  test('U9: Stroke color input adds border-[hex] to className', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNodeViaLayers(page);
 
@@ -1231,8 +1264,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
   });
 
   // U10: Typography Leading → leading-loose in className (Text node)
-  test('U10: Typography Leading applies leading-loose (Text node)', async ({ page }) => {
-    await gotoBuilder(page);
+  test('U10: Typography Leading applies leading-loose (Text node)', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Text');
     await selectFirstRootNodeViaLayers(page);
 
@@ -1248,8 +1281,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
   });
 
   // U11: Typography Tracking → tracking-widest in className (Text node)
-  test('U11: Typography Tracking applies tracking-widest (Text node)', async ({ page }) => {
-    await gotoBuilder(page);
+  test('U11: Typography Tracking applies tracking-widest (Text node)', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Text');
     await selectFirstRootNodeViaLayers(page);
 
@@ -1265,8 +1298,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
   });
 
   // U12: Typography Text Color → text-[#ff0000] in className (Text node)
-  test('U12: Typography Text Color applies text-[hex] (Text node)', async ({ page }) => {
-    await gotoBuilder(page);
+  test('U12: Typography Text Color applies text-[hex] (Text node)', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Text');
     await selectFirstRootNodeViaLayers(page);
 
@@ -1284,8 +1317,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
   });
 
   // U13: Background opacity slider → bg-opacity-50 in className
-  test('U13: Background opacity slider applies bg-opacity-50', async ({ page }) => {
-    await gotoBuilder(page);
+  test('U13: Background opacity slider applies bg-opacity-50', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNodeViaLayers(page);
 
@@ -1306,8 +1339,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
   });
 
   // U14: W=56 DOM update — el.style.width === '56px' (Box node, to avoid Gluestack min-width)
-  test('U14: W=56 updates DOM element style.width to 56px (with minWidth:0)', async ({ page }) => {
-    await gotoBuilder(page);
+  test('U14: W=56 updates DOM element style.width to 56px (with minWidth:0)', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNodeViaLayers(page);
 
@@ -1347,8 +1380,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
 
   // ── Color picker tests (V-series) ──────────────────────────────────────────
 
-  test('V1: Background color picker sets style.backgroundColor on canvas node', async ({ page }) => {
-    await gotoBuilder(page);
+  test('V1: Background color picker sets style.backgroundColor on canvas node', async () => {
+    const page = sharedPage;
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
         .getState()._setPageNodes([{ type: 'Box', id: 'v1-box', props: { className: 'w-32 h-32' }, children: [] }]);
@@ -1375,8 +1408,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
     console.log('✅ Background color reflects on canvas via inline style');
   });
 
-  test('V2: Text color picker sets style.color on Text node', async ({ page }) => {
-    await gotoBuilder(page);
+  test('V2: Text color picker sets style.color on Text node', async () => {
+    const page = sharedPage;
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
         .getState()._setPageNodes([{ type: 'Text', id: 'v2-text', props: { className: 'text-base' }, text: 'Hello' }]);
@@ -1396,8 +1429,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
     console.log('✅ Text color reflects on canvas via inline style');
   });
 
-  test('V3: Pressable-based Button is visible and Auto Layout IS shown (it is a container)', async ({ page }) => {
-    await gotoBuilder(page);
+  test('V3: Pressable-based Button is visible and Auto Layout IS shown (it is a container)', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Btn Solid');
     await selectFirstRootNodeViaLayers(page);
     const nodeId = await getFirstRootNodeId(page);
@@ -1413,8 +1446,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
     console.log('✅ Pressable-based Button stays visible and Auto Layout is shown (it is a container)');
   });
 
-  test('V5: Auto Layout / Gap section IS shown for Pressable-based Button (container node)', async ({ page }) => {
-    await gotoBuilder(page);
+  test('V5: Auto Layout / Gap section IS shown for Pressable-based Button (container node)', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Btn Solid');
     await selectFirstRootNodeViaLayers(page);
 
@@ -1424,8 +1457,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
     console.log('✅ Gap input visible for Pressable-based Button node (container)');
   });
 
-  test('V6: Auto Layout / Gap section IS shown for Box (container node)', async ({ page }) => {
-    await gotoBuilder(page);
+  test('V6: Auto Layout / Gap section IS shown for Box (container node)', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNodeViaLayers(page);
 
@@ -1434,8 +1467,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
     console.log('✅ Gap input visible for Box node');
   });
 
-  test('V7: Typography section shown for Text, hidden for Box', async ({ page }) => {
-    await gotoBuilder(page);
+  test('V7: Typography section shown for Text, hidden for Box', async () => {
+    const page = sharedPage;
 
     // Text node → Typography visible
     await dropComponent(page, 'Text');
@@ -1453,8 +1486,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
     console.log('✅ Typography shown for Text, hidden for Box');
   });
 
-  test('V8: Self-alignment adds self-center class to Button inside VStack', async ({ page }) => {
-    await gotoBuilder(page);
+  test('V8: Self-alignment adds self-center class to Button inside VStack', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Btn Solid');
     await selectFirstRootNodeViaLayers(page);
     const nodeId = await getFirstRootNodeId(page);
@@ -1486,8 +1519,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
     console.log('✅ Self-alignment applies and toggles correctly');
   });
 
-  test('V4: Stroke border color picker sets style.borderColor', async ({ page }) => {
-    await gotoBuilder(page);
+  test('V4: Stroke border color picker sets style.borderColor', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNodeViaLayers(page);
     const nodeId = await getFirstRootNodeId(page);
@@ -1516,8 +1549,8 @@ test.describe('Group U — Right Panel: All Properties', () => {
 
 test.describe('Fix-Ghost: Drag source hidden during drag, restored after dragend', () => {
 
-  test('Fix-Ghost-1: element opacity becomes 0 during canvas drag', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-Ghost-1: element opacity becomes 0 during canvas drag', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
 
     // Select via Layers panel so selectedIds is populated (hitTest fallback path)
@@ -1567,8 +1600,8 @@ test.describe('Fix-Ghost: Drag source hidden during drag, restored after dragend
     });
   });
 
-  test('Fix-Ghost-2: element opacity restored to empty string after dragend', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-Ghost-2: element opacity restored to empty string after dragend', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
 
     await page.getByTestId('tab-layers').click();
@@ -1668,8 +1701,8 @@ test.describe('Fix-MultiDrag: multi-select drag moves all selected nodes', () =>
   }
 
   // MD-1: clicking an already-selected node preserves multi-selection
-  test('MD-1: pointerdown on selected node preserves multi-selection', async ({ page }) => {
-    await gotoBuilder(page);
+  test('MD-1: pointerdown on selected node preserves multi-selection', async () => {
+    const page = sharedPage;
     await injectTwoNodes(page);
     await selectBoth(page);
 
@@ -1703,8 +1736,8 @@ test.describe('Fix-MultiDrag: multi-select drag moves all selected nodes', () =>
   });
 
   // MD-2: moveNodes store action moves both nodes into a container atomically
-  test('MD-2: moveNodes moves two nodes (with children) into a container', async ({ page }) => {
-    await gotoBuilder(page);
+  test('MD-2: moveNodes moves two nodes (with children) into a container', async () => {
+    const page = sharedPage;
 
     // Use Input nodes WITH InputField children — InputField must remain inside Input
     // (crash guard: InputField uses useStyleContext which crashes if orphaned outside Input).
@@ -1747,8 +1780,8 @@ test.describe('Fix-MultiDrag: multi-select drag moves all selected nodes', () =>
   });
 
   // MD-2b: moveNodes with parent+child both selected — child must NOT be moved independently
-  test('MD-2b: moveNodes skips child nodes whose parent is also being moved', async ({ page }) => {
-    await gotoBuilder(page);
+  test('MD-2b: moveNodes skips child nodes whose parent is also being moved', async () => {
+    const page = sharedPage;
 
     // Inject: VStack target + Input with InputField child
     // REQUIRED_PARENT guard: InputField must never end up outside an Input
@@ -1782,8 +1815,8 @@ test.describe('Fix-MultiDrag: multi-select drag moves all selected nodes', () =>
   });
 
   // MD-3: moveNodes reorders two root nodes atomically
-  test('MD-3: moveNodes reorders two root-level nodes', async ({ page }) => {
-    await gotoBuilder(page);
+  test('MD-3: moveNodes reorders two root-level nodes', async () => {
+    const page = sharedPage;
     await injectTwoNodes(page);
 
     // Root order is [btn-a, txt-b]. Move both to index 0 — order should be preserved.
@@ -1802,8 +1835,8 @@ test.describe('Fix-MultiDrag: multi-select drag moves all selected nodes', () =>
   });
 
   // MD-4: composite ghost — all selected elements faded, all restored after dragend
-  test('MD-4: all selected elements faded during drag, all restored after dragend', async ({ page }) => {
-    await gotoBuilder(page);
+  test('MD-4: all selected elements faded during drag, all restored after dragend', async () => {
+    const page = sharedPage;
     await injectTwoNodes(page);
     await selectBoth(page);
 
@@ -1863,8 +1896,8 @@ test.describe('Fix-MultiDrag: multi-select drag moves all selected nodes', () =>
 
 test.describe('Fix-MarqueeStale: marquee cleared when drag starts', () => {
 
-  test('Fix-Marquee-1: marqueeStartRef is cleared on dragstart', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-Marquee-1: marqueeStartRef is cleared on dragstart', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Btn Solid');
 
     // Expose the internal ref via window for testing
@@ -1900,8 +1933,8 @@ test.describe('Fix-MarqueeStale: marquee cleared when drag starts', () => {
     console.log('✅ Marquee cleared on dragstart — no stale marquee after drag');
   });
 
-  test('Fix-Marquee-2: marquee rect is gone after dragend', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-Marquee-2: marquee rect is gone after dragend', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
 
     await page.getByTestId('tab-layers').click();
@@ -1948,8 +1981,8 @@ test.describe('Fix-MarqueeStale: marquee cleared when drag starts', () => {
 
 test.describe('Fix-SelfDrop: dragged nodes excluded from drop targets', () => {
 
-  test('Fix-SelfDrop-1: moveNodes refuses to drop a node into itself', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-SelfDrop-1: moveNodes refuses to drop a node into itself', async () => {
+    const page = sharedPage;
 
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
@@ -1975,8 +2008,8 @@ test.describe('Fix-SelfDrop: dragged nodes excluded from drop targets', () => {
     console.log('✅ moveNodes(btn-b, btn-b) is a no-op — cannot drop into self');
   });
 
-  test('Fix-SelfDrop-2: moveNodes refuses to drop btn-a into btn-b when both are being dragged', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-SelfDrop-2: moveNodes refuses to drop btn-a into btn-b when both are being dragged', async () => {
+    const page = sharedPage;
 
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
@@ -2023,8 +2056,8 @@ test.describe('Fix-SelfDrop: dragged nodes excluded from drop targets', () => {
 
 test.describe('Fix-DropLine: drop line behaviour', () => {
 
-  test('Fix-DropLine-1: line not shown while cursor is over a dragged node', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-DropLine-1: line not shown while cursor is over a dragged node', async () => {
+    const page = sharedPage;
 
     // Set up 4 root-level buttons
     await page.evaluate(() => {
@@ -2066,8 +2099,8 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
     console.log('✅ Drop line does not trap on dragged node');
   });
 
-  test('Fix-DropLine-2: moveNodes correctly places node at index 2 (3rd position)', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-DropLine-2: moveNodes correctly places node at index 2 (3rd position)', async () => {
+    const page = sharedPage;
 
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
@@ -2098,8 +2131,8 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
     console.log('✅ Node correctly moved to 3rd position');
   });
 
-  test('Fix-DropLine-3: moveNodes can move first node to last position', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-DropLine-3: moveNodes can move first node to last position', async () => {
+    const page = sharedPage;
 
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
@@ -2129,8 +2162,8 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
     console.log('✅ First node successfully moved to last position');
   });
 
-  test('Fix-DropLine-4: only one drop-zone line is rendered (no dim ghost lines)', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-DropLine-4: only one drop-zone line is rendered (no dim ghost lines)', async () => {
+    const page = sharedPage;
 
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
@@ -2165,8 +2198,8 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
 
   // ── New Fix-Container: drag inside container stays in container ─────────────
 
-  test('Fix-Container-1: drag a node within its container keeps it in that container', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-Container-1: drag a node within its container keeps it in that container', async () => {
+    const page = sharedPage;
 
     // VStack with two buttons; move btn-a to idx 2 (after btn-b) within the same container
     await page.evaluate(() => {
@@ -2205,8 +2238,8 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
     console.log('✅ Node stayed inside container after in-container reorder');
   });
 
-  test('Fix-Container-2: moveNode correctly reparents node from one container to another', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-Container-2: moveNode correctly reparents node from one container to another', async () => {
+    const page = sharedPage;
 
     // Two containers; move child from container A to container B
     await page.evaluate(() => {
@@ -2244,8 +2277,8 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
 
   // ── New Fix-Select: click-to-select and shift-select ─────────────────────
 
-  test('Fix-Select-1: shift+select toggles node into selection without cancelling', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-Select-1: shift+select toggles node into selection without cancelling', async () => {
+    const page = sharedPage;
 
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
@@ -2281,8 +2314,8 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
     console.log('✅ Shift-select adds node to selection without cancelling');
   });
 
-  test('Fix-DropLine-5: moveNodes correctly inserts node inside a container at a specific index', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-DropLine-5: moveNodes correctly inserts node inside a container at a specific index', async () => {
+    const page = sharedPage;
 
     // Container (VStack) with two children; drop a root button into the container at index 1
     await page.evaluate(() => {
@@ -2317,8 +2350,8 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
 
   // ── Fix-MoveAbs: moveNodeUp / moveNodeDown for absolute-positioned nodes ──
 
-  test('Fix-MoveAbs-1: moveNodeDown works for last absolute node (send backward)', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-MoveAbs-1: moveNodeDown works for last absolute node (send backward)', async () => {
+    const page = sharedPage;
 
     // Two overlapping absolute buttons — abs-b is the last (idx 1, visually on top).
     // moveNodeDown on abs-b should "send backward" = move to idx 0.
@@ -2349,8 +2382,8 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
     console.log('✅ moveNodeDown on last abs node sends it backward correctly');
   });
 
-  test('Fix-MoveAbs-2: moveNodeUp works for first absolute node (bring forward)', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-MoveAbs-2: moveNodeUp works for first absolute node (bring forward)', async () => {
+    const page = sharedPage;
 
     // abs-a is at idx 0. moveNodeUp should "bring forward" = move to idx 1.
     await page.evaluate(() => {
@@ -2378,8 +2411,8 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
     console.log('✅ moveNodeUp on first abs node brings it forward correctly');
   });
 
-  test('Fix-MoveAbs-3: moveNodeDown on last node is no-op when already at bottom of stack', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-MoveAbs-3: moveNodeDown on last node is no-op when already at bottom of stack', async () => {
+    const page = sharedPage;
 
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
@@ -2409,8 +2442,8 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
 
   // ── Fix-Layers-Deselect: clicking empty space in layers panel clears selection ─
 
-  test('Fix-Layers-Deselect-1: clicking empty space in layers panel deselects all nodes', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-Layers-Deselect-1: clicking empty space in layers panel deselects all nodes', async () => {
+    const page = sharedPage;
 
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
@@ -2457,8 +2490,8 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
 
   // ── Fix-Layers-InsideDrop: drop into empty container in layers panel ──────────
 
-  test('Fix-Layers-InsideDrop-1: dragging a node into an empty container via layers nests it correctly', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-Layers-InsideDrop-1: dragging a node into an empty container via layers nests it correctly', async () => {
+    const page = sharedPage;
 
     // box-empty is an empty container; btn-root is a sibling at root
     await page.evaluate(() => {
@@ -2497,8 +2530,8 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
 
   // ── Fix-AbsMultiContainer: dropping abs node across containers keeps correct position ─
 
-  test('Fix-AbsMultiContainer-1: abs node dropped into second container has correct left/top relative to that container', async ({ page }) => {
-    await gotoBuilder(page);
+  test('Fix-AbsMultiContainer-1: abs node dropped into second container has correct left/top relative to that container', async () => {
+    const page = sharedPage;
 
     // Two side-by-side containers and one abs node initially at root.
     // Container A starts at ~left:0, Container B starts at ~left:200.

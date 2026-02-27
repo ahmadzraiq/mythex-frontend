@@ -277,7 +277,7 @@ export const NavIcon = React.forwardRef<HTMLSpanElement, NavIconProps>(
     if (!IconComponent) return null;
     const numericSize = typeof size === 'number' ? size : (NAMED_SIZE_MAP[size as string] ?? 16);
     return (
-      <span ref={ref} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+      <span ref={ref} className="inline-flex items-center justify-center">
         <IconComponent size={numericSize} color={color as string} className={className as string} {...(rest as object)} />
       </span>
     );

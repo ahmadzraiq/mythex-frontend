@@ -22,8 +22,8 @@ import React, { useState, useRef, useCallback, useEffect, useMemo, memo } from '
 import { useBuilderStore, findParentNode, findNode } from './_store';
 import type { BuilderStore, BuilderPage } from './_store';
 import type { SDUINode } from '@/lib/sdui/types/node';
-import { sectionLibrary } from '@/lib/ai/section-library';
 import routes from '@/config/routes.json';
+import { ThemePanel } from './_theme-panel';
 
 // ─── Icons (inline SVG stubs) ─────────────────────────────────────────────────
 
@@ -844,20 +844,8 @@ const PRIMITIVE_COMPONENTS: Record<string, { type: string; label: string; icon: 
 
 // ─── Components tab ───────────────────────────────────────────────────────────
 
-const ALL_VARIANTS = (() => {
-  const manifest = sectionLibrary.getManifest();
-  const grouped: Record<string, { variantId: string; label: string }[]> = {};
-  for (const entry of manifest) {
-    const group = entry.variantId.split('.')[0]; // 'hero', 'navbar', 'footer', etc.
-    if (!grouped[group]) grouped[group] = [];
-    grouped[group].push({ variantId: entry.variantId, label: entry.label });
-  }
-  return grouped;
-})();
-
 function ComponentsTab() {
   const [search, setSearch] = useState('');
-  const [showSections, setShowSections] = useState(true);
   const q = search.toLowerCase();
 
   return (
@@ -891,24 +879,6 @@ function ComponentsTab() {
         );
       })}
 
-      {/* ── Section variants ── */}
-      <SectionHeader label="Sections" collapsible collapsed={!showSections} onToggle={() => setShowSections(v => !v)} />
-      {showSections && Object.entries(ALL_VARIANTS).map(([group, variants]) => {
-        const filtered = (variants as { variantId: string; label: string }[]).filter(
-          v => !q || v.label.toLowerCase().includes(q) || v.variantId.toLowerCase().includes(q)
-        );
-        if (!filtered.length) return null;
-        return (
-          <div key={group} style={{ marginBottom: 8 }}>
-            <div style={{ padding: '4px 12px 2px', fontSize: 10, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
-              {group}
-            </div>
-            {filtered.map(v => (
-              <DraggableVariant key={v.variantId} variantId={v.variantId} label={v.label} />
-            ))}
-          </div>
-        );
-      })}
     </div>
   );
 }
@@ -951,36 +921,6 @@ function DraggablePrimitive({ primitive }: { primitive: { type: string; label: s
       </div>
       <span style={{ fontSize: 11, color: '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {primitive.label}
-      </span>
-    </div>
-  );
-}
-
-function DraggableVariant({ variantId, label }: { variantId: string; label: string }) {
-  return (
-    <div
-      draggable
-      onDragStart={e => {
-        e.dataTransfer.setData('text/variant-id', variantId);
-        e.dataTransfer.effectAllowed = 'copy';
-      }}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '6px 12px',
-        cursor: 'grab',
-        borderRadius: 4,
-        margin: '1px 4px',
-        userSelect: 'none',
-      }}
-      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(59,130,246,0.15)')}
-      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-    >
-      {/* Thumbnail placeholder */}
-      <div style={{ width: 36, height: 24, background: '#374151', borderRadius: 3, flexShrink: 0 }} />
-      <span style={{ fontSize: 11, color: '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-        {label}
       </span>
     </div>
   );
@@ -1286,7 +1226,7 @@ function PagesTab() {
 // ─── Main Panel ───────────────────────────────────────────────────────────────
 
 export default function PanelLeft() {
-  const [tab, setTab] = useState<'layers' | 'components' | 'pages'>('components');
+  const [tab, setTab] = useState<'layers' | 'components' | 'pages' | 'theme'>('components');
   const [search, setSearch] = useState('');
   const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [layerDrag, setLayerDrag] = useState<LayerDragState>({ dragId: null, dropTargetId: null, dropPosition: 'above' });
@@ -1365,7 +1305,7 @@ export default function PanelLeft() {
     <div style={{ width: 240, display: 'flex', flexDirection: 'column', background: '#111827', borderRight: '1px solid #1f2937', overflow: 'hidden' }}>
       {/* Tab bar */}
       <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-        {(['layers', 'components', 'pages'] as const).map(t => (
+        {(['layers', 'components', 'pages', 'theme'] as const).map(t => (
           <button
             key={t}
             data-testid={`tab-${t}`}
@@ -1376,7 +1316,7 @@ export default function PanelLeft() {
               border: 'none',
               borderBottom: tab === t ? '2px solid #3b82f6' : '2px solid transparent',
               color: tab === t ? '#f3f4f6' : '#6b7280',
-              fontSize: 11,
+              fontSize: 10,
               cursor: 'pointer',
               textTransform: 'capitalize',
               marginBottom: -1,
@@ -1436,6 +1376,8 @@ export default function PanelLeft() {
       {tab === 'components' && <ComponentsTab />}
 
       {tab === 'pages' && <PagesTab />}
+
+      {tab === 'theme' && <ThemePanel />}
 
       {/* Context menu */}
       {contextMenu && (

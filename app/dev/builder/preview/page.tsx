@@ -14,6 +14,51 @@ interface PreviewData {
   nodes: SDUINode[];
   pageName: string;
   pageRoute: string;
+  themeOverrides?: Record<string, string>;
+  themeDarkOverrides?: Record<string, string>;
+}
+
+/** Convert hex → space-separated RGB triplet (matches ThemeStyles format). */
+function hexToRgbTriplet(value: string): string {
+  if (!value.startsWith('#')) return value;
+  const clean = value.replace('#', '');
+  const full = clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  return `${r} ${g} ${b}`;
+}
+
+const GLUESTACK_PRIMARY_BRIDGE = [
+  '  --color-primary-400: var(--primary) !important;',
+  '  --color-primary-500: var(--primary) !important;',
+  '  --color-primary-600: var(--primary) !important;',
+  '  --color-primary-700: var(--primary) !important;',
+  '  --color-primary-800: var(--primary) !important;',
+].join('\n');
+
+function applyPreviewTheme(light: Record<string, string>, dark: Record<string, string>) {
+  const getOrCreate = (id: string) => {
+    let el = document.getElementById(id) as HTMLStyleElement | null;
+    if (!el) { el = document.createElement('style'); el.id = id; document.head.appendChild(el); }
+    return el;
+  };
+
+  const lightEl = getOrCreate('preview-light-overrides');
+  const colorLines: string[] = [];
+  const baseLines: string[] = [];
+  for (const [k, v] of Object.entries(light)) {
+    if (v.startsWith('#')) colorLines.push(`  --${k}: ${hexToRgbTriplet(v)};`);
+    else baseLines.push(`  --${k}: ${v};`);
+  }
+  const parts: string[] = [];
+  if (baseLines.length) parts.push(`:root {\n${baseLines.join('\n')}\n}`);
+  parts.push(`html:not(.dark) {\n${colorLines.join('\n')}${colorLines.length ? '\n' : ''}${GLUESTACK_PRIMARY_BRIDGE}\n}`);
+  lightEl.textContent = parts.join('\n\n');
+
+  const darkEl = getOrCreate('preview-dark-overrides');
+  const darkVars = Object.entries(dark).map(([k, v]) => `  --${k}: ${hexToRgbTriplet(v)};`).join('\n');
+  darkEl.textContent = `html.dark {\n${darkVars ? darkVars + '\n' : ''}${GLUESTACK_PRIMARY_BRIDGE}\n}`;
 }
 
 export default function PreviewPage() {
@@ -28,7 +73,14 @@ export default function PreviewPage() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(BUILDER_PREVIEW_KEY);
-      if (raw) setData(JSON.parse(raw) as PreviewData);
+      if (raw) {
+        const parsed = JSON.parse(raw) as PreviewData;
+        setData(parsed);
+        // Apply theme overrides saved from the builder
+        if (parsed.themeOverrides || parsed.themeDarkOverrides) {
+          applyPreviewTheme(parsed.themeOverrides ?? {}, parsed.themeDarkOverrides ?? {});
+        }
+      }
     } catch { /* ignore */ }
   }, []);
 

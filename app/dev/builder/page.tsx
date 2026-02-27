@@ -36,6 +36,44 @@ void useRef; void useState; // suppress unused-import lint
 /** localStorage key used to hand off page data to the preview tab. */
 export const BUILDER_PREVIEW_KEY = 'builder_preview';
 
+// ─── Dark/Light mode toggle ───────────────────────────────────────────────────
+
+function DarkModeToggle() {
+  const [dark, setDark] = useState(false);
+
+  // Sync initial state from document
+  useEffect(() => {
+    setDark(document.documentElement.classList.contains('dark'));
+  }, []);
+
+  const toggle = () => {
+    const isDark = !dark;
+    setDark(isDark);
+    document.documentElement.classList.toggle('dark', isDark);
+  };
+
+  return (
+    <button
+      onClick={toggle}
+      title={dark ? 'Switch to Light mode' : 'Switch to Dark mode'}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 5,
+        padding: '4px 10px',
+        background: dark ? '#1e293b' : '#f1f5f9',
+        border: `1px solid ${dark ? '#334155' : '#cbd5e1'}`,
+        borderRadius: 5,
+        color: dark ? '#f1f5f9' : '#1e293b',
+        cursor: 'pointer',
+        fontSize: 13,
+        fontFamily: 'system-ui',
+        transition: 'all 0.15s',
+      }}
+    >
+      {dark ? '☀️' : '🌙'}
+    </button>
+  );
+}
+
 // ─── Top Bar ──────────────────────────────────────────────────────────────────
 
 const VIEWPORT_LABELS: Record<ViewportSize, string> = {
@@ -156,6 +194,9 @@ function TopBar({ onPreview }: { onPreview: () => void }) {
 
       <div style={{ flex: 1 }} />
 
+      {/* Dark / Light mode toggle */}
+      <DarkModeToggle />
+
       {/* Preview button — saves to localStorage then opens /dev/builder/preview in new tab */}
       <button
         data-testid="btn-preview"
@@ -237,18 +278,25 @@ function TopBarBtn({
 
 export default function BuilderPage() {
   const store = useBuilderStore();
+  const initTheme = useBuilderStore(s => s.initTheme);
+
+  // Install Gluestack primary token bridge immediately on mount so Checkbox,
+  // Radio, Switch etc. reflect --primary even before a preset is applied.
+  useEffect(() => { initTheme(); }, [initTheme]);
 
   // __builderStore is exposed at module level in _store.ts for E2E tests
 
-  /** Serialize current page to localStorage then open preview in a new tab. */
+  /** Serialize current page + active theme overrides to localStorage then open preview. */
   const openPreview = useCallback(() => {
-    const { pageNodes, viewport, pages, currentPageId } = useBuilderStore.getState();
+    const { pageNodes, viewport, pages, currentPageId, themeOverrides, themeDarkOverrides } = useBuilderStore.getState();
     const currentPage = pages.find(p => p.id === currentPageId);
     localStorage.setItem(BUILDER_PREVIEW_KEY, JSON.stringify({
       nodes: pageNodes,
       viewport,
       pageName: currentPage?.name ?? 'Untitled',
       pageRoute: currentPage?.route ?? '/',
+      themeOverrides,
+      themeDarkOverrides,
     }));
     window.open('/dev/builder/preview', '_blank');
   }, []);

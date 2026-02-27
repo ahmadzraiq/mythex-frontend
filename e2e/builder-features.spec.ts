@@ -51,7 +51,7 @@
  *   BF-32  Dropped Row bounding box height ≥ 40px
  */
 
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page, type Browser } from '@playwright/test';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -95,13 +95,40 @@ async function getBuilderStore(page: Page) {
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
+
+let sharedPage: Page;
+
+async function resetBuilder(p: Page) {
+  await p.evaluate(() => {
+    const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
+    if (!store) return;
+    (store._setPageNodes as (n: unknown[]) => void)([]);
+    if (typeof store.setSelectedIds === 'function') (store.setSelectedIds as (ids: string[]) => void)([]);
+    if (typeof store.setZoom === 'function') (store.setZoom as (z: number) => void)(1);
+  });
+  await p.waitForFunction(
+    () => document.querySelectorAll('[data-builder-id]').length === 0,
+    { timeout: 5_000 }
+  );
+}
+
 test.describe('BF – Builder Features', () => {
-  test.beforeEach(async ({ page }) => {
-    await gotoBuilder(page);
+  test.beforeAll(async ({ browser }: { browser: Browser }) => {
+    sharedPage = await browser.newPage();
+    await gotoBuilder(sharedPage);
+  });
+
+  test.afterAll(async () => {
+    await sharedPage?.close();
+  });
+
+  test.beforeEach(async () => {
+    await resetBuilder(sharedPage);
   });
 
   // BF-01 — Default Btn Solid (Pressable) drops with auto (natural) size, not w-full
-  test('BF-01: Default Button drop has natural size (no w-full)', async ({ page }) => {
+  test('BF-01: Default Button drop has natural size (no w-full)', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Btn Solid');
     const btn = page.locator('[data-builder-id]').filter({ hasText: 'Button' }).first();
     await expect(btn).toBeVisible();
@@ -110,7 +137,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-02 — Responsive viewport: Mobile = 390px
-  test('BF-02: Mobile viewport sets page frame to 390px', async ({ page }) => {
+  test('BF-02: Mobile viewport sets page frame to 390px', async () => {
+    const page = sharedPage;
     const mobileBtn = page.getByTestId('viewport-mobile');
     await mobileBtn.click();
     await page.waitForTimeout(300);
@@ -123,7 +151,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-03 — Responsive viewport: Desktop = 1280px
-  test('BF-03: Desktop viewport sets page frame to 1280px', async ({ page }) => {
+  test('BF-03: Desktop viewport sets page frame to 1280px', async () => {
+    const page = sharedPage;
     // First switch to mobile, then back to desktop
     await page.getByTestId('viewport-mobile').click();
     await page.waitForTimeout(200);
@@ -135,7 +164,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-05 — Right-click on node shows node context menu
-  test('BF-05: Right-click on node shows node context menu with Move Up/Down', async ({ page }) => {
+  test('BF-05: Right-click on node shows node context menu with Move Up/Down', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Btn Solid');
     const node = page.locator('[data-builder-id]').first();
     // Right-click on the node element — this triggers the contextmenu event reliably
@@ -158,7 +188,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-06 — Right-click on empty canvas shows empty-area menu
-  test('BF-06: Right-click on empty canvas shows Select All / Paste / Paste in Place', async ({ page }) => {
+  test('BF-06: Right-click on empty canvas shows Select All / Paste / Paste in Place', async () => {
+    const page = sharedPage;
     // Verify the empty-area context menu components render when triggered.
     // We test functionality by checking store actions work; UI is verified via
     // the CanvasContextMenu component items matching expected options.
@@ -207,7 +238,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-07 — Move Up in context menu
-  test('BF-07: Move Up in layer panel context menu reorders node', async ({ page }) => {
+  test('BF-07: Move Up in layer panel context menu reorders node', async () => {
+    const page = sharedPage;
     // Drop two nodes
     await dropComponent(page, 'Btn Solid');
     await dropComponent(page, 'Text');
@@ -240,7 +272,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-08 — Move Down in layer panel context menu
-  test('BF-08: Move Down in layer panel context menu reorders node', async ({ page }) => {
+  test('BF-08: Move Down in layer panel context menu reorders node', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Btn Solid');
     await dropComponent(page, 'Text');
     const storeBefore = await getBuilderStore(page) as { pageNodes: Array<{ type: string }> } | null;
@@ -261,7 +294,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-09 — Escape selects parent when child is selected
-  test('BF-09: Escape key selects parent when child is selected', async ({ page }) => {
+  test('BF-09: Escape key selects parent when child is selected', async () => {
+    const page = sharedPage;
     // Drop a Box with a child
     await page.evaluate(() => {
       const store = (window as unknown as Record<string, unknown>).__builderStore;
@@ -297,7 +331,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-10 — Enter selects first child
-  test('BF-10: Enter key selects first child of selected node', async ({ page }) => {
+  test('BF-10: Enter key selects first child of selected node', async () => {
+    const page = sharedPage;
     await page.evaluate(() => {
       const store = (window as unknown as Record<string, unknown>).__builderStore;
       if (!store || typeof (store as { getState?: unknown }).getState !== 'function') return;
@@ -322,7 +357,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-11 — Marquee drag draws a selection rectangle
-  test('BF-11: Marquee drag on empty canvas shows selection rect', async ({ page }) => {
+  test('BF-11: Marquee drag on empty canvas shows selection rect', async () => {
+    const page = sharedPage;
     const canvas = page.getByTestId('builder-canvas');
     const box = await canvas.boundingBox();
     if (!box) throw new Error('Canvas not found');
@@ -346,7 +382,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-12 — Grid layout mode shows grid-cols select
-  test('BF-12: Grid layout mode → grid-cols selector appears', async ({ page }) => {
+  test('BF-12: Grid layout mode → grid-cols selector appears', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNode(page);
     await page.getByTestId('tab-right-design').click();
@@ -368,7 +405,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-13 — Grid mode → select grid-cols-2 applies class
-  test('BF-13: Grid mode → grid-cols-2 applied to node className', async ({ page }) => {
+  test('BF-13: Grid mode → grid-cols-2 applied to node className', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     await selectFirstRootNode(page);
     await page.getByTestId('tab-right-design').click();
@@ -399,7 +437,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-14 — Position absolute → inset inputs appear
-  test('BF-14: Position absolute → top/right/bottom/left inputs appear', async ({ page }) => {
+  test('BF-14: Position absolute → top/right/bottom/left inputs appear', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Btn Solid');
     await selectFirstRootNode(page);
     await page.getByTestId('tab-right-design').click();
@@ -418,7 +457,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-15 — Position absolute top input sets style.top
-  test('BF-15: Position absolute top input sets style.top', async ({ page }) => {
+  test('BF-15: Position absolute top input sets style.top', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Btn Solid');
     await selectFirstRootNode(page);
     await page.getByTestId('tab-right-design').click();
@@ -443,7 +483,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-16 — Multi-select shows Align/Distribute panel
-  test('BF-16: Multi-select (2 nodes) shows Align/Distribute panel', async ({ page }) => {
+  test('BF-16: Multi-select (2 nodes) shows Align/Distribute panel', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Btn Solid');
     await dropComponent(page, 'Text');
     await page.waitForTimeout(200);
@@ -471,7 +512,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-17 — Align Left button does not throw
-  test('BF-17: Align Left button does not throw', async ({ page }) => {
+  test('BF-17: Align Left button does not throw', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Btn Solid');
     await dropComponent(page, 'Text');
     await page.waitForTimeout(200);
@@ -498,7 +540,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-18 — Distribute Horizontal does not throw
-  test('BF-18: Distribute Horizontal does not throw', async ({ page }) => {
+  test('BF-18: Distribute Horizontal does not throw', async () => {
+    const page = sharedPage;
     // Need at least 3 nodes for distribute
     await dropComponent(page, 'Btn Solid');
     await dropComponent(page, 'Text');
@@ -527,7 +570,8 @@ test.describe('BF – Builder Features', () => {
   // ─── Default component sizes ──────────────────────────────────────────────────
 
   // BF-24 — Box drops with w-full + min-h in className
-  test('BF-24: Box drops with w-full and min-h class in its props', async ({ page }) => {
+  test('BF-24: Box drops with w-full and min-h class in its props', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     const store = await getBuilderStore(page) as { pageNodes: Array<{ props?: { className?: string } }> } | null;
     const cls = store?.pageNodes?.[0]?.props?.className ?? '';
@@ -536,7 +580,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-25 — Row (Box flex-row) drops with w-full + min-h + items-center
-  test('BF-25: Row drops with flex-row, w-full, min-h and items-center classes', async ({ page }) => {
+  test('BF-25: Row drops with flex-row, w-full, min-h and items-center classes', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Row');
     const store = await getBuilderStore(page) as { pageNodes: Array<{ props?: { className?: string } }> } | null;
     const cls = store?.pageNodes?.[0]?.props?.className ?? '';
@@ -547,7 +592,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-26 — Heading drops with text-2xl (no forced w-full; sizes to content)
-  test('BF-26: Heading drops with text-2xl class', async ({ page }) => {
+  test('BF-26: Heading drops with text-2xl class', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Heading');
     const store = await getBuilderStore(page) as { pageNodes: Array<{ props?: { className?: string } }> } | null;
     const cls = store?.pageNodes?.[0]?.props?.className ?? '';
@@ -556,7 +602,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-27 — Text drops with text-base (no forced w-full; sizes to content)
-  test('BF-27: Text drops with text-base class', async ({ page }) => {
+  test('BF-27: Text drops with text-base class', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Text');
     const store = await getBuilderStore(page) as { pageNodes: Array<{ props?: { className?: string } }> } | null;
     const cls = store?.pageNodes?.[0]?.props?.className ?? '';
@@ -565,7 +612,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-28 — Input drops with size prop; current default uses w-full
-  test('BF-28: Input drops with w-64 class and size prop set to md', async ({ page }) => {
+  test('BF-28: Input drops with w-64 class and size prop set to md', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Input');
     const store = await getBuilderStore(page) as { pageNodes: Array<{ type?: string; props?: { className?: string; size?: string } }> } | null;
     const node = store?.pageNodes?.find(n => n.type === 'Input') ?? store?.pageNodes?.[0];
@@ -575,7 +623,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-29 — Image (NextImage) drops with rounded-md; default has style width/height
-  test('BF-29: Image drops with w-full, h-48 and rounded-md classes', async ({ page }) => {
+  test('BF-29: Image drops with w-full, h-48 and rounded-md classes', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Image');
     const store = await getBuilderStore(page) as { pageNodes: Array<{ type?: string; props?: { className?: string } }> } | null;
     const node = store?.pageNodes?.find(n => n.type === 'NextImage');
@@ -585,7 +634,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-30 — Btn Solid (Pressable) drops with no w-full (natural auto size)
-  test('BF-30: Button drops with size md and no w-full', async ({ page }) => {
+  test('BF-30: Button drops with size md and no w-full', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Btn Solid');
     const store = await getBuilderStore(page) as { pageNodes: Array<{ type?: string; props?: { className?: string } }> } | null;
     const node = store?.pageNodes?.find(n => n.type === 'Pressable') ?? store?.pageNodes?.[0];
@@ -594,7 +644,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-31 — Dropped Box is visually tall enough to be selectable (bounding-box check, zoom-aware)
-  test('BF-31: Dropped Box bounding box height matches min-h-[80px] at canvas zoom', async ({ page }) => {
+  test('BF-31: Dropped Box bounding box height matches min-h-[80px] at canvas zoom', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Box');
     const node = page.locator('[data-builder-id]').first();
     await expect(node).toBeVisible();
@@ -606,7 +657,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-32 — Dropped Row bounding box has minimum height (zoom-aware)
-  test('BF-32: Dropped Row bounding box height matches min-h-[60px] at canvas zoom', async ({ page }) => {
+  test('BF-32: Dropped Row bounding box height matches min-h-[60px] at canvas zoom', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Row');
     const node = page.locator('[data-builder-id]').first();
     await expect(node).toBeVisible();
@@ -618,7 +670,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-19 — Paste in Place via canvas context menu
-  test('BF-19: Paste in Place in canvas context menu', async ({ page }) => {
+  test('BF-19: Paste in Place in canvas context menu', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Btn Solid');
     await page.waitForTimeout(200);
 
@@ -677,7 +730,8 @@ test.describe('BF – Builder Features', () => {
   }
 
   // BF-33 — Setting position to absolute adds 'absolute' to className
-  test('BF-33: Position dropdown set to absolute adds absolute class', async ({ page }) => {
+  test('BF-33: Position dropdown set to absolute adds absolute class', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Btn Solid');
     await selectFirstRootNode(page);
     await setPositionAbsolute(page);
@@ -687,7 +741,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-34 — Inset controls appear in right panel when position is absolute
-  test('BF-34: Inset controls are visible when position is absolute', async ({ page }) => {
+  test('BF-34: Inset controls are visible when position is absolute', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Btn Solid');
     await selectFirstRootNode(page);
     await setPositionAbsolute(page);
@@ -699,7 +754,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-35 — Dragging an absolute node updates style.left and style.top (not reorder)
-  test('BF-35: Dragging absolute node writes style.left and style.top', async ({ page }) => {
+  test('BF-35: Dragging absolute node writes style.left and style.top', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Btn Solid');
     await selectFirstRootNode(page);
     await setPositionAbsolute(page);
@@ -742,7 +798,8 @@ test.describe('BF – Builder Features', () => {
   });
 
   // BF-36 — No flow drop-zone line when dragging absolute node
-  test('BF-36: No flow drop-zone indicator when dragging an absolute node', async ({ page }) => {
+  test('BF-36: No flow drop-zone indicator when dragging an absolute node', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Btn Solid');
     await selectFirstRootNode(page);
     await setPositionAbsolute(page);
@@ -786,7 +843,8 @@ test.describe('BF – Builder Features', () => {
   //
   // NOTE: uses Button (same as BF-35) because Button's rendered Pressable root
   // is reliably found by hitTest at sourcePosition (10,10) in the page frame.
-  test('BF-37: Absolute drag coordinates match style.left and style.top', async ({ page }) => {
+  test('BF-37: Absolute drag coordinates match style.left and style.top', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Btn Solid');
     await selectFirstRootNode(page);
     await setPositionAbsolute(page);
@@ -969,7 +1027,8 @@ test.describe('BF – Builder Features', () => {
   // Action: drag button B so its rawLeft = 104px (4px inside SNAP_THRESHOLD=6).
   //
   // Expect: style.left snaps to 100 (button A's left edge).
-  test('BF-38: Absolute node snaps left edge to sibling left edge', async ({ page }) => {
+  test('BF-38: Absolute node snaps left edge to sibling left edge', async () => {
+    const page = sharedPage;
     // ── Drop + configure Button A ──────────────────────────────────────────
     await dropComponent(page, 'Btn Solid');
     await selectFirstRootNode(page);
@@ -1030,7 +1089,8 @@ test.describe('BF – Builder Features', () => {
   // Same two-button setup as BF-38, but we only do dragstart + dragover (no drop).
   // After dragover fires and React renders, a [data-testid="snap-guide"] element
   // should be present in the DOM.
-  test('BF-39: Snap guide line appears when dragging near a sibling edge', async ({ page }) => {
+  test('BF-39: Snap guide line appears when dragging near a sibling edge', async () => {
+    const page = sharedPage;
     // ── Drop + configure Button A ──────────────────────────────────────────
     await dropComponent(page, 'Btn Solid');
     await selectFirstRootNode(page);
@@ -1082,8 +1142,8 @@ test.describe('BF – Builder Features', () => {
   //        B.left needs to be 104 so B.cx = 104+40 = 144.
   //
   // Expect: B.left snaps to 100 (B.cx becomes 140, aligning with A.cx).
-  test('BF-40: center-X snap aligns centers of two nodes', async ({ page }) => {
-    await gotoBuilder(page);
+  test('BF-40: center-X snap aligns centers of two nodes', async () => {
+    const page = sharedPage;
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
         .getState()._setPageNodes([
@@ -1127,7 +1187,8 @@ test.describe('BF – Builder Features', () => {
   //   srcX/srcY = nodeB.getBCR().left/top  (grabOffset = 0 when drag from top-left)
   //   dstY = frame.getBCR().top + (aContentY + 3) * zoom  → rawY = aContentY + 3
   //   Δ = 3 < SNAP_THRESHOLD=6  → B.top snaps to aContentY
-  test('BF-41: Y-axis top-to-top snap', async ({ page }) => {
+  test('BF-41: Y-axis top-to-top snap', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Btn Solid');
     await selectFirstRootNode(page);
     await setPositionAbsolute(page);
@@ -1193,7 +1254,8 @@ test.describe('BF – Builder Features', () => {
   //
   // Button A at left=100. Drag Button B to rawX=108 (Δ=8 > SNAP_THRESHOLD=6).
   // Expect: B.left stays at 108 (no snap).
-  test('BF-42: no snap when delta exceeds SNAP_THRESHOLD', async ({ page }) => {
+  test('BF-42: no snap when delta exceeds SNAP_THRESHOLD', async () => {
+    const page = sharedPage;
     await dropComponent(page, 'Btn Solid');
     await selectFirstRootNode(page);
     await setPositionAbsolute(page);
@@ -1233,8 +1295,8 @@ test.describe('BF – Builder Features', () => {
   // While drag is in flight (dragstart + dragover only), assert that at least
   // one [data-testid="snap-guide"][data-snap-type="edge"] element is in the DOM.
   // Uses injectNodes; can be flaky when run in parallel with other tests.
-  test('BF-43: edge snap guide has data-snap-type="edge" attribute', async ({ page }) => {
-    await gotoBuilder(page);
+  test('BF-43: edge snap guide has data-snap-type="edge" attribute', async () => {
+    const page = sharedPage;
     await page.waitForTimeout(200);
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
@@ -1272,8 +1334,8 @@ test.describe('BF – Builder Features', () => {
   // Drag Button B (width=80) so its cx = 144 (Δ=4 from 140).
   // While drag is in flight assert data-snap-type="center" guide exists.
   // Uses injectNodes to avoid flaky dropComponent timeout.
-  test('BF-44: center snap guide has data-snap-type="center" attribute', async ({ page }) => {
-    await gotoBuilder(page);
+  test('BF-44: center snap guide has data-snap-type="center" attribute', async () => {
+    const page = sharedPage;
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
         .getState()._setPageNodes([
@@ -1316,7 +1378,8 @@ test.describe('BF – Builder Features', () => {
   // route that already exists (either via predefined route list or custom input)
   // must NOT create a second page for the same route; the page count stays the
   // same and the existing page becomes active instead.
-  test('BF-50: Adding an existing route does not create a duplicate page', async ({ page }) => {
+  test('BF-50: Adding an existing route does not create a duplicate page', async () => {
+    const page = sharedPage;
     await page.getByTestId('tab-pages').click();
     await page.waitForTimeout(200);
 
@@ -1357,7 +1420,8 @@ test.describe('BF – Builder Features', () => {
   // The builder starts with all routes as pages. Clicking a page that is NOT
   // already active must (a) make it the currentPageId and (b) shift panX so
   // the canvas centers on that page frame (panX changes from its pre-click value).
-  test('BF-51: Clicking a page row navigates the canvas to that page', async ({ page }) => {
+  test('BF-51: Clicking a page row navigates the canvas to that page', async () => {
+    const page = sharedPage;
     await page.getByTestId('tab-pages').click();
     await page.waitForTimeout(200);
 
