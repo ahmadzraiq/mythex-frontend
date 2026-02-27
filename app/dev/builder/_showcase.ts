@@ -32,7 +32,7 @@ function labeled(label: string, node: SDUINode): SDUINode {
   return {
     id: uid(),
     type: 'Box',
-    props: { className: 'flex flex-col items-center gap-2 shrink-0' },
+    props: { className: 'flex flex-col items-center gap-2 min-w-0' },
     children: [
       { ...node, id: uid() },
       {
@@ -45,21 +45,30 @@ function labeled(label: string, node: SDUINode): SDUINode {
   };
 }
 
-function row(items: SDUINode[]): SDUINode {
+function row(items: SDUINode[], mobileCols: 1 | 2 | 3 = 2): SDUINode {
+  // Mobile → tablet → laptop column progression per density tier:
+  //   1 (large items):  1 → 2 → 3   (wide cells at every breakpoint)
+  //   2 (medium items): 2 → 3 → 3   (default)
+  //   3 (small items):  3 → 4 → 5   (compact indicators)
+  const colClass = mobileCols === 3
+    ? 'grid-cols-3 md:grid-cols-4 lg:grid-cols-5'
+    : mobileCols === 2
+      ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-3'
+      : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
   return {
     id: uid(),
     type: 'Box',
-    props: { className: 'grid grid-cols-3 gap-6 items-start w-full' },
+    props: { className: `grid ${colClass} gap-4 md:gap-6 items-start w-full` },
     children: items,
   };
 }
 
 /** Full-width section card using theme variables */
-function section(title: string, examples: SDUINode[]): SDUINode {
+function section(title: string, examples: SDUINode[], mobileCols: 1 | 2 = 2): SDUINode {
   return {
     id: uid(),
     type: 'Box',
-    props: { className: 'flex flex-col gap-4 p-6 bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] shadow-sm w-full' },
+    props: { className: 'flex flex-col gap-4 p-4 md:p-6 bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] shadow-sm w-full' },
     children: [
       {
         id: uid(),
@@ -84,7 +93,7 @@ function section(title: string, examples: SDUINode[]): SDUINode {
         type: 'Box',
         props: { className: 'w-full h-px bg-[rgb(var(--border))]' },
       },
-      row(examples),
+      row(examples, mobileCols),
     ],
   };
 }
@@ -291,12 +300,12 @@ const buttonsSection = section('Buttons', [
 const formSection = section('Form', [
   labeled('Input', {
     type: 'Input',
-    props: { variant: 'outline', size: 'md', className: 'w-44 !rounded-md !border-[rgb(var(--border))] !bg-[rgb(var(--card))]' },
+    props: { variant: 'outline', size: 'md', className: 'w-full !rounded-md !border-[rgb(var(--border))] !bg-[rgb(var(--card))]' },
     children: [{ type: 'InputField', props: { placeholder: 'Enter text…', className: '!text-[rgb(var(--foreground))]' } }],
   }),
   labeled('Input Search', {
     type: 'Input',
-    props: { variant: 'outline', size: 'md', className: 'w-44 !rounded-md !border-[rgb(var(--border))] !bg-[rgb(var(--card))]' },
+    props: { variant: 'outline', size: 'md', className: 'w-full !rounded-md !border-[rgb(var(--border))] !bg-[rgb(var(--card))]' },
     children: [
       { type: 'InputSlot', props: { className: 'pl-3 pointer-events-none' }, children: [{ type: 'NavIcon', props: { icon: 'Search', size: 15, color: 'rgb(var(--muted-foreground))' } }] },
       { type: 'InputField', props: { placeholder: 'Search…', className: '!text-[rgb(var(--foreground))]' } },
@@ -304,7 +313,7 @@ const formSection = section('Form', [
   }),
   labeled('Input Password', {
     type: 'Input',
-    props: { variant: 'outline', size: 'md', className: 'w-44 !rounded-md !border-[rgb(var(--border))] !bg-[rgb(var(--card))]' },
+    props: { variant: 'outline', size: 'md', className: 'w-full !rounded-md !border-[rgb(var(--border))] !bg-[rgb(var(--card))]' },
     children: [
       { type: 'InputField', props: { placeholder: 'Password', type: 'password', className: '!text-[rgb(var(--foreground))]' } },
       { type: 'InputSlot', props: { className: 'pr-3 pointer-events-none' }, children: [{ type: 'NavIcon', props: { icon: 'Eye', size: 15, color: 'rgb(var(--muted-foreground))' } }] },
@@ -312,7 +321,7 @@ const formSection = section('Form', [
   }),
   labeled('Textarea', {
     type: 'Textarea',
-    props: { className: 'w-44 h-20 !rounded-md !border-[rgb(var(--border))] !bg-[rgb(var(--card))]' },
+    props: { className: 'w-full h-20 !rounded-md !border-[rgb(var(--border))] !bg-[rgb(var(--card))]' },
     children: [{ type: 'TextareaInput', props: { placeholder: 'Write something…', className: '!text-[rgb(var(--foreground))]' } }],
   }),
   labeled('Select', {
@@ -321,7 +330,7 @@ const formSection = section('Form', [
     children: [
       {
         type: 'SelectTrigger',
-        props: { className: 'flex flex-row items-center justify-between px-3 py-2 rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--card))] w-44' },
+        props: { className: 'flex flex-row items-center justify-between px-3 py-2 rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--card))] w-full' },
         children: [
           { type: 'SelectInput', props: { placeholder: 'Choose option…', className: '!text-[rgb(var(--foreground))]' } },
           { type: 'SelectIcon', children: [{ type: 'NavIcon', props: { icon: 'ChevronDown', size: 15, color: 'rgb(var(--muted-foreground))' } }] },
@@ -388,7 +397,7 @@ const formSection = section('Form', [
   }),
   labeled('Slider', {
     type: 'Slider',
-    props: { defaultValue: 60, minValue: 0, maxValue: 100, className: 'w-44' },
+    props: { defaultValue: 60, minValue: 0, maxValue: 100, className: 'w-full' },
     children: [
       { type: 'SliderTrack', children: [{ type: 'SliderFilledTrack' }] },
       { type: 'SliderThumb' },
@@ -396,19 +405,20 @@ const formSection = section('Form', [
   }),
   labeled('Progress 60%', {
     type: 'Progress',
-    props: { value: 60, className: 'w-44 h-2 rounded-full bg-[rgb(var(--muted))]' },
+    props: { value: 60, className: 'w-full h-2 rounded-full bg-[rgb(var(--muted))]' },
     children: [{ type: 'ProgressFilledTrack', props: { className: 'h-full rounded-full bg-[rgb(var(--primary))]' } }],
   }),
   labeled('Progress 90%', {
     type: 'Progress',
-    props: { value: 90, className: 'w-44 h-2 rounded-full bg-[rgb(var(--muted))]' },
+    props: { value: 90, className: 'w-full h-2 rounded-full bg-[rgb(var(--muted))]' },
     children: [{ type: 'ProgressFilledTrack', props: { className: 'h-full rounded-full bg-green-500' } }],
   }),
 ]);
 
 // ─── Display / Feedback ───────────────────────────────────────────────────────
 
-const displaySection = section('Display & Feedback', [
+// Small indicators — 3 per row on mobile (compact enough to share a row)
+const displaySmallItems = [
   labeled('Badge Primary', {
     type: 'Box',
     props: { className: 'flex flex-row items-center px-2 py-0.5 rounded-full bg-[rgb(var(--primary))]' },
@@ -442,7 +452,7 @@ const displaySection = section('Display & Feedback', [
       { type: 'NavIcon', props: { icon: 'X', size: 11, color: 'rgb(var(--muted-foreground))' } },
     ],
   }),
-  labeled('Avatar Initials', {
+  labeled('Avatar', {
     type: 'Box',
     props: { className: 'flex items-center justify-center w-10 h-10 rounded-full bg-[rgb(var(--primary))]' },
     children: [{ type: 'Text', props: { className: 'text-sm font-bold text-[rgb(var(--primary-foreground))]' }, text: 'JD' }],
@@ -456,9 +466,13 @@ const displaySection = section('Display & Feedback', [
     type: 'Spinner',
     props: { size: 'large', color: 'rgb(var(--primary))' },
   }),
+];
+
+// Larger feedback items — 1 per row on mobile (need full width)
+const displayLargeItems = [
   labeled('Alert Info', {
     type: 'Box',
-    props: { className: 'flex flex-row items-start gap-3 p-3 rounded-lg bg-[rgb(var(--accent))] border border-[rgb(var(--border))] w-56' },
+    props: { className: 'flex flex-row items-start gap-3 p-3 rounded-lg bg-[rgb(var(--accent))] border border-[rgb(var(--border))] w-full' },
     children: [
       { type: 'NavIcon', props: { icon: 'Info', size: 16, color: '#2563eb' } },
       { type: 'Box', props: { className: 'flex flex-col gap-0.5 flex-1' }, children: [
@@ -469,7 +483,7 @@ const displaySection = section('Display & Feedback', [
   }),
   labeled('Alert Success', {
     type: 'Box',
-    props: { className: 'flex flex-row items-start gap-3 p-3 rounded-lg bg-green-50 border border-green-200 w-56' },
+    props: { className: 'flex flex-row items-start gap-3 p-3 rounded-lg bg-green-50 border border-green-200 w-full' },
     children: [
       { type: 'NavIcon', props: { icon: 'CheckCircle', size: 16, color: '#16a34a' } },
       { type: 'Box', props: { className: 'flex flex-col gap-0.5 flex-1' }, children: [
@@ -480,7 +494,7 @@ const displaySection = section('Display & Feedback', [
   }),
   labeled('Alert Error', {
     type: 'Box',
-    props: { className: 'flex flex-row items-start gap-3 p-3 rounded-lg bg-red-50 border border-red-200 w-56' },
+    props: { className: 'flex flex-row items-start gap-3 p-3 rounded-lg bg-red-50 border border-red-200 w-full' },
     children: [
       { type: 'NavIcon', props: { icon: 'AlertCircle', size: 16, color: '#dc2626' } },
       { type: 'Box', props: { className: 'flex flex-col gap-0.5 flex-1' }, children: [
@@ -491,7 +505,7 @@ const displaySection = section('Display & Feedback', [
   }),
   labeled('Alert Warning', {
     type: 'Box',
-    props: { className: 'flex flex-row items-start gap-3 p-3 rounded-lg bg-yellow-50 border border-yellow-200 w-56' },
+    props: { className: 'flex flex-row items-start gap-3 p-3 rounded-lg bg-yellow-50 border border-yellow-200 w-full' },
     children: [
       { type: 'NavIcon', props: { icon: 'AlertTriangle', size: 16, color: '#d97706' } },
       { type: 'Box', props: { className: 'flex flex-col gap-0.5 flex-1' }, children: [
@@ -502,7 +516,7 @@ const displaySection = section('Display & Feedback', [
   }),
   labeled('Skeleton Text', {
     type: 'Box',
-    props: { className: 'flex flex-col gap-2 w-44' },
+    props: { className: 'flex flex-col gap-2 w-full' },
     children: [
       { type: 'Box', props: { className: 'w-full h-4 bg-[rgb(var(--muted))] rounded animate-pulse' } },
       { type: 'Box', props: { className: 'w-3/4 h-4 bg-[rgb(var(--muted))] rounded animate-pulse' } },
@@ -511,7 +525,7 @@ const displaySection = section('Display & Feedback', [
   }),
   labeled('Skeleton Card', {
     type: 'Box',
-    props: { className: 'flex flex-col gap-3 p-4 w-44 border border-[rgb(var(--border))] rounded-xl bg-[rgb(var(--card))]' },
+    props: { className: 'flex flex-col gap-3 p-4 w-full border border-[rgb(var(--border))] rounded-xl bg-[rgb(var(--card))]' },
     children: [
       { type: 'Box', props: { className: 'w-full h-24 bg-[rgb(var(--muted))] rounded-lg animate-pulse' } },
       { type: 'Box', props: { className: 'w-2/3 h-4 bg-[rgb(var(--muted))] rounded animate-pulse' } },
@@ -520,13 +534,33 @@ const displaySection = section('Display & Feedback', [
   }),
   labeled('Toast', {
     type: 'Box',
-    props: { className: 'flex flex-row items-center gap-3 px-4 py-3 rounded-lg bg-[rgb(var(--foreground))] shadow-xl w-64' },
+    props: { className: 'flex flex-row items-center gap-3 px-4 py-3 rounded-lg bg-[rgb(var(--foreground))] shadow-xl w-full' },
     children: [
       { type: 'NavIcon', props: { icon: 'CheckCircle', size: 16, color: '#4ade80' } },
       { type: 'Text', props: { className: 'text-sm text-[rgb(var(--background))] flex-1' }, text: 'Changes saved successfully!' },
     ],
   }),
-]);
+];
+
+const displaySection: SDUINode = {
+  id: uid(),
+  type: 'Box',
+  props: { className: 'flex flex-col gap-4 p-4 md:p-6 bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] shadow-sm w-full' },
+  children: [
+    {
+      id: uid(),
+      type: 'Box',
+      props: { className: 'flex flex-row items-center gap-3' },
+      children: [
+        { id: uid(), type: 'Box', props: { className: 'w-1 h-6 rounded-full bg-[rgb(var(--primary))]' } },
+        { id: uid(), type: 'Heading', props: { className: 'text-sm font-semibold text-[rgb(var(--foreground))] uppercase tracking-wider' }, text: 'Display & Feedback' },
+      ],
+    },
+    { id: uid(), type: 'Box', props: { className: 'w-full h-px bg-[rgb(var(--border))]' } },
+    row(displaySmallItems, 3),
+    row(displayLargeItems, 1),
+  ],
+};
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
 
@@ -646,7 +680,7 @@ const navigationSection = section('Navigation', [
       },
     ],
   }),
-]);
+], 1);
 
 // ─── Icon palette helper ──────────────────────────────────────────────────────
 
@@ -666,7 +700,7 @@ function iconGrid(icons: { name: string; color?: string }[]): SDUINode {
   return {
     id: uid(),
     type: 'Box',
-    props: { className: 'grid grid-cols-6 gap-1 w-full' },
+    props: { className: 'grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-1 w-full' },
     children: icons.map(({ name, color }) => iconTile(name, color)),
   };
 }
@@ -884,7 +918,7 @@ const dataSection = section('Data, Charts & Rich Content', [
       className: 'w-72 h-40 rounded-xl border border-[rgb(var(--border))]',
     },
   }),
-]);
+], 1);
 
 // ─── Cards & Patterns ─────────────────────────────────────────────────────────
 
@@ -980,7 +1014,7 @@ const patternsSection = section('Common UI Patterns', [
       { type: 'Pressable', props: { className: 'flex flex-row items-center gap-2 px-4 py-2 rounded-lg bg-[rgb(var(--primary))]' }, children: [{ type: 'NavIcon', props: { icon: 'Plus', size: 14, color: 'rgb(var(--primary-foreground))' } }, { type: 'Text', props: { className: 'text-xs font-semibold text-[rgb(var(--primary-foreground))]' }, text: 'Create Item' }] },
     ],
   }),
-]);
+], 1);
 
 // ─── Page background ──────────────────────────────────────────────────────────
 
@@ -991,7 +1025,7 @@ const patternsSection = section('Common UI Patterns', [
 const pageRoot: SDUINode = {
   id: uid(),
   type: 'Box',
-  props: { className: 'flex flex-col gap-8 p-8 min-h-screen w-full bg-[rgb(var(--background))]' },
+  props: { className: 'flex flex-col gap-6 md:gap-8 p-4 md:p-8 min-h-screen w-full bg-[rgb(var(--background))]' },
   children: [
     typographySection,
     layoutSection,
