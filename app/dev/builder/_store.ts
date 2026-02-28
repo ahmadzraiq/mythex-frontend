@@ -17,6 +17,8 @@ import { create } from 'zustand';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import routesConfig from '@/config/routes.json';
 import { showcaseNodes } from './_showcase';
+import root from '@/config/root';
+import { resolveScreenConfig, type ConfigRegistry } from '@/lib/sdui/config-resolver';
 
 const MAX_HISTORY = 50;
 
@@ -387,13 +389,60 @@ const SHOWCASE_PAGE: BuilderPage = {
   nodes: showcaseNodes,
 };
 
-// Initialise one page per route so all app pages are visible on the canvas by default.
+// Fragment-only registry: resolves $ref nodes from fragments without injecting
+// the full layout shell (navbar/footer). Pages in the builder show only the
+// page content area — shared layout chrome is not part of the editable tree.
+const _fragmentRegistry: ConfigRegistry = {
+  layouts: root.layouts as ConfigRegistry['layouts'],
+  fragments: root.fragments as ConfigRegistry['fragments'],
+};
+
+/**
+ * Recursively ensure every node in the tree has a unique `id`.
+ * SDUI screen configs are render-only trees — they have no `id` fields.
+ * The builder requires `id` on every node so:
+ *   • the renderer stamps `data-builder-id` on the DOM element
+ *   • the overlay can hit-test and select nodes
+ *   • findNode / moveNode / patchProp can locate nodes in the tree
+ *
+ * IDs are generated as `<prefix>-<type>-<counter>` so they are
+ * readable in the Layers panel and stable within a single page load.
+ */
+function _assignIds(nodes: SDUINode[], prefix: string, ctr: { n: number }): SDUINode[] {
+  return nodes.map(node => {
+    ctr.n += 1;
+    const id = (node.id as string | undefined) ?? `${prefix}-${String(node.type ?? 'node').toLowerCase()}-${ctr.n}`;
+    const children = Array.isArray(node.children)
+      ? _assignIds(node.children as SDUINode[], prefix, ctr)
+      : node.children;
+    return { ...node, id, children } as SDUINode;
+  });
+}
+
+function _extractPageNodes(configName: string): SDUINode[] {
+  const screen = root.screens[configName as keyof typeof root.screens];
+  if (!screen) return [];
+  try {
+    const resolved = resolveScreenConfig(
+      screen as Parameters<typeof resolveScreenConfig>[0],
+      _fragmentRegistry,
+    );
+    const ui = (resolved as { ui?: unknown }).ui as SDUINode | SDUINode[] | undefined;
+    if (!ui) return [];
+    const raw = Array.isArray(ui) ? ui : [ui];
+    return _assignIds(raw, configName, { n: 0 });
+  } catch {
+    return [];
+  }
+}
+
+// Initialise one page per route pre-populated with the screen's content nodes.
 const ROUTE_PAGES: BuilderPage[] = (routesConfig as { routes: Array<{ path: string; config: string }> })
   .routes.map(r => ({
     id: `page-${r.config}`,
     name: r.config,
     route: r.path,
-    nodes: [],
+    nodes: _extractPageNodes(r.config),
   }));
 
 const INITIAL_PAGES: BuilderPage[] = [SHOWCASE_PAGE, ...ROUTE_PAGES];

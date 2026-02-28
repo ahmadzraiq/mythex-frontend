@@ -1702,8 +1702,12 @@ export default function BuilderCanvas() {
                   width: vpWidth,
                   minHeight: VIEWPORT_H,
                   background: '#ffffff',
-                  overflow: 'visible',
+                  overflow: 'hidden',
                   boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
+                  // Each page frame must be its own CSS transform ancestor so that
+                  // position:fixed children (e.g. navbar) are contained within this
+                  // frame rather than escaping to the worldRef transform container.
+                  transform: 'translateZ(0)',
                 }}
               >
                 <InactivePageEngine
@@ -1742,8 +1746,11 @@ export default function BuilderCanvas() {
             width: vpWidth,
             minHeight: VIEWPORT_H,
             background: '#ffffff',
-            overflow: 'visible',
+            overflow: 'hidden',
             boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
+            // Own transform context so position:fixed children (navbar, drawers)
+            // are contained within this frame, not the worldRef transform.
+            transform: 'translateZ(0)',
           }}
         >
         <PageEngine pageConfig={pageConfig} />
