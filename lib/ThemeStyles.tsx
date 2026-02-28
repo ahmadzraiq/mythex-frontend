@@ -44,7 +44,10 @@ export function ThemeStyles() {
       dark?: Record<string, string>;
     };
     colors?: Record<string, string>;
+    colorsDark?: Record<string, string>;
     sections?: Record<string, Record<string, string>>;
+    sectionsDark?: Record<string, Record<string, string>>;
+    fonts?: { heading?: string; body?: string };
   };
 
   if (theme.cssVariables?.root) {
@@ -55,25 +58,56 @@ export function ThemeStyles() {
     cssBlocks.push(`.dark {\n${buildVarBlock(theme.cssVariables.dark)}\n}`);
   }
 
-  const themeVars: string[] = [];
+  // ── Light mode: colors + sections ──────────────────────────────────────────
+  const themeVarsLight: string[] = [];
 
   if (theme.colors) {
     for (const [key, value] of Object.entries(theme.colors)) {
       const cssName = `--theme-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
-      themeVars.push(`  ${cssName}: ${value}`);
+      themeVarsLight.push(`  ${cssName}: ${value}`);
     }
   }
 
   if (theme.sections) {
     for (const [section, values] of Object.entries(theme.sections)) {
       for (const [key, value] of Object.entries(values)) {
-        themeVars.push(`  --theme-${section}-${key}: ${value}`);
+        themeVarsLight.push(`  --theme-${section}-${key}: ${value}`);
       }
     }
   }
 
-  if (themeVars.length > 0) {
-    cssBlocks.push(`:root {\n${themeVars.join(';\n')}\n}`);
+  if (themeVarsLight.length > 0) {
+    cssBlocks.push(`:root {\n${themeVarsLight.join(';\n')}\n}`);
+  }
+
+  // ── Dark mode: colorsDark + sectionsDark ───────────────────────────────────
+  const themeVarsDark: string[] = [];
+
+  if (theme.colorsDark) {
+    for (const [key, value] of Object.entries(theme.colorsDark)) {
+      const cssName = `--theme-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
+      themeVarsDark.push(`  ${cssName}: ${value}`);
+    }
+  }
+
+  if (theme.sectionsDark) {
+    for (const [section, values] of Object.entries(theme.sectionsDark)) {
+      for (const [key, value] of Object.entries(values)) {
+        themeVarsDark.push(`  --theme-${section}-${key}: ${value}`);
+      }
+    }
+  }
+
+  if (themeVarsDark.length > 0) {
+    cssBlocks.push(`.dark {\n${themeVarsDark.join(';\n')}\n}`);
+  }
+
+  // ── Fonts: inject --font-heading / --font-body on body ─────────────────────
+  if (theme.fonts) {
+    const fontVars: string[] = [];
+    if (theme.fonts.heading) fontVars.push(`  --font-heading: ${theme.fonts.heading}`);
+    if (theme.fonts.body)    fontVars.push(`  --font-body: ${theme.fonts.body}`);
+    if (fontVars.length > 0) cssBlocks.push(`body {\n${fontVars.join(';\n')}\n}`);
   }
 
   return <style dangerouslySetInnerHTML={{ __html: cssBlocks.join('\n\n') }} />;

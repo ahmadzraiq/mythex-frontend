@@ -78,18 +78,35 @@ function isValidHex(s: string) {
 // ─── Swatch ───────────────────────────────────────────────────────────────────
 
 function Swatch({
-  label, cssVar, defaultHex, currentValue, onSelect, overrides,
+  label, cssVar, defaultHex, currentValue, onSelect, overrides, selectedCssVar, editingCssVar, editingDefaultHex, singleMatchCssVar,
 }: {
   label: string; cssVar: string; defaultHex: string;
-  currentValue: string; onSelect: (hex: string) => void;
-  overrides: Record<string, string>;
+  currentValue: string; onSelect: (hex: string, cssVar: string) => void;
+  overrides: Record<string, string>; selectedCssVar: string | null;
+  /** When set (e.g. Theme panel), only this swatch is active when selectedCssVar is null — avoids multiple highlights when vars share the same hex */
+  editingCssVar?: string | null;
+  /** When editing this var, use this as the default to show/apply — so user can click to reset to theme default */
+  editingDefaultHex?: string | null;
+  /** When exactly one swatch matches value (right panel), its cssVar — highlight it; if multiple match, null */
+  singleMatchCssVar?: string | null;
 }) {
   const resolved = overrides[cssVar] ?? resolveCssVar(cssVar) ?? defaultHex;
-  const isActive = currentValue.toLowerCase() === resolved.toLowerCase();
+  // When editing this var, show default so user can click to reset to default; else show current resolved value.
+  const isEditingThis = editingCssVar != null && editingCssVar === cssVar;
+  const defaultForReset = (editingDefaultHex ?? defaultHex) || defaultHex;
+  const displayColor = isEditingThis ? defaultForReset : resolved;
+  const valueOnClick = isEditingThis ? defaultForReset : resolved;
+  // Use explicit cssVar match when a swatch was selected; when editing a specific var (Theme panel), only that swatch is active; when no editing context (right panel), highlight only if exactly one swatch matches.
+  const isActive = selectedCssVar !== null
+    ? selectedCssVar === cssVar
+    : editingCssVar != null
+      ? editingCssVar === cssVar
+      : singleMatchCssVar != null && singleMatchCssVar === cssVar;
   return (
     <div
-      title={`${label}\n${resolved}`}
-      onClick={() => onSelect(resolved)}
+      data-testid={`swatch-${cssVar}`}
+      title={`${label}\n${isEditingThis ? `${displayColor} (default)` : displayColor}`}
+      onClick={() => onSelect(valueOnClick, cssVar)}
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
         cursor: 'pointer', padding: '4px 2px', borderRadius: 4,
@@ -98,7 +115,7 @@ function Swatch({
     >
       <div style={{
         width: 24, height: 24, borderRadius: 5,
-        background: resolved,
+        background: displayColor,
         border: isActive ? '2px solid #3b82f6' : '1.5px solid rgba(255,255,255,0.18)',
         boxSizing: 'border-box', flexShrink: 0,
       }} />
@@ -118,19 +135,33 @@ interface PopoverProps {
   anchorRect: DOMRect;
   onClose: () => void;
   value: string;
-  onSelect: (hex: string) => void;
+  onSelect: (hex: string, cssVar: string) => void;
   hexInput: string;
   setHexInput: (v: string) => void;
   handleHexCommit: (v: string) => void;
   themeOverrides: Record<string, string>;
+  selectedCssVar: string | null;
+  editingCssVar?: string | null;
+  editingDefaultHex?: string | null;
 }
 
 function ColorPopover({
   anchorRect, onClose, value, onSelect,
-  hexInput, setHexInput, handleHexCommit, themeOverrides,
+  hexInput, setHexInput, handleHexCommit, themeOverrides, selectedCssVar, editingCssVar, editingDefaultHex,
 }: PopoverProps) {
   const ref = useRef<HTMLDivElement>(null);
   const displayColor = value.startsWith('#') ? value : '#000000';
+
+  // When no editingCssVar (right panel), highlight first matching swatch — when multiple match (e.g. #ffffff = Background, Card, Destructive Text), prefer first in list
+  const singleMatchCssVar = (() => {
+    if (editingCssVar != null) return null;
+    const val = value.toLowerCase();
+    const match = GLOBAL_SWATCHES.find(s => {
+      const r = themeOverrides[s.cssVar] ?? resolveCssVar(s.cssVar) ?? s.defaultHex;
+      return val === r.toLowerCase();
+    });
+    return match?.cssVar ?? null;
+  })();
 
   // Close on outside click
   useEffect(() => {
@@ -175,7 +206,7 @@ function ColorPopover({
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 1 }}>
           {GLOBAL_SWATCHES.map(s => (
-            <Swatch key={s.cssVar} {...s} currentValue={value} onSelect={onSelect} overrides={themeOverrides} />
+            <Swatch key={s.cssVar} {...s} currentValue={value} onSelect={onSelect} overrides={themeOverrides} selectedCssVar={selectedCssVar} editingCssVar={editingCssVar} editingDefaultHex={editingDefaultHex} singleMatchCssVar={singleMatchCssVar} />
           ))}
         </div>
       </div>
@@ -192,7 +223,7 @@ function ColorPopover({
           <input
             type="color"
             value={displayColor}
-            onChange={e => { setHexInput(e.target.value); onSelect(e.target.value); }}
+            onChange={e => { setHexInput(e.target.value); onSelect(e.target.value, ''); /* '' = no swatch */ }}
             style={{ width: 38, height: 38, padding: 0, border: '1px solid #374151', borderRadius: 6, background: 'none', cursor: 'pointer', flexShrink: 0 }}
           />
           <div style={{ flex: 1 }}>
@@ -225,28 +256,65 @@ function ColorPopover({
 
 export interface FigmaColorPickerProps {
   value: string;
-  onChange: (hex: string) => void;
+  /** Called with the resolved hex and, when a theme swatch was clicked, its cssVar so the caller can store `var(--cssVar)` instead of a hardcoded hex */
+  onChange: (hex: string, cssVar?: string) => void;
   label?: string;
   testId?: string;
+  /** When set (e.g. Theme panel editing a specific var), only that swatch is highlighted initially — avoids multiple highlights when vars share the same hex */
+  editingCssVar?: string | null;
+  /** When editing a var (editingCssVar set), this is the theme default for that var — swatch shows it so user can click to reset */
+  editingDefaultHex?: string | null;
+  /** When set, picker uses controlled open state — parent must close others when opening this one to avoid multiple popovers and wrong variable being patched */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function FigmaColorPicker({ value, onChange, label, testId }: FigmaColorPickerProps) {
-  const [open, setOpen]           = useState(false);
-  const [hexInput, setHexInput]   = useState(value);
-  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+export function FigmaColorPicker({ value, onChange, label, testId, editingCssVar, editingDefaultHex, open: controlledOpen, onOpenChange }: FigmaColorPickerProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const [hexInput, setHexInput]       = useState(value);
+  const [anchorRect, setAnchorRect]   = useState<DOMRect | null>(null);
+  const [selectedCssVar, setSelectedCssVar] = useState<string | null>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const themeOverrides = useBuilderStore(s => s.themeOverrides);
+  // Track whether the value change was triggered internally (swatch/hex input click)
+  // so we do NOT reset selectedCssVar on the echo-back from the parent.
+  const isInternalChangeRef = useRef(false);
 
-  useEffect(() => { setHexInput(value); }, [value]);
+  const isControlled = controlledOpen !== undefined && onOpenChange !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = useCallback((v: boolean | ((prev: boolean) => boolean)) => {
+    const next = typeof v === 'function' ? v(open) : v;
+    if (isControlled) onOpenChange!(next);
+    else setInternalOpen(next);
+  }, [isControlled, onOpenChange, open]);
 
-  const handleSwatchSelect = useCallback((hex: string) => {
+  useEffect(() => {
+    if (isInternalChangeRef.current) {
+      // Internal change: only sync hexInput, preserve selectedCssVar highlight
+      isInternalChangeRef.current = false;
+      setHexInput(value);
+      return;
+    }
+    // External change (e.g. different node selected): reset everything
+    setHexInput(value);
+    setSelectedCssVar(null);
+  }, [value]);
+
+  const handleSwatchSelect = useCallback((hex: string, cssVar: string) => {
+    isInternalChangeRef.current = true;
     setHexInput(hex);
-    onChange(hex);
+    setSelectedCssVar(cssVar);
+    // Pass cssVar so callers can store var(--cssVar) — making the element react to theme changes
+    onChange(hex, cssVar || undefined);
   }, [onChange]);
 
   const handleHexCommit = useCallback((raw: string) => {
     const val = raw.startsWith('#') ? raw : `#${raw}`;
-    if (isValidHex(val)) onChange(val);
+    if (isValidHex(val)) {
+      isInternalChangeRef.current = true;
+      setSelectedCssVar(null); // custom hex → no swatch active
+      onChange(val);
+    }
   }, [onChange]);
 
   const handleTriggerClick = () => {
@@ -264,6 +332,7 @@ export function FigmaColorPicker({ value, onChange, label, testId }: FigmaColorP
       <div
         ref={triggerRef}
         onClick={handleTriggerClick}
+        data-testid={testId ? `${testId}-swatch` : undefined}
         title={`${label ?? 'Color'}: ${value}`}
         style={{
           width: 26, height: 26, borderRadius: 4,
@@ -301,6 +370,9 @@ export function FigmaColorPicker({ value, onChange, label, testId }: FigmaColorP
           setHexInput={setHexInput}
           handleHexCommit={handleHexCommit}
           themeOverrides={themeOverrides}
+          selectedCssVar={selectedCssVar}
+          editingCssVar={editingCssVar}
+          editingDefaultHex={editingDefaultHex}
         />
       )}
     </div>

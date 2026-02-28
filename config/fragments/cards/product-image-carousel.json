@@ -7,7 +7,7 @@
     {
       "type": "Box",
       "props": {
-        "className": "relative aspect-square bg-gray-100 rounded-lg overflow-hidden group"
+        "className": "relative aspect-square bg-[var(--theme-hero-bg)] rounded-lg overflow-hidden group"
       },
       "children": [
         {
@@ -51,11 +51,9 @@
               },
               "children": [
                 {
-                  "type": "Button",
+                  "type": "Pressable",
                   "props": {
-                    "variant": "ghost",
-                    "size": "icon",
-                    "className": "h-10 w-10 rounded-full bg-white/80 hover:bg-white border border-gray-200"
+                    "className": "h-10 w-10 rounded-full bg-[var(--theme-content-bg)]/80 hover:bg-[var(--theme-content-bg)] border border-[var(--theme-border)] flex flex-row items-center justify-center"
                   },
                   "actions": {
                     "click": {
@@ -92,11 +90,9 @@
               },
               "children": [
                 {
-                  "type": "Button",
+                  "type": "Pressable",
                   "props": {
-                    "variant": "ghost",
-                    "size": "icon",
-                    "className": "h-10 w-10 rounded-full bg-white/80 hover:bg-white border border-gray-200"
+                    "className": "h-10 w-10 rounded-full bg-[var(--theme-content-bg)]/80 hover:bg-[var(--theme-content-bg)] border border-[var(--theme-border)] flex flex-row items-center justify-center"
                   },
                   "actions": {
                     "click": {
@@ -129,7 +125,7 @@
                 ]
               },
               "props": {
-                "className": "absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/80 px-3 py-1 rounded-full text-sm"
+                "className": "absolute bottom-4 left-1/2 -translate-x-1/2 bg-[var(--theme-content-bg)]/80 px-3 py-1 rounded-full text-sm"
               },
               "children": [
                 {
@@ -179,7 +175,7 @@
             {
               "type": "Text",
               "props": {
-                "className": "text-gray-500"
+                "className": "text-[var(--theme-muted-foreground)]"
               },
               "text": "No images available"
             }

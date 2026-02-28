@@ -41,18 +41,45 @@ async function resetBuilder(page: Page) {
     if (typeof store.setZoom === 'function') {
       (store.setZoom as (z: number) => void)(1);
     }
+    // Reset pan so the page frame is always properly centred after prior tests
+    // may have panned the canvas. Compute the same centred offset fitToCanvas
+    // would use: panX = (canvasW - pageW) / 2, panY = 0 (zoom=1 fits height).
+    if (typeof store.setPan === 'function') {
+      const canvas = document.querySelector('[data-testid="builder-canvas"]') as HTMLElement | null;
+      const pageW = 375; // VIEWPORT_WIDTHS['mobile']
+      const px = canvas ? (canvas.clientWidth - pageW) / 2 : 0;
+      (store.setPan as (x: number, y: number) => void)(px, 0);
+      // Force the DOM transform immediately — React won't re-render if panX was
+      // already 202.5 (same value), so the canvas world div stays at its previous
+      // position.  Directly patching the transform here guarantees the page frame
+      // is centered regardless of prior Zustand state.
+      const world = document.querySelector('[data-builder-world]') as HTMLElement | null;
+      if (world) {
+        world.style.transform = `translate(${px}px, 0px) scale(1)`;
+      } else {
+        console.warn('[resetBuilder] data-builder-world not found!');
+      }
+    }
   });
   await page.waitForFunction(
     () => document.querySelectorAll('[data-builder-id]').length === 0,
     { timeout: 5_000 }
   );
+  // Let React finish deferred effects (overlay RAF, computed updates) that fire
+  // after the pageNodes state change — without this, a DnD from the components
+  // panel immediately following reset can be silently dropped in headless Chrome.
+  await page.waitForTimeout(300);
 }
 
 /**
  * Drag a draggable component from the Components panel onto the canvas.
+ * Retries once if the first drag doesn't produce a node (headless-Chromium
+ * DnD can silently fail on the first interaction after a page reset).
  * @param label  Visible label in the Components panel (e.g. "Button")
  */
 async function dropComponent(page: Page, label: string) {
+  const countBefore = await page.locator('[data-builder-id]').count();
+
   // Make sure we are on the Components tab
   const compTab = page.getByTestId('tab-components');
   await compTab.click();
@@ -65,8 +92,24 @@ async function dropComponent(page: Page, label: string) {
   const frame = page.locator('[data-builder-page-frame]');
   await item.dragTo(frame);
 
-  // Wait for a node to appear in the canvas
-  await page.waitForSelector('[data-builder-id]', { timeout: 12_000 });
+  // Wait for a node to appear.  Retry once if the drag was silently ignored
+  // (headless Chromium sometimes drops the first DnD event after a page reset).
+  const appeared = await page.waitForFunction(
+    (before: number) => document.querySelectorAll('[data-builder-id]').length > before,
+    countBefore,
+    { timeout: 5_000 }
+  ).catch(() => null);
+
+  if (!appeared) {
+    // Brief pause then retry the drag
+    await page.waitForTimeout(300);
+    await item.dragTo(frame);
+    await page.waitForFunction(
+      (before: number) => document.querySelectorAll('[data-builder-id]').length > before,
+      countBefore,
+      { timeout: 10_000 }
+    );
+  }
 }
 
 /** Click a dropped node identified by its data-builder-id prefix. */
@@ -89,6 +132,11 @@ async function clickFirstNode(page: Page) {
 async function selectFirstRootNode(page: Page) {
   await page.getByTestId('tab-layers').click();
   await page.locator('[data-testid="layer-row"]').first().click();
+  // Wait for BuilderOverlay to render the selection handles, then let the
+  // RAF measurement loop stabilise their positions (the overlay runs a ~200ms
+  // idle RAF loop after selection changes before it stops ticking).
+  await page.waitForSelector('[data-testid="resize-handle"]', { timeout: 3_000 });
+  await page.waitForTimeout(300);
 }
 
 // ─── File-level shared page ────────────────────────────────────────────────────
@@ -221,11 +269,18 @@ test.describe('Selection', () => {
     await sharedPage.getByTestId('layer-row').first().click();
     await expect(sharedPage.getByTestId('selection-ring')).toBeVisible({ timeout: 3_000 });
 
-    // Click empty area at the bottom of the page frame
-    const frame = sharedPage.locator('[data-builder-page-frame]');
-    const box   = await frame.boundingBox();
-    if (box) {
-      await sharedPage.mouse.click(box.x + box.width / 2, box.y + box.height - 20);
+    // Click empty area at the bottom of the page frame, clamped to canvas bounds.
+    // The page frame can extend beyond the visible canvas (overflow:hidden clips it),
+    // so getBoundingClientRect().height may exceed the canvas height. We must clamp
+    // the click Y so it lands inside the canvas, otherwise the click is ignored.
+    const frame     = sharedPage.locator('[data-builder-page-frame]');
+    const canvas    = sharedPage.getByTestId('builder-canvas');
+    const box       = await frame.boundingBox();
+    const canvasBox = await canvas.boundingBox();
+    if (box && canvasBox) {
+      const clickX = box.x + box.width / 2;
+      const clickY = Math.min(box.y + box.height - 20, canvasBox.y + canvasBox.height - 20);
+      await sharedPage.mouse.click(clickX, clickY);
     }
     await expect(sharedPage.getByTestId('selection-ring')).not.toBeVisible({ timeout: 2_000 });
   });
@@ -236,9 +291,10 @@ test.describe('Selection', () => {
     await sharedPage.getByTestId('layer-row').first().click();
     await expect(sharedPage.getByTestId('selection-ring')).toBeVisible();
 
-    // Click the dark canvas area (top-left corner of canvas, outside page frame)
+    // Click dark canvas: use the far-right edge of the canvas (always dark regardless
+    // of panX, since page frame is 375px wide and canvas is ~780px wide).
     const canvasBox = await sharedPage.getByTestId('builder-canvas').boundingBox();
-    await sharedPage.mouse.click(canvasBox!.x + 5, canvasBox!.y + 5);
+    await sharedPage.mouse.click(canvasBox!.x + canvasBox!.width - 5, canvasBox!.y + 5);
     await expect(sharedPage.getByTestId('selection-ring')).not.toBeVisible({ timeout: 2_000 });
   });
 
@@ -404,16 +460,37 @@ test.describe('Resize Handles', () => {
     const cx = box.x + box.width / 2;
     const cy = box.y + box.height / 2;
 
-    await sharedPage.mouse.move(cx, cy);
-    await sharedPage.mouse.down();
+    // dispatchEvent targets the handle directly — no hit-test uncertainty.
+    // window listeners for pointermove/pointerup are set up by onResizeStart.
+    await seHandle.dispatchEvent('pointerdown', { button: 0, buttons: 1, clientX: cx, clientY: cy, pointerId: 1 });
     await sharedPage.mouse.move(cx + 60, cy + 40, { steps: 10 });
     await sharedPage.mouse.up();
+    // onResizeStart adds a window capture-click suppressClick listener.
+    // Since dispatchEvent('pointerdown') doesn't generate a real click sequence,
+    // flush that listener manually so subsequent test clicks aren't intercepted.
+    await sharedPage.evaluate(() => document.body.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    // Give React time to commit the patchProp update to the DOM
+    await sharedPage.waitForTimeout(300);
 
-    const node = sharedPage.locator('[data-builder-id]').first();
-    const style = await node.evaluate((el: HTMLElement) => ({
-      width: el.style.width,
-      height: el.style.height,
-    }));
+    // Read the committed size from the Zustand store (patchProp writes props.style).
+    // Using the store avoids false positives from querying the wrong DOM node.
+    const style = await sharedPage.evaluate(() => {
+      const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
+      if (!store) return { width: '', height: '' };
+      const selectedIds = store.selectedIds as string[];
+      const id = selectedIds?.[0];
+      if (!id) return { width: '', height: '' };
+      function find(nodes: unknown[], targetId: string): Record<string, unknown> | null {
+        for (const n of nodes as Array<Record<string, unknown>>) {
+          if (n.id === targetId) return n;
+          if (Array.isArray(n.children)) { const f = find(n.children, targetId); if (f) return f; }
+        }
+        return null;
+      }
+      const node = find(store.pageNodes as unknown[], id) as Record<string, unknown> | null;
+      const s = (node?.props as Record<string, unknown>)?.style as Record<string, string> | undefined;
+      return { width: s?.width ?? '', height: s?.height ?? '' };
+    });
     expect(style.width).toMatch(/px$/);
     expect(style.height).toMatch(/px$/);
   });
@@ -429,61 +506,95 @@ test.describe('Resize Handles', () => {
     const node = sharedPage.locator('[data-builder-id]').first();
     const heightBefore = await node.evaluate((el: HTMLElement) => el.getBoundingClientRect().height);
 
-    await sharedPage.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    await sharedPage.mouse.down();
-    await sharedPage.mouse.move(box.x + 80, box.y + box.height / 2, { steps: 10 });
+    const ex = box.x + box.width / 2;
+    const ey = box.y + box.height / 2;
+    // dispatchEvent targets the handle directly — no hit-test uncertainty
+    await eHandle.dispatchEvent('pointerdown', { button: 0, buttons: 1, clientX: ex, clientY: ey, pointerId: 1 });
+    await sharedPage.mouse.move(box.x + 80, ey, { steps: 10 });
     await sharedPage.mouse.up();
+    // Flush suppressClick listener added by onResizeStart (same as test 60)
+    await sharedPage.evaluate(() => document.body.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    await sharedPage.waitForTimeout(300);
 
-    const width = await node.evaluate((el: HTMLElement) => el.style.width);
-    expect(width).toMatch(/px$/);
+    // Read committed width from Zustand store (same as test 60)
+    const style = await sharedPage.evaluate(() => {
+      const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
+      if (!store) return { width: '' };
+      const selectedIds = store.selectedIds as string[];
+      const id = selectedIds?.[0];
+      if (!id) return { width: '' };
+      function find(nodes: unknown[], targetId: string): Record<string, unknown> | null {
+        for (const n of nodes as Array<Record<string, unknown>>) {
+          if (n.id === targetId) return n;
+          if (Array.isArray(n.children)) { const f = find(n.children, targetId); if (f) return f; }
+        }
+        return null;
+      }
+      const nd = find(store.pageNodes as unknown[], id) as Record<string, unknown> | null;
+      const s = (nd?.props as Record<string, unknown>)?.style as Record<string, string> | undefined;
+      return { width: s?.width ?? '' };
+    });
+    expect(style.width).toMatch(/px$/);
     const heightAfter = await node.evaluate((el: HTMLElement) => el.getBoundingClientRect().height);
     expect(Math.abs(heightAfter - heightBefore)).toBeLessThan(20);
   });
 });
 
 // ─── History — Undo/Redo (checklist 65–68) ────────────────────────────────────
-// These tests require a FRESH undo history stack. resetBuilder() does NOT clear
-// the undo history, so each test uses its own page fixture via gotoBuilder().
+// These tests require a FRESH undo history stack. We use sharedPage + _clearHistory
+// (which resets both pageNodes and history to a clean empty state) instead of
+// per-test page fixtures to avoid browser-context teardown races.
+
+async function clearHistory(page: Page) {
+  await page.evaluate(() => {
+    const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
+    if (typeof (store as Record<string, unknown>)?._clearHistory === 'function') {
+      (store._clearHistory as () => void)();
+    }
+  });
+  await page.waitForFunction(
+    () => document.querySelectorAll('[data-builder-id]').length === 0,
+    { timeout: 5_000 }
+  );
+}
 
 test.describe('History (Undo / Redo)', () => {
-  test('65. undo after drop removes the node', async ({ page }) => {
-    await gotoBuilder(page);
-    await dropComponent(page, 'Btn Solid');
-    await expect(page.locator('[data-builder-id]').first()).toBeVisible();
+  test.beforeEach(async () => { await clearHistory(sharedPage); });
 
-    await page.keyboard.press('Meta+z');
-    await expect(page.locator('[data-builder-id]')).toHaveCount(0, { timeout: 3_000 });
+  test('65. undo after drop removes the node', async () => {
+    await dropComponent(sharedPage, 'Btn Solid');
+    await expect(sharedPage.locator('[data-builder-id]').first()).toBeVisible();
+
+    await sharedPage.keyboard.press('Meta+z');
+    await expect(sharedPage.locator('[data-builder-id]')).toHaveCount(0, { timeout: 3_000 });
   });
 
-  test('66. redo after undo restores the node', async ({ page }) => {
-    await gotoBuilder(page);
-    await dropComponent(page, 'Btn Solid');
-    await page.keyboard.press('Meta+z');
-    await expect(page.locator('[data-builder-id]')).toHaveCount(0, { timeout: 3_000 });
+  test('66. redo after undo restores the node', async () => {
+    await dropComponent(sharedPage, 'Btn Solid');
+    await sharedPage.keyboard.press('Meta+z');
+    await expect(sharedPage.locator('[data-builder-id]')).toHaveCount(0, { timeout: 3_000 });
 
-    await page.keyboard.press('Meta+Shift+z');
-    await expect(page.locator('[data-builder-id]').first()).toBeVisible({ timeout: 3_000 });
+    await sharedPage.keyboard.press('Meta+Shift+z');
+    await expect(sharedPage.locator('[data-builder-id]').first()).toBeVisible({ timeout: 3_000 });
   });
 
-  test('67. undo button in top bar works', async ({ page }) => {
-    await gotoBuilder(page);
-    await dropComponent(page, 'Btn Solid');
-    await page.getByTestId('btn-undo').click();
-    await expect(page.locator('[data-builder-id]')).toHaveCount(0, { timeout: 3_000 });
+  test('67. undo button in top bar works', async () => {
+    await dropComponent(sharedPage, 'Btn Solid');
+    await sharedPage.getByTestId('btn-undo').click();
+    await expect(sharedPage.locator('[data-builder-id]')).toHaveCount(0, { timeout: 3_000 });
   });
 
-  test('68. undo after second drop removes second node', async ({ page }) => {
-    await gotoBuilder(page);
-    await dropComponent(page, 'Btn Solid');
-    await dropComponent(page, 'Btn Solid');
+  test('68. undo after second drop removes second node', async () => {
+    await dropComponent(sharedPage, 'Btn Solid');
+    await dropComponent(sharedPage, 'Btn Solid');
 
-    const countBefore = await page.locator('[data-builder-id]').count();
+    const countBefore = await sharedPage.locator('[data-builder-id]').count();
     expect(countBefore).toBeGreaterThanOrEqual(2);
 
-    await page.keyboard.press('Meta+z');
+    await sharedPage.keyboard.press('Meta+z');
 
     await expect(async () => {
-      const countAfter = await page.locator('[data-builder-id]').count();
+      const countAfter = await sharedPage.locator('[data-builder-id]').count();
       expect(countAfter).toBeLessThan(countBefore);
     }).toPass({ timeout: 3_000 });
   });

@@ -621,8 +621,8 @@
               {
                 "if": [
                   { "==": [{ "var": "checkout.step" }, "contact"] },
-                  "bg-[#1e293b] !text-white",
-                  "bg-gray-100 !text-gray-500"
+                  "bg-[var(--theme-shop-button)] !text-white",
+                  "bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]"
                 ]
               }
             ]
@@ -642,8 +642,8 @@
               {
                 "if": [
                   { "==": [{ "var": "checkout.step" }, "shipping"] },
-                  "bg-[#1e293b] !text-white",
-                  "bg-gray-100 !text-gray-500"
+                  "bg-[var(--theme-shop-button)] !text-white",
+                  "bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]"
                 ]
               }
             ]
@@ -663,8 +663,8 @@
               {
                 "if": [
                   { "==": [{ "var": "checkout.step" }, "payment"] },
-                  "bg-[#1e293b] !text-white",
-                  "bg-gray-100 !text-gray-500"
+                  "bg-[var(--theme-shop-button)] !text-white",
+                  "bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]"
                 ]
               }
             ]

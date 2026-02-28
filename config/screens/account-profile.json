@@ -23,9 +23,9 @@
     }
   ],
   "content": {
-    "type": "VStack",
+    "type": "Box",
     "props": {
-      "className": "space-y-6"
+      "className": "space-y-6 flex flex-col"
     },
     "children": [
       {
@@ -41,7 +41,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-gray-500 mt-2"
+              "className": "text-[var(--theme-muted-foreground)] mt-2"
             },
             "text": "Manage your account information"
           }
@@ -64,9 +64,9 @@
                 "text": "Personal Information"
               },
               {
-                "type": "VStack",
+                "type": "Box",
                 "props": {
-                  "className": "space-y-4"
+                  "className": "space-y-4 flex flex-col"
                 },
                 "children": [
                   {
@@ -187,15 +187,15 @@
                     ]
                   },
                   {
-                    "type": "Button",
+                    "type": "Pressable",
                     "props": {
-                      "className": "bg-[#1e293b] text-white hover:bg-[#334155]"
+                      "className": "bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
                     },
                     "children": [
                       {
-                        "type": "ButtonText",
+                        "type": "Text",
                         "props": {
-                          "className": "!text-white"
+                          "className": "text-white"
                         },
                         "text": "Save Changes"
                       }
@@ -229,9 +229,9 @@
                 "text": "Email Address"
               },
               {
-                "type": "VStack",
+                "type": "Box",
                 "props": {
-                  "className": "space-y-4"
+                  "className": "space-y-4 flex flex-col"
                 },
                 "children": [
                   {
@@ -272,15 +272,15 @@
                     ]
                   },
                   {
-                    "type": "Button",
+                    "type": "Pressable",
                     "props": {
-                      "className": "bg-[#1e293b] text-white hover:bg-[#334155]"
+                      "className": "bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
                     },
                     "children": [
                       {
-                        "type": "ButtonText",
+                        "type": "Text",
                         "props": {
-                          "className": "!text-white"
+                          "className": "text-white"
                         },
                         "text": "Update Email"
                       }
@@ -314,9 +314,9 @@
                 "text": "Change Password"
               },
               {
-                "type": "VStack",
+                "type": "Box",
                 "props": {
-                  "className": "space-y-4"
+                  "className": "space-y-4 flex flex-col"
                 },
                 "children": [
                   {
@@ -394,15 +394,15 @@
                     ]
                   },
                   {
-                    "type": "Button",
+                    "type": "Pressable",
                     "props": {
-                      "className": "bg-[#1e293b] text-white hover:bg-[#334155]"
+                      "className": "bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
                     },
                     "children": [
                       {
-                        "type": "ButtonText",
+                        "type": "Text",
                         "props": {
-                          "className": "!text-white"
+                          "className": "text-white"
                         },
                         "text": "Change Password"
                       }

@@ -19,6 +19,7 @@ import appConfig from '@/config/app';
 import type { SDUIConfig } from '@/lib/sdui/types';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import { computeSnap, snapResizeSize, SNAP_THRESHOLD, type SnapGuide, type ContentRect } from './_snap-engine';
+import { removeTwToken } from './_tw-utils';
 
 /** Node types that act as containers and accept dropped children. */
 // Keep in sync with isContainer in _panel-right.tsx
@@ -285,6 +286,33 @@ export default function BuilderCanvas() {
 
   // ── Dynamic viewport width ────────────────────────────────────────────────
   const vpWidth = VIEWPORT_WIDTHS[viewport];
+
+  // When the viewport breakpoint changes, the page frame width changes and all DOM
+  // elements re-layout at new dimensions. We use a ResizeObserver on the page frame
+  // so the overlay re-measures AFTER the browser finishes layout (ResizeObserver
+  // callbacks fire post-layout, giving correct getBoundingClientRect() values).
+  // A rAF is used so the overlay reads positions in the same frame as the paint,
+  // avoiding a stale-layout read if ResizeObserver fires mid-commit.
+  useEffect(() => {
+    const frame = pageFrameRef.current;
+    if (!frame) return;
+    let rafId: number | undefined;
+    const ro = new ResizeObserver(() => {
+      if (rafId !== undefined) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        rafId = undefined;
+        overlayInstantUpdateRef.current?.();
+        overlayNotifyRef.current?.();
+      });
+    });
+    ro.observe(frame);
+    return () => {
+      ro.disconnect();
+      if (rafId !== undefined) cancelAnimationFrame(rafId);
+    };
+  // pageFrameRef is stable; only re-run if the ref object itself changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /** Horizontal gap (content-px) between page frames on the canvas. */
   const PAGE_GAP = 80;
@@ -1055,8 +1083,10 @@ export default function BuilderCanvas() {
                     e.dataTransfer.types.includes('text/primitive-node') ||
                     e.dataTransfer.types.includes('text/canvas-node-id') ||
                     // In CDP-simulated drags (e.g. Playwright) dataTransfer.types is
-                    // empty; treat as a canvas-node move when a node is already active.
-                    !!draggingNodeIdRef.current;
+                    // empty; treat as a canvas-node move when a node is already active,
+                    // or as a primitive drop when the panel set the global fallback.
+                    !!draggingNodeIdRef.current ||
+                    !!(window as unknown as Record<string, unknown>).__primitiveDrag;
     if (!hasData) return;
     e.preventDefault();
     const isCanvasMove = e.dataTransfer.types.includes('text/canvas-node-id') || !!draggingNodeIdRef.current;
@@ -1392,7 +1422,12 @@ export default function BuilderCanvas() {
     // getData may return '' in CDP-simulated drags; fall back to the ref set in onDragStart
     const canvasNodeId = e.dataTransfer.getData('text/canvas-node-id') || draggingNodeIdRef.current || '';
     const variantId    = e.dataTransfer.getData('text/variant-id');
-    const primitive    = e.dataTransfer.getData('text/primitive-node');
+    const win = window as unknown as Record<string, unknown>;
+    const primitive    = e.dataTransfer.getData('text/primitive-node') ||
+                         // CDP fallback: panel sets __primitiveDrag on dragstart
+                         (win.__primitiveDrag as string | undefined) || '';
+    // Clear the CDP fallback regardless of whether it was used
+    win.__primitiveDrag = undefined;
 
     if (canvasNodeId) {
       // ── Absolute node: apply style.left / style.top, don't reorder ──────────
@@ -1565,6 +1600,22 @@ export default function BuilderCanvas() {
         width:  `${lastW}px`,
         height: `${lastH}px`,
       });
+
+      // When the user drags a resize handle they are explicitly setting a fixed pixel size.
+      // Remove any Hug (w-fit / h-fit) or Fill (w-full / h-full) classes for the
+      // affected dimensions so the Dimensions panel reflects Fixed mode correctly.
+      const existingCls = (node?.props as { className?: string })?.className ?? '';
+      let newCls = existingCls;
+      if (handle.includes('e') || handle.includes('w')) {
+        newCls = removeTwToken(removeTwToken(newCls, 'w-fit'), 'w-full');
+      }
+      if (handle.includes('n') || handle.includes('s')) {
+        newCls = removeTwToken(removeTwToken(newCls, 'h-fit'), 'h-full');
+      }
+      if (newCls !== existingCls) {
+        useBuilderStore.getState().patchProp(id, 'props.className', newCls);
+      }
+
       useBuilderStore.getState()._pushHistory();
     };
 

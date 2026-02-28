@@ -69,7 +69,7 @@
                             {
                               "type": "Text",
                               "props": {
-                                "className": "text-sm text-[var(--theme-footer-textMuted)] hover:text-gray-900 dark:hover:text-gray-100"
+                                "className": "text-sm text-[var(--theme-footer-textMuted)] hover:text-[var(--theme-foreground)]"
                               },
                               "text": "{{$item.name}}"
                             }

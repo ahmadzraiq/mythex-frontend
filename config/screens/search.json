@@ -71,7 +71,7 @@
                       {
                         "type": "Heading",
                         "props": {
-                          "className": "font-semibold text-lg text-gray-900 dark:text-gray-100"
+                          "className": "font-semibold text-lg text-[var(--theme-foreground)]"
                         },
                         "text": "Filters"
                       },
@@ -90,13 +90,13 @@
                           ]
                         },
                         "props": {
-                          "className": "text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                          "className": "text-sm text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] transition-colors"
                         },
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-sm text-gray-500 dark:text-gray-400"
+                              "className": "text-sm text-[var(--theme-muted-foreground)]"
                             },
                             "text": "Clear all"
                           }
@@ -133,7 +133,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "font-medium text-sm text-gray-700 dark:text-gray-300 capitalize"
+                              "className": "font-medium text-sm text-[var(--theme-foreground)] capitalize"
                             },
                             "text": "{{$item.key}}"
                           },
@@ -183,7 +183,7 @@
                                   {
                                     "type": "Box",
                                     "props": {
-                                      "className": "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors border-gray-300 dark:border-gray-600 group-hover:border-gray-500"
+                                      "className": "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors border-[var(--theme-border)]"
                                     },
                                     "condition": {
                                       "!": [
@@ -204,7 +204,7 @@
                                   {
                                     "type": "Box",
                                     "props": {
-                                      "className": "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors bg-gray-900 border-gray-900 dark:bg-white dark:border-white"
+                                      "className": "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors bg-[var(--theme-shop-button)] border-[var(--theme-shop-button)]"
                                     },
                                     "condition": {
                                       "arrayIncludes": [
@@ -222,7 +222,7 @@
                                         "props": {
                                           "icon": "Check",
                                           "size": 10,
-                                          "className": "!text-white dark:!text-gray-900"
+                                          "className": "!text-white"
                                         }
                                       }
                                     ]
@@ -230,14 +230,14 @@
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "className": "text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors"
+                                      "className": "text-sm text-[var(--theme-foreground)] transition-colors"
                                     },
                                     "text": "{{$item.facetValue.name}}"
                                   },
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "className": "text-xs text-gray-400 dark:text-gray-500"
+                                      "className": "text-xs text-[var(--theme-muted-foreground)]"
                                     },
                                     "text": "({{$item.count}})"
                                   }
@@ -270,7 +270,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                      "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
                     "text": "{{search.resultsHeaderText}}"
                   },
@@ -299,7 +299,7 @@
                       {
                         "type": "Pressable",
                         "props": {
-                          "className": "relative z-50 flex flex-row items-center gap-2 h-9 px-3 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 min-w-[180px] justify-between"
+                          "className": "relative z-50 flex flex-row items-center gap-2 h-9 px-3 rounded-md border border-[var(--theme-border)] bg-[var(--theme-content-bg)] hover:bg-[var(--theme-hero-bg)] min-w-[180px] justify-between"
                         },
                         "actions": {
                           "click": {
@@ -311,7 +311,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-sm text-gray-700 dark:text-gray-300"
+                              "className": "text-sm text-[var(--theme-foreground)]"
                             },
                             "text": {
                               "expr": {
@@ -364,13 +364,13 @@
                           "var": "sortMenuOpen"
                         },
                         "props": {
-                          "className": "absolute right-0 top-full mt-1 min-w-[180px] rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-md z-[9999] py-1"
+                          "className": "absolute right-0 top-full mt-1 min-w-[180px] rounded-md border border-[var(--theme-border)] bg-[var(--theme-content-bg)] shadow-md z-[9999] py-1"
                         },
                         "children": [
                           {
                             "type": "Pressable",
                             "props": {
-                              "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                              "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-[var(--theme-hero-bg)]"
                             },
                             "actions": {
                               "click": {
@@ -407,7 +407,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-sm text-gray-700 dark:text-gray-300"
+                                  "className": "text-sm text-[var(--theme-foreground)]"
                                 },
                                 "text": "Name: A to Z"
                               },
@@ -416,7 +416,7 @@
                                 "props": {
                                   "icon": "Check",
                                   "size": 14,
-                                  "color": "#1e293b"
+                                  "color": "#7c3aed"
                                 },
                                 "condition": {
                                   "==": [
@@ -432,7 +432,7 @@
                           {
                             "type": "Pressable",
                             "props": {
-                              "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                              "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-[var(--theme-hero-bg)]"
                             },
                             "actions": {
                               "click": {
@@ -469,7 +469,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-sm text-gray-700 dark:text-gray-300"
+                                  "className": "text-sm text-[var(--theme-foreground)]"
                                 },
                                 "text": "Name: Z to A"
                               },
@@ -478,7 +478,7 @@
                                 "props": {
                                   "icon": "Check",
                                   "size": 14,
-                                  "color": "#1e293b"
+                                  "color": "#7c3aed"
                                 },
                                 "condition": {
                                   "==": [
@@ -494,7 +494,7 @@
                           {
                             "type": "Pressable",
                             "props": {
-                              "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                              "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-[var(--theme-hero-bg)]"
                             },
                             "actions": {
                               "click": {
@@ -531,7 +531,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-sm text-gray-700 dark:text-gray-300"
+                                  "className": "text-sm text-[var(--theme-foreground)]"
                                 },
                                 "text": "Price: Low to High"
                               },
@@ -540,7 +540,7 @@
                                 "props": {
                                   "icon": "Check",
                                   "size": 14,
-                                  "color": "#1e293b"
+                                  "color": "#7c3aed"
                                 },
                                 "condition": {
                                   "==": [
@@ -556,7 +556,7 @@
                           {
                             "type": "Pressable",
                             "props": {
-                              "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                              "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-[var(--theme-hero-bg)]"
                             },
                             "actions": {
                               "click": {
@@ -593,7 +593,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-sm text-gray-700 dark:text-gray-300"
+                                  "className": "text-sm text-[var(--theme-foreground)]"
                                 },
                                 "text": "Price: High to Low"
                               },
@@ -602,7 +602,7 @@
                                 "props": {
                                   "icon": "Check",
                                   "size": 14,
-                                  "color": "#1e293b"
+                                  "color": "#7c3aed"
                                 },
                                 "condition": {
                                   "==": [
@@ -641,7 +641,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-gray-500 dark:text-gray-400"
+                      "className": "text-[var(--theme-muted-foreground)]"
                     },
                     "text": "No products found"
                   }

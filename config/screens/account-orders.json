@@ -45,7 +45,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-gray-500"
+              "className": "text-[var(--theme-muted-foreground)]"
             },
             "text": "You haven't placed any orders yet."
           }
@@ -74,7 +74,7 @@
               {
                 "type": "TableHeader",
                 "props": {
-                  "className": "bg-gray-100"
+                  "className": "bg-[var(--theme-hero-bg)]"
                 },
                 "children": [
                   {
@@ -140,7 +140,7 @@
                     "map": "orders",
                     "key": "orderRow",
                     "props": {
-                      "className": "hover:bg-gray-50/50"
+                      "className": "hover:bg-[var(--theme-hero-bg)]"
                     },
                     "children": [
                       {
@@ -152,7 +152,7 @@
                           {
                             "type": "Pressable",
                             "props": {
-                              "className": "inline-flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-md text-sm hover:bg-gray-100 transition-colors"
+                              "className": "inline-flex items-center gap-1 px-3 py-1.5 border border-[var(--theme-border)] rounded-md text-sm hover:bg-[var(--theme-hero-bg)] transition-colors"
                             },
                             "actions": {
                               "click": {

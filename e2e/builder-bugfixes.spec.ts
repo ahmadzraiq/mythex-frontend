@@ -99,23 +99,19 @@ test.describe('BB – Builder Bug Fixes', () => {
     }, nodeId);
     await page.waitForSelector('[data-builder-id]', { timeout: 5_000 });
 
-    // Add a second page via the store
-    await page.evaluate(() => {
-      (window as unknown as Record<string, { getState: () => { addPage: (r: string, n: string) => void } }>).__builderStore.getState().addPage('/page2', 'Page 2');
+    // Capture the source page ID BEFORE addPage switches currentPageId
+    const srcPageId = await page.evaluate(() => {
+      return (window as unknown as Record<string, { getState: () => { currentPageId: string } }>).__builderStore.getState().currentPageId;
+    });
+
+    // Add a second page via the store (also saves current pageNodes to srcPage.nodes)
+    const dstPageId = await page.evaluate(() => {
+      const store = (window as unknown as Record<string, { getState: () => { addPage: (r: string, n: string) => void; pages: Array<{ id: string; name: string }> } }>).__builderStore;
+      store.getState().addPage('/page2', 'Page 2');
+      // Read fresh state after addPage
+      return store.getState().pages.find(p => p.name === 'Page 2')?.id ?? '';
     });
     await page.waitForTimeout(300);
-
-    // Get the page IDs
-    const { srcPageId, dstPageId } = await page.evaluate((id) => {
-      const s = (window as unknown as Record<string, { getState: () => {
-        pages: Array<{ id: string; name: string }>;
-        currentPageId: string;
-        pageNodes: Array<{ id: string }>;
-      } }>).__builderStore.getState();
-      const src = s.currentPageId;
-      const dst = s.pages.find(p => p.name === 'Page 2')?.id ?? '';
-      return { srcPageId: src, dstPageId: dst };
-    }, nodeId);
 
     // Simulate cross-page move using the store action directly
     await page.evaluate(({ nodeId: nid, srcPageId: src, dstPageId: dst }) => {
@@ -131,19 +127,24 @@ test.describe('BB – Builder Bug Fixes', () => {
     }, { nodeId, srcPageId, dstPageId });
     await page.waitForTimeout(300);
 
-    // Verify the node is now in the destination page's nodes
-    const foundInDest = await page.evaluate(({ dstPageId: dst, nodeId: nid }) => {
+    // Verify the node is now in the destination page's nodes.
+    // moveNodeFromPage inserts into pageNodes (live working copy). pages[dst].nodes
+    // is only saved when switching away, so check pageNodes when currentPageId === dst.
+    const diagResult = await page.evaluate(({ dstPageId: dst, nodeId: nid }) => {
       const s = (window as unknown as Record<string, { getState: () => {
         pages: Array<{ id: string; nodes: Array<{ id: string }> }>;
+        currentPageId: string;
+        pageNodes: Array<{ id: string }>;
       } }>).__builderStore.getState();
-      const dstPage = s.pages.find(p => p.id === dst);
-      const nodes = dstPage?.nodes ?? [];
+      const nodes = s.currentPageId === dst
+        ? s.pageNodes
+        : (s.pages.find(p => p.id === dst)?.nodes ?? []);
       function hasNode(arr: Array<{ id: string; children?: Array<{ id: string }> }>): boolean {
         return arr.some(n => n.id === nid || (n.children ? hasNode(n.children as Array<{ id: string; children?: Array<{ id: string }> }>) : false));
       }
       return hasNode(nodes as Array<{ id: string; children?: Array<{ id: string }> }>);
     }, { dstPageId, nodeId });
-    expect(foundInDest).toBe(true);
+    expect(diagResult).toBe(true);
   });
 
   // ── BB-03: Zoom speed ─────────────────────────────────────────────────────
@@ -152,9 +153,9 @@ test.describe('BB – Builder Bug Fixes', () => {
       return (window as unknown as Record<string, { getState: () => { zoom: number } }>).__builderStore.getState().zoom;
     });
 
-    // Fire a wheel event on the canvas to zoom out
-    const canvas = page.locator('[data-builder-canvas]').first();
-    await canvas.dispatchEvent('wheel', { deltaY: 100, ctrlKey: false, bubbles: true });
+    // Fire a wheel event on the canvas to zoom out (ctrlKey required to trigger zoom)
+    const canvas = page.getByTestId('builder-canvas');
+    await canvas.dispatchEvent('wheel', { deltaY: 100, ctrlKey: true, bubbles: true });
     await page.waitForTimeout(200);
 
     const zoomAfter = await page.evaluate(() => {

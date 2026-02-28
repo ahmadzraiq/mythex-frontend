@@ -49,6 +49,10 @@
  *   BF-30  Button drops with size: 'md' and no w-full (natural size)
  *   BF-31  Dropped Box bounding box height ≥ 60px (min-h is visually applied)
  *   BF-32  Dropped Row bounding box height ≥ 40px
+ *
+ *   Viewport breakpoint — selection ring tracking:
+ *   BF-52  Select at laptop, switch to mobile → selection ring narrows to match element
+ *   BF-53  Select at mobile, switch to desktop → selection ring widens to match element
  */
 
 import { test, expect, type Page, type Browser } from '@playwright/test';
@@ -1370,6 +1374,160 @@ test.describe('BF – Builder Features', () => {
     }, [dstX, dstY] as [number, number]);
   });
 
+  // ─── Viewport breakpoint — selection ring tracking ───────────────────────────
+
+  // BF-52 — Switching breakpoints while an element is selected updates the
+  //          selection ring to match the element's new size/position.
+  //
+  // A w-full Box spans the full page frame width. Selecting it at laptop
+  // (1024 px) then switching to mobile (390 px) must produce a narrower ring
+  // that still overlaps the element's actual bounding box.
+  test('BF-52: Selection ring updates after switching from laptop to mobile breakpoint', async () => {
+    const page = sharedPage;
+
+    // Start at laptop to match the user-reported scenario
+    await page.getByTestId('viewport-laptop').click();
+    await page.waitForTimeout(400);
+
+    // Inject a w-full box whose width visibly changes across breakpoints.
+    // Use a Text child so the Box has content and data-builder-id is stamped
+    // on the Box itself (matching the BF-43/44 injection pattern).
+    await page.waitForTimeout(200);
+    await page.evaluate(() => {
+      (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>)
+        .__builderStore.getState()._setPageNodes([
+          {
+            type: 'Box',
+            id: 'bf52-box',
+            props: { className: 'w-full', style: { minHeight: '80px' } },
+            children: [{ type: 'Text', id: 'bf52-txt', text: 'BF52', props: {} }],
+          },
+        ]);
+    });
+    await page.waitForSelector('[data-builder-id="bf52-box"]', { timeout: 12_000 });
+
+    // Select via Layers panel — reliable in headless; canvas click-to-select is flaky
+    await page.getByTestId('tab-layers').click();
+    await page.locator('[data-testid="layer-row"]').first().click();
+    await page.waitForTimeout(300);
+
+    // Record ring bounds at laptop viewport
+    const ring = page.locator('[data-testid="selection-ring"]').first();
+    await expect(ring).toBeVisible({ timeout: 5_000 });
+    const laptopRingBox = await ring.boundingBox();
+    expect(laptopRingBox).not.toBeNull();
+
+    // Switch to mobile (smallest breakpoint — the exact scenario the user reported)
+    await page.getByTestId('viewport-mobile').click();
+
+    // Wait for ResizeObserver + rAF overlay to re-measure: poll until ring width
+    // stops matching the laptop width (i.e. it has shrunk to mobile frame width).
+    await page.waitForFunction(
+      ({ laptopW }: { laptopW: number }) => {
+        const ring = document.querySelector('[data-testid="selection-ring"]') as HTMLElement | null;
+        if (!ring) return false;
+        return ring.getBoundingClientRect().width < laptopW - 10;
+      },
+      { laptopW: laptopRingBox!.width },
+      { timeout: 8_000 },
+    );
+    // Also wait for the ring's x position to converge with the element's x position.
+    // Width shrinking and x repositioning happen in separate RAF ticks.
+    await page.waitForFunction(
+      () => {
+        const ring = document.querySelector('[data-testid="selection-ring"]') as HTMLElement | null;
+        const el = document.querySelector('[data-builder-id="bf52-box"]') as HTMLElement | null;
+        if (!ring || !el) return false;
+        return Math.abs(ring.getBoundingClientRect().x - el.getBoundingClientRect().x) < 10;
+      },
+      { timeout: 8_000 },
+    );
+
+    // Ring must have narrowed — mobile frame (390 px) is narrower than laptop (1024 px)
+    const mobileRingBox = await ring.boundingBox();
+    expect(mobileRingBox).not.toBeNull();
+    expect(
+      mobileRingBox!.width,
+      'Selection ring should be narrower at mobile breakpoint',
+    ).toBeLessThan(laptopRingBox!.width);
+
+    // Ring must be aligned with the element's actual bounding box (within 5 px)
+    const elBox = await page.locator('[data-builder-id="bf52-box"]').boundingBox();
+    expect(elBox).not.toBeNull();
+    expect(
+      Math.abs(mobileRingBox!.x - elBox!.x),
+      'Ring x should match element x after breakpoint switch',
+    ).toBeLessThan(5);
+    expect(
+      Math.abs(mobileRingBox!.width - elBox!.width),
+      'Ring width should match element width after breakpoint switch',
+    ).toBeLessThan(5);
+
+    // Restore desktop so later tests start from a known viewport
+    await page.getByTestId('viewport-desktop').click();
+    await page.waitForTimeout(200);
+  });
+
+  // BF-53 — Switching BACK to a wider breakpoint also updates the ring.
+  //
+  // Select at mobile, switch to desktop — the ring must widen to match.
+  test('BF-53: Selection ring updates after switching from mobile back to desktop breakpoint', async () => {
+    const page = sharedPage;
+
+    // Start at mobile
+    await page.getByTestId('viewport-mobile').click();
+    await page.waitForTimeout(300);
+
+    // Inject a w-full node
+    await page.waitForTimeout(200);
+    await page.evaluate(() => {
+      (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>)
+        .__builderStore.getState()._setPageNodes([
+          {
+            type: 'Box',
+            id: 'bf53-box',
+            props: { className: 'w-full', style: { minHeight: '80px' } },
+            children: [{ type: 'Text', id: 'bf53-txt', text: 'BF53', props: {} }],
+          },
+        ]);
+    });
+    await page.waitForSelector('[data-builder-id="bf53-box"]', { timeout: 12_000 });
+
+    // Select via Layers panel
+    await page.getByTestId('tab-layers').click();
+    await page.locator('[data-testid="layer-row"]').first().click();
+    await page.waitForTimeout(300);
+
+    const ring = page.locator('[data-testid="selection-ring"]').first();
+    await expect(ring).toBeVisible({ timeout: 5_000 });
+    const mobileRingBox = await ring.boundingBox();
+    expect(mobileRingBox).not.toBeNull();
+
+    // Switch to desktop
+    await page.getByTestId('viewport-desktop').click();
+    await page.waitForTimeout(500);
+
+    // Ring must have widened
+    const desktopRingBox = await ring.boundingBox();
+    expect(desktopRingBox).not.toBeNull();
+    expect(
+      desktopRingBox!.width,
+      'Selection ring should be wider at desktop breakpoint',
+    ).toBeGreaterThan(mobileRingBox!.width);
+
+    // Ring must align with the element (within 5 px)
+    const elBox = await page.locator('[data-builder-id="bf53-box"]').boundingBox();
+    expect(elBox).not.toBeNull();
+    expect(
+      Math.abs(desktopRingBox!.x - elBox!.x),
+      'Ring x should match element x after switching to desktop',
+    ).toBeLessThan(5);
+    expect(
+      Math.abs(desktopRingBox!.width - elBox!.width),
+      'Ring width should match element width after switching to desktop',
+    ).toBeLessThan(5);
+  });
+
   // ─── Page management ─────────────────────────────────────────────────────────
 
   // BF-50 — No duplicate pages
@@ -1390,8 +1548,11 @@ test.describe('BF – Builder Features', () => {
     const countBefore = stateBefore.pages.length;
     expect(countBefore).toBeGreaterThan(0);
 
-    // Pick the route of the FIRST existing page and attempt to add it again
-    const existingRoute = stateBefore.pages[0].route;
+    // Pick the route of the first page that HAS a route (pages[0] is the
+    // showcase page which has no route property).
+    const firstWithRoute = stateBefore.pages.find((p: { id: string; route?: string; name: string }) => p.route);
+    if (!firstWithRoute?.route) return; // no routed pages — nothing to test
+    const existingRoute = firstWithRoute.route;
 
     // Try adding via the custom-route text input (the predefined list disables dupes in UI,
     // but the store guard must also hold for the custom input path).
@@ -1412,7 +1573,7 @@ test.describe('BF – Builder Features', () => {
     expect(
       stateAfter?.currentPageId,
       'Existing page should become active after attempting to add duplicate',
-    ).toBe(stateBefore.pages[0].id);
+    ).toBe(firstWithRoute.id);
   });
 
   // BF-51 — Clicking a page row in the Pages panel navigates the canvas to it

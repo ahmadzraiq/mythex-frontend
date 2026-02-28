@@ -1,7 +1,7 @@
 {
-  "type": "VStack",
+  "type": "Box",
   "props": {
-    "className": "space-y-6"
+    "className": "space-y-6 flex flex-col"
   },
   "children": [
     {
@@ -52,7 +52,7 @@
       },
       "props": {
         "html": "{{product.description}}",
-        "className": "prose prose-sm max-w-none text-gray-600"
+        "className": "prose prose-sm max-w-none text-[var(--theme-muted-foreground)]"
       }
     },
     {
@@ -121,7 +121,7 @@
                         ]
                       },
                       "props": {
-                        "className": "flex items-center justify-center rounded-md border-2 border-[#1e293b] bg-[#1e293b]/5 px-4 py-3 transition-colors"
+                        "className": "flex items-center justify-center rounded-md border-2 border-[var(--theme-shop-button)] bg-[var(--theme-shop-button)]/5 px-4 py-3 transition-colors"
                       },
                       "actions": {
                         "click": {
@@ -155,7 +155,7 @@
                         ]
                       },
                       "props": {
-                        "className": "flex items-center justify-center rounded-md border-2 border-gray-200 bg-gray-50 px-4 py-3 hover:bg-gray-100 transition-colors"
+                        "className": "flex items-center justify-center rounded-md border-2 border-[var(--theme-border)] bg-[var(--theme-hero-bg)] px-4 py-3 hover:bg-[var(--theme-content-bg)] transition-colors"
                       },
                       "actions": {
                         "click": {
@@ -222,7 +222,7 @@
       },
       "children": [
         {
-          "type": "Button",
+          "type": "Pressable",
           "condition": {
             "and": [
               {
@@ -239,14 +239,13 @@
             ]
           },
           "props": {
-            "size": "lg",
-            "className": "w-full !bg-[#1e293b] hover:!bg-[#334155] !text-white"
+            "className": "w-full !bg-[var(--theme-shop-button)] hover:!bg-[var(--theme-shop-buttonHover)] !text-white flex flex-row items-center justify-center py-3 rounded-md"
           },
           "children": [
             {
-              "type": "ButtonText",
+              "type": "Text",
               "props": {
-                "className": "!text-white"
+                "className": "text-white"
               },
               "text": "Add to Cart"
             }
@@ -258,7 +257,7 @@
           }
         },
         {
-          "type": "Button",
+          "type": "Pressable",
           "condition": {
             "or": [
               {
@@ -279,15 +278,14 @@
             ]
           },
           "props": {
-            "size": "lg",
-            "className": "w-full !bg-gray-300 !text-gray-500 cursor-not-allowed",
+            "className": "w-full !bg-[var(--theme-border)] !text-[var(--theme-muted-foreground)] cursor-not-allowed flex flex-row items-center justify-center py-3 rounded-md",
             "disabled": true
           },
           "children": [
             {
-              "type": "ButtonText",
+              "type": "Text",
               "props": {
-                "className": "!text-gray-500"
+                "className": "text-[var(--theme-muted-foreground)]"
               },
               "text": {
                 "expr": {
@@ -325,7 +323,7 @@
         {
           "type": "Text",
           "props": {
-            "className": "text-xs text-gray-500"
+            "className": "text-xs text-[var(--theme-muted-foreground)]"
           },
           "text": {
             "expr": {

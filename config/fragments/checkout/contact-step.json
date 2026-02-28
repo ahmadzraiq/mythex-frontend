@@ -1,7 +1,7 @@
 {
   "type": "Box",
   "props": {
-    "className": "border rounded-lg px-6"
+    "className": "border rounded-lg px-6 bg-[var(--theme-content-bg)]"
   },
   "condition": {
     "==": [
@@ -97,7 +97,7 @@
                 {
                   "type": "Text",
                   "props": {
-                    "className": "font-semibold text-sm !text-gray-500"
+                    "className": "font-semibold text-sm !text-[var(--theme-muted-foreground)]"
                   },
                   "text": "1",
                   "condition": {
@@ -152,7 +152,7 @@
               "props": {
                 "icon": "ChevronUp",
                 "size": 16,
-                "className": "!text-gray-500"
+                "className": "!text-[var(--theme-muted-foreground)]"
               },
               "condition": {
                 "==": [
@@ -168,7 +168,7 @@
               "props": {
                 "icon": "ChevronDown",
                 "size": 16,
-                "className": "!text-gray-500"
+                "className": "!text-[var(--theme-muted-foreground)]"
               },
               "condition": {
                 "!=": [
@@ -198,9 +198,9 @@
       },
       "children": [
         {
-          "type": "VStack",
+          "type": "Box",
           "props": {
-            "className": "space-y-4"
+            "className": "space-y-4 flex flex-col"
           },
           "children": [
             {
@@ -212,7 +212,7 @@
                 {
                   "type": "Text",
                   "props": {
-                    "className": "text-gray-600"
+                    "className": "text-[var(--theme-muted-foreground)]"
                   },
                   "text": "Already have an account? "
                 },
@@ -445,15 +445,15 @@
               ]
             },
             {
-              "type": "Button",
+              "type": "Pressable",
               "props": {
-                "className": "bg-[#1e293b] text-white hover:bg-[#334155]"
+                "className": "bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
               },
               "children": [
                 {
-                  "type": "ButtonText",
+                  "type": "Text",
                   "props": {
-                    "className": "!text-white"
+                    "className": "text-white"
                   },
                   "text": "Continue"
                 }

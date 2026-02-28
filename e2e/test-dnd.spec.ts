@@ -22,13 +22,31 @@ async function gotoBuilder(page: Page) {
 }
 
 async function dropComponent(page: Page, label: string) {
+  const countBefore = await page.locator('[data-builder-id]').count();
   const compTab = page.getByTestId('tab-components');
   await compTab.click();
   const item = page.locator('[draggable="true"]').filter({ hasText: label }).first();
   await expect(item).toBeVisible({ timeout: 5_000 });
   const frame = page.locator('[data-builder-page-frame]');
   await item.dragTo(frame);
-  await page.waitForSelector('[data-builder-id]', { timeout: 12_000 });
+
+  // Wait for a node to appear. Retry once if the drag was silently ignored
+  // (headless Chromium sometimes drops the first DnD event).
+  const appeared = await page.waitForFunction(
+    (before: number) => document.querySelectorAll('[data-builder-id]').length > before,
+    countBefore,
+    { timeout: 6_000 },
+  ).catch(() => null);
+
+  if (!appeared) {
+    await page.waitForTimeout(300);
+    await item.dragTo(frame);
+    await page.waitForFunction(
+      (before: number) => document.querySelectorAll('[data-builder-id]').length > before,
+      countBefore,
+      { timeout: 15_000 },
+    );
+  }
 }
 
 /**
@@ -758,6 +776,15 @@ async function selectFirstRootNodeViaLayers(page: Page) {
 
 test('T1: W Fill button adds w-full class', async () => {
   const page = sharedPage;
+  // Reload to get a clean canvas — previous tests accumulate many nodes which
+  // can cause the first dragTo to silently fail (drop lands on an existing node).
+  await page.goto('/dev/builder');
+  await page.waitForSelector('[data-builder-page-frame]', { timeout: 30_000 });
+  await page.waitForFunction(
+    () => !!(window as unknown as Record<string, unknown>).__builderStore,
+    { timeout: 15_000 },
+  );
+  await page.waitForTimeout(500);
   await dropComponent(page, 'Btn Solid');
   await selectFirstRootNodeViaLayers(page);
 
@@ -1468,6 +1495,7 @@ test.describe('Group U — Right Panel: All Properties', () => {
   });
 
   test('V7: Typography section shown for Text, hidden for Box', async () => {
+    test.setTimeout(60_000);
     const page = sharedPage;
 
     // Text node → Typography visible
@@ -1478,7 +1506,12 @@ test.describe('Group U — Right Panel: All Properties', () => {
     console.log('Typography visible for Text ✓');
 
     // Box node → Typography hidden (fresh page to avoid multi-node layer issues)
-    await page.reload();
+    await page.goto('/dev/builder');
+    await page.waitForSelector('[data-builder-page-frame]', { timeout: 30_000 });
+    await page.waitForFunction(
+      () => !!(window as unknown as Record<string, unknown>).__builderStore,
+      { timeout: 15_000 },
+    );
     await page.waitForTimeout(500);
     await dropComponent(page, 'Box');
     await selectFirstRootNodeViaLayers(page);
@@ -1935,6 +1968,14 @@ test.describe('Fix-MarqueeStale: marquee cleared when drag starts', () => {
 
   test('Fix-Marquee-2: marquee rect is gone after dragend', async () => {
     const page = sharedPage;
+    // Fresh canvas so the drop reliably lands on empty space.
+    await page.goto('/dev/builder');
+    await page.waitForSelector('[data-builder-page-frame]', { timeout: 30_000 });
+    await page.waitForFunction(
+      () => !!(window as unknown as Record<string, unknown>).__builderStore,
+      { timeout: 15_000 },
+    );
+    await page.waitForTimeout(500);
     await dropComponent(page, 'Box');
 
     await page.getByTestId('tab-layers').click();

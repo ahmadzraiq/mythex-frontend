@@ -150,6 +150,25 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      {/* Auto-reload guard: catches the dev-mode race condition where webpack writes
+          a new chunk to disk while the browser reads it, producing a partial file
+          that causes SyntaxError: Invalid or unexpected token. Only active in dev. */}
+      {process.env.NODE_ENV === 'development' && (
+        <head>
+          <script dangerouslySetInnerHTML={{ __html: `
+            (function() {
+              var reloading = false;
+              window.addEventListener('error', function(e) {
+                if (reloading) return;
+                if (e.error instanceof SyntaxError || (e.message && (e.message.indexOf('Unexpected token') !== -1 || e.message.indexOf('Invalid or unexpected') !== -1))) {
+                  reloading = true;
+                  setTimeout(function() { location.reload(); }, 300);
+                }
+              }, true);
+            })();
+          ` }} />
+        </head>
+      )}
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${plusJakartaSans.variable} ${roboto.variable} ${robotoMono.variable} ${spaceGrotesk.variable} ${rajdhani.variable} ${oxanium.variable} ${rubik.variable} ${exo2.variable} ${ibmPlexSans.variable} ${notoSans.variable} ${lato.variable} ${poppins.variable} ${montserrat.variable} ${playfairDisplay.variable} ${dmSans.variable} ${nunito.variable} antialiased`}
         style={{ flex: 1 }}

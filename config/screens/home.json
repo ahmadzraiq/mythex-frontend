@@ -21,7 +21,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full relative bg-slate-100 dark:bg-slate-900 overflow-hidden"
+          "className": "w-full relative bg-[var(--theme-hero-bg)] overflow-hidden"
         },
         "children": [
           {
@@ -39,14 +39,14 @@
                   {
                     "type": "Heading",
                     "props": {
-                      "className": "text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-center text-slate-900 dark:text-slate-50"
+                      "className": "text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-center text-[var(--theme-foreground)]"
                     },
                     "text": "E-Commerce Starter Template"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-xl md:text-2xl text-slate-500 dark:text-slate-400 max-w-2xl text-center"
+                      "className": "text-xl md:text-2xl text-[var(--theme-muted-foreground)] max-w-2xl text-center"
                     },
                     "text": "Powered by Vendure and Next.js"
                   },
@@ -59,7 +59,7 @@
                       {
                         "type": "Pressable",
                         "props": {
-                          "className": "inline-flex items-center justify-center min-w-[200px] h-11 px-8 rounded-lg bg-slate-900 dark:bg-slate-50 hover:bg-slate-800 dark:hover:bg-slate-200"
+                          "className": "inline-flex items-center justify-center min-w-[200px] h-11 px-8 rounded-lg bg-[var(--theme-shop-button)] hover:bg-[var(--theme-shop-buttonHover)]"
                         },
                         "actions": {
                           "click": {
@@ -73,7 +73,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-slate-50 dark:text-slate-900 text-base font-semibold"
+                              "className": "text-[var(--theme-shop-buttonText)] text-base font-semibold"
                             },
                             "text": "Shop Now"
                           }
@@ -82,7 +82,7 @@
                       {
                         "type": "Pressable",
                         "props": {
-                          "className": "inline-flex flex-row items-center justify-center gap-2 min-w-[200px] h-11 px-8 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800"
+                          "className": "inline-flex flex-row items-center justify-center gap-2 min-w-[200px] h-11 px-8 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-content-bg)] hover:bg-[var(--theme-hero-bg)]"
                         },
                         "actions": {
                           "click": {
@@ -96,7 +96,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-slate-900 dark:text-slate-50 text-base font-semibold"
+                              "className": "text-[var(--theme-foreground)] text-base font-semibold"
                             },
                             "text": "View on GitHub"
                           }
@@ -125,7 +125,7 @@
               {
                 "type": "Heading",
                 "props": {
-                  "className": "text-3xl md:text-4xl font-bold mb-8 text-slate-900 dark:text-slate-50"
+                  "className": "text-3xl md:text-4xl font-bold mb-8 text-[var(--theme-foreground)]"
                 },
                 "text": "Featured Products"
               },
@@ -147,7 +147,7 @@
                       {
                         "type": "Pressable",
                         "props": {
-                          "className": "group w-full text-left bg-white dark:bg-slate-800 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow duration-150"
+                          "className": "group w-full text-left bg-[var(--theme-content-bg)] rounded-lg overflow-hidden border border-[var(--theme-border)] hover:shadow-lg transition-shadow duration-150"
                         },
                         "actions": {
                           "click": {
@@ -164,7 +164,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "aspect-square relative overflow-hidden bg-slate-100 dark:bg-slate-700"
+                              "className": "aspect-square relative overflow-hidden bg-[var(--theme-hero-bg)]"
                             },
                             "children": [
                               {
@@ -199,7 +199,7 @@
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "className": "text-slate-400 dark:text-slate-500 text-sm"
+                                      "className": "text-[var(--theme-muted-foreground)] text-sm"
                                     },
                                     "text": "No image"
                                   }
@@ -217,14 +217,14 @@
                                 "type": "Heading",
                                 "props": {
                                   "size": "sm",
-                                  "className": "font-medium text-slate-900 dark:text-slate-100 line-clamp-2 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors"
+                                  "className": "font-medium text-[var(--theme-foreground)] line-clamp-2 hover:opacity-70 transition-opacity"
                                 },
                                 "text": "{{$item.productName}}"
                               },
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-lg font-bold text-slate-900 dark:text-slate-100"
+                                  "className": "text-lg font-bold text-[var(--theme-foreground)]"
                                 },
                                 "text": {
                                   "expr": {
@@ -281,7 +281,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full py-16 bg-slate-50 dark:bg-slate-900/50"
+          "className": "w-full py-16 bg-[var(--theme-hero-bg)]"
         },
         "children": [
           {
@@ -305,7 +305,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-12 h-12 mx-auto bg-slate-900/10 dark:bg-slate-100/10 rounded-full flex items-center justify-center"
+                          "className": "w-12 h-12 mx-auto bg-[#7c3aed]/10 rounded-full flex items-center justify-center"
                         },
                         "children": [
                           {
@@ -313,7 +313,7 @@
                             "props": {
                               "icon": "Check",
                               "size": "sm",
-                              "className": "text-slate-900 dark:text-slate-100"
+                              "className": "text-[var(--theme-foreground)]"
                             }
                           }
                         ]
@@ -321,14 +321,14 @@
                       {
                         "type": "Heading",
                         "props": {
-                          "className": "text-xl font-semibold text-slate-900 dark:text-slate-100 text-center"
+                          "className": "text-xl font-semibold text-[var(--theme-foreground)] text-center"
                         },
                         "text": "High Quality"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-slate-500 dark:text-slate-400 text-center"
+                          "className": "text-[var(--theme-muted-foreground)] text-center"
                         },
                         "text": "Premium products carefully selected for you"
                       }
@@ -343,7 +343,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-12 h-12 mx-auto bg-slate-900/10 dark:bg-slate-100/10 rounded-full flex items-center justify-center"
+                          "className": "w-12 h-12 mx-auto bg-[#7c3aed]/10 rounded-full flex items-center justify-center"
                         },
                         "children": [
                           {
@@ -351,7 +351,7 @@
                             "props": {
                               "icon": "CircleDollarSign",
                               "size": "sm",
-                              "className": "text-slate-900 dark:text-slate-100"
+                              "className": "text-[var(--theme-foreground)]"
                             }
                           }
                         ]
@@ -359,14 +359,14 @@
                       {
                         "type": "Heading",
                         "props": {
-                          "className": "text-xl font-semibold text-slate-900 dark:text-slate-100 text-center"
+                          "className": "text-xl font-semibold text-[var(--theme-foreground)] text-center"
                         },
                         "text": "Best Prices"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-slate-500 dark:text-slate-400 text-center"
+                          "className": "text-[var(--theme-muted-foreground)] text-center"
                         },
                         "text": "Competitive pricing on all our products"
                       }
@@ -381,7 +381,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-12 h-12 mx-auto bg-slate-900/10 dark:bg-slate-100/10 rounded-full flex items-center justify-center"
+                          "className": "w-12 h-12 mx-auto bg-[#7c3aed]/10 rounded-full flex items-center justify-center"
                         },
                         "children": [
                           {
@@ -389,7 +389,7 @@
                             "props": {
                               "icon": "Zap",
                               "size": "sm",
-                              "className": "text-slate-900 dark:text-slate-100"
+                              "className": "text-[var(--theme-foreground)]"
                             }
                           }
                         ]
@@ -397,14 +397,14 @@
                       {
                         "type": "Heading",
                         "props": {
-                          "className": "text-xl font-semibold text-slate-900 dark:text-slate-100 text-center"
+                          "className": "text-xl font-semibold text-[var(--theme-foreground)] text-center"
                         },
                         "text": "Fast Delivery"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-slate-500 dark:text-slate-400 text-center"
+                          "className": "text-[var(--theme-muted-foreground)] text-center"
                         },
                         "text": "Quick and reliable shipping worldwide"
                       }

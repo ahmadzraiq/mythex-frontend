@@ -506,7 +506,9 @@ test.describe('PD — Skeleton', () => {
   });
 
   test('PD-15: Select SkeletonText child → Typography section IS shown', async () => {
-    await injectNodes(sharedPage, [DISPLAY_NODES['Skeleton'] as unknown as object]);
+    // Inject SkeletonText at root so it renders in DOM (Skeleton with isLoaded=false
+    // swallows children and renders only a shimmer div, so we can't wait for the child).
+    await injectNodes(sharedPage, [{ id: 'test-skeleton-text', type: 'SkeletonText', props: { _lines: 3, className: 'w-full' } }]);
     await sharedPage.waitForSelector('[data-builder-id="test-skeleton-text"]', { timeout: 5_000 });
 
     await sharedPage.evaluate(() => {

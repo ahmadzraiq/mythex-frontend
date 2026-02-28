@@ -8,7 +8,7 @@
  * document.documentElement and stored in the builder Zustand store.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import themeConfig from '@/config/theme.json';
 import { useBuilderStore } from './_store';
 import { FigmaColorPicker } from './_color-picker';
@@ -83,12 +83,18 @@ function ColorRow({
   label,
   cssVar,
   defaultHex,
+  themeDefaultHex,
   mode,
+  openColorPickerCssVar,
+  onOpenColorPickerChange,
 }: {
   label: string;
   cssVar: string;
   defaultHex: string;
+  themeDefaultHex: string;
   mode: 'light' | 'dark';
+  openColorPickerCssVar: string | null;
+  onOpenColorPickerChange: (cssVar: string | null) => void;
 }) {
   const patchTheme = useBuilderStore(s => s.patchTheme);
   const themeOverrides = useBuilderStore(s => s.themeOverrides);
@@ -96,6 +102,7 @@ function ColorRow({
 
   const overrides = mode === 'dark' ? themeDarkOverrides : themeOverrides;
   const currentHex = overrides[cssVar] ?? defaultHex;
+  const isOpen = openColorPickerCssVar === cssVar;
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, alignItems: 'center', marginBottom: 6 }}>
@@ -103,6 +110,10 @@ function ColorRow({
       <FigmaColorPicker
         value={currentHex}
         onChange={hex => patchTheme(cssVar, hex, mode)}
+        editingCssVar={cssVar}
+        editingDefaultHex={themeDefaultHex}
+        open={isOpen}
+        onOpenChange={open => onOpenColorPickerChange(open ? cssVar : null)}
       />
     </div>
   );
@@ -358,8 +369,15 @@ export function ThemePanel() {
   const [colorMode, setColorMode] = useState<'light' | 'dark'>('light');
   const [openSection, setOpenSection] = useState<string | null>('presets');
   const [activePreset, setActivePreset] = useState<string | null>(null);
+  /** Only one theme color picker open at a time — prevents wrong variable being patched when multiple popovers overlap */
+  const [openColorPickerCssVar, setOpenColorPickerCssVar] = useState<string | null>(null);
 
   const toggle = (key: string) => setOpenSection(v => (v === key ? null : key));
+
+  // Close color picker when collapsing Colors section
+  useEffect(() => {
+    if (openSection !== 'colors') setOpenColorPickerCssVar(null);
+  }, [openSection]);
 
   const currentRadius = themeOverrides['radius'] ?? LIGHT['--radius'] ?? '0.625rem';
 
@@ -496,15 +514,18 @@ export function ThemePanel() {
                 ? LIGHT[`--${cssVar}`]
                 : DARK[`--${cssVar}`];
               // Light defaults are stored as "#hex"; DARK too in theme.json
-              const defaultHex = rawDefault ?? '#ffffff';
+              const themeDefaultHex = rawDefault ?? '#ffffff';
               const overrides = colorMode === 'light' ? themeOverrides : themeDarkOverrides;
               return (
                 <ColorRow
                   key={`${colorMode}-${cssVar}`}
                   label={label}
                   cssVar={cssVar}
-                  defaultHex={overrides[cssVar] ?? defaultHex}
+                  defaultHex={overrides[cssVar] ?? themeDefaultHex}
+                  themeDefaultHex={themeDefaultHex}
                   mode={colorMode}
+                  openColorPickerCssVar={openColorPickerCssVar}
+                  onOpenColorPickerChange={setOpenColorPickerCssVar}
                 />
               );
             })}

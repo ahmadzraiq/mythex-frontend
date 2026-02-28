@@ -900,8 +900,12 @@ function DraggablePrimitive({ primitive }: { primitive: { type: string; label: s
     <div
       draggable
       onDragStart={e => {
-        e.dataTransfer.setData('text/primitive-node', JSON.stringify(primitive.defaultNode));
+        const data = JSON.stringify(primitive.defaultNode);
+        e.dataTransfer.setData('text/primitive-node', data);
         e.dataTransfer.effectAllowed = 'copy';
+        // Fallback for CDP-simulated drags (e.g. Playwright headless) where
+        // subsequent dragover/drop events may receive an empty dataTransfer.
+        (window as unknown as Record<string, unknown>).__primitiveDrag = data;
       }}
       style={{
         display: 'flex',

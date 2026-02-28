@@ -30,7 +30,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-gray-500"
+              "className": "text-[var(--theme-muted-foreground)]"
             },
             "text": "Please wait while we verify your email address."
           },
@@ -43,7 +43,7 @@
               {
                 "type": "Spinner",
                 "props": {
-                  "className": "h-8 w-8 text-[#1e293b]"
+                  "className": "h-8 w-8 text-[#7c3aed]"
                 }
               }
             ]

@@ -56,20 +56,20 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-gray-500 mb-8"
+              "className": "text-[var(--theme-muted-foreground)] mb-8"
             },
             "text": "Add some items to your cart to get started"
           },
           {
-            "type": "Button",
+            "type": "Pressable",
             "props": {
-              "className": "!bg-[#1e293b] hover:!bg-[#334155] px-6"
+              "className": "!bg-[var(--theme-shop-button)] hover:!bg-[var(--theme-shop-buttonHover)] px-6 flex flex-row items-center justify-center py-3 rounded-md"
             },
             "children": [
               {
-                "type": "ButtonText",
+                "type": "Text",
                 "props": {
-                  "className": "!text-white"
+                  "className": "text-white"
                 },
                 "text": "Continue Shopping"
               }
@@ -109,13 +109,13 @@
               "description": "Cart line items with quantity controls"
             },
             "props": {
-              "className": "lg:col-span-2 space-y-4"
+              "className": "lg:col-span-2 flex flex-col gap-6"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "contents"
+                  "className": "flex flex-col gap-4 w-full"
                 },
                 "map": "cart.lines",
                 "key": "cartLine",
@@ -123,7 +123,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex flex-col sm:flex-row gap-4 p-4 border border-gray-200 rounded-lg !bg-white"
+                      "className": "flex flex-col sm:flex-row gap-4 p-4 border border-[var(--theme-border)] rounded-lg !bg-[var(--theme-content-bg)]"
                     },
                     "children": [
                       {
@@ -187,7 +187,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-sm text-gray-500 mt-1"
+                              "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                             },
                             "text": "{{$item.productVariant.name}}",
                             "condition": {
@@ -204,7 +204,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-sm text-gray-500 mt-1"
+                              "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                             },
                             "text": {
                               "expr": {
@@ -214,21 +214,21 @@
                             }
                           },
                           {
-                            "type": "HStack",
+                            "type": "Box",
                             "props": {
-                              "className": "flex items-center gap-3 mt-4 flex-wrap"
+                              "className": "flex items-center gap-3 mt-4 flex-wrap flex-row"
                             },
                             "children": [
                               {
-                                "type": "HStack",
+                                "type": "Box",
                                 "props": {
-                                  "className": "flex items-center gap-2 border rounded-md"
+                                  "className": "flex items-center gap-2 border rounded-md flex-row"
                                 },
                                 "children": [
                                   {
-                                    "type": "Button",
+                                    "type": "Pressable",
                                     "props": {
-                                      "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-gray-100 rounded-none disabled:opacity-50"
+                                      "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-[var(--theme-hero-bg)] rounded-none disabled:opacity-50 flex-row"
                                     },
                                     "condition": {
                                       ">": [
@@ -243,9 +243,9 @@
                                     },
                                     "children": [
                                       {
-                                        "type": "ButtonText",
+                                        "type": "Text",
                                         "props": {
-                                          "className": "!text-gray-900"
+                                          "className": "text-[var(--theme-foreground)]"
                                         },
                                         "text": "−"
                                       }
@@ -275,9 +275,9 @@
                                     }
                                   },
                                   {
-                                    "type": "Button",
+                                    "type": "Pressable",
                                     "props": {
-                                      "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-gray-100 rounded-none disabled:opacity-50"
+                                      "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-[var(--theme-hero-bg)] rounded-none disabled:opacity-50 flex-row"
                                     },
                                     "condition": {
                                       "==": [
@@ -292,9 +292,9 @@
                                     },
                                     "children": [
                                       {
-                                        "type": "ButtonText",
+                                        "type": "Text",
                                         "props": {
-                                          "className": "!text-gray-900"
+                                          "className": "text-[var(--theme-foreground)]"
                                         },
                                         "text": "−"
                                       }
@@ -318,15 +318,15 @@
                                     }
                                   },
                                   {
-                                    "type": "Button",
+                                    "type": "Pressable",
                                     "props": {
-                                      "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-gray-100 rounded-none"
+                                      "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-[var(--theme-hero-bg)] rounded-none flex-row"
                                     },
                                     "children": [
                                       {
-                                        "type": "ButtonText",
+                                        "type": "Text",
                                         "props": {
-                                          "className": "!text-gray-900"
+                                          "className": "text-[var(--theme-foreground)]"
                                         },
                                         "text": "+"
                                       }
@@ -356,15 +356,15 @@
                                     }
                                   },
                                   {
-                                    "type": "Button",
+                                    "type": "Pressable",
                                     "props": {
-                                      "className": "h-9 w-9 p-0 flex items-center justify-center !bg-transparent border-0 hover:!bg-red-50 rounded-none"
+                                      "className": "h-9 w-9 p-0 flex items-center justify-center !bg-transparent border-0 hover:!bg-red-50 rounded-none flex-row"
                                     },
                                     "children": [
                                       {
-                                        "type": "ButtonText",
+                                        "type": "Text",
                                         "props": {
-                                          "className": "!text-red-500"
+                                          "className": "text-red-500"
                                         },
                                         "text": "✕"
                                       }
@@ -379,9 +379,9 @@
                                 ]
                               },
                               {
-                                "type": "VStack",
+                                "type": "Box",
                                 "props": {
-                                  "className": "sm:hidden ml-auto gap-0 items-end"
+                                  "className": "sm:hidden ml-auto gap-0 items-end flex flex-col"
                                 },
                                 "children": [
                                   {
@@ -413,7 +413,7 @@
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "className": "text-sm text-gray-500 mt-1"
+                                      "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                                     },
                                     "text": {
                                       "expr": {
@@ -478,7 +478,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-sm text-gray-500 mt-1"
+                              "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                             },
                             "text": {
                               "expr": {
@@ -519,7 +519,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "border rounded-lg p-6 bg-white sticky top-4 h-fit"
+                  "className": "border border-[var(--theme-border)] rounded-lg p-6 bg-[var(--theme-content-bg)] sticky top-4 h-fit"
                 },
                 "children": [
                   {
@@ -530,21 +530,21 @@
                     "text": "Order Summary"
                   },
                   {
-                    "type": "VStack",
+                    "type": "Box",
                     "props": {
-                      "className": "space-y-2 mb-4"
+                      "className": "space-y-2 mb-4 flex flex-col"
                     },
                     "children": [
                       {
-                        "type": "HStack",
+                        "type": "Box",
                         "props": {
-                          "className": "flex justify-between text-sm"
+                          "className": "flex justify-between text-sm flex-row"
                         },
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-gray-500"
+                              "className": "text-[var(--theme-muted-foreground)]"
                             },
                             "text": "Subtotal"
                           },
@@ -593,9 +593,9 @@
                         },
                         "children": [
                           {
-                            "type": "HStack",
+                            "type": "Box",
                             "props": {
-                              "className": "flex justify-between text-sm text-green-600"
+                              "className": "flex justify-between text-sm text-green-600 flex-row"
                             },
                             "children": [
                               {
@@ -630,15 +630,15 @@
                         ]
                       },
                       {
-                        "type": "HStack",
+                        "type": "Box",
                         "props": {
-                          "className": "flex justify-between text-sm"
+                          "className": "flex justify-between text-sm flex-row"
                         },
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-gray-500"
+                              "className": "text-[var(--theme-muted-foreground)]"
                             },
                             "text": "Shipping"
                           },
@@ -689,9 +689,9 @@
                     },
                     "children": [
                       {
-                        "type": "HStack",
+                        "type": "Box",
                         "props": {
-                          "className": "flex justify-between font-bold text-lg"
+                          "className": "flex justify-between font-bold text-lg flex-row"
                         },
                         "children": [
                           {
@@ -726,15 +726,15 @@
                     ]
                   },
                   {
-                    "type": "Button",
+                    "type": "Pressable",
                     "props": {
-                      "className": "w-full !bg-[#1e293b] hover:!bg-[#334155] h-11 text-base font-medium"
+                      "className": "w-full !bg-[var(--theme-shop-button)] hover:!bg-[var(--theme-shop-buttonHover)] h-11 text-base font-medium flex flex-row items-center justify-center rounded-md"
                     },
                     "children": [
                       {
-                        "type": "ButtonText",
+                        "type": "Text",
                         "props": {
-                          "className": "!text-white"
+                          "className": "text-white"
                         },
                         "text": "Proceed to Checkout"
                       }
@@ -749,15 +749,15 @@
                     }
                   },
                   {
-                    "type": "Button",
+                    "type": "Pressable",
                     "props": {
-                      "className": "w-full mt-2 border border-gray-200 !bg-white hover:!bg-gray-100 h-10"
+                      "className": "w-full mt-2 border border-[var(--theme-border)] !bg-[var(--theme-content-bg)] hover:!bg-[var(--theme-hero-bg)] h-10 flex flex-row items-center justify-center rounded-md"
                     },
                     "children": [
                       {
-                        "type": "ButtonText",
+                        "type": "Text",
                         "props": {
-                          "className": "!text-gray-900"
+                          "className": "text-[var(--theme-foreground)]"
                         },
                         "text": "Continue Shopping"
                       }
@@ -776,13 +776,13 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "border rounded-lg p-6 bg-white"
+                  "className": "border border-[var(--theme-border)] rounded-lg p-6 bg-[var(--theme-content-bg)]"
                 },
                 "children": [
                   {
-                    "type": "HStack",
+                    "type": "Box",
                     "props": {
-                      "className": "flex items-center gap-2 mb-2"
+                      "className": "flex items-center gap-2 mb-2 flex-row"
                     },
                     "children": [
                       {
@@ -790,7 +790,7 @@
                         "props": {
                           "icon": "Tag",
                           "size": 20,
-                          "className": "text-gray-500"
+                          "className": "text-[var(--theme-muted-foreground)]"
                         }
                       },
                       {
@@ -805,7 +805,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500 mb-4"
+                      "className": "text-sm text-[var(--theme-muted-foreground)] mb-4"
                     },
                     "text": "Enter your discount code below"
                   },
@@ -835,15 +835,15 @@
                         "key": "code",
                         "children": [
                           {
-                            "type": "HStack",
+                            "type": "Box",
                             "props": {
-                              "className": "flex items-center justify-between p-3 border rounded-md bg-green-50"
+                              "className": "flex items-center justify-between p-3 border rounded-md bg-green-50 flex-row"
                             },
                             "children": [
                               {
-                                "type": "HStack",
+                                "type": "Box",
                                 "props": {
-                                  "className": "flex items-center gap-2"
+                                  "className": "flex items-center gap-2 flex-row"
                                 },
                                 "children": [
                                   {
@@ -864,15 +864,15 @@
                                 ]
                               },
                               {
-                                "type": "Button",
+                                "type": "Pressable",
                                 "props": {
-                                  "className": "h-8 !bg-transparent hover:!bg-red-50"
+                                  "className": "h-8 !bg-transparent hover:!bg-red-50 flex flex-row items-center justify-center px-4 rounded-md"
                                 },
                                 "children": [
                                   {
-                                    "type": "ButtonText",
+                                    "type": "Text",
                                     "props": {
-                                      "className": "!text-red-500"
+                                      "className": "text-red-500"
                                     },
                                     "text": "Remove"
                                   }
@@ -895,9 +895,9 @@
                     ]
                   },
                   {
-                    "type": "HStack",
+                    "type": "Box",
                     "props": {
-                      "className": "flex gap-2"
+                      "className": "flex gap-2 flex-row"
                     },
                     "condition": {
                       "==": [
@@ -916,7 +916,7 @@
                         "props": {
                           "variant": "outline",
                           "size": "sm",
-                          "className": "flex-1 !rounded-md !border-gray-200 !bg-white"
+                          "className": "flex-1 !rounded-md !border-[var(--theme-border)] !bg-[var(--theme-content-bg)]"
                         },
                         "children": [
                           {
@@ -924,7 +924,7 @@
                             "props": {
                               "placeholder": "Enter code",
                               "value": "{{form.couponCode}}",
-                              "className": "!text-gray-900"
+                              "className": "!text-[var(--theme-foreground)]"
                             },
                             "actions": {
                               "change": {
@@ -939,15 +939,15 @@
                         ]
                       },
                       {
-                        "type": "Button",
+                        "type": "Pressable",
                         "props": {
-                          "className": "!bg-[#1e293b] hover:!bg-[#334155] px-4"
+                          "className": "!bg-[var(--theme-shop-button)] hover:!bg-[var(--theme-shop-buttonHover)] px-4 flex flex-row items-center justify-center py-3 rounded-md"
                         },
                         "children": [
                           {
-                            "type": "ButtonText",
+                            "type": "Text",
                             "props": {
-                              "className": "!text-white"
+                              "className": "text-white"
                             },
                             "text": "Apply"
                           }

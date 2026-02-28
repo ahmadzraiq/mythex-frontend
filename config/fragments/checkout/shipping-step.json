@@ -1,7 +1,7 @@
 {
   "type": "Box",
   "props": {
-    "className": "border rounded-lg px-6"
+    "className": "border rounded-lg px-6 bg-[var(--theme-content-bg)]"
   },
   "children": [
     {
@@ -73,7 +73,7 @@
                 {
                   "type": "Text",
                   "props": {
-                    "className": "font-semibold text-sm !text-gray-500"
+                    "className": "font-semibold text-sm !text-[var(--theme-muted-foreground)]"
                   },
                   "text": "2",
                   "condition": {
@@ -120,7 +120,7 @@
               "props": {
                 "icon": "ChevronUp",
                 "size": 16,
-                "className": "!text-gray-500"
+                "className": "!text-[var(--theme-muted-foreground)]"
               },
               "condition": {
                 "==": [
@@ -136,7 +136,7 @@
               "props": {
                 "icon": "ChevronDown",
                 "size": 16,
-                "className": "!text-gray-500"
+                "className": "!text-[var(--theme-muted-foreground)]"
               },
               "condition": {
                 "!=": [
@@ -166,9 +166,9 @@
       },
       "children": [
         {
-          "type": "VStack",
+          "type": "Box",
           "props": {
-            "className": "space-y-4"
+            "className": "space-y-4 flex flex-col"
           },
           "children": [
             {
@@ -505,14 +505,14 @@
                         {
                           "type": "SelectTrigger",
                           "props": {
-                            "className": "w-full !rounded-md !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900 min-h-[40px]"
+                            "className": "w-full !rounded-md !border-[var(--theme-border)] !bg-[var(--theme-content-bg)] min-h-[40px]"
                           },
                           "children": [
                             {
                               "type": "SelectInput",
                               "props": {
                                 "placeholder": "Select country...",
-                                "className": "!text-gray-900 dark:!text-gray-100"
+                                "className": "!text-[var(--theme-foreground)]"
                               }
                             },
                             {
@@ -658,8 +658,8 @@
                               {
                                 "var": "checkout.useSameForBilling"
                               },
-                              "bg-[#1e293b] border-[#1e293b]",
-                              "border-gray-300"
+                              "bg-[var(--theme-shop-button)] border-[var(--theme-shop-button)]",
+                              "border-[var(--theme-border)]"
                             ]
                           }
                         ]
@@ -689,15 +689,15 @@
               ]
             },
             {
-              "type": "Button",
+              "type": "Pressable",
               "props": {
-                "className": "bg-[#1e293b] text-white hover:bg-[#334155]"
+                "className": "bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
               },
               "children": [
                 {
-                  "type": "ButtonText",
+                  "type": "Text",
                   "props": {
-                    "className": "!text-white"
+                    "className": "text-white"
                   },
                   "text": "Continue"
                 }

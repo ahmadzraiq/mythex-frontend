@@ -29,13 +29,13 @@
         {
           "type": "DrawerHeader",
           "props": {
-            "className": "border-b border-gray-200 pb-4"
+            "className": "border-b border-[var(--theme-border)] pb-4"
           },
           "children": [
             {
-              "type": "HStack",
+              "type": "Box",
               "props": {
-                "className": "flex items-center justify-between"
+                "className": "flex items-center justify-between flex-row"
               },
               "children": [
                 {
@@ -48,7 +48,7 @@
                 {
                   "type": "DrawerCloseButton",
                   "props": {
-                    "className": "h-8 w-8 rounded-md border-0 bg-transparent hover:bg-gray-100 flex items-center justify-center"
+                    "className": "h-8 w-8 rounded-md border-0 bg-transparent hover:bg-[var(--theme-hero-bg)] flex items-center justify-center"
                   },
                   "actions": {
                     "click": {
@@ -87,22 +87,22 @@
                   "type": "NavIcon",
                   "props": {
                     "icon": "ShoppingBag",
-                    "className": "h-12 w-12 text-gray-500 mb-4"
+                    "className": "h-12 w-12 text-[var(--theme-muted-foreground)] mb-4"
                   }
                 },
                 {
                   "type": "Text",
                   "props": {
-                    "className": "text-gray-500"
+                    "className": "text-[var(--theme-muted-foreground)]"
                   },
                   "text": "Your cart is empty"
                 }
               ]
             },
             {
-              "type": "VStack",
+              "type": "Box",
               "props": {
-                "className": "space-y-3"
+                "className": "space-y-3 flex flex-col"
               },
               "condition": {
                 ">": [
@@ -119,9 +119,9 @@
               "key": "drawerLine",
               "children": [
                 {
-                  "type": "HStack",
+                  "type": "Box",
                   "props": {
-                    "className": "flex gap-3 items-start"
+                    "className": "flex gap-3 items-start flex-row"
                   },
                   "children": [
                     {
@@ -131,7 +131,7 @@
                         "alt": "{{$item.productVariant.product.name}}",
                         "width": 64,
                         "height": 64,
-                        "className": "rounded-md object-cover w-16 h-16 flex-shrink-0 border border-gray-200"
+                        "className": "rounded-md object-cover w-16 h-16 flex-shrink-0 border border-[var(--theme-border)]"
                       }
                     },
                     {
@@ -150,14 +150,14 @@
                         {
                           "type": "Text",
                           "props": {
-                            "className": "text-xs text-gray-500 mt-0.5"
+                            "className": "text-xs text-[var(--theme-muted-foreground)] mt-0.5"
                           },
                           "text": "{{$item.productVariant.name}}"
                         },
                         {
-                          "type": "HStack",
+                          "type": "Box",
                           "props": {
-                            "className": "flex items-center justify-between mt-2"
+                            "className": "flex items-center justify-between mt-2 flex-row"
                           },
                           "children": [
                             {
@@ -205,7 +205,7 @@
                     {
                       "type": "Pressable",
                       "props": {
-                        "className": "text-gray-500 hover:text-red-500 transition-colors p-1"
+                        "className": "text-[var(--theme-muted-foreground)] hover:text-red-500 transition-colors p-1"
                       },
                       "actions": {
                         "click": {
@@ -231,7 +231,7 @@
         {
           "type": "DrawerFooter",
           "props": {
-            "className": "border-t border-gray-200 pt-4 space-y-3"
+            "className": "border-t border-[var(--theme-border)] pt-4 space-y-3"
           },
           "condition": {
             ">": [
@@ -246,15 +246,15 @@
           },
           "children": [
             {
-              "type": "HStack",
+              "type": "Box",
               "props": {
-                "className": "flex justify-between items-center mb-2"
+                "className": "flex justify-between items-center mb-2 flex-row"
               },
               "children": [
                 {
                   "type": "Text",
                   "props": {
-                    "className": "text-sm text-gray-500"
+                    "className": "text-sm text-[var(--theme-muted-foreground)]"
                   },
                   "text": "Subtotal"
                 },
@@ -290,15 +290,15 @@
               ]
             },
             {
-              "type": "Button",
+              "type": "Pressable",
               "props": {
-                "className": "w-full bg-[#1e293b] text-white hover:bg-[#334155] h-11 font-medium"
+                "className": "w-full bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] h-11 font-medium flex flex-row items-center justify-center rounded-md"
               },
               "children": [
                 {
-                  "type": "ButtonText",
+                  "type": "Text",
                   "props": {
-                    "className": "!text-white"
+                    "className": "text-white"
                   },
                   "text": "View Cart"
                 }
@@ -310,15 +310,15 @@
               }
             },
             {
-              "type": "Button",
+              "type": "Pressable",
               "props": {
-                "className": "w-full border border-gray-200 bg-white text-gray-900 hover:bg-gray-100 h-10"
+                "className": "w-full border border-[var(--theme-border)] bg-[var(--theme-content-bg)] text-[var(--theme-foreground)] hover:bg-[var(--theme-hero-bg)] h-10 flex flex-row items-center justify-center rounded-md"
               },
               "children": [
                 {
-                  "type": "ButtonText",
+                  "type": "Text",
                   "props": {
-                    "className": "!text-gray-900"
+                    "className": "text-[var(--theme-foreground)]"
                   },
                   "text": "Checkout"
                 }

@@ -10,7 +10,7 @@
     {
       "type": "Box",
       "props": {
-        "className": "lg:col-span-1 h-64 bg-gray-200 dark:bg-gray-700 rounded-lg"
+        "className": "lg:col-span-1 h-64 bg-[var(--theme-hero-bg)] rounded-lg"
       }
     },
     {
@@ -28,13 +28,13 @@
             {
               "type": "Box",
               "props": {
-                "className": "h-5 bg-gray-200 dark:bg-gray-700 rounded w-24"
+                "className": "h-5 bg-[var(--theme-hero-bg)] rounded w-24"
               }
             },
             {
               "type": "Box",
               "props": {
-                "className": "h-9 bg-gray-200 dark:bg-gray-700 rounded w-44 flex-shrink-0"
+                "className": "h-9 bg-[var(--theme-hero-bg)] rounded w-44 flex-shrink-0"
               }
             }
           ]
@@ -48,37 +48,37 @@
             {
               "type": "Box",
               "props": {
-                "className": "aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg"
+                "className": "aspect-square bg-[var(--theme-hero-bg)] rounded-lg"
               }
             },
             {
               "type": "Box",
               "props": {
-                "className": "aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg"
+                "className": "aspect-square bg-[var(--theme-hero-bg)] rounded-lg"
               }
             },
             {
               "type": "Box",
               "props": {
-                "className": "aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg"
+                "className": "aspect-square bg-[var(--theme-hero-bg)] rounded-lg"
               }
             },
             {
               "type": "Box",
               "props": {
-                "className": "aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg hidden sm:block"
+                "className": "aspect-square bg-[var(--theme-hero-bg)] rounded-lg hidden sm:block"
               }
             },
             {
               "type": "Box",
               "props": {
-                "className": "aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg hidden sm:block"
+                "className": "aspect-square bg-[var(--theme-hero-bg)] rounded-lg hidden sm:block"
               }
             },
             {
               "type": "Box",
               "props": {
-                "className": "aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg hidden lg:block"
+                "className": "aspect-square bg-[var(--theme-hero-bg)] rounded-lg hidden lg:block"
               }
             }
           ]

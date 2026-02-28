@@ -367,9 +367,15 @@ export interface BuilderStore {
   // Internal (debounce wrapper)
   _pushHistory: () => void;
   _setPageNodes: (nodes: SDUINode[]) => void;
+  /** E2E only — resets undo/redo history to a single empty snapshot so tests start clean. */
+  _clearHistory: () => void;
   // Overlay update callback — set by _canvas.tsx, called by _panel-right.tsx for imperative ring updates
   _requestOverlayUpdate: () => void;
   _setOverlayUpdateCallback: (fn: (() => void) | null) => void;
+  // Lightweight ring-only update — skips fills/getComputedStyle; called from patchStyle RAF
+  // with already-computed BCR so the overlay doesn't need to re-read the DOM.
+  _requestRingUpdate: (elRect: DOMRect, frameRect: DOMRect) => void;
+  _setRingUpdateCallback: (fn: ((elRect: DOMRect, frameRect: DOMRect) => void) | null) => void;
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -1066,9 +1072,35 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
 
   // ── History ──────────────────────────────────────────────────────────────────
 
-  _setPageNodes: (nodes) => set({ pageNodes: nodes }),
+  _setPageNodes: (nodes) => {
+    // Collect IDs of all nodes that have children so the layers panel shows them expanded.
+    function collectContainerIds(ns: SDUINode[]): string[] {
+      const ids: string[] = [];
+      for (const n of ns) {
+        if ((n.children as SDUINode[] | undefined)?.length && n.id) ids.push(n.id);
+        if ((n.children as SDUINode[] | undefined)?.length) ids.push(...collectContainerIds(n.children as SDUINode[]));
+      }
+      return ids;
+    }
+    const containerIds = collectContainerIds(nodes);
+    set(s => ({
+      pageNodes: nodes,
+      expandedIds: containerIds.length ? new Set([...s.expandedIds, ...containerIds]) : s.expandedIds,
+    }));
+  },
+  _clearHistory: () => {
+    set(s => ({
+      pageNodes: [],
+      history: [[]],
+      historyIdx: 0,
+      selectedIds: [],
+      pages: s.pages.map(p => p.id === s.currentPageId ? { ...p } : p),
+    }));
+  },
   _requestOverlayUpdate: () => {},
   _setOverlayUpdateCallback: (fn) => set({ _requestOverlayUpdate: fn ?? (() => {}) }),
+  _requestRingUpdate: () => {},
+  _setRingUpdateCallback: (fn) => set({ _requestRingUpdate: fn ?? (() => {}) }),
 
   _pushHistory: () => {
     set(s => {

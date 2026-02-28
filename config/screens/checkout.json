@@ -78,7 +78,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "border rounded-lg px-6"
+                  "className": "border rounded-lg px-6 bg-[var(--theme-content-bg)]"
                 },
                 "children": [
                   {
@@ -149,8 +149,8 @@
                                                 "delivery"
                                               ]
                                             },
-                                            "bg-[#1e293b] !text-white",
-                                            "bg-gray-100 !text-gray-500"
+                                            "bg-[var(--theme-shop-button)] !text-white",
+                                            "bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]"
                                           ]
                                         }
                                       ]
@@ -212,7 +212,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "font-semibold text-sm !text-gray-500"
+                                  "className": "font-semibold text-sm !text-[var(--theme-muted-foreground)]"
                                 },
                                 "text": "3",
                                 "condition": {
@@ -261,7 +261,7 @@
                             "props": {
                               "icon": "ChevronUp",
                               "size": 16,
-                              "className": "!text-gray-500"
+                              "className": "!text-[var(--theme-muted-foreground)]"
                             },
                             "condition": {
                               "==": [
@@ -277,7 +277,7 @@
                             "props": {
                               "icon": "ChevronDown",
                               "size": 16,
-                              "className": "!text-gray-500"
+                              "className": "!text-[var(--theme-muted-foreground)]"
                             },
                             "condition": {
                               "!=": [
@@ -309,7 +309,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-600 dark:text-gray-400"
+                          "className": "text-sm text-[var(--theme-muted-foreground)]"
                         },
                         "text": "Select shipping method"
                       },
@@ -346,8 +346,8 @@
                                                 }
                                               ]
                                             },
-                                            "border-[#1e293b] bg-slate-50 dark:bg-slate-800/50",
-                                            "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
+                                            "border-[var(--theme-shop-button)] bg-[var(--theme-hero-bg)]",
+                                            "border-[var(--theme-border)] hover:border-[var(--theme-shop-button)]"
                                           ]
                                         }
                                       ]
@@ -395,8 +395,8 @@
                                                     }
                                                   ]
                                                 },
-                                                "border-[#1e293b] bg-[#1e293b]",
-                                                "border-gray-300 dark:border-gray-600"
+                                                "border-[var(--theme-shop-button)] bg-[var(--theme-shop-button)]",
+                                                "border-[var(--theme-border)]"
                                               ]
                                             }
                                           ]
@@ -427,26 +427,26 @@
                                     "props": {
                                       "icon": "Truck",
                                       "size": 20,
-                                      "className": "!text-gray-500 dark:!text-gray-400 shrink-0"
+                                      "className": "!text-[var(--theme-muted-foreground)] shrink-0"
                                     }
                                   },
                                   {
-                                    "type": "VStack",
+                                    "type": "Box",
                                     "props": {
-                                      "className": "gap-0.5 text-left flex-1 min-w-0"
+                                      "className": "gap-0.5 text-left flex-1 min-w-0 flex flex-col"
                                     },
                                     "children": [
                                       {
                                         "type": "Text",
                                         "props": {
-                                          "className": "font-medium text-sm text-gray-900 dark:text-gray-100"
+                                          "className": "font-medium text-sm text-[var(--theme-foreground)]"
                                         },
                                         "text": "{{$item.name}}"
                                       },
                                       {
                                         "type": "Text",
                                         "props": {
-                                          "className": "text-xs text-gray-500 dark:text-gray-400"
+                                          "className": "text-xs text-[var(--theme-muted-foreground)]"
                                         },
                                         "text": "{{$item.description}}"
                                       }
@@ -455,7 +455,7 @@
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "className": "font-semibold text-sm text-gray-900 dark:text-gray-100 shrink-0"
+                                      "className": "font-semibold text-sm text-[var(--theme-foreground)] shrink-0"
                                     },
                                     "text": {
                                       "expr": {
@@ -500,12 +500,13 @@
                         ]
                       },
                       {
-                        "type": "Button",
+                        "type": "Pressable",
                         "props": {
                           "className": {
                             "expr": {
                               "cat": [
-                                "bg-[#1e293b] text-white hover:bg-[#334155] mt-2 ",
+                                "flex flex-row items-center justify-center ",
+                                "bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] mt-2 ",
                                 {
                                   "if": [
                                     {
@@ -524,9 +525,9 @@
                         },
                         "children": [
                           {
-                            "type": "ButtonText",
+                            "type": "Text",
                             "props": {
-                              "className": "!text-white"
+                              "className": "text-white"
                             },
                             "text": "Continue to payment"
                           }
@@ -547,7 +548,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "border rounded-lg px-6"
+                  "className": "border rounded-lg px-6 bg-[var(--theme-content-bg)]"
                 },
                 "children": [
                   {
@@ -650,8 +651,8 @@
                                             "review"
                                           ]
                                         },
-                                        "bg-[#1e293b] !text-white",
-                                        "bg-gray-100 !text-gray-500"
+                                        "bg-[var(--theme-shop-button)] !text-white",
+                                        "bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]"
                                       ]
                                     }
                                   ]
@@ -677,7 +678,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "font-semibold text-sm !text-gray-500"
+                                  "className": "font-semibold text-sm !text-[var(--theme-muted-foreground)]"
                                 },
                                 "text": "5",
                                 "condition": {
@@ -711,7 +712,7 @@
                             "props": {
                               "icon": "ChevronUp",
                               "size": 16,
-                              "className": "!text-gray-500"
+                              "className": "!text-[var(--theme-muted-foreground)]"
                             },
                             "condition": {
                               "==": [
@@ -727,7 +728,7 @@
                             "props": {
                               "icon": "ChevronDown",
                               "size": 16,
-                              "className": "!text-gray-500"
+                              "className": "!text-[var(--theme-muted-foreground)]"
                             },
                             "condition": {
                               "!=": [
@@ -793,7 +794,7 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "text-sm text-gray-500 space-y-1"
+                                  "className": "text-sm text-[var(--theme-muted-foreground)] space-y-1"
                                 },
                                 "condition": {
                                   "var": [
@@ -834,16 +835,15 @@
                                 ]
                               },
                               {
-                                "type": "Button",
+                                "type": "Pressable",
                                 "props": {
-                                  "size": "sm",
-                                  "variant": "outline",
-                                  "className": "!border-gray-300"
+                                  "className": "!border-[var(--theme-border)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
                                 },
                                 "children": [
                                   {
-                                    "type": "ButtonText",
-                                    "text": "Edit"
+                                    "type": "Text",
+                                    "text": "Edit",
+                                    "props": {}
                                   }
                                 ],
                                 "actions": {
@@ -872,7 +872,7 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "text-sm text-gray-500 space-y-1"
+                                  "className": "text-sm text-[var(--theme-muted-foreground)] space-y-1"
                                 },
                                 "condition": {
                                   "var": [
@@ -924,16 +924,15 @@
                                 ]
                               },
                               {
-                                "type": "Button",
+                                "type": "Pressable",
                                 "props": {
-                                  "size": "sm",
-                                  "variant": "outline",
-                                  "className": "!border-gray-300"
+                                  "className": "!border-[var(--theme-border)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
                                 },
                                 "children": [
                                   {
-                                    "type": "ButtonText",
-                                    "text": "Edit"
+                                    "type": "Text",
+                                    "text": "Edit",
+                                    "props": {}
                                   }
                                 ],
                                 "actions": {
@@ -962,7 +961,7 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "text-sm text-gray-500"
+                                  "className": "text-sm text-[var(--theme-muted-foreground)]"
                                 },
                                 "condition": {
                                   ">": [
@@ -1018,16 +1017,15 @@
                                 ]
                               },
                               {
-                                "type": "Button",
+                                "type": "Pressable",
                                 "props": {
-                                  "size": "sm",
-                                  "variant": "outline",
-                                  "className": "!border-gray-300"
+                                  "className": "!border-[var(--theme-border)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
                                 },
                                 "children": [
                                   {
-                                    "type": "ButtonText",
-                                    "text": "Edit"
+                                    "type": "Text",
+                                    "text": "Edit",
+                                    "props": {}
                                   }
                                 ],
                                 "actions": {
@@ -1056,7 +1054,7 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "text-sm text-gray-500 space-y-1"
+                                  "className": "text-sm text-[var(--theme-muted-foreground)] space-y-1"
                                 },
                                 "condition": {
                                   "var": [
@@ -1067,23 +1065,22 @@
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "className": "font-medium text-gray-900"
+                                      "className": "font-medium text-[var(--theme-foreground)]"
                                     },
                                     "text": "{{checkout.selectedPaymentMethodDisplay}}"
                                   }
                                 ]
                               },
                               {
-                                "type": "Button",
+                                "type": "Pressable",
                                 "props": {
-                                  "size": "sm",
-                                  "variant": "outline",
-                                  "className": "!border-gray-300"
+                                  "className": "!border-[var(--theme-border)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
                                 },
                                 "children": [
                                   {
-                                    "type": "ButtonText",
-                                    "text": "Edit"
+                                    "type": "Text",
+                                    "text": "Edit",
+                                    "props": {}
                                   }
                                 ],
                                 "actions": {
@@ -1119,12 +1116,13 @@
                         ]
                       },
                       {
-                        "type": "Button",
+                        "type": "Pressable",
                         "props": {
                           "className": {
                             "expr": {
                               "cat": [
-                                "w-full bg-[#1e293b] text-white hover:bg-[#334155] !py-3 ",
+                                "flex flex-row items-center justify-center ",
+                                "w-full bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] !py-3 ",
                                 {
                                   "if": [
                                     {
@@ -1143,9 +1141,9 @@
                         },
                         "children": [
                           {
-                            "type": "ButtonText",
+                            "type": "Text",
                             "props": {
-                              "className": "!text-white"
+                              "className": "text-white"
                             },
                             "text": "Place Order"
                           }
@@ -1171,7 +1169,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "border rounded-lg p-6 bg-white sticky top-20 space-y-3"
+                  "className": "border border-[var(--theme-border)] rounded-lg p-6 bg-[var(--theme-content-bg)] sticky top-20 space-y-3"
                 },
                 "children": [
                   {
@@ -1182,23 +1180,23 @@
                     "text": "Order Summary"
                   },
                   {
-                    "type": "VStack",
+                    "type": "Box",
                     "props": {
-                      "className": "space-y-3 max-h-64 overflow-y-auto"
+                      "className": "space-y-3 max-h-64 overflow-y-auto flex flex-col"
                     },
                     "map": "checkout.order.lines",
                     "key": "checkoutLine",
                     "children": [
                       {
-                        "type": "HStack",
+                        "type": "Box",
                         "props": {
-                          "className": "flex gap-3 text-sm items-start"
+                          "className": "flex gap-3 text-sm items-start flex-row"
                         },
                         "children": [
                           {
                             "type": "Box",
                             "props": {
-                              "className": "flex-shrink-0 w-15 h-15 rounded overflow-hidden bg-gray-100"
+                              "className": "flex-shrink-0 w-16 h-16 rounded overflow-hidden bg-[var(--theme-hero-bg)]"
                             },
                             "condition": {
                               "var": [
@@ -1211,17 +1209,17 @@
                                 "props": {
                                   "src": "{{$item.productVariant.product.featuredAsset.preview}}",
                                   "alt": "{{$item.productVariant.product.name}}",
-                                  "width": 60,
-                                  "height": 60,
-                                  "className": "w-full h-full object-cover"
+                                  "width": 64,
+                                  "height": 64,
+                                  "className": "w-16 h-16 object-cover"
                                 }
                               }
                             ]
                           },
                           {
-                            "type": "VStack",
+                            "type": "Box",
                             "props": {
-                              "className": "flex-1 min-w-0 gap-0.5"
+                              "className": "flex-1 min-w-0 gap-0.5 flex flex-col"
                             },
                             "children": [
                               {
@@ -1234,7 +1232,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-xs text-gray-500"
+                                  "className": "text-xs text-[var(--theme-muted-foreground)]"
                                 },
                                 "condition": {
                                   "!=": [
@@ -1251,7 +1249,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-xs text-gray-500"
+                                  "className": "text-xs text-[var(--theme-muted-foreground)]"
                                 },
                                 "text": {
                                   "expr": {
@@ -1299,21 +1297,21 @@
                     }
                   },
                   {
-                    "type": "VStack",
+                    "type": "Box",
                     "props": {
-                      "className": "space-y-1 text-sm"
+                      "className": "space-y-1 text-sm flex flex-col"
                     },
                     "children": [
                       {
-                        "type": "HStack",
+                        "type": "Box",
                         "props": {
-                          "className": "flex justify-between"
+                          "className": "flex justify-between flex-row"
                         },
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-gray-500"
+                              "className": "text-[var(--theme-muted-foreground)]"
                             },
                             "text": "Subtotal"
                           },
@@ -1365,9 +1363,9 @@
                         },
                         "children": [
                           {
-                            "type": "HStack",
+                            "type": "Box",
                             "props": {
-                              "className": "flex justify-between text-sm text-green-600"
+                              "className": "flex justify-between text-sm text-green-600 flex-row"
                             },
                             "children": [
                               {
@@ -1397,15 +1395,15 @@
                         ]
                       },
                       {
-                        "type": "HStack",
+                        "type": "Box",
                         "props": {
-                          "className": "flex justify-between"
+                          "className": "flex justify-between flex-row"
                         },
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-gray-500"
+                              "className": "text-[var(--theme-muted-foreground)]"
                             },
                             "text": "Shipping"
                           },
@@ -1460,9 +1458,9 @@
                         }
                       },
                       {
-                        "type": "HStack",
+                        "type": "Box",
                         "props": {
-                          "className": "flex justify-between font-bold text-base"
+                          "className": "flex justify-between font-bold text-base flex-row"
                         },
                         "children": [
                           {

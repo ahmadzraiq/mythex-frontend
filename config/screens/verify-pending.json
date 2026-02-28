@@ -23,14 +23,14 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-16 h-16 mx-auto rounded-full bg-[#1e293b]/10 flex items-center justify-center"
+              "className": "w-16 h-16 mx-auto rounded-full bg-[var(--theme-shop-button)]/10 flex items-center justify-center"
             },
             "children": [
               {
                 "type": "NavIcon",
                 "props": {
                   "icon": "Globe",
-                  "className": "h-8 w-8 text-[#1e293b]"
+                  "className": "h-8 w-8 text-[#7c3aed]"
                 }
               }
             ]
@@ -45,20 +45,20 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-gray-500 text-lg"
+              "className": "text-[var(--theme-muted-foreground)] text-lg"
             },
             "text": "We've sent a verification link to your email address. Please click the link to verify your account."
           },
           {
-            "type": "Button",
+            "type": "Pressable",
             "props": {
-              "className": "bg-[#1e293b] text-white hover:bg-[#334155] px-8"
+              "className": "bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] px-8 flex flex-row items-center justify-center py-3 rounded-md"
             },
             "children": [
               {
-                "type": "ButtonText",
+                "type": "Text",
                 "props": {
-                  "className": "!text-white"
+                  "className": "text-white"
                 },
                 "text": "Back to Sign In"
               }

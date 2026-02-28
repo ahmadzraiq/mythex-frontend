@@ -337,14 +337,11 @@ export function styleToClassName(
   }
 
   // ── Transform (rotation) ─────────────────────────────────────────────────────
+  // Rotation is stored exclusively in props.style.transform — never synced back
+  // to className. Remove any stale rotate-[...] token if style.transform is set.
   if (style.transform !== undefined) {
     cls = removeTwToken(cls, 'rotate-');
     cls = removeTwToken(cls, '-rotate-');
-    const deg = style.transform.match(/rotate\(([-\d.]+)deg\)/);
-    if (deg && deg[1] !== '0') {
-      const n = parseFloat(deg[1]);
-      cls = `${cls} rotate-[${n}deg]`.trim();
-    }
   }
 
   // ── Inset (top / right / bottom / left) ──────────────────────────────────────

@@ -12,6 +12,7 @@
 import React, { useMemo, useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import type { GridOverlayConfig } from './_store';
+import { useBuilderStore } from './_store';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -568,11 +569,15 @@ export default function BuilderOverlay({
   // (debounced 80 ms), so indicator fills paint wrong sizes. useLayoutEffect runs
   // *before* the browser paints, so we re-run the instant update here to apply
   // the correct live zoom — eliminating the single-frame flash entirely.
+  //
+  // Also runs when pageNodes changes (panel edits like rotation, opacity, etc.) so the
+  // selection ring repositions immediately after the React commit — without waiting for
+  // the RAF tick loop, which may be stopped when the user is only using the panel.
   useLayoutEffect(() => {
     // Re-run instant update immediately — before paint — so ring, crosshairs, and fills
     // use liveZoomRef (not the stale Zustand zoom prop).
     overlayInstantUpdateRef?.current?.();
-  }, [tick]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [tick, pageNodes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!overlayInstantUpdateRef) return;
@@ -758,7 +763,54 @@ export default function BuilderOverlay({
     };
     // Trigger immediate update so crosshairs/ring show on mount when something is selected
     overlayInstantUpdateRef?.current?.();
-    return () => { if (overlayInstantUpdateRef) overlayInstantUpdateRef.current = null; };
+
+    // ── Lightweight ring-only update (called from patchStyle RAF) ────────────
+    // Accepts pre-computed BCR to avoid a second getBoundingClientRect() call and
+    // skips all fill calculations (padding/gap/margin) — they don't change during
+    // style edits like rotation/opacity. This eliminates 3x getComputedStyle() calls
+    // per RAF, dropping layout flushes from ~5 to 2 per frame during rapid edits.
+    const ringOnlyUpdate = (elRect: DOMRect, frameRect: DOMRect) => {
+      if (!canvasEl) return;
+      const cr = canvasDomRectRef.current ?? frameRect;
+      const z  = liveZoomRef?.current ?? zoom;
+
+      if (selectedIds.length !== 1) return;
+
+      const currX = elRect.left - cr.left;
+      const currY = elRect.top  - cr.top;
+      const currW = elRect.width;
+      const currH = elRect.height;
+
+      if (selectionRingRef.current) {
+        selectionRingRef.current.style.left   = `${currX}px`;
+        selectionRingRef.current.style.top    = `${currY}px`;
+        selectionRingRef.current.style.width  = `${currW}px`;
+        selectionRingRef.current.style.height = `${currH}px`;
+        const tooltipEl = selectionRingRef.current.querySelector<HTMLElement>('[data-dim-tooltip]');
+        if (tooltipEl) tooltipEl.textContent = `${Math.round(currW / z)} × ${Math.round(currH / z)}`;
+      }
+
+      const isAbs = Array.isArray(pageNodes) && pageNodes.length > 0
+        ? isAbsoluteNode(selectedIds[0], pageNodes) : false;
+      if (!isAbs) {
+        const cx = currX + currW / 2;
+        const cy = currY + currH / 2;
+        if (imperativeCrosshairHRef.current) {
+          imperativeCrosshairHRef.current.style.top     = `${cy}px`;
+          imperativeCrosshairHRef.current.style.display = '';
+        }
+        if (imperativeCrosshairVRef.current) {
+          imperativeCrosshairVRef.current.style.left    = `${cx}px`;
+          imperativeCrosshairVRef.current.style.display = '';
+        }
+      }
+    };
+    useBuilderStore.getState()._setRingUpdateCallback(ringOnlyUpdate);
+
+    return () => {
+      if (overlayInstantUpdateRef) overlayInstantUpdateRef.current = null;
+      useBuilderStore.getState()._setRingUpdateCallback(null);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvasEl, selectedIds, overlayInstantUpdateRef, zoom, pageNodes]);
 
@@ -770,8 +822,10 @@ export default function BuilderOverlay({
     return selectedIds
       .map(id => ({ id, rect: getCanvasRect(id, canvasEl) }))
       .filter(r => r.rect !== null) as { id: string; rect: CanvasRect }[];
+    // pageNodes included so the rect recomputes on any panel edit (rotation, size, etc.)
+    // without waiting for the RAF tick loop to be active.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canvasEl, selectedIds, tick]);
+  }, [canvasEl, selectedIds, tick, pageNodes]);
 
   const firstSel = selectedRects[0];
 
@@ -789,7 +843,7 @@ export default function BuilderOverlay({
     if (!canvasEl || !altMode || !altHoveredId) return null;
     return getCanvasRect(altHoveredId, canvasEl);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canvasEl, altMode, altHoveredId, tick]);
+  }, [canvasEl, altMode, altHoveredId, tick, pageNodes]);
 
   // dropLineY is computed in onDragOver and passed in directly — no local memo needed.
 

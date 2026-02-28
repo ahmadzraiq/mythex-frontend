@@ -109,37 +109,88 @@ function SectionHeader({ title, children }: { title: string; children?: React.Re
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-
 // ─── Inputs ───────────────────────────────────────────────────────────────────
 
 function NumberInput({
   label, value, onChange, min = 0, max = 9999, step = 1, testId, onFocus,
 }: { label: string; value: number | string; onChange: (v: number) => void; min?: number; max?: number; step?: number; testId?: string; onFocus?: () => void }) {
   const [local, setLocal] = useState(String(value));
-  useEffect(() => setLocal(String(value)), [value]);
+  const liveRef    = useRef(Number(value));
+  const inputRef   = useRef<HTMLInputElement | null>(null);
+  const delayRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    liveRef.current = Number(value);
+    setLocal(String(value));
+  }, [value]);
+
+  // Clean up repeat timers on unmount
+  useEffect(() => () => { clearRepeat(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const clearRepeat = () => {
+    if (delayRef.current)    { clearTimeout(delayRef.current);    delayRef.current    = null; }
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+  };
 
   const handleChange = (raw: string) => {
     setLocal(raw);
-    // Apply immediately — no debounce so arrow keys, drag, and typing all feel instant.
-    // commitHistory (undo batching) is already debounced separately in DesignTab.
     const n = Number(raw);
-    if (!Number.isNaN(n)) onChange(n);
+    if (!Number.isNaN(n)) { liveRef.current = n; onChange(n); }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    e.preventDefault();
+
+    // Ignore OS-generated auto-repeat entirely — we drive our own repeat loop
+    // below so it starts faster (250ms) and fires faster (50ms) than the OS
+    // defaults (~500ms delay, ~33ms interval), matching the feel of holding the
+    // spinner arrow button.
+    if (e.repeat) return;
+
+    const direction = e.key === 'ArrowUp' ? 1 : -1;
+    const inp = inputRef.current;
+
+    const fire = () => {
+      const newVal = Math.min(max, Math.max(min, liveRef.current + direction * step));
+      liveRef.current = newVal;
+      setLocal(String(newVal));
+      if (inp) inp.value = String(newVal);
+      onChange(newVal);
+    };
+
+    fire(); // immediate on first press
+    clearRepeat();
+
+    // After 250ms, start repeating at 50ms — same feel as the browser spinner hold
+    delayRef.current = setTimeout(() => {
+      intervalRef.current = setInterval(fire, 50);
+    }, 250);
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') clearRepeat();
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
       <span style={{ fontSize: 9, color: '#6b7280' }}>{label}</span>
       <input
+        ref={inputRef}
         data-testid={testId}
         type="number" min={min} max={max} step={step} value={local}
         onChange={e => handleChange(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onKeyUp={handleKeyUp}
         onFocus={onFocus}
-        onBlur={() => {
-          // Only fire if the user actually changed the value from what the store has.
-          // This prevents spurious patchProp calls (e.g. gap → 'gap-0') when the
-          // user merely clicks into an input and then clicks away without changing it.
-          const n = Number(local);
-          if (!Number.isNaN(n) && n !== Number(value)) onChange(n);
+        onBlur={e => {
+          clearRepeat();
+          const domVal = Number(e.currentTarget.value);
+          const live   = Number.isNaN(domVal) ? liveRef.current : domVal;
+          liveRef.current = live;
+          if (live !== Number(value)) onChange(live);
+          setLocal(String(live));
         }}
         style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 6px', width: '100%', boxSizing: 'border-box' }}
       />
@@ -218,6 +269,7 @@ function DesignTab({ node }: { node: SDUINode }) {
   );
   const pendingStyleRef   = useRef<Record<string, string>>({});
   const pendingNodeIdRef  = useRef<string>(nodeId);
+  const rafSyncRef        = useRef<number | null>(null);
   const styleFlushTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
   // When user blurs an input by clicking another element, React may re-render with the NEW
   // selection before blur fires. We capture the node on focus; delay the nodeId-sync so
@@ -232,15 +284,47 @@ function DesignTab({ node }: { node: SDUINode }) {
     const targetId = overrideNodeId ?? editingNodeIdRef.current ?? nodeId;
     pendingNodeIdRef.current = targetId;
 
-    // 1. Apply directly to DOM — zero React re-renders during rapid input
+    // 1. Apply directly to DOM — zero React re-renders, zero layout reads in the event handler.
+    //    Writing style properties is a paint-only invalidation; no layout is forced here.
     const el = document.querySelector(`[data-builder-id="${targetId}"]`) as HTMLElement | null;
     if (el) {
+      // Always clear any transition so every patchStyle call snaps instantly.
+      el.style.transition = '';
       for (const [k, v] of Object.entries(patch)) {
         (el.style as unknown as Record<string, string>)[k] = v ?? '';
       }
     }
-    // 2. Trigger an immediate overlay ring update via the store callback
-    useBuilderStore.getState()._requestOverlayUpdate();
+
+    // 2. RAF: batch ALL layout reads into one animation frame so they never block the
+    //    event handler. getBoundingClientRect() forces a synchronous layout — calling it
+    //    inside the event handler at 30-40 Hz causes layout thrashing and cursor flicker.
+    //    Moving it to RAF lets the browser settle the style mutation first, then measure
+    //    once per frame: no forced intermediate layouts, no cursor flicker.
+    if (rafSyncRef.current !== null) cancelAnimationFrame(rafSyncRef.current);
+    rafSyncRef.current = requestAnimationFrame(() => {
+      rafSyncRef.current = null;
+      const rafEl    = document.querySelector(`[data-builder-id="${targetId}"]`) as HTMLElement | null;
+      const rafFrame = document.querySelector('[data-builder-page-frame]');
+      if (rafEl && rafFrame) {
+        const r  = rafEl.getBoundingClientRect();
+        const fr = rafFrame.getBoundingClientRect();
+        const z  = zoom;
+        const setV = (tid: string, val: number) => {
+          const inp = document.querySelector<HTMLInputElement>(`[data-testid="${tid}"]`);
+          if (inp && inp !== document.activeElement) inp.value = String(val);
+        };
+        setV('input-pos-x', Math.round((r.left - fr.left) / z));
+        setV('input-pos-y', Math.round((r.top  - fr.top)  / z));
+        setV('input-pos-w', Math.round(r.width  / z));
+        setV('input-pos-h', Math.round(r.height / z));
+        // Ring-only update: reuse already-computed BCR (r, fr) — no second BCR read,
+        // no getComputedStyle() fills — eliminates 3 layout flushes per RAF frame.
+        useBuilderStore.getState()._requestRingUpdate(r, fr);
+      } else {
+        // El or frame not found — fall back to full overlay update
+        useBuilderStore.getState()._requestOverlayUpdate();
+      }
+    });
 
     // 3. Accumulate and debounce the Zustand commit (one re-render after gesture settles).
     pendingStyleRef.current = { ...pendingStyleRef.current, ...patch };
@@ -275,11 +359,13 @@ function DesignTab({ node }: { node: SDUINode }) {
     }, 80);
   // nodeStyle intentionally excluded from deps — we read live from store in the timer
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodeId, store, commitHistory]);
+  }, [nodeId, zoom, store, commitHistory]);
 
   // Flush any pending style patch immediately when the selected node changes.
   useEffect(() => {
     return () => {
+      // Cancel any pending RAF sync so stale metric reads don't fire after unmount.
+      if (rafSyncRef.current !== null) { cancelAnimationFrame(rafSyncRef.current); rafSyncRef.current = null; }
       if (styleFlushTimer.current) {
         clearTimeout(styleFlushTimer.current);
         if (Object.keys(pendingStyleRef.current).length > 0) {
@@ -311,10 +397,53 @@ function DesignTab({ node }: { node: SDUINode }) {
     commitHistory();
   }, [nodeId, store, commitHistory]);
 
+  /**
+   * Apply a theme CSS variable as a color class (bg/text/border).
+   *
+   * CSS variables cannot be set reliably via el.style.property = 'var(--x)' in RN Web, so:
+   *  1. Use el.style.setProperty (CSS-variable-aware) for immediate DOM update.
+   *  2. Clear the inline style prop in Zustand so the class wins on re-render.
+   *  3. Add the Tailwind arbitrary-value class (e.g. bg-[var(--destructive)]).
+   *  4. Flush any pending patchStyle for that prop so the 80ms timer doesn't overwrite.
+   */
+  const patchColorAsThemeVar = useCallback((
+    cssProp: 'backgroundColor' | 'color' | 'borderColor',
+    stylePropPath: string,
+    clsPrefix: 'bg' | 'text' | 'border',
+    cssVar: string,
+  ) => {
+    // CSS vars in this project are stored as R G B triplets (e.g. --destructive: 239 68 68),
+    // so they must be wrapped with rgb() to produce a valid color value.
+    const cssVarValue = `rgb(var(--${cssVar}))`;
+    // 1. Immediate DOM update (setProperty handles CSS functions correctly)
+    const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
+    if (el) {
+      const kebab = cssProp === 'backgroundColor' ? 'background-color'
+        : cssProp === 'borderColor' ? 'border-color' : 'color';
+      el.style.removeProperty(kebab);
+      el.style.setProperty(kebab, cssVarValue);
+    }
+    // 2. Cancel any pending patchStyle for this prop so the 80ms timer doesn't overwrite
+    delete (pendingStyleRef.current as Record<string, string>)[cssProp];
+    // 3. Remove old arbitrary color class + add CSS var class; clear inline style in Zustand
+    const regex = new RegExp(`\\b${clsPrefix}-\\[[^\\]]+\\]`, 'g');
+    const next = cls.replace(regex, '').replace(/\s+/g, ' ').trim();
+    // Use rgb(var(--X)) so Tailwind generates: background-color: rgb(var(--X))
+    // which correctly resolves the R G B triplet CSS variable format used by ThemeStyles.
+    const newCls = `${next} ${clsPrefix}-[${cssVarValue}]`.trim();
+    // Atomic Zustand update: clear inline style so the class wins, update className
+    store.patchProp(nodeId, stylePropPath, '');
+    store.patchProp(nodeId, 'props.className', newCls);
+    commitHistory();
+  }, [nodeId, cls, store, commitHistory]);
+
   // ── Live DOM metrics ─────────────────────────────────────────────────────────
+  // Used for the initial render and when selection/zoom changes.
+  // During active patchStyle editing, the RAF in patchStyle imperatively updates
+  // the input DOM values directly — no React re-renders needed.
 
   const domMetrics = useMemo(() => {
-    const el = document.querySelector(`[data-builder-id="${nodeId}"]`);
+    const el    = document.querySelector(`[data-builder-id="${nodeId}"]`);
     const frame = document.querySelector('[data-builder-page-frame]');
     if (!el || !frame) return { x: 0, y: 0, w: 0, h: 0 };
     const r  = el.getBoundingClientRect();
@@ -348,7 +477,7 @@ function DesignTab({ node }: { node: SDUINode }) {
     const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
     if (!el) return;
     const s = window.getComputedStyle(el);
-    if (!nodeStyle.backgroundColor) {
+    if (!nodeStyle.backgroundColor || nodeStyle.backgroundColor.startsWith('var(')) {
       const hex = rgbToHex(s.backgroundColor);
       // rgba(0,0,0,0) = transparent — keep the default so we don't show black
       if (hex && s.backgroundColor !== 'rgba(0, 0, 0, 0)') setComputedBgColor(hex);
@@ -356,13 +485,13 @@ function DesignTab({ node }: { node: SDUINode }) {
     } else {
       setComputedBgColor(nodeStyle.backgroundColor);
     }
-    if (!nodeStyle.color) {
+    if (!nodeStyle.color || nodeStyle.color.startsWith('var(')) {
       const hex = rgbToHex(s.color);
       if (hex) setComputedTextColor(hex);
     } else {
       setComputedTextColor(nodeStyle.color);
     }
-    if (!nodeStyle.borderColor) {
+    if (!nodeStyle.borderColor || nodeStyle.borderColor.startsWith('var(')) {
       const hex = rgbToHex(s.borderTopColor);
       if (hex) setComputedBorderColor(hex);
     } else {
@@ -527,8 +656,8 @@ function DesignTab({ node }: { node: SDUINode }) {
           />
         </div>
         <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-          <NumberInput label="X" value={domMetrics.x} onChange={() => {}} />
-          <NumberInput label="Y" value={domMetrics.y} onChange={() => {}} />
+          <NumberInput label="X" testId="input-pos-x" value={domMetrics.x} onChange={() => {}} />
+          <NumberInput label="Y" testId="input-pos-y" value={domMetrics.y} onChange={() => {}} />
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <NumberInput label="W" testId="input-pos-w" value={(() => {
@@ -540,6 +669,9 @@ function DesignTab({ node }: { node: SDUINode }) {
             return domMetrics.w;
           })()} onChange={px => {
             patchStyle({ width: `${px}px`, minWidth: '0' });
+            // Entering a pixel value means Fixed mode — clear any Hug/Fill class so the
+            // Dimensions section reflects the new mode instead of staying on Fill/Hug.
+            patchCls(removeTwToken(removeTwToken(cls, 'w-fit'), 'w-full'));
           }} />
           <NumberInput label="H" testId="input-pos-h" value={(() => {
             const clsH = parseTwArbitrary(cls, 'h-');
@@ -549,6 +681,7 @@ function DesignTab({ node }: { node: SDUINode }) {
             return domMetrics.h;
           })()} onChange={px => {
             patchStyle({ height: `${px}px`, minHeight: '0' });
+            patchCls(removeTwToken(removeTwToken(cls, 'h-fit'), 'h-full'));
           }} />
         </div>
 
@@ -919,10 +1052,10 @@ function DesignTab({ node }: { node: SDUINode }) {
           label="Background"
           testId="input-bg-color"
           value={computedBgColor}
-          onChange={hex => {
-            const cleaned = cls.replace(/\bbg-\[#[0-9a-fA-F]{3,8}\]/g, '').replace(/\s+/g, ' ').trim();
-            patchCls(hex ? `${cleaned} bg-[${hex}]`.trim() : cleaned);
-          }}
+          onChange={(hex, cssVar) => cssVar
+            ? patchColorAsThemeVar('backgroundColor', 'props.style.backgroundColor', 'bg', cssVar)
+            : patchStyle({ backgroundColor: hex || '' })
+          }
         />
         <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ fontSize: 9, color: '#6b7280' }}>Opacity</span>
@@ -946,12 +1079,10 @@ function DesignTab({ node }: { node: SDUINode }) {
           label="Color"
           testId="input-stroke-color"
           value={computedBorderColor}
-          onChange={hex => {
-            // Write directly to className; styleToClassName also handles this via patchStyle
-            // but writing className immediately avoids the 80ms debounce lag for color pickers.
-            const cleaned = cls.replace(/\bborder-\[#[0-9a-fA-F]{3,8}\]/g, '').replace(/\s+/g, ' ').trim();
-            patchCls(hex ? `${cleaned} border-[${hex}]`.trim() : cleaned);
-          }}
+          onChange={(hex, cssVar) => cssVar
+            ? patchColorAsThemeVar('borderColor', 'props.style.borderColor', 'border', cssVar)
+            : patchStyle({ borderColor: hex || '' })
+          }
         />
         <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
           <SelectInput
@@ -1025,10 +1156,10 @@ function DesignTab({ node }: { node: SDUINode }) {
             label="Color"
             testId="input-text-color"
             value={computedTextColor}
-            onChange={hex => {
-              const cleaned = cls.replace(/\btext-\[#[0-9a-fA-F]{3,8}\]/g, '').replace(/\s+/g, ' ').trim();
-              patchCls(hex ? `${cleaned} text-[${hex}]`.trim() : cleaned);
-            }}
+            onChange={(hex, cssVar) => cssVar
+              ? patchColorAsThemeVar('color', 'props.style.color', 'text', cssVar)
+              : patchStyle({ color: hex || '' })
+            }
           />
         </div>
       )}

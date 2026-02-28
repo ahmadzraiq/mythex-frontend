@@ -58,6 +58,16 @@ module.exports = {
     { pattern: /^bg-\[#[0-9a-fA-F]{3,8}\]$/ },
     { pattern: /^text-\[#[0-9a-fA-F]{3,8}\]$/ },
     { pattern: /^border-\[#[0-9a-fA-F]{3,8}\]$/ },
+    // Theme CSS variable colors — applied by patchColorAsThemeVar (design tokens).
+    // CSS vars are stored as R G B triplets (e.g. --destructive: 239 68 68), so
+    // they are wrapped with rgb() to produce valid CSS: rgb(var(--X)).
+    ...['background','foreground','primary','primary-foreground','secondary','secondary-foreground',
+        'muted','muted-foreground','accent','accent-foreground','destructive','destructive-foreground',
+        'card','card-foreground','border','input','ring'].flatMap(token => [
+      `bg-[rgb(var(--${token}))]`,
+      `text-[rgb(var(--${token}))]`,
+      `border-[rgb(var(--${token}))]`,
+    ]),
     // Dimensions (w, h, min/max)
     { pattern: /^(w|h)-\[\d+(\.\d+)?px\]$/ },
     { pattern: /^(min-w|max-w|min-h|max-h)-\[\d+(\.\d+)?px\]$/ },

@@ -44,7 +44,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-gray-500"
+                  "className": "text-[var(--theme-muted-foreground)]"
                 },
                 "text": "Loading order..."
               }
@@ -93,14 +93,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-gray-500 dark:text-gray-400"
+                      "className": "text-[var(--theme-muted-foreground)]"
                     },
                     "text": "Thank you for your order. Your order number is "
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-semibold text-gray-900 dark:text-gray-100"
+                      "className": "font-semibold text-[var(--theme-foreground)]"
                     },
                     "text": "{{order.code}}"
                   }
@@ -111,7 +111,7 @@
           {
             "type": "Card",
             "props": {
-              "className": "mb-6 rounded-xl border border-gray-200 shadow-sm bg-white dark:border-gray-700 dark:bg-gray-900 p-0 overflow-hidden"
+              "className": "mb-6 rounded-xl border border-[var(--theme-border)] shadow-sm bg-[var(--theme-content-bg)] p-0 overflow-hidden"
             },
             "condition": {
               "var": [
@@ -122,7 +122,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "px-6 py-4 border-b border-gray-200 dark:border-gray-700"
+                  "className": "px-6 py-4 border-b border-[var(--theme-border)]"
                 },
                 "children": [
                   {
@@ -141,17 +141,17 @@
                 },
                 "children": [
                   {
-                    "type": "VStack",
+                    "type": "Box",
                     "props": {
-                      "className": "space-y-4"
+                      "className": "space-y-4 flex flex-col"
                     },
                     "map": "order.lines",
                     "key": "orderConfLine",
                     "children": [
                       {
-                        "type": "HStack",
+                        "type": "Box",
                         "props": {
-                          "className": "flex gap-4 items-center"
+                          "className": "flex gap-4 items-center flex-row"
                         },
                         "children": [
                           {
@@ -193,7 +193,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                                  "className": "text-sm text-[var(--theme-muted-foreground)]"
                                 },
                                 "text": "{{$item.productVariant.name}}",
                                 "condition": {
@@ -218,7 +218,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                                  "className": "text-sm text-[var(--theme-muted-foreground)]"
                                 },
                                 "text": "Qty"
                               },
@@ -272,13 +272,13 @@
                   {
                     "type": "Divider",
                     "props": {
-                      "className": "my-4 h-px w-full !bg-gray-200 dark:!bg-gray-700"
+                      "className": "my-4 h-px w-full !bg-[var(--theme-border)]"
                     }
                   },
                   {
-                    "type": "HStack",
+                    "type": "Box",
                     "props": {
-                      "className": "flex justify-between font-bold text-lg"
+                      "className": "flex justify-between font-bold text-lg flex-row"
                     },
                     "children": [
                       {
@@ -320,7 +320,7 @@
           {
             "type": "Card",
             "props": {
-              "className": "mb-6 rounded-xl border border-gray-200 shadow-sm bg-white dark:border-gray-700 dark:bg-gray-900 p-0 overflow-hidden"
+              "className": "mb-6 rounded-xl border border-[var(--theme-border)] shadow-sm bg-[var(--theme-content-bg)] p-0 overflow-hidden"
             },
             "condition": {
               "and": [
@@ -340,7 +340,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "px-6 py-4 border-b border-gray-200 dark:border-gray-700"
+                  "className": "px-6 py-4 border-b border-[var(--theme-border)]"
                 },
                 "children": [
                   {
@@ -368,7 +368,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                      "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                     },
                     "text": {
                       "expr": {
@@ -405,7 +405,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                      "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
                     "text": {
                       "expr": {
@@ -437,7 +437,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                      "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
                     "text": "{{order.shippingAddress.country}}"
                   }
@@ -457,15 +457,15 @@
             },
             "children": [
               {
-                "type": "Button",
+                "type": "Pressable",
                 "props": {
-                  "className": "flex-1 rounded-md h-9 px-4 py-2 text-sm font-medium bg-[#1e293b] text-white hover:bg-[#334155]"
+                  "className": "flex-1 rounded-md h-9 px-4 py-2 text-sm font-medium bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] flex flex-row items-center justify-center"
                 },
                 "children": [
                   {
-                    "type": "ButtonText",
+                    "type": "Text",
                     "props": {
-                      "className": "!text-white"
+                      "className": "text-white"
                     },
                     "text": "Continue Shopping"
                   }

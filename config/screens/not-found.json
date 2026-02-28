@@ -29,7 +29,7 @@
               {
                 "type": "Heading",
                 "props": {
-                  "className": "text-8xl font-bold text-gray-500"
+                  "className": "text-8xl font-bold text-[var(--theme-muted-foreground)]"
                 },
                 "text": "404"
               },
@@ -43,20 +43,20 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-gray-500 text-lg"
+                  "className": "text-[var(--theme-muted-foreground)] text-lg"
                 },
                 "text": "Sorry, we couldn't find the page you're looking for."
               },
               {
-                "type": "Button",
+                "type": "Pressable",
                 "props": {
-                  "className": "bg-[#1e293b] text-white hover:bg-[#334155] px-8 h-11"
+                  "className": "bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] px-8 h-11 flex flex-row items-center justify-center rounded-md"
                 },
                 "children": [
                   {
-                    "type": "ButtonText",
+                    "type": "Text",
                     "props": {
-                      "className": "!text-white"
+                      "className": "text-white"
                     },
                     "text": "Back to Home"
                   }

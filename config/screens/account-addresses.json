@@ -26,9 +26,9 @@
     }
   ],
   "content": {
-    "type": "VStack",
+    "type": "Box",
     "props": {
-      "className": "space-y-6"
+      "className": "space-y-6 flex flex-col"
     },
     "children": [
       {
@@ -50,22 +50,22 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-gray-500 mt-2"
+                  "className": "text-[var(--theme-muted-foreground)] mt-2"
                 },
                 "text": "Manage your saved shipping and billing addresses"
               }
             ]
           },
           {
-            "type": "Button",
+            "type": "Pressable",
             "props": {
-              "className": "bg-[#1e293b] text-white hover:bg-[#334155]"
+              "className": "bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
             },
             "children": [
               {
-                "type": "ButtonText",
+                "type": "Text",
                 "props": {
-                  "className": "!text-white"
+                  "className": "text-white"
                 },
                 "text": "+ Add Address"
               }
@@ -102,9 +102,9 @@
             "text": "Add New Address"
           },
           {
-            "type": "VStack",
+            "type": "Box",
             "props": {
-              "className": "space-y-4"
+              "className": "space-y-4 flex flex-col"
             },
             "children": [
               {
@@ -296,21 +296,21 @@
                 ]
               },
               {
-                "type": "HStack",
+                "type": "Box",
                 "props": {
-                  "className": "flex gap-2"
+                  "className": "flex gap-2 flex-row"
                 },
                 "children": [
                   {
-                    "type": "Button",
+                    "type": "Pressable",
                     "props": {
-                      "className": "bg-[#1e293b] text-white hover:bg-[#334155]"
+                      "className": "bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
                     },
                     "children": [
                       {
-                        "type": "ButtonText",
+                        "type": "Text",
                         "props": {
-                          "className": "!text-white"
+                          "className": "text-white"
                         },
                         "text": "Save Address"
                       }
@@ -322,15 +322,15 @@
                     }
                   },
                   {
-                    "type": "Button",
+                    "type": "Pressable",
                     "props": {
-                      "className": "border border-gray-200 bg-white text-gray-900 hover:bg-gray-100"
+                      "className": "border border-[var(--theme-border)] bg-[var(--theme-content-bg)] text-[var(--theme-foreground)] hover:bg-[var(--theme-hero-bg)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
                     },
                     "children": [
                       {
-                        "type": "ButtonText",
+                        "type": "Text",
                         "props": {
-                          "className": "!text-gray-900"
+                          "className": "text-[var(--theme-foreground)]"
                         },
                         "text": "Cancel"
                       }
@@ -369,7 +369,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-gray-500"
+              "className": "text-[var(--theme-muted-foreground)]"
             },
             "text": "No saved addresses yet."
           }
@@ -402,55 +402,55 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500 mt-1"
+                      "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                     },
                     "text": "{{$item.streetLine1}}"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500"
+                      "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
                     "text": "{{$item.city}}, {{$item.postalCode}}"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500"
+                      "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
                     "text": "{{$item.country.name}}"
                   },
                   {
-                    "type": "HStack",
+                    "type": "Box",
                     "props": {
-                      "className": "flex gap-2 mt-3"
+                      "className": "flex gap-2 mt-3 flex-row"
                     },
                     "children": [
                       {
-                        "type": "Button",
+                        "type": "Pressable",
                         "props": {
-                          "className": "border border-gray-200 bg-white text-gray-900 hover:bg-gray-100 text-xs h-8 px-3"
+                          "className": "border border-[var(--theme-border)] bg-[var(--theme-content-bg)] text-[var(--theme-foreground)] hover:bg-[var(--theme-hero-bg)] text-xs h-8 px-3 flex flex-row items-center justify-center rounded-md"
                         },
                         "children": [
                           {
-                            "type": "ButtonText",
+                            "type": "Text",
                             "props": {
-                              "className": "!text-gray-900"
+                              "className": "text-[var(--theme-foreground)]"
                             },
                             "text": "Edit"
                           }
                         ]
                       },
                       {
-                        "type": "Button",
+                        "type": "Pressable",
                         "props": {
-                          "className": "border border-red-400 text-red-500 hover:bg-red-50 text-xs h-8 px-3"
+                          "className": "border border-red-400 text-red-500 hover:bg-red-50 text-xs h-8 px-3 flex flex-row items-center justify-center rounded-md"
                         },
                         "children": [
                           {
-                            "type": "ButtonText",
+                            "type": "Text",
                             "props": {
-                              "className": "!text-red-500"
+                              "className": "text-red-500"
                             },
                             "text": "Delete"
                           }

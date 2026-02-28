@@ -386,6 +386,22 @@ const effectiveAction = hasBg ? 'custom' : action;
 
 ---
 
+### 3b. Overlay ring / X/Y/W/H lag during panel edits (rotation, opacity, etc.)
+
+**Root cause 1 (ring lag):** The overlay's `useLayoutEffect` and `selectedRects` useMemo depended only on `tick` (RAF loop). The RAF loop stops 200 ms after the last canvas hover/scroll. When the user is only clicking the panel, `tick` is frozen → ring doesn't reposition to match the newly rotated element.
+
+**Fix:** Added `pageNodes` to both `useLayoutEffect([tick, pageNodes])` and `selectedRects` useMemo deps in `_overlay.tsx`. Every `patchProp` call creates a new `pageNodes` reference, triggering the layout effect before paint.
+
+**Root cause 2 (X/Y/W/H lag):** `domMetrics` was a `useMemo` that ran during the render phase (before React committed the new style to DOM). It read stale BCR values. Also, `patchStyle` debounces the Zustand commit by 80 ms, so during rapid pressing the `useLayoutEffect([store.pageNodes])` that recomputes domMetrics fires at most once per 80 ms.
+
+**Fix 1:** Converted `domMetrics` from `useMemo` to `useState` driven by `useLayoutEffect` (after commit → correct BCR).
+
+**Fix 2:** Inside `patchStyle`, right after the direct DOM mutation (step 1), read `getBoundingClientRect()` and imperatively set `.value` on the `input-pos-x/y/w/h` DOM inputs. This gives frame-perfect X/Y/W/H updates with zero React re-renders — same frame as the component rotation.
+
+**Rule:** Any panel control that produces a direct DOM mutation via `patchStyle` step 1 must also update any read-only DOM metrics displays imperatively (via `querySelector + inp.value = ...`) in the same synchronous call, NOT via React state. React state (domMetrics) is the fallback for zoom changes, node selection changes, and the post-debounce settle render.
+
+---
+
 ### 4. Colors use inline `style.backgroundColor / color / borderColor`
 
 **Root cause:** NativeWind doesn't reliably compile arbitrary `bg-[#hex]` classes set dynamically at runtime.
@@ -688,6 +704,43 @@ The **capture overlay** gets `pointerEvents: 'none'` while `editingId` is set, s
 **Fix:** Hug and Fill click handlers now call `patchStyle({ width: '', minWidth: '' })` (or `height/minHeight`) in addition to updating the className. Fixed mode intentionally does NOT clear the inline style — it preserves the user's explicit size.
 
 **Rule:** Any time you add a layout-mode class (`w-fit`, `w-full`, `h-fit`, `h-full`) you must also clear the corresponding inline style property. Otherwise the inline style wins.
+
+---
+
+### 13b. Fill/Hug stays active after resizing via panel input or canvas handles
+
+**Root cause:** When the user types a new value in the W or H input (Position & Size section), or drags a canvas resize handle, the code calls `patchStyle({ width: '${px}px' })` — which sets an inline style overriding the `w-full`/`w-fit` class visually. BUT the class is NOT removed from `className`, so the Dimensions section still shows "Fill" or "Hug" as active.
+
+**Fix 1 — Right panel W/H inputs (`_panel-right.tsx`):** After calling `patchStyle`, also call `patchCls` to remove the fill/hug tokens:
+```tsx
+// W input
+onChange={px => {
+  patchStyle({ width: `${px}px`, minWidth: '0' });
+  patchCls(removeTwToken(removeTwToken(cls, 'w-fit'), 'w-full'));
+}}
+// H input
+onChange={px => {
+  patchStyle({ height: `${px}px`, minHeight: '0' });
+  patchCls(removeTwToken(removeTwToken(cls, 'h-fit'), 'h-full'));
+}}
+```
+
+**Fix 2 — Canvas resize handles (`_canvas.tsx` `onUp`):** After committing the style, also patch className for the resized axis:
+```tsx
+const existingCls = (node?.props as { className?: string })?.className ?? '';
+let newCls = existingCls;
+if (handle.includes('e') || handle.includes('w')) {
+  newCls = removeTwToken(removeTwToken(newCls, 'w-fit'), 'w-full');
+}
+if (handle.includes('n') || handle.includes('s')) {
+  newCls = removeTwToken(removeTwToken(newCls, 'h-fit'), 'h-full');
+}
+if (newCls !== existingCls) {
+  useBuilderStore.getState().patchProp(id, 'props.className', newCls);
+}
+```
+
+**Rule:** Whenever a pixel size is explicitly set (via input or drag handle), the corresponding `w-fit`/`w-full`/`h-fit`/`h-full` class MUST be removed so the Dimensions panel reflects Fixed mode. Symmetrically, when switching to Hug/Fill, the inline style must be cleared (§13 above).
 
 ---
 
@@ -1272,6 +1325,29 @@ onChange={hex => {
   patchCls(hex ? `${cleaned} text-[${hex}]`.trim() : cleaned);
   patchStyle({ color: hex || '' });   // also update inline style
 }}
+```
+
+---
+
+### Viewport Breakpoint Tests — Inject Nodes With Child Text, Not Empty Children
+
+**Problem:** Injecting a Box with `children: []` (empty array) can be unreliable — the element may not receive `data-builder-id` in DOM immediately. Combined with a viewport click before injection (which causes a brief canvas re-render), `waitForSelector('[data-builder-id]')` can time out.
+
+**Fix:**
+1. Add a `waitForTimeout(200)` before `_setPageNodes` (matching the BF-43 pattern) to let the canvas settle after the viewport click.
+2. Always include at least one child (e.g. `{ type: 'Text', id: '...', text: '...', props: {} }`) so the container has content and `data-builder-id` is stamped reliably.
+3. Use inline `style: { minHeight: '80px' }` instead of Tailwind `h-20` (dynamic Tailwind classes may not compile in tests).
+
+```typescript
+await page.waitForTimeout(200);
+await page.evaluate(() => {
+  __builderStore.getState()._setPageNodes([{
+    type: 'Box', id: 'test-box',
+    props: { className: 'w-full', style: { minHeight: '80px' } },
+    children: [{ type: 'Text', id: 'test-txt', text: 'label', props: {} }],
+  }]);
+});
+await page.waitForSelector('[data-builder-id="test-box"]', { timeout: 12_000 });
 ```
 
 ---

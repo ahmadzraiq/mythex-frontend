@@ -13,15 +13,15 @@
     }
   ],
   "content": {
-    "type": "VStack",
+    "type": "Box",
     "props": {
-      "className": "space-y-6"
+      "className": "space-y-6 flex flex-col"
     },
     "children": [
       {
-        "type": "HStack",
+        "type": "Box",
         "props": {
-          "className": "flex items-center gap-3"
+          "className": "flex items-center gap-3 flex-row"
         },
         "children": [
           {
@@ -38,7 +38,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 hover:text-gray-900 hover:underline transition-colors"
+                  "className": "text-sm text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] hover:underline transition-colors"
                 },
                 "text": "← Orders"
               }
@@ -87,17 +87,17 @@
                 "text": "Items"
               },
               {
-                "type": "VStack",
+                "type": "Box",
                 "props": {
-                  "className": "space-y-4"
+                  "className": "space-y-4 flex flex-col"
                 },
                 "map": "account.orderDetail.lines",
                 "key": "orderDetailLine",
                 "children": [
                   {
-                    "type": "HStack",
+                    "type": "Box",
                     "props": {
-                      "className": "flex gap-4 items-start"
+                      "className": "flex gap-4 items-start flex-row"
                     },
                     "children": [
                       {
@@ -107,7 +107,7 @@
                           "alt": "{{$item.productVariant.product.name}}",
                           "width": 80,
                           "height": 80,
-                          "className": "rounded-md object-cover w-20 h-20 flex-shrink-0 border border-gray-200"
+                          "className": "rounded-md object-cover w-20 h-20 flex-shrink-0 border border-[var(--theme-border)]"
                         }
                       },
                       {
@@ -126,14 +126,14 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-sm text-gray-500"
+                              "className": "text-sm text-[var(--theme-muted-foreground)]"
                             },
                             "text": "{{$item.productVariant.name}}"
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-sm text-gray-500 mt-1"
+                              "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                             },
                             "text": {
                               "expr": {
@@ -210,21 +210,21 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500"
+                      "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
                     "text": "{{account.orderDetail.shippingAddress.streetLine1}}"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500"
+                      "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
                     "text": "{{account.orderDetail.shippingAddress.city}}, {{account.orderDetail.shippingAddress.postalCode}}"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500"
+                      "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
                     "text": "{{account.orderDetail.shippingAddress.country}}"
                   }
@@ -249,15 +249,15 @@
                     "text": "Order Summary"
                   },
                   {
-                    "type": "HStack",
+                    "type": "Box",
                     "props": {
-                      "className": "flex justify-between text-sm"
+                      "className": "flex justify-between text-sm flex-row"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-gray-500"
+                          "className": "text-[var(--theme-muted-foreground)]"
                         },
                         "text": "Subtotal"
                       },
@@ -290,15 +290,15 @@
                     ]
                   },
                   {
-                    "type": "HStack",
+                    "type": "Box",
                     "props": {
-                      "className": "flex justify-between text-sm"
+                      "className": "flex justify-between text-sm flex-row"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-gray-500"
+                          "className": "text-[var(--theme-muted-foreground)]"
                         },
                         "text": "Shipping"
                       },
@@ -334,9 +334,9 @@
                     "type": "Divider"
                   },
                   {
-                    "type": "HStack",
+                    "type": "Box",
                     "props": {
-                      "className": "flex justify-between font-bold"
+                      "className": "flex justify-between font-bold flex-row"
                     },
                     "children": [
                       {

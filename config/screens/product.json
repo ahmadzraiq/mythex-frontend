@@ -57,20 +57,20 @@
         {
           "type": "Text",
           "props": {
-            "className": "text-gray-500 mb-6"
+            "className": "text-[var(--theme-muted-foreground)] mb-6"
           },
           "text": "The product you're looking for doesn't exist or has been removed."
         },
         {
-          "type": "Button",
+          "type": "Pressable",
           "props": {
-            "className": "!bg-[#1e293b] hover:!bg-[#334155] !text-white"
+            "className": "!bg-[var(--theme-shop-button)] hover:!bg-[var(--theme-shop-buttonHover)] !text-white flex flex-row items-center justify-center py-3 px-4 rounded-md"
           },
           "children": [
             {
-              "type": "ButtonText",
+              "type": "Text",
               "props": {
-                "className": "!text-white"
+                "className": "text-white"
               },
               "text": "Continue Shopping"
             }
@@ -104,7 +104,7 @@
             {
               "type": "Box",
               "props": {
-                "className": "aspect-square bg-gray-200 rounded-lg"
+                "className": "aspect-square bg-[var(--theme-hero-bg)] rounded-lg"
               }
             },
             {
@@ -116,19 +116,19 @@
                 {
                   "type": "Box",
                   "props": {
-                    "className": "h-10 bg-gray-200 rounded w-3/4"
+                    "className": "h-10 bg-[var(--theme-hero-bg)] rounded w-3/4"
                   }
                 },
                 {
                   "type": "Box",
                   "props": {
-                    "className": "h-6 bg-gray-200 rounded w-1/4"
+                    "className": "h-6 bg-[var(--theme-hero-bg)] rounded w-1/4"
                   }
                 },
                 {
                   "type": "Box",
                   "props": {
-                    "className": "h-32 bg-gray-200 rounded"
+                    "className": "h-32 bg-[var(--theme-hero-bg)] rounded"
                   }
                 }
               ]
@@ -192,7 +192,7 @@
         {
           "type": "Box",
           "props": {
-            "className": "py-16 bg-gray-50/30 mt-12"
+            "className": "py-16 mt-12"
           },
           "children": [
             {
@@ -215,7 +215,7 @@
                   },
                   "children": [
                     {
-                      "type": "VStack",
+                      "type": "Box",
                       "props": {
                         "className": "space-y-3 flex flex-col items-center"
                       },
@@ -223,14 +223,14 @@
                         {
                           "type": "Box",
                           "props": {
-                            "className": "w-12 h-12 bg-[#1e293b]/10 rounded-full flex items-center justify-center"
+                            "className": "w-12 h-12 bg-[#7c3aed]/10 rounded-full flex items-center justify-center"
                           },
                           "children": [
                             {
                               "type": "NavIcon",
                               "props": {
                                 "icon": "Star",
-                                "className": "w-6 h-6 text-[#1e293b]"
+                                "className": "w-6 h-6 text-[#7c3aed]"
                               }
                             }
                           ]
@@ -245,14 +245,14 @@
                         {
                           "type": "Text",
                           "props": {
-                            "className": "text-gray-500 text-center"
+                            "className": "text-[var(--theme-muted-foreground)] text-center"
                           },
                           "text": "Crafted with care using the finest materials"
                         }
                       ]
                     },
                     {
-                      "type": "VStack",
+                      "type": "Box",
                       "props": {
                         "className": "space-y-3 flex flex-col items-center"
                       },
@@ -260,14 +260,14 @@
                         {
                           "type": "Box",
                           "props": {
-                            "className": "w-12 h-12 bg-[#1e293b]/10 rounded-full flex items-center justify-center"
+                            "className": "w-12 h-12 bg-[#7c3aed]/10 rounded-full flex items-center justify-center"
                           },
                           "children": [
                             {
                               "type": "NavIcon",
                               "props": {
                                 "icon": "Globe",
-                                "className": "w-6 h-6 text-[#1e293b]"
+                                "className": "w-6 h-6 text-[#7c3aed]"
                               }
                             }
                           ]
@@ -282,14 +282,14 @@
                         {
                           "type": "Text",
                           "props": {
-                            "className": "text-gray-500 text-center"
+                            "className": "text-[var(--theme-muted-foreground)] text-center"
                           },
                           "text": "Sustainably sourced and environmentally conscious"
                         }
                       ]
                     },
                     {
-                      "type": "VStack",
+                      "type": "Box",
                       "props": {
                         "className": "space-y-3 flex flex-col items-center"
                       },
@@ -297,14 +297,14 @@
                         {
                           "type": "Box",
                           "props": {
-                            "className": "w-12 h-12 bg-[#1e293b]/10 rounded-full flex items-center justify-center"
+                            "className": "w-12 h-12 bg-[#7c3aed]/10 rounded-full flex items-center justify-center"
                           },
                           "children": [
                             {
                               "type": "NavIcon",
                               "props": {
                                 "icon": "ShieldCheck",
-                                "className": "w-6 h-6 text-[#1e293b]"
+                                "className": "w-6 h-6 text-[#7c3aed]"
                               }
                             }
                           ]
@@ -319,7 +319,7 @@
                         {
                           "type": "Text",
                           "props": {
-                            "className": "text-gray-500 text-center"
+                            "className": "text-[var(--theme-muted-foreground)] text-center"
                           },
                           "text": "100% happiness or your money back"
                         }
@@ -334,7 +334,7 @@
         {
           "type": "Box",
           "props": {
-            "className": "py-16 bg-gray-50/30"
+            "className": "py-16"
           },
           "children": [
             {
@@ -362,7 +362,7 @@
                       "type": "AccordionItem",
                       "props": {
                         "value": "shipping",
-                        "className": "border-b border-gray-200 last:border-b-0"
+                        "className": "border-b border-[var(--theme-border)] last:border-b-0"
                       },
                       "children": [
                         {
@@ -384,7 +384,7 @@
                                 {
                                   "type": "AccordionIcon",
                                   "props": {
-                                    "className": "!text-gray-500 h-4 w-4 shrink-0"
+                                    "className": "!text-[var(--theme-muted-foreground)] h-4 w-4 shrink-0"
                                   }
                                 }
                               ]
@@ -400,7 +400,7 @@
                             {
                               "type": "AccordionContentText",
                               "props": {
-                                "className": "text-gray-500"
+                                "className": "text-[var(--theme-muted-foreground)]"
                               },
                               "text": "We offer standard shipping (5-7 business days), express shipping (2-3 business days), and next-day delivery for select areas. Free standard shipping is available on orders over $50."
                             }
@@ -412,7 +412,7 @@
                       "type": "AccordionItem",
                       "props": {
                         "value": "returns",
-                        "className": "border-b border-gray-200 last:border-b-0"
+                        "className": "border-b border-[var(--theme-border)] last:border-b-0"
                       },
                       "children": [
                         {
@@ -434,7 +434,7 @@
                                 {
                                   "type": "AccordionIcon",
                                   "props": {
-                                    "className": "!text-gray-500 h-4 w-4 shrink-0"
+                                    "className": "!text-[var(--theme-muted-foreground)] h-4 w-4 shrink-0"
                                   }
                                 }
                               ]
@@ -450,7 +450,7 @@
                             {
                               "type": "AccordionContentText",
                               "props": {
-                                "className": "text-gray-500"
+                                "className": "text-[var(--theme-muted-foreground)]"
                               },
                               "text": "We accept returns within 30 days of purchase. Items must be unused and in their original packaging. Simply contact our support team to initiate a return and receive a prepaid shipping label."
                             }
@@ -462,7 +462,7 @@
                       "type": "AccordionItem",
                       "props": {
                         "value": "tracking",
-                        "className": "border-b border-gray-200 last:border-b-0"
+                        "className": "border-b border-[var(--theme-border)] last:border-b-0"
                       },
                       "children": [
                         {
@@ -484,7 +484,7 @@
                                 {
                                   "type": "AccordionIcon",
                                   "props": {
-                                    "className": "!text-gray-500 h-4 w-4 shrink-0"
+                                    "className": "!text-[var(--theme-muted-foreground)] h-4 w-4 shrink-0"
                                   }
                                 }
                               ]
@@ -500,7 +500,7 @@
                             {
                               "type": "AccordionContentText",
                               "props": {
-                                "className": "text-gray-500"
+                                "className": "text-[var(--theme-muted-foreground)]"
                               },
                               "text": "Once your order ships, you'll receive an email with a tracking number. You can also view your order status anytime by logging into your account and visiting the order history section."
                             }
@@ -512,7 +512,7 @@
                       "type": "AccordionItem",
                       "props": {
                         "value": "international",
-                        "className": "border-b border-gray-200 last:border-b-0"
+                        "className": "border-b border-[var(--theme-border)] last:border-b-0"
                       },
                       "children": [
                         {
@@ -534,7 +534,7 @@
                                 {
                                   "type": "AccordionIcon",
                                   "props": {
-                                    "className": "!text-gray-500 h-4 w-4 shrink-0"
+                                    "className": "!text-[var(--theme-muted-foreground)] h-4 w-4 shrink-0"
                                   }
                                 }
                               ]
@@ -550,7 +550,7 @@
                             {
                               "type": "AccordionContentText",
                               "props": {
-                                "className": "text-gray-500"
+                                "className": "text-[var(--theme-muted-foreground)]"
                               },
                               "text": "Yes! We ship to over 50 countries worldwide. International shipping rates and delivery times vary by location. You can see the exact cost at checkout before completing your purchase."
                             }
