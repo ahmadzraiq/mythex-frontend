@@ -519,8 +519,9 @@ function DesignTab({ node }: { node: SDUINode }) {
 
   const padding     = expandPadding(cls);
   const corners     = expandBorderRadius(cls);
-  const activeCell  = getAlignCellIndex(cls);
   const flexDir     = parseTwToken(cls, 'flex-') ?? 'flex-col';
+  const isRow       = flexDir === 'flex-row';
+  const activeCell  = getAlignCellIndex(cls, isRow);
   const gapToken    = parseTwToken(cls, 'gap-') ?? 'gap-0';
   // parseTwArbitrary handles gap-[12px]; scale tokens fall back to the 4px grid
   const gapPx       = parseTwArbitrary(cls, 'gap-') ?? (parseInt(gapToken.replace('gap-', '') || '0') * 4);
@@ -841,15 +842,34 @@ function DesignTab({ node }: { node: SDUINode }) {
         <div style={SECTION_STYLE}>
           <SectionHeader title="Alignment" />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, width: 72 }}>
-            {Array.from({ length: 9 }, (_, i) => (
-              <div
-                key={i}
-                data-testid="alignment-cell"
-                data-cell-index={i}
-                onClick={() => patchCls(applyAlignment(cls, i))}
-                style={{ width: 20, height: 20, background: activeCell === i ? '#3b82f6' : '#1f2937', border: `1px solid ${activeCell === i ? '#3b82f6' : '#374151'}`, borderRadius: 3, cursor: 'pointer' }}
-              />
-            ))}
+            {Array.from({ length: 9 }, (_, i) => {
+              const isActive = activeCell === i;
+              // Dot position maps directly to visual meaning: row=vertical, col=horizontal
+              const FLEX_POS = ['flex-start', 'center', 'flex-end'] as const;
+              const dotV = FLEX_POS[Math.floor(i / 3)];
+              const dotH = FLEX_POS[i % 3];
+              return (
+                <div
+                  key={i}
+                  data-testid="alignment-cell"
+                  data-cell-index={i}
+                  onClick={() => patchCls(applyAlignment(cls, i, isRow))}
+                  style={{
+                    width: 20, height: 20,
+                    background: isActive ? '#3b82f6' : '#1f2937',
+                    border: `1px solid ${isActive ? '#3b82f6' : '#374151'}`,
+                    borderRadius: 3, cursor: 'pointer',
+                    display: 'flex', alignItems: dotV, justifyContent: dotH,
+                    padding: 3,
+                  }}
+                >
+                  <div style={{
+                    width: 4, height: 4, borderRadius: '50%', flexShrink: 0,
+                    background: isActive ? 'rgba(255,255,255,0.9)' : '#4b5563',
+                  }} />
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

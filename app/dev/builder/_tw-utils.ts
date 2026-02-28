@@ -521,28 +521,41 @@ export function applyBorderRadius(className: string, corners: FourCorners): stri
 
 // ─── Flex alignment ───────────────────────────────────────────────────────────
 
-/** Figma-style 9-cell alignment → Tailwind flex classes */
-export const ALIGN_CELLS: { items: string; justify: string }[] = [
-  { items: 'items-start',   justify: 'justify-start'   }, // top-left
-  { items: 'items-start',   justify: 'justify-center'  }, // top-center
-  { items: 'items-start',   justify: 'justify-end'     }, // top-right
-  { items: 'items-center',  justify: 'justify-start'   }, // middle-left
-  { items: 'items-center',  justify: 'justify-center'  }, // center
-  { items: 'items-center',  justify: 'justify-end'     }, // middle-right
-  { items: 'items-end',     justify: 'justify-start'   }, // bottom-left
-  { items: 'items-end',     justify: 'justify-center'  }, // bottom-center
-  { items: 'items-end',     justify: 'justify-end'     }, // bottom-right
-];
+/**
+ * Build the 9-cell alignment map for a flex container.
+ *
+ * Visual grid rows = vertical axis (top → bottom)
+ * Visual grid cols = horizontal axis (left → right)
+ *
+ * flex-row  cross axis = vertical   → items-*   driven by row
+ *           main  axis = horizontal → justify-* driven by col
+ *
+ * flex-col  main  axis = vertical   → justify-* driven by row
+ *           cross axis = horizontal → items-*   driven by col
+ */
+function buildAlignCells(isRow: boolean): { items: string; justify: string }[] {
+  const POS = ['start', 'center', 'end'] as const;
+  return Array.from({ length: 9 }, (_, i) => {
+    const row = Math.floor(i / 3);
+    const col = i % 3;
+    if (isRow) {
+      return { items: `items-${POS[row]}`, justify: `justify-${POS[col]}` };
+    } else {
+      // flex-col: rows drive justify (vertical main-axis), cols drive items (horizontal cross-axis)
+      return { items: `items-${POS[col]}`, justify: `justify-${POS[row]}` };
+    }
+  });
+}
 
-export function getAlignCellIndex(className: string): number {
+export function getAlignCellIndex(className: string, isRow = false): number {
   const items   = parseTwToken(className, 'items-')   ?? 'items-start';
   const justify = parseTwToken(className, 'justify-') ?? 'justify-start';
-  const idx = ALIGN_CELLS.findIndex(c => c.items === items && c.justify === justify);
+  const idx = buildAlignCells(isRow).findIndex(c => c.items === items && c.justify === justify);
   return idx >= 0 ? idx : 0;
 }
 
-export function applyAlignment(className: string, cellIdx: number): string {
-  const cell = ALIGN_CELLS[cellIdx];
+export function applyAlignment(className: string, cellIdx: number, isRow = false): string {
+  const cell = buildAlignCells(isRow)[cellIdx];
   if (!cell) return className;
   const cls = removeTwToken(removeTwToken(className, 'items-'), 'justify-');
   return `${cls} ${cell.items} ${cell.justify}`.trim();
