@@ -224,12 +224,70 @@ export const VIEWPORT_WIDTHS: Record<ViewportSize, number> = {
   desktop: 1280,
 };
 
+// ─── Data Source Config ───────────────────────────────────────────────────────
+
+export interface DataSourceHeader { key: string; value: string; enabled?: boolean; }
+
+export interface DataSourceParam { key: string; value: string; enabled: boolean; }
+
+export interface DataSourceAuth {
+  type: 'none' | 'bearer' | 'basic' | 'apikey';
+  token?: string;
+  username?: string;
+  password?: string;
+  apiKey?: string;
+  apiKeyHeader?: string;
+}
+
+export interface CustomVar {
+  name: string;
+  type: 'string' | 'number' | 'boolean' | 'object' | 'array';
+  initialValue: unknown;
+}
+
+export interface DataSourceConfig {
+  id: string;
+  name: string;
+  type: 'rest' | 'graphql';
+  // REST
+  url?: string;
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  headers?: DataSourceHeader[];
+  body?: string;
+  queryParams?: DataSourceParam[];
+  auth?: DataSourceAuth;
+  // GraphQL
+  endpoint?: string;
+  query?: string;
+  variables?: string;
+  // Common
+  responsePath?: string;
+  storeIn?: string;
+  trigger?: 'mount' | 'action';
+  triggerActionName?: string;
+  /** Origin actions/*.json file name (without .json) — used for write-back */
+  _sourceFile?: string;
+}
+
+export interface PageMeta {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+}
+
 export interface BuilderPage {
   id: string;
   name: string;
   /** App route path — omitted for builder-internal canvases (e.g. Component Showcase). */
   route?: string;
   nodes: SDUINode[];
+  /** Flat key-value dummy data for the "Data" preview state.
+   *  Keys match Zustand data paths (e.g. "cart.totalQuantity", "cart.lines"). */
+  previewData?: Record<string, unknown>;
+  /** Page-level SEO / meta fields */
+  meta?: PageMeta;
+  /** Page-level interactions keyed by event name (e.g. "mount") */
+  pageInteractions?: Record<string, { workflow?: string }>;
 }
 
 export interface BuilderStore {
@@ -302,6 +360,7 @@ export interface BuilderStore {
   toggleVisibility: (id: string) => void;
   toggleLock: (id: string) => void;
   toggleExpanded: (id: string) => void;
+  setExpandedIds: (ids: Set<string>) => void;
 
   // Tool
   setTool: (t: 'select' | 'hand') => void;
@@ -342,6 +401,71 @@ export interface BuilderStore {
   pendingFitToPage: boolean;
   clearPendingFit: () => void;
 
+  // ── Logic / Behavior layer ───────────────────────────────────────────────────
+  /** Which component states are being previewed on the canvas (builder-only mock). Multi-select supported. */
+  activePreviewStates: string[];
+  /** Show interaction lines on the canvas overlay */
+  showInteractionLines: boolean;
+  /** Signal to the Logic panel to scroll to / open a specific section */
+  activeLogicSection: string | null;
+
+  patchCondition: (id: string, condition: object | null) => void;
+  patchActions: (id: string, actions: Record<string, unknown> | null) => void;
+  patchMap: (id: string, mapPath: string | null, keyField?: string) => void;
+  patchDataSource: (id: string, ds: Record<string, unknown> | null) => void;
+  patchVariant: (id: string, variants: unknown[] | null) => void;
+  /** Generic: patch any top-level or nested field on a node */
+  patchNodeField: (id: string, field: string, value: unknown) => void;
+  setPreviewState: (state: string) => void;
+  togglePreviewState: (state: string) => void;
+  setShowInteractionLines: (on: boolean) => void;
+  openLogicSection: (section: string | null) => void;
+  /** Set the dummy preview data for the current page (used by "Data" preview state) */
+  setCurrentPagePreviewData: (data: Record<string, unknown>) => void;
+  /** Set meta fields for the current page */
+  setCurrentPageMeta: (meta: PageMeta) => void;
+  /** Set page-level interactions for the current page */
+  setCurrentPageInteractions: (interactions: Record<string, { workflow?: string }>) => void;
+  /** Engine conventions loaded from store.json (graphqlEndpoint, graphqlHeaders, etc.) */
+  engineConventions: {
+    graphqlEndpoint?: string;
+    graphqlHeaders?: Record<string, string>;
+    graphqlCredentials?: string;
+  };
+
+  /** App-level global preview data shared across all pages (overridden per-page) */
+  appPreviewData: Record<string, unknown>;
+  /** Set global app-level preview data */
+  setAppPreviewData: (data: Record<string, unknown>) => void;
+
+  // ── Workflows & Formulas ─────────────────────────────────────────────────────
+  /** Named workflows (per-page action sequences, keyed by workflow name) */
+  pageWorkflows: Record<string, object[]>;
+  /** App-level workflows shared across all pages */
+  globalWorkflows: Record<string, object[]>;
+  /** Named JSON Logic expressions usable as {{formula.name}} anywhere */
+  globalFormulas: Record<string, object>;
+  setPageWorkflow: (name: string, actions: object[]) => void;
+  removePageWorkflow: (name: string) => void;
+  setGlobalWorkflow: (name: string, actions: object[]) => void;
+  removeGlobalWorkflow: (name: string) => void;
+  setGlobalFormula: (name: string, expr: object) => void;
+  removeGlobalFormula: (name: string) => void;
+
+  // ── Custom Variables ─────────────────────────────────────────────────────────
+  /** User-defined variables with an initial value and type */
+  customVars: CustomVar[];
+  addCustomVar: (v: CustomVar) => void;
+  updateCustomVar: (name: string, patch: Partial<CustomVar>) => void;
+  removeCustomVar: (name: string) => void;
+
+  // ── Data Sources ─────────────────────────────────────────────────────────────
+  /** Page-level API data sources (REST or GraphQL) */
+  pageDataSources: DataSourceConfig[];
+  addPageDataSource: (cfg: DataSourceConfig) => void;
+  updatePageDataSource: (id: string, patch: Partial<DataSourceConfig>) => void;
+  removePageDataSource: (id: string) => void;
+
   // ── Theme overrides ──────────────────────────────────────────────────────────
   /** Light-mode CSS variable overrides (key = var name without --) */
   themeOverrides: Record<string, string>;
@@ -366,6 +490,10 @@ export interface BuilderStore {
     fonts?: { heading?: string; body?: string },
   ) => void;
 
+  /** Load Data Sources, Workflows, Variables, Formulas from the app config files via the API.
+   *  Only runs if panels are empty (user hasn't manually edited), unless forceReload=true. */
+  loadFromConfig: (forceReload?: boolean) => Promise<void>;
+
   // Internal (debounce wrapper)
   _pushHistory: () => void;
   _setPageNodes: (nodes: SDUINode[]) => void;
@@ -378,6 +506,39 @@ export interface BuilderStore {
   // with already-computed BCR so the overlay doesn't need to re-read the DOM.
   _requestRingUpdate: (elRect: DOMRect, frameRect: DOMRect) => void;
   _setRingUpdateCallback: (fn: ((elRect: DOMRect, frameRect: DOMRect) => void) | null) => void;
+}
+
+// ─── localStorage persistence helpers ────────────────────────────────────────
+
+function _loadJson<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function _saveJson(key: string, value: unknown) {
+  if (typeof window === 'undefined') return;
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* quota exceeded etc. */ }
+}
+
+/** localStorage key for builder preview data (Run / Use as preview). Survives refresh. */
+export const BUILDER_PREVIEW_DATA_KEY = 'builder:previewData';
+
+/** Persist a top-level preview key so it survives page refresh. Call from Run and Use as preview. */
+export function persistPreviewData(key: string, value: unknown) {
+  if (typeof window === 'undefined') return;
+  const current = _loadJson<Record<string, unknown>>(BUILDER_PREVIEW_DATA_KEY, {});
+  _saveJson(BUILDER_PREVIEW_DATA_KEY, { ...current, [key]: value });
+}
+
+/** Restore persisted preview data for hydration on page load. */
+export function restorePreviewData(): Record<string, unknown> {
+  return _loadJson<Record<string, unknown>>(BUILDER_PREVIEW_DATA_KEY, {});
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -468,6 +629,131 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   history: [clone(showcaseNodes)],
   historyIdx: 0,
   pendingFitToPage: false,
+  activePreviewStates: ['normal'],
+  showInteractionLines: false,
+  activeLogicSection: null,
+  pageWorkflows: _loadJson<Record<string, object[]>>('builder:workflows', {}),
+  globalWorkflows: {},
+  globalFormulas: _loadJson<Record<string, object>>('builder:formulas', {}),
+  customVars: _loadJson<CustomVar[]>('builder:customVars', []),
+  pageDataSources: _loadJson<DataSourceConfig[]>('builder:dataSources', []),
+  engineConventions: _loadJson<{ graphqlEndpoint?: string; graphqlHeaders?: Record<string, string>; graphqlCredentials?: string }>('builder:engineConventions', {}),
+  appPreviewData: (() => {
+    const defaults: Record<string, unknown> = {
+    // ── Auth ──────────────────────────────────────────────────────────────────
+    'auth.user': { id: 'u1', firstName: 'Jane', lastName: 'Doe', emailAddress: 'jane@example.com' },
+
+    // ── Nav ───────────────────────────────────────────────────────────────────
+    'nav.collections': [
+      { name: 'Women', slug: 'women' },
+      { name: 'Men', slug: 'men' },
+      { name: 'Accessories', slug: 'accessories' },
+      { name: 'Sale', slug: 'sale' },
+    ],
+
+    // ── Cart (priceWithTax values are in cents × 100) ─────────────────────────
+    'cart.currencyCode': 'USD',
+    'cart.totalQuantity': 2,
+    'cart.subTotalWithTax': 14998,
+    'cart.totalWithTax': 16498,
+    'cart.shippingWithTax': 1500,
+    'cart.couponCodes': [],
+    'cart.discounts': [],
+    'cart.lines': [
+      {
+        id: 'l1', quantity: 1, linePriceWithTax: 8999, unitPriceWithTax: 8999,
+        productVariant: {
+          name: 'Classic Tee — M', sku: 'CT-M-001',
+          product: {
+            name: 'Classic Tee', slug: 'classic-tee',
+            featuredAsset: { preview: 'https://placehold.co/80x80/e2e8f0/475569?text=Tee' },
+          },
+        },
+      },
+      {
+        id: 'l2', quantity: 1, linePriceWithTax: 5999, unitPriceWithTax: 5999,
+        productVariant: {
+          name: 'Canvas Tote — Natural', sku: 'TO-NAT-001',
+          product: {
+            name: 'Canvas Tote', slug: 'canvas-tote',
+            featuredAsset: { preview: 'https://placehold.co/80x80/e2e8f0/475569?text=Tote' },
+          },
+        },
+      },
+    ],
+
+    // ── Home — featured products (product-card fragment shape) ────────────────
+    'featured.products': [
+      { slug: 'classic-tee', productName: 'Classic Tee', currencyCode: 'USD', productAsset: { preview: 'https://placehold.co/400x400/f1f5f9/475569?text=Tee' }, priceWithTax: { __typename: 'SinglePrice', value: 8999 } },
+      { slug: 'canvas-tote', productName: 'Canvas Tote', currencyCode: 'USD', productAsset: { preview: 'https://placehold.co/400x400/f1f5f9/475569?text=Tote' }, priceWithTax: { __typename: 'SinglePrice', value: 5999 } },
+      { slug: 'knit-sweater', productName: 'Knit Sweater', currencyCode: 'USD', productAsset: { preview: 'https://placehold.co/400x400/f1f5f9/475569?text=Sweater' }, priceWithTax: { __typename: 'SinglePrice', value: 12999 } },
+      { slug: 'leather-belt', productName: 'Leather Belt', currencyCode: 'USD', productAsset: { preview: 'https://placehold.co/400x400/f1f5f9/475569?text=Belt' }, priceWithTax: { __typename: 'SinglePrice', value: 4500 } },
+    ],
+
+    // ── Collection page ───────────────────────────────────────────────────────
+    'collection.search.totalItems': 24,
+    'collection.search.items': [
+      { slug: 'classic-tee', productName: 'Classic Tee', currencyCode: 'USD', productAsset: { preview: 'https://placehold.co/400x400/f1f5f9/475569?text=Tee' }, priceWithTax: { __typename: 'SinglePrice', value: 8999 } },
+      { slug: 'canvas-tote', productName: 'Canvas Tote', currencyCode: 'USD', productAsset: { preview: 'https://placehold.co/400x400/f1f5f9/475569?text=Tote' }, priceWithTax: { __typename: 'SinglePrice', value: 5999 } },
+      { slug: 'knit-sweater', productName: 'Knit Sweater', currencyCode: 'USD', productAsset: { preview: 'https://placehold.co/400x400/f1f5f9/475569?text=Sweater' }, priceWithTax: { __typename: 'SinglePrice', value: 12999 } },
+      { slug: 'leather-belt', productName: 'Leather Belt', currencyCode: 'USD', productAsset: { preview: 'https://placehold.co/400x400/f1f5f9/475569?text=Belt' }, priceWithTax: { __typename: 'SinglePrice', value: 4500 } },
+      { slug: 'linen-shirt', productName: 'Linen Shirt', currencyCode: 'USD', productAsset: { preview: 'https://placehold.co/400x400/f1f5f9/475569?text=Shirt' }, priceWithTax: { __typename: 'SinglePrice', value: 7500 } },
+      { slug: 'wool-scarf', productName: 'Wool Scarf', currencyCode: 'USD', productAsset: { preview: 'https://placehold.co/400x400/f1f5f9/475569?text=Scarf' }, priceWithTax: { __typename: 'SinglePrice', value: 3500 } },
+    ],
+    'collection.facetGroups': [
+      { id: 'cat', key: 'category', items: [{ facetValue: { id: 'women', name: 'Women' }, count: 12 }, { facetValue: { id: 'men', name: 'Men' }, count: 8 }] },
+      { id: 'col', key: 'color', items: [{ facetValue: { id: 'black', name: 'Black' }, count: 6 }, { facetValue: { id: 'white', name: 'White' }, count: 5 }] },
+    ],
+    'collection.resultsHeaderText': 'Women',
+
+    // ── Search page ───────────────────────────────────────────────────────────
+    'search.totalItems': 8,
+    'search.resultsHeaderText': '8 results for "tee"',
+    'search.resultsHeadingText': 'Search Results',
+    'search.items': [
+      { slug: 'classic-tee', productName: 'Classic Tee', currencyCode: 'USD', productAsset: { preview: 'https://placehold.co/400x400/f1f5f9/475569?text=Tee' }, priceWithTax: { __typename: 'SinglePrice', value: 8999 } },
+      { slug: 'linen-shirt', productName: 'Linen Shirt', currencyCode: 'USD', productAsset: { preview: 'https://placehold.co/400x400/f1f5f9/475569?text=Shirt' }, priceWithTax: { __typename: 'SinglePrice', value: 7500 } },
+      { slug: 'knit-sweater', productName: 'Knit Sweater', currencyCode: 'USD', productAsset: { preview: 'https://placehold.co/400x400/f1f5f9/475569?text=Sweater' }, priceWithTax: { __typename: 'SinglePrice', value: 12999 } },
+    ],
+    'search.facetGroups': [
+      { id: 'cat', key: 'category', items: [{ facetValue: { id: 'women', name: 'Women' }, count: 5 }, { facetValue: { id: 'men', name: 'Men' }, count: 3 }] },
+    ],
+
+    // ── Product detail page ───────────────────────────────────────────────────
+    'product.name': 'Classic Tee',
+    'product.description': '<p>A comfortable everyday essential made from 100% organic cotton. Soft, breathable, and versatile.</p>',
+    'product.assets': [
+      { preview: 'https://placehold.co/600x600/f1f5f9/475569?text=Front', source: 'https://placehold.co/800x800/f1f5f9/475569?text=Front' },
+      { preview: 'https://placehold.co/600x600/e2e8f0/475569?text=Back', source: 'https://placehold.co/800x800/e2e8f0/475569?text=Back' },
+    ],
+    'product.currentImage': { source: 'https://placehold.co/800x800/f1f5f9/475569?text=Front' },
+    'product.imageIndex': 0,
+    'product.optionGroups': [
+      { id: 'size', name: 'Size', options: [{ id: 'xs', name: 'XS' }, { id: 'sm', name: 'S' }, { id: 'md', name: 'M' }, { id: 'lg', name: 'L' }] },
+      { id: 'color', name: 'Color', options: [{ id: 'white', name: 'White' }, { id: 'black', name: 'Black' }, { id: 'navy', name: 'Navy' }] },
+    ],
+    'product.selectedOptions': { size: 'md', color: 'white' },
+    'product.selectedVariant': { priceWithTax: 8999, stockLevel: 'IN_STOCK', sku: 'CT-M-WHT-001' },
+
+    // ── Related products (product page carousel) ──────────────────────────────
+    'related.products': [
+      { slug: 'canvas-tote', productName: 'Canvas Tote', currencyCode: 'USD', productAsset: { preview: 'https://placehold.co/400x400/f1f5f9/475569?text=Tote' }, priceWithTax: { __typename: 'SinglePrice', value: 5999 } },
+      { slug: 'knit-sweater', productName: 'Knit Sweater', currencyCode: 'USD', productAsset: { preview: 'https://placehold.co/400x400/f1f5f9/475569?text=Sweater' }, priceWithTax: { __typename: 'SinglePrice', value: 12999 } },
+      { slug: 'leather-belt', productName: 'Leather Belt', currencyCode: 'USD', productAsset: { preview: 'https://placehold.co/400x400/f1f5f9/475569?text=Belt' }, priceWithTax: { __typename: 'SinglePrice', value: 4500 } },
+    ],
+  };
+    const persisted = restorePreviewData();
+    const merged = { ...defaults };
+    for (const [k, v] of Object.entries(persisted)) {
+      if (!k.includes('.')) {
+        for (const dk of Object.keys(merged)) {
+          if (dk.startsWith(k + '.')) delete merged[dk];
+        }
+      }
+      merged[k] = v;
+    }
+    return merged;
+  })(),
   themeOverrides: {},
   themeDarkOverrides: {},
 
@@ -956,6 +1242,8 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     });
   },
 
+  setExpandedIds: (ids) => set({ expandedIds: ids }),
+
   setTool: (t) => set({ tool: t }),
 
   setZoom: (z) => set({ zoom: z }),
@@ -1297,6 +1585,175 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     set({ themeOverrides: {}, themeDarkOverrides: {} });
   },
 
+  // ── Logic / Behavior helpers ─────────────────────────────────────────────────
+
+  patchCondition: (id, condition) => {
+    set(s => ({
+      pageNodes: patchNodeById(s.pageNodes, id, node =>
+        condition === null
+          ? (({ condition: _c, ...rest }) => rest)(node as SDUINode & { condition?: unknown }) as SDUINode
+          : { ...node, condition } as SDUINode
+      ),
+    }));
+    get()._pushHistory();
+  },
+
+  patchActions: (id, actions) => {
+    set(s => ({
+      pageNodes: patchNodeById(s.pageNodes, id, node =>
+        actions === null
+          ? (({ actions: _a, ...rest }) => rest)(node as SDUINode & { actions?: unknown }) as SDUINode
+          : { ...node, actions } as SDUINode
+      ),
+    }));
+    get()._pushHistory();
+  },
+
+  patchMap: (id, mapPath, keyField) => {
+    set(s => ({
+      pageNodes: patchNodeById(s.pageNodes, id, node => {
+        if (mapPath === null) {
+          const { map: _m, key: _k, ...rest } = node as SDUINode & { map?: unknown; key?: unknown };
+          return rest as SDUINode;
+        }
+        return { ...node, map: mapPath, ...(keyField !== undefined ? { key: keyField } : {}) } as SDUINode;
+      }),
+    }));
+    get()._pushHistory();
+  },
+
+  patchDataSource: (id, ds) => {
+    set(s => ({
+      pageNodes: patchNodeById(s.pageNodes, id, node =>
+        ds === null
+          ? (({ dataSource: _d, ...rest }) => rest)(node as SDUINode & { dataSource?: unknown }) as SDUINode
+          : { ...node, dataSource: ds } as unknown as SDUINode
+      ),
+    }));
+    get()._pushHistory();
+  },
+
+  patchVariant: (id, variants) => {
+    set(s => ({
+      pageNodes: patchNodeById(s.pageNodes, id, node =>
+        variants === null
+          ? (({ _variants: _v, ...rest }) => rest)(node as SDUINode & { _variants?: unknown }) as SDUINode
+          : { ...node, _variants: variants } as SDUINode
+      ),
+    }));
+    get()._pushHistory();
+  },
+
+  patchNodeField: (id, field, value) => {
+    set(s => ({
+      pageNodes: patchNodeById(s.pageNodes, id, node => ({ ...node, [field]: value }) as SDUINode),
+    }));
+    get()._pushHistory();
+  },
+
+  setPreviewState: (state) => set({ activePreviewStates: [state] }),
+  togglePreviewState: (state) =>
+    set((s) => {
+      if (state === 'normal') return { activePreviewStates: ['normal'] };
+      const current = s.activePreviewStates.filter(x => x !== 'normal');
+      const has = current.includes(state);
+      const next = has ? current.filter(x => x !== state) : [...current, state];
+      return { activePreviewStates: next.length === 0 ? ['normal'] : next };
+    }),
+  setCurrentPagePreviewData: (data) =>
+    set((s) => ({
+      pages: s.pages.map((p) => p.id === s.currentPageId ? { ...p, previewData: data } : p),
+    })),
+
+  setCurrentPageMeta: (meta) =>
+    set((s) => ({
+      pages: s.pages.map((p) => p.id === s.currentPageId ? { ...p, meta: { ...p.meta, ...meta } } : p),
+    })),
+
+  setCurrentPageInteractions: (interactions) =>
+    set((s) => ({
+      pages: s.pages.map((p) => p.id === s.currentPageId ? { ...p, pageInteractions: interactions } : p),
+    })),
+
+  setAppPreviewData: (data) => set({ appPreviewData: data }),
+
+  setPageWorkflow: (name, actions) =>
+    set(s => ({ pageWorkflows: { ...s.pageWorkflows, [name]: actions } })),
+  removePageWorkflow: (name) =>
+    set(s => { const { [name]: _, ...rest } = s.pageWorkflows; return { pageWorkflows: rest }; }),
+  setGlobalWorkflow: (name, actions) =>
+    set(s => ({ globalWorkflows: { ...s.globalWorkflows, [name]: actions } })),
+  removeGlobalWorkflow: (name) =>
+    set(s => { const { [name]: _, ...rest } = s.globalWorkflows; return { globalWorkflows: rest }; }),
+  setGlobalFormula: (name, expr) =>
+    set(s => ({ globalFormulas: { ...s.globalFormulas, [name]: expr } })),
+  removeGlobalFormula: (name) =>
+    set(s => { const { [name]: _, ...rest } = s.globalFormulas; return { globalFormulas: rest }; }),
+
+  addCustomVar: (v) =>
+    set(s => ({ customVars: [...s.customVars.filter(x => x.name !== v.name), v] })),
+  updateCustomVar: (name, patch) =>
+    set(s => ({ customVars: s.customVars.map(v => v.name === name ? { ...v, ...patch } : v) })),
+  removeCustomVar: (name) =>
+    set(s => ({ customVars: s.customVars.filter(v => v.name !== name) })),
+
+  addPageDataSource: (cfg) =>
+    set(s => ({ pageDataSources: [...s.pageDataSources, cfg] })),
+  updatePageDataSource: (id, patch) =>
+    set(s => ({ pageDataSources: s.pageDataSources.map(d => d.id === id ? { ...d, ...patch } : d) })),
+  removePageDataSource: (id) =>
+    set(s => ({ pageDataSources: s.pageDataSources.filter(d => d.id !== id) })),
+
+  loadFromConfig: async (forceReload = false) => {
+    try {
+      const res = await fetch('/api/builder/config');
+      if (!res.ok) return;
+      const data = await res.json() as {
+        dataSources?: DataSourceConfig[];
+        workflows?: Record<string, object[]>;
+        variables?: CustomVar[];
+        formulas?: Record<string, object>;
+        engineConventions?: {
+          graphqlEndpoint?: string;
+          graphqlHeaders?: Record<string, string>;
+          graphqlCredentials?: string;
+        };
+      };
+      const conventions = data.engineConventions ?? {};
+      // Always persist and apply engineConventions so the Run button can resolve the endpoint
+      if (typeof window !== 'undefined') {
+        try { localStorage.setItem('builder:engineConventions', JSON.stringify(conventions)); } catch { /* ignore */ }
+      }
+
+      const s = get();
+      const hasLocalData =
+        s.pageDataSources.length > 0 ||
+        s.customVars.length > 0 ||
+        Object.keys(s.pageWorkflows).length > 0 ||
+        Object.keys(s.globalFormulas).length > 0;
+
+      if (forceReload || !hasLocalData) {
+        // Seed panels from config only on first load or when forced
+        set({
+          pageDataSources: data.dataSources ?? [],
+          pageWorkflows: data.workflows ?? {},
+          customVars: data.variables ?? [],
+          globalFormulas: data.formulas ?? {},
+          engineConventions: conventions,
+        });
+      } else {
+        // Still always update engineConventions so execute can use the real endpoint
+        set({ engineConventions: conventions });
+      }
+    } catch {
+      // Network error or dev server not running — silently skip
+    }
+  },
+
+  setShowInteractionLines: (on) => set({ showInteractionLines: on }),
+
+  openLogicSection: (section) => set({ activeLogicSection: section }),
+
   applyThemePreset: (light, dark, fonts) => {
     const fullLight = {
       ...light,
@@ -1336,6 +1793,67 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     });
   },
 }));
+
+// Persist selected fields to localStorage whenever they change
+if (typeof window !== 'undefined') {
+  useBuilderStore.subscribe(s => {
+    _saveJson('builder:dataSources', s.pageDataSources);
+    _saveJson('builder:customVars', s.customVars);
+    _saveJson('builder:workflows', s.pageWorkflows);
+    _saveJson('builder:formulas', s.globalFormulas);
+  });
+}
+
+// ─── Debounced write-back to config files ─────────────────────────────────────
+// Whenever the user edits Data Sources, Variables, Workflows, or Formulas in
+// the builder, flush the changes back to config/actions/*.json and
+// config/store.json via the Next.js API route (500 ms debounce).
+
+if (typeof window !== 'undefined') {
+  let _saveTimer: ReturnType<typeof setTimeout> | null = null;
+  let _prevSaveKey = '';
+
+  useBuilderStore.subscribe(s => {
+    // Build a cheap change-detection key to avoid unnecessary PUT calls
+    const key = JSON.stringify({
+      ds: s.pageDataSources.length,
+      cv: s.customVars.length,
+      wf: Object.keys(s.pageWorkflows).length,
+      gf: Object.keys(s.globalFormulas).length,
+    });
+
+    if (key === _prevSaveKey) return;
+    _prevSaveKey = key;
+
+    if (_saveTimer) clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(async () => {
+      const { pageDataSources, customVars, pageWorkflows, globalFormulas } = useBuilderStore.getState();
+      // Never write back when the builder is in an empty/reset state — this would
+      // destructively overwrite the config files with empty data.
+      const hasData =
+        pageDataSources.length > 0 ||
+        customVars.length > 0 ||
+        Object.keys(pageWorkflows).length > 0 ||
+        Object.keys(globalFormulas).length > 0;
+      if (!hasData) return;
+
+      try {
+        await fetch('/api/builder/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dataSources: pageDataSources,
+            workflows: pageWorkflows,
+            variables: customVars,
+            formulas: globalFormulas,
+          }),
+        });
+      } catch {
+        // Silent — dev-server may not be available, network error, etc.
+      }
+    }, 500);
+  });
+}
 
 // Expose store for E2E tests as early as possible (module-level, not useEffect)
 // so it's available as soon as the JS bundle loads — before React hydration.

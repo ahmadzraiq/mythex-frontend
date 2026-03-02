@@ -2,6 +2,8 @@
  * Handler for type: "navigate" - router navigation (path or routeConfig + slug)
  */
 
+import { CONVENTIONS } from '../../conventions';
+import { setNestedValue } from '../../nested-utils';
 import { interpolateUrl } from '../resolve-value';
 import type { ActionDef, ActionHandlerContext } from './types';
 
@@ -25,7 +27,7 @@ export const navigateHandler: (ctx: ActionHandlerContext) => (actionDef: ActionD
         const resolved = ctx.get(String(varPath), ctx.scope);
         slug = typeof resolved === 'string' ? resolved : (resolved as { slug?: string })?.slug;
       } else if (typeof pl.slug === 'string') {
-        slug = pl.slug;
+        slug = pl.slug.includes('{{') ? interpolateUrl(pl.slug, ctx.get, ctx.scope) : pl.slug;
       } else {
         const item = ctx.scope?.$item as { slug?: string } | undefined;
         slug = item?.slug;
@@ -51,5 +53,17 @@ export const navigateHandler: (ctx: ActionHandlerContext) => (actionDef: ActionD
       } else {
         router.push(interpolated);
       }
+    }
+
+    // Reset variable store paths configured to clear on navigation (e.g. open menus)
+    const resetPaths = CONVENTIONS.resetVarsOnNavigate;
+    if (resetPaths.length > 0) {
+      ctx.store.getState().setState((prev) => {
+        let next = prev;
+        for (const p of resetPaths) {
+          next = setNestedValue(next, p, false);
+        }
+        return next;
+      });
     }
   };

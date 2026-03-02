@@ -84,25 +84,7 @@
                   {
                     "type": "Pressable",
                     "props": {
-                      "className": {
-                        "expr": {
-                          "cat": [
-                            "flex flex-row items-center justify-between w-full py-4 ",
-                            {
-                              "if": [
-                                {
-                                  "var": [
-                                    "checkout.order.shippingAddress.streetLine1",
-                                    ""
-                                  ]
-                                },
-                                "",
-                                "opacity-50 pointer-events-none cursor-not-allowed"
-                              ]
-                            }
-                          ]
-                        }
-                      }
+                      "className": { "expr": "'flex flex-row items-center justify-between w-full py-4 ' + ({{checkout.order.shippingAddress.streetLine1}} ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')" }
                     },
                     "actions": {
                       "click": {
@@ -121,43 +103,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": {
-                                "expr": {
-                                  "cat": [
-                                    "flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ",
-                                    {
-                                      "if": [
-                                        {
-                                          ">": [
-                                            {
-                                              "var": [
-                                                "checkout.order.shippingLines.length",
-                                                0
-                                              ]
-                                            },
-                                            0
-                                          ]
-                                        },
-                                        "bg-green-500 !text-white",
-                                        {
-                                          "if": [
-                                            {
-                                              "==": [
-                                                {
-                                                  "var": "checkout.step"
-                                                },
-                                                "delivery"
-                                              ]
-                                            },
-                                            "bg-[var(--theme-shop-button)] !text-white",
-                                            "bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]"
-                                          ]
-                                        }
-                                      ]
-                                    }
-                                  ]
-                                }
-                              }
+                              "className": { "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + (({{checkout.order.shippingLines.length}} || 0) > 0 ? 'bg-green-500 !text-white' : ({{checkout.step}} === 'delivery' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]'))" }
                             },
                             "children": [
                               {
@@ -167,17 +113,7 @@
                                   "size": 16,
                                   "className": "!text-white"
                                 },
-                                "condition": {
-                                  ">": [
-                                    {
-                                      "var": [
-                                        "checkout.order.shippingLines.length",
-                                        0
-                                      ]
-                                    },
-                                    0
-                                  ]
-                                }
+                                "condition": "({{checkout.order.shippingLines.length}} || 0) > 0"
                               },
                               {
                                 "type": "Text",
@@ -185,29 +121,7 @@
                                   "className": "font-semibold text-sm !text-white"
                                 },
                                 "text": "3",
-                                "condition": {
-                                  "and": [
-                                    {
-                                      "<=": [
-                                        {
-                                          "var": [
-                                            "checkout.order.shippingLines.length",
-                                            0
-                                          ]
-                                        },
-                                        0
-                                      ]
-                                    },
-                                    {
-                                      "==": [
-                                        {
-                                          "var": "checkout.step"
-                                        },
-                                        "delivery"
-                                      ]
-                                    }
-                                  ]
-                                }
+                                "condition": "({{checkout.order.shippingLines.length}} || 0) <= 0 && {{checkout.step}} === 'delivery'"
                               },
                               {
                                 "type": "Text",
@@ -215,29 +129,7 @@
                                   "className": "font-semibold text-sm !text-[var(--theme-muted-foreground)]"
                                 },
                                 "text": "3",
-                                "condition": {
-                                  "and": [
-                                    {
-                                      "<=": [
-                                        {
-                                          "var": [
-                                            "checkout.order.shippingLines.length",
-                                            0
-                                          ]
-                                        },
-                                        0
-                                      ]
-                                    },
-                                    {
-                                      "!=": [
-                                        {
-                                          "var": "checkout.step"
-                                        },
-                                        "delivery"
-                                      ]
-                                    }
-                                  ]
-                                }
+                                "condition": "({{checkout.order.shippingLines.length}} || 0) <= 0 && {{checkout.step}} !== 'delivery'"
                               }
                             ]
                           },
@@ -263,14 +155,7 @@
                               "size": 16,
                               "className": "!text-[var(--theme-muted-foreground)]"
                             },
-                            "condition": {
-                              "==": [
-                                {
-                                  "var": "checkout.step"
-                                },
-                                "delivery"
-                              ]
-                            }
+                            "condition": "{{checkout.step}} === 'delivery'"
                           },
                           {
                             "type": "NavIcon",
@@ -279,14 +164,7 @@
                               "size": 16,
                               "className": "!text-[var(--theme-muted-foreground)]"
                             },
-                            "condition": {
-                              "!=": [
-                                {
-                                  "var": "checkout.step"
-                                },
-                                "delivery"
-                              ]
-                            }
+                            "condition": "{{checkout.step}} !== 'delivery'"
                           }
                         ]
                       }
@@ -297,14 +175,7 @@
                     "props": {
                       "className": "pb-6 space-y-3"
                     },
-                    "condition": {
-                      "==": [
-                        {
-                          "var": "checkout.step"
-                        },
-                        "delivery"
-                      ]
-                    },
+                    "condition": "{{checkout.step}} === 'delivery'",
                     "children": [
                       {
                         "type": "Text",
@@ -330,29 +201,7 @@
                               {
                                 "type": "Pressable",
                                 "props": {
-                                  "className": {
-                                    "expr": {
-                                      "cat": [
-                                        "flex flex-row items-center gap-3 p-4 border-2 rounded-lg w-full cursor-pointer transition-colors ",
-                                        {
-                                          "if": [
-                                            {
-                                              "==": [
-                                                {
-                                                  "var": "checkout.selectedShippingMethodId"
-                                                },
-                                                {
-                                                  "var": "$item.id"
-                                                }
-                                              ]
-                                            },
-                                            "border-[var(--theme-shop-button)] bg-[var(--theme-hero-bg)]",
-                                            "border-[var(--theme-border)] hover:border-[var(--theme-shop-button)]"
-                                          ]
-                                        }
-                                      ]
-                                    }
-                                  }
+                                  "className": { "expr": "'flex flex-row items-center gap-3 p-4 border-2 rounded-lg w-full cursor-pointer transition-colors ' + ({{checkout.selectedShippingMethodId}} === {{$item.id}} ? 'border-[var(--theme-shop-button)] bg-[var(--theme-hero-bg)]' : 'border-[var(--theme-border)] hover:border-[var(--theme-shop-button)]')" }
                                 },
                                 "actions": {
                                   "click": {
@@ -361,9 +210,7 @@
                                       {
                                         "type": "set",
                                         "path": "checkout.selectedShippingMethodId",
-                                        "value": {
-                                          "var": "$item.id"
-                                        }
+                                        "value": "{{$item.id}}"
                                       },
                                       {
                                         "action": "setState",
@@ -379,29 +226,7 @@
                                   {
                                     "type": "Box",
                                     "props": {
-                                      "className": {
-                                        "expr": {
-                                          "cat": [
-                                            "w-5 h-5 min-w-5 min-h-5 rounded-full border-2 flex items-center justify-center shrink-0 ",
-                                            {
-                                              "if": [
-                                                {
-                                                  "==": [
-                                                    {
-                                                      "var": "checkout.selectedShippingMethodId"
-                                                    },
-                                                    {
-                                                      "var": "$item.id"
-                                                    }
-                                                  ]
-                                                },
-                                                "border-[var(--theme-shop-button)] bg-[var(--theme-shop-button)]",
-                                                "border-[var(--theme-border)]"
-                                              ]
-                                            }
-                                          ]
-                                        }
-                                      }
+                                      "className": { "expr": "'w-5 h-5 min-w-5 min-h-5 rounded-full border-2 flex items-center justify-center shrink-0 ' + ({{checkout.selectedShippingMethodId}} === {{$item.id}} ? 'border-[var(--theme-shop-button)] bg-[var(--theme-shop-button)]' : 'border-[var(--theme-border)]')" }
                                     },
                                     "children": [
                                       {
@@ -409,16 +234,7 @@
                                         "props": {
                                           "className": "w-2 h-2 rounded-full bg-white pointer-events-none"
                                         },
-                                        "condition": {
-                                          "==": [
-                                            {
-                                              "var": "checkout.selectedShippingMethodId"
-                                            },
-                                            {
-                                              "var": "$item.id"
-                                            }
-                                          ]
-                                        }
+                                        "condition": "{{checkout.selectedShippingMethodId}} === {{$item.id}}"
                                       }
                                     ]
                                   },
@@ -457,21 +273,7 @@
                                     "props": {
                                       "className": "font-semibold text-sm text-[var(--theme-foreground)] shrink-0"
                                     },
-                                    "text": {
-                                      "expr": {
-                                        "formatCurrency": [
-                                          {
-                                            "/": [
-                                              {
-                                                "var": "$item.priceWithTax"
-                                              },
-                                              100
-                                            ]
-                                          },
-                                          "USD"
-                                        ]
-                                      }
-                                    }
+                                    "text": { "expr": "formatCurrency({{$item.priceWithTax}} / 100, 'USD')" }
                                   }
                                 ]
                               }
@@ -484,11 +286,7 @@
                         "props": {
                           "className": "min-h-[20px]"
                         },
-                        "condition": {
-                          "var": [
-                            "screens.checkout.errors.checkout.selectedShippingMethodId"
-                          ]
-                        },
+                        "condition": "{{screens.checkout.errors.checkout.selectedShippingMethodId}}",
                         "children": [
                           {
                             "type": "Text",
@@ -502,26 +300,7 @@
                       {
                         "type": "Pressable",
                         "props": {
-                          "className": {
-                            "expr": {
-                              "cat": [
-                                "flex flex-row items-center justify-center ",
-                                "bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] mt-2 ",
-                                {
-                                  "if": [
-                                    {
-                                      "var": [
-                                        "checkout.selectedShippingMethodId",
-                                        ""
-                                      ]
-                                    },
-                                    "",
-                                    "opacity-50 pointer-events-none cursor-not-allowed"
-                                  ]
-                                }
-                              ]
-                            }
-                          }
+                          "className": { "expr": "'flex flex-row items-center justify-center bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] mt-2 ' + ({{checkout.selectedShippingMethodId}} ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')" }
                         },
                         "children": [
                           {
@@ -554,71 +333,7 @@
                   {
                     "type": "Pressable",
                     "props": {
-                      "className": {
-                        "expr": {
-                          "cat": [
-                            "flex flex-row items-center justify-between w-full py-4 ",
-                            {
-                              "if": [
-                                {
-                                  "or": [
-                                    {
-                                      "==": [
-                                        {
-                                          "var": "checkout.step"
-                                        },
-                                        "review"
-                                      ]
-                                    },
-                                    {
-                                      "and": [
-                                        {
-                                          "or": [
-                                            {
-                                              "var": "auth.user"
-                                            },
-                                            {
-                                              "var": [
-                                                "checkout.order.customer.emailAddress",
-                                                false
-                                              ]
-                                            }
-                                          ]
-                                        },
-                                        {
-                                          "var": [
-                                            "checkout.order.shippingAddress.streetLine1",
-                                            ""
-                                          ]
-                                        },
-                                        {
-                                          ">": [
-                                            {
-                                              "var": [
-                                                "checkout.order.shippingLines.length",
-                                                0
-                                              ]
-                                            },
-                                            0
-                                          ]
-                                        },
-                                        {
-                                          "var": [
-                                            "checkout.selectedPaymentMethodCode",
-                                            ""
-                                          ]
-                                        }
-                                      ]
-                                    }
-                                  ]
-                                },
-                                "",
-                                "opacity-50 pointer-events-none cursor-not-allowed"
-                              ]
-                            }
-                          ]
-                        }
-                      }
+                      "className": { "expr": "'flex flex-row items-center justify-between w-full py-4 ' + (({{checkout.step}} === 'review' || (({{auth.user}} || {{checkout.order.customer.emailAddress}}) && {{checkout.order.shippingAddress.streetLine1}} && ({{checkout.order.shippingLines.length}} || 0) > 0 && {{checkout.selectedPaymentMethodCode}})) ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')" }
                     },
                     "actions": {
                       "click": {
@@ -637,27 +352,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": {
-                                "expr": {
-                                  "cat": [
-                                    "flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ",
-                                    {
-                                      "if": [
-                                        {
-                                          "==": [
-                                            {
-                                              "var": "checkout.step"
-                                            },
-                                            "review"
-                                          ]
-                                        },
-                                        "bg-[var(--theme-shop-button)] !text-white",
-                                        "bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]"
-                                      ]
-                                    }
-                                  ]
-                                }
-                              }
+                              "className": { "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + ({{checkout.step}} === 'review' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]')" }
                             },
                             "children": [
                               {
@@ -666,14 +361,7 @@
                                   "className": "font-semibold text-sm !text-white"
                                 },
                                 "text": "5",
-                                "condition": {
-                                  "==": [
-                                    {
-                                      "var": "checkout.step"
-                                    },
-                                    "review"
-                                  ]
-                                }
+                                "condition": "{{checkout.step}} === 'review'"
                               },
                               {
                                 "type": "Text",
@@ -681,14 +369,7 @@
                                   "className": "font-semibold text-sm !text-[var(--theme-muted-foreground)]"
                                 },
                                 "text": "5",
-                                "condition": {
-                                  "!=": [
-                                    {
-                                      "var": "checkout.step"
-                                    },
-                                    "review"
-                                  ]
-                                }
+                                "condition": "{{checkout.step}} !== 'review'"
                               }
                             ]
                           },
@@ -714,14 +395,7 @@
                               "size": 16,
                               "className": "!text-[var(--theme-muted-foreground)]"
                             },
-                            "condition": {
-                              "==": [
-                                {
-                                  "var": "checkout.step"
-                                },
-                                "review"
-                              ]
-                            }
+                            "condition": "{{checkout.step}} === 'review'"
                           },
                           {
                             "type": "NavIcon",
@@ -730,14 +404,7 @@
                               "size": 16,
                               "className": "!text-[var(--theme-muted-foreground)]"
                             },
-                            "condition": {
-                              "!=": [
-                                {
-                                  "var": "checkout.step"
-                                },
-                                "review"
-                              ]
-                            }
+                            "condition": "{{checkout.step}} !== 'review'"
                           }
                         ]
                       }
@@ -748,14 +415,7 @@
                     "props": {
                       "className": "pb-6 space-y-6"
                     },
-                    "condition": {
-                      "==": [
-                        {
-                          "var": "checkout.step"
-                        },
-                        "review"
-                      ]
-                    },
+                    "condition": "{{checkout.step}} === 'review'",
                     "children": [
                       {
                         "type": "Text",
@@ -775,14 +435,7 @@
                             "props": {
                               "className": "space-y-3"
                             },
-                            "condition": {
-                              "==": [
-                                {
-                                  "var": "auth.user"
-                                },
-                                null
-                              ]
-                            },
+                            "condition": "{{auth.user}} === null",
                             "children": [
                               {
                                 "type": "Text",
@@ -796,41 +449,15 @@
                                 "props": {
                                   "className": "text-sm text-[var(--theme-muted-foreground)] space-y-1"
                                 },
-                                "condition": {
-                                  "var": [
-                                    "checkout.order.customer.emailAddress"
-                                  ]
-                                },
+                                "condition": "{{checkout.order.customer.emailAddress}}",
                                 "children": [
                                   {
                                     "type": "Text",
-                                    "text": {
-                                      "expr": {
-                                        "cat": [
-                                          {
-                                            "var": [
-                                              "checkout.order.customer.firstName",
-                                              ""
-                                            ]
-                                          },
-                                          " ",
-                                          {
-                                            "var": [
-                                              "checkout.order.customer.lastName",
-                                              ""
-                                            ]
-                                          }
-                                        ]
-                                      }
-                                    }
+                                    "text": "{{checkout.order.customer.firstName}} {{checkout.order.customer.lastName}}"
                                   },
                                   {
                                     "type": "Text",
-                                    "text": {
-                                      "expr": {
-                                        "var": "checkout.order.customer.emailAddress"
-                                      }
-                                    }
+                                    "text": "{{checkout.order.customer.emailAddress}}"
                                   }
                                 ]
                               },
@@ -874,11 +501,7 @@
                                 "props": {
                                   "className": "text-sm text-[var(--theme-muted-foreground)] space-y-1"
                                 },
-                                "condition": {
-                                  "var": [
-                                    "checkout.order.shippingAddress.streetLine1"
-                                  ]
-                                },
+                                "condition": "{{checkout.order.shippingAddress.streetLine1}}",
                                 "children": [
                                   {
                                     "type": "Text",
@@ -890,32 +513,7 @@
                                   },
                                   {
                                     "type": "Text",
-                                    "text": {
-                                      "expr": {
-                                        "cat": [
-                                          {
-                                            "var": [
-                                              "checkout.order.shippingAddress.city",
-                                              ""
-                                            ]
-                                          },
-                                          ", ",
-                                          {
-                                            "var": [
-                                              "checkout.order.shippingAddress.province",
-                                              ""
-                                            ]
-                                          },
-                                          " ",
-                                          {
-                                            "var": [
-                                              "checkout.order.shippingAddress.postalCode",
-                                              ""
-                                            ]
-                                          }
-                                        ]
-                                      }
-                                    }
+                                    "text": "{{checkout.order.shippingAddress.city}}, {{checkout.order.shippingAddress.province}} {{checkout.order.shippingAddress.postalCode}}"
                                   },
                                   {
                                     "type": "Text",
@@ -963,17 +561,7 @@
                                 "props": {
                                   "className": "text-sm text-[var(--theme-muted-foreground)]"
                                 },
-                                "condition": {
-                                  ">": [
-                                    {
-                                      "var": [
-                                        "checkout.order.shippingLines.length",
-                                        0
-                                      ]
-                                    },
-                                    0
-                                  ]
-                                },
+                                "condition": "({{checkout.order.shippingLines.length}} || 0) > 0",
                                 "children": [
                                   {
                                     "type": "Text",
@@ -981,38 +569,7 @@
                                   },
                                   {
                                     "type": "Text",
-                                    "text": {
-                                      "expr": {
-                                        "if": [
-                                          {
-                                            "==": [
-                                              {
-                                                "var": [
-                                                  "checkout.order.shippingLines.0.priceWithTax"
-                                                ]
-                                              },
-                                              0
-                                            ]
-                                          },
-                                          "FREE",
-                                          {
-                                            "formatCurrency": [
-                                              {
-                                                "/": [
-                                                  {
-                                                    "var": [
-                                                      "checkout.order.shippingLines.0.priceWithTax"
-                                                    ]
-                                                  },
-                                                  100
-                                                ]
-                                              },
-                                              "USD"
-                                            ]
-                                          }
-                                        ]
-                                      }
-                                    }
+                                    "text": { "expr": "{{checkout.order.shippingLines.0.priceWithTax}} === 0 ? 'FREE' : formatCurrency({{checkout.order.shippingLines.0.priceWithTax}} / 100, 'USD')" }
                                   }
                                 ]
                               },
@@ -1056,11 +613,7 @@
                                 "props": {
                                   "className": "text-sm text-[var(--theme-muted-foreground)] space-y-1"
                                 },
-                                "condition": {
-                                  "var": [
-                                    "checkout.selectedPaymentMethodCode"
-                                  ]
-                                },
+                                "condition": "{{checkout.selectedPaymentMethodCode}}",
                                 "children": [
                                   {
                                     "type": "Text",
@@ -1100,11 +653,7 @@
                         "props": {
                           "className": "min-h-[20px]"
                         },
-                        "condition": {
-                          "var": [
-                            "screens.checkout.errors.checkout.selectedPaymentMethodCode"
-                          ]
-                        },
+                        "condition": "{{screens.checkout.errors.checkout.selectedPaymentMethodCode}}",
                         "children": [
                           {
                             "type": "Text",
@@ -1118,26 +667,7 @@
                       {
                         "type": "Pressable",
                         "props": {
-                          "className": {
-                            "expr": {
-                              "cat": [
-                                "flex flex-row items-center justify-center ",
-                                "w-full bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] !py-3 ",
-                                {
-                                  "if": [
-                                    {
-                                      "var": [
-                                        "checkout.selectedPaymentMethodCode",
-                                        ""
-                                      ]
-                                    },
-                                    "",
-                                    "opacity-50 pointer-events-none cursor-not-allowed"
-                                  ]
-                                }
-                              ]
-                            }
-                          }
+                          "className": { "expr": "'flex flex-row items-center justify-center w-full bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] !py-3 ' + ({{checkout.selectedPaymentMethodCode}} ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')" }
                         },
                         "children": [
                           {
@@ -1198,11 +728,7 @@
                             "props": {
                               "className": "flex-shrink-0 w-16 h-16 rounded overflow-hidden bg-[var(--theme-hero-bg)]"
                             },
-                            "condition": {
-                              "var": [
-                                "$item.productVariant.product.featuredAsset.preview"
-                              ]
-                            },
+                            "condition": "{{$item.productVariant.product.featuredAsset.preview}}",
                             "children": [
                               {
                                 "type": "NextImage",
@@ -1234,16 +760,7 @@
                                 "props": {
                                   "className": "text-xs text-[var(--theme-muted-foreground)]"
                                 },
-                                "condition": {
-                                  "!=": [
-                                    {
-                                      "var": "$item.productVariant.name"
-                                    },
-                                    {
-                                      "var": "$item.productVariant.product.name"
-                                    }
-                                  ]
-                                },
+                                "condition": "{{$item.productVariant.name}} !== {{$item.productVariant.product.name}}",
                                 "text": "{{$item.productVariant.name}}"
                               },
                               {
@@ -1251,12 +768,7 @@
                                 "props": {
                                   "className": "text-xs text-[var(--theme-muted-foreground)]"
                                 },
-                                "text": {
-                                  "expr": {
-                                    "var": "$item.quantity"
-                                  },
-                                  "prefix": "Qty: "
-                                }
+                                "text": "Qty: {{$item.quantity}}"
                               }
                             ]
                           },
@@ -1265,26 +777,7 @@
                             "props": {
                               "className": "font-medium flex-shrink-0"
                             },
-                            "text": {
-                              "expr": {
-                                "formatCurrency": [
-                                  {
-                                    "/": [
-                                      {
-                                        "var": "$item.linePriceWithTax"
-                                      },
-                                      100
-                                    ]
-                                  },
-                                  {
-                                    "var": [
-                                      "checkout.order.currencyCode",
-                                      "USD"
-                                    ]
-                                  }
-                                ]
-                              }
-                            }
+                            "text": { "expr": "formatCurrency({{$item.linePriceWithTax}} / 100, {{checkout.order.currencyCode}} || 'USD')" }
                           }
                         ]
                       }
@@ -1317,29 +810,7 @@
                           },
                           {
                             "type": "Text",
-                            "text": {
-                              "expr": {
-                                "formatCurrency": [
-                                  {
-                                    "/": [
-                                      {
-                                        "var": [
-                                          "checkout.order.subTotalWithTax",
-                                          0
-                                        ]
-                                      },
-                                      100
-                                    ]
-                                  },
-                                  {
-                                    "var": [
-                                      "checkout.order.currencyCode",
-                                      "USD"
-                                    ]
-                                  }
-                                ]
-                              }
-                            }
+                            "text": { "expr": "formatCurrency(({{checkout.order.subTotalWithTax}} || 0) / 100, {{checkout.order.currencyCode}} || 'USD')" }
                           }
                         ]
                       },
@@ -1350,17 +821,7 @@
                         },
                         "map": "checkout.order.discounts",
                         "key": "discount",
-                        "condition": {
-                          ">": [
-                            {
-                              "var": [
-                                "checkout.order.discounts.length",
-                                0
-                              ]
-                            },
-                            0
-                          ]
-                        },
+                        "condition": "({{checkout.order.discounts.length}} || 0) > 0",
                         "children": [
                           {
                             "type": "Box",
@@ -1374,21 +835,7 @@
                               },
                               {
                                 "type": "Text",
-                                "text": {
-                                  "expr": {
-                                    "formatCurrency": [
-                                      {
-                                        "/": [
-                                          {
-                                            "var": "$item.amountWithTax"
-                                          },
-                                          100
-                                        ]
-                                      },
-                                      "USD"
-                                    ]
-                                  }
-                                }
+                                "text": { "expr": "formatCurrency({{$item.amountWithTax}} / 100, 'USD')" }
                               }
                             ]
                           }
@@ -1409,45 +856,7 @@
                           },
                           {
                             "type": "Text",
-                            "text": {
-                              "expr": {
-                                "if": [
-                                  {
-                                    ">": [
-                                      {
-                                        "var": [
-                                          "checkout.order.shippingWithTax",
-                                          0
-                                        ]
-                                      },
-                                      0
-                                    ]
-                                  },
-                                  {
-                                    "formatCurrency": [
-                                      {
-                                        "/": [
-                                          {
-                                            "var": [
-                                              "checkout.order.shippingWithTax",
-                                              0
-                                            ]
-                                          },
-                                          100
-                                        ]
-                                      },
-                                      {
-                                        "var": [
-                                          "checkout.order.currencyCode",
-                                          "USD"
-                                        ]
-                                      }
-                                    ]
-                                  },
-                                  "To be calculated"
-                                ]
-                              }
-                            }
+                            "text": { "expr": "({{checkout.order.shippingWithTax}} || 0) > 0 ? formatCurrency(({{checkout.order.shippingWithTax}} || 0) / 100, {{checkout.order.currencyCode}} || 'USD') : 'To be calculated'" }
                           }
                         ]
                       },
@@ -1469,29 +878,7 @@
                           },
                           {
                             "type": "Text",
-                            "text": {
-                              "expr": {
-                                "formatCurrency": [
-                                  {
-                                    "/": [
-                                      {
-                                        "var": [
-                                          "checkout.order.totalWithTax",
-                                          0
-                                        ]
-                                      },
-                                      100
-                                    ]
-                                  },
-                                  {
-                                    "var": [
-                                      "checkout.order.currencyCode",
-                                      "USD"
-                                    ]
-                                  }
-                                ]
-                              }
-                            }
+                            "text": { "expr": "formatCurrency(({{checkout.order.totalWithTax}} || 0) / 100, {{checkout.order.currencyCode}} || 'USD')" }
                           }
                         ]
                       }

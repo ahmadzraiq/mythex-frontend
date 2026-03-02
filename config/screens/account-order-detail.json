@@ -49,12 +49,7 @@
             "props": {
               "className": "text-3xl font-bold"
             },
-            "text": {
-              "expr": {
-                "var": "account.orderDetail.code"
-              },
-              "prefix": "Order #"
-            }
+            "text": "Order #{{account.orderDetail.code}}"
           },
           {
             "type": "Badge",
@@ -135,12 +130,7 @@
                             "props": {
                               "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                             },
-                            "text": {
-                              "expr": {
-                                "var": "$item.quantity"
-                              },
-                              "prefix": "Qty: "
-                            }
+                            "text": "Qty: {{$item.quantity}}"
                           }
                         ]
                       },
@@ -150,24 +140,7 @@
                           "className": "font-semibold text-right flex-shrink-0"
                         },
                         "text": {
-                          "expr": {
-                            "formatCurrency": [
-                              {
-                                "/": [
-                                  {
-                                    "var": "$item.linePriceWithTax"
-                                  },
-                                  100
-                                ]
-                              },
-                              {
-                                "var": [
-                                  "account.orderDetail.currencyCode",
-                                  "USD"
-                                ]
-                              }
-                            ]
-                          }
+                          "expr": "formatCurrency({{$item.linePriceWithTax}} / 100, {{account.orderDetail.currencyCode}} || 'USD')"
                         }
                       }
                     ]
@@ -264,27 +237,7 @@
                       {
                         "type": "Text",
                         "text": {
-                          "expr": {
-                            "formatCurrency": [
-                              {
-                                "/": [
-                                  {
-                                    "var": [
-                                      "account.orderDetail.subTotalWithTax",
-                                      0
-                                    ]
-                                  },
-                                  100
-                                ]
-                              },
-                              {
-                                "var": [
-                                  "account.orderDetail.currencyCode",
-                                  "USD"
-                                ]
-                              }
-                            ]
-                          }
+                          "expr": "formatCurrency(({{account.orderDetail.subTotalWithTax}} || 0) / 100, {{account.orderDetail.currencyCode}} || 'USD')"
                         }
                       }
                     ]
@@ -305,27 +258,7 @@
                       {
                         "type": "Text",
                         "text": {
-                          "expr": {
-                            "formatCurrency": [
-                              {
-                                "/": [
-                                  {
-                                    "var": [
-                                      "account.orderDetail.shippingWithTax",
-                                      0
-                                    ]
-                                  },
-                                  100
-                                ]
-                              },
-                              {
-                                "var": [
-                                  "account.orderDetail.currencyCode",
-                                  "USD"
-                                ]
-                              }
-                            ]
-                          }
+                          "expr": "formatCurrency(({{account.orderDetail.shippingWithTax}} || 0) / 100, {{account.orderDetail.currencyCode}} || 'USD')"
                         }
                       }
                     ]
@@ -346,27 +279,7 @@
                       {
                         "type": "Text",
                         "text": {
-                          "expr": {
-                            "formatCurrency": [
-                              {
-                                "/": [
-                                  {
-                                    "var": [
-                                      "account.orderDetail.totalWithTax",
-                                      0
-                                    ]
-                                  },
-                                  100
-                                ]
-                              },
-                              {
-                                "var": [
-                                  "account.orderDetail.currencyCode",
-                                  "USD"
-                                ]
-                              }
-                            ]
-                          }
+                          "expr": "formatCurrency(({{account.orderDetail.totalWithTax}} || 0) / 100, {{account.orderDetail.currencyCode}} || 'USD')"
                         }
                       }
                     ]

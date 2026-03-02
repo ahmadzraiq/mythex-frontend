@@ -16,40 +16,19 @@
         },
         {
           "type": "Text",
-          "condition": {
-            "var": "product.selectedVariant"
-          },
+          "condition": "{{product.selectedVariant}}",
           "props": {
             "className": "text-2xl font-bold mt-2"
           },
           "text": {
-            "expr": {
-              "formatCurrency": [
-                {
-                  "/": [
-                    {
-                      "var": "product.selectedVariant.priceWithTax"
-                    },
-                    100
-                  ]
-                },
-                {
-                  "var": [
-                    "cart.currencyCode",
-                    "USD"
-                  ]
-                }
-              ]
-            }
+            "expr": "formatCurrency({{product.selectedVariant.priceWithTax}} / 100, {{cart.currencyCode}} || 'USD')"
           }
         }
       ]
     },
     {
       "type": "HtmlContent",
-      "condition": {
-        "var": "product.description"
-      },
+      "condition": "{{product.description}}",
       "props": {
         "html": "{{product.description}}",
         "className": "prose prose-sm max-w-none text-[var(--theme-muted-foreground)]"
@@ -57,17 +36,7 @@
     },
     {
       "type": "Box",
-      "condition": {
-        ">": [
-          {
-            "var": [
-              "product.optionGroups.length",
-              0
-            ]
-          },
-          0
-        ]
-      },
+      "condition": "{{product.optionGroups.length}} > 0",
       "props": {
         "className": "space-y-4"
       },
@@ -103,23 +72,7 @@
                   "children": [
                     {
                       "type": "Pressable",
-                      "condition": {
-                        "==": [
-                          {
-                            "getFromMap": [
-                              {
-                                "var": "product.selectedOptions"
-                              },
-                              {
-                                "var": "$parent.id"
-                              }
-                            ]
-                          },
-                          {
-                            "var": "$item.id"
-                          }
-                        ]
-                      },
+                      "condition": "getFromMap({{product.selectedOptions}}, {{$parent.id}}) === {{$item.id}}",
                       "props": {
                         "className": "flex items-center justify-center rounded-md border-2 border-[var(--theme-shop-button)] bg-[var(--theme-shop-button)]/5 px-4 py-3 transition-colors"
                       },
@@ -137,23 +90,7 @@
                     },
                     {
                       "type": "Pressable",
-                      "condition": {
-                        "!=": [
-                          {
-                            "getFromMap": [
-                              {
-                                "var": "product.selectedOptions"
-                              },
-                              {
-                                "var": "$parent.id"
-                              }
-                            ]
-                          },
-                          {
-                            "var": "$item.id"
-                          }
-                        ]
-                      },
+                      "condition": "getFromMap({{product.selectedOptions}}, {{$parent.id}}) !== {{$item.id}}",
                       "props": {
                         "className": "flex items-center justify-center rounded-md border-2 border-[var(--theme-border)] bg-[var(--theme-hero-bg)] px-4 py-3 hover:bg-[var(--theme-content-bg)] transition-colors"
                       },
@@ -179,20 +116,11 @@
     },
     {
       "type": "Box",
-      "condition": {
-        "var": "product.selectedVariant"
-      },
+      "condition": "{{product.selectedVariant}}",
       "children": [
         {
           "type": "Text",
-          "condition": {
-            "!=": [
-              {
-                "var": "product.selectedVariant.stockLevel"
-              },
-              "OUT_OF_STOCK"
-            ]
-          },
+          "condition": "{{product.selectedVariant.stockLevel}} !== 'OUT_OF_STOCK'",
           "props": {
             "className": "text-sm text-green-600 font-medium"
           },
@@ -200,14 +128,7 @@
         },
         {
           "type": "Text",
-          "condition": {
-            "==": [
-              {
-                "var": "product.selectedVariant.stockLevel"
-              },
-              "OUT_OF_STOCK"
-            ]
-          },
+          "condition": "{{product.selectedVariant.stockLevel}} === 'OUT_OF_STOCK'",
           "props": {
             "className": "text-sm text-red-600 font-medium"
           },
@@ -223,21 +144,7 @@
       "children": [
         {
           "type": "Pressable",
-          "condition": {
-            "and": [
-              {
-                "var": "product.selectedVariant"
-              },
-              {
-                "!=": [
-                  {
-                    "var": "product.selectedVariant.stockLevel"
-                  },
-                  "OUT_OF_STOCK"
-                ]
-              }
-            ]
-          },
+          "condition": "{{product.selectedVariant}} && {{product.selectedVariant.stockLevel}} !== 'OUT_OF_STOCK'",
           "props": {
             "className": "w-full !bg-[var(--theme-shop-button)] hover:!bg-[var(--theme-shop-buttonHover)] !text-white flex flex-row items-center justify-center py-3 rounded-md"
           },
@@ -258,25 +165,7 @@
         },
         {
           "type": "Pressable",
-          "condition": {
-            "or": [
-              {
-                "!": [
-                  {
-                    "var": "product.selectedVariant"
-                  }
-                ]
-              },
-              {
-                "==": [
-                  {
-                    "var": "product.selectedVariant.stockLevel"
-                  },
-                  "OUT_OF_STOCK"
-                ]
-              }
-            ]
-          },
+          "condition": "!{{product.selectedVariant}} || {{product.selectedVariant.stockLevel}} === 'OUT_OF_STOCK'",
           "props": {
             "className": "w-full !bg-[var(--theme-border)] !text-[var(--theme-muted-foreground)] cursor-not-allowed flex flex-row items-center justify-center py-3 rounded-md",
             "disabled": true
@@ -288,19 +177,7 @@
                 "className": "text-[var(--theme-muted-foreground)]"
               },
               "text": {
-                "expr": {
-                  "if": [
-                    {
-                      "!": [
-                        {
-                          "var": "product.selectedVariant"
-                        }
-                      ]
-                    },
-                    "Select Options",
-                    "Out of Stock"
-                  ]
-                }
+                "expr": "!{{product.selectedVariant}} ? 'Select Options' : 'Out of Stock'"
               }
             }
           ]
@@ -309,32 +186,14 @@
     },
     {
       "type": "Box",
-      "condition": {
-        "and": [
-          {
-            "var": "product.selectedVariant"
-          },
-          {
-            "var": "product.selectedVariant.sku"
-          }
-        ]
-      },
+      "condition": "{{product.selectedVariant}} && {{product.selectedVariant.sku}}",
       "children": [
         {
           "type": "Text",
           "props": {
             "className": "text-xs text-[var(--theme-muted-foreground)]"
           },
-          "text": {
-            "expr": {
-              "cat": [
-                "SKU: ",
-                {
-                  "var": "product.selectedVariant.sku"
-                }
-              ]
-            }
-          }
+          "text": "SKU: {{product.selectedVariant.sku}}"
         }
       ]
     }

@@ -5,8 +5,8 @@
  * Each node subscribes only to the variables it uses - no unnecessary re-renders
  */
 
-import React, { useEffect, memo } from 'react';
-import jsonLogic from 'json-logic-js';
+import React, { useEffect, memo, useSyncExternalStore } from 'react';
+import { evaluateFormula } from './formula-evaluator';
 import { getComponent } from './component-registry';
 import { evaluateCondition, interpolate, resolveProps, resolveText } from './utils';
 import { createVariableStore, useVariablePaths, type VariableStoreConfig } from './variable-store';
@@ -16,6 +16,7 @@ import { isScreenScopedPath } from './path-utils';
 import { createGet } from './create-get';
 import { bindActionsToProps } from './action-binding';
 import { useBuilderMode } from './builder-context';
+import { mergeTailwindClasses } from './tailwind-merge';
 
 interface RendererContext {
   store: ReturnType<typeof createVariableStore>;
@@ -27,6 +28,8 @@ interface RendererContext {
   actionsConfig?: Record<string, unknown>;
   screenName?: string;
   screenScopedAliases?: string[];
+  /** Active preview state in builder mode — used to apply _stateOverrides per node */
+  previewState?: string;
 }
 
 interface RendererProps {
@@ -55,8 +58,16 @@ function DataSourceWrapper({
 
 const SDURendererInner = memo(function SDURendererInner({ node, context, scope, builderPath = '0' }: RendererProps) {
   const { builderMode } = useBuilderMode();
-  const { store, mergedStore, storeConfig, mergedState, runAction, fetchData, actionsConfig, screenName, screenScopedAliases = [] } = context;
-  const merged = mergedStore?.getState().merged ?? mergedState;
+  const { store, mergedStore, storeConfig, mergedState, runAction, fetchData, actionsConfig, screenName, screenScopedAliases = [], previewState } = context;
+
+  // Subscribe to mergedStore so preview state patches (applied in useEffect after render)
+  // immediately trigger a re-render without needing a manual canvas click.
+  const mergedFromStore = useSyncExternalStore(
+    mergedStore ? mergedStore.subscribe : (_cb: () => void) => () => {},
+    () => mergedStore?.getState().merged ?? mergedState ?? {},
+    () => mergedStore?.getState().merged ?? mergedState ?? {},
+  );
+  const merged = mergedStore ? mergedFromStore : mergedState;
   const rawDeps = extractNodeDependencies(node);
   const deps =
     screenName && rawDeps.some((p) => isScreenScopedPath(p, screenScopedAliases))
@@ -77,12 +88,11 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
 
   if (!node) return null;
 
-  // In builder mode: bypass conditions — show all nodes but flag hidden ones
-  if (!builderMode) {
-    if (node.condition === false) return null;
-    if (node.condition != null && !evaluateCondition(node.condition, sduiContext)) {
-      return null;
-    }
+  // Always evaluate conditions — builder mode respects them too so the canvas
+  // matches the real app. Hidden nodes are still accessible via the Layers panel.
+  if (node.condition === false) return null;
+  if (node.condition != null && !evaluateCondition(node.condition, sduiContext)) {
+    return null;
   }
 
   if (node.map) {
@@ -90,8 +100,8 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
     if (typeof node.map === 'string') {
       arr = (get(node.map) as unknown[]) ?? [];
     } else if (node.map && typeof node.map === 'object' && 'expr' in node.map) {
-      const expr = (node.map as { expr: object }).expr;
-      arr = (jsonLogic.apply(expr, stateWithScope) as unknown[]) ?? [];
+      const expr = (node.map as { expr: string | object }).expr;
+      arr = (evaluateFormula(expr, stateWithScope).value as unknown[]) ?? [];
     } else {
       arr = [];
     }
@@ -135,6 +145,26 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
     Object.entries(resolvedProps).filter(([k]) => !k.startsWith('$') && k !== '_meta')
   ) as Record<string, unknown>;
 
+  // Apply _stateOverrides className for the active preview state in builder mode
+  if (builderMode && previewState && previewState !== 'normal') {
+    const overrides = (node as { _stateOverrides?: Record<string, { className?: string }> })._stateOverrides;
+    const overrideClass = overrides?.[previewState]?.className;
+    if (overrideClass) {
+      const base = (cleanProps.className as string | undefined) ?? '';
+      cleanProps.className = mergeTailwindClasses(base, overrideClass);
+    }
+  }
+
+  // Disabled preview state: apply visual disabled styling to interactive nodes
+  const INTERACTIVE_TYPES = new Set(['Button', 'Input', 'Select', 'Pressable', 'InputField', 'ButtonText']);
+  if (builderMode && (merged as Record<string, unknown> | null | undefined)?._preview_disabled && INTERACTIVE_TYPES.has(node.type)) {
+    cleanProps.disabled = true;
+    cleanProps.className = mergeTailwindClasses(
+      (cleanProps.className as string) ?? '',
+      'opacity-50 pointer-events-none'
+    );
+  }
+
   Object.assign(cleanProps, bindActionsToProps(node.actions, runAction, actionsConfig, scope, node.type));
 
   // Builder mode: annotate nodes via a ref callback that writes directly onto
@@ -145,28 +175,22 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
   //
   // Nodes without an explicit id (e.g. the synthetic root Box from pageConfig.ui)
   // get NO data-builder-id so clicking the page background correctly deselects.
-  if (builderMode) {
-    if (node.id) {
-      const _bId   = node.id;
-      const _bType = node.type;
-      const _prevRef = cleanProps.ref as React.Ref<unknown> | undefined;
-      cleanProps.ref = (el: unknown) => {
-        if (el && typeof (el as Element).setAttribute === 'function') {
-          (el as Element).setAttribute('data-builder-id',   _bId);
-          (el as Element).setAttribute('data-builder-type', _bType);
-        }
-        // Compose with any existing ref on the node
-        if (typeof _prevRef === 'function') {
-          _prevRef(el);
-        } else if (_prevRef && typeof _prevRef === 'object' && 'current' in _prevRef) {
-          (_prevRef as React.MutableRefObject<unknown>).current = el;
-        }
-      };
-    }
-    // Flag nodes whose condition would be false in normal rendering
-    if (node.condition != null && !evaluateCondition(node.condition, sduiContext)) {
-      cleanProps['data-builder-hidden'] = 'true';
-    }
+  if (builderMode && node.id) {
+    const _bId   = node.id;
+    const _bType = node.type;
+    const _prevRef = cleanProps.ref as React.Ref<unknown> | undefined;
+    cleanProps.ref = (el: unknown) => {
+      if (el && typeof (el as Element).setAttribute === 'function') {
+        (el as Element).setAttribute('data-builder-id',   _bId);
+        (el as Element).setAttribute('data-builder-type', _bType);
+      }
+      // Compose with any existing ref on the node
+      if (typeof _prevRef === 'function') {
+        _prevRef(el);
+      } else if (_prevRef && typeof _prevRef === 'object' && 'current' in _prevRef) {
+        (_prevRef as React.MutableRefObject<unknown>).current = el;
+      }
+    };
   }
 
   const textContent = node.text != null ? resolveText(node.text, sduiContext, scope) : undefined;

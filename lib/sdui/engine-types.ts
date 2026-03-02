@@ -67,7 +67,15 @@ export interface SDUIEngineProps {
   engineConfig?: EngineConfig;
   routes?: RouteConfig[];
   paramChangeAction?: string;
-  /** When true, annotates every rendered node with data-builder-* attributes
-   *  and bypasses condition evaluation (shows all nodes). Used by /dev/builder. */
+  /** When true, annotates every rendered node with data-builder-* attributes.
+   *  Used by /dev/builder. */
   builderMode?: boolean;
+  /** Active preview state name (e.g. 'hover', 'loading', 'error', 'empty').
+   *  When set in builder mode, applies _stateOverrides and state patches. */
+  previewState?: string;
+  /** Multiple active preview states — applied in order. Supercedes previewState when provided. */
+  previewStates?: string[];
+  /** Flat key-value data to overlay on top of merged state in builder mode.
+   *  Used by the "Data" preview state to inject per-page dummy data. */
+  previewData?: Record<string, unknown>;
 }

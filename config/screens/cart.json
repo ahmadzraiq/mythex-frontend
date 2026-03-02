@@ -34,17 +34,7 @@
         "props": {
           "className": "text-center py-16"
         },
-        "condition": {
-          "==": [
-            {
-              "var": [
-                "cart.totalQuantity",
-                0
-              ]
-            },
-            0
-          ]
-        },
+        "condition": "({{cart.totalQuantity}} || 0) === 0",
         "children": [
           {
             "type": "Heading",
@@ -90,17 +80,7 @@
         "props": {
           "className": "grid lg:grid-cols-3 gap-8"
         },
-        "condition": {
-          ">": [
-            {
-              "var": [
-                "cart.totalQuantity",
-                0
-              ]
-            },
-            0
-          ]
-        },
+        "condition": "{{cart.totalQuantity}} > 0",
         "children": [
           {
             "type": "Box",
@@ -136,9 +116,7 @@
                             "action": "navigate",
                             "payload": {
                               "routeConfig": "product",
-                              "slug": {
-                                "var": "$item.productVariant.product.slug"
-                              }
+                              "slug": "{{$item.productVariant.product.slug}}"
                             }
                           }
                         },
@@ -171,9 +149,7 @@
                                 "action": "navigate",
                                 "payload": {
                                   "routeConfig": "product",
-                                  "slug": {
-                                    "var": "$item.productVariant.product.slug"
-                                  }
+                                  "slug": "{{$item.productVariant.product.slug}}"
                                 }
                               }
                             },
@@ -190,28 +166,14 @@
                               "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                             },
                             "text": "{{$item.productVariant.name}}",
-                            "condition": {
-                              "!=": [
-                                {
-                                  "var": "$item.productVariant.name"
-                                },
-                                {
-                                  "var": "$item.productVariant.product.name"
-                                }
-                              ]
-                            }
+                            "condition": "{{$item.productVariant.name}} !== {{$item.productVariant.product.name}}"
                           },
                           {
                             "type": "Text",
                             "props": {
                               "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                             },
-                            "text": {
-                              "expr": {
-                                "var": "$item.productVariant.sku"
-                              },
-                              "prefix": "SKU: "
-                            }
+                            "text": "SKU: {{$item.productVariant.sku}}"
                           },
                           {
                             "type": "Box",
@@ -230,17 +192,7 @@
                                     "props": {
                                       "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-[var(--theme-hero-bg)] rounded-none disabled:opacity-50 flex-row"
                                     },
-                                    "condition": {
-                                      ">": [
-                                        {
-                                          "var": [
-                                            "$item.quantity",
-                                            0
-                                          ]
-                                        },
-                                        1
-                                      ]
-                                    },
+                                    "condition": "{{$item.quantity}} > 1",
                                     "children": [
                                       {
                                         "type": "Text",
@@ -254,21 +206,9 @@
                                       "click": {
                                         "action": "adjustCartItemQuantity",
                                         "payload": {
-                                          "lineId": {
-                                            "var": "$item.id"
-                                          },
+                                          "lineId": "{{$item.id}}",
                                           "quantity": {
-                                            "expr": {
-                                              "-": [
-                                                {
-                                                  "var": [
-                                                    "$item.quantity",
-                                                    1
-                                                  ]
-                                                },
-                                                1
-                                              ]
-                                            }
+                                            "expr": "{{$item.quantity}} - 1"
                                           }
                                         }
                                       }
@@ -279,17 +219,7 @@
                                     "props": {
                                       "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-[var(--theme-hero-bg)] rounded-none disabled:opacity-50 flex-row"
                                     },
-                                    "condition": {
-                                      "==": [
-                                        {
-                                          "var": [
-                                            "$item.quantity",
-                                            0
-                                          ]
-                                        },
-                                        1
-                                      ]
-                                    },
+                                    "condition": "({{$item.quantity}} || 0) === 1",
                                     "children": [
                                       {
                                         "type": "Text",
@@ -311,11 +241,7 @@
                                     "props": {
                                       "className": "w-12 text-center font-medium text-sm"
                                     },
-                                    "text": {
-                                      "expr": {
-                                        "var": "$item.quantity"
-                                      }
-                                    }
+                                    "text": "{{$item.quantity}}"
                                   },
                                   {
                                     "type": "Pressable",
@@ -335,21 +261,9 @@
                                       "click": {
                                         "action": "adjustCartItemQuantity",
                                         "payload": {
-                                          "lineId": {
-                                            "var": "$item.id"
-                                          },
+                                          "lineId": "{{$item.id}}",
                                           "quantity": {
-                                            "expr": {
-                                              "+": [
-                                                {
-                                                  "var": [
-                                                    "$item.quantity",
-                                                    0
-                                                  ]
-                                                },
-                                                1
-                                              ]
-                                            }
+                                            "expr": "{{$item.quantity}} + 1"
                                           }
                                         }
                                       }
@@ -390,24 +304,7 @@
                                       "className": "font-semibold text-lg"
                                     },
                                     "text": {
-                                      "expr": {
-                                        "formatCurrency": [
-                                          {
-                                            "/": [
-                                              {
-                                                "var": "$item.linePriceWithTax"
-                                              },
-                                              100
-                                            ]
-                                          },
-                                          {
-                                            "var": [
-                                              "cart.currencyCode",
-                                              "USD"
-                                            ]
-                                          }
-                                        ]
-                                      }
+                                      "expr": "formatCurrency({{$item.linePriceWithTax}} / 100, {{cart.currencyCode}} || 'USD')"
                                     }
                                   },
                                   {
@@ -416,25 +313,7 @@
                                       "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                                     },
                                     "text": {
-                                      "expr": {
-                                        "formatCurrency": [
-                                          {
-                                            "/": [
-                                              {
-                                                "var": "$item.unitPriceWithTax"
-                                              },
-                                              100
-                                            ]
-                                          },
-                                          {
-                                            "var": [
-                                              "cart.currencyCode",
-                                              "USD"
-                                            ]
-                                          }
-                                        ]
-                                      },
-                                      "suffix": " each"
+                                      "expr": "formatCurrency({{$item.unitPriceWithTax}} / 100, {{cart.currencyCode}} || 'USD') + ' each'"
                                     }
                                   }
                                 ]
@@ -455,24 +334,7 @@
                               "className": "font-semibold text-lg"
                             },
                             "text": {
-                              "expr": {
-                                "formatCurrency": [
-                                  {
-                                    "/": [
-                                      {
-                                        "var": "$item.linePriceWithTax"
-                                      },
-                                      100
-                                    ]
-                                  },
-                                  {
-                                    "var": [
-                                      "cart.currencyCode",
-                                      "USD"
-                                    ]
-                                  }
-                                ]
-                              }
+                              "expr": "formatCurrency({{$item.linePriceWithTax}} / 100, {{cart.currencyCode}} || 'USD')"
                             }
                           },
                           {
@@ -481,25 +343,7 @@
                               "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                             },
                             "text": {
-                              "expr": {
-                                "formatCurrency": [
-                                  {
-                                    "/": [
-                                      {
-                                        "var": "$item.unitPriceWithTax"
-                                      },
-                                      100
-                                    ]
-                                  },
-                                  {
-                                    "var": [
-                                      "cart.currencyCode",
-                                      "USD"
-                                    ]
-                                  }
-                                ]
-                              },
-                              "suffix": " each"
+                              "expr": "formatCurrency({{$item.unitPriceWithTax}} / 100, {{cart.currencyCode}} || 'USD') + ' each'"
                             }
                           }
                         ]
@@ -551,24 +395,7 @@
                           {
                             "type": "Text",
                             "text": {
-                              "expr": {
-                                "formatCurrency": [
-                                  {
-                                    "/": [
-                                      {
-                                        "var": "cart.subTotalWithTax"
-                                      },
-                                      100
-                                    ]
-                                  },
-                                  {
-                                    "var": [
-                                      "cart.currencyCode",
-                                      "USD"
-                                    ]
-                                  }
-                                ]
-                              }
+                              "expr": "formatCurrency({{cart.subTotalWithTax}} / 100, {{cart.currencyCode}} || 'USD')"
                             }
                           }
                         ]
@@ -580,17 +407,7 @@
                         },
                         "map": "cart.discounts",
                         "key": "discount",
-                        "condition": {
-                          ">": [
-                            {
-                              "var": [
-                                "cart.discounts.length",
-                                0
-                              ]
-                            },
-                            0
-                          ]
-                        },
+                        "condition": "{{cart.discounts.length}} > 0",
                         "children": [
                           {
                             "type": "Box",
@@ -605,24 +422,7 @@
                               {
                                 "type": "Text",
                                 "text": {
-                                  "expr": {
-                                    "formatCurrency": [
-                                      {
-                                        "/": [
-                                          {
-                                            "var": "$item.amountWithTax"
-                                          },
-                                          100
-                                        ]
-                                      },
-                                      {
-                                        "var": [
-                                          "cart.currencyCode",
-                                          "USD"
-                                        ]
-                                      }
-                                    ]
-                                  }
+                                  "expr": "formatCurrency({{$item.amountWithTax}} / 100, {{cart.currencyCode}} || 'USD')"
                                 }
                               }
                             ]
@@ -645,37 +445,7 @@
                           {
                             "type": "Text",
                             "text": {
-                              "expr": {
-                                "if": [
-                                  {
-                                    ">": [
-                                      {
-                                        "var": "cart.shippingWithTax"
-                                      },
-                                      0
-                                    ]
-                                  },
-                                  {
-                                    "formatCurrency": [
-                                      {
-                                        "/": [
-                                          {
-                                            "var": "cart.shippingWithTax"
-                                          },
-                                          100
-                                        ]
-                                      },
-                                      {
-                                        "var": [
-                                          "cart.currencyCode",
-                                          "USD"
-                                        ]
-                                      }
-                                    ]
-                                  },
-                                  "Calculated at checkout"
-                                ]
-                              }
+                              "expr": "{{cart.shippingWithTax}} > 0 ? formatCurrency({{cart.shippingWithTax}} / 100, {{cart.currencyCode}} || 'USD') : 'Calculated at checkout'"
                             }
                           }
                         ]
@@ -701,24 +471,7 @@
                           {
                             "type": "Text",
                             "text": {
-                              "expr": {
-                                "formatCurrency": [
-                                  {
-                                    "/": [
-                                      {
-                                        "var": "cart.totalWithTax"
-                                      },
-                                      100
-                                    ]
-                                  },
-                                  {
-                                    "var": [
-                                      "cart.currencyCode",
-                                      "USD"
-                                    ]
-                                  }
-                                ]
-                              }
+                              "expr": "formatCurrency({{cart.totalWithTax}} / 100, {{cart.currencyCode}} || 'USD')"
                             }
                           }
                         ]
@@ -814,17 +567,7 @@
                     "props": {
                       "className": "space-y-2"
                     },
-                    "condition": {
-                      ">": [
-                        {
-                          "var": [
-                            "cart.couponCodes.length",
-                            0
-                          ]
-                        },
-                        0
-                      ]
-                    },
+                    "condition": "{{cart.couponCodes.length}} > 0",
                     "children": [
                       {
                         "type": "Box",
@@ -881,9 +624,7 @@
                                   "click": {
                                     "action": "removePromotionCode",
                                     "payload": {
-                                      "couponCode": {
-                                        "var": "$item"
-                                      }
+                                      "couponCode": "{{$item}}"
                                     }
                                   }
                                 }
@@ -899,17 +640,7 @@
                     "props": {
                       "className": "flex gap-2 flex-row"
                     },
-                    "condition": {
-                      "==": [
-                        {
-                          "var": [
-                            "cart.couponCodes.length",
-                            0
-                          ]
-                        },
-                        0
-                      ]
-                    },
+                    "condition": "({{cart.couponCodes.length}} || 0) === 0",
                     "children": [
                       {
                         "type": "Input",

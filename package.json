@@ -32,7 +32,8 @@
     "snapshot:all": "npx tsx scripts/snapshot-sections.ts --with-layout-parts",
     "sections:browser": "echo 'Open http://localhost:3000/dev/sections in your browser (requires npm run dev)'",
     "test:builder": "npx playwright test e2e/builder.spec.ts",
-    "test:builder:all": "npx playwright test e2e/builder.spec.ts e2e/builder-features.spec.ts e2e/builder-bugfixes.spec.ts e2e/test-dnd.spec.ts e2e/snap-engine.spec.ts e2e/panel-color-picker.spec.ts e2e/panel-interactive.spec.ts e2e/panel-media.spec.ts e2e/panel-overlays.spec.ts e2e/panel-rotate-smooth.spec.ts e2e/panel-rotate-timing.spec.ts e2e/panel-display.spec.ts e2e/panel-charts.spec.ts e2e/panel-layout.spec.ts e2e/panel-form.spec.ts --workers=1"
+    "test:builder:logic": "npx playwright test e2e/builder-logic.spec.ts",
+    "test:builder:all": "npx playwright test e2e/builder.spec.ts e2e/builder-features.spec.ts e2e/builder-bugfixes.spec.ts e2e/builder-logic.spec.ts e2e/test-dnd.spec.ts e2e/snap-engine.spec.ts e2e/panel-color-picker.spec.ts e2e/panel-interactive.spec.ts e2e/panel-media.spec.ts e2e/panel-overlays.spec.ts e2e/panel-rotate-smooth.spec.ts e2e/panel-rotate-timing.spec.ts e2e/panel-display.spec.ts e2e/panel-charts.spec.ts e2e/panel-layout.spec.ts e2e/panel-form.spec.ts --workers=1"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.30",
@@ -46,7 +47,6 @@
     "ai": "^6.0.97",
     "dom-helpers": "^5.2.1",
     "embla-carousel-react": "^8.6.0",
-    "json-logic-js": "^2.0.5",
     "lucide-react-native": "^0.510.0",
     "nativewind": "^4.1.23",
     "next": "15.3.8",

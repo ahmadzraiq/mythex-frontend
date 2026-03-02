@@ -4,6 +4,8 @@
  * Use null in queryParams to remove a param.
  */
 
+import { CONVENTIONS } from '../../conventions';
+import { setNestedValue } from '../../nested-utils';
 import { resolveValue } from '../resolve-value';
 import type { ActionDef, ActionHandlerContext } from './types';
 
@@ -44,4 +46,16 @@ export const navigateWithQueryHandler: (ctx: ActionHandlerContext) => (actionDef
 
     const qs = merged.toString();
     router.push(qs ? `${basePath}?${qs}` : basePath);
+
+    // Reset variable store paths configured to clear on navigation (e.g. open menus)
+    const resetPaths = CONVENTIONS.resetVarsOnNavigate;
+    if (resetPaths.length > 0) {
+      ctx.store.getState().setState((prev) => {
+        let next = prev;
+        for (const p of resetPaths) {
+          next = setNestedValue(next, p, false);
+        }
+        return next;
+      });
+    }
   };

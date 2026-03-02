@@ -29,38 +29,14 @@
                     "size": 16,
                     "className": "!text-white"
                   },
-                  "condition": {
-                    "var": [
-                      "checkout.selectedPaymentMethodCode"
-                    ]
-                  }
+                  "condition": "{{checkout.selectedPaymentMethodCode}}"
                 },
                 {
                   "type": "Text",
                   "props": {
                     "className": "font-semibold text-sm !text-white"
                   },
-                  "condition": {
-                    "and": [
-                      {
-                        "!": [
-                          {
-                            "var": [
-                              "checkout.selectedPaymentMethodCode"
-                            ]
-                          }
-                        ]
-                      },
-                      {
-                        "==": [
-                          {
-                            "var": "checkout.step"
-                          },
-                          "payment"
-                        ]
-                      }
-                    ]
-                  },
+                  "condition": "!{{checkout.selectedPaymentMethodCode}} && {{checkout.step}} === 'payment'",
                   "text": "4"
                 },
                 {
@@ -68,27 +44,7 @@
                   "props": {
                     "className": "font-semibold text-sm !text-[var(--theme-muted-foreground)]"
                   },
-                  "condition": {
-                    "and": [
-                      {
-                        "!": [
-                          {
-                            "var": [
-                              "checkout.selectedPaymentMethodCode"
-                            ]
-                          }
-                        ]
-                      },
-                      {
-                        "!=": [
-                          {
-                            "var": "checkout.step"
-                          },
-                          "payment"
-                        ]
-                      }
-                    ]
-                  },
+                  "condition": "!{{checkout.selectedPaymentMethodCode}} && {{checkout.step}} !== 'payment'",
                   "text": "4"
                 }
               ]
@@ -115,14 +71,7 @@
                 "size": 16,
                 "className": "!text-[var(--theme-muted-foreground)]"
               },
-              "condition": {
-                "==": [
-                  {
-                    "var": "checkout.step"
-                  },
-                  "payment"
-                ]
-              }
+              "condition": "{{checkout.step}} === 'payment'"
             },
             {
               "type": "NavIcon",
@@ -131,14 +80,7 @@
                 "size": 16,
                 "className": "!text-[var(--theme-muted-foreground)]"
               },
-              "condition": {
-                "!=": [
-                  {
-                    "var": "checkout.step"
-                  },
-                  "payment"
-                ]
-              }
+              "condition": "{{checkout.step}} !== 'payment'"
             }
           ]
         }
@@ -156,14 +98,7 @@
       "props": {
         "className": "pb-6 space-y-3"
       },
-      "condition": {
-        "==": [
-          {
-            "var": "checkout.step"
-          },
-          "payment"
-        ]
-      },
+      "condition": "{{checkout.step}} === 'payment'",
       "children": [
         {
           "type": "Text",
@@ -183,57 +118,13 @@
             {
               "type": "Pressable",
               "props": {
-                "className": {
-                  "expr": {
-                    "cat": [
-                      "flex flex-row items-center gap-3 p-4 border-2 rounded-lg w-full cursor-pointer transition-colors ",
-                      {
-                        "if": [
-                          {
-                            "==": [
-                              {
-                                "var": "checkout.selectedPaymentMethodCode"
-                              },
-                              {
-                                "var": "$item.code"
-                              }
-                            ]
-                          },
-                          "border-[var(--theme-shop-button)] bg-[var(--theme-hero-bg)]",
-                          "border-[var(--theme-border)] hover:border-[var(--theme-shop-button)]"
-                        ]
-                      }
-                    ]
-                  }
-                }
+                "className": "flex flex-row items-center gap-3 p-4 border-2 rounded-lg w-full cursor-pointer transition-colors {{checkout.selectedPaymentMethodCode === $item.code ? 'border-[var(--theme-shop-button)] bg-[var(--theme-hero-bg)]' : 'border-[var(--theme-border)] hover:border-[var(--theme-shop-button)]'}}"
               },
               "children": [
                 {
                   "type": "Box",
                   "props": {
-                    "className": {
-                      "expr": {
-                        "cat": [
-                          "w-5 h-5 min-w-5 min-h-5 rounded-full border-2 flex items-center justify-center shrink-0 ",
-                          {
-                            "if": [
-                              {
-                                "==": [
-                                  {
-                                    "var": "checkout.selectedPaymentMethodCode"
-                                  },
-                                  {
-                                    "var": "$item.code"
-                                  }
-                                ]
-                              },
-                              "border-[var(--theme-shop-button)] bg-[var(--theme-shop-button)]",
-                              "border-[var(--theme-border)]"
-                            ]
-                          }
-                        ]
-                      }
-                    }
+                    "className": "w-5 h-5 min-w-5 min-h-5 rounded-full border-2 flex items-center justify-center shrink-0 {{checkout.selectedPaymentMethodCode === $item.code ? 'border-[var(--theme-shop-button)] bg-[var(--theme-shop-button)]' : 'border-[var(--theme-border)]'}}"
                   },
                   "children": [
                     {
@@ -241,16 +132,7 @@
                       "props": {
                         "className": "w-2 h-2 rounded-full bg-white pointer-events-none"
                       },
-                      "condition": {
-                        "==": [
-                          {
-                            "var": "checkout.selectedPaymentMethodCode"
-                          },
-                          {
-                            "var": "$item.code"
-                          }
-                        ]
-                      }
+                      "condition": "{{checkout.selectedPaymentMethodCode}} === {{$item.code}}"
                     }
                   ]
                 },
@@ -292,9 +174,7 @@
                     {
                       "type": "set",
                       "path": "checkout.selectedPaymentMethodCode",
-                      "value": {
-                        "var": "$item.code"
-                      }
+                      "value": "{{$item.code}}"
                     },
                     {
                       "action": "setState",
@@ -312,26 +192,7 @@
         {
           "type": "Pressable",
           "props": {
-            "className": {
-              "expr": {
-                "cat": [
-                  "w-full flex flex-row items-center justify-center py-3 rounded-md ",
-                  "bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] mt-2 ",
-                  {
-                    "if": [
-                      {
-                        "var": [
-                          "checkout.selectedPaymentMethodCode",
-                          ""
-                        ]
-                      },
-                      "",
-                      "opacity-50 pointer-events-none cursor-not-allowed"
-                    ]
-                  }
-                ]
-              }
-            }
+            "className": "w-full flex flex-row items-center justify-center py-3 rounded-md bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] mt-2 {{checkout.selectedPaymentMethodCode ? '' : 'opacity-50 pointer-events-none cursor-not-allowed'}}"
           },
           "children": [
             {

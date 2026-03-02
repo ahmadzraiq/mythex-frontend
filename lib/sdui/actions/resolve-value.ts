@@ -2,7 +2,8 @@
  * Value resolution for actions - { var }, { expr }, interpolation
  */
 
-import jsonLogic from 'json-logic-js';
+import { evaluateFormula } from '../formula-evaluator';
+
 
 export function interpolateUrl(
   url: string,
@@ -67,6 +68,12 @@ export function resolveValue(
   if (Array.isArray(value)) {
     return value.map((item) => resolveValue(item, get, scope, fullState));
   }
+  // Handle formula strings with {{path}} interpolation
+  if (typeof value === 'string' && value.includes('{{') && fullState) {
+    const stateWithScope = scope ? { ...fullState, ...scope } : fullState;
+    const result = evaluateFormula(value, stateWithScope);
+    if (!result.error) return result.value;
+  }
   if (typeof value === 'object') {
     const obj = value as Record<string, unknown>;
     if ('var' in obj) {
@@ -83,19 +90,23 @@ export function resolveValue(
           _timestamp: Date.now(),
           _date: new Date().toISOString().slice(0, 10),
         };
-        return jsonLogic.apply((obj as { expr: object }).expr as object, stateForExpr);
+        const exprVal = (obj as { expr: string | object }).expr;
+        return evaluateFormula(exprVal, stateForExpr).value;
       } catch {
         return undefined;
       }
     }
+    // Legacy: single-key object that is a json-logic op (e.g. { "var": "path" } already handled above)
     const resolved: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(obj)) {
       resolved[k] = resolveValue(v, get, scope, fullState);
     }
+    // If the resolved object looks like a json-logic / formula object, evaluate it
     const keys = Object.keys(resolved);
-    if (keys.length === 1 && typeof keys[0] === 'string') {
+    if (keys.length === 1 && fullState) {
       try {
-        return jsonLogic.apply(resolved as object, fullState ?? {});
+        const evalResult = evaluateFormula(obj as object, fullState ?? {});
+        if (!evalResult.error) return evalResult.value;
       } catch {
         /* fall through */
       }

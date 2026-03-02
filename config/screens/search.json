@@ -27,13 +27,7 @@
         "props": {
           "className": "grid grid-cols-1 lg:grid-cols-4 gap-8"
         },
-        "condition": {
-          "!": [
-            {
-              "var": "search.loading"
-            }
-          ]
-        },
+        "condition": "!{{search.loading}}",
         "children": [
           {
             "type": "Box",
@@ -77,18 +71,7 @@
                       },
                       {
                         "type": "Pressable",
-                        "condition": {
-                          ">": [
-                            {
-                              "arrayLength": [
-                                {
-                                  "var": ["route.facets", []]
-                                }
-                              ]
-                            },
-                            0
-                          ]
-                        },
+                        "condition": "arrayLength({{route.facets}} || []) > 0",
                         "props": {
                           "className": "text-sm text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] transition-colors"
                         },
@@ -104,9 +87,7 @@
                         "actions": {
                           "click": {
                             "type": "navigateWithQuery",
-                            "path": {
-                              "var": "route.path"
-                            },
+                            "path": "{{route.path}}",
                             "queryParams": {
                               "facets": [],
                               "page": "1"
@@ -157,27 +138,16 @@
                                   "className": "flex flex-row items-center gap-2 cursor-pointer group"
                                 },
                                 "actions": {
-                                  "click": {
-                                    "type": "navigateWithQuery",
-                                    "path": {
-                                      "var": "route.path"
-                                    },
-                                    "queryParams": {
-                                      "facets": {
-                                        "expr": {
-                                          "toggleInArray": [
-                                            {
-                                              "var": ["route.facets", []]
-                                            },
-                                            {
-                                              "var": "$item.facetValue.id"
-                                            }
-                                          ]
-                                        }
-                                      },
-                                      "page": "1"
-                                    }
-                                  }
+                  "click": {
+                    "type": "navigateWithQuery",
+                    "path": "{{route.path}}",
+                    "queryParams": {
+                      "facets": {
+                        "expr": "toggleInArray({{route.facets}} || [], {{$item.facetValue.id}})"
+                      },
+                      "page": "1"
+                    }
+                  }
                                 },
                                 "children": [
                                   {
@@ -185,20 +155,7 @@
                                     "props": {
                                       "className": "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors border-[var(--theme-border)]"
                                     },
-                                    "condition": {
-                                      "!": [
-                                        {
-                                          "arrayIncludes": [
-                                            {
-                                              "var": ["route.facets", []]
-                                            },
-                                            {
-                                              "var": "$item.facetValue.id"
-                                            }
-                                          ]
-                                        }
-                                      ]
-                                    },
+                                    "condition": "!arrayIncludes({{route.facets}} || [], {{$item.facetValue.id}})",
                                     "children": []
                                   },
                                   {
@@ -206,16 +163,7 @@
                                     "props": {
                                       "className": "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors bg-[var(--theme-shop-button)] border-[var(--theme-shop-button)]"
                                     },
-                                    "condition": {
-                                      "arrayIncludes": [
-                                        {
-                                          "var": ["route.facets", []]
-                                        },
-                                        {
-                                          "var": "$item.facetValue.id"
-                                        }
-                                      ]
-                                    },
+                                    "condition": "arrayIncludes({{route.facets}} || [], {{$item.facetValue.id}})",
                                     "children": [
                                       {
                                         "type": "NavIcon",
@@ -285,9 +233,7 @@
                         "props": {
                           "className": "fixed inset-0 z-[9998]"
                         },
-                        "condition": {
-                          "var": "sortMenuOpen"
-                        },
+                        "condition": "{{sortMenuOpen}}",
                         "actions": {
                           "click": {
                             "type": "setVar",
@@ -314,38 +260,7 @@
                               "className": "text-sm text-[var(--theme-foreground)]"
                             },
                             "text": {
-                              "expr": {
-                                "if": [
-                                  {
-                                    "==": [
-                                      {
-                                        "var": "route.sort"
-                                      },
-                                      "name-asc"
-                                    ]
-                                  },
-                                  "Name: A to Z",
-                                  {
-                                    "==": [
-                                      {
-                                        "var": "route.sort"
-                                      },
-                                      "name-desc"
-                                    ]
-                                  },
-                                  "Name: Z to A",
-                                  {
-                                    "==": [
-                                      {
-                                        "var": "route.sort"
-                                      },
-                                      "price-asc"
-                                    ]
-                                  },
-                                  "Price: Low to High",
-                                  "Price: High to Low"
-                                ]
-                              }
+                              "expr": "{{route.sort}} === 'name-asc' ? 'Name: A to Z' : {{route.sort}} === 'name-desc' ? 'Name: Z to A' : {{route.sort}} === 'price-asc' ? 'Price: Low to High' : 'Price: High to Low'"
                             }
                           },
                           {
@@ -360,9 +275,7 @@
                       },
                       {
                         "type": "Box",
-                        "condition": {
-                          "var": "sortMenuOpen"
-                        },
+                        "condition": "{{sortMenuOpen}}",
                         "props": {
                           "className": "absolute right-0 top-full mt-1 min-w-[180px] rounded-md border border-[var(--theme-border)] bg-[var(--theme-content-bg)] shadow-md z-[9999] py-1"
                         },
@@ -418,14 +331,7 @@
                                   "size": 14,
                                   "color": "#7c3aed"
                                 },
-                                "condition": {
-                                  "==": [
-                                    {
-                                      "var": "route.sort"
-                                    },
-                                    "name-asc"
-                                  ]
-                                }
+                                "condition": "{{route.sort}} === 'name-asc'"
                               }
                             ]
                           },
@@ -480,14 +386,7 @@
                                   "size": 14,
                                   "color": "#7c3aed"
                                 },
-                                "condition": {
-                                  "==": [
-                                    {
-                                      "var": "route.sort"
-                                    },
-                                    "name-desc"
-                                  ]
-                                }
+                                "condition": "{{route.sort}} === 'name-desc'"
                               }
                             ]
                           },
@@ -542,14 +441,7 @@
                                   "size": 14,
                                   "color": "#7c3aed"
                                 },
-                                "condition": {
-                                  "==": [
-                                    {
-                                      "var": "route.sort"
-                                    },
-                                    "price-asc"
-                                  ]
-                                }
+                                "condition": "{{route.sort}} === 'price-asc'"
                               }
                             ]
                           },
@@ -604,14 +496,7 @@
                                   "size": 14,
                                   "color": "#7c3aed"
                                 },
-                                "condition": {
-                                  "==": [
-                                    {
-                                      "var": "route.sort"
-                                    },
-                                    "price-desc"
-                                  ]
-                                }
+                                "condition": "{{route.sort}} === 'price-desc'"
                               }
                             ]
                           }
@@ -623,17 +508,7 @@
               },
               {
                 "type": "Box",
-                "condition": {
-                  "==": [
-                    {
-                      "var": [
-                        "search.totalItems",
-                        0
-                      ]
-                    },
-                    0
-                  ]
-                },
+                "condition": "({{search.totalItems}} || 0) === 0",
                 "props": {
                   "className": "text-center py-12"
                 },
@@ -649,17 +524,7 @@
               },
               {
                 "type": "Box",
-                "condition": {
-                  ">": [
-                    {
-                      "var": [
-                        "search.totalItems",
-                        0
-                      ]
-                    },
-                    0
-                  ]
-                },
+                "condition": "{{search.totalItems}} > 0",
                 "props": {
                   "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
                 },

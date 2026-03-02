@@ -2,8 +2,10 @@
  * SDUI node and action types - JSON tree structure
  */
 
-import type { JsonLogicRules } from 'json-logic-js';
 import type { SetStatePayload, FetchPayload, NavigatePayload } from './payloads';
+
+/** Condition: formula string ("cart.count > 0") or legacy json-logic object */
+type ConditionValue = string | Record<string, unknown>;
 
 /** All gluestack-ui component types - AI can generate any of these */
 export type SDUIComponentType =
@@ -153,8 +155,8 @@ export interface SDUIDataSource {
   key: string; // state key to store response
   /** Refetch when this state path changes */
   dependsOn?: string;
-  /** JSON Logic - only fetch when condition is truthy */
-  when?: JsonLogicRules;
+  /** Condition - only fetch when truthy (formula string or legacy json-logic object) */
+  when?: ConditionValue;
 }
 
 /** Action definition for event handlers - action can be any string (resolved from actions.json) */
@@ -169,7 +171,7 @@ export interface SDUINode {
   /** Stable identifier — used by visual builder for selection & annotation */
   id?: string;
   key?: string;
-  condition?: JsonLogicRules;
+  condition?: ConditionValue;
   map?: string;
   props?: Record<string, unknown>;
   className?: string;

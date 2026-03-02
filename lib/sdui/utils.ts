@@ -2,7 +2,7 @@
  * SDUI Utilities - Variable resolution, interpolation, condition evaluation
  */
 
-import jsonLogic from 'json-logic-js';
+import { evaluateFormula } from './formula-evaluator';
 import type { SDUIContext } from './types';
 
 /** Resolve dot-notation path from context state */
@@ -45,36 +45,39 @@ export function resolveText(
     }
     if ('expr' in text) {
       const { expr, suffix = '', prefix = '', template } = text;
-      const result = jsonLogic.apply((expr ?? {}) as object, context.state ?? {});
-      const str = String(result ?? '');
+      const evalResult = evaluateFormula(
+        (typeof expr === 'string' ? expr : expr) as string | object,
+        context.state ?? {}
+      );
+      const str = String(evalResult.value ?? '');
       if (template != null) return template.replace('{0}', str);
       return prefix + str + suffix;
     }
-    // Fallback: treat the entire object as a bare JSON Logic expression.
+    // Fallback: treat the entire object as a bare formula expression.
     // This handles AI-generated patterns like { "formatCurrency": { "var": "..." } }
     // where the "expr" wrapper was omitted. Prevents raw JSON from appearing on screen.
     try {
-      const result = jsonLogic.apply(text as unknown as object, context.state ?? {});
-      if (result !== undefined && result !== null && typeof result !== 'object') {
-        return String(result);
+      const evalResult = evaluateFormula(text as object, context.state ?? {});
+      if (evalResult.value !== undefined && evalResult.value !== null && typeof evalResult.value !== 'object') {
+        return String(evalResult.value);
       }
     } catch {
-      // Not a valid JSON Logic op — fall through to empty string
+      // Not a valid expression — fall through to empty string
     }
     return '';
   }
   return String(text);
 }
 
-/** Evaluate JSON Logic condition against context state */
+/** Evaluate condition (formula string or legacy json-logic object) against context state */
 export function evaluateCondition(
   condition: unknown,
   context: SDUIContext
 ): boolean {
   if (condition == null) return true;
   try {
-    const result = jsonLogic.apply(condition as object, context.state);
-    return Boolean(result);
+    const result = evaluateFormula(condition as string | object, context.state ?? {});
+    return Boolean(result.value);
   } catch {
     return false;
   }
@@ -114,8 +117,11 @@ export function resolveProps(
         resolved[key] = coerceValue(finalVal);
       } else if ('expr' in obj) {
         try {
-          const result = jsonLogic.apply((obj.expr ?? {}) as object, context.state ?? {});
-          resolved[key] = result != null ? String(result) : result;
+          const evalResult = evaluateFormula(
+            (typeof obj.expr === 'string' ? obj.expr : obj.expr) as string | object,
+            context.state ?? {}
+          );
+          resolved[key] = evalResult.value != null ? String(evalResult.value) : evalResult.value;
         } catch {
           resolved[key] = value;
         }

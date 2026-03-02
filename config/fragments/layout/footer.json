@@ -59,9 +59,7 @@
                               "action": "navigate",
                               "payload": {
                                 "routeConfig": "collection",
-                                "slug": {
-                                  "var": "$item.slug"
-                                }
+                                "slug": "{{$item.slug}}"
                               }
                             }
                           },

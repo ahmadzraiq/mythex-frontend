@@ -572,7 +572,8 @@ export function extractColors(node: { props?: unknown; children?: unknown }): st
   const hex = /#[0-9a-fA-F]{3,8}/g;
 
   function walk(n: { props?: unknown; children?: unknown }) {
-    const cls = (n.props as { className?: string } | undefined)?.className ?? '';
+    const rawCls = (n.props as { className?: unknown } | undefined)?.className ?? '';
+    const cls = typeof rawCls === 'string' ? rawCls : '';
     const matches = cls.match(hex) ?? [];
     matches.forEach(m => found.add(m.toLowerCase()));
     const kids = n.children;

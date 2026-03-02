@@ -11,7 +11,7 @@
  * correct canvas-relative X/Y coordinates.
  */
 
-import React, { useRef, useEffect, useCallback, useMemo, useState, memo } from 'react';
+import React, { useRef, useEffect, useCallback, useMemo, useState, memo, useDeferredValue } from 'react';
 import { useBuilderStore, findNode, findParentNode, VIEWPORT_WIDTHS } from './_store';
 import BuilderOverlay, { type ResizeHandle } from './_overlay';
 import { SDUIEngine } from '@/lib/sdui/sdui-engine';
@@ -20,6 +20,7 @@ import type { SDUIConfig } from '@/lib/sdui/types';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import { computeSnap, snapResizeSize, SNAP_THRESHOLD, type SnapGuide, type ContentRect } from './_snap-engine';
 import { removeTwToken } from './_tw-utils';
+import { StateBar } from './_state-bar';
 
 /** Node types that act as containers and accept dropped children. */
 // Keep in sync with isContainer in _panel-right.tsx
@@ -142,16 +143,28 @@ const ALLOWED_CHILDREN: Record<string, Set<string>> = {
  * state changes — those updates only affect the canvas transforms and overlays,
  * not the page content.
  */
-const PageEngine = memo(function PageEngine({ pageConfig }: { pageConfig: SDUIConfig }) {
+const PageEngine = memo(function PageEngine({
+  pageConfig,
+  configName,
+  previewStates,
+  previewData,
+}: {
+  pageConfig: SDUIConfig;
+  configName: string;
+  previewStates?: string[];
+  previewData?: Record<string, unknown>;
+}) {
   if (!pageConfig.ui) return <EmptyCanvas />;
   return (
     <SDUIEngine
       key="builder-engine"
       config={pageConfig}
-      configName="builder"
+      configName={configName}
       actionsConfig={app.actions}
       routes={app.routes}
       builderMode
+      previewStates={previewStates}
+      previewData={previewData}
     />
   );
 });
@@ -165,11 +178,32 @@ const InactivePageEngine = memo(function InactivePageEngine({
   pageId,
   configName,
   nodes,
+  previewStates,
+  previewData,
 }: {
   pageId: string;
   configName: string;
   nodes: SDUINode[];
+  previewStates?: string[];
+  previewData?: Record<string, unknown>;
 }) {
+  // Defer preview state changes for inactive pages so the active page always
+  // updates first. This keeps the UI responsive when many pages are visible.
+  const deferredPreviewStates = useDeferredValue(previewStates);
+  const deferredPreviewData = useDeferredValue(previewData);
+
+  const cfg = useMemo<SDUIConfig>(() => {
+    const screenState = (app.screens?.[configName] as { state?: Record<string, unknown> } | undefined)?.state ?? {};
+    return {
+      state: screenState,
+      ui: {
+        type: 'Box',
+        props: { className: 'flex flex-col w-full min-h-screen items-start relative' },
+        children: nodes,
+      } as SDUIConfig['ui'],
+    };
+  }, [configName, nodes]);
+
   if (!nodes.length) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: VIEWPORT_H, gap: 8, color: '#9ca3af', fontFamily: 'system-ui', userSelect: 'none' }}>
@@ -178,14 +212,6 @@ const InactivePageEngine = memo(function InactivePageEngine({
       </div>
     );
   }
-  const cfg: SDUIConfig = {
-    state: {},
-    ui: {
-      type: 'Box',
-      props: { className: 'flex flex-col w-full min-h-screen items-start relative' },
-      children: nodes,
-    } as SDUIConfig['ui'],
-  };
   return (
     <SDUIEngine
       key={`pg-${pageId}`}
@@ -194,6 +220,8 @@ const InactivePageEngine = memo(function InactivePageEngine({
       actionsConfig={app.actions ?? {}}
       routes={app.routes ?? []}
       builderMode
+      previewStates={deferredPreviewStates}
+      previewData={deferredPreviewData}
     />
   );
 });
@@ -244,7 +272,91 @@ export default function BuilderCanvas() {
     switchPage,
     pendingFitToPage,
     clearPendingFit,
+    showInteractionLines,
+    setShowInteractionLines,
+    duplicateNodes,
+    deleteNodes,
+    selectParent,
+    selectFirstChild,
+    copyToClipboard,
+    pasteFromClipboard,
+    setPreviewState,
+    activePreviewStates,
+    openLogicSection,
   } = useBuilderStore();
+
+
+  // Use the route config name (page.name) so screen-scoped paths (screens.signIn.form, etc.) resolve correctly
+  const currentPageConfigName = useMemo(() => {
+    const pg = pages.find(p => p.id === currentPageId);
+    return pg?.name ?? 'builder';
+  }, [pages, currentPageId]);
+
+  // ── Selected node rect (for floating toolbar) ─────────────────────────────
+
+  // ── Keyboard shortcuts ────────────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      // Don't fire shortcuts when focus is in an input/textarea
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+      const id = selectedIds[0];
+
+      // Panel tab switching
+      if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (e.key === 'l' || e.key === 'L') {
+          window.dispatchEvent(new CustomEvent('builder:open-logic-tab', {}));
+          return;
+        }
+        if (e.key === 'j' || e.key === 'J') {
+          window.dispatchEvent(new CustomEvent('builder:open-json-tab', {}));
+          return;
+        }
+        if (e.key === 'd' || e.key === 'D') {
+          if (e.shiftKey) return; // Ctrl+D = duplicate
+          window.dispatchEvent(new CustomEvent('builder:open-design-tab', {}));
+          return;
+        }
+        // Logic shortcuts
+        if (e.key === 'i' || e.key === 'I') { openLogicSection('interactions'); window.dispatchEvent(new CustomEvent('builder:open-logic-tab', { detail: { section: 'interactions' } })); return; }
+        if (e.key === 'b' || e.key === 'B') { openLogicSection('binding'); window.dispatchEvent(new CustomEvent('builder:open-logic-tab', { detail: { section: 'binding' } })); return; }
+        if (e.key === 'v' || e.key === 'V') { setShowInteractionLines(!showInteractionLines); return; }
+        if (e.key === 's' || e.key === 'S') {
+          if (e.shiftKey) { window.dispatchEvent(new CustomEvent('builder:open-state-picker', {})); return; }
+          const states = ['normal', 'hover', 'loading', 'error', 'empty', 'disabled'];
+          const store = useBuilderStore.getState();
+          const current = store.activePreviewStates[0] ?? 'normal';
+          const idx = states.indexOf(current);
+          setPreviewState(states[(idx + 1) % states.length]);
+          return;
+        }
+        // Navigation
+        if (e.key === 'Escape' && id) { selectParent(id); return; }
+        if (e.key === 'Enter' && id) { selectFirstChild(id); return; }
+        // Z-order
+        if (e.key === '[') { id && useBuilderStore.getState().moveNodeDown(id); return; }
+        if (e.key === ']') { id && useBuilderStore.getState().moveNodeUp(id); return; }
+      }
+
+      // With Ctrl/Cmd
+      if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+        if (e.key === 'd' || e.key === 'D') {
+          e.preventDefault();
+          if (id) duplicateNodes([id]);
+          return;
+        }
+        if (e.key === 'c') { copyToClipboard(); return; }
+        if (e.key === 'v') { pasteFromClipboard(); return; }
+      }
+
+      if ((e.key === 'Delete' || e.key === 'Backspace') && id && !e.ctrlKey && !e.metaKey) {
+        deleteNodes([id]);
+        return;
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [selectedIds, showInteractionLines, setShowInteractionLines, duplicateNodes, deleteNodes, selectParent, selectFirstChild, copyToClipboard, pasteFromClipboard, setPreviewState, openLogicSection]);
 
   // ── World transform helpers ───────────────────────────────────────────────
   //
@@ -622,14 +734,19 @@ export default function BuilderCanvas() {
 
   // ── Build SDUI config ────────────────────────────────────────────────────
 
-  const pageConfig = useMemo<SDUIConfig>(() => ({
-    state: {},
-    ui: {
-      type: 'Box',
-      props: { className: 'flex flex-col w-full min-h-screen items-start relative' },
-      children: pageNodes,
-    } as SDUIConfig['ui'],
-  }), [pageNodes]);
+  const pageConfig = useMemo<SDUIConfig>(() => {
+    // Include the screen's state (form fields, errors, etc.) so preview states like
+    // "validation" can find the form fields and inject per-field error messages.
+    const screenState = (app.screens?.[currentPageConfigName] as { state?: Record<string, unknown> } | undefined)?.state ?? {};
+    return {
+      state: screenState,
+      ui: {
+        type: 'Box',
+        props: { className: 'flex flex-col w-full min-h-screen items-start relative' },
+        children: pageNodes,
+      } as SDUIConfig['ui'],
+    };
+  }, [pageNodes, currentPageConfigName]);
 
   // ── Wheel: Ctrl/Meta = zoom, else pan ─────────────────────────────────────
   //
@@ -734,6 +851,12 @@ export default function BuilderCanvas() {
   // pointer capture state.
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    // Don't start canvas drag when clicking the floating toolbar or overflow menu —
+    // those bubbled pointer events would otherwise deselect the node.
+    if ((e.target as Element).closest('[data-floating-toolbar]') ||
+        (e.target as Element).closest('[data-more-menu]')) {
+      return;
+    }
     const isPan = e.button === 1 || tool === 'hand';
     if (!isPan && e.button !== 0) return;
     dragRef.current = { active: true, startX: e.clientX, startY: e.clientY, startPX: panXRef.current, startPY: panYRef.current, moved: false };
@@ -850,6 +973,8 @@ export default function BuilderCanvas() {
 
     if (d.active && !d.moved) {
       const insideAnyPage = (e.target as Element).closest('[data-builder-page-id]');
+      const insideToolbar = (e.target as Element).closest('[data-floating-toolbar]') ||
+                            (e.target as Element).closest('[data-more-menu]');
       if (insideAnyPage) {
         const hit = hitTest(e.clientX, e.clientY);
         if (hit.kind === 'node') {
@@ -870,7 +995,7 @@ export default function BuilderCanvas() {
           }
           select(null);
         }
-      } else {
+      } else if (!insideToolbar) {
         // Clicked on the dark canvas background → deselect
         select(null);
       }
@@ -1712,8 +1837,10 @@ export default function BuilderCanvas() {
               >
                 <InactivePageEngine
                   pageId={page.id}
-                  configName={(page.route ?? '').replace(/[^a-zA-Z0-9]/g, '_') || 'page'}
+                  configName={page.name || 'page'}
                   nodes={page.nodes as SDUINode[]}
+                  previewStates={activePreviewStates}
+                  previewData={undefined}
                 />
                 {/* Fold line */}
                 <div data-builder-overlay="fold-line" style={{ position: 'absolute', left: 0, right: 0, top: VIEWPORT_H, height: 0, borderTop: '1.5px dashed rgba(99,130,246,0.3)', pointerEvents: 'none', zIndex: 9990 }} />
@@ -1753,7 +1880,12 @@ export default function BuilderCanvas() {
             transform: 'translateZ(0)',
           }}
         >
-        <PageEngine pageConfig={pageConfig} />
+        <PageEngine
+          pageConfig={pageConfig}
+          configName={currentPageConfigName}
+          previewStates={activePreviewStates}
+          previewData={undefined}
+        />
 
         {/* Viewport fold line — dashed line marking where the viewport ends.
             Content below this line exists on the page but is not visible
@@ -2211,6 +2343,31 @@ export default function BuilderCanvas() {
           {Math.round(zoom * 100)}%
         </button>
         <ZoomBtn label="+" testId="zoom-in" onClick={() => setZoom(Math.min(MAX_ZOOM, zoom * 1.25))} />
+      </div>
+
+      {/* ── Show Interactions toggle ── */}
+      {/* Positioned above the state bar (bottom: ~40px) so it's not covered */}
+      <div style={{ position: 'absolute', bottom: 52, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 4, pointerEvents: 'all', zIndex: 9991 }}>
+        <button
+          data-testid="toggle-interaction-lines"
+          onClick={() => setShowInteractionLines(!showInteractionLines)}
+          style={{
+            background: showInteractionLines ? '#1d4ed8' : '#1f2937',
+            border: `1px solid ${showInteractionLines ? '#3b82f6' : '#374151'}`,
+            borderRadius: 6,
+            color: showInteractionLines ? '#bfdbfe' : '#9ca3af',
+            fontSize: 10,
+            padding: '4px 10px',
+            cursor: 'pointer',
+          }}
+        >
+          ⚡ {showInteractionLines ? 'Hide' : 'Show'} interactions (V)
+        </button>
+      </div>
+
+      {/* ── State Bar ── */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 9990, pointerEvents: 'all' }}>
+        <StateBar />
       </div>
     </div>
   );

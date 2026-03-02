@@ -31,15 +31,7 @@
             "props": {
               "className": "text-center py-16"
             },
-            "condition": {
-              "!": [
-                {
-                  "var": [
-                    "order"
-                  ]
-                }
-              ]
-            },
+            "condition": "!{{order}}",
             "children": [
               {
                 "type": "Text",
@@ -55,11 +47,7 @@
             "props": {
               "className": "text-center mb-8"
             },
-            "condition": {
-              "var": [
-                "order"
-              ]
-            },
+            "condition": "{{order}}",
             "children": [
               {
                 "type": "Box",
@@ -113,11 +101,7 @@
             "props": {
               "className": "mb-6 rounded-xl border border-[var(--theme-border)] shadow-sm bg-[var(--theme-content-bg)] p-0 overflow-hidden"
             },
-            "condition": {
-              "var": [
-                "order"
-              ]
-            },
+            "condition": "{{order}}",
             "children": [
               {
                 "type": "Box",
@@ -159,11 +143,7 @@
                             "props": {
                               "className": "flex-shrink-0"
                             },
-                            "condition": {
-                              "var": [
-                                "$item.productVariant.product.featuredAsset.preview"
-                              ]
-                            },
+                            "condition": "{{$item.productVariant.product.featuredAsset.preview}}",
                             "children": [
                               {
                                 "type": "NextImage",
@@ -196,16 +176,7 @@
                                   "className": "text-sm text-[var(--theme-muted-foreground)]"
                                 },
                                 "text": "{{$item.productVariant.name}}",
-                                "condition": {
-                                  "!=": [
-                                    {
-                                      "var": "$item.productVariant.name"
-                                    },
-                                    {
-                                      "var": "$item.productVariant.product.name"
-                                    }
-                                  ]
-                                }
+                                "condition": "{{$item.productVariant.name}} !== {{$item.productVariant.product.name}}"
                               }
                             ]
                           },
@@ -242,26 +213,7 @@
                                 "props": {
                                   "className": "font-semibold"
                                 },
-                                "text": {
-                                  "expr": {
-                                    "formatCurrency": [
-                                      {
-                                        "/": [
-                                          {
-                                            "var": "$item.linePriceWithTax"
-                                          },
-                                          100
-                                        ]
-                                      },
-                                      {
-                                        "var": [
-                                          "order.currencyCode",
-                                          "USD"
-                                        ]
-                                      }
-                                    ]
-                                  }
-                                }
+                                "text": { "expr": "formatCurrency({{$item.linePriceWithTax}} / 100, {{order.currencyCode}} || 'USD')" }
                               }
                             ]
                           }
@@ -287,29 +239,7 @@
                       },
                       {
                         "type": "Text",
-                        "text": {
-                          "expr": {
-                            "formatCurrency": [
-                              {
-                                "/": [
-                                  {
-                                    "var": [
-                                      "order.totalWithTax",
-                                      0
-                                    ]
-                                  },
-                                  100
-                                ]
-                              },
-                              {
-                                "var": [
-                                  "order.currencyCode",
-                                  "USD"
-                                ]
-                              }
-                            ]
-                          }
-                        }
+                        "text": { "expr": "formatCurrency(({{order.totalWithTax}} || 0) / 100, {{order.currencyCode}} || 'USD')" }
                       }
                     ]
                   }
@@ -322,20 +252,7 @@
             "props": {
               "className": "mb-6 rounded-xl border border-[var(--theme-border)] shadow-sm bg-[var(--theme-content-bg)] p-0 overflow-hidden"
             },
-            "condition": {
-              "and": [
-                {
-                  "var": [
-                    "order"
-                  ]
-                },
-                {
-                  "var": [
-                    "order.shippingAddress"
-                  ]
-                }
-              ]
-            },
+            "condition": "{{order}} && {{order.shippingAddress}}",
             "children": [
               {
                 "type": "Box",
@@ -370,69 +287,14 @@
                     "props": {
                       "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                     },
-                    "text": {
-                      "expr": {
-                        "cat": [
-                          {
-                            "var": [
-                              "order.shippingAddress.streetLine1",
-                              ""
-                            ]
-                          },
-                          {
-                            "if": [
-                              {
-                                "var": [
-                                  "order.shippingAddress.streetLine2",
-                                  ""
-                                ]
-                              },
-                              {
-                                "cat": [
-                                  ", ",
-                                  {
-                                    "var": "order.shippingAddress.streetLine2"
-                                  }
-                                ]
-                              },
-                              ""
-                            ]
-                          }
-                        ]
-                      }
-                    }
+                    "text": { "expr": "{{order.shippingAddress.streetLine1}} + ({{order.shippingAddress.streetLine2}} ? ', ' + {{order.shippingAddress.streetLine2}} : '')" }
                   },
                   {
                     "type": "Text",
                     "props": {
                       "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
-                    "text": {
-                      "expr": {
-                        "cat": [
-                          {
-                            "var": [
-                              "order.shippingAddress.city",
-                              ""
-                            ]
-                          },
-                          ", ",
-                          {
-                            "var": [
-                              "order.shippingAddress.province",
-                              ""
-                            ]
-                          },
-                          " ",
-                          {
-                            "var": [
-                              "order.shippingAddress.postalCode",
-                              ""
-                            ]
-                          }
-                        ]
-                      }
-                    }
+                    "text": "{{order.shippingAddress.city}}, {{order.shippingAddress.province}} {{order.shippingAddress.postalCode}}"
                   },
                   {
                     "type": "Text",
@@ -450,11 +312,7 @@
             "props": {
               "className": "flex gap-4"
             },
-            "condition": {
-              "var": [
-                "order"
-              ]
-            },
+            "condition": "{{order}}",
             "children": [
               {
                 "type": "Pressable",

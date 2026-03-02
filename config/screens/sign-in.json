@@ -115,11 +115,7 @@
                         "props": {
                           "className": "min-h-[20px]"
                         },
-                        "condition": {
-                          "var": [
-                            "screens.signIn.errors.form.username"
-                          ]
-                        },
+                        "condition": "{{screens.signIn.errors.form.username}}",
                         "children": [
                           {
                             "type": "Text",
@@ -219,11 +215,7 @@
                         "props": {
                           "className": "min-h-[20px]"
                         },
-                        "condition": {
-                          "var": [
-                            "screens.signIn.errors.form.password"
-                          ]
-                        },
+                        "condition": "{{screens.signIn.errors.form.password}}",
                         "children": [
                           {
                             "type": "Text",

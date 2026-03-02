@@ -30,17 +30,7 @@
         "props": {
           "className": "text-center py-12"
         },
-        "condition": {
-          "==": [
-            {
-              "var": [
-                "orders.length",
-                0
-              ]
-            },
-            0
-          ]
-        },
+        "condition": "({{orders.length}} || 0) === 0",
         "children": [
           {
             "type": "Text",
@@ -56,17 +46,7 @@
         "props": {
           "className": "border rounded-lg overflow-hidden"
         },
-        "condition": {
-          ">": [
-            {
-              "var": [
-                "orders.length",
-                0
-              ]
-            },
-            0
-          ]
-        },
+        "condition": "{{orders.length}} > 0",
         "children": [
           {
             "type": "Table",
@@ -159,9 +139,7 @@
                                 "action": "navigate",
                                 "payload": {
                                   "routeConfig": "order-detail",
-                                  "slug": {
-                                    "var": "$item.code"
-                                  }
+                                  "slug": "{{$item.code}}"
                                 }
                               }
                             },
@@ -212,12 +190,7 @@
                         "children": [
                           {
                             "type": "Text",
-                            "text": {
-                              "expr": {
-                                "var": "$item.lines.length"
-                              },
-                              "suffix": " item(s)"
-                            }
+                            "text": "{{$item.lines.length}} item(s)"
                           }
                         ]
                       },
@@ -233,21 +206,7 @@
                               "className": "font-medium"
                             },
                             "text": {
-                              "expr": {
-                                "formatCurrency": [
-                                  {
-                                    "/": [
-                                      {
-                                        "var": "$item.totalWithTax"
-                                      },
-                                      100
-                                    ]
-                                  },
-                                  {
-                                    "var": "$item.currencyCode"
-                                  }
-                                ]
-                              }
+                              "expr": "formatCurrency({{$item.totalWithTax}} / 100, {{$item.currencyCode}})"
                             }
                           }
                         ]

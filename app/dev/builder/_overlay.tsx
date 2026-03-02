@@ -73,6 +73,120 @@ function getCanvasRect(id: string, canvasEl: HTMLElement): CanvasRect | null {
   return { x: r.left - cr.left, y: r.top - cr.top, w: r.width, h: r.height };
 }
 
+// ─── Interaction Lines ────────────────────────────────────────────────────────
+
+const ACTION_LINE_COLOR: Record<string, string> = {
+  navigate:   '#3b82f6',
+  setState:   '#f97316',
+  set:        '#f97316',
+  setVar:     '#f97316',
+  fetch:      '#22c55e',
+  graphql:    '#22c55e',
+  toggle:     '#a78bfa',
+  increment:  '#a78bfa',
+  decrement:  '#a78bfa',
+  animate:    '#fb923c',
+  default:    '#6b7280',
+};
+
+function getActionColor(actionType: string): string {
+  return ACTION_LINE_COLOR[actionType] ?? ACTION_LINE_COLOR.default;
+}
+
+function flattenNodes(nodes: SDUINode[]): SDUINode[] {
+  const result: SDUINode[] = [];
+  const visit = (ns: SDUINode[]) => {
+    for (const n of ns) {
+      result.push(n);
+      if (n.children?.length) visit(n.children as SDUINode[]);
+    }
+  };
+  visit(nodes);
+  return result;
+}
+
+interface InteractionLine {
+  id: string;
+  fromId: string;
+  event: string;
+  actionType: string;
+  label: string;
+  color: string;
+}
+
+function InteractionLines({ pageNodes, canvasEl, canvasDomRect }: {
+  pageNodes: SDUINode[];
+  canvasEl: HTMLElement;
+  canvasDomRect: DOMRect;
+}) {
+  const allNodes = useMemo(() => flattenNodes(pageNodes), [pageNodes]);
+  const [hoveredLine, setHoveredLine] = useState<string | null>(null);
+
+  const lines = useMemo((): InteractionLine[] => {
+    const result: InteractionLine[] = [];
+    for (const node of allNodes) {
+      if (!node.id || !node.actions) continue;
+      for (const [event, actionDef] of Object.entries(node.actions)) {
+        const defs = Array.isArray(actionDef) ? actionDef : [actionDef];
+        for (const def of defs) {
+          const d = def as unknown as Record<string, unknown>;
+          const actionType = String(d.type ?? d.action ?? 'default');
+          result.push({
+            id: `${node.id}-${event}-${actionType}`,
+            fromId: node.id,
+            event,
+            actionType,
+            label: `${event} → ${actionType}`,
+            color: getActionColor(actionType),
+          });
+        }
+      }
+    }
+    return result;
+  }, [allNodes]);
+
+  if (!lines.length) return null;
+  const cr = canvasDomRect;
+
+  return (
+    <svg
+      style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'visible' }}
+      width={canvasEl.clientWidth}
+      height={canvasEl.clientHeight}
+    >
+      {lines.map(line => {
+        const fromEl = canvasEl.querySelector(`[data-builder-id="${line.fromId}"]`);
+        if (!fromEl) return null;
+        const fromR = fromEl.getBoundingClientRect();
+        const fx = fromR.left - cr.left + fromR.width / 2;
+        const fy = fromR.top  - cr.top  + fromR.height;
+
+        const isHovered = hoveredLine === line.id;
+        const opacity = isHovered ? 1 : 0.5;
+
+        return (
+          <g key={line.id}>
+            {/* Small dot at source */}
+            <circle cx={fx} cy={fy} r={4} fill={line.color} opacity={opacity} />
+            {/* Label badge */}
+            <g
+              transform={`translate(${fx - 30}, ${fy + 4})`}
+              style={{ pointerEvents: 'all', cursor: 'default' }}
+              onMouseEnter={() => setHoveredLine(line.id)}
+              onMouseLeave={() => setHoveredLine(null)}
+            >
+              <rect x={0} y={0} width={60} height={14} rx={3} fill={line.color} opacity={opacity * 0.9} />
+              <text x={30} y={10} textAnchor="middle" fontSize={8} fill="#fff" fontFamily="system-ui">
+                {line.event}
+              </text>
+            </g>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 function getComputedPadding(id: string, canvasEl: HTMLElement) {
   const el = canvasEl.querySelector(`[data-builder-id="${id}"]`) as HTMLElement | null;
   if (!el) return null;
@@ -419,6 +533,8 @@ export default function BuilderOverlay({
   overlayInstantUpdateRef,
   liveZoomRef,
 }: OverlayProps) {
+  const showInteractionLines = useBuilderStore(s => s.showInteractionLines);
+
   // ── Event-driven RAF loop ────────────────────────────────────────────────
   //
   // The loop only runs during active interaction (scroll, pan, hover, edit).
@@ -489,7 +605,7 @@ export default function BuilderOverlay({
     ro.observe(canvasEl);
     return () => ro.disconnect();
   }, [canvasEl]);
-  const canvasDomRect = canvasDomRectRef.current ?? { top: 0, left: 0, bottom: 0, right: 0, width: 0, height: 0, x: 0, y: 0 };
+  const canvasDomRect = canvasDomRectRef.current ?? ({ x: 0, y: 0, width: 0, height: 0, top: 0, left: 0, bottom: 0, right: 0 } as DOMRect);
 
   // ── Hover outline (imperative) ────────────────────────────────────────────
   //
@@ -990,16 +1106,10 @@ export default function BuilderOverlay({
         );
       })()}
 
-      {/* Hidden-node dim overlay */}
-      {pageNodes.filter(n => n.id).map(n => {
-        const el = canvasEl.querySelector(`[data-builder-id="${n.id}"][data-builder-hidden="true"]`) as HTMLElement | null;
-        if (!el) return null;
-        const r  = el.getBoundingClientRect();
-        const cr = canvasDomRect;
-        return (
-          <div key={n.id} style={{ position: 'absolute', left: r.left - cr.left, top: r.top - cr.top, width: r.width, height: r.height, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none', border: '1px dashed rgba(255,200,0,0.5)' }} />
-        );
-      })}
+      {/* ── Interaction Lines ── */}
+      {showInteractionLines && (
+        <InteractionLines pageNodes={pageNodes} canvasEl={canvasEl} canvasDomRect={canvasDomRect} />
+      )}
     </div>
   );
 }

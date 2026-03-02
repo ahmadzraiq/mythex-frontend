@@ -126,11 +126,7 @@
                         "props": {
                           "className": "min-h-[20px]"
                         },
-                        "condition": {
-                          "var": [
-                            "screens.register.errors.form.emailAddress"
-                          ]
-                        },
+                        "condition": "{{screens.register.errors.form.emailAddress}}",
                         "children": [
                           {
                             "type": "Text",
@@ -214,11 +210,7 @@
                             "props": {
                               "className": "min-h-[20px]"
                             },
-                            "condition": {
-                              "var": [
-                                "screens.register.errors.form.firstName"
-                              ]
-                            },
+                            "condition": "{{screens.register.errors.form.firstName}}",
                             "children": [
                               {
                                 "type": "Text",
@@ -296,11 +288,7 @@
                             "props": {
                               "className": "min-h-[20px]"
                             },
-                            "condition": {
-                              "var": [
-                                "screens.register.errors.form.lastName"
-                              ]
-                            },
+                            "condition": "{{screens.register.errors.form.lastName}}",
                             "children": [
                               {
                                 "type": "Text",
@@ -444,11 +432,7 @@
                         "props": {
                           "className": "min-h-[20px]"
                         },
-                        "condition": {
-                          "var": [
-                            "screens.register.errors.form.password"
-                          ]
-                        },
+                        "condition": "{{screens.register.errors.form.password}}",
                         "children": [
                           {
                             "type": "Text",
@@ -527,11 +511,7 @@
                         "props": {
                           "className": "min-h-[20px]"
                         },
-                        "condition": {
-                          "var": [
-                            "screens.register.errors.form.confirmPassword"
-                          ]
-                        },
+                        "condition": "{{screens.register.errors.form.confirmPassword}}",
                         "children": [
                           {
                             "type": "Text",
@@ -549,25 +529,7 @@
                     "props": {
                       "className": "text-sm text-red-500"
                     },
-                    "condition": {
-                      "and": [
-                        {
-                          "==": [
-                            {
-                              "var": [
-                                "_workflow.lastAction"
-                              ]
-                            },
-                            "registerMutation"
-                          ]
-                        },
-                        {
-                          "var": [
-                            "_workflow.lastError"
-                          ]
-                        }
-                      ]
-                    },
+                    "condition": "{{_workflow.lastAction}} === 'registerMutation' && {{_workflow.lastError}}",
                     "children": [
                       {
                         "type": "Text",

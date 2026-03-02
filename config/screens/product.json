@@ -25,24 +25,7 @@
   "content": [
     {
       "type": "Box",
-      "condition": {
-        "and": [
-          {
-            "!": [
-              {
-                "var": "product.loading"
-              }
-            ]
-          },
-          {
-            "!": [
-              {
-                "var": "product"
-              }
-            ]
-          }
-        ]
-      },
+      "condition": "!{{product.loading}} && !{{product}}",
       "props": {
         "className": "container mx-auto px-4 py-16 text-center"
       },
@@ -88,9 +71,7 @@
     },
     {
       "type": "Box",
-      "condition": {
-        "var": "product.loading"
-      },
+      "condition": "{{product.loading}}",
       "props": {
         "className": "container mx-auto px-4 py-8 mt-16"
       },
@@ -139,20 +120,7 @@
     },
     {
       "type": "Box",
-      "condition": {
-        "and": [
-          {
-            "!": [
-              {
-                "var": "product.loading"
-              }
-            ]
-          },
-          {
-            "var": "product"
-          }
-        ]
-      },
+      "condition": "!{{product.loading}} && {{product}}",
       "children": [
         {
           "type": "Box",
@@ -566,17 +534,7 @@
         },
         {
           "type": "Box",
-          "condition": {
-            ">": [
-              {
-                "var": [
-                  "related.products.length",
-                  0
-                ]
-              },
-              0
-            ]
-          },
+          "condition": "{{related.products.length}} > 0",
           "props": {
             "className": "py-12 md:py-16"
           },

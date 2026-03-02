@@ -37,7 +37,7 @@ export const graphqlHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDe
         : undefined;
 
     const rawHeaders = (actionDef.headers as Record<string, string>) ?? {};
-    const resolvedActionHeaders = resolvePayload(rawHeaders as Record<string, unknown>, ctx.get, ctx.scope) as Record<string, string>;
+    const resolvedActionHeaders = resolvePayload(rawHeaders as Record<string, unknown>, ctx.get, ctx.scope, stateWithScope) as Record<string, string>;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...CONVENTIONS.graphqlHeaders,

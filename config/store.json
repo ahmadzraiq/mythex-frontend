@@ -86,6 +86,9 @@
     "persistPaths": [
       "checkout.selectedPaymentMethodCode"
     ],
+    "resetVarsOnNavigate": [
+      "nav.themeMenuOpen"
+    ],
     "sortInputMap": {
       "name-asc": {
         "name": "ASC"
@@ -124,593 +127,143 @@
   "computed": [
     {
       "output": "sortInput",
-      "expr": {
-        "lookupMap": [
-          {
-            "var": "_conventions.sortInputMap"
-          },
-          {
-            "var": [
-              "route.sort",
-              "name-asc"
-            ]
-          },
-          {
-            "var": "_conventions.defaultSortInput"
-          }
-        ]
-      }
+      "expr": "lookupMap({{_conventions.sortInputMap}}, {{route.sort}} || 'name-asc', {{_conventions.defaultSortInput}})"
     },
     {
       "output": "collectionPaginationPages",
-      "expr": {
-        "paginationPages": [
-          {
-            "var": [
-              "collection.search.totalItems",
-              0
-            ]
-          },
-          {
-            "var": [
-              "collectionSkip",
-              0
-            ]
-          },
-          {
-            "var": [
-              "collectionPageSize",
-              12
-            ]
-          }
-        ]
-      }
+      "expr": "paginationPages({{collection.search.totalItems}} || 0, {{collectionSkip}} || 0, {{collectionPageSize}} || 12)"
     },
     {
       "output": "collectionCurrentPage",
-      "expr": {
-        "max": [
-          1,
-          {
-            "floor": {
-              "+": [
-                {
-                  "/": [
-                    {
-                      "var": [
-                        "collectionSkip",
-                        0
-                      ]
-                    },
-                    {
-                      "var": [
-                        "collectionPageSize",
-                        12
-                      ]
-                    }
-                  ]
-                },
-                1
-              ]
-            }
-          }
-        ]
-      }
+      "expr": "max(1, floor(({{collectionSkip}} || 0) / ({{collectionPageSize}} || 12) + 1))"
     },
     {
       "output": "collectionTotalPages",
-      "expr": {
-        "max": [
-          1,
-          {
-            "ceil": {
-              "/": [
-                {
-                  "var": [
-                    "collection.search.totalItems",
-                    0
-                  ]
-                },
-                {
-                  "var": [
-                    "collectionPageSize",
-                    12
-                  ]
-                }
-              ]
-            }
-          }
-        ]
-      }
+      "expr": "max(1, ceil(({{collection.search.totalItems}} || 0) / ({{collectionPageSize}} || 12)))"
     },
     {
       "output": "collectionPrevPage",
-      "expr": {
-        "max": [
-          1,
-          {
-            "-": [
-              {
-                "var": [
-                  "collectionCurrentPage",
-                  1
-                ]
-              },
-              1
-            ]
-          }
-        ]
-      }
+      "expr": "max(1, ({{collectionCurrentPage}} || 1) - 1)"
     },
     {
       "output": "collectionNextPage",
-      "expr": {
-        "min": [
-          {
-            "var": [
-              "collectionTotalPages",
-              1
-            ]
-          },
-          {
-            "+": [
-              {
-                "var": [
-                  "collectionCurrentPage",
-                  1
-                ]
-              },
-              1
-            ]
-          }
-        ]
-      }
+      "expr": "min({{collectionTotalPages}} || 1, ({{collectionCurrentPage}} || 1) + 1)"
     },
     {
       "output": "searchPaginationPages",
-      "expr": {
-        "paginationPages": [
-          {
-            "var": [
-              "search.totalItems",
-              0
-            ]
-          },
-          {
-            "var": [
-              "collectionSkip",
-              0
-            ]
-          },
-          {
-            "var": [
-              "collectionPageSize",
-              12
-            ]
-          }
-        ]
-      }
+      "expr": "paginationPages({{search.totalItems}} || 0, {{searchSkip}} || 0, {{collectionPageSize}} || 12)"
     },
     {
       "output": "searchCurrentPage",
-      "expr": {
-        "max": [
-          1,
-          {
-            "floor": {
-              "+": [
-                {
-                  "/": [
-                    {
-                      "var": [
-                        "searchSkip",
-                        0
-                      ]
-                    },
-                    {
-                      "var": [
-                        "collectionPageSize",
-                        12
-                      ]
-                    }
-                  ]
-                },
-                1
-              ]
-            }
-          }
-        ]
-      }
+      "expr": "max(1, floor(({{searchSkip}} || 0) / ({{collectionPageSize}} || 12) + 1))"
     },
     {
       "output": "searchTotalPages",
-      "expr": {
-        "max": [
-          1,
-          {
-            "ceil": {
-              "/": [
-                {
-                  "var": [
-                    "search.totalItems",
-                    0
-                  ]
-                },
-                {
-                  "var": [
-                    "collectionPageSize",
-                    12
-                  ]
-                }
-              ]
-            }
-          }
-        ]
-      }
+      "expr": "max(1, ceil(({{search.totalItems}} || 0) / ({{collectionPageSize}} || 12)))"
     },
     {
       "output": "searchPrevPage",
-      "expr": {
-        "max": [
-          1,
-          {
-            "-": [
-              {
-                "var": [
-                  "searchCurrentPage",
-                  1
-                ]
-              },
-              1
-            ]
-          }
-        ]
-      }
+      "expr": "max(1, ({{searchCurrentPage}} || 1) - 1)"
     },
     {
       "output": "searchNextPage",
-      "expr": {
-        "min": [
-          {
-            "var": [
-              "searchTotalPages",
-              1
-            ]
-          },
-          {
-            "+": [
-              {
-                "var": [
-                  "searchCurrentPage",
-                  1
-                ]
-              },
-              1
-            ]
-          }
-        ]
-      }
+      "expr": "min({{searchTotalPages}} || 1, ({{searchCurrentPage}} || 1) + 1)"
     },
     {
       "output": "product.selectedVariantId",
-      "expr": {
-        "findItemByOptionsMatch": [
-          {
-            "var": "product.variants"
-          },
-          {
-            "var": "product.optionGroups"
-          },
-          {
-            "var": "product.selectedOptions"
-          }
-        ]
-      }
+      "expr": "findItemByOptionsMatch({{product.variants}}, {{product.optionGroups}}, {{product.selectedOptions}})"
     },
     {
       "output": "product.primaryCollectionSlug",
-      "expr": {
-        "findFirstByPreference": [
-          {
-            "var": "product.collections"
-          }
-        ]
-      }
+      "expr": "findFirstByPreference({{product.collections}})"
     },
     {
       "output": "product.currentImage",
-      "expr": {
-        "at": [
-          {
-            "var": "product.assets"
-          },
-          {
-            "var": [
-              "product.imageIndex",
-              0
-            ]
-          }
-        ]
-      }
+      "expr": "at({{product.assets}}, {{product.imageIndex}} || 0)"
     },
     {
       "output": "product.selectedVariant",
-      "expr": {
-        "findItemById": [
-          {
-            "var": "product.variants"
-          },
-          {
-            "var": "product.selectedVariantId"
-          }
-        ]
-      }
+      "expr": "findItemById({{product.variants}}, {{product.selectedVariantId}})"
     },
     {
       "output": "related.products",
-      "expr": {
-        "filterExcludeByFieldAndSlice": [
-          {
-            "var": "related._raw"
-          },
-          "productId",
-          {
-            "var": "product.id"
-          },
-          12
-        ]
-      }
+      "expr": "filterExcludeByFieldAndSlice({{related._raw}}, 'productId', {{product.id}}, 12)"
     },
     {
       "output": "checkout.firstIncompleteStep",
-      "expr": {
-        "if": [
-          {
-            "!": [
-              {
-                "or": [
-                  {
-                    "var": "auth.user"
-                  },
-                  {
-                    "var": [
-                      "checkout.order.customer.emailAddress",
-                      ""
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          "contact",
-          {
-            "if": [
-              {
-                "!": [
-                  {
-                    "var": [
-                      "checkout.order.shippingAddress.streetLine1",
-                      ""
-                    ]
-                  }
-                ]
-              },
-              "shipping",
-              {
-                "if": [
-                  {
-                    "<=": [
-                      {
-                        "var": [
-                          "checkout.order.shippingLines.length",
-                          0
-                        ]
-                      },
-                      0
-                    ]
-                  },
-                  "delivery",
-                  {
-                    "if": [
-                      {
-                        "!": [
-                          {
-                            "var": [
-                              "checkout.selectedPaymentMethodCode",
-                              ""
-                            ]
-                          }
-                        ]
-                      },
-                      "payment",
-                      "review"
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      }
+      "expr": "!({{auth.user}} || {{checkout.order.customer.emailAddress}} || '') ? 'contact' : !({{checkout.order.shippingAddress.streetLine1}} || '') ? 'shipping' : ({{checkout.order.shippingLines.length}} || 0) <= 0 ? 'delivery' : !({{checkout.selectedPaymentMethodCode}} || '') ? 'payment' : 'review'"
     },
     {
       "output": "collection.resultsHeaderText",
-      "expr": {
-        "if": [
-          { "==": [{ "var": ["collection.search.totalItems", 0] }, 1] },
-          "1 product",
-          { "cat": [{ "var": ["collection.search.totalItems", "0"] }, " products"] }
-        ]
-      }
+      "expr": "({{collection.search.totalItems}} || 0) === 1 ? '1 product' : ({{collection.search.totalItems}} || 0) + ' products'"
     },
     {
       "output": "collection.facetGroups",
-      "expr": {
-        "groupBy": [
-          { "var": ["collection.search.facetValues", []] },
-          "facetValue.facet.name",
-          "facetValue.facet.id"
-        ]
-      }
+      "expr": "groupBy({{collection.search.facetValues}} || [], 'facetValue.facet.name', 'facetValue.facet.id')"
     },
     {
       "output": "search.resultsHeaderText",
-      "expr": {
-        "if": [
-          { "==": [{ "var": ["search.totalItems", 0] }, 1] },
-          "1 product",
-          { "cat": [{ "var": ["search.totalItems", "0"] }, " products"] }
-        ]
-      }
+      "expr": "({{search.totalItems}} || 0) === 1 ? '1 product' : ({{search.totalItems}} || 0) + ' products'"
     },
     {
       "output": "search.resultsHeadingText",
-      "expr": {
-        "if": [
-          { "!=": [{ "var": ["route.q", ""] }, ""] },
-          { "cat": ["Search results for \"", { "var": ["route.q", ""] }, "\""] },
-          "Search"
-        ]
-      }
+      "expr": "({{route.q}} || '') !== '' ? 'Search results for \"' + ({{route.q}} || '') + '\"' : 'Search'"
     },
     {
       "output": "search.facetGroups",
-      "expr": {
-        "groupBy": [
-          { "var": ["search.facetValues", []] },
-          "facetValue.facet.name",
-          "facetValue.facet.id"
-        ]
-      }
+      "expr": "groupBy({{search.facetValues}} || [], 'facetValue.facet.name', 'facetValue.facet.id')"
     },
     {
       "output": "checkout.selectedPaymentMethodDisplay",
-      "expr": {
-        "lookupInArray": [
-          {
-            "var": [
-              "checkout.paymentMethods",
-              []
-            ]
-          },
-          "code",
-          {
-            "var": [
-              "checkout.selectedPaymentMethodCode",
-              ""
-            ]
-          },
-          "name"
-        ]
-      }
+      "expr": "lookupInArray({{checkout.paymentMethods}} || [], 'code', {{checkout.selectedPaymentMethodCode}} || '', 'name')"
     },
     {
       "output": "checkout.contactStepIndicatorClassName",
-      "expr": {
-        "cat": [
-          "flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ",
-          {
-            "if": [
-              {
-                "or": [
-                  { "var": "auth.user" },
-                  { "var": ["checkout.order.customer.emailAddress", false] }
-                ]
-              },
-              "bg-green-500 !text-white",
-              {
-                "if": [
-                  { "==": [{ "var": "checkout.step" }, "contact"] },
-                  "bg-[var(--theme-shop-button)] !text-white",
-                  "bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]"
-                ]
-              }
-            ]
-          }
-        ]
-      }
+      "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + (({{auth.user}} || {{checkout.order.customer.emailAddress}}) ? 'bg-green-500 !text-white' : ({{checkout.step}} === 'contact' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]'))"
     },
     {
       "output": "checkout.shippingStepIndicatorClassName",
-      "expr": {
-        "cat": [
-          "flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ",
-          {
-            "if": [
-              { "var": ["checkout.order.shippingAddress.streetLine1"] },
-              "bg-green-500 !text-white",
-              {
-                "if": [
-                  { "==": [{ "var": "checkout.step" }, "shipping"] },
-                  "bg-[var(--theme-shop-button)] !text-white",
-                  "bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]"
-                ]
-              }
-            ]
-          }
-        ]
-      }
+      "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + ({{checkout.order.shippingAddress.streetLine1}} ? 'bg-green-500 !text-white' : ({{checkout.step}} === 'shipping' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]'))"
     },
     {
       "output": "checkout.paymentStepIndicatorClassName",
-      "expr": {
-        "cat": [
-          "flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ",
-          {
-            "if": [
-              { "var": ["checkout.selectedPaymentMethodCode"] },
-              "bg-green-500 !text-white",
-              {
-                "if": [
-                  { "==": [{ "var": "checkout.step" }, "payment"] },
-                  "bg-[var(--theme-shop-button)] !text-white",
-                  "bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]"
-                ]
-              }
-            ]
-          }
-        ]
-      }
+      "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + ({{checkout.selectedPaymentMethodCode}} ? 'bg-green-500 !text-white' : ({{checkout.step}} === 'payment' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]'))"
     },
     {
       "output": "checkout.shippingStepHeaderClassName",
-      "expr": {
-        "cat": [
-          "flex flex-row items-center justify-between w-full py-4 ",
-          {
-            "if": [
-              {
-                "or": [
-                  { "var": "auth.user" },
-                  { "var": ["checkout.order.customer.emailAddress", false] }
-                ]
-              },
-              "",
-              "opacity-50 pointer-events-none cursor-not-allowed"
-            ]
-          }
-        ]
-      }
+      "expr": "'flex flex-row items-center justify-between w-full py-4 ' + (({{auth.user}} || {{checkout.order.customer.emailAddress}}) ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')"
     },
     {
       "output": "checkout.paymentStepHeaderClassName",
-      "expr": {
-        "cat": [
-          "flex flex-row items-center justify-between w-full py-4 ",
-          {
-            "if": [
-              {
-                "or": [
-                  { ">": [{ "var": ["checkout.order.shippingLines.length", 0] }, 0] },
-                  { "var": ["checkout.selectedPaymentMethodCode", ""] }
-                ]
-              },
-              "",
-              "opacity-50 pointer-events-none cursor-not-allowed"
-            ]
-          }
-        ]
-      }
+      "expr": "'flex flex-row items-center justify-between w-full py-4 ' + (({{checkout.order.shippingLines.length}} || 0) > 0 || {{checkout.selectedPaymentMethodCode}} ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')"
+    },
+    {
+      "output": "untitled",
+      "expr": {}
+    },
+    {
+      "output": "untitled1",
+      "expr": {}
+    },
+    {
+      "output": "untitled2",
+      "expr": {}
+    },
+    {
+      "output": "untitled3",
+      "expr": {}
+    },
+    {
+      "output": "untitled4",
+      "expr": {}
+    },
+    {
+      "output": "untitled5",
+      "expr": {}
+    },
+    {
+      "output": "untitled6",
+      "expr": {}
     }
   ],
   "variableStoreInitial": {
@@ -754,6 +307,7 @@
       "transform": "pageToSkip",
       "pageSize": 12,
       "variableStorePath": "collectionSkip",
+      "triggersParamChange": true,
       "routePrefix": "/collection"
     },
     {
@@ -763,6 +317,7 @@
       "transform": "pageToSkip",
       "pageSize": 12,
       "variableStorePath": "searchSkip",
+      "triggersParamChange": true,
       "routePrefix": "/search"
     }
   ]

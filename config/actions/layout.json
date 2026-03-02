@@ -24,7 +24,7 @@
     "path": "nav.themeMenuOpen"
   },
   "closeThemeMenu": {
-    "type": "set",
+    "type": "setVar",
     "path": "nav.themeMenuOpen",
     "value": false
   },
@@ -90,5 +90,248 @@
     "payload": {
       "path": "/cart"
     }
+  },
+  "changePassword": {
+    "type": "validate",
+    "rules": {
+      "form.currentPassword": {
+        "required": true,
+        "message": "Current password required"
+      },
+      "form.newPassword": {
+        "required": true,
+        "minLength": 8,
+        "message": "New password must be at least 8 characters"
+      }
+    },
+    "storeErrorsIn": "errors",
+    "onSuccess": {
+      "action": "changePasswordMutation"
+    }
+  },
+  "requestEmailUpdate": {
+    "type": "validate",
+    "rules": {
+      "form.password": {
+        "required": true,
+        "message": "Password required"
+      },
+      "form.newEmailAddress": {
+        "required": true,
+        "pattern": "email",
+        "message": "Valid email required"
+      }
+    },
+    "storeErrorsIn": "errors",
+    "onSuccess": {
+      "action": "requestEmailUpdateMutation"
+    }
+  },
+  "createAddress": {
+    "type": "validate",
+    "rules": {
+      "form.fullName": {
+        "required": true,
+        "message": "Full name required"
+      },
+      "form.streetLine1": {
+        "required": true,
+        "message": "Street address required"
+      },
+      "form.city": {
+        "required": true,
+        "message": "City required"
+      },
+      "form.postalCode": {
+        "required": true,
+        "message": "Postal code required"
+      },
+      "form.countryCode": {
+        "required": true,
+        "message": "Country required"
+      }
+    },
+    "storeErrorsIn": "errors",
+    "onSuccess": {
+      "action": "createAddressMutation"
+    }
+  },
+  "syncCheckoutStep": {
+    "type": "set",
+    "path": "checkout.step",
+    "value": "{{checkout.firstIncompleteStep}}"
+  },
+  "populateCheckoutForm": {
+    "type": "runMultiple",
+    "actions": [
+      {
+        "action": "setState",
+        "payload": {
+          "path": "screens.checkout.form.emailAddress",
+          "value": "{{checkout.order.customer.emailAddress}}"
+        }
+      },
+      {
+        "action": "setState",
+        "payload": {
+          "path": "screens.checkout.form.firstName",
+          "value": "{{checkout.order.customer.firstName}}"
+        }
+      },
+      {
+        "action": "setState",
+        "payload": {
+          "path": "screens.checkout.form.lastName",
+          "value": "{{checkout.order.customer.lastName}}"
+        }
+      },
+      {
+        "action": "setState",
+        "payload": {
+          "path": "screens.checkout.form.fullName",
+          "value": "{{checkout.order.shippingAddress.fullName}}"
+        }
+      },
+      {
+        "action": "setState",
+        "payload": {
+          "path": "screens.checkout.form.company",
+          "value": "{{checkout.order.shippingAddress.company}}"
+        }
+      },
+      {
+        "action": "setState",
+        "payload": {
+          "path": "screens.checkout.form.streetLine1",
+          "value": "{{checkout.order.shippingAddress.streetLine1}}"
+        }
+      },
+      {
+        "action": "setState",
+        "payload": {
+          "path": "screens.checkout.form.streetLine2",
+          "value": "{{checkout.order.shippingAddress.streetLine2}}"
+        }
+      },
+      {
+        "action": "setState",
+        "payload": {
+          "path": "screens.checkout.form.city",
+          "value": "{{checkout.order.shippingAddress.city}}"
+        }
+      },
+      {
+        "action": "setState",
+        "payload": {
+          "path": "screens.checkout.form.province",
+          "value": "{{checkout.order.shippingAddress.province}}"
+        }
+      },
+      {
+        "action": "setState",
+        "payload": {
+          "path": "screens.checkout.form.postalCode",
+          "value": "{{checkout.order.shippingAddress.postalCode}}"
+        }
+      },
+      {
+        "action": "setState",
+        "payload": {
+          "path": "screens.checkout.form.countryCode",
+          "value": "{{checkout.order.shippingAddress.countryCode}}"
+        }
+      },
+      {
+        "action": "setState",
+        "payload": {
+          "path": "screens.checkout.form.phoneNumber",
+          "value": "{{checkout.order.shippingAddress.phoneNumber}}"
+        }
+      },
+      {
+        "type": "set",
+        "path": "checkout.selectedShippingMethodId",
+        "value": "{{checkout.order.shippingLines.0.shippingMethod.id}}"
+      }
+    ]
+  },
+  "fetchCheckoutDependentData": {
+    "type": "runMultiple",
+    "actions": [
+      {
+        "condition": "{{checkout.order.shippingAddress.streetLine1}}",
+        "action": "fetchShippingMethods"
+      },
+      {
+        "condition": "({{checkout.order.shippingLines.length}} || 0 || 0) > 0",
+        "action": "fetchPaymentMethods"
+      }
+    ]
+  },
+  "clearCartAfterOrder": {
+    "type": "set",
+    "path": "cart",
+    "value": {
+      "id": null,
+      "code": null,
+      "state": null,
+      "totalQuantity": 0,
+      "subTotalWithTax": 0,
+      "shippingWithTax": 0,
+      "totalWithTax": 0,
+      "currencyCode": "USD",
+      "couponCodes": [],
+      "discounts": [],
+      "lines": []
+    }
+  },
+  "clearCheckoutSessionAndNavigate": {
+    "type": "runMultiple",
+    "actions": [
+      {
+        "action": "clearCartAfterOrder"
+      },
+      {
+        "type": "clearPersistedPaths",
+        "onSuccess": {
+          "action": "navigateToOrderConfirmation"
+        }
+      }
+    ]
+  },
+  "navigateToOrderConfirmation": {
+    "action": "navigate",
+    "payload": {
+      "routeConfig": "orderConfirmation",
+      "slug": "{{checkout.completedOrder.code}}"
+    }
+  },
+  "goToCheckoutStep": {
+    "type": "set",
+    "path": "checkout.step",
+    "value": "{{$item}}"
+  },
+  "selectProductOption": {
+    "type": "mergeAtPath",
+    "path": "product.selectedOptions",
+    "key": "{{$parent.id}}",
+    "value": "{{$item.id}}"
+  },
+  "prevProductImage": {
+    "type": "cycleIndex",
+    "path": "product.imageIndex",
+    "arrayPath": "product.assets",
+    "direction": "prev"
+  },
+  "nextProductImage": {
+    "type": "cycleIndex",
+    "path": "product.imageIndex",
+    "arrayPath": "product.assets",
+    "direction": "next"
+  },
+  "selectProductImage": {
+    "type": "setVar",
+    "path": "product.imageIndex",
+    "value": "{{$index}}"
   }
 }

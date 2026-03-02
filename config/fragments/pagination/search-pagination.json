@@ -3,39 +3,14 @@
   "props": {
     "className": "w-full border-t border-[var(--theme-border)] pt-8 flex flex-row items-center justify-center gap-2 flex-wrap"
   },
-  "condition": {
-    ">": [
-      {
-        "var": [
-          "search.totalItems",
-          0
-        ]
-      },
-      {
-        "var": [
-          "collectionPageSize",
-          12
-        ]
-      }
-    ]
-  },
+  "condition": "{{search.totalItems}} > {{collectionPageSize}}",
   "children": [
     {
       "type": "Box",
       "props": {
         "className": "flex items-center justify-center h-9 w-9 rounded-md border border-[var(--theme-border)] bg-[var(--theme-hero-bg)] cursor-not-allowed pointer-events-none flex-shrink-0"
       },
-      "condition": {
-        "<=": [
-          {
-            "var": [
-              "searchCurrentPage",
-              1
-            ]
-          },
-          1
-        ]
-      },
+      "condition": "{{searchCurrentPage}} <= 1",
       "children": [
         {
           "type": "NavIcon",
@@ -52,17 +27,7 @@
       "props": {
         "className": "flex items-center justify-center h-9 w-9 rounded-md border border-[var(--theme-border)] bg-[var(--theme-content-bg)] hover:bg-[var(--theme-hero-bg)] transition-colors flex-shrink-0"
       },
-      "condition": {
-        ">": [
-          {
-            "var": [
-              "searchCurrentPage",
-              1
-            ]
-          },
-          1
-        ]
-      },
+      "condition": "{{searchCurrentPage}} > 1",
       "children": [
         {
           "type": "NavIcon",
@@ -80,12 +45,7 @@
             {
               "type": "decrement",
               "path": "searchSkip",
-              "amount": {
-                "var": [
-                  "collectionPageSize",
-                  12
-                ]
-              }
+              "amount": "{{collectionPageSize}}"
             },
             {
               "action": "fetchSearchResults"
@@ -112,14 +72,7 @@
           "props": {
             "className": "px-2 text-sm text-[var(--theme-muted-foreground)] flex-shrink-0"
           },
-          "condition": {
-            "==": [
-              {
-                "var": "$item"
-              },
-              "..."
-            ]
-          },
+          "condition": "{{$item}} === '...'",
           "text": "..."
         },
         {
@@ -127,40 +80,14 @@
           "props": {
             "className": "flex items-center justify-center h-9 w-9 rounded-md border border-[var(--theme-shop-button)] bg-[var(--theme-shop-button)] text-white pointer-events-none flex-shrink-0"
           },
-          "condition": {
-            "and": [
-              {
-                "!=": [
-                  {
-                    "var": "$item"
-                  },
-                  "..."
-                ]
-              },
-              {
-                "==": [
-                  {
-                    "var": "$item"
-                  },
-                  {
-                    "var": [
-                      "searchCurrentPage",
-                      1
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
+          "condition": "{{$item}} !== '...' && {{$item}} === {{searchCurrentPage}}",
           "children": [
             {
               "type": "Text",
               "props": {
                 "className": "text-sm font-medium text-white"
               },
-              "text": {
-                "var": "$item"
-              }
+              "text": "{{$item}}"
             }
           ]
         },
@@ -169,40 +96,14 @@
           "props": {
             "className": "flex items-center justify-center h-9 w-9 rounded-md border border-[var(--theme-border)] bg-[var(--theme-content-bg)] hover:bg-[var(--theme-hero-bg)] transition-colors flex-shrink-0"
           },
-          "condition": {
-            "and": [
-              {
-                "!=": [
-                  {
-                    "var": "$item"
-                  },
-                  "..."
-                ]
-              },
-              {
-                "!=": [
-                  {
-                    "var": "$item"
-                  },
-                  {
-                    "var": [
-                      "searchCurrentPage",
-                      1
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
+          "condition": "{{$item}} !== '...' && {{$item}} !== {{searchCurrentPage}}",
           "children": [
             {
               "type": "Text",
               "props": {
                 "className": "text-sm font-medium text-[var(--theme-foreground)]"
               },
-              "text": {
-                "var": "$item"
-              }
+              "text": "{{$item}}"
             }
           ],
           "actions": {
@@ -212,15 +113,8 @@
                 {
                   "type": "goToPage",
                   "path": "searchSkip",
-                  "page": {
-                    "var": "$item"
-                  },
-                  "pageSize": {
-                    "var": [
-                      "collectionPageSize",
-                      12
-                    ]
-                  },
+                  "page": "{{$item}}",
+                  "pageSize": "{{collectionPageSize}}",
                   "fetchAction": "fetchSearchResults"
                 },
                 {
@@ -243,22 +137,7 @@
       "props": {
         "className": "flex items-center justify-center h-9 w-9 rounded-md border border-[var(--theme-border)] bg-[var(--theme-hero-bg)] cursor-not-allowed pointer-events-none flex-shrink-0"
       },
-      "condition": {
-        ">=": [
-          {
-            "var": [
-              "searchCurrentPage",
-              1
-            ]
-          },
-          {
-            "var": [
-              "searchTotalPages",
-              1
-            ]
-          }
-        ]
-      },
+      "condition": "{{searchCurrentPage}} >= {{searchTotalPages}}",
       "children": [
         {
           "type": "NavIcon",
@@ -275,22 +154,7 @@
       "props": {
         "className": "flex items-center justify-center h-9 w-9 rounded-md border border-[var(--theme-border)] bg-[var(--theme-content-bg)] hover:bg-[var(--theme-hero-bg)] transition-colors flex-shrink-0"
       },
-      "condition": {
-        "<": [
-          {
-            "var": [
-              "searchCurrentPage",
-              1
-            ]
-          },
-          {
-            "var": [
-              "searchTotalPages",
-              1
-            ]
-          }
-        ]
-      },
+      "condition": "{{searchCurrentPage}} < {{searchTotalPages}}",
       "children": [
         {
           "type": "NavIcon",
@@ -308,12 +172,7 @@
             {
               "type": "increment",
               "path": "searchSkip",
-              "amount": {
-                "var": [
-                  "collectionPageSize",
-                  12
-                ]
-              }
+              "amount": "{{collectionPageSize}}"
             },
             {
               "action": "fetchSearchResults"

@@ -85,14 +85,7 @@
         "props": {
           "className": "p-6"
         },
-        "condition": {
-          "==": [
-            {
-              "var": "showAddForm"
-            },
-            true
-          ]
-        },
+        "condition": "{{showAddForm}}",
         "children": [
           {
             "type": "Heading",
@@ -354,17 +347,7 @@
         "props": {
           "className": "text-center py-12"
         },
-        "condition": {
-          "==": [
-            {
-              "var": [
-                "addresses.length",
-                0
-              ]
-            },
-            0
-          ]
-        },
+        "condition": "({{addresses.length}} || 0) === 0",
         "children": [
           {
             "type": "Text",

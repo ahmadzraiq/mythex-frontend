@@ -20,7 +20,7 @@
         {
           "type": "Box",
           "props": { "className": "flex flex-col items-center gap-4 py-20" },
-          "condition": { "!": [{ "var": "featured.products.0" }] },
+          "condition": "!{{featured.products.0}}",
           "children": [
             {
               "type": "Text",
@@ -41,7 +41,7 @@
         },
         {
           "type": "Carousel",
-          "condition": { "!!": [{ "var": "featured.products.0" }] },
+          "condition": "!!{{featured.products.0}}",
           "props": {
             "loop": true,
             "align": "start",
@@ -65,9 +65,7 @@
                       "action": "navigate",
                       "payload": {
                         "routeConfig": "product",
-                        "slug": {
-                          "var": "$item.slug"
-                        }
+                        "slug": "{{$item.slug}}"
                       }
                     }
                   },
@@ -86,26 +84,14 @@
                             "fill": true,
                             "className": "object-cover group-hover:scale-105 transition-transform duration-300"
                           },
-                          "condition": {
-                            "!!": [
-                              {
-                                "var": "$item.productAsset.preview"
-                              }
-                            ]
-                          }
+                          "condition": "!!{{$item.productAsset.preview}}"
                         },
                         {
                           "type": "Box",
                           "props": {
                             "className": "w-full h-full flex items-center justify-center"
                           },
-                          "condition": {
-                            "!": [
-                              {
-                                "var": "$item.productAsset.preview"
-                              }
-                            ]
-                          },
+                          "condition": "!{{$item.productAsset.preview}}",
                           "children": [
                             {
                               "type": "Text",
@@ -137,45 +123,9 @@
                           "props": {
                             "className": "text-lg font-bold text-[var(--theme-content-text)]"
                           },
-                          "text": {
-                            "expr": {
-                              "if": [
-                                {
-                                  "==": [
-                                    {
-                                      "var": "$item.priceWithTax.__typename"
-                                    },
-                                    "SinglePrice"
-                                  ]
-                                },
-                                {
-                                  "formatCurrency": [
-                                    {
-                                      "var": "$item.priceWithTax.value"
-                                    },
-                                    {
-                                      "var": "$item.currencyCode"
-                                    }
-                                  ]
-                                },
-                                {
-                                  "cat": [
-                                    "from ",
-                                    {
-                                      "formatCurrency": [
-                                        {
-                                          "var": "$item.priceWithTax.min"
-                                        },
-                                        {
-                                          "var": "$item.currencyCode"
-                                        }
-                                      ]
-                                    }
-                                  ]
-                                }
-                              ]
-                            }
-                          }
+                        "text": {
+                          "expr": "{{$item.priceWithTax.__typename}} === 'SinglePrice' ? formatCurrency({{$item.priceWithTax.value}}, {{$item.currencyCode}}) : 'from ' + formatCurrency({{$item.priceWithTax.min}}, {{$item.currencyCode}})"
+                        }
                         }
                       ]
                     }

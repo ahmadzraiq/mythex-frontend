@@ -20,10 +20,16 @@
 
 import React, { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
 import { useBuilderStore, findParentNode, findNode } from './_store';
-import type { BuilderStore, BuilderPage } from './_store';
+import type { BuilderStore, BuilderPage, CustomVar, PageMeta } from './_store';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import routes from '@/config/routes.json';
-import { ThemePanel } from './_theme-panel';
+import { useSduiStore } from '@/store/sdui-store';
+import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
+import app from '@/config/app';
+import { ExprBuilder } from './_expr-builder';
+import { ActionBuilder } from './_action-builder';
+import { DataTab, type DataTabSlideState } from './_data-tab';
+import { LogicTab, type LogicSlideState } from './_logic-tab';
 
 // ─── Icons (inline SVG stubs) ─────────────────────────────────────────────────
 
@@ -190,10 +196,33 @@ const LayerRow = memo(function LayerRow({
   const [editVal, setEditVal] = useState(nodeId);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const badges: string[] = [];
-  if ((node as { condition?: unknown }).condition != null) badges.push('if');
-  if ((node as { map?: unknown }).map != null) badges.push('map');
-  if ((node as { actions?: unknown }).actions != null) badges.push('act');
+  // Enriched badges with count + tooltip preview
+  type BadgeInfo = { key: string; label: string; color: string; bg: string; title: string };
+  const badges: BadgeInfo[] = [];
+
+  const condition = (node as { condition?: unknown }).condition;
+  if (condition != null) {
+    const preview = JSON.stringify(condition);
+    const short = preview.length > 40 ? preview.slice(0, 38) + '…' : preview;
+    badges.push({ key: 'if', label: 'if', color: '#60a5fa', bg: '#1e3a5f', title: `Condition: ${short}` });
+  }
+
+  const mapPath = (node as { map?: string }).map;
+  if (mapPath != null) {
+    badges.push({ key: 'map', label: `⟳ ${mapPath.split('.').pop() ?? mapPath}`, color: '#c084fc', bg: '#2e1065', title: `Repeat over: ${mapPath}` });
+  }
+
+  const nodeActions = (node as { actions?: Record<string, unknown> }).actions;
+  if (nodeActions != null) {
+    const eventCount = Object.keys(nodeActions).length;
+    const preview = Object.keys(nodeActions).join(', ');
+    badges.push({ key: 'act', label: `⚡ ${eventCount}`, color: '#818cf8', bg: '#1e1b4b', title: `Events: ${preview}` });
+  }
+
+  const ds = (node as { dataSource?: unknown }).dataSource;
+  if (ds != null) {
+    badges.push({ key: 'ds', label: '↓', color: '#34d399', bg: '#022c22', title: 'Has data source' });
+  }
 
   const startEdit = useCallback(() => {
     setEditVal(nodeId);
@@ -219,6 +248,7 @@ const LayerRow = memo(function LayerRow({
       data-testid="layer-row"
       data-layer-row
       data-node-id={nodeId}
+      data-node-type={node.type}
       draggable
       style={{
         display: 'flex',
@@ -300,13 +330,29 @@ const LayerRow = memo(function LayerRow({
         )}
       </span>
 
-      {/* SDUI badges */}
+      {/* SDUI badges — enriched with counts and tooltips */}
       {badges.map(b => (
         <span
-          key={b}
-          style={{ fontSize: 9, background: '#374151', color: '#9ca3af', borderRadius: 3, padding: '0 3px', marginLeft: 2, flexShrink: 0 }}
+          key={b.key}
+          title={b.title}
+          style={{
+            fontSize: 9,
+            background: b.bg,
+            color: b.color,
+            borderRadius: 3,
+            padding: '0 4px',
+            marginLeft: 2,
+            flexShrink: 0,
+            border: `1px solid ${b.color}40`,
+            lineHeight: '14px',
+            cursor: 'default',
+            maxWidth: 52,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
         >
-          {b}
+          {b.label}
         </span>
       ))}
 
@@ -1229,13 +1275,747 @@ function PagesTab() {
 
 // ─── Main Panel ───────────────────────────────────────────────────────────────
 
-export default function PanelLeft() {
-  const [tab, setTab] = useState<'layers' | 'components' | 'pages' | 'theme'>('components');
+// ─── App Panel (Store / Actions / Sources) ───────────────────────────────────
+
+const ACTION_TYPE_COLORS: Record<string, string> = {
+  graphql: '#818cf8',
+  fetch: '#34d399',
+  set: '#fbbf24',
+  setVar: '#f9a8d4',
+  validate: '#f87171',
+  runMultiple: '#93c5fd',
+  navigate: '#a78bfa',
+  appendToPath: '#6ee7b7',
+  toggle: '#fcd34d',
+  default: '#6b7280',
+};
+
+function ActionTypeBadge({ type }: { type: string }) {
+  const color = ACTION_TYPE_COLORS[type] ?? ACTION_TYPE_COLORS.default;
+  return (
+    <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, background: color + '33', color, border: `1px solid ${color}55`, fontFamily: 'monospace', flexShrink: 0 }}>
+      {type}
+    </span>
+  );
+}
+
+function StoreTab({ embedded = false }: { embedded?: boolean }) {
+  const zustandData = useSduiStore(s => s.data);
+  const [vsData, setVsData] = useState<Record<string, unknown>>({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    const vs = getGlobalVariableStore();
+    setVsData(vs.getState().getFullState());
+    return vs.subscribe(() => setVsData(vs.getState().getFullState()));
+  }, []);
+
+  // Build a merged nested-like snapshot from Zustand flat keys + VS nested
+  const snapshot = useMemo(() => {
+    const groups: Record<string, Record<string, unknown>> = {};
+    // Zustand flat keys → group by top-level prefix
+    for (const [k, v] of Object.entries(zustandData)) {
+      const dot = k.indexOf('.');
+      const group = dot >= 0 ? k.slice(0, dot) : k;
+      const sub = dot >= 0 ? k.slice(dot + 1) : '__value__';
+      if (!groups[group]) groups[group] = {};
+      groups[group][sub] = v;
+    }
+    // VS nested keys
+    for (const [k, v] of Object.entries(vsData)) {
+      if (!groups[k]) groups[k] = {};
+      if (typeof v === 'object' && v !== null && !Array.isArray(v)) {
+        Object.assign(groups[k], v);
+      } else {
+        groups[k]['__value__'] = v;
+      }
+    }
+    return groups;
+  }, [zustandData, vsData]);
+
+  const filteredGroups = useMemo(() => {
+    const q = search.toLowerCase();
+    if (!q) return snapshot;
+    return Object.fromEntries(
+      Object.entries(snapshot).filter(([k]) => k.toLowerCase().includes(q))
+    );
+  }, [snapshot, search]);
+
+  const content = (
+    <>
+      <div style={{ padding: '4px 8px', flexShrink: 0 }}>
+        <input
+          placeholder="Filter by key…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 5, color: '#d1d5db', fontSize: 11, padding: '4px 8px', boxSizing: 'border-box' }}
+        />
+      </div>
+      <div style={embedded ? { padding: '4px 0' } : { flex: 1, overflow: 'auto', padding: '4px 0' }}>
+        {Object.entries(filteredGroups).map(([group, values]) => (
+          <div key={group}>
+            <button
+              onClick={() => setExpanded(p => ({ ...p, [group]: !p[group] }))}
+              style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '4px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: '#d1d5db', fontSize: 11 }}
+            >
+              <span style={{ color: '#4b5563', fontSize: 9 }}>{expanded[group] ? '▾' : '▸'}</span>
+              <span style={{ fontWeight: 600, color: '#e5e7eb' }}>{group}</span>
+              <span style={{ fontSize: 10, color: '#6b7280', marginLeft: 'auto' }}>{Object.keys(values).length} key{Object.keys(values).length !== 1 ? 's' : ''}</span>
+            </button>
+            {expanded[group] && (
+              <div style={{ paddingLeft: 20 }}>
+                {Object.entries(values).map(([k, v]) => (
+                  <div key={k} data-testid={`store-entry-${group}.${k}`} style={{ display: 'flex', gap: 8, padding: '2px 12px 2px 4px', borderBottom: '1px solid #1f293750' }}>
+                    <span style={{ color: '#9ca3af', fontSize: 10, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0, maxWidth: 90 }}>
+                      {k === '__value__' ? group : `${group}.${k}`}
+                    </span>
+                    <span style={{ color: '#6ee7b7', fontSize: 10, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
+                      {JSON.stringify(v).slice(0, 60)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+        {Object.keys(filteredGroups).length === 0 && (
+          <div style={{ color: '#4b5563', fontSize: 12, textAlign: 'center', padding: 16 }}>No store data yet</div>
+        )}
+      </div>
+    </>
+  );
+
+  if (embedded) return <div style={{ display: 'flex', flexDirection: 'column' }}>{content}</div>;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+      {content}
+    </div>
+  );
+}
+
+function ActionsTab() {
+  const actions = app.actions as Record<string, { type: string }>;
+  const [search, setSearch] = useState('');
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  // Group by detected prefix
+  const groups = useMemo(() => {
+    const g: Record<string, Array<[string, { type: string }]>> = {};
+    for (const [name, def] of Object.entries(actions)) {
+      const prefix = name.replace(/([A-Z])/g, ' $1').split(' ')[0].toLowerCase();
+      if (!g[prefix]) g[prefix] = [];
+      g[prefix].push([name, def]);
+    }
+    return g;
+  }, [actions]);
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    if (!q) return groups;
+    const out: typeof groups = {};
+    for (const [grp, rows] of Object.entries(groups)) {
+      const matching = rows.filter(([n]) => n.toLowerCase().includes(q));
+      if (matching.length) out[grp] = matching;
+    }
+    return out;
+  }, [groups, search]);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+      <div style={{ padding: '6px 8px', flexShrink: 0 }}>
+        <input
+          placeholder="Filter actions…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 5, color: '#d1d5db', fontSize: 11, padding: '4px 8px', boxSizing: 'border-box' }}
+        />
+      </div>
+      <div style={{ padding: '6px 10px', borderBottom: '1px solid #1f2937', fontSize: 10, color: '#4b5563', lineHeight: 1.6, flexShrink: 0 }}>
+        Use named actions in Interactions → select "namedAction" and type the action name.
+        Defined in <code style={{ color: '#818cf8' }}>config/actions/</code>.
+      </div>
+      <div style={{ flex: 1, overflow: 'auto', padding: '4px 0' }}>
+        {Object.entries(filtered).map(([grp, rows]) => (
+          <div key={grp}>
+            <div style={{ padding: '3px 12px', fontSize: 10, color: '#6b7280', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', background: '#0f172a' }}>
+              {grp}
+            </div>
+            {rows.map(([name, def]) => (
+              <div key={name}>
+                <button
+                  data-testid={`action-row-${name}`}
+                  onClick={() => setExpanded(p => ({ ...p, [name]: !p[name] }))}
+                  style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '4px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderBottom: '1px solid #1f2937' }}
+                >
+                  <span style={{ color: '#d1d5db', fontSize: 11, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                  <ActionTypeBadge type={def.type} />
+                  <span style={{ color: '#4b5563', fontSize: 9 }}>{expanded[name] ? '▾' : '▸'}</span>
+                </button>
+                {expanded[name] && (
+                  <pre style={{ margin: 0, padding: '6px 16px', background: '#0f172a', color: '#9ca3af', fontSize: 10, fontFamily: 'monospace', overflow: 'auto', maxHeight: 120 }}>
+                    {JSON.stringify(def, null, 2)}
+                  </pre>
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+        {Object.keys(filtered).length === 0 && (
+          <div style={{ color: '#4b5563', fontSize: 12, textAlign: 'center', padding: 24 }}>No actions match</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SourcesTab() {
+  const actions = app.actions as Record<string, { type: string; url?: string; method?: string; query?: string; endpoint?: string }>;
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const sources = useMemo(() =>
+    Object.entries(actions).filter(([, def]) => def.type === 'graphql' || def.type === 'fetch'),
+    [actions]
+  );
+
+  if (sources.length === 0) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4b5563', fontSize: 12, textAlign: 'center', padding: 24, flexDirection: 'column', gap: 8 }}>
+        <div>No graphql / fetch actions defined</div>
+        <div style={{ fontSize: 10, color: '#374151', maxWidth: 180 }}>
+          Add fetch/graphql actions in <code style={{ color: '#34d399' }}>config/actions/</code> then use them in Interactions or Data Source sections.
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '6px 10px', borderBottom: '1px solid #1f2937', fontSize: 10, color: '#4b5563', lineHeight: 1.6, flexShrink: 0 }}>
+        Select an element → Logic tab → <span style={{ color: '#34d399' }}>Data Source</span> to trigger one of these on mount.
+        Use them in Interactions to call on click/submit.
+      </div>
+    <div style={{ flex: 1, overflow: 'auto', padding: '4px 0' }}>
+      {sources.map(([name, def]) => (
+        <div key={name} style={{ borderBottom: '1px solid #1f2937' }}>
+          <button
+            data-testid={`source-row-${name}`}
+            onClick={() => setExpanded(p => ({ ...p, [name]: !p[name] }))}
+            style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '6px 12px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 3 }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ color: '#d1d5db', fontSize: 11, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+              <ActionTypeBadge type={def.type} />
+            </div>
+            <div style={{ color: '#6b7280', fontSize: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {def.type === 'fetch' ? `${def.method ?? 'GET'} ${def.url ?? ''}` : `${def.endpoint ?? 'convention endpoint'}`}
+            </div>
+          </button>
+          {expanded[name] && def.query && (
+            <pre style={{ margin: 0, padding: '6px 16px', background: '#0f172a', color: '#9ca3af', fontSize: 10, fontFamily: 'monospace', overflow: 'auto', maxHeight: 120, whiteSpace: 'pre-wrap' }}>
+              {def.query.slice(0, 400)}{def.query.length > 400 ? '\n…' : ''}
+            </pre>
+          )}
+        </div>
+      ))}
+    </div>
+    </div>
+  );
+}
+
+function AppPreviewDataEditor() {
+  const appPreviewData = useBuilderStore(s => s.appPreviewData);
+  const setAppPreviewData = useBuilderStore(s => s.setAppPreviewData);
+  const [raw, setRaw] = useState(() => JSON.stringify(appPreviewData, null, 2));
+  const [error, setError] = useState<string | null>(null);
+
+  const handleApply = useCallback(() => {
+    try {
+      const parsed = JSON.parse(raw);
+      setAppPreviewData(parsed);
+      setError(null);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }, [raw, setAppPreviewData]);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', padding: '10px 8px', gap: 8 }}>
+      <div style={{ fontSize: 10, color: '#9ca3af', lineHeight: 1.5 }}>
+        Global mock data shared across all pages. Per-page data (set when &quot;Data&quot; state is active) overrides these values.
+      </div>
+      <textarea
+        data-testid="app-preview-data-textarea"
+        value={raw}
+        onChange={e => { setRaw(e.target.value); setError(null); }}
+        onBlur={handleApply}
+        spellCheck={false}
+        style={{
+          flex: 1,
+          resize: 'none',
+          background: '#0f172a',
+          color: '#e2e8f0',
+          border: `1px solid ${error ? '#ef4444' : '#1f2937'}`,
+          borderRadius: 4,
+          fontFamily: 'monospace',
+          fontSize: 11,
+          padding: '6px 8px',
+          outline: 'none',
+          minHeight: 180,
+        }}
+      />
+      {error && <div style={{ fontSize: 10, color: '#ef4444' }}>{error}</div>}
+      <button
+        data-testid="app-preview-data-apply"
+        onClick={handleApply}
+        style={{ padding: '5px 10px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 4, fontSize: 11, cursor: 'pointer', alignSelf: 'flex-end' }}
+      >
+        Apply
+      </button>
+    </div>
+  );
+}
+
+// ─── Vars Panel ───────────────────────────────────────────────────────────────
+
+const VARS_INPUT: React.CSSProperties = {
+  background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
+  padding: '3px 6px', fontSize: 11, color: '#f3f4f6', outline: 'none', width: '100%',
+};
+const VARS_SELECT: React.CSSProperties = { ...VARS_INPUT, cursor: 'pointer' };
+const VARS_SECTION_LABEL: React.CSSProperties = {
+  fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
+  color: '#4b5563', padding: '10px 12px 4px',
+};
+
+function CustomVarsSection() {
+  const { customVars, addCustomVar, updateCustomVar, removeCustomVar } = useBuilderStore();
+  const [newName, setNewName] = useState('');
+  const [newType, setNewType] = useState<CustomVar['type']>('string');
+
+  const handleAdd = () => {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    const defaults: Record<CustomVar['type'], unknown> = {
+      string: '', number: 0, boolean: false, object: {}, array: [],
+    };
+    addCustomVar({ name: trimmed, type: newType, initialValue: defaults[newType] });
+    setNewName('');
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={VARS_SECTION_LABEL}>Custom Variables</div>
+      <div style={{ padding: '0 8px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {customVars.length === 0 && (
+          <div style={{ fontSize: 10, color: '#4b5563', fontStyle: 'italic', padding: '2px 0' }}>
+            No variables yet — add one below
+          </div>
+        )}
+        {customVars.map(v => (
+          <div key={v.name} style={{ background: '#1f2937', borderRadius: 4, border: '1px solid #374151', padding: '5px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ flex: 1, fontSize: 11, color: '#c084fc', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
+              <span style={{ fontSize: 9, color: '#6b7280', background: '#111827', borderRadius: 3, padding: '1px 5px', flexShrink: 0 }}>{v.type}</span>
+              <button
+                onClick={() => removeCustomVar(v.name)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 12, padding: '0 2px', flexShrink: 0 }}
+              >×</button>
+            </div>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <span style={{ fontSize: 9, color: '#6b7280', flexShrink: 0 }}>value</span>
+              {v.type === 'boolean' ? (
+                <select
+                  value={String(v.initialValue)}
+                  onChange={e => updateCustomVar(v.name, { initialValue: e.target.value === 'true' })}
+                  style={{ ...VARS_SELECT, flex: 1 }}
+                >
+                  <option value="false">false</option>
+                  <option value="true">true</option>
+                </select>
+              ) : v.type === 'number' ? (
+                <input
+                  type="number"
+                  value={String(v.initialValue)}
+                  onChange={e => updateCustomVar(v.name, { initialValue: Number(e.target.value) })}
+                  style={{ ...VARS_INPUT, flex: 1 }}
+                />
+              ) : v.type === 'object' || v.type === 'array' ? (
+                <textarea
+                  value={typeof v.initialValue === 'string' ? v.initialValue : JSON.stringify(v.initialValue, null, 2)}
+                  onChange={e => {
+                    try { updateCustomVar(v.name, { initialValue: JSON.parse(e.target.value) }); }
+                    catch { updateCustomVar(v.name, { initialValue: e.target.value }); }
+                  }}
+                  rows={2}
+                  style={{ ...VARS_INPUT, flex: 1, resize: 'vertical', fontFamily: 'monospace', fontSize: 10 }}
+                />
+              ) : (
+                <input
+                  value={String(v.initialValue)}
+                  onChange={e => updateCustomVar(v.name, { initialValue: e.target.value })}
+                  style={{ ...VARS_INPUT, flex: 1 }}
+                />
+              )}
+            </div>
+          </div>
+        ))}
+
+        {/* Add row */}
+        <div style={{ display: 'flex', gap: 4, marginTop: 2 }}>
+          <input
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }}
+            placeholder="variable name…"
+            style={{ flex: 1, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 6px', outline: 'none' }}
+          />
+          <select value={newType} onChange={e => setNewType(e.target.value as CustomVar['type'])} style={{ ...VARS_SELECT, width: 70 }}>
+            <option value="string">str</option>
+            <option value="number">num</option>
+            <option value="boolean">bool</option>
+            <option value="object">obj</option>
+            <option value="array">arr</option>
+          </select>
+          <button
+            onClick={handleAdd}
+            style={{ padding: '3px 10px', background: '#1d4ed8', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, cursor: 'pointer', flexShrink: 0 }}
+          >+</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VarsWorkflowsSection() {
+  const { pageWorkflows, setPageWorkflow, removePageWorkflow } = useBuilderStore();
+  const [newName, setNewName] = useState('');
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const entries = Object.entries(pageWorkflows);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={VARS_SECTION_LABEL}>Workflows</div>
+      <div style={{ padding: '0 8px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ fontSize: 10, color: '#6b7280', lineHeight: 1.5, marginBottom: 2 }}>
+          Named action sequences — reference from any interaction with <code style={{ color: '#c084fc', fontSize: 9 }}>workflow: "name"</code>.
+        </div>
+        {entries.length === 0 && (
+          <div style={{ fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>No workflows yet</div>
+        )}
+        {entries.map(([name, actions]) => (
+          <div key={name} style={{ background: '#1f2937', borderRadius: 5, border: '1px solid #374151', overflow: 'hidden' }}>
+            <button
+              onClick={() => setExpanded(e => e === name ? null : name)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '5px 8px', background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              <span style={{ fontSize: 9, color: '#6b7280' }}>{expanded === name ? '▾' : '▸'}</span>
+              <span style={{ fontSize: 11, color: '#c084fc', fontWeight: 600, flex: 1, textAlign: 'left' }}>{name}</span>
+              <span style={{ fontSize: 9, color: '#4b5563' }}>{actions.length} step{actions.length !== 1 ? 's' : ''}</span>
+              <button
+                onClick={e => { e.stopPropagation(); removePageWorkflow(name); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 12, padding: '0 2px' }}
+              >×</button>
+            </button>
+            {expanded === name && (
+              <div style={{ borderTop: '1px solid #374151', padding: '8px' }}>
+                <ActionBuilder
+                  value={actions.reduce<Record<string, unknown[]>>((acc, a) => { (acc['run'] ??= []).push(a); return acc; }, {})}
+                  onChange={v => setPageWorkflow(name, Object.values(v ?? {}).flat() as object[])}
+                  availableEvents={['run']}
+                />
+              </div>
+            )}
+          </div>
+        ))}
+        <div style={{ display: 'flex', gap: 4, marginTop: 2 }}>
+          <input
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            placeholder="workflow name…"
+            onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) { setPageWorkflow(newName.trim(), []); setNewName(''); } }}
+            style={{ flex: 1, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 6px', outline: 'none' }}
+          />
+          <button
+            onClick={() => { if (newName.trim()) { setPageWorkflow(newName.trim(), []); setNewName(''); } }}
+            style={{ padding: '3px 10px', background: '#1d4ed8', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, cursor: 'pointer', flexShrink: 0 }}
+          >+ Add</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VarsFormulasSection() {
+  const { globalFormulas, setGlobalFormula, removeGlobalFormula } = useBuilderStore();
+  const [newName, setNewName] = useState('');
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const entries = Object.entries(globalFormulas);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={VARS_SECTION_LABEL}>Global Formulas</div>
+      <div style={{ padding: '0 8px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ fontSize: 10, color: '#6b7280', lineHeight: 1.5, marginBottom: 2 }}>
+          Named JSON Logic expressions — use anywhere as <code style={{ color: '#fbbf24', fontSize: 9 }}>{`{{formula.name}}`}</code>.
+        </div>
+        {entries.length === 0 && (
+          <div style={{ fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>No formulas yet</div>
+        )}
+        {entries.map(([name, expr]) => (
+          <div key={name} style={{ background: '#1f2937', borderRadius: 5, border: '1px solid #374151', overflow: 'hidden' }}>
+            <button
+              onClick={() => setExpanded(e => e === name ? null : name)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '5px 8px', background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              <span style={{ fontSize: 9, color: '#6b7280' }}>{expanded === name ? '▾' : '▸'}</span>
+              <span style={{ fontSize: 11, color: '#fbbf24', fontWeight: 600, flex: 1, textAlign: 'left' }}>{name}</span>
+              <button
+                onClick={e => { e.stopPropagation(); removeGlobalFormula(name); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 12, padding: '0 2px' }}
+              >×</button>
+            </button>
+            {expanded === name && (
+              <div style={{ borderTop: '1px solid #374151', padding: '8px' }}>
+                <ExprBuilder
+                  value={expr as object | null}
+                  onChange={v => setGlobalFormula(name, v as object)}
+                />
+              </div>
+            )}
+          </div>
+        ))}
+        <div style={{ display: 'flex', gap: 4, marginTop: 2 }}>
+          <input
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            placeholder="formula name…"
+            onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) { setGlobalFormula(newName.trim(), {}); setNewName(''); } }}
+            style={{ flex: 1, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 6px', outline: 'none' }}
+          />
+          <button
+            onClick={() => { if (newName.trim()) { setGlobalFormula(newName.trim(), {}); setNewName(''); } }}
+            style={{ padding: '3px 10px', background: '#1d4ed8', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, cursor: 'pointer', flexShrink: 0 }}
+          >+ Add</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const DIVIDER = <div style={{ height: 1, background: '#1f2937', margin: '4px 0' }} />;
+
+function VarsPanel() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflowY: 'auto' }}>
+      {/* Store viewer */}
+      <div style={VARS_SECTION_LABEL}>Live Store</div>
+      <StoreTab embedded />
+      {DIVIDER}
+      <CustomVarsSection />
+      {DIVIDER}
+      <VarsWorkflowsSection />
+      {DIVIDER}
+      <VarsFormulasSection />
+    </div>
+  );
+}
+
+// ─── Page Config Slide ────────────────────────────────────────────────────────
+
+const PC_INPUT: React.CSSProperties = {
+  width: '100%', background: '#1f2937', border: '1px solid #374151',
+  borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '5px 8px',
+  outline: 'none', boxSizing: 'border-box',
+};
+const PC_LABEL: React.CSSProperties = {
+  fontSize: 10, fontWeight: 600, color: '#9ca3af',
+  textTransform: 'uppercase', letterSpacing: '0.06em',
+  display: 'block', marginBottom: 4,
+};
+const PC_SECTION: React.CSSProperties = {
+  padding: '10px 12px', borderBottom: '1px solid #1f2937',
+  display: 'flex', flexDirection: 'column', gap: 8,
+};
+
+export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }) {
+  const { pages, currentPageId, renamePage, setCurrentPageMeta, setCurrentPageInteractions, pageWorkflows } = useBuilderStore();
+  const currentPage = pages.find(p => p.id === currentPageId);
+
+  const [pageName, setPageName] = useState(currentPage?.name ?? '');
+  const [title, setTitle] = useState(currentPage?.meta?.title ?? '');
+  const [description, setDescription] = useState(currentPage?.meta?.description ?? '');
+  const [ogImage, setOgImage] = useState(currentPage?.meta?.ogImage ?? '');
+  const [mountWorkflow, setMountWorkflow] = useState(currentPage?.pageInteractions?.mount?.workflow ?? '');
+
+  const workflowNames = Object.keys(pageWorkflows);
+
+  const saveMeta = () => {
+    const meta: PageMeta = {};
+    if (title.trim()) meta.title = title.trim();
+    if (description.trim()) meta.description = description.trim();
+    if (ogImage.trim()) meta.ogImage = ogImage.trim();
+    setCurrentPageMeta(meta);
+  };
+
+  const saveInteractions = (newMountWorkflow: string) => {
+    const interactions: Record<string, { workflow?: string }> = {};
+    if (newMountWorkflow.trim()) {
+      interactions.mount = { workflow: newMountWorkflow.trim() };
+    }
+    setCurrentPageInteractions(interactions);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Page name */}
+      <div style={PC_SECTION}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Page</div>
+        <div>
+          <label style={PC_LABEL}>Name</label>
+          <input
+            data-testid="page-config-name"
+            value={pageName}
+            onChange={e => setPageName(e.target.value)}
+            onBlur={() => { if (pageName.trim() && currentPageId) renamePage(currentPageId, pageName.trim()); }}
+            style={PC_INPUT}
+          />
+        </div>
+        {currentPage?.route && (
+          <div>
+            <label style={PC_LABEL}>Route</label>
+            <div style={{ ...PC_INPUT, color: '#6b7280', cursor: 'default' }}>{currentPage.route}</div>
+          </div>
+        )}
+      </div>
+
+      {/* SEO / Meta */}
+      <div style={PC_SECTION}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em' }}>SEO / Meta</div>
+        <div>
+          <label style={PC_LABEL}>Page title</label>
+          <input
+            data-testid="page-config-meta-title"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            onBlur={saveMeta}
+            placeholder="My page title"
+            style={PC_INPUT}
+          />
+        </div>
+        <div>
+          <label style={PC_LABEL}>Description</label>
+          <textarea
+            data-testid="page-config-meta-description"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            onBlur={saveMeta}
+            placeholder="Short description for search engines…"
+            rows={3}
+            style={{ ...PC_INPUT, resize: 'vertical', lineHeight: 1.5 }}
+          />
+        </div>
+        <div>
+          <label style={PC_LABEL}>OG Image URL</label>
+          <input
+            value={ogImage}
+            onChange={e => setOgImage(e.target.value)}
+            onBlur={saveMeta}
+            placeholder="https://…"
+            style={PC_INPUT}
+          />
+        </div>
+      </div>
+
+      {/* Interactions */}
+      <div style={PC_SECTION}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Interactions</div>
+        <div>
+          <label style={PC_LABEL}>On mount (page load)</label>
+          <select
+            data-testid="page-config-mount-workflow"
+            value={mountWorkflow}
+            onChange={e => { setMountWorkflow(e.target.value); saveInteractions(e.target.value); }}
+            style={{ ...PC_INPUT, cursor: 'pointer' }}
+          >
+            <option value="">— none —</option>
+            {workflowNames.map(w => <option key={w} value={w}>{w}</option>)}
+          </select>
+          {mountWorkflow && (
+            <button
+              onClick={() => { setMountWorkflow(''); saveInteractions(''); }}
+              style={{ marginTop: 4, background: 'none', border: 'none', color: '#f87171', fontSize: 10, cursor: 'pointer', padding: 0 }}
+            >
+              × Clear
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div style={{ marginTop: 'auto', padding: '10px 12px', borderTop: '1px solid #1f2937', display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          onClick={onClose}
+          style={{ padding: '5px 14px', background: '#1d4ed8', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, cursor: 'pointer' }}
+        >
+          Done
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface PanelLeftProps {
+  dataSlideState: DataTabSlideState;
+  onSetDataSlide: (s: DataTabSlideState) => void;
+  logicSlideState: LogicSlideState;
+  onSetLogicSlide: (s: LogicSlideState) => void;
+  onOpenPageConfig: () => void;
+}
+
+export default function PanelLeft({
+  dataSlideState,
+  onSetDataSlide,
+  logicSlideState,
+  onSetLogicSlide,
+  onOpenPageConfig,
+}: PanelLeftProps) {
+  const [tab, setTab] = useState<'layers' | 'components' | 'data' | 'logic'>('components');
   const [search, setSearch] = useState('');
   const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [layerDrag, setLayerDrag] = useState<LayerDragState>({ dragId: null, dropTargetId: null, dropPosition: 'above' });
 
   const store = useBuilderStore();
+
+  // Auto-expand ancestor nodes and scroll to the selected layer when canvas selection changes
+  useEffect(() => {
+    if (store.selectedIds.length !== 1) return;
+    const targetId = store.selectedIds[0];
+
+    // Walk up ancestry and collect IDs to expand
+    const idsToExpand: string[] = [];
+    let current: SDUINode | null = findNode(store.pageNodes as SDUINode[], targetId) ?? null;
+    while (current) {
+      const currentId = (current as { id?: string }).id ?? '';
+      const parent = currentId ? findParentNode(store.pageNodes as SDUINode[], currentId) : null;
+      if (!parent) break;
+      const parentId = (parent as { id?: string }).id ?? '';
+      if (parentId && !store.expandedIds.has(parentId)) {
+        idsToExpand.push(parentId);
+      }
+      current = parent as SDUINode;
+    }
+
+    if (idsToExpand.length > 0) {
+      store.setExpandedIds(new Set([...store.expandedIds, ...idsToExpand]));
+    }
+
+    // Switch to layers tab and scroll selected row into view after next paint
+    setTab('layers');
+    requestAnimationFrame(() => {
+      document.querySelector(`[data-node-id="${CSS.escape(targetId)}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store.selectedIds]);
 
   const handleLayerDragStart = useCallback((id: string) => {
     setLayerDrag({ dragId: id, dropTargetId: null, dropPosition: 'above' });
@@ -1305,11 +2085,32 @@ export default function PanelLeft() {
     show: (id: string, x: number, y: number) => setContextMenu({ id, x, y }),
   }), []);
 
+  const pages = useBuilderStore(s => s.pages);
+  const currentPageId = useBuilderStore(s => s.currentPageId);
+  const currentPageName = pages.find(p => p.id === currentPageId)?.name ?? '';
+
   return (
-    <div style={{ width: 240, display: 'flex', flexDirection: 'column', background: '#111827', borderRight: '1px solid #1f2937', overflow: 'hidden' }}>
+    <div data-testid="panel-left" style={{ width: 240, height: '100%', display: 'flex', flexDirection: 'column', background: '#111827', borderRight: '1px solid #1f2937', overflow: 'hidden' }}>
+      {/* Page settings bar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 8px', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
+        <span style={{ fontSize: 10, opacity: 0.5, flexShrink: 0 }}>📄</span>
+        <span style={{ flex: 1, fontSize: 11, color: '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {currentPageName}
+        </span>
+        <button
+          data-testid="page-config-btn"
+          onClick={onOpenPageConfig}
+          title="Page settings (name, SEO meta, interactions)"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 14, padding: '2px 4px', borderRadius: 3, flexShrink: 0 }}
+          onMouseEnter={e => (e.currentTarget.style.color = '#d1d5db')}
+          onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+        >
+          ⚙
+        </button>
+      </div>
       {/* Tab bar */}
       <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-        {(['layers', 'components', 'pages', 'theme'] as const).map(t => (
+        {(['layers', 'components', 'data', 'logic'] as const).map(t => (
           <button
             key={t}
             data-testid={`tab-${t}`}
@@ -1379,9 +2180,9 @@ export default function PanelLeft() {
 
       {tab === 'components' && <ComponentsTab />}
 
-      {tab === 'pages' && <PagesTab />}
+      {tab === 'data' && <DataTab onSetSlide={onSetDataSlide} />}
 
-      {tab === 'theme' && <ThemePanel />}
+      {tab === 'logic' && <LogicTab onSetSlide={onSetLogicSlide} />}
 
       {/* Context menu */}
       {contextMenu && (

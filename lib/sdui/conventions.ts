@@ -18,6 +18,7 @@ type EngineConventions = {
   workflowPath?: string;
   screenScopedAliases?: string[];
   persistPaths?: string[];
+  resetVarsOnNavigate?: string[];
   sortInputMap?: Record<string, Record<string, string>>;
   defaultSortInput?: Record<string, string>;
   graphqlEndpoint?: string;
@@ -41,6 +42,7 @@ export const CONVENTIONS = {
   workflowPath: engineConventions.workflowPath,
   screenScopedAliases: engineConventions.screenScopedAliases ?? [],
   persistPaths: engineConventions.persistPaths ?? [],
+  resetVarsOnNavigate: engineConventions.resetVarsOnNavigate ?? [],
   sortInputMap: engineConventions.sortInputMap ?? {},
   defaultSortInput: engineConventions.defaultSortInput ?? { name: 'ASC' },
   graphqlEndpoint: engineConventions.graphqlEndpoint,

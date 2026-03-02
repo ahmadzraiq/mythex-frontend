@@ -14,7 +14,7 @@
         {
           "type": "Box",
           "props": { "className": "grid grid-cols-2 gap-4 lg:grid-cols-4" },
-          "condition": { "!!": [{ "var": "featured.products.0" }] },
+          "condition": "!!{{featured.products.0}}",
           "children": [
             {
               "type": "Box",
@@ -28,7 +28,7 @@
         {
           "type": "Box",
           "props": { "className": "flex flex-col items-center gap-4 py-20" },
-          "condition": { "!": [{ "var": "featured.products.0" }] },
+          "condition": "!{{featured.products.0}}",
           "children": [
             {
               "type": "Text",

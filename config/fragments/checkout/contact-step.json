@@ -3,14 +3,7 @@
   "props": {
     "className": "border rounded-lg px-6 bg-[var(--theme-content-bg)]"
   },
-  "condition": {
-    "==": [
-      {
-        "var": "auth.user"
-      },
-      null
-    ]
-  },
+  "condition": "{{auth.user}} === null",
   "children": [
     {
       "type": "Pressable",
@@ -44,19 +37,7 @@
                     "size": 16,
                     "className": "!text-white"
                   },
-                  "condition": {
-                    "or": [
-                      {
-                        "var": "auth.user"
-                      },
-                      {
-                        "var": [
-                          "checkout.order.customer.emailAddress",
-                          false
-                        ]
-                      }
-                    ]
-                  }
+                  "condition": "{{auth.user}} || {{checkout.order.customer.emailAddress}}"
                 },
                 {
                   "type": "Text",
@@ -64,35 +45,7 @@
                     "className": "font-semibold text-sm !text-white"
                   },
                   "text": "1",
-                  "condition": {
-                    "and": [
-                      {
-                        "!": [
-                          {
-                            "or": [
-                              {
-                                "var": "auth.user"
-                              },
-                              {
-                                "var": [
-                                  "checkout.order.customer.emailAddress",
-                                  false
-                                ]
-                              }
-                            ]
-                          }
-                        ]
-                      },
-                      {
-                        "==": [
-                          {
-                            "var": "checkout.step"
-                          },
-                          "contact"
-                        ]
-                      }
-                    ]
-                  }
+                  "condition": "!({{auth.user}} || {{checkout.order.customer.emailAddress}}) && {{checkout.step}} === 'contact'"
                 },
                 {
                   "type": "Text",
@@ -100,35 +53,7 @@
                     "className": "font-semibold text-sm !text-[var(--theme-muted-foreground)]"
                   },
                   "text": "1",
-                  "condition": {
-                    "and": [
-                      {
-                        "!": [
-                          {
-                            "or": [
-                              {
-                                "var": "auth.user"
-                              },
-                              {
-                                "var": [
-                                  "checkout.order.customer.emailAddress",
-                                  false
-                                ]
-                              }
-                            ]
-                          }
-                        ]
-                      },
-                      {
-                        "!=": [
-                          {
-                            "var": "checkout.step"
-                          },
-                          "contact"
-                        ]
-                      }
-                    ]
-                  }
+                  "condition": "!({{auth.user}} || {{checkout.order.customer.emailAddress}}) && {{checkout.step}} !== 'contact'"
                 }
               ]
             },
@@ -154,14 +79,7 @@
                 "size": 16,
                 "className": "!text-[var(--theme-muted-foreground)]"
               },
-              "condition": {
-                "==": [
-                  {
-                    "var": "checkout.step"
-                  },
-                  "contact"
-                ]
-              }
+              "condition": "{{checkout.step}} === 'contact'"
             },
             {
               "type": "NavIcon",
@@ -170,14 +88,7 @@
                 "size": 16,
                 "className": "!text-[var(--theme-muted-foreground)]"
               },
-              "condition": {
-                "!=": [
-                  {
-                    "var": "checkout.step"
-                  },
-                  "contact"
-                ]
-              }
+              "condition": "{{checkout.step}} !== 'contact'"
             }
           ]
         }
@@ -188,14 +99,7 @@
       "props": {
         "className": "pb-6"
       },
-      "condition": {
-        "==": [
-          {
-            "var": "checkout.step"
-          },
-          "contact"
-        ]
-      },
+      "condition": "{{checkout.step}} === 'contact'",
       "children": [
         {
           "type": "Box",
@@ -283,11 +187,7 @@
                   "props": {
                     "className": "min-h-[20px]"
                   },
-                  "condition": {
-                    "var": [
-                      "screens.checkout.errors.form.emailAddress"
-                    ]
-                  },
+                  "condition": "{{screens.checkout.errors.form.emailAddress}}",
                   "children": [
                     {
                       "type": "Text",
@@ -357,11 +257,7 @@
                       "props": {
                         "className": "min-h-[20px]"
                       },
-                      "condition": {
-                        "var": [
-                          "screens.checkout.errors.form.firstName"
-                        ]
-                      },
+                      "condition": "{{screens.checkout.errors.form.firstName}}",
                       "children": [
                         {
                           "type": "Text",
@@ -425,11 +321,7 @@
                       "props": {
                         "className": "min-h-[20px]"
                       },
-                      "condition": {
-                        "var": [
-                          "screens.checkout.errors.form.lastName"
-                        ]
-                      },
+                      "condition": "{{screens.checkout.errors.form.lastName}}",
                       "children": [
                         {
                           "type": "Text",

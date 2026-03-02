@@ -62,7 +62,7 @@ async function resetBuilder(page: Page) {
     }
   });
   await page.waitForFunction(
-    () => document.querySelectorAll('[data-builder-id]').length === 0,
+    () => document.querySelectorAll('[data-builder-page-frame] [data-builder-id]').length === 0,
     { timeout: 5_000 }
   );
   // Let React finish deferred effects (overlay RAF, computed updates) that fire
@@ -78,7 +78,7 @@ async function resetBuilder(page: Page) {
  * @param label  Visible label in the Components panel (e.g. "Button")
  */
 async function dropComponent(page: Page, label: string) {
-  const countBefore = await page.locator('[data-builder-id]').count();
+  const countBefore = await page.locator('[data-builder-page-frame] [data-builder-id]').count();
 
   // Make sure we are on the Components tab
   const compTab = page.getByTestId('tab-components');
@@ -95,7 +95,7 @@ async function dropComponent(page: Page, label: string) {
   // Wait for a node to appear.  Retry once if the drag was silently ignored
   // (headless Chromium sometimes drops the first DnD event after a page reset).
   const appeared = await page.waitForFunction(
-    (before: number) => document.querySelectorAll('[data-builder-id]').length > before,
+    (before: number) => document.querySelectorAll('[data-builder-page-frame] [data-builder-id]').length > before,
     countBefore,
     { timeout: 5_000 }
   ).catch(() => null);
@@ -105,7 +105,7 @@ async function dropComponent(page: Page, label: string) {
     await page.waitForTimeout(300);
     await item.dragTo(frame);
     await page.waitForFunction(
-      (before: number) => document.querySelectorAll('[data-builder-id]').length > before,
+      (before: number) => document.querySelectorAll('[data-builder-page-frame] [data-builder-id]').length > before,
       countBefore,
       { timeout: 10_000 }
     );
@@ -114,7 +114,7 @@ async function dropComponent(page: Page, label: string) {
 
 /** Click a dropped node identified by its data-builder-id prefix. */
 async function clickFirstNode(page: Page) {
-  const node = page.locator('[data-builder-id]').first();
+  const node = page.locator('[data-builder-page-frame] [data-builder-id]').first();
   const box = await node.boundingBox();
   if (box) {
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
@@ -218,28 +218,28 @@ test.describe('Drop Components', () => {
 
   test('10. drag Button from Components panel drops onto canvas', async () => {
     await dropComponent(sharedPage, 'Btn Solid');
-    await expect(sharedPage.locator('[data-builder-id]').first()).toBeVisible({ timeout: 5_000 });
+    await expect(sharedPage.locator('[data-builder-page-frame] [data-builder-id]').first()).toBeVisible({ timeout: 5_000 });
   });
 
   test('11. drag Input from Components panel drops onto canvas', async () => {
     await dropComponent(sharedPage, 'Input');
-    await expect(sharedPage.locator('[data-builder-id]').first()).toBeVisible();
+    await expect(sharedPage.locator('[data-builder-page-frame] [data-builder-id]').first()).toBeVisible();
   });
 
   test('12. drag Text primitive drops onto canvas', async () => {
     await dropComponent(sharedPage, 'Text');
-    await expect(sharedPage.locator('[data-builder-id]').first()).toBeVisible();
+    await expect(sharedPage.locator('[data-builder-page-frame] [data-builder-id]').first()).toBeVisible();
   });
 
   test('13. drag Box primitive drops onto canvas', async () => {
     await dropComponent(sharedPage, 'Box');
-    await expect(sharedPage.locator('[data-builder-id]').first()).toBeVisible();
+    await expect(sharedPage.locator('[data-builder-page-frame] [data-builder-id]').first()).toBeVisible();
   });
 
   test('14. second drop inserts a second node', async () => {
     await dropComponent(sharedPage, 'Btn Solid');
     await dropComponent(sharedPage, 'Btn Solid');
-    const count = await sharedPage.locator('[data-builder-id]').count();
+    const count = await sharedPage.locator('[data-builder-page-frame] [data-builder-id]').count();
     expect(count).toBeGreaterThanOrEqual(2);
   });
 });
@@ -330,7 +330,7 @@ test.describe('Hover', () => {
     await dropComponent(sharedPage, 'Btn Solid');
 
     // Hover over the node (not selected)
-    const node = sharedPage.locator('[data-builder-id]').first();
+    const node = sharedPage.locator('[data-builder-page-frame] [data-builder-id]').first();
     await node.hover({ force: true });
 
     // Hover outline is rendered in the BuilderOverlay (data-builder-overlay="1")
@@ -376,7 +376,7 @@ test.describe('Layers Panel', () => {
     await expect(sharedPage.getByTestId('selection-ring')).toBeVisible();
 
     await sharedPage.keyboard.press('Delete');
-    await expect(sharedPage.locator('[data-builder-id]')).toHaveCount(0, { timeout: 3_000 });
+    await expect(sharedPage.locator('[data-builder-page-frame] [data-builder-id]')).toHaveCount(0, { timeout: 3_000 });
   });
 
   test('30. search box filters layer tree', async () => {
@@ -418,7 +418,7 @@ test.describe('Right Panel — Design Tab', () => {
     await hInput.fill('80');
     await hInput.press('Enter');
 
-    const node = sharedPage.locator('[data-builder-id]').first();
+    const node = sharedPage.locator('[data-builder-page-frame] [data-builder-id]').first();
     const height = await node.evaluate((el: HTMLElement) => el.style.height);
     expect(height).toBe('80px');
   });
@@ -431,7 +431,7 @@ test.describe('Right Panel — Design Tab', () => {
     await wInput.fill('200');
     await wInput.press('Enter');
 
-    const node = sharedPage.locator('[data-builder-id]').first();
+    const node = sharedPage.locator('[data-builder-page-frame] [data-builder-id]').first();
     const width = await node.evaluate((el: HTMLElement) => el.style.width);
     expect(width).toBe('200px');
   });
@@ -503,7 +503,7 @@ test.describe('Resize Handles', () => {
     const box = await eHandle.boundingBox();
     if (!box) throw new Error('E handle not found');
 
-    const node = sharedPage.locator('[data-builder-id]').first();
+    const node = sharedPage.locator('[data-builder-page-frame] [data-builder-id]').first();
     const heightBefore = await node.evaluate((el: HTMLElement) => el.getBoundingClientRect().height);
 
     const ex = box.x + box.width / 2;
@@ -553,7 +553,7 @@ async function clearHistory(page: Page) {
     }
   });
   await page.waitForFunction(
-    () => document.querySelectorAll('[data-builder-id]').length === 0,
+    () => document.querySelectorAll('[data-builder-page-frame] [data-builder-id]').length === 0,
     { timeout: 5_000 }
   );
 }
@@ -563,38 +563,38 @@ test.describe('History (Undo / Redo)', () => {
 
   test('65. undo after drop removes the node', async () => {
     await dropComponent(sharedPage, 'Btn Solid');
-    await expect(sharedPage.locator('[data-builder-id]').first()).toBeVisible();
+    await expect(sharedPage.locator('[data-builder-page-frame] [data-builder-id]').first()).toBeVisible();
 
     await sharedPage.keyboard.press('Meta+z');
-    await expect(sharedPage.locator('[data-builder-id]')).toHaveCount(0, { timeout: 3_000 });
+    await expect(sharedPage.locator('[data-builder-page-frame] [data-builder-id]')).toHaveCount(0, { timeout: 3_000 });
   });
 
   test('66. redo after undo restores the node', async () => {
     await dropComponent(sharedPage, 'Btn Solid');
     await sharedPage.keyboard.press('Meta+z');
-    await expect(sharedPage.locator('[data-builder-id]')).toHaveCount(0, { timeout: 3_000 });
+    await expect(sharedPage.locator('[data-builder-page-frame] [data-builder-id]')).toHaveCount(0, { timeout: 3_000 });
 
     await sharedPage.keyboard.press('Meta+Shift+z');
-    await expect(sharedPage.locator('[data-builder-id]').first()).toBeVisible({ timeout: 3_000 });
+    await expect(sharedPage.locator('[data-builder-page-frame] [data-builder-id]').first()).toBeVisible({ timeout: 3_000 });
   });
 
   test('67. undo button in top bar works', async () => {
     await dropComponent(sharedPage, 'Btn Solid');
     await sharedPage.getByTestId('btn-undo').click();
-    await expect(sharedPage.locator('[data-builder-id]')).toHaveCount(0, { timeout: 3_000 });
+    await expect(sharedPage.locator('[data-builder-page-frame] [data-builder-id]')).toHaveCount(0, { timeout: 3_000 });
   });
 
   test('68. undo after second drop removes second node', async () => {
     await dropComponent(sharedPage, 'Btn Solid');
     await dropComponent(sharedPage, 'Btn Solid');
 
-    const countBefore = await sharedPage.locator('[data-builder-id]').count();
+    const countBefore = await sharedPage.locator('[data-builder-page-frame] [data-builder-id]').count();
     expect(countBefore).toBeGreaterThanOrEqual(2);
 
     await sharedPage.keyboard.press('Meta+z');
 
     await expect(async () => {
-      const countAfter = await sharedPage.locator('[data-builder-id]').count();
+      const countAfter = await sharedPage.locator('[data-builder-page-frame] [data-builder-id]').count();
       expect(countAfter).toBeLessThan(countBefore);
     }).toPass({ timeout: 3_000 });
   });
@@ -610,7 +610,7 @@ test.describe('Keyboard Shortcuts', () => {
     await sharedPage.getByTestId('tab-layers').click();
     await sharedPage.locator('[data-testid="layer-row"]').first().click();
     await sharedPage.keyboard.press('Delete');
-    await expect(sharedPage.locator('[data-builder-id]')).toHaveCount(0, { timeout: 3_000 });
+    await expect(sharedPage.locator('[data-builder-page-frame] [data-builder-id]')).toHaveCount(0, { timeout: 3_000 });
   });
 
   test('70. Backspace key removes selected node', async () => {
@@ -618,18 +618,18 @@ test.describe('Keyboard Shortcuts', () => {
     await sharedPage.getByTestId('tab-layers').click();
     await sharedPage.locator('[data-testid="layer-row"]').first().click();
     await sharedPage.keyboard.press('Backspace');
-    await expect(sharedPage.locator('[data-builder-id]')).toHaveCount(0, { timeout: 3_000 });
+    await expect(sharedPage.locator('[data-builder-page-frame] [data-builder-id]')).toHaveCount(0, { timeout: 3_000 });
   });
 
   test('71. Cmd+D duplicates selected node', async () => {
     await dropComponent(sharedPage, 'Btn Solid');
     await selectFirstRootNode(sharedPage);
 
-    const before = await sharedPage.locator('[data-builder-id]').count();
+    const before = await sharedPage.locator('[data-builder-page-frame] [data-builder-id]').count();
     await sharedPage.evaluate(() => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', metaKey: true, bubbles: true }));
     });
-    const after = await sharedPage.locator('[data-builder-id]').count();
+    const after = await sharedPage.locator('[data-builder-page-frame] [data-builder-id]').count();
     expect(after).toBeGreaterThan(before);
   });
 
@@ -657,11 +657,11 @@ test.describe('Keyboard Shortcuts', () => {
     await dropComponent(sharedPage, 'Btn Solid');
     await dropComponent(sharedPage, 'Btn Solid');
 
-    const nodes = sharedPage.locator('[data-builder-id]');
+    const nodes = sharedPage.locator('[data-builder-page-frame] [data-builder-id]');
     await nodes.first().click({ force: true });
     await nodes.last().click({ force: true, modifiers: ['Shift'] });
 
-    const before = await sharedPage.locator('[data-builder-id]').count();
+    const before = await sharedPage.locator('[data-builder-page-frame] [data-builder-id]').count();
     await sharedPage.keyboard.press('Meta+g');
 
     await sharedPage.getByTestId('tab-layers').click();
@@ -678,7 +678,7 @@ async function injectNodes(page: Page, nodes: object[]) {
   await page.evaluate((n) => {
     (window as unknown as Record<string, { getState: () => { _setPageNodes: (nodes: object[]) => void } }>).__builderStore.getState()._setPageNodes(n);
   }, nodes);
-  await page.waitForSelector('[data-builder-id]', { timeout: 5_000 });
+  await page.waitForSelector('[data-builder-page-frame] [data-builder-id]', { timeout: 5_000 });
 }
 
 /** Read the className of a node from the store by id. */
@@ -761,7 +761,7 @@ test.describe('Group A — Drop Zone Lines', () => {
   test('A2. Active drop zone line highlights when hovering near top of existing node', async () => {
     await dropComponent(sharedPage, 'Btn Solid');
 
-    const node = sharedPage.locator('[data-builder-id]').first();
+    const node = sharedPage.locator('[data-builder-page-frame] [data-builder-id]').first();
     const nodeBox = await node.boundingBox();
     await simulateDragOver(sharedPage, nodeBox!.x + 10, nodeBox!.y + 2);
     const activeLine = sharedPage.locator('[data-testid="drop-zone-line"][data-active="true"]');
@@ -827,7 +827,7 @@ test.describe('Group C — Hover Outline', () => {
     const canvasBox = await canvas.boundingBox();
     await sharedPage.mouse.click(canvasBox!.x + canvasBox!.width / 2, canvasBox!.y + canvasBox!.height - 20);
 
-    const node = sharedPage.locator('[data-builder-id]').first();
+    const node = sharedPage.locator('[data-builder-page-frame] [data-builder-id]').first();
     const nodeBox = await node.boundingBox();
     await sharedPage.mouse.move(nodeBox!.x + nodeBox!.width / 2, nodeBox!.y + nodeBox!.height / 2);
     await expect(sharedPage.locator('[data-testid="hover-outline"]')).toBeVisible({ timeout: 3_000 });
@@ -840,7 +840,7 @@ test.describe('Group C — Hover Outline', () => {
     const canvasBox = await canvas.boundingBox();
     await sharedPage.mouse.click(canvasBox!.x + canvasBox!.width / 2, canvasBox!.y + canvasBox!.height - 20);
 
-    const node = sharedPage.locator('[data-builder-id]').first();
+    const node = sharedPage.locator('[data-builder-page-frame] [data-builder-id]').first();
     const nodeBox = await node.boundingBox();
     await sharedPage.mouse.move(nodeBox!.x + nodeBox!.width / 2, nodeBox!.y + nodeBox!.height / 2);
     await expect(sharedPage.locator('[data-testid="hover-outline"]')).toBeVisible({ timeout: 3_000 });

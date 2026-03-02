@@ -8,9 +8,7 @@
       "action": "navigate",
       "payload": {
         "routeConfig": "product",
-        "slug": {
-          "var": "$item.slug"
-        }
+        "slug": "{{$item.slug}}"
       }
     }
   },
@@ -36,14 +34,7 @@
           "props": {
             "className": "w-full h-full flex items-center justify-center text-[var(--theme-content-textMuted)]"
           },
-          "condition": {
-            "==": [
-              {
-                "var": "$item.productAsset"
-              },
-              null
-            ]
-          },
+          "condition": "!{{$item.productAsset}}",
           "children": [
             {
               "type": "Text",
@@ -72,82 +63,7 @@
             "className": "text-lg font-bold text-[var(--theme-content-text)]"
           },
           "text": {
-            "expr": {
-              "if": [
-                {
-                  "==": [
-                    {
-                      "var": "$item.priceWithTax.__typename"
-                    },
-                    "SinglePrice"
-                  ]
-                },
-                {
-                  "formatCurrency": [
-                    {
-                      "/": [
-                        {
-                          "var": "$item.priceWithTax.value"
-                        },
-                        100
-                      ]
-                    },
-                    {
-                      "var": "$item.currencyCode"
-                    }
-                  ]
-                },
-                {
-                  "if": [
-                    {
-                      "!=": [
-                        {
-                          "var": "$item.priceWithTax.min"
-                        },
-                        {
-                          "var": "$item.priceWithTax.max"
-                        }
-                      ]
-                    },
-                    {
-                      "cat": [
-                        "from ",
-                        {
-                          "formatCurrency": [
-                            {
-                              "/": [
-                                {
-                                  "var": "$item.priceWithTax.min"
-                                },
-                                100
-                              ]
-                            },
-                            {
-                              "var": "$item.currencyCode"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "formatCurrency": [
-                        {
-                          "/": [
-                            {
-                              "var": "$item.priceWithTax.min"
-                            },
-                            100
-                          ]
-                        },
-                        {
-                          "var": "$item.currencyCode"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
+            "expr": "{{$item.priceWithTax.__typename}} === 'SinglePrice' ? formatCurrency({{$item.priceWithTax.value}} / 100, {{$item.currencyCode}} || 'USD') : 'from ' + formatCurrency({{$item.priceWithTax.min}} / 100, {{$item.currencyCode}} || 'USD')"
           }
         }
       ]

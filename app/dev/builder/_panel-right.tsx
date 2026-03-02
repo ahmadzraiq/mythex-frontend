@@ -35,6 +35,10 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useBuilderStore } from './_store';
+import { ThemePanel } from './_theme-panel';
+import { PathPicker } from './_path-picker';
+import { ExprBuilder } from './_expr-builder';
+import { FieldWithBinding, type FormulaValue } from './_formula-panel';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import { FigmaColorPicker } from './_color-picker';
 import {
@@ -607,7 +611,23 @@ function DesignTab({ node }: { node: SDUINode }) {
       {/* ── Content (text value) — shown for text nodes and buttons ── */}
       {hasContent && (
         <div style={SECTION_STYLE}>
-          <SectionHeader title="Content" />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <SectionHeader title="Content" />
+            <FieldWithBinding
+              label="text"
+              value={(buttonTextChild
+                ? ((buttonTextChild as { text?: string }).text ?? '')
+                : ((node as { text?: string }).text ?? '')
+              ) as string}
+              onChange={v => {
+                const targetId = buttonTextChild ? (buttonTextChild as { id?: string }).id ?? '' : nodeId;
+                store.patchProp(targetId, 'text', v as string);
+                commitHistory();
+              }}
+            >
+              <span />
+            </FieldWithBinding>
+          </div>
           <textarea
             data-testid="input-text-content"
             value={
@@ -638,52 +658,62 @@ function DesignTab({ node }: { node: SDUINode }) {
       <div style={SECTION_STYLE}>
         <SectionHeader title="Position & Size" />
         <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-          <SelectInput
-            label="Position"
-            testId="select-position"
-            value={positionToken}
-            options={POSITION_TOKENS}
-            onChange={v => {
-              let next = cls;
-              POSITION_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-              patchCls(v === 'static' ? next : `${next} ${v}`.trim());
-            }}
-          />
-          <SelectInput
-            label="Z-Index"
-            value={zIndexToken}
-            options={Z_INDEX_TOKENS}
-            onChange={v => patchCls(replaceTwToken(cls, 'z-', v))}
-          />
+          <FieldWithBinding label="position" value={positionToken as FormulaValue} onChange={v => {
+            let next = cls;
+            POSITION_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+            const val = String(v);
+            patchCls(val === 'static' ? next : `${next} ${val}`.trim());
+          }} expectedType="string">
+            <SelectInput
+              label="Position"
+              testId="select-position"
+              value={positionToken}
+              options={POSITION_TOKENS}
+              onChange={v => {
+                let next = cls;
+                POSITION_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                patchCls(v === 'static' ? next : `${next} ${v}`.trim());
+              }}
+            />
+          </FieldWithBinding>
+          <FieldWithBinding label="zIndex" value={zIndexToken as FormulaValue} onChange={v => patchCls(replaceTwToken(cls, 'z-', String(v)))} expectedType="string">
+            <SelectInput
+              label="Z-Index"
+              value={zIndexToken}
+              options={Z_INDEX_TOKENS}
+              onChange={v => patchCls(replaceTwToken(cls, 'z-', v))}
+            />
+          </FieldWithBinding>
         </div>
         <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
           <NumberInput label="X" testId="input-pos-x" value={domMetrics.x} onChange={() => {}} />
           <NumberInput label="Y" testId="input-pos-y" value={domMetrics.y} onChange={() => {}} />
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
-          <NumberInput label="W" testId="input-pos-w" value={(() => {
-            // Read from className arbitrary token first, then legacy style, then DOM
-            const clsW = parseTwArbitrary(cls, 'w-');
-            if (clsW !== null) return clsW;
-            const styleW = nodeStyle.width;
-            if (styleW) return parseInt(styleW) || domMetrics.w;
-            return domMetrics.w;
-          })()} onChange={px => {
-            patchStyle({ width: `${px}px`, minWidth: '0' });
-            // Entering a pixel value means Fixed mode — clear any Hug/Fill class so the
-            // Dimensions section reflects the new mode instead of staying on Fill/Hug.
-            patchCls(removeTwToken(removeTwToken(cls, 'w-fit'), 'w-full'));
-          }} />
-          <NumberInput label="H" testId="input-pos-h" value={(() => {
-            const clsH = parseTwArbitrary(cls, 'h-');
-            if (clsH !== null) return clsH;
-            const styleH = nodeStyle.height;
-            if (styleH) return parseInt(styleH) || domMetrics.h;
-            return domMetrics.h;
-          })()} onChange={px => {
-            patchStyle({ height: `${px}px`, minHeight: '0' });
-            patchCls(removeTwToken(removeTwToken(cls, 'h-fit'), 'h-full'));
-          }} />
+          <FieldWithBinding label="width" value={(nodeStyle.width ?? '') as FormulaValue} onChange={v => patchStyle({ width: String(v), minWidth: '0' })}>
+            <NumberInput label="W" testId="input-pos-w" value={(() => {
+              const clsW = parseTwArbitrary(cls, 'w-');
+              if (clsW !== null) return clsW;
+              const styleW = nodeStyle.width;
+              if (styleW) return parseInt(styleW) || domMetrics.w;
+              return domMetrics.w;
+            })()} onChange={px => {
+              patchStyle({ width: `${px}px`, minWidth: '0' });
+              patchCls(removeTwToken(removeTwToken(cls, 'w-fit'), 'w-full'));
+            }} />
+          </FieldWithBinding>
+          <FieldWithBinding label="height" value={(nodeStyle.height ?? '') as FormulaValue} onChange={v => patchStyle({ height: String(v), minHeight: '0' })}>
+            <NumberInput label="H" testId="input-pos-h" value={(() => {
+              const clsH = parseTwArbitrary(cls, 'h-');
+              if (clsH !== null) return clsH;
+              const styleH = nodeStyle.height;
+              if (styleH) return parseInt(styleH) || domMetrics.h;
+              return domMetrics.h;
+            })()} onChange={px => {
+              patchStyle({ height: `${px}px`, minHeight: '0' });
+              patchCls(removeTwToken(removeTwToken(cls, 'h-fit'), 'h-full'));
+            }} />
+          </FieldWithBinding>
         </div>
 
         {/* ── Inset controls (shown when position is absolute / fixed / sticky) ── */}
@@ -692,15 +722,16 @@ function DesignTab({ node }: { node: SDUINode }) {
             <div style={{ marginTop: 6, marginBottom: 2, fontSize: 10, color: '#6b7280' }}>Inset</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
               {(['top','right','bottom','left'] as const).map(side => (
-                <NumberInput
-                  key={side}
-                  label={side.charAt(0).toUpperCase() + side.slice(1)}
-                  testId={`input-inset-${side}`}
-                  value={parseTwArbitrary(cls, `${side}-`) ?? parseInt(nodeStyle[side] ?? '') || 0}
-                  onChange={px => {
-                    patchStyle({ [side]: `${px}px` });
-                  }}
-                />
+                <FieldWithBinding key={side} label={side} value={(nodeStyle[side] ?? '') as FormulaValue} onChange={v => patchStyle({ [side]: String(v) })}>
+                  <NumberInput
+                    label={side.charAt(0).toUpperCase() + side.slice(1)}
+                    testId={`input-inset-${side}`}
+                    value={(parseTwArbitrary(cls, `${side}-`) ?? parseInt(nodeStyle[side] ?? '')) || 0}
+                    onChange={px => {
+                      patchStyle({ [side]: `${px}px` });
+                    }}
+                  />
+                </FieldWithBinding>
               ))}
             </div>
           </>
@@ -758,30 +789,38 @@ function DesignTab({ node }: { node: SDUINode }) {
         </div>
         {/* Min / Max constraints */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-          <NumberInput
-            label="Min W"
-            testId="input-min-w"
-            value={parseTwArbitrary(cls, 'min-w-') ?? parseInt(nodeStyle.minWidth ?? '0') || 0}
-            onChange={px => patchStyle({ minWidth: px > 0 ? `${px}px` : '' })}
-          />
-          <NumberInput
-            label="Max W"
-            testId="input-max-w"
-            value={parseTwArbitrary(cls, 'max-w-') ?? (nodeStyle.maxWidth ? parseInt(nodeStyle.maxWidth) || 0 : 0)}
-            onChange={px => patchStyle({ maxWidth: px > 0 ? `${px}px` : '' })}
-          />
-          <NumberInput
-            label="Min H"
-            testId="input-min-h"
-            value={parseTwArbitrary(cls, 'min-h-') ?? parseInt(nodeStyle.minHeight ?? '0') || 0}
-            onChange={px => patchStyle({ minHeight: px > 0 ? `${px}px` : '' })}
-          />
-          <NumberInput
-            label="Max H"
-            testId="input-max-h"
-            value={parseTwArbitrary(cls, 'max-h-') ?? (nodeStyle.maxHeight ? parseInt(nodeStyle.maxHeight) || 0 : 0)}
-            onChange={px => patchStyle({ maxHeight: px > 0 ? `${px}px` : '' })}
-          />
+          <FieldWithBinding label="minWidth" value={(nodeStyle.minWidth ?? '') as FormulaValue} onChange={v => patchStyle({ minWidth: String(v) })}>
+            <NumberInput
+              label="Min W"
+              testId="input-min-w"
+              value={(parseTwArbitrary(cls, 'min-w-') ?? parseInt(nodeStyle.minWidth ?? '0')) || 0}
+              onChange={px => patchStyle({ minWidth: px > 0 ? `${px}px` : '' })}
+            />
+          </FieldWithBinding>
+          <FieldWithBinding label="maxWidth" value={(nodeStyle.maxWidth ?? '') as FormulaValue} onChange={v => patchStyle({ maxWidth: String(v) })}>
+            <NumberInput
+              label="Max W"
+              testId="input-max-w"
+              value={parseTwArbitrary(cls, 'max-w-') ?? (nodeStyle.maxWidth ? parseInt(nodeStyle.maxWidth) || 0 : 0)}
+              onChange={px => patchStyle({ maxWidth: px > 0 ? `${px}px` : '' })}
+            />
+          </FieldWithBinding>
+          <FieldWithBinding label="minHeight" value={(nodeStyle.minHeight ?? '') as FormulaValue} onChange={v => patchStyle({ minHeight: String(v) })}>
+            <NumberInput
+              label="Min H"
+              testId="input-min-h"
+              value={(parseTwArbitrary(cls, 'min-h-') ?? parseInt(nodeStyle.minHeight ?? '0')) || 0}
+              onChange={px => patchStyle({ minHeight: px > 0 ? `${px}px` : '' })}
+            />
+          </FieldWithBinding>
+          <FieldWithBinding label="maxHeight" value={(nodeStyle.maxHeight ?? '') as FormulaValue} onChange={v => patchStyle({ maxHeight: String(v) })}>
+            <NumberInput
+              label="Max H"
+              testId="input-max-h"
+              value={parseTwArbitrary(cls, 'max-h-') ?? (nodeStyle.maxHeight ? parseInt(nodeStyle.maxHeight) || 0 : 0)}
+              onChange={px => patchStyle({ maxHeight: px > 0 ? `${px}px` : '' })}
+            />
+          </FieldWithBinding>
         </div>
       </div>
 
@@ -816,16 +855,18 @@ function DesignTab({ node }: { node: SDUINode }) {
       <div style={SECTION_STYLE}>
         <SectionHeader title="Transform" />
         <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
-          <NumberInput
-            label="Rotate °"
-            testId="input-rotate"
-            value={rotateDeg}
-            min={-180} max={180}
-            onChange={deg => {
-              const newTransform = deg !== 0 ? `rotate(${deg}deg)` : '';
-              patchStyle({ transform: newTransform });
-            }}
-          />
+          <FieldWithBinding label="rotate" value={(styleTransform ?? '') as FormulaValue} onChange={v => patchStyle({ transform: String(v) })}>
+            <NumberInput
+              label="Rotate °"
+              testId="input-rotate"
+              value={rotateDeg}
+              min={-180} max={180}
+              onChange={deg => {
+                const newTransform = deg !== 0 ? `rotate(${deg}deg)` : '';
+                patchStyle({ transform: newTransform });
+              }}
+            />
+          </FieldWithBinding>
           <div style={{ display: 'flex', gap: 4 }}>
             <ToggleBtn active={isFlipH} title="Flip horizontal" onClick={() => {
               patchCls(isFlipH ? removeTwToken(cls, '-scale-x-') : `${cls} -scale-x-100`.trim());
@@ -906,14 +947,16 @@ function DesignTab({ node }: { node: SDUINode }) {
           </div>
 
           <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-            <NumberInput
-              label="Gap"
-              testId="input-gap"
-              value={gapPx}
-              onChange={px => {
-                patchStyle({ gap: px > 0 ? `${px}px` : undefined as unknown as string });
-              }}
-            />
+            <FieldWithBinding label="gap" value={(nodeStyle.gap ?? '') as FormulaValue} onChange={v => patchStyle({ gap: String(v) })}>
+              <NumberInput
+                label="Gap"
+                testId="input-gap"
+                value={gapPx}
+                onChange={px => {
+                  patchStyle({ gap: px > 0 ? `${px}px` : undefined as unknown as string });
+                }}
+              />
+            </FieldWithBinding>
             {/* Gap mode: Fixed vs Space-between */}
             <div>
               <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Mode</span>
@@ -927,16 +970,22 @@ function DesignTab({ node }: { node: SDUINode }) {
           {/* Grid columns / rows (only visible when 'grid' layout is selected) */}
           {isGrid && (
             <div style={{ display: 'flex', gap: 6 }}>
-              <SelectInput
-                label="Columns"
-                value={GRID_COLS_TOKENS.find(t => cls.includes(t)) ?? 'grid-cols-1'}
-                options={[...GRID_COLS_TOKENS]}
-                onChange={v => {
-                  let next = cls;
-                  GRID_COLS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-                  patchCls(`${next} ${v}`.trim());
-                }}
-              />
+              <FieldWithBinding label="gridCols" value={(GRID_COLS_TOKENS.find(t => cls.includes(t)) ?? 'grid-cols-1') as FormulaValue} onChange={v => {
+                let next = cls;
+                GRID_COLS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                patchCls(`${next} ${String(v)}`.trim());
+              }} expectedType="string">
+                <SelectInput
+                  label="Columns"
+                  value={GRID_COLS_TOKENS.find(t => cls.includes(t)) ?? 'grid-cols-1'}
+                  options={[...GRID_COLS_TOKENS]}
+                  onChange={v => {
+                    let next = cls;
+                    GRID_COLS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                    patchCls(`${next} ${v}`.trim());
+                  }}
+                />
+              </FieldWithBinding>
               <SelectInput
                 label="Rows"
                 value={GRID_ROWS_TOKENS.find(t => cls.includes(t)) ?? 'grid-rows-1'}
@@ -978,18 +1027,18 @@ function DesignTab({ node }: { node: SDUINode }) {
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-              <NumberInput label="Top"    testId="input-pad-top"
-                value={padding.top}
-                onChange={px => patchStyle({ paddingTop: `${px}px` })} />
-              <NumberInput label="Right"  testId="input-pad-right"
-                value={padding.right}
-                onChange={px => patchStyle({ paddingRight: `${px}px` })} />
-              <NumberInput label="Bottom" testId="input-pad-bottom"
-                value={padding.bottom}
-                onChange={px => patchStyle({ paddingBottom: `${px}px` })} />
-              <NumberInput label="Left"   testId="input-pad-left"
-                value={padding.left}
-                onChange={px => patchStyle({ paddingLeft: `${px}px` })} />
+              <FieldWithBinding label="paddingTop" value={(nodeStyle.paddingTop ?? '') as FormulaValue} onChange={v => patchStyle({ paddingTop: String(v) })}>
+                <NumberInput label="Top" testId="input-pad-top" value={padding.top} onChange={px => patchStyle({ paddingTop: `${px}px` })} />
+              </FieldWithBinding>
+              <FieldWithBinding label="paddingRight" value={(nodeStyle.paddingRight ?? '') as FormulaValue} onChange={v => patchStyle({ paddingRight: String(v) })}>
+                <NumberInput label="Right" testId="input-pad-right" value={padding.right} onChange={px => patchStyle({ paddingRight: `${px}px` })} />
+              </FieldWithBinding>
+              <FieldWithBinding label="paddingBottom" value={(nodeStyle.paddingBottom ?? '') as FormulaValue} onChange={v => patchStyle({ paddingBottom: String(v) })}>
+                <NumberInput label="Bottom" testId="input-pad-bottom" value={padding.bottom} onChange={px => patchStyle({ paddingBottom: `${px}px` })} />
+              </FieldWithBinding>
+              <FieldWithBinding label="paddingLeft" value={(nodeStyle.paddingLeft ?? '') as FormulaValue} onChange={v => patchStyle({ paddingLeft: String(v) })}>
+                <NumberInput label="Left" testId="input-pad-left" value={padding.left} onChange={px => patchStyle({ paddingLeft: `${px}px` })} />
+              </FieldWithBinding>
             </div>
           )}
         </div>
@@ -1020,10 +1069,18 @@ function DesignTab({ node }: { node: SDUINode }) {
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-            <NumberInput label="Top"    value={margin.top}    onChange={px => patchStyle({ marginTop:    `${px}px` })} />
-            <NumberInput label="Right"  value={margin.right}  onChange={px => patchStyle({ marginRight:  `${px}px` })} />
-            <NumberInput label="Bottom" value={margin.bottom} onChange={px => patchStyle({ marginBottom: `${px}px` })} />
-            <NumberInput label="Left"   value={margin.left}   onChange={px => patchStyle({ marginLeft:   `${px}px` })} />
+            <FieldWithBinding label="marginTop" value={(nodeStyle.marginTop ?? '') as FormulaValue} onChange={v => patchStyle({ marginTop: String(v) })}>
+              <NumberInput label="Top" value={margin.top} onChange={px => patchStyle({ marginTop: `${px}px` })} />
+            </FieldWithBinding>
+            <FieldWithBinding label="marginRight" value={(nodeStyle.marginRight ?? '') as FormulaValue} onChange={v => patchStyle({ marginRight: String(v) })}>
+              <NumberInput label="Right" value={margin.right} onChange={px => patchStyle({ marginRight: `${px}px` })} />
+            </FieldWithBinding>
+            <FieldWithBinding label="marginBottom" value={(nodeStyle.marginBottom ?? '') as FormulaValue} onChange={v => patchStyle({ marginBottom: String(v) })}>
+              <NumberInput label="Bottom" value={margin.bottom} onChange={px => patchStyle({ marginBottom: `${px}px` })} />
+            </FieldWithBinding>
+            <FieldWithBinding label="marginLeft" value={(nodeStyle.marginLeft ?? '') as FormulaValue} onChange={v => patchStyle({ marginLeft: String(v) })}>
+              <NumberInput label="Left" value={margin.left} onChange={px => patchStyle({ marginLeft: `${px}px` })} />
+            </FieldWithBinding>
           </div>
         )}
       </div>
@@ -1032,24 +1089,35 @@ function DesignTab({ node }: { node: SDUINode }) {
       <div style={SECTION_STYLE}>
         <SectionHeader title="Display & Interaction" />
         <div style={{ display: 'flex', gap: 6 }}>
-          <SelectInput
-            label="Display"
-            value={displayToken}
-            options={['', ...DISPLAY_TOKENS]}
-            onChange={v => {
-              let next = cls;
-              DISPLAY_TOKENS.forEach(t => {
-                next = next.replace(new RegExp(`(?:^|\\s)${t}(?=\\s|$)`, 'g'), ' ').replace(/\s+/g, ' ').trim();
-              });
-              patchCls(v ? `${next} ${v}`.trim() : next);
-            }}
-          />
-          <SelectInput
-            label="Cursor"
-            value={cursorToken}
-            options={CURSOR_TOKENS}
-            onChange={v => patchCls(replaceTwToken(cls, 'cursor-', v))}
-          />
+          <FieldWithBinding label="display" value={displayToken as FormulaValue} onChange={v => {
+            let next = cls;
+            DISPLAY_TOKENS.forEach(t => {
+              next = next.replace(new RegExp(`(?:^|\\s)${t}(?=\\s|$)`, 'g'), ' ').replace(/\s+/g, ' ').trim();
+            });
+            const val = String(v);
+            patchCls(val ? `${next} ${val}`.trim() : next);
+          }} expectedType="string">
+            <SelectInput
+              label="Display"
+              value={displayToken}
+              options={['', ...DISPLAY_TOKENS]}
+              onChange={v => {
+                let next = cls;
+                DISPLAY_TOKENS.forEach(t => {
+                  next = next.replace(new RegExp(`(?:^|\\s)${t}(?=\\s|$)`, 'g'), ' ').replace(/\s+/g, ' ').trim();
+                });
+                patchCls(v ? `${next} ${v}`.trim() : next);
+              }}
+            />
+          </FieldWithBinding>
+          <FieldWithBinding label="cursor" value={cursorToken as FormulaValue} onChange={v => patchCls(replaceTwToken(cls, 'cursor-', String(v)))} expectedType="string">
+            <SelectInput
+              label="Cursor"
+              value={cursorToken}
+              options={CURSOR_TOKENS}
+              onChange={v => patchCls(replaceTwToken(cls, 'cursor-', v))}
+            />
+          </FieldWithBinding>
         </div>
       </div>
 
@@ -1067,7 +1135,12 @@ function DesignTab({ node }: { node: SDUINode }) {
 
       {/* ── Fill ── */}
       <div style={SECTION_STYLE}>
-        <SectionHeader title="Fill" />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <SectionHeader title="Fill" />
+          <FieldWithBinding label="backgroundColor" value={(nodeStyle.backgroundColor ?? '') as FormulaValue} onChange={v => patchStyle({ backgroundColor: String(v) })}>
+            <span />
+          </FieldWithBinding>
+        </div>
         <FigmaColorPicker
           label="Background"
           testId="input-bg-color"
@@ -1094,7 +1167,17 @@ function DesignTab({ node }: { node: SDUINode }) {
 
       {/* ── Stroke ── */}
       <div style={SECTION_STYLE}>
-        <SectionHeader title="Stroke" />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <SectionHeader title="Stroke" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <FieldWithBinding label="borderWidth" value={(nodeStyle.borderWidth ?? '') as FormulaValue} onChange={v => patchStyle({ borderWidth: String(v) })} expectedType="string">
+              <span />
+            </FieldWithBinding>
+            <FieldWithBinding label="borderColor" value={(nodeStyle.borderColor ?? '') as FormulaValue} onChange={v => patchStyle({ borderColor: String(v) })}>
+              <span />
+            </FieldWithBinding>
+          </div>
+        </div>
         <FigmaColorPicker
           label="Color"
           testId="input-stroke-color"
@@ -1105,49 +1188,83 @@ function DesignTab({ node }: { node: SDUINode }) {
           }
         />
         <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-          <SelectInput
-            label="Width"
-            testId="select-border-width"
-            value={borderWidth}
-            options={BORDER_WIDTH_TOKENS}
-            onChange={v => patchCls(replaceTwToken(cls, 'border', v))}
-          />
-          <SelectInput
-            label="Style"
-            value={borderStyle}
-            options={BORDER_STYLE_TOKENS}
-            onChange={v => {
-              let next = cls;
-              BORDER_STYLE_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-              patchCls(`${next} ${v}`.trim());
-            }}
-          />
+          <FieldWithBinding label="borderWidthClass" value={borderWidth as FormulaValue} onChange={v => patchCls(replaceTwToken(cls, 'border', String(v)))} expectedType="string">
+            <SelectInput
+              label="Width"
+              testId="select-border-width"
+              value={borderWidth}
+              options={BORDER_WIDTH_TOKENS}
+              onChange={v => patchCls(replaceTwToken(cls, 'border', v))}
+            />
+          </FieldWithBinding>
+          <FieldWithBinding label="borderStyle" value={borderStyle as FormulaValue} onChange={v => {
+            let next = cls;
+            BORDER_STYLE_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+            patchCls(`${next} ${String(v)}`.trim());
+          }} expectedType="string">
+            <SelectInput
+              label="Style"
+              value={borderStyle}
+              options={BORDER_STYLE_TOKENS}
+              onChange={v => {
+                let next = cls;
+                BORDER_STYLE_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                patchCls(`${next} ${v}`.trim());
+              }}
+            />
+          </FieldWithBinding>
         </div>
       </div>
 
       {/* ── Effects (Shadow) ── */}
       <div style={SECTION_STYLE}>
-        <SectionHeader title="Effects" />
-          <SelectInput
-            label="Drop shadow"
-            testId="select-shadow"
-            value={shadowToken}
-            options={SHADOW_TOKENS}
-            onChange={v => patchCls(replaceTwToken(removeTwToken(cls, 'shadow'), 'shadow', v))}
-          />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <SectionHeader title="Effects" />
+          <FieldWithBinding label="shadow" value={shadowToken as FormulaValue} onChange={v => patchCls(replaceTwToken(removeTwToken(cls, 'shadow'), 'shadow', String(v)))} expectedType="string">
+            <span />
+          </FieldWithBinding>
+        </div>
+        <SelectInput
+          label="Drop shadow"
+          testId="select-shadow"
+          value={shadowToken}
+          options={SHADOW_TOKENS}
+          onChange={v => patchCls(replaceTwToken(removeTwToken(cls, 'shadow'), 'shadow', v))}
+        />
       </div>
 
       {/* ── Typography (text nodes only) ── */}
       {isTextNode && (
         <div style={SECTION_STYLE}>
-          <SectionHeader title="Typography" />
-          <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-            <SelectInput label="Size"   testId="select-text-size"   value={textSize}   options={TEXT_SIZE_TOKENS}   onChange={v => patchCls(replaceTwToken(cls, 'text-', v))} />
-            <SelectInput label="Weight" testId="select-font-weight" value={fontWeight} options={FONT_WEIGHT_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'font-', v))} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+            <SectionHeader title="Typography" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <FieldWithBinding label="fontSize" value={(nodeStyle.fontSize ?? '') as FormulaValue} onChange={v => patchStyle({ fontSize: String(v) })} expectedType="string">
+                <span />
+              </FieldWithBinding>
+              <FieldWithBinding label="fontWeight" value={(nodeStyle.fontWeight ?? '') as FormulaValue} onChange={v => patchStyle({ fontWeight: String(v) })} expectedType="string">
+                <span />
+              </FieldWithBinding>
+              <FieldWithBinding label="lineHeight" value={(nodeStyle.lineHeight ?? '') as FormulaValue} onChange={v => patchStyle({ lineHeight: String(v) })} expectedType="string">
+                <span />
+              </FieldWithBinding>
+            </div>
           </div>
           <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-            <SelectInput label="Leading"  testId="select-leading"  value={leading}  options={LEADING_TOKENS}  onChange={v => patchCls(replaceTwToken(cls, 'leading-', v))} />
-            <SelectInput label="Tracking" testId="select-tracking" value={tracking} options={TRACKING_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'tracking-', v))} />
+            <FieldWithBinding label="textSize" value={textSize as FormulaValue} onChange={v => patchCls(replaceTwToken(cls, 'text-', String(v)))} expectedType="string">
+              <SelectInput label="Size" testId="select-text-size" value={textSize} options={TEXT_SIZE_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'text-', v))} />
+            </FieldWithBinding>
+            <FieldWithBinding label="fontWeightClass" value={fontWeight as FormulaValue} onChange={v => patchCls(replaceTwToken(cls, 'font-', String(v)))} expectedType="string">
+              <SelectInput label="Weight" testId="select-font-weight" value={fontWeight} options={FONT_WEIGHT_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'font-', v))} />
+            </FieldWithBinding>
+          </div>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+            <FieldWithBinding label="leading" value={leading as FormulaValue} onChange={v => patchCls(replaceTwToken(cls, 'leading-', String(v)))} expectedType="string">
+              <SelectInput label="Leading" testId="select-leading" value={leading} options={LEADING_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'leading-', v))} />
+            </FieldWithBinding>
+            <FieldWithBinding label="tracking" value={tracking as FormulaValue} onChange={v => patchCls(replaceTwToken(cls, 'tracking-', String(v)))} expectedType="string">
+              <SelectInput label="Tracking" testId="select-tracking" value={tracking} options={TRACKING_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'tracking-', v))} />
+            </FieldWithBinding>
           </div>
           {/* Text alignment — 4 icon buttons */}
           <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
@@ -1161,32 +1278,58 @@ function DesignTab({ node }: { node: SDUINode }) {
           </div>
           {/* Text decoration & transform */}
           <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-            <SelectInput label="Decoration" value={textDecor} options={TEXT_DECORATION_TOKENS} onChange={v => {
+            <FieldWithBinding label="textDecoration" value={textDecor as FormulaValue} onChange={v => {
               let next = cls;
               TEXT_DECORATION_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-              patchCls(v === 'no-underline' ? next : `${next} ${v}`.trim());
-            }} />
-            <SelectInput label="Transform" value={textTransform} options={TEXT_TRANSFORM_TOKENS} onChange={v => {
+              const val = String(v);
+              patchCls(val === 'no-underline' ? next : `${next} ${val}`.trim());
+            }} expectedType="string">
+              <SelectInput label="Decoration" value={textDecor} options={TEXT_DECORATION_TOKENS} onChange={v => {
+                let next = cls;
+                TEXT_DECORATION_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                patchCls(v === 'no-underline' ? next : `${next} ${v}`.trim());
+              }} />
+            </FieldWithBinding>
+            <FieldWithBinding label="textTransform" value={textTransform as FormulaValue} onChange={v => {
               let next = cls;
               TEXT_TRANSFORM_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-              patchCls(v === 'normal-case' ? next : `${next} ${v}`.trim());
-            }} />
+              const val = String(v);
+              patchCls(val === 'normal-case' ? next : `${next} ${val}`.trim());
+            }} expectedType="string">
+              <SelectInput label="Transform" value={textTransform} options={TEXT_TRANSFORM_TOKENS} onChange={v => {
+                let next = cls;
+                TEXT_TRANSFORM_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                patchCls(v === 'normal-case' ? next : `${next} ${v}`.trim());
+              }} />
+            </FieldWithBinding>
           </div>
-            <FigmaColorPicker
-            label="Color"
-            testId="input-text-color"
-            value={computedTextColor}
-            onChange={(hex, cssVar) => cssVar
-              ? patchColorAsThemeVar('color', 'props.style.color', 'text', cssVar)
-              : patchStyle({ color: hex || '' })
-            }
-          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div style={{ flex: 1 }}>
+              <FigmaColorPicker
+                label="Color"
+                testId="input-text-color"
+                value={computedTextColor}
+                onChange={(hex, cssVar) => cssVar
+                  ? patchColorAsThemeVar('color', 'props.style.color', 'text', cssVar)
+                  : patchStyle({ color: hex || '' })
+                }
+              />
+            </div>
+            <FieldWithBinding label="color" value={(nodeStyle.color ?? '') as FormulaValue} onChange={v => patchStyle({ color: String(v) })}>
+              <span />
+            </FieldWithBinding>
+          </div>
         </div>
       )}
 
       {/* ── Border Radius ── */}
       <div style={SECTION_STYLE}>
-        <SectionHeader title="Border Radius" />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <SectionHeader title="Border Radius" />
+          <FieldWithBinding label="borderRadius" value={(nodeStyle.borderRadius ?? '') as FormulaValue} onChange={v => patchStyle({ borderRadius: String(v) })} expectedType="string">
+            <span />
+          </FieldWithBinding>
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
           {(['tl', 'tr', 'br', 'bl'] as const).map(corner => (
             <SelectInput
@@ -1201,7 +1344,12 @@ function DesignTab({ node }: { node: SDUINode }) {
 
       {/* ── Opacity ── */}
       <div style={SECTION_STYLE}>
-        <SectionHeader title="Opacity" />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+          <SectionHeader title="Opacity" />
+          <FieldWithBinding label="opacity" value={(nodeStyle.opacity ?? '') as FormulaValue} onChange={v => patchStyle({ opacity: String(v) })}>
+            <span />
+          </FieldWithBinding>
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <input
             type="range" min={5} max={100} step={5} value={opacityVal < 5 ? 5 : opacityVal}
@@ -1209,13 +1357,10 @@ function DesignTab({ node }: { node: SDUINode }) {
             onChange={e => {
               const val = parseInt(e.target.value);
               if (val >= 100) {
-                // Full opacity — remove style.opacity so the element is fully opaque
                 patchStyle({ opacity: undefined as unknown as string });
-                // Also clean up any legacy className opacity token
                 const cleaned = removeTwToken(cls, 'opacity-');
                 if (cleaned !== cls) patchCls(cleaned);
               } else {
-                // Store as a fractional number (0–1) in inline style
                 patchStyle({ opacity: String(val / 100) });
               }
             }}
@@ -1242,6 +1387,253 @@ function DesignTab({ node }: { node: SDUINode }) {
 
       {/* ── Grid overlay toggle ── */}
       <GridOverlayPanel />
+
+      {/* ── Visibility ── */}
+      <VisibilityInDesign node={node} />
+
+      {/* ── Disable (interactive nodes only) ── */}
+      <DisableInDesign node={node} />
+
+      {/* ── Repeat / List ── */}
+      <RepeatInDesign node={node} />
+
+      {/* ── Validation (form input nodes only) ── */}
+      <ValidationInDesign node={node} />
+
+      {/* ── Interactions (workflow triggers) ── */}
+      <InteractionsInDesign node={node} />
+    </div>
+  );
+}
+
+// ─── Design-tab inline sections (moved from Logic) ────────────────────────────
+
+const INTERACTIVE_TYPES = new Set(['Button', 'Input', 'InputField', 'Select', 'SelectTrigger', 'Pressable', 'Checkbox', 'Switch', 'Radio', 'TextArea']);
+const FORM_INPUT_TYPES = new Set(['Input', 'InputField', 'Select', 'TextArea', 'Checkbox', 'Radio', 'Switch']);
+
+const DESIGN_INLINE_STYLE: React.CSSProperties = {
+  borderTop: '1px solid #1f2937',
+  padding: '8px 12px',
+};
+
+const DESIGN_LABEL: React.CSSProperties = {
+  fontSize: 10,
+  color: '#6b7280',
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.05em',
+  display: 'block',
+  marginBottom: 4,
+};
+
+function VisibilityInDesign({ node }: { node: SDUINode }) {
+  const store = useBuilderStore();
+  const nodeId = (node as { id?: string }).id ?? '';
+  const condition = (node as { condition?: object }).condition ?? null;
+  const hasCondition = !!condition;
+
+  return (
+    <div style={DESIGN_INLINE_STYLE}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: hasCondition ? 6 : 0 }}>
+        <span style={DESIGN_LABEL}>Visibility</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {hasCondition && (
+            <button
+              onClick={() => store.patchCondition(nodeId, null)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 10 }}
+            >
+              Clear
+            </button>
+          )}
+          <span style={{ fontSize: 10, color: hasCondition ? '#60a5fa' : '#4b5563' }}>
+            {hasCondition ? 'conditional' : 'always visible'}
+          </span>
+        </div>
+      </div>
+      <ExprBuilder
+        value={condition}
+        onChange={v => store.patchCondition(nodeId, typeof v === 'string' ? null : v)}
+      />
+    </div>
+  );
+}
+
+function DisableInDesign({ node }: { node: SDUINode }) {
+  const store = useBuilderStore();
+  const nodeId = (node as { id?: string }).id ?? '';
+  if (!INTERACTIVE_TYPES.has(node.type as string)) return null;
+  const disabled = (node.props as Record<string, unknown> | undefined)?.disabled;
+  const isDisabled = !!disabled;
+
+  return (
+    <div style={{ ...DESIGN_INLINE_STYLE, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <span style={DESIGN_LABEL}>Disabled</span>
+      <button
+        data-testid="design-disable-toggle"
+        onClick={() => store.patchProp(nodeId, 'props.disabled', isDisabled ? undefined : true)}
+        style={{ width: 32, height: 18, borderRadius: 9, background: isDisabled ? '#3b82f6' : '#374151', border: 'none', cursor: 'pointer', position: 'relative' }}
+      >
+        <span style={{ position: 'absolute', top: 2, left: isDisabled ? 16 : 2, width: 14, height: 14, borderRadius: '50%', background: '#fff' }} />
+      </button>
+    </div>
+  );
+}
+
+function RepeatInDesign({ node }: { node: SDUINode }) {
+  const store = useBuilderStore();
+  const nodeId = (node as { id?: string }).id ?? '';
+  const mapPath: string = (node.map as string | undefined) ?? '';
+  const keyField: string = (node.key as string | undefined) ?? '';
+  const hasMap = !!mapPath;
+
+  return (
+    <div style={DESIGN_INLINE_STYLE}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <span style={DESIGN_LABEL}>Repeat / List</span>
+        {hasMap && (
+          <button onClick={() => store.patchMap(nodeId, null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 10 }}>Clear</button>
+        )}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <span style={{ fontSize: 9, color: '#6b7280' }}>Data path</span>
+        <PathPicker
+          value={mapPath}
+          onChange={path => store.patchMap(nodeId, path || null, keyField)}
+          placeholder="store.products"
+        />
+        {hasMap && (
+          <>
+            <span style={{ fontSize: 9, color: '#6b7280', marginTop: 4 }}>Key field (optional)</span>
+            <input
+              value={keyField}
+              onChange={e => store.patchMap(nodeId, mapPath, e.target.value)}
+              placeholder="id"
+              style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 6px', outline: 'none' }}
+            />
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ValidationInDesign({ node }: { node: SDUINode }) {
+  const store = useBuilderStore();
+  const nodeId = (node as { id?: string }).id ?? '';
+  if (!FORM_INPUT_TYPES.has(node.type as string)) return null;
+
+  const existing = (node as { _validation?: { rules: Array<{ type: string; value: string; message: string }> } })._validation;
+  const [rules, setRules] = useState(existing?.rules ?? []);
+
+  const saveRules = (next: typeof rules) => {
+    setRules(next);
+    store.patchNodeField(nodeId, '_validation', next.length > 0 ? { rules: next } : null);
+  };
+
+  return (
+    <div style={DESIGN_INLINE_STYLE}>
+      <span style={DESIGN_LABEL}>Validation</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {rules.map((r, i) => (
+          <div key={i} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            <select value={r.type} onChange={e => saveRules(rules.map((x, xi) => xi === i ? { ...x, type: e.target.value } : x))}
+              style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 10, padding: '2px 4px' }}>
+              <option value="required">required</option>
+              <option value="minLength">minLength</option>
+              <option value="maxLength">maxLength</option>
+              <option value="pattern">pattern</option>
+              <option value="equalsField">equalsField</option>
+            </select>
+            <input value={r.value} onChange={e => saveRules(rules.map((x, xi) => xi === i ? { ...x, value: e.target.value } : x))}
+              placeholder="value" style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 10, padding: '2px 4px', flex: 1 }} />
+            <input value={r.message} onChange={e => saveRules(rules.map((x, xi) => xi === i ? { ...x, message: e.target.value } : x))}
+              placeholder="error msg" style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 10, padding: '2px 4px', flex: 1 }} />
+            <button onClick={() => saveRules(rules.filter((_, xi) => xi !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 12 }}>×</button>
+          </div>
+        ))}
+        <button onClick={() => saveRules([...rules, { type: 'required', value: '', message: 'Required' }])}
+          style={{ alignSelf: 'flex-start', background: 'none', border: '1px dashed #374151', borderRadius: 4, color: '#6b7280', fontSize: 10, padding: '2px 7px', cursor: 'pointer' }}>
+          + Add rule
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Interactions (workflow picker per event) ─────────────────────────────────
+
+const INTERACTION_EVENTS = ['click', 'change', 'submit', 'mount'] as const;
+type InteractionEvent = typeof INTERACTION_EVENTS[number];
+
+function InteractionsInDesign({ node }: { node: SDUINode }) {
+  const store = useBuilderStore();
+  const nodeId = (node as { id?: string }).id ?? '';
+  const pageWorkflows = useBuilderStore(s => s.pageWorkflows);
+  const workflowNames = Object.keys(pageWorkflows);
+
+  const nodeActions = (node.actions ?? {}) as Record<string, unknown>;
+
+  const getWorkflow = (event: InteractionEvent): string => {
+    const action = nodeActions[event] as { type?: string; workflow?: string } | undefined;
+    return action?.type === 'runWorkflow' ? (action.workflow ?? '') : '';
+  };
+
+  const setWorkflow = (event: InteractionEvent, workflowName: string) => {
+    const newActions = { ...nodeActions };
+    if (workflowName) {
+      newActions[event] = { type: 'runWorkflow', workflow: workflowName };
+    } else {
+      delete newActions[event];
+    }
+    store.patchNodeField(nodeId, 'actions', Object.keys(newActions).length ? newActions : null);
+    store._pushHistory();
+  };
+
+  return (
+    <div
+      data-testid="interactions-section"
+      style={{ borderTop: '1px solid #1f2937', padding: '8px 12px' }}
+    >
+      <span style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 8 }}>
+        Interactions
+      </span>
+      {INTERACTION_EVENTS.map(event => {
+        const currentWorkflow = getWorkflow(event);
+        return (
+          <div key={event} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            <span style={{ fontSize: 10, color: '#9ca3af', width: 50, flexShrink: 0, textTransform: 'capitalize' }}>{event}</span>
+            <select
+              data-testid={`interaction-picker-${event}`}
+              value={currentWorkflow}
+              onChange={e => setWorkflow(event, e.target.value)}
+              style={{
+                flex: 1,
+                background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
+                color: currentWorkflow ? '#fbbf24' : '#4b5563',
+                fontSize: 10, padding: '3px 6px', cursor: 'pointer', outline: 'none',
+              }}
+            >
+              <option value="">— no workflow —</option>
+              {workflowNames.map(name => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+            {currentWorkflow && (
+              <button
+                data-testid={`interaction-clear-${event}`}
+                onClick={() => setWorkflow(event, '')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 13, padding: '0 2px' }}
+              >
+                ×
+              </button>
+            )}
+          </div>
+        );
+      })}
+      {workflowNames.length === 0 && (
+        <div style={{ fontSize: 10, color: '#4b5563', fontStyle: 'italic', marginTop: 4 }}>
+          No workflows yet — add them in the Logic tab.
+        </div>
+      )}
     </div>
   );
 }
@@ -1283,11 +1675,17 @@ function GridOverlayPanel() {
 
 // ─── Props Tab ────────────────────────────────────────────────────────────────
 
+// Props managed by the Design tab — hide from raw Props tab to avoid confusion
+const DESIGN_MANAGED_PROPS = new Set(['className', 'style']);
+// Props managed by Design tab for specific node types
+const IMAGE_MANAGED_PROPS = new Set(['width', 'height', 'src', 'alt', 'fill', 'objectFit']);
+
 function PropsTab({ node }: { node: SDUINode }) {
   const store = useBuilderStore();
   const nodeId = (node as { id?: string }).id ?? '';
   const props = (node.props ?? {}) as Record<string, unknown>;
   const [localProps, setLocalProps] = useState<Record<string, string>>({});
+  const isImageNode = node.type === 'NextImage' || node.type === 'Image';
 
   useEffect(() => {
     const flat: Record<string, string> = {};
@@ -1303,9 +1701,18 @@ function PropsTab({ node }: { node: SDUINode }) {
     store._pushHistory();
   };
 
+  const filteredEntries = Object.entries(localProps).filter(([key]) => {
+    if (DESIGN_MANAGED_PROPS.has(key)) return false;
+    if (isImageNode && IMAGE_MANAGED_PROPS.has(key)) return false;
+    return true;
+  });
+
   return (
     <div style={{ flex: 1, overflow: 'auto', padding: 12 }}>
-      {Object.entries(localProps).map(([key, val]) => (
+      <div style={{ fontSize: 10, color: '#4b5563', marginBottom: 10, fontStyle: 'italic' }}>
+        className and layout props are managed in the Design tab.
+      </div>
+      {filteredEntries.map(([key, val]) => (
         <div key={key} style={{ marginBottom: 8 }}>
           <span style={{ fontSize: 10, color: '#6b7280', display: 'block', marginBottom: 2 }}>{key}</span>
           <input
@@ -1318,7 +1725,11 @@ function PropsTab({ node }: { node: SDUINode }) {
           />
         </div>
       ))}
-      {Object.keys(localProps).length === 0 && <div style={{ color: '#4b5563', fontSize: 12 }}>No props</div>}
+      {filteredEntries.length === 0 && (
+        <div style={{ color: '#4b5563', fontSize: 12 }}>
+          No additional props — use the Design tab to adjust layout and style.
+        </div>
+      )}
     </div>
   );
 }
@@ -1337,9 +1748,122 @@ function JsonTab({ node }: { node: SDUINode }) {
 
 // ─── Main Panel ───────────────────────────────────────────────────────────────
 
+// ─── Preview Data Editor ──────────────────────────────────────────────────────
+
+// Stable empty object — avoids creating a new {} reference on every render for pages without previewData
+const EMPTY_PREVIEW_DATA: Record<string, unknown> = {};
+
+function PreviewDataEditor() {
+  // Use targeted selectors to avoid re-rendering on every store change
+  const setCurrentPagePreviewData = useBuilderStore(s => s.setCurrentPagePreviewData);
+  const appPreviewData = useBuilderStore(s => s.appPreviewData);
+  const pageData = useBuilderStore(s => s.pages.find(p => p.id === s.currentPageId)?.previewData ?? EMPTY_PREVIEW_DATA);
+
+  // Keep a ref for appPreviewData so the effect closure always has the latest without it being a dep
+  const appPreviewDataRef = useRef(appPreviewData);
+  appPreviewDataRef.current = appPreviewData;
+
+  // Show merged data as starting point when page data is empty so user sees all applied data
+  const initialDraft = Object.keys(pageData).length > 0
+    ? pageData
+    : { ...appPreviewData, ...pageData };
+
+  const [draft, setDraft] = useState(() => JSON.stringify(initialDraft, null, 2));
+  const [error, setError] = useState<string | null>(null);
+  const prevPageDataRef = useRef<Record<string, unknown>>(pageData);
+
+  // Sync external store changes into the draft only when pageData identity changes.
+  // appPreviewData is intentionally not in deps — we read it via ref to avoid excess re-runs.
+  useEffect(() => {
+    if (prevPageDataRef.current !== pageData) {
+      prevPageDataRef.current = pageData;
+      const newDraft = Object.keys(pageData).length > 0
+        ? pageData
+        : { ...appPreviewDataRef.current, ...pageData };
+      setDraft(JSON.stringify(newDraft, null, 2));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageData]);
+
+  const handleSave = useCallback(() => {
+    try {
+      const parsed = JSON.parse(draft) as Record<string, unknown>;
+      setError(null);
+      setCurrentPagePreviewData(parsed);
+    } catch {
+      setError('Invalid JSON');
+    }
+  }, [draft, setCurrentPagePreviewData]);
+
+  const appKeyCount = Object.keys(appPreviewData).length;
+  const pageKeyCount = Object.keys(pageData).length;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: 12, gap: 8, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: '#a78bfa', letterSpacing: '0.05em' }}>PREVIEW DATA</span>
+        <button
+          data-testid="preview-data-save"
+          onClick={handleSave}
+          style={{ padding: '3px 10px', background: '#7c3aed', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, cursor: 'pointer' }}
+        >
+          Apply
+        </button>
+      </div>
+      {/* Badge showing app vs page key counts */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 10, background: '#1e1b4b', color: '#a78bfa', padding: '2px 6px', borderRadius: 4, border: '1px solid #4c1d95' }}>
+          App: {appKeyCount} keys
+        </span>
+        <span style={{ fontSize: 10, background: '#1f2937', color: '#9ca3af', padding: '2px 6px', borderRadius: 4, border: '1px solid #374151' }}>
+          Page override: {pageKeyCount} keys
+        </span>
+      </div>
+      <div style={{ fontSize: 10, color: '#6b7280', lineHeight: 1.5 }}>
+        Editing saves page-level overrides. App-level data is set in <strong style={{ color: '#9ca3af' }}>App &rarr; Preview Data</strong>.
+      </div>
+      <textarea
+        data-testid="preview-data-editor"
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={handleSave}
+        spellCheck={false}
+        style={{
+          flex: 1,
+          minHeight: 200,
+          background: '#111827',
+          color: '#e5e7eb',
+          border: `1px solid ${error ? '#f87171' : '#374151'}`,
+          borderRadius: 6,
+          padding: 10,
+          fontSize: 11,
+          fontFamily: 'monospace',
+          resize: 'vertical',
+          outline: 'none',
+          lineHeight: 1.6,
+        }}
+      />
+      {error && <span style={{ fontSize: 11, color: '#f87171' }}>{error}</span>}
+    </div>
+  );
+}
+
 export default function PanelRight() {
-  const [tab, setTab] = useState<'design' | 'props' | 'json'>('design');
-  const { selectedIds, pageNodes } = useBuilderStore();
+  const [tab, setTab] = useState<'design' | 'theme'>('design');
+  const { selectedIds, pageNodes, activePreviewStates } = useBuilderStore();
+  const activePreviewState = activePreviewStates?.[0] ?? 'normal';
+
+  // Listen for external tab-switch requests (design only now; logic/data moved to left panel)
+  useEffect(() => {
+    const handleDesign = () => setTab('design');
+    const handleTheme  = () => setTab('theme');
+    window.addEventListener('builder:open-design-tab', handleDesign);
+    window.addEventListener('builder:open-theme-tab', handleTheme);
+    return () => {
+      window.removeEventListener('builder:open-design-tab', handleDesign);
+      window.removeEventListener('builder:open-theme-tab', handleTheme);
+    };
+  }, []);
 
   const selectedNode = useMemo(() => {
     if (selectedIds.length !== 1) return null;
@@ -1360,7 +1884,7 @@ export default function PanelRight() {
     <div data-testid="panel-right" style={PANEL_STYLE}>
       {/* Tab bar */}
       <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-        {(['design', 'props', 'json'] as const).map(t => (
+        {(['design', 'theme'] as const).map(t => (
           <button
             key={t}
             data-testid={`tab-right-${t}`}
@@ -1372,20 +1896,24 @@ export default function PanelRight() {
         ))}
       </div>
 
-      {/* Multi-select: show align/distribute panel instead of single-node design panel */}
-      {selectedIds.length > 1 && (
-        <AlignDistributePanel ids={selectedIds} />
-      )}
+      {tab === 'theme' && <ThemePanel />}
 
-      {!selectedNode && selectedIds.length <= 1 && (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4b5563', fontSize: 12, textAlign: 'center', padding: 16 }}>
-          Select a node to edit its properties
-        </div>
-      )}
+      {tab === 'design' && (
+        <>
+          {/* Multi-select: show align/distribute panel instead of single-node design panel */}
+          {selectedIds.length > 1 && (
+            <AlignDistributePanel ids={selectedIds} />
+          )}
 
-      {selectedNode && tab === 'design' && <DesignTab node={selectedNode} />}
-      {selectedNode && tab === 'props'  && <PropsTab  node={selectedNode} />}
-      {selectedNode && tab === 'json'   && <JsonTab   node={selectedNode} />}
+          {!selectedNode && selectedIds.length <= 1 && (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4b5563', fontSize: 12, textAlign: 'center', padding: 16 }}>
+              Select a node to edit its properties
+            </div>
+          )}
+
+          {selectedNode && <DesignTab node={selectedNode} />}
+        </>
+      )}
     </div>
   );
 }

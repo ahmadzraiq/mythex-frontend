@@ -36,11 +36,7 @@
                     "size": 16,
                     "className": "!text-white"
                   },
-                  "condition": {
-                    "var": [
-                      "checkout.order.shippingAddress.streetLine1"
-                    ]
-                  }
+                  "condition": "{{checkout.order.shippingAddress.streetLine1}}"
                 },
                 {
                   "type": "Text",
@@ -48,27 +44,7 @@
                     "className": "font-semibold text-sm !text-white"
                   },
                   "text": "2",
-                  "condition": {
-                    "and": [
-                      {
-                        "!": [
-                          {
-                            "var": [
-                              "checkout.order.shippingAddress.streetLine1"
-                            ]
-                          }
-                        ]
-                      },
-                      {
-                        "==": [
-                          {
-                            "var": "checkout.step"
-                          },
-                          "shipping"
-                        ]
-                      }
-                    ]
-                  }
+                  "condition": "!{{checkout.order.shippingAddress.streetLine1}} && {{checkout.step}} === 'shipping'"
                 },
                 {
                   "type": "Text",
@@ -76,27 +52,7 @@
                     "className": "font-semibold text-sm !text-[var(--theme-muted-foreground)]"
                   },
                   "text": "2",
-                  "condition": {
-                    "and": [
-                      {
-                        "!": [
-                          {
-                            "var": [
-                              "checkout.order.shippingAddress.streetLine1"
-                            ]
-                          }
-                        ]
-                      },
-                      {
-                        "!=": [
-                          {
-                            "var": "checkout.step"
-                          },
-                          "shipping"
-                        ]
-                      }
-                    ]
-                  }
+                  "condition": "!{{checkout.order.shippingAddress.streetLine1}} && {{checkout.step}} !== 'shipping'"
                 }
               ]
             },
@@ -122,14 +78,7 @@
                 "size": 16,
                 "className": "!text-[var(--theme-muted-foreground)]"
               },
-              "condition": {
-                "==": [
-                  {
-                    "var": "checkout.step"
-                  },
-                  "shipping"
-                ]
-              }
+              "condition": "{{checkout.step}} === 'shipping'"
             },
             {
               "type": "NavIcon",
@@ -138,14 +87,7 @@
                 "size": 16,
                 "className": "!text-[var(--theme-muted-foreground)]"
               },
-              "condition": {
-                "!=": [
-                  {
-                    "var": "checkout.step"
-                  },
-                  "shipping"
-                ]
-              }
+              "condition": "{{checkout.step}} !== 'shipping'"
             }
           ]
         }
@@ -156,14 +98,7 @@
       "props": {
         "className": "pb-6"
       },
-      "condition": {
-        "==": [
-          {
-            "var": "checkout.step"
-          },
-          "shipping"
-        ]
-      },
+      "condition": "{{checkout.step}} === 'shipping'",
       "children": [
         {
           "type": "Box",
@@ -294,11 +229,7 @@
                   "props": {
                     "className": "min-h-[20px]"
                   },
-                  "condition": {
-                    "var": [
-                      "screens.checkout.errors.form.streetLine1"
-                    ]
-                  },
+                  "condition": "{{screens.checkout.errors.form.streetLine1}}",
                   "children": [
                     {
                       "type": "Text",
@@ -578,11 +509,7 @@
                       "props": {
                         "className": "min-h-[20px]"
                       },
-                      "condition": {
-                        "var": [
-                          "screens.checkout.errors.form.countryCode"
-                        ]
-                      },
+                      "condition": "{{screens.checkout.errors.form.countryCode}}",
                       "children": [
                         {
                           "type": "Text",
@@ -649,22 +576,7 @@
                 {
                   "type": "Box",
                   "props": {
-                    "className": {
-                      "expr": {
-                        "cat": [
-                          "w-4 h-4 rounded border flex items-center justify-center ",
-                          {
-                            "if": [
-                              {
-                                "var": "checkout.useSameForBilling"
-                              },
-                              "bg-[var(--theme-shop-button)] border-[var(--theme-shop-button)]",
-                              "border-[var(--theme-border)]"
-                            ]
-                          }
-                        ]
-                      }
-                    }
+                    "className": "w-4 h-4 rounded border flex items-center justify-center {{checkout.useSameForBilling ? 'bg-[var(--theme-shop-button)] border-[var(--theme-shop-button)]' : 'border-[var(--theme-border)]'}}"
                   },
                   "children": [
                     {
@@ -672,9 +584,7 @@
                       "props": {
                         "className": "text-white text-xs font-bold"
                       },
-                      "condition": {
-                        "var": "checkout.useSameForBilling"
-                      },
+                      "condition": "{{checkout.useSameForBilling}}",
                       "text": "✓"
                     }
                   ]
