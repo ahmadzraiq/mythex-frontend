@@ -19,9 +19,9 @@
           "children": [
             {
               "type": "NextImage",
-              "condition": "{{product.currentImage}}",
+              "condition": { "expr": "at({{product.assets}}, {{product.imageIndex}} || 0)" },
               "props": {
-                "src": "{{product.currentImage.source}}",
+                "src": { "expr": "getKeyValue(at({{product.assets}}, {{product.imageIndex}} || 0), 'source')" },
                 "alt": "{{product.name}}",
                 "fill": true,
                 "className": "object-cover",

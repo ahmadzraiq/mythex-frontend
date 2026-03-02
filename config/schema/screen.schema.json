@@ -43,7 +43,7 @@
         },
         "text": { "oneOf": [{ "type": "string" }, { "type": "object" }] },
         "condition": { "oneOf": [{ "type": "string" }, { "type": "object" }] },
-        "map": { "type": "string" },
+        "map": { "oneOf": [{ "type": "string" }, { "type": "object", "properties": { "expr": {} }, "required": ["expr"] }] },
         "key": { "type": "string" },
         "actions": { "type": "object" },
         "$ref": { "type": "string", "pattern": "^fragments/" },

@@ -4,7 +4,7 @@
 
 import { CONVENTIONS } from '../../conventions';
 import { setNestedValue } from '../../nested-utils';
-import { interpolateUrl } from '../resolve-value';
+import { interpolateUrl, resolveValue } from '../resolve-value';
 import type { ActionDef, ActionHandlerContext } from './types';
 
 export const navigateHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
@@ -12,7 +12,7 @@ export const navigateHandler: (ctx: ActionHandlerContext) => (actionDef: ActionD
     const router = ctx.router;
     const routes = ctx.routes ?? [];
     const payload = ctx.payload ?? actionDef;
-    const pl = payload as { path?: string; routeConfig?: string; slug?: unknown };
+    const pl = payload as { path?: string | Record<string, unknown>; routeConfig?: string; slug?: unknown };
 
     if (!router) return;
 
@@ -36,8 +36,13 @@ export const navigateHandler: (ctx: ActionHandlerContext) => (actionDef: ActionD
         router.push(`${targetRoute.path}/${slug}`);
       }
     } else if ('path' in pl && pl.path) {
-      const path = String(pl.path);
-      const interpolated = interpolateUrl(path, ctx.get, ctx.scope);
+      const fullState = ctx.getFullMergedState();
+      const stateWithScope = ctx.scope ? { ...fullState, ...ctx.scope } : fullState;
+      const resolvedPath = typeof pl.path === 'object'
+        ? resolveValue(pl.path, ctx.get, ctx.scope, stateWithScope)
+        : pl.path;
+      const path = String(resolvedPath ?? '');
+      const interpolated = path.includes('{{') ? interpolateUrl(path, ctx.get, ctx.scope) : path;
       const qIdx = interpolated.indexOf('?');
       if (qIdx >= 0 && ctx.searchParams) {
         const basePath = interpolated.slice(0, qIdx);

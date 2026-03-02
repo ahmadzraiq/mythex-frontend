@@ -27,6 +27,8 @@ alwaysApply: true
 
 **When adding new computed logic:** Add a generic op with configurable params (field paths, keys, limits) in `computed-runner.ts`, then use it in `store.json`. Never hardcode app-specific field names in the runner.
 
+**One-off action values:** For derived values used only in a single action (e.g. checkout step sync), use inline `{ "expr": "..." }` or `{ "var": "path" }` in the action config—do not add to `store.json` computed. Use `store.json` computed only for values reused across multiple places (text, conditions, several actions).
+
 ---
 
 ## searchParamSync — Config-Driven, No Hardcoding in Page

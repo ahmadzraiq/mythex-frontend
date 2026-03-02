@@ -10,7 +10,7 @@
       "props": {
         "className": "flex items-center justify-center h-9 w-9 rounded-md border border-[var(--theme-border)] bg-[var(--theme-hero-bg)] cursor-not-allowed pointer-events-none flex-shrink-0"
       },
-      "condition": "{{collectionCurrentPage}} <= 1",
+      "condition": "max(1, floor(({{collectionSkip}} || 0) / ({{collectionPageSize}} || 12) + 1)) <= 1",
       "children": [
         {
           "type": "NavIcon",
@@ -27,7 +27,7 @@
       "props": {
         "className": "flex items-center justify-center h-9 w-9 rounded-md border border-[var(--theme-border)] bg-[var(--theme-content-bg)] hover:bg-[var(--theme-hero-bg)] transition-colors flex-shrink-0"
       },
-      "condition": "{{collectionCurrentPage}} > 1",
+      "condition": "max(1, floor(({{collectionSkip}} || 0) / ({{collectionPageSize}} || 12) + 1)) > 1",
       "children": [
         {
           "type": "NavIcon",
@@ -53,7 +53,9 @@
             {
               "action": "navigate",
               "payload": {
-                "path": "{{route.path}}?page={{collectionPrevPage}}"
+                "path": {
+                  "expr": "cat({{route.path}}, '?page=', max(1, max(1, floor(({{collectionSkip}} || 0) / ({{collectionPageSize}} || 12) + 1)) - 1))"
+                }
               }
             }
           ]
@@ -65,7 +67,9 @@
       "props": {
         "className": "contents"
       },
-      "map": "collectionPaginationPages",
+      "map": {
+        "expr": "paginationPages({{collection.search.totalItems}} || 0, {{collectionSkip}} || 0, {{collectionPageSize}} || 12)"
+      },
       "children": [
         {
           "type": "Text",
@@ -80,7 +84,7 @@
           "props": {
             "className": "flex items-center justify-center h-9 w-9 rounded-md border border-[var(--theme-shop-button)] bg-[var(--theme-shop-button)] text-white pointer-events-none flex-shrink-0"
           },
-          "condition": "{{$item}} !== '...' && {{$item}} === {{collectionCurrentPage}}",
+          "condition": "{{$item}} !== '...' && {{$item}} === max(1, floor(({{collectionSkip}} || 0) / ({{collectionPageSize}} || 12) + 1))",
           "children": [
             {
               "type": "Text",
@@ -96,7 +100,7 @@
           "props": {
             "className": "flex items-center justify-center h-9 w-9 rounded-md border border-[var(--theme-border)] bg-[var(--theme-content-bg)] hover:bg-[var(--theme-hero-bg)] transition-colors flex-shrink-0"
           },
-          "condition": "{{$item}} !== '...' && {{$item}} !== {{collectionCurrentPage}}",
+          "condition": "{{$item}} !== '...' && {{$item}} !== max(1, floor(({{collectionSkip}} || 0) / ({{collectionPageSize}} || 12) + 1))",
           "children": [
             {
               "type": "Text",
@@ -132,7 +136,7 @@
       "props": {
         "className": "flex items-center justify-center h-9 w-9 rounded-md border border-[var(--theme-border)] bg-[var(--theme-hero-bg)] cursor-not-allowed pointer-events-none flex-shrink-0"
       },
-      "condition": "{{collectionCurrentPage}} >= {{collectionTotalPages}}",
+      "condition": "max(1, floor(({{collectionSkip}} || 0) / ({{collectionPageSize}} || 12) + 1)) >= max(1, ceil(({{collection.search.totalItems}} || 0) / ({{collectionPageSize}} || 12)))",
       "children": [
         {
           "type": "NavIcon",
@@ -149,7 +153,7 @@
       "props": {
         "className": "flex items-center justify-center h-9 w-9 rounded-md border border-[var(--theme-border)] bg-[var(--theme-content-bg)] hover:bg-[var(--theme-hero-bg)] transition-colors flex-shrink-0"
       },
-      "condition": "{{collectionCurrentPage}} < {{collectionTotalPages}}",
+      "condition": "max(1, floor(({{collectionSkip}} || 0) / ({{collectionPageSize}} || 12) + 1)) < max(1, ceil(({{collection.search.totalItems}} || 0) / ({{collectionPageSize}} || 12)))",
       "children": [
         {
           "type": "NavIcon",
@@ -175,7 +179,9 @@
             {
               "action": "navigate",
               "payload": {
-                "path": "{{route.path}}?page={{collectionNextPage}}"
+                "path": {
+                  "expr": "cat({{route.path}}, '?page=', min(max(1, ceil(({{collection.search.totalItems}} || 0) / ({{collectionPageSize}} || 12))), max(1, floor(({{collectionSkip}} || 0) / ({{collectionPageSize}} || 12) + 1)) + 1))"
+                }
               }
             }
           ]

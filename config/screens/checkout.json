@@ -620,7 +620,7 @@
                                     "props": {
                                       "className": "font-medium text-[var(--theme-foreground)]"
                                     },
-                                    "text": "{{checkout.selectedPaymentMethodDisplay}}"
+                                    "text": { "expr": "lookupInArray({{checkout.paymentMethods}} || [], 'code', {{checkout.selectedPaymentMethodCode}} || '', 'name')" }
                                   }
                                 ]
                               },

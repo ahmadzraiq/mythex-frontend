@@ -7,7 +7,7 @@
     {
       "type": "Pressable",
       "props": {
-        "className": "{{checkout.paymentStepHeaderClassName}}"
+        "className": { "expr": "'flex flex-row items-center justify-between w-full py-4 ' + (({{checkout.order.shippingLines.length}} || 0) > 0 || {{checkout.selectedPaymentMethodCode}} ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')" }
       },
       "children": [
         {
@@ -19,7 +19,7 @@
             {
               "type": "Box",
               "props": {
-                "className": "{{checkout.paymentStepIndicatorClassName}}"
+                "className": { "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + ({{checkout.selectedPaymentMethodCode}} ? 'bg-green-500 !text-white' : ({{checkout.step}} === 'payment' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]'))" }
               },
               "children": [
                 {

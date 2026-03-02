@@ -16,12 +16,12 @@
         },
         {
           "type": "Text",
-          "condition": "{{product.selectedVariant}}",
+          "condition": { "expr": "findItemById({{product.variants}}, findItemByOptionsMatch({{product.variants}}, {{product.optionGroups}}, {{product.selectedOptions}}))" },
           "props": {
             "className": "text-2xl font-bold mt-2"
           },
           "text": {
-            "expr": "formatCurrency({{product.selectedVariant.priceWithTax}} / 100, {{cart.currencyCode}} || 'USD')"
+            "expr": "formatCurrency(getKeyValue(findItemById({{product.variants}}, findItemByOptionsMatch({{product.variants}}, {{product.optionGroups}}, {{product.selectedOptions}})), 'priceWithTax') / 100, {{cart.currencyCode}} || 'USD')"
           }
         }
       ]
@@ -116,11 +116,11 @@
     },
     {
       "type": "Box",
-      "condition": "{{product.selectedVariant}}",
+      "condition": { "expr": "findItemById({{product.variants}}, findItemByOptionsMatch({{product.variants}}, {{product.optionGroups}}, {{product.selectedOptions}}))" },
       "children": [
         {
           "type": "Text",
-          "condition": "{{product.selectedVariant.stockLevel}} !== 'OUT_OF_STOCK'",
+          "condition": { "expr": "getKeyValue(findItemById({{product.variants}}, findItemByOptionsMatch({{product.variants}}, {{product.optionGroups}}, {{product.selectedOptions}})), 'stockLevel') !== 'OUT_OF_STOCK'" },
           "props": {
             "className": "text-sm text-green-600 font-medium"
           },
@@ -128,7 +128,7 @@
         },
         {
           "type": "Text",
-          "condition": "{{product.selectedVariant.stockLevel}} === 'OUT_OF_STOCK'",
+          "condition": { "expr": "getKeyValue(findItemById({{product.variants}}, findItemByOptionsMatch({{product.variants}}, {{product.optionGroups}}, {{product.selectedOptions}})), 'stockLevel') === 'OUT_OF_STOCK'" },
           "props": {
             "className": "text-sm text-red-600 font-medium"
           },
@@ -144,7 +144,7 @@
       "children": [
         {
           "type": "Pressable",
-          "condition": "{{product.selectedVariant}} && {{product.selectedVariant.stockLevel}} !== 'OUT_OF_STOCK'",
+          "condition": { "expr": "findItemById({{product.variants}}, findItemByOptionsMatch({{product.variants}}, {{product.optionGroups}}, {{product.selectedOptions}})) && getKeyValue(findItemById({{product.variants}}, findItemByOptionsMatch({{product.variants}}, {{product.optionGroups}}, {{product.selectedOptions}})), 'stockLevel') !== 'OUT_OF_STOCK'" },
           "props": {
             "className": "w-full !bg-[var(--theme-shop-button)] hover:!bg-[var(--theme-shop-buttonHover)] !text-white flex flex-row items-center justify-center py-3 rounded-md"
           },
@@ -165,7 +165,7 @@
         },
         {
           "type": "Pressable",
-          "condition": "!{{product.selectedVariant}} || {{product.selectedVariant.stockLevel}} === 'OUT_OF_STOCK'",
+          "condition": { "expr": "!findItemById({{product.variants}}, findItemByOptionsMatch({{product.variants}}, {{product.optionGroups}}, {{product.selectedOptions}})) || getKeyValue(findItemById({{product.variants}}, findItemByOptionsMatch({{product.variants}}, {{product.optionGroups}}, {{product.selectedOptions}})), 'stockLevel') === 'OUT_OF_STOCK'" },
           "props": {
             "className": "w-full !bg-[var(--theme-border)] !text-[var(--theme-muted-foreground)] cursor-not-allowed flex flex-row items-center justify-center py-3 rounded-md",
             "disabled": true
@@ -177,7 +177,7 @@
                 "className": "text-[var(--theme-muted-foreground)]"
               },
               "text": {
-                "expr": "!{{product.selectedVariant}} ? 'Select Options' : 'Out of Stock'"
+                "expr": "!findItemById({{product.variants}}, findItemByOptionsMatch({{product.variants}}, {{product.optionGroups}}, {{product.selectedOptions}})) ? 'Select Options' : 'Out of Stock'"
               }
             }
           ]
@@ -186,14 +186,14 @@
     },
     {
       "type": "Box",
-      "condition": "{{product.selectedVariant}} && {{product.selectedVariant.sku}}",
+      "condition": { "expr": "findItemById({{product.variants}}, findItemByOptionsMatch({{product.variants}}, {{product.optionGroups}}, {{product.selectedOptions}})) && getKeyValue(findItemById({{product.variants}}, findItemByOptionsMatch({{product.variants}}, {{product.optionGroups}}, {{product.selectedOptions}})), 'sku')" },
       "children": [
         {
           "type": "Text",
           "props": {
             "className": "text-xs text-[var(--theme-muted-foreground)]"
           },
-          "text": "SKU: {{product.selectedVariant.sku}}"
+          "text": { "expr": "'SKU: ' + getKeyValue(findItemById({{product.variants}}, findItemByOptionsMatch({{product.variants}}, {{product.optionGroups}}, {{product.selectedOptions}})), 'sku')" }
         }
       ]
     }

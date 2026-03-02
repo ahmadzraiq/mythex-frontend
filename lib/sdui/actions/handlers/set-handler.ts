@@ -12,10 +12,13 @@ export const setHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) =
     const path = (actionDef.path ?? '') as string;
     const rawValue = actionDef.value;
     const fullState = ctx.getFullMergedState();
-    const value =
-      rawValue != null && typeof rawValue === 'object' && !Array.isArray(rawValue)
-        ? resolveValue(rawValue, ctx.get, ctx.scope, fullState)
-        : rawValue;
+    const shouldResolve =
+      rawValue != null &&
+      ((typeof rawValue === 'object' && !Array.isArray(rawValue)) ||
+        (typeof rawValue === 'string' && rawValue.includes('{{')));
+    const value = shouldResolve
+      ? resolveValue(rawValue, ctx.get, ctx.scope, fullState)
+      : rawValue;
 
     if (path) {
       ctx.setData(path, value);

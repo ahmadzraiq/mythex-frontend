@@ -27,7 +27,7 @@
             {
               "type": "Box",
               "props": {
-                "className": "{{checkout.contactStepIndicatorClassName}}"
+                "className": { "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + (({{auth.user}} || {{checkout.order.customer.emailAddress}}) ? 'bg-green-500 !text-white' : ({{checkout.step}} === 'contact' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]'))" }
               },
               "children": [
                 {

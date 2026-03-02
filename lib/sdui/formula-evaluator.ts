@@ -291,6 +291,11 @@ export const FORMULA_FNS: Record<string, (...args: unknown[]) => unknown> = {
  *   - Legacy json-logic objects (passed through as-is for backward compat)
  */
 export function evaluateFormula(formula: string | object, context: Record<string, unknown>): EvalResult {
+  // { "expr": formula } — wrapper for inline formula; evaluate the inner expression
+  if (typeof formula === 'object' && formula !== null && 'expr' in formula) {
+    const inner = (formula as { expr: string | object }).expr;
+    return evaluateFormula(inner as string | object, context);
+  }
   // Legacy: json-logic object passed directly — evaluate inline using the fn registry
   if (typeof formula === 'object' && formula !== null) {
     return evaluateJsonLogicObject(formula as Record<string, unknown>, context);

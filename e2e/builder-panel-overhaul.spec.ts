@@ -26,8 +26,8 @@ async function gotoBuilder(page: Page) {
     () => !!(window as unknown as Record<string, unknown>).__builderStore,
     { timeout: 15_000, polling: 100 }
   );
-  // Allow loadFromConfig (async, ~200ms API call) to settle before tests run
-  await page.waitForTimeout(2000);
+  // Brief pause for store to initialize
+  await page.waitForTimeout(500);
 }
 
 async function resetBuilder(page: Page) {
@@ -54,9 +54,7 @@ async function resetBuilder(page: Page) {
     }
   });
 
-  // Brief pause so any in-flight loadFromConfig fetch (triggered on mount) can settle,
-  // then clear the panels a second time so empty-state tests get a clean slate.
-  await page.waitForTimeout(800);
+  await page.waitForTimeout(300);
   await page.evaluate(() => {
     const storeApi = (window as unknown as Record<string, { getState: () => Record<string, unknown>; setState: (partial: Record<string, unknown>) => void }>).__builderStore;
     if (!storeApi) return;
@@ -878,66 +876,28 @@ test.describe('BPO Group N — Config Bridge', () => {
 
   test.beforeEach(async () => resetBuilder(page));
 
-  // Helper: force-reload config data into store (bypasses hasLocalData guard)
-  async function forceLoadConfig(p: Page) {
-    await p.evaluate(async () => {
-      const storeApi = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore;
-      if (storeApi) await (storeApi.getState().loadFromConfig as (force?: boolean) => Promise<void>)(true);
-    });
-  }
-
-  test('BPO-55 Data Sources panel is populated from config on first load', async () => {
-    await forceLoadConfig(page);
-    await page.click('[data-testid="tab-data"]');
-    await expect(page.locator('[data-testid^="edit-datasource-"]').first()).toBeVisible({ timeout: 8000 });
+  test.skip('BPO-55 Data Sources panel is populated from config on first load', async () => {
+    // Skipped: /api/builder/config removed
   });
 
-  test('BPO-56 Variables panel is populated from config on first load', async () => {
-    const varCount = await page.evaluate(async () => {
-      const storeApi = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore;
-      if (!storeApi) return 0;
-      await (storeApi.getState().loadFromConfig as (force?: boolean) => Promise<void>)(true);
-      return (storeApi.getState().customVars as unknown[]).length;
-    });
-    expect(varCount).toBeGreaterThan(0);
+  test.skip('BPO-56 Variables panel is populated from config on first load', async () => {
+    // Skipped: /api/builder/config removed
   });
 
-  test('BPO-57 Workflows panel is populated from config on first load', async () => {
-    await forceLoadConfig(page);
-    await page.click('[data-testid="tab-logic"]');
-    await expect(page.locator('[data-testid^="workflow-row-"]').first()).toBeVisible({ timeout: 8000 });
+  test.skip('BPO-57 Workflows panel is populated from config on first load', async () => {
+    // Skipped: /api/builder/config removed
   });
 
-  test('BPO-58 engineConventions.graphqlEndpoint is loaded from config', async () => {
-    const endpoint = await page.evaluate(async () => {
-      const storeApi = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore;
-      if (!storeApi) return '';
-      await (storeApi.getState().loadFromConfig as (force?: boolean) => Promise<void>)(true);
-      return (storeApi.getState().engineConventions as Record<string, unknown>)?.graphqlEndpoint ?? '';
-    });
-    expect(typeof endpoint).toBe('string');
-    expect((endpoint as string).length).toBeGreaterThan(0);
+  test.skip('BPO-58 engineConventions.graphqlEndpoint is loaded from config', async () => {
+    // Skipped: /api/builder/config removed
   });
 
-  test('BPO-59 Data source loaded from config has global headers in its config', async () => {
-    const headerCount = await page.evaluate(async () => {
-      const storeApi = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore;
-      if (!storeApi) return 0;
-      await (storeApi.getState().loadFromConfig as (force?: boolean) => Promise<void>)(true);
-      const sources = storeApi.getState().pageDataSources as Array<{ headers?: unknown[] }>;
-      return sources[0]?.headers?.length ?? 0;
-    });
-    expect(headerCount).toBeGreaterThan(0);
+  test.skip('BPO-59 Data source loaded from config has global headers in its config', async () => {
+    // Skipped: /api/builder/config removed
   });
 
-  test('BPO-60 Execute button uses global GraphQL endpoint when action has no explicit endpoint', async () => {
-    const endpoint = await page.evaluate(async () => {
-      const storeApi = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore;
-      if (!storeApi) return '';
-      await (storeApi.getState().loadFromConfig as (force?: boolean) => Promise<void>)(true);
-      return (storeApi.getState().engineConventions as { graphqlEndpoint?: string })?.graphqlEndpoint ?? '';
-    });
-    expect(endpoint).toBeTruthy();
+  test.skip('BPO-60 Execute button uses global GraphQL endpoint when action has no explicit endpoint', async () => {
+    // Skipped: /api/builder/config removed
   });
 
   test('BPO-61 Execute on REST source (jsonplaceholder) reflects data in preview', async () => {
@@ -1175,128 +1135,8 @@ test.describe('BPO Group O — Preview data → canvas flow', () => {
 
 test.describe('BPO Group P — Full preview integration (searchProducts → search page)', () => {
 
-  test('BPO-69 Run searchProducts, save, switch page — canvas shows product items', async ({ page }) => {
-    await gotoBuilder(page);
-
-    // ── Step 1: Open data tab ──────────────────────────────────────────────────
-    await page.click('[data-testid="tab-data"]');
-
-    // ── Step 2: Wait for data sources to load from config ─────────────────────
-    // Force a config reload then wait until search data sources appear
-    await page.evaluate(async () => {
-      const storeApi = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore;
-      if (storeApi) await (storeApi.getState().loadFromConfig as (f?: boolean) => Promise<void>)(true);
-    });
-    // Wait until searchProducts or fetchSearchResults edit button appears
-    await page.waitForFunction(
-      () => !!(
-        document.querySelector('[data-testid="edit-datasource-searchProducts"]') ||
-        document.querySelector('[data-testid="edit-datasource-fetchSearchResults"]')
-      ),
-      { timeout: 10_000, polling: 200 }
-    );
-
-    // ── Step 3: Open the search data source ───────────────────────────────────
-    const editBtnId = await page.evaluate(() => {
-      if (document.querySelector('[data-testid="edit-datasource-searchProducts"]')) return 'edit-datasource-searchProducts';
-      if (document.querySelector('[data-testid="edit-datasource-fetchSearchResults"]')) return 'edit-datasource-fetchSearchResults';
-      return null;
-    });
-    expect(editBtnId, 'searchProducts or fetchSearchResults must be listed in data sources').not.toBeNull();
-    await page.click(`[data-testid="${editBtnId}"]`);
-    await page.waitForSelector('[data-testid="left-slide-panel"]', { timeout: 8000 });
-
-    // ── Step 3: Run the data source ───────────────────────────────────────────
-    await page.click('[data-testid="ds-execute"]');
-
-    // Wait for a response (success or error) — up to 20s for real API call
-    const statusEl = page.locator('[data-testid="ds-exec-status"]');
-    await expect(statusEl).toBeVisible({ timeout: 20_000 });
-    const statusText = await statusEl.textContent();
-
-    // ── Step 4: Assert response and save ──────────────────────────────────────
-    // Capture what happened
-    const execBody = await page.evaluate(() => {
-      // Read the store's appPreviewData (before save) — not directly accessible from slide
-      // Instead, check the response status we saw in the UI
-      return document.querySelector('[data-testid="ds-exec-status"]')?.textContent ?? '';
-    });
-
-    console.log('API response status:', statusText);
-
-    if (statusText === '200') {
-      // Save to preview
-      await page.click('[data-testid="ds-save-to-preview"]');
-      await expect(page.locator('[data-testid="ds-exec-saved"]')).toBeVisible({ timeout: 5000 });
-
-      // Verify data is in appPreviewData
-      const previewKeys = await page.evaluate(() => {
-        const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
-        return Object.keys((store?.appPreviewData as Record<string, unknown>) ?? {});
-      });
-      console.log('Preview data keys after save:', previewKeys);
-      expect(previewKeys.some((k: string) => k.startsWith('search'))).toBe(true);
-
-      const searchItems = await page.evaluate(() => {
-        const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
-        const data = store?.appPreviewData as Record<string, unknown>;
-        const items = data?.['search.items'] ?? (data?.['search'] as Record<string, unknown> | undefined)?.items;
-        return Array.isArray(items) ? items.length : 0;
-      });
-      console.log('Saved search.items count:', searchItems);
-      expect(searchItems).toBeGreaterThan(0);
-
-      // ── Step 5: Close the slide panel ────────────────────────────────────────
-      await page.click('[data-testid="slide-panel-close"]');
-      await page.waitForTimeout(300);
-
-      // ── Step 6: Switch to the search page ────────────────────────────────────
-      await page.evaluate(() => {
-        const storeApi = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore;
-        if (!storeApi) return;
-        (storeApi.getState().switchPage as (id: string) => void)('page-search');
-      });
-      await page.waitForTimeout(800);
-
-      // Activate data state if not already active
-      const isDataActive = await page.evaluate(() => {
-        const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
-        return ((store?.activePreviewStates as string[]) ?? []).includes('data');
-      });
-      if (!isDataActive) {
-        await page.click('[data-testid="state-chip-data"]');
-        await page.waitForTimeout(300);
-      }
-
-      // ── Step 7: Verify items appear in canvas ─────────────────────────────────
-      const pageFrame = page.locator('[data-builder-page-frame]');
-      // The search grid should be visible (not loading, not empty)
-      // We check that at least one product card appears (mapped from search.items)
-      // Product cards use Pressable elements with the product name as text
-      await page.waitForTimeout(1000);
-
-      // Check that the canvas is NOT showing "0 results" or empty state
-      const frameContent = await pageFrame.textContent();
-      console.log('Page frame content (first 300 chars):', frameContent?.slice(0, 300));
-
-      // The frame should contain content from the product cards (not empty)
-      expect(frameContent).toBeTruthy();
-      expect(frameContent!.length).toBeGreaterThan(100); // has substantial content
-
-      // Check the merged state actually has search.items populated
-      const mergedSearchItemsLen = await page.evaluate(() => {
-        // useSduiStore is accessible from window in dev
-        const sduiStore = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__sduiStore?.getState?.();
-        const data = (sduiStore?.data as Record<string, unknown> | undefined);
-        const items = data?.['search.items'] ?? (data?.['search'] as Record<string, unknown> | undefined)?.items;
-        return Array.isArray(items) ? items.length : -1;
-      });
-      console.log('useSduiStore search.items length:', mergedSearchItemsLen);
-    } else {
-      // API not reachable in CI — skip the canvas check but document the flow
-      console.log('API returned non-200 status:', statusText, '— skipping canvas check (API not available in this environment)');
-      test.skip();
-    }
+  test.skip('BPO-69 Run searchProducts, save, switch page — canvas shows product items', async () => {
+    // Skipped: /api/builder/config removed — data sources no longer load from config
   });
 });
 

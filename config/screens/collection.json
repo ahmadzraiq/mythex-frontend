@@ -87,7 +87,7 @@
                   },
                   {
                     "type": "Box",
-                    "map": "collection.facetGroups",
+                    "map": { "expr": "groupBy({{collection.search.facetValues}} || [], 'facetValue.facet.name', 'facetValue.facet.id')" },
                     "key": "$item.id",
                     "props": {
                       "className": "flex flex-col gap-5"
@@ -208,7 +208,7 @@
                     "props": {
                       "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
-                    "text": "{{collection.resultsHeaderText}}"
+                    "text": { "expr": "({{collection.search.totalItems}} || 0) === 1 ? '1 product' : ({{collection.search.totalItems}} || 0) + ' products'" }
                   },
                   {
                     "type": "Box",

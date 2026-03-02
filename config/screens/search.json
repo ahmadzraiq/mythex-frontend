@@ -40,7 +40,7 @@
                 "props": {
                   "className": "text-3xl font-bold"
                 },
-                "text": "{{search.resultsHeadingText}}"
+                "text": { "expr": "({{route.q}} || '') !== '' ? 'Search results for \"' + ({{route.q}} || '') + '\"' : 'Search'" }
               }
             ]
           },
@@ -99,7 +99,7 @@
                   },
                   {
                     "type": "Box",
-                    "map": "search.facetGroups",
+                    "map": { "expr": "groupBy({{search.facetValues}} || [], 'facetValue.facet.name', 'facetValue.facet.id')" },
                     "key": "$item.id",
                     "props": {
                       "className": "flex flex-col gap-5"
@@ -220,7 +220,7 @@
                     "props": {
                       "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
-                    "text": "{{search.resultsHeaderText}}"
+                    "text": { "expr": "({{search.totalItems}} || 0) === 1 ? '1 product' : ({{search.totalItems}} || 0) + ' products'" }
                   },
                   {
                     "type": "Box",

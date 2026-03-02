@@ -20,7 +20,9 @@
     "type": "graphql",
     "query": "mutation AddToCart($variantId: ID!, $quantity: Int!) { addItemToOrder(productVariantId: $variantId, quantity: $quantity) { __typename ... on Order { id code state totalQuantity subTotal subTotalWithTax shipping shippingWithTax total totalWithTax currencyCode couponCodes discounts { description amountWithTax } lines { id productVariant { id name sku product { id name slug featuredAsset { id preview } } } unitPriceWithTax quantity linePriceWithTax } } ... on ErrorResult { errorCode message } } }",
     "variables": {
-      "variantId": "{{product.selectedVariant.id}}",
+      "variantId": {
+        "expr": "getKeyValue(findItemById({{product.variants}}, findItemByOptionsMatch({{product.variants}}, {{product.optionGroups}}, {{product.selectedOptions}})), 'id')"
+      },
       "quantity": 1
     },
     "headers": {

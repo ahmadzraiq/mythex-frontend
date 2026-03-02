@@ -124,17 +124,13 @@ export function createVariableStore(config: VariableStoreConfig = {}) {
   return useStore;
 }
 
-const EMPTY_ARRAY: unknown[] = [];
-
-function arraysEqual(a: unknown[], b: unknown[]): boolean {
-  return a.length === b.length && a.every((v, i) => v === b[i]);
-}
+const EMPTY_SNAPSHOT = '';
 
 type MergedStore = { getState: () => { merged: Record<string, unknown> }; subscribe: (cb: () => void) => () => void };
 
 /** Hook: subscribe to paths - only re-renders when these values change.
  *  When mergedStore is provided, subscribes to both for selective re-renders.
- *  Must always call useSyncExternalStore (no early return) to satisfy React hooks rules. */
+ *  Returns a stable string snapshot (useSyncExternalStore requires cached result to avoid infinite loop). */
 export function useVariablePaths(
   store: ReturnType<typeof createVariableStore>,
   paths: string[],
@@ -143,12 +139,12 @@ export function useVariablePaths(
 ): unknown[] {
   const config = (store.getState() as Store)._config;
   const expanded = expandComputedDeps(paths, config.computed);
-  const serverSnapshotRef = useRef<unknown[] | null>(null);
-  const clientSnapshotRef = useRef<unknown[]>(EMPTY_ARRAY);
+  const serverSnapshotRef = useRef<string | null>(null);
+  const clientSnapshotRef = useRef<string>(EMPTY_SNAPSHOT);
 
-  const getSnapshot = () => {
-    if (expanded.length === 0) return EMPTY_ARRAY;
-    const next = expanded.map((p) => {
+  const getSnapshot = (): string => {
+    if (expanded.length === 0) return EMPTY_SNAPSHOT;
+    const values = expanded.map((p) => {
       if (typeof p !== 'string') return undefined;
       if (scope && (p.startsWith('$item') || p.startsWith('$index') || p.startsWith('$parent'))) {
         return getNestedValue(scope, p);
@@ -159,14 +155,17 @@ export function useVariablePaths(
       const state = store.getState();
       return computeValue(p, state.data, config);
     });
-    if (arraysEqual(next, clientSnapshotRef.current)) {
+    try {
+      const str = JSON.stringify(values);
+      if (str === clientSnapshotRef.current) return clientSnapshotRef.current;
+      clientSnapshotRef.current = str;
+      return str;
+    } catch {
       return clientSnapshotRef.current;
     }
-    clientSnapshotRef.current = next;
-    return next;
   };
 
-  const getServerSnapshot = () => {
+  const getServerSnapshot = (): string => {
     if (serverSnapshotRef.current === null) {
       serverSnapshotRef.current = getSnapshot();
     }
@@ -180,5 +179,6 @@ export function useVariablePaths(
         ? (cb: () => void) => mergedStore.subscribe(cb)
         : (cb: () => void) => store.subscribe(cb);
 
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  return [];
 }

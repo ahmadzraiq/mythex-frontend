@@ -335,7 +335,7 @@ export function SDUIEngine({
       };
 
       const getFullMergedState = () =>
-        ({ ...mergedStore.getState().merged, ...store.getState().getFullState() }) as Record<string, unknown>;
+        mergedStore.getState().merged as Record<string, unknown>;
 
       const runOne = async (a: SDUIAction) => {
         const actionName = String((a as { action: string }).action);

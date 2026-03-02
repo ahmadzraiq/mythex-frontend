@@ -6,6 +6,9 @@
  */
 
 import React, { useEffect, memo, useSyncExternalStore } from 'react';
+
+/** Stable empty object for useSyncExternalStore fallback — avoids infinite loop from new {} each call */
+const STABLE_EMPTY_OBJECT: Record<string, unknown> = {};
 import { evaluateFormula } from './formula-evaluator';
 import { getComponent } from './component-registry';
 import { evaluateCondition, interpolate, resolveProps, resolveText } from './utils';
@@ -64,8 +67,8 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
   // immediately trigger a re-render without needing a manual canvas click.
   const mergedFromStore = useSyncExternalStore(
     mergedStore ? mergedStore.subscribe : (_cb: () => void) => () => {},
-    () => mergedStore?.getState().merged ?? mergedState ?? {},
-    () => mergedStore?.getState().merged ?? mergedState ?? {},
+    () => mergedStore?.getState().merged ?? mergedState ?? STABLE_EMPTY_OBJECT,
+    () => mergedStore?.getState().merged ?? mergedState ?? STABLE_EMPTY_OBJECT,
   );
   const merged = mergedStore ? mergedFromStore : mergedState;
   const rawDeps = extractNodeDependencies(node);

@@ -534,7 +534,7 @@
         },
         {
           "type": "Box",
-          "condition": "{{related.products.length}} > 0",
+          "condition": { "expr": "length(filterExcludeByFieldAndSlice({{related._raw}}, 'productId', {{product.id}}, 12)) > 0" },
           "props": {
             "className": "py-12 md:py-16"
           },
@@ -563,7 +563,7 @@
                   "children": [
                     {
                       "type": "CarouselSlide",
-                      "map": "related.products",
+                      "map": { "expr": "filterExcludeByFieldAndSlice({{related._raw}}, 'productId', {{product.id}}, 12)" },
                       "key": "relatedProduct",
                       "props": {
                         "className": "basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"

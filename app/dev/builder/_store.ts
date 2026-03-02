@@ -492,7 +492,7 @@ export interface BuilderStore {
 
   /** Load Data Sources, Workflows, Variables, Formulas from the app config files via the API.
    *  Only runs if panels are empty (user hasn't manually edited), unless forceReload=true. */
-  loadFromConfig: (forceReload?: boolean) => Promise<void>;
+  loadFromConfig: () => Promise<void>;
 
   // Internal (debounce wrapper)
   _pushHistory: () => void;
@@ -632,12 +632,12 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   activePreviewStates: ['normal'],
   showInteractionLines: false,
   activeLogicSection: null,
-  pageWorkflows: _loadJson<Record<string, object[]>>('builder:workflows', {}),
+  pageWorkflows: {},
   globalWorkflows: {},
-  globalFormulas: _loadJson<Record<string, object>>('builder:formulas', {}),
-  customVars: _loadJson<CustomVar[]>('builder:customVars', []),
-  pageDataSources: _loadJson<DataSourceConfig[]>('builder:dataSources', []),
-  engineConventions: _loadJson<{ graphqlEndpoint?: string; graphqlHeaders?: Record<string, string>; graphqlCredentials?: string }>('builder:engineConventions', {}),
+  globalFormulas: {},
+  customVars: [],
+  pageDataSources: [],
+  engineConventions: {},
   appPreviewData: (() => {
     const defaults: Record<string, unknown> = {
     // ── Auth ──────────────────────────────────────────────────────────────────
@@ -1704,50 +1704,8 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   removePageDataSource: (id) =>
     set(s => ({ pageDataSources: s.pageDataSources.filter(d => d.id !== id) })),
 
-  loadFromConfig: async (forceReload = false) => {
-    try {
-      const res = await fetch('/api/builder/config');
-      if (!res.ok) return;
-      const data = await res.json() as {
-        dataSources?: DataSourceConfig[];
-        workflows?: Record<string, object[]>;
-        variables?: CustomVar[];
-        formulas?: Record<string, object>;
-        engineConventions?: {
-          graphqlEndpoint?: string;
-          graphqlHeaders?: Record<string, string>;
-          graphqlCredentials?: string;
-        };
-      };
-      const conventions = data.engineConventions ?? {};
-      // Always persist and apply engineConventions so the Run button can resolve the endpoint
-      if (typeof window !== 'undefined') {
-        try { localStorage.setItem('builder:engineConventions', JSON.stringify(conventions)); } catch { /* ignore */ }
-      }
-
-      const s = get();
-      const hasLocalData =
-        s.pageDataSources.length > 0 ||
-        s.customVars.length > 0 ||
-        Object.keys(s.pageWorkflows).length > 0 ||
-        Object.keys(s.globalFormulas).length > 0;
-
-      if (forceReload || !hasLocalData) {
-        // Seed panels from config only on first load or when forced
-        set({
-          pageDataSources: data.dataSources ?? [],
-          pageWorkflows: data.workflows ?? {},
-          customVars: data.variables ?? [],
-          globalFormulas: data.formulas ?? {},
-          engineConventions: conventions,
-        });
-      } else {
-        // Still always update engineConventions so execute can use the real endpoint
-        set({ engineConventions: conventions });
-      }
-    } catch {
-      // Network error or dev server not running — silently skip
-    }
+  loadFromConfig: async () => {
+    // No-op: /api/builder/config removed. Data Sources, Variables, Workflows, Formulas panels use defaults.
   },
 
   setShowInteractionLines: (on) => set({ showInteractionLines: on }),
@@ -1793,67 +1751,6 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     });
   },
 }));
-
-// Persist selected fields to localStorage whenever they change
-if (typeof window !== 'undefined') {
-  useBuilderStore.subscribe(s => {
-    _saveJson('builder:dataSources', s.pageDataSources);
-    _saveJson('builder:customVars', s.customVars);
-    _saveJson('builder:workflows', s.pageWorkflows);
-    _saveJson('builder:formulas', s.globalFormulas);
-  });
-}
-
-// ─── Debounced write-back to config files ─────────────────────────────────────
-// Whenever the user edits Data Sources, Variables, Workflows, or Formulas in
-// the builder, flush the changes back to config/actions/*.json and
-// config/store.json via the Next.js API route (500 ms debounce).
-
-if (typeof window !== 'undefined') {
-  let _saveTimer: ReturnType<typeof setTimeout> | null = null;
-  let _prevSaveKey = '';
-
-  useBuilderStore.subscribe(s => {
-    // Build a cheap change-detection key to avoid unnecessary PUT calls
-    const key = JSON.stringify({
-      ds: s.pageDataSources.length,
-      cv: s.customVars.length,
-      wf: Object.keys(s.pageWorkflows).length,
-      gf: Object.keys(s.globalFormulas).length,
-    });
-
-    if (key === _prevSaveKey) return;
-    _prevSaveKey = key;
-
-    if (_saveTimer) clearTimeout(_saveTimer);
-    _saveTimer = setTimeout(async () => {
-      const { pageDataSources, customVars, pageWorkflows, globalFormulas } = useBuilderStore.getState();
-      // Never write back when the builder is in an empty/reset state — this would
-      // destructively overwrite the config files with empty data.
-      const hasData =
-        pageDataSources.length > 0 ||
-        customVars.length > 0 ||
-        Object.keys(pageWorkflows).length > 0 ||
-        Object.keys(globalFormulas).length > 0;
-      if (!hasData) return;
-
-      try {
-        await fetch('/api/builder/config', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            dataSources: pageDataSources,
-            workflows: pageWorkflows,
-            variables: customVars,
-            formulas: globalFormulas,
-          }),
-        });
-      } catch {
-        // Silent — dev-server may not be available, network error, etc.
-      }
-    }, 500);
-  });
-}
 
 // Expose store for E2E tests as early as possible (module-level, not useEffect)
 // so it's available as soon as the JS bundle loads — before React hydration.

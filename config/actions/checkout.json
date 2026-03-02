@@ -93,7 +93,9 @@
         {
           "type": "set",
           "path": "checkout.step",
-          "value": "{{checkout.firstIncompleteStep}}"
+          "value": {
+            "expr": "!({{auth.user}} || {{checkout.order.customer.emailAddress}} || '') ? 'contact' : !({{checkout.order.shippingAddress.streetLine1}} || '') ? 'shipping' : ({{checkout.order.shippingLines.length}} || 0) <= 0 ? 'delivery' : !({{checkout.selectedPaymentMethodCode}} || '') ? 'payment' : 'review'"
+          }
         }
       ]
     },
