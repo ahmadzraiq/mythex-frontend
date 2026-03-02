@@ -47,7 +47,7 @@
         "take": "{{collectionPageSize}} || 12",
         "skip": "{{collectionSkip}} || 0",
         "groupByProduct": true,
-        "sort": "{{sortInput}} || {'name': 'ASC'}",
+        "sort": "{{sortInput}} || {\"name\": \"ASC\"}",
         "facetValueIds": "{{route.facets}} || []"
       }
     },
@@ -75,7 +75,7 @@
         "take": "{{collectionPageSize}} || 12",
         "skip": "{{searchSkip}} || 0",
         "groupByProduct": true,
-        "sort": "{{sortInput}} || {'name': 'ASC'}",
+        "sort": "{{sortInput}} || {\"name\": \"ASC\"}",
         "facetValueIds": "{{route.facets}} || []"
       }
     },
