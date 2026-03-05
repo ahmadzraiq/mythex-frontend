@@ -35,6 +35,15 @@ export function resolveText(
   if (text == null) return '';
   if (typeof text === 'string') return interpolate(text, context, scope);
   if (typeof text === 'object' && text !== null) {
+    // Builder formula binding: { formula: "expression string" }
+    if ('formula' in text) {
+      const formulaStr = (text as { formula: string }).formula;
+      const evalResult = evaluateFormula(formulaStr, context.state ?? {});
+      if (evalResult.value !== undefined && evalResult.value !== null && typeof evalResult.value !== 'object') {
+        return String(evalResult.value);
+      }
+      return '';
+    }
     if ('var' in text) {
       const v = text.var;
       const path = Array.isArray(v) ? String(v[0]) : String(v);
@@ -122,6 +131,21 @@ export function resolveProps(
             context.state ?? {}
           );
           resolved[key] = evalResult.value != null ? String(evalResult.value) : evalResult.value;
+        } catch {
+          resolved[key] = value;
+        }
+      } else if ('formula' in obj && typeof obj.formula === 'string') {
+        // Builder formula binding in style/prop values (e.g. style.width = { formula: "200" })
+        try {
+          const evalResult = evaluateFormula(obj.formula, context.state ?? {});
+          if (evalResult.value != null && typeof evalResult.value !== 'object') {
+            // Auto-append "px" for numeric results on known CSS dimension properties
+            const DIMENSION_KEYS = new Set(['width','height','minWidth','maxWidth','minHeight','maxHeight','top','right','bottom','left','paddingTop','paddingRight','paddingBottom','paddingLeft','marginTop','marginRight','marginBottom','marginLeft','gap','rowGap','columnGap','borderRadius','borderTopLeftRadius','borderTopRightRadius','borderBottomLeftRadius','borderBottomRightRadius','borderWidth','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth','fontSize','lineHeight','letterSpacing','wordSpacing','outlineWidth']);
+            const v = evalResult.value;
+            resolved[key] = (typeof v === 'number' && DIMENSION_KEYS.has(key)) ? `${v}px` : String(v);
+          } else {
+            resolved[key] = evalResult.value;
+          }
         } catch {
           resolved[key] = value;
         }

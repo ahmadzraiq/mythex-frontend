@@ -36,6 +36,8 @@ export interface ActionHandlerContext {
   routes?: Array<{ path?: string; config?: string; dynamic?: boolean }>;
   setColorScheme?: (mode: 'light' | 'dark' | 'system') => void;
   useSduiStore?: { getState: () => { setData: (path: string, value: unknown) => void } };
+  /** Clears the DS cache for `name` and triggers the engine to re-fetch it. */
+  triggerDataSourceRefetch?: (name: string) => void;
 }
 
 export type ActionHandler = (

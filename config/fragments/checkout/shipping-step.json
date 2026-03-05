@@ -7,12 +7,12 @@
     {
       "type": "Pressable",
       "props": {
-        "className": { "expr": "'flex flex-row items-center justify-between w-full py-4 ' + (({{auth.user}} || {{checkout.order.customer.emailAddress}}) ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')" }
+        "className": { "expr": "'flex flex-row items-center justify-between w-full py-4 ' + (({{auth.user}} || {{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.emailAddress}}) ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')" }
       },
       "actions": {
         "click": {
-          "type": "set",
-          "path": "checkout.step",
+          "type": "setVar",
+          "path": "d9e0f1a2-b3c4-5678-defa-789012345678",
           "value": "shipping"
         }
       },
@@ -26,7 +26,7 @@
             {
               "type": "Box",
               "props": {
-                "className": { "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + ({{checkout.order.shippingAddress.streetLine1}} ? 'bg-green-500 !text-white' : ({{checkout.step}} === 'shipping' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]'))" }
+                "className": { "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + ({{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine1}} ? 'bg-green-500 !text-white' : ({{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'shipping' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]'))" }
               },
               "children": [
                 {
@@ -36,7 +36,7 @@
                     "size": 16,
                     "className": "!text-white"
                   },
-                  "condition": "{{checkout.order.shippingAddress.streetLine1}}"
+                  "condition": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine1}}"
                 },
                 {
                   "type": "Text",
@@ -44,7 +44,7 @@
                     "className": "font-semibold text-sm !text-white"
                   },
                   "text": "2",
-                  "condition": "!{{checkout.order.shippingAddress.streetLine1}} && {{checkout.step}} === 'shipping'"
+                  "condition": "!{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine1}} && {{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'shipping'"
                 },
                 {
                   "type": "Text",
@@ -52,7 +52,7 @@
                     "className": "font-semibold text-sm !text-[var(--theme-muted-foreground)]"
                   },
                   "text": "2",
-                  "condition": "!{{checkout.order.shippingAddress.streetLine1}} && {{checkout.step}} !== 'shipping'"
+                  "condition": "!{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine1}} && {{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} !== 'shipping'"
                 }
               ]
             },
@@ -78,7 +78,7 @@
                 "size": 16,
                 "className": "!text-[var(--theme-muted-foreground)]"
               },
-              "condition": "{{checkout.step}} === 'shipping'"
+              "condition": "{{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'shipping'"
             },
             {
               "type": "NavIcon",
@@ -87,7 +87,7 @@
                 "size": 16,
                 "className": "!text-[var(--theme-muted-foreground)]"
               },
-              "condition": "{{checkout.step}} !== 'shipping'"
+              "condition": "{{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} !== 'shipping'"
             }
           ]
         }
@@ -98,7 +98,7 @@
       "props": {
         "className": "pb-6"
       },
-      "condition": "{{checkout.step}} === 'shipping'",
+      "condition": "{{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'shipping'",
       "children": [
         {
           "type": "Box",
@@ -126,15 +126,11 @@
                       "type": "InputField",
                       "props": {
                         "placeholder": "Jane Doe",
-                        "value": "{{form.fullName}}"
+                        "value": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.fullName}}"
                       },
                       "actions": {
                         "change": {
-                          "action": "setState",
-                          "payload": {
-                            "path": "screens.checkout.form.fullName",
-                            "value": "$event"
-                          }
+                          "type": "setFormField", "formId": "d1e2f3a4-b5c6-7890-defa-890123456789", "field": "fullName", "value": "$event"
                         }
                       }
                     }
@@ -162,15 +158,11 @@
                       "type": "InputField",
                       "props": {
                         "placeholder": "Acme Inc",
-                        "value": "{{form.company}}"
+                        "value": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.company}}"
                       },
                       "actions": {
                         "change": {
-                          "action": "setState",
-                          "payload": {
-                            "path": "screens.checkout.form.company",
-                            "value": "$event"
-                          }
+                          "type": "setFormField", "formId": "d1e2f3a4-b5c6-7890-defa-890123456789", "field": "company", "value": "$event"
                         }
                       }
                     }
@@ -198,18 +190,14 @@
                       "type": "InputField",
                       "props": {
                         "placeholder": "123 Main St",
-                        "value": "{{form.streetLine1}}"
+                        "value": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.streetLine1}}"
                       },
                       "actions": {
                         "change": {
                           "type": "runMultiple",
                           "actions": [
                             {
-                              "action": "setState",
-                              "payload": {
-                                "path": "screens.checkout.form.streetLine1",
-                                "value": "$event"
-                              }
+                              "type": "setFormField", "formId": "d1e2f3a4-b5c6-7890-defa-890123456789", "field": "streetLine1", "value": "$event"
                             },
                             {
                               "action": "setState",
@@ -229,14 +217,14 @@
                   "props": {
                     "className": "min-h-[20px]"
                   },
-                  "condition": "{{screens.checkout.errors.form.streetLine1}}",
+                  "condition": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].errors.streetLine1}}",
                   "children": [
                     {
                       "type": "Text",
                       "props": {
                         "className": "text-sm text-red-500 dark:text-red-400"
                       },
-                      "text": "{{errors.form.streetLine1}}"
+                      "text": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].errors.streetLine1}}"
                     }
                   ]
                 }
@@ -262,15 +250,11 @@
                       "type": "InputField",
                       "props": {
                         "placeholder": "Apt 4",
-                        "value": "{{form.streetLine2}}"
+                        "value": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.streetLine2}}"
                       },
                       "actions": {
                         "change": {
-                          "action": "setState",
-                          "payload": {
-                            "path": "screens.checkout.form.streetLine2",
-                            "value": "$event"
-                          }
+                          "type": "setFormField", "formId": "d1e2f3a4-b5c6-7890-defa-890123456789", "field": "streetLine2", "value": "$event"
                         }
                       }
                     }
@@ -304,15 +288,11 @@
                           "type": "InputField",
                           "props": {
                             "placeholder": "New York",
-                            "value": "{{form.city}}"
+                            "value": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.city}}"
                           },
                           "actions": {
                             "change": {
-                              "action": "setState",
-                              "payload": {
-                                "path": "screens.checkout.form.city",
-                                "value": "$event"
-                              }
+                              "type": "setFormField", "formId": "d1e2f3a4-b5c6-7890-defa-890123456789", "field": "city", "value": "$event"
                             }
                           }
                         }
@@ -340,15 +320,11 @@
                           "type": "InputField",
                           "props": {
                             "placeholder": "NY",
-                            "value": "{{form.province}}"
+                            "value": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.province}}"
                           },
                           "actions": {
                             "change": {
-                              "action": "setState",
-                              "payload": {
-                                "path": "screens.checkout.form.province",
-                                "value": "$event"
-                              }
+                              "type": "setFormField", "formId": "d1e2f3a4-b5c6-7890-defa-890123456789", "field": "province", "value": "$event"
                             }
                           }
                         }
@@ -376,15 +352,11 @@
                           "type": "InputField",
                           "props": {
                             "placeholder": "10001",
-                            "value": "{{form.postalCode}}"
+                            "value": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.postalCode}}"
                           },
                           "actions": {
                             "change": {
-                              "action": "setState",
-                              "payload": {
-                                "path": "screens.checkout.form.postalCode",
-                                "value": "$event"
-                              }
+                              "type": "setFormField", "formId": "d1e2f3a4-b5c6-7890-defa-890123456789", "field": "postalCode", "value": "$event"
                             }
                           }
                         }
@@ -408,7 +380,7 @@
                     {
                       "type": "Select",
                       "props": {
-                        "selectedValue": "{{form.countryCode}}",
+                        "selectedValue": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.countryCode}}",
                         "className": "w-full"
                       },
                       "actions": {
@@ -416,11 +388,7 @@
                           "type": "runMultiple",
                           "actions": [
                             {
-                              "action": "setState",
-                              "payload": {
-                                "path": "screens.checkout.form.countryCode",
-                                "value": "$event"
-                              }
+                              "type": "setFormField", "formId": "d1e2f3a4-b5c6-7890-defa-890123456789", "field": "countryCode", "value": "$event"
                             },
                             {
                               "action": "setState",
@@ -492,8 +460,8 @@
                                     {
                                       "type": "SelectItem",
                                       "props": {
-                                        "label": "{{$item.name}}",
-                                        "value": "{{$item.code}}"
+                                        "label": "{{context.item.name}}",
+                                        "value": "{{context.item.code}}"
                                       }
                                     }
                                   ]
@@ -509,14 +477,14 @@
                       "props": {
                         "className": "min-h-[20px]"
                       },
-                      "condition": "{{screens.checkout.errors.form.countryCode}}",
+                      "condition": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].errors.countryCode}}",
                       "children": [
                         {
                           "type": "Text",
                           "props": {
                             "className": "text-sm text-red-500 dark:text-red-400"
                           },
-                          "text": "{{errors.form.countryCode}}"
+                          "text": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].errors.countryCode}}"
                         }
                       ]
                     }
@@ -545,15 +513,11 @@
                       "props": {
                         "type": "tel",
                         "placeholder": "+1 234 567 8900",
-                        "value": "{{form.phoneNumber}}"
+                        "value": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.phoneNumber}}"
                       },
                       "actions": {
                         "change": {
-                          "action": "setState",
-                          "payload": {
-                            "path": "screens.checkout.form.phoneNumber",
-                            "value": "$event"
-                          }
+                          "type": "setFormField", "formId": "d1e2f3a4-b5c6-7890-defa-890123456789", "field": "phoneNumber", "value": "$event"
                         }
                       }
                     }
@@ -569,7 +533,7 @@
               "actions": {
                 "click": {
                   "type": "toggle",
-                  "path": "checkout.useSameForBilling"
+                  "path": "f1a2b3c4-d5e6-7890-fabc-901234567890"
                 }
               },
               "children": [
@@ -584,7 +548,7 @@
                       "props": {
                         "className": "text-white text-xs font-bold"
                       },
-                      "condition": "{{checkout.useSameForBilling}}",
+                      "condition": "{{variables['f1a2b3c4-d5e6-7890-fabc-901234567890']}}",
                       "text": "✓"
                     }
                   ]

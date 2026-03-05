@@ -21,6 +21,8 @@ export interface SlidePanelProps {
   width?: number;
   /** Optional footer content (Save/Cancel buttons etc.) */
   footer?: React.ReactNode;
+  /** Optional extra content rendered in the header row, before the × button */
+  headerExtra?: React.ReactNode;
   testId?: string;
 }
 
@@ -31,6 +33,7 @@ export function SlidePanel({
   children,
   width = 320,
   footer,
+  headerExtra,
   testId,
 }: SlidePanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -67,18 +70,24 @@ export function SlidePanel({
         zIndex: 10,
       }}
     >
-      {/* Header */}
+      {/* Header — always shown (carries the × close button) */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        padding: '10px 12px',
+        padding: '6px 10px',
         borderBottom: '1px solid #1f2937',
         flexShrink: 0,
-        gap: 8,
+        gap: 6,
+        minHeight: 32,
       }}>
-        <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: '#f3f4f6', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {title}
-        </span>
+        {title ? (
+          <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: '#9ca3af', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {title}
+          </span>
+        ) : (
+          <span style={{ flex: 1 }} />
+        )}
+        {headerExtra}
         <button
           data-testid="slide-panel-close"
           onClick={onClose}
@@ -158,10 +167,9 @@ export const SP_INPUT: React.CSSProperties = {
 };
 
 export const SP_LABEL: React.CSSProperties = {
-  fontSize: 10,
-  color: '#6b7280',
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.05em',
+  fontSize: 11,
+  fontWeight: 500,
+  color: '#9ca3af',
   display: 'block',
   marginBottom: 3,
 };

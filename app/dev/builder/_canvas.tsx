@@ -32,6 +32,7 @@ const CONTAINER_TYPES = new Set([
   'Modal', 'ModalContent', 'ModalHeader', 'ModalBody', 'ModalFooter',
   'Tooltip', 'AlertDialog', 'AlertDialogContent',
   'AlertDialogHeader', 'AlertDialogBody', 'AlertDialogFooter',
+  'FormContainer',
 ]);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

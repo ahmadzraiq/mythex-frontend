@@ -1,0 +1,33 @@
+{
+  "fetchNavCollections": { "type": "refetchDataSource", "name": "a7b8c9d0-e1f2-3456-abcd-567890123456" },
+  "fetchCollection": { "type": "refetchDataSource", "name": "d4e5f6a7-b8c9-0123-defa-234567890123" },
+  "fetchSearchResults": { "type": "refetchDataSource", "name": "e5f6a7b8-c9d0-1234-efab-345678901234" },
+  "fetchProduct": { "type": "refetchDataSource", "name": "b2c3d4e5-f6a7-8901-bcde-f12345678901" },
+  "fetchRelatedProducts": { "type": "refetchDataSource", "name": "f6a7b8c9-d0e1-2345-fabc-456789012345" },
+  "fetchFeaturedProducts": { "type": "refetchDataSource", "name": "c3d4e5f6-a7b8-9012-cdef-123456789012" },
+  "fetchCart": {
+    "type": "graphql",
+    "query": "query GetActiveOrder { activeOrder { id code state totalQuantity subTotal subTotalWithTax shipping shippingWithTax total totalWithTax currencyCode couponCodes discounts { description amountWithTax } lines { id productVariant { id name sku product { id name slug featuredAsset { id preview } } } unitPriceWithTax quantity linePriceWithTax } } }",
+    "storeIn": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "endpoint": "http://localhost:3000/shop-api",
+    "headers": { "vendure-token": "__default_channel__" }
+  },
+  "fetchCheckoutOrder": { "type": "refetchDataSource", "name": "b8c9d0e1-f2a3-4567-bcde-678901234567" },
+  "fetchCheckoutShippingMethods": { "type": "refetchDataSource", "name": "c9d0e1f2-a3b4-5678-cdef-789012345678" },
+  "fetchCheckoutPaymentMethods": { "type": "refetchDataSource", "name": "d0e1f2a3-b4c5-6789-defa-890123456789" },
+  "fetchCheckoutCountries": { "type": "refetchDataSource", "name": "e1f2a3b4-c5d6-7890-efab-901234567890" },
+  "fetchShippingMethods": { "type": "refetchDataSource", "name": "c9d0e1f2-a3b4-5678-cdef-789012345678" },
+  "fetchPaymentMethods": { "type": "refetchDataSource", "name": "d0e1f2a3-b4c5-6789-defa-890123456789" },
+  "fetchCountries": { "type": "refetchDataSource", "name": "e1f2a3b4-c5d6-7890-efab-901234567890" },
+  "fetchOrderConfirmation": { "type": "refetchDataSource", "name": "f2a3b4c5-d6e7-8901-fabc-012345678901" },
+  "fetchOrderByCode": { "type": "refetchDataSource", "name": "a3b4c5d6-e7f8-9012-abcd-123456789012" },
+  "fetchOrder": { "type": "refetchDataSource", "name": "a3b4c5d6-e7f8-9012-abcd-123456789012" },
+  "fetchOrders": { "type": "refetchDataSource", "name": "f8a9b0c1-d2e3-4567-fabc-678901234567" },
+  "fetchOrderDetail": { "type": "refetchDataSource", "name": "d6e7f8a9-b0c1-2345-defa-456789012345" },
+  "fetchProfile": { "type": "refetchDataSource", "name": "e7f8a9b0-c1d2-3456-efab-567890123456" },
+  "fetchAccountOrders": { "type": "refetchDataSource", "name": "c5d6e7f8-a9b0-1234-cdef-345678901234" },
+  "fetchCustomerOrders": { "type": "refetchDataSource", "name": "c5d6e7f8-a9b0-1234-cdef-345678901234" },
+  "fetchAddresses": { "type": "refetchDataSource", "name": "a9b0c1d2-e3f4-5678-abcd-789012345678" },
+  "fetchCustomerAddresses": { "type": "refetchDataSource", "name": "a9b0c1d2-e3f4-5678-abcd-789012345678" },
+  "fetchActiveCustomer": { "type": "refetchDataSource", "name": "b4c5d6e7-f8a9-0123-bcde-234567890123" }
+}

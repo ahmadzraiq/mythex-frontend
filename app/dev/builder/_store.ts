@@ -239,10 +239,24 @@ export interface DataSourceAuth {
   apiKeyHeader?: string;
 }
 
-export interface CustomVar {
+export interface Folder {
+  id: string;
   name: string;
-  type: 'string' | 'number' | 'boolean' | 'object' | 'array';
-  initialValue: unknown;
+  parentId: string | null;
+}
+
+export interface CustomVar {
+  /** UUID key from config/variables.json (only set for config-driven variables) */
+  id?: string;
+  name: string;
+  label?: string;
+  type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'form';
+  initialValue?: unknown;
+  description?: string;
+  saveInLocalStorage?: boolean;
+  folderId?: string;
+  /** For form-type variables: field definitions */
+  fields?: Array<{ name: string; type?: string; initialValue?: unknown; validation?: Record<string, unknown> }>;
 }
 
 export interface DataSourceConfig {
@@ -265,8 +279,19 @@ export interface DataSourceConfig {
   storeIn?: string;
   trigger?: 'mount' | 'action';
   triggerActionName?: string;
+  /** Proxy the request through the server to avoid CORS issues. */
+  proxy?: boolean;
+  /** Include credentials (cookies) in the request. */
+  sendCredentials?: boolean;
+  /** Human-readable display label (from config label field) */
+  _label?: string;
+  /** Whether this datasource came from config/datasources.json */
+  _fromConfig?: boolean;
   /** Origin actions/*.json file name (without .json) — used for write-back */
   _sourceFile?: string;
+  /** Last manual fetch result — persisted so the result panel reopens on edit */
+  _lastFetch?: { status: 'success' | 'error'; data?: unknown; error?: string; fetchedAt?: number };
+  folderId?: string;
 }
 
 export interface PageMeta {
@@ -452,6 +477,18 @@ export interface BuilderStore {
   setGlobalFormula: (name: string, expr: object) => void;
   removeGlobalFormula: (name: string) => void;
 
+  // ── Folders ──────────────────────────────────────────────────────────────────
+  /** Folders for organising variables */
+  varFolders: Folder[];
+  addVarFolder: (f: Folder) => void;
+  updateVarFolder: (id: string, name: string) => void;
+  removeVarFolder: (id: string) => void;
+  /** Folders for organising data sources */
+  dsFolders: Folder[];
+  addDsFolder: (f: Folder) => void;
+  updateDsFolder: (id: string, name: string) => void;
+  removeDsFolder: (id: string) => void;
+
   // ── Custom Variables ─────────────────────────────────────────────────────────
   /** User-defined variables with an initial value and type */
   customVars: CustomVar[];
@@ -539,6 +576,27 @@ export function persistPreviewData(key: string, value: unknown) {
 /** Restore persisted preview data for hydration on page load. */
 export function restorePreviewData(): Record<string, unknown> {
   return _loadJson<Record<string, unknown>>(BUILDER_PREVIEW_DATA_KEY, {});
+}
+
+/** localStorage key for data source last-fetch results. Keyed by datasource ID. */
+const BUILDER_DS_FETCH_KEY = 'builder:dsFetch';
+
+/** Persist the last-fetch result for a datasource so it survives page refresh. */
+export function persistDsLastFetch(id: string, fetch: DataSourceConfig['_lastFetch']) {
+  if (typeof window === 'undefined') return;
+  const current = _loadJson<Record<string, unknown>>(BUILDER_DS_FETCH_KEY, {});
+  if (fetch) {
+    _saveJson(BUILDER_DS_FETCH_KEY, { ...current, [id]: fetch });
+  } else {
+    const next = { ...current };
+    delete next[id];
+    _saveJson(BUILDER_DS_FETCH_KEY, next);
+  }
+}
+
+/** Restore all persisted last-fetch results (keyed by datasource ID). */
+export function restoreDsLastFetches(): Record<string, DataSourceConfig['_lastFetch']> {
+  return _loadJson(BUILDER_DS_FETCH_KEY, {});
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -635,6 +693,8 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   pageWorkflows: {},
   globalWorkflows: {},
   globalFormulas: {},
+  varFolders: [],
+  dsFolders: [],
   customVars: [],
   pageDataSources: [],
   engineConventions: {},
@@ -1690,6 +1750,40 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   removeGlobalFormula: (name) =>
     set(s => { const { [name]: _, ...rest } = s.globalFormulas; return { globalFormulas: rest }; }),
 
+  addVarFolder: (f) => set(s => ({ varFolders: [...s.varFolders.filter(x => x.id !== f.id), f] })),
+  updateVarFolder: (id, name) => set(s => ({ varFolders: s.varFolders.map(f => f.id === id ? { ...f, name } : f) })),
+  removeVarFolder: (id) => set(s => {
+    const toRemove = new Set<string>([id]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const f of s.varFolders) {
+        if (f.parentId && toRemove.has(f.parentId) && !toRemove.has(f.id)) { toRemove.add(f.id); changed = true; }
+      }
+    }
+    return {
+      varFolders: s.varFolders.filter(f => !toRemove.has(f.id)),
+      customVars: s.customVars.map(v => v.folderId && toRemove.has(v.folderId) ? { ...v, folderId: undefined } : v),
+    };
+  }),
+
+  addDsFolder: (f) => set(s => ({ dsFolders: [...s.dsFolders.filter(x => x.id !== f.id), f] })),
+  updateDsFolder: (id, name) => set(s => ({ dsFolders: s.dsFolders.map(f => f.id === id ? { ...f, name } : f) })),
+  removeDsFolder: (id) => set(s => {
+    const toRemove = new Set<string>([id]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const f of s.dsFolders) {
+        if (f.parentId && toRemove.has(f.parentId) && !toRemove.has(f.id)) { toRemove.add(f.id); changed = true; }
+      }
+    }
+    return {
+      dsFolders: s.dsFolders.filter(f => !toRemove.has(f.id)),
+      pageDataSources: s.pageDataSources.map(d => d.folderId && toRemove.has(d.folderId) ? { ...d, folderId: undefined } : d),
+    };
+  }),
+
   addCustomVar: (v) =>
     set(s => ({ customVars: [...s.customVars.filter(x => x.name !== v.name), v] })),
   updateCustomVar: (name, patch) =>
@@ -1699,13 +1793,80 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
 
   addPageDataSource: (cfg) =>
     set(s => ({ pageDataSources: [...s.pageDataSources, cfg] })),
-  updatePageDataSource: (id, patch) =>
-    set(s => ({ pageDataSources: s.pageDataSources.map(d => d.id === id ? { ...d, ...patch } : d) })),
-  removePageDataSource: (id) =>
-    set(s => ({ pageDataSources: s.pageDataSources.filter(d => d.id !== id) })),
+  updatePageDataSource: (id, patch) => {
+    // Auto-persist _lastFetch changes to localStorage so they survive refresh
+    if ('_lastFetch' in patch) persistDsLastFetch(id, patch._lastFetch);
+    set(s => ({ pageDataSources: s.pageDataSources.map(d => d.id === id ? { ...d, ...patch } : d) }));
+  },
+  removePageDataSource: (id) => {
+    // Remove persisted fetch result when datasource is deleted
+    persistDsLastFetch(id, undefined);
+    set(s => ({ pageDataSources: s.pageDataSources.filter(d => d.id !== id) }));
+  },
 
   loadFromConfig: async () => {
-    // No-op: /api/builder/config removed. Data Sources, Variables, Workflows, Formulas panels use defaults.
+    try {
+      const res = await fetch('/api/builder/config');
+      if (!res.ok) return;
+      const json = (await res.json()) as {
+        dataSources?: DataSourceConfig[];
+        dsFolders?: Folder[];
+        variables?: Array<{ id: string; label?: string; type?: string; initialValue?: unknown; folder?: string; fields?: CustomVar['fields'] }>;
+        varFolders?: Array<{ id: string; label: string }>;
+      };
+
+      set(s => {
+        const next: Partial<typeof s> = {};
+
+        // ── Data sources ──────────────────────────────────────────────────────
+        if (Array.isArray(json.dataSources) && json.dataSources.length > 0) {
+          const savedFetches = restoreDsLastFetches();
+          const withFetches = json.dataSources.map(d =>
+            savedFetches[d.id] ? { ...d, _lastFetch: savedFetches[d.id] } : d
+          );
+          const configIds = new Set(withFetches.map(d => d.id));
+          const userAdded = s.pageDataSources.filter(d => !configIds.has(d.id) && !(d as { _fromConfig?: boolean })._fromConfig);
+          const userAddedWithFetches = userAdded.map(d =>
+            savedFetches[d.id] ? { ...d, _lastFetch: savedFetches[d.id] } : d
+          );
+          const configFolderIds = new Set((json.dsFolders ?? []).map(f => f.id));
+          const userDsFolders = s.dsFolders.filter(f => !configFolderIds.has(f.id));
+          next.pageDataSources = [...withFetches, ...userAddedWithFetches];
+          next.dsFolders = [...(json.dsFolders ?? []), ...userDsFolders];
+        }
+
+        // ── Variables from config/variables.json ──────────────────────────────
+        if (Array.isArray(json.variables) && json.variables.length > 0) {
+          const configVarIds = new Set(json.variables.map(v => v.id));
+          // Keep user-added vars that are NOT from config
+          const userVars = s.customVars.filter(v => !v.id || !configVarIds.has(v.id));
+          const configVars: CustomVar[] = json.variables.map(v => ({
+            id: v.id,
+            name: v.id,                  // UUID as the name (for backward compat)
+            label: v.label ?? v.id,
+            type: (v.type ?? 'string') as CustomVar['type'],
+            initialValue: v.initialValue,
+            folderId: v.folder,
+            fields: v.fields,
+          }));
+          next.customVars = [...configVars, ...userVars];
+        }
+
+        // ── Variable folders ──────────────────────────────────────────────────
+        if (Array.isArray(json.varFolders) && json.varFolders.length > 0) {
+          const configFolderIds = new Set(json.varFolders.map(f => f.id));
+          const userVarFolders = s.varFolders.filter(f => !configFolderIds.has(f.id));
+          next.varFolders = [
+            ...json.varFolders.map(f => ({ id: f.id, name: f.label })),
+            ...userVarFolders,
+          ];
+        }
+
+        return next;
+      });
+    } catch {
+      // Silently ignore — builder still works without pre-populated sources.
+    }
   },
 
   setShowInteractionLines: (on) => set({ showInteractionLines: on }),
@@ -1756,4 +1917,8 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
 // so it's available as soon as the JS bundle loads — before React hydration.
 if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
   (window as unknown as Record<string, unknown>).__builderStore = useBuilderStore;
+  // Also expose the SDUI data store for E2E tests that verify page binding updates
+  import('@/store/sdui-store').then(m => {
+    (window as unknown as Record<string, unknown>).__sduiStore = m.useSduiStore;
+  });
 }

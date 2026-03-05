@@ -4,19 +4,6 @@
       "user": null,
       "token": null
     },
-    "cart": {
-      "id": null,
-      "code": null,
-      "state": null,
-      "totalQuantity": 0,
-      "subTotalWithTax": 0,
-      "shippingWithTax": 0,
-      "totalWithTax": 0,
-      "currencyCode": "USD",
-      "couponCodes": [],
-      "discounts": [],
-      "lines": []
-    },
     "route": {
       "path": "/",
       "slug": "",
@@ -25,36 +12,7 @@
       "sort": "name-asc",
       "facets": []
     },
-    "nav": {
-      "collections": [],
-      "searchQuery": "",
-      "themeMenuOpen": false,
-      "colorScheme": "system"
-    },
-    "collectionSkip": 0,
-    "searchSkip": 0,
     "collectionPageSize": 12,
-    "selectedFacets": [],
-    "sortInput": {
-      "name": "ASC"
-    },
-    "sort": "name-asc",
-    "sortMenuOpen": false,
-    "layout": {
-      "drawerOpen": false,
-      "cartDrawerOpen": false
-    },
-    "checkout": {
-      "step": "contact",
-      "contactCompleted": false,
-      "order": null,
-      "shippingMethods": [],
-      "paymentMethods": [],
-      "countries": [],
-      "selectedShippingMethodId": null,
-      "selectedPaymentMethodCode": null,
-      "useSameForBilling": true
-    },
     "_workflow": {
       "lastAction": null,
       "lastError": null
@@ -63,18 +21,15 @@
   "paths": {
     "authUser": "auth.user",
     "routePath": "route.path",
-    "routeSlug": "route.slug",
-    "routeQ": "route.q",
-    "routeSort": "route.sort",
-    "routeFacets": "route.facets"
+    "routeSlug": "route.slug"
   },
   "engineConventions": {
     "computedConventionKeys": [
       "sortInputMap",
       "defaultSortInput"
     ],
-    "themePath": "nav.colorScheme",
-    "defaultPaginationPath": "collectionSkip",
+    "themePath": "d3e4f5a6-b7c8-9012-defa-123456789012",
+    "defaultPaginationPath": "a6b7c8d9-e0f1-2345-abcd-456789012345",
     "defaultPaginationFetchAction": "fetchCollection",
     "shareSlugPrefix": "/product",
     "loadingSuffix": "loading",
@@ -84,10 +39,10 @@
     "defaultErrorMessagePath": "message",
     "workflowPath": "_workflow",
     "persistPaths": [
-      "checkout.selectedPaymentMethodCode"
+      "b3c4d5e6-f7a8-9012-bcde-123456789012"
     ],
     "resetVarsOnNavigate": [
-      "nav.themeMenuOpen"
+      "e4f5a6b7-c8d9-0123-efab-234567890123"
     ],
     "sortInputMap": {
       "name-asc": {
@@ -106,39 +61,19 @@
     "defaultSortInput": {
       "name": "ASC"
     },
-    "screenScopedAliases": [
-      "form",
-      "errors"
-    ],
     "graphqlEndpoint": "http://localhost:3000/shop-api",
     "graphqlHeaders": {
       "vendure-token": "__default_channel__"
     },
     "graphqlCredentials": "include"
   },
-  "globalInitActions": [
-    {
-      "action": "fetchNavCollections"
-    },
-    {
-      "action": "fetchCart"
-    }
-  ],
-  "variableStoreInitial": {
-    "collectionSkip": 0,
-    "searchSkip": 0,
-    "sortMenuOpen": false,
-    "product": {
-      "selectedOptions": {},
-      "imageIndex": 0
-    }
-  },
+  "globalInitActions": [],
   "searchParamSync": [
     {
       "param": "q",
       "path": "route.q",
       "default": "",
-      "variableStorePath": "nav.searchQuery",
+      "variableStorePath": "f5a6b7c8-d9e0-1234-fabc-345678901234",
       "triggersParamChange": true
     },
     {
@@ -160,21 +95,21 @@
     },
     {
       "param": "page",
-      "path": "collectionSkip",
+      "path": "a6b7c8d9-e0f1-2345-abcd-456789012345",
       "default": "1",
       "transform": "pageToSkip",
       "pageSize": 12,
-      "variableStorePath": "collectionSkip",
+      "variableStorePath": "a6b7c8d9-e0f1-2345-abcd-456789012345",
       "triggersParamChange": true,
       "routePrefix": "/collection"
     },
     {
       "param": "page",
-      "path": "searchSkip",
+      "path": "b7c8d9e0-f1a2-3456-bcde-567890123456",
       "default": "1",
       "transform": "pageToSkip",
       "pageSize": 12,
-      "variableStorePath": "searchSkip",
+      "variableStorePath": "b7c8d9e0-f1a2-3456-bcde-567890123456",
       "triggersParamChange": true,
       "routePrefix": "/search"
     }

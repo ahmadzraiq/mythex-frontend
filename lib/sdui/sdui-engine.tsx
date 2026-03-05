@@ -16,20 +16,53 @@ import { SDURenderer } from './renderer';
 import { getGlobalVariableStore } from './global-variable-store';
 import { RunActionProvider } from './run-action-context';
 import type { SDUIConfig, SDUIContext, SDUIAction, SDUIDataSource } from './types';
-import { getNestedValue, setNestedValue } from './nested-utils';
+import { getNestedValue, setNestedValue, extractReferencedDataSources } from './nested-utils';
+import { dsCacheGet, dsCacheSet, dsCacheClear } from './ds-cache';
 import { runComputed, getComputedDeps } from './computed-runner';
+import { evaluateFormula } from './formula-evaluator';
 import storeConfig from '@/config/store-config';
+import routesConfig from '@/config/routes.json';
+import themeConfig from '@/config/theme.json';
 import { CONVENTIONS } from './conventions';
 import { isScreenScopedPath, isScopeVariable } from './path-utils';
 import { computeMergedState as computeMergedStateFn, finalizeMergedWithVariableStore, mergeDataPaths } from './merge-state';
 import { dispatchToHandler } from './actions/handlers';
-import type { ValidationRule, ActionsConfig, EngineConfig, RouteConfig, SDUIEngineProps } from './engine-types';
+import type { ValidationRule, ActionsConfig, EngineConfig, RouteConfig, SDUIEngineProps, NamedDataSourceDef } from './engine-types';
 
-export type { ValidationRule, ActionsConfig, EngineConfig, RouteConfig, SDUIEngineProps } from './engine-types';
+export type { ValidationRule, ActionsConfig, EngineConfig, RouteConfig, SDUIEngineProps, NamedDataSourceDef } from './engine-types';
 
 let globalInitHasRun = false;
 
 const computedDefs = (storeConfig as { computed?: unknown[] }).computed ?? [];
+
+/** Static pages map built from config/routes.json — keyed by route config name (or UUID if present) */
+const PAGES_MAP: Record<string, {
+  id: string; name: string; path: string; dynamic: boolean; auth: boolean;
+}> = {};
+{
+  type RouteEntry = { path: string; config: string; id?: string; auth?: boolean; dynamic?: boolean };
+  const routes = (routesConfig as { routes?: RouteEntry[] }).routes ?? [];
+  for (const r of routes) {
+    const key = r.id ?? r.config;
+    PAGES_MAP[key] = {
+      id: r.id ?? r.config,
+      name: r.config,
+      path: r.path,
+      dynamic: r.dynamic ?? false,
+      auth: r.auth ?? false,
+    };
+  }
+}
+
+/** Static theme object built from config/theme.json */
+const THEME_OBJ: Record<string, unknown> = {
+  colors: (themeConfig as Record<string, unknown>).colors ?? {},
+  colorsDark: (themeConfig as Record<string, unknown>).colorsDark ?? {},
+  sections: (themeConfig as Record<string, unknown>).sections ?? {},
+  sectionsDark: (themeConfig as Record<string, unknown>).sectionsDark ?? {},
+  fonts: (themeConfig as Record<string, unknown>).fonts ?? {},
+  cssVariables: (themeConfig as Record<string, unknown>).cssVariables ?? {},
+};
 const computedDepPaths = getComputedDeps(computedDefs as Parameters<typeof getComputedDeps>[0]);
 
 /** Ref for page to trigger fetch when searchParams change (avoids engine remount) */
@@ -132,6 +165,7 @@ export function SDUIEngine({
   previewState,
   previewStates,
   previewData,
+  dataSources,
 }: SDUIEngineProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -141,6 +175,16 @@ export function SDUIEngine({
   const setData = useSduiStore((s) => s.setData);
   const setError = useSduiStore((s) => s.setError);
   const append = useSduiStore((s) => s.append);
+
+  // Tracks per-datasource refetch triggers incremented by the refetchDataSource action.
+  const [dsRefetchKeys, setDsRefetchKeys] = useState<Record<string, number>>({});
+  const prevDsRefetchKeysRef = useRef<Record<string, number>>({});
+  // Stable ref so the handler always calls the latest setter without stale closure issues.
+  const triggerDataSourceRefetchRef = useRef<(name: string) => void>(() => {});
+  triggerDataSourceRefetchRef.current = (name: string) => {
+    dsCacheClear(name);
+    setDsRefetchKeys(prev => ({ ...prev, [name]: (prev[name] ?? 0) + 1 }));
+  };
 
   const computeMergedState = useCallback(
     (state: { data: Record<string, unknown>; loading: Record<string, boolean>; error: Record<string, string | null> }) =>
@@ -227,6 +271,58 @@ export function SDUIEngine({
     }
     return next;
   }, []);
+
+  // ── globalContext: browser/screen runtime object — injected into merged state ──
+  // We update this whenever pathname or searchParams changes so formulas that
+  // reference globalContext.browser.path / query / etc. always see fresh values.
+  const globalContextRef = useRef<Record<string, unknown>>({});
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const query: Record<string, string> = {};
+    searchParams?.forEach((v, k) => { query[k] = v; });
+    const url = window.location.href;
+    const domain = window.location.hostname;
+    const baseUrl = window.location.origin;
+    globalContextRef.current = {
+      browser: {
+        url,
+        path: pathname ?? window.location.pathname,
+        domain,
+        baseUrl,
+        query,
+        // breakpoint / environment / theme are best-effort at this point
+        breakpoint: (() => {
+          const w = window.innerWidth;
+          if (w < 640) return 'sm';
+          if (w < 768) return 'md';
+          if (w < 1024) return 'lg';
+          if (w < 1280) return 'xl';
+          return '2xl';
+        })(),
+        environment: process.env.NODE_ENV ?? 'production',
+      },
+      screen: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        scroll: {
+          x: window.scrollX,
+          y: window.scrollY,
+          xPercent: document.documentElement.scrollWidth > window.innerWidth
+            ? Math.round((window.scrollX / (document.documentElement.scrollWidth - window.innerWidth)) * 100)
+            : 0,
+          yPercent: document.documentElement.scrollHeight > window.innerHeight
+            ? Math.round((window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100)
+            : 0,
+        },
+      },
+    };
+    mergedStore.getState().setMerged((prev) => ({
+      ...prev,
+      globalContext: globalContextRef.current,
+      pages: PAGES_MAP,
+      theme: THEME_OBJ,
+    }));
+  }, [pathname, searchParams, mergedStore]);
 
   useEffect(() => {
     const base = computeMergedState(useSduiStore.getState());
@@ -385,6 +481,7 @@ export function SDUIEngine({
           routes,
           setColorScheme,
           useSduiStore: useSduiStore as { getState: () => { setData: (path: string, value: unknown) => void } },
+          triggerDataSourceRefetch: (name: string) => triggerDataSourceRefetchRef.current(name),
         };
         if (actionDef && (await dispatchToHandler(actionDef as import('./actions/handlers/types').ActionDef, handlerCtx))) {
           return;
@@ -480,6 +577,211 @@ export function SDUIEngine({
   useEffect(() => {
     config.dataSources?.forEach((ds) => fetchDataStable(ds));
   }, [config.dataSources]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch named data sources from config/datasources.json on mount.
+  // Results are stored at the source's name path via setData(name, result).
+  useEffect(() => {
+    if (!dataSources || Object.keys(dataSources).length === 0) return;
+    const conventions = CONVENTIONS as { loadingSuffix?: string; errorSuffix?: string };
+    const loadingSuffix = conventions.loadingSuffix ?? '_loading';
+    const errorSuffix = conventions.errorSuffix ?? '_error';
+
+    // Use the fully-merged state: Zustand + variable store + _conventions + computed.
+    // _conventions (sortInputMap, defaultSortInput, etc.) is only injected by
+    // finalizeMergedWithVariableStore, so skipping it would cause sort formulas to fail.
+    const mergedBase = computeMergedStateFn(
+      useSduiStore.getState(),
+      config as { state?: Record<string, unknown>; meta?: Record<string, unknown> },
+      computedDefs as { output: string; expr: object }[]
+    );
+    const vs = getGlobalVariableStore().getState().getFullState();
+    const currentState = finalizeMergedWithVariableStore(mergedBase, vs);
+    const interpolate = (str: string): string =>
+      str.replace(/\{\{([^}]+)\}\}/g, (_, path: string) => {
+        const v = getNestedValue(currentState, path.trim());
+        return v != null ? String(v) : '';
+      });
+
+    const extractPath = (json: unknown, responsePath?: string): unknown => {
+      if (!responsePath) return json;
+      let result: unknown = json;
+      for (const part of responsePath.split('.')) {
+        result = (result as Record<string, unknown>)?.[part];
+      }
+      return result;
+    };
+
+    // Deep-walk a variables object and resolve values using the current merged state.
+    // Handles four patterns:
+    //   1. {"expr": "..."} or {"expr": <json-logic>}  → evaluated via evaluateFormula
+    //   2. {"var": "path"} or {"var": ["path", default]} → direct state lookup (type-preserving)
+    //   3. "{{path}} || fallback"  → path lookup with JSON-parsed fallback (type-preserving)
+    //   4. "{{path}}" (pure)       → type-preserving state lookup
+    //   5. "mixed {{path}} text"   → string interpolation
+    const resolveVariables = (vars: Record<string, unknown>): Record<string, unknown> => {
+      const result: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(vars)) {
+        if (typeof v === 'object' && v !== null && 'expr' in (v as object)) {
+          // Pattern 1: {"expr": "..."} — evaluate formula
+          const expr = (v as { expr: unknown }).expr;
+          try {
+            result[k] = evaluateFormula(expr as string | object, currentState).value;
+          } catch {
+            result[k] = null;
+          }
+        } else if (typeof v === 'object' && v !== null && 'var' in (v as object)) {
+          // Pattern 2: {"var": "path"} JSON Logic
+          const varRef = (v as { var: string | [string, unknown] }).var;
+          const pathStr = Array.isArray(varRef) ? varRef[0] : varRef;
+          const defaultVal = Array.isArray(varRef) ? varRef[1] : null;
+          const resolved = getNestedValue(currentState, pathStr as string);
+          result[k] = resolved !== undefined && resolved !== null ? resolved : defaultVal;
+        } else if (typeof v === 'object' && v !== null && !Array.isArray(v)) {
+          // Nested object — recurse
+          result[k] = resolveVariables(v as Record<string, unknown>);
+        } else if (typeof v === 'string') {
+          // Pattern 3: "{{path}} || fallback" — OR fallback with type preservation
+          const orMatch = v.match(/^\{\{([^}]+)\}\}\s*\|\|\s*(.+)$/);
+          if (orMatch) {
+            const pathVal = getNestedValue(currentState, orMatch[1].trim());
+            if (pathVal !== null && pathVal !== undefined && pathVal !== '') {
+              result[k] = pathVal;
+            } else {
+              const fallback = orMatch[2].trim();
+              try { result[k] = JSON.parse(fallback); } catch { result[k] = fallback; }
+            }
+          // Pattern 4: "{{path}}" pure — preserve type
+          } else if (/^\{\{([^}]+)\}\}$/.test(v)) {
+            const m = v.match(/^\{\{([^}]+)\}\}$/)!;
+            result[k] = getNestedValue(currentState, m[1].trim()) ?? null;
+          // Pattern 5: mixed string
+          } else {
+            result[k] = interpolate(v);
+          }
+        } else {
+          result[k] = v;
+        }
+      }
+      return result;
+    };
+
+    const sduiStore = useSduiStore.getState();
+
+    // Determine which sources were explicitly triggered by a refetchDataSource action.
+    const triggeredNames = new Set(
+      Object.keys(dsRefetchKeys).filter(n => dsRefetchKeys[n] !== (prevDsRefetchKeysRef.current[n] ?? 0))
+    );
+    prevDsRefetchKeysRef.current = { ...dsRefetchKeys };
+
+    // Only fetch data sources actually referenced by this page's config.
+    const allNames = Object.keys(dataSources);
+    const referencedNames = new Set(extractReferencedDataSources(config, allNames));
+
+    // If specific sources were triggered, only re-fetch those; otherwise fetch all referenced.
+    const neededNames = triggeredNames.size > 0
+      ? new Set([...triggeredNames].filter(n => referencedNames.has(n)))
+      : referencedNames;
+
+    Object.entries(dataSources)
+      .filter(([name]) => neededNames.has(name))
+      .forEach(([name, ds]: [string, NamedDataSourceDef]) => {
+        // Data is stored under collections.UUID so JSON can access it as
+        // {{collections.UUID.data.field}} — matches the path convention used
+        // throughout all screen/fragment configs.
+        const storeKey = `collections.${name}`;
+        sduiStore.setData(`${storeKey}.${loadingSuffix}`, true);
+        sduiStore.setData(`${storeKey}.${errorSuffix}`, null);
+
+      if (ds.type === 'graphql') {
+        // ── GraphQL data source ──────────────────────────────────────────────
+        const cacheTag = ds.cacheTag ?? '';
+        const cacheTTL = Number(ds.cacheTTL ?? 0);
+        const cacheKeyVars = (ds.cacheKeyVars ?? []) as string[];
+
+        // Build cache key and check before fetching
+        let cacheKey = '';
+        if (cacheTag && cacheTTL > 0) {
+          const keyParts = cacheKeyVars.map(p => String(getNestedValue(currentState, p) ?? ''));
+          cacheKey = `ds:${cacheTag}:${keyParts.join(':')}`;
+          const cached = dsCacheGet(cacheKey);
+          if (cached !== undefined) {
+            sduiStore.setData(storeKey, cached);
+            sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
+            return;
+          }
+        }
+
+        const endpoint = interpolate(ds.endpoint);
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (ds.headers) {
+          for (const [k, v] of Object.entries(ds.headers)) {
+            const resolved = interpolate(String(v));
+            if (resolved) headers[k] = resolved;
+          }
+        }
+        const resolvedVariables = resolveVariables((ds.variables ?? {}) as Record<string, unknown>);
+        const gqlCredentials = (CONVENTIONS as { graphqlCredentials?: RequestCredentials }).graphqlCredentials;
+        fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ query: ds.query, variables: resolvedVariables }),
+          ...(gqlCredentials ? { credentials: gqlCredentials } : {}),
+        })
+          .then(res => res.json())
+          .then((json: unknown) => {
+            const data = json as { data?: unknown; errors?: Array<{ message: string }> };
+            if (data.errors?.length) {
+              sduiStore.setData(`${storeKey}.${errorSuffix}`, data.errors[0]?.message ?? 'GraphQL error');
+              sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
+              return;
+            }
+            const result = extractPath(json, ds.responsePath);
+            if (result === null && ds.skipStoreWhenNull) return;
+            if (cacheKey && cacheTTL > 0) dsCacheSet(cacheKey, result, cacheTTL);
+            sduiStore.setData(storeKey, result);
+            sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
+          })
+          .catch((err: unknown) => {
+            sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
+            sduiStore.setData(`${storeKey}.${errorSuffix}`, String(err));
+          });
+      } else {
+        // ── REST data source ─────────────────────────────────────────────────
+        const rawHeaders = ds.headers;
+        const headers: Record<string, string> = {};
+        if (Array.isArray(rawHeaders)) {
+          rawHeaders.filter(h => h.enabled !== false && h.key.trim()).forEach(h => {
+            headers[h.key] = h.value;
+          });
+        } else if (rawHeaders && typeof rawHeaders === 'object') {
+          for (const [k, v] of Object.entries(rawHeaders as Record<string, string>)) {
+            headers[k] = interpolate(v);
+          }
+        }
+        const enabled = (ds.queryParams ?? []).filter(p => p.enabled !== false && p.key.trim());
+        let url = ds.url;
+        if (enabled.length) {
+          const qs = enabled.map(p => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`).join('&');
+          url = `${url}${url.includes('?') ? '&' : '?'}${qs}`;
+        }
+        const fetchOpts: RequestInit = { method: ds.method ?? 'GET', headers };
+        if (ds.sendCredentials) fetchOpts.credentials = 'include';
+
+        fetch(url, fetchOpts)
+          .then(res => res.json())
+          .then((json: unknown) => {
+            const result = extractPath(json, ds.responsePath);
+            sduiStore.setData(storeKey, result);
+            sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
+          })
+          .catch((err: unknown) => {
+            sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
+            sduiStore.setData(`${storeKey}.${errorSuffix}`, String(err));
+          });
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataSources, dsRefetchKeys]);
 
   const globalInitActions = (storeConfig as { globalInitActions?: Array<{ action: string }> }).globalInitActions ?? [];
   useEffect(() => {

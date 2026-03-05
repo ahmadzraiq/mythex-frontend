@@ -29,6 +29,8 @@ A Figma-like visual page builder that renders SDUI components directly in the sa
 | `e2e/panel-layout.spec.ts` | Right-panel tests for Card, Center, Grid, Link, ScrollView, Table, Iframe, SvgViewer, Chart, MarkdownViewer, QRCode, GoogleMap (PL-01..23). |
 | `e2e/panel-overlays.spec.ts` | Right-panel tests for Modal, Tooltip, AlertDialog — isContainer + REQUIRED_PARENT guards (PO-01..09). |
 | `e2e/panel-charts.spec.ts` | Chart (bar/line/pie), QRCodeWidget, MarkdownViewer, GoogleMap, GoogleMapPlaces — isLeafWidget + render checks (PC-01..14). |
+| `e2e/builder-formula-editor.spec.ts` | Formula editor: opening/closing, input area, evaluation, tabs, function library, operators, unbind, apply, ExprBuilder integration (FE-01..77). |
+| `e2e/builder-formula-chips.spec.ts` | Formula chips: auto-chip on typing, function chips, undo/redo, copy/cut/paste, normalisation, select-all, Current value layout, data-panel chip colours (FE-M01..T05). |
 
 ---
 
@@ -1462,3 +1464,289 @@ interface FigmaColorPickerProps {
 **Rule:** Never store `var(--primary)` etc. as inline style values — always resolve to hex before calling `onChange`. The rest of the builder pipeline (serialize → preview → SDUI engine) handles hex only.
 
 **Rule:** `FigmaColorPicker` is used for Fill (background), Stroke (border), and Typography (text color) in `_panel-right.tsx`. The old `ColorInput` function remains in `_panel-right.tsx` only as a backup but is no longer rendered.
+
+---
+
+## §35 Formula Binding — `FieldWithBinding`, `ToggleBind`, and Class-Based Fields
+
+### FieldWithBinding — Two Layout Modes
+
+`FieldWithBinding` in `_formula-panel.tsx` wraps any input with a bind icon (≈). When a formula is applied the input is replaced by "ƒ Edit formula".
+
+- **Default layout** (no `stackLayout`): children + ≈ side-by-side. Use for number/text inputs where the bind icon can sit to the right.
+- **Stack layout** (`stackLayout`): displayLabel + ≈ on top row, children or "ƒ Edit formula" below. Use when children are wide (toggle button groups, 9-cell grids, direction buttons) to prevent horizontal overflow.
+
+**Rule:** Never put `FieldWithBinding` (which has `flex: 1`) inside a header row (`justifyContent: space-between`) alongside a `SectionHeader`. The FieldWithBinding expands and the "ƒ Edit formula" button inflates the header when bound. Instead:
+1. Place `SectionHeader` alone at the top.
+2. Place `FieldWithBinding` with `stackLayout` below it, with the interactive controls as its children.
+
+```tsx
+// ❌ BAD — FieldWithBinding in header row inflates it when bound
+<div style={{ display: 'flex', justifyContent: 'space-between' }}>
+  <SectionHeader title="Self Alignment" />
+  <FieldWithBinding label="selfAlignment" ...><span /></FieldWithBinding>
+</div>
+{!isBound && <div>toggles</div>}
+
+// ✅ GOOD — SectionHeader alone, FieldWithBinding wraps toggles with stackLayout
+<SectionHeader title="Self Alignment" />
+<FieldWithBinding label="selfAlignment" stackLayout ...>
+  <div style={{ display: 'flex', gap: 4 }}>{toggles}</div>
+</FieldWithBinding>
+```
+
+This applies to: **Self Alignment**, **Alignment** (9-cell grid), **Auto Layout** (direction buttons).
+
+---
+
+### ToggleBind — Compact Row for Toggle + Bind
+
+For sections that are a simple on/off toggle (Visible, Disabled, Repeat/List, Clip content), use the `ToggleBind` component defined in `_panel-right.tsx`.
+
+```tsx
+<ToggleBind
+  rowLabel="Visible"
+  fieldId="visibility-condition"
+  hint="e.g. {{isLoggedIn}}"
+  expectedType="boolean"
+  isOn={!isHidden}
+  value={formulaValue}
+  onToggle={() => /* toggle the boolean */}
+  onChange={v => /* handle FormulaValue */}
+/>
+```
+
+Renders: `LABEL | [toggle or ƒ Edit formula] [≈]` — all tightly grouped on the right (no flex-1 expansion).
+
+**Rule:** Never use `FieldWithBinding` for toggle+bind rows. It has `flex: 1` which floats the ≈ icon to the far right. Use `ToggleBind` instead.
+
+---
+
+### Class-Based Field Binding (`classFormulas` sidecar)
+
+Style-based fields (width, color, etc.) store `{ formula: "..." }` directly in `node.props.style.*`. Class-based fields (selfAlignment, textAlign, shadow, etc.) cannot store formulas in `className` (which is always a plain string).
+
+**Solution:** `node.props.classFormulas` is a sidecar object that stores formula bindings for class-based fields:
+
+```ts
+node.props.classFormulas = {
+  selfAlignment: { formula: '"self-center"' },
+  textAlign: { formula: '"text-center"' },
+}
+```
+
+**`bindOrPatchCls(fieldKey, applyFn, v)`** in `_panel-right.tsx` manages writes:
+- If `v` is a formula → stores in `props.classFormulas[fieldKey]`, evaluates immediately, calls `applyFn(evaluated)`
+- If `v` is a plain string → clears `props.classFormulas[fieldKey]`, calls `applyFn(v)`
+
+**Renderer** (`lib/sdui/renderer.tsx`) reads `classFormulas` after `cleanProps` is assembled and merges evaluated classes into `className`:
+```ts
+for (const [, fv] of Object.entries(classFormulas)) {
+  if (fv?.formula) extraCls += ' ' + evaluateFormula(fv.formula, state).value;
+}
+cleanProps.className = mergeTailwindClasses(className, extraCls.trim());
+```
+
+**Rule:** Every `FieldWithBinding` for a class-based property must:
+1. Read `value` from `(classFormulas?.['fieldKey'] as FormulaValue) ?? derivedToken`
+2. Call `bindOrPatchCls('fieldKey', applyFn, v)` in `onChange`
+
+---
+
+### Rules of Hooks — No Early Returns Before Hooks
+
+**Problem:** React throws "change in order of Hooks" when a component has an early `return null` BEFORE a hook call (`useState`, `useCallback`, etc.).
+
+**Fix:** Always call ALL hooks unconditionally before any early return.
+
+```tsx
+// ❌ BAD
+function DisableInDesign({ node }) {
+  const store = useBuilderStore();
+  if (!INTERACTIVE_TYPES.has(node.type)) return null;  // early return
+  const [state, setState] = useState(false);           // hook after return!
+}
+
+// ✅ GOOD
+function DisableInDesign({ node }) {
+  const store = useBuilderStore();
+  const [state, setState] = useState(false);           // all hooks first
+  if (!INTERACTIVE_TYPES.has(node.type)) return null;  // early return after
+}
+```
+
+---
+
+## §36 Visibility — Force Show in Editor
+
+When a node has a `condition` (formula or `false`), the Visible section shows a sub-toggle: **"Force show in editor"**.
+
+- Toggle ON → sets `node._forceShowInEditor = true`
+- Toggle OFF → removes the field
+
+In `lib/sdui/renderer.tsx`, before condition evaluation:
+```ts
+const forceShow = builderMode && node._forceShowInEditor === true;
+if (!forceShow) {
+  if ((node.condition as unknown) === false) return null;
+  if (node.condition != null && !evaluateCondition(node.condition, sduiContext)) return null;
+}
+```
+
+**Rule:** `_forceShowInEditor` is a builder-only field. The exported JSON still has the real `condition`, so production behaviour is unaffected. Use amber toggle colour (`#f59e0b`) to visually distinguish it from normal blue toggles.
+
+---
+
+## §37 Repeat / List — Plain String Map Paths
+
+Existing JSONs store `map` as a plain string (e.g. `"map": "store.products"`). `RepeatInDesign` normalises it for display:
+
+```ts
+const mapFormulaValue: FormulaValue = isBoundValue(mapValue)
+  ? mapValue                              // already a formula object
+  : typeof mapValue === 'string' && mapValue
+    ? { formula: mapValue }              // wrap plain string for editor display
+    : false;                             // no map → toggle OFF
+```
+
+When saving, simple dot-paths are stored back as plain strings (not formula objects):
+```ts
+const isSimplePath = /^[\w$.]+$/.test(formulaString.trim());
+store.patchNodeField(nodeId, 'map', isSimplePath ? formulaString : { formula: formulaString });
+```
+
+**Rule:** Never require users to update existing JSON. Normalise plain-string `map` values to `{ formula }` for editor display and unwrap back to plain strings when saving simple paths.
+
+---
+
+## §38 Formula Editor — Chips, Auto-chip, Undo/Redo, Copy/Cut/Paste
+
+### Chip building
+
+Three chip builders live at the top of `_formula-editor.tsx`:
+
+| Builder | Usage | Colour |
+|---|---|---|
+| `buildChipSpan(formula, label, type)` | collection/variable paths | blue `#1d4ed8` / green `#15803d` |
+| `buildOperatorChip(label, insert, category)` | operators and punctuation | neutral gray `#374151` |
+| `buildFunctionChip(fnName)` | known function names | same gray as operators |
+
+All chips use `padding:2px 4px`, `border-radius:5px`, `margin:0 1px`, `font-size:11px`, `contentEditable="false"`. **No** `user-select:none` — chips must be visually selectable via Cmd+A.
+
+`data-type` attribute: `"collection"`, `"variable"`, `"operator"`, `"function"`.
+`data-formula` attribute: the raw formula string the chip represents (used by `serializeEditor`).
+
+For function chips, `data-formula` is the function **name only** (e.g. `ifEmpty`), not `ifEmpty(` — inserting the `(` chip separately prevents duplicate `((` on copy.
+
+### Auto-chip on typing (`rechipCurrentTextNode`)
+
+Called from `onInput`. Scans the current text node using `AUTO_CHIP_RE` (longest-match-first alternation):
+```
+/===|!==|>=|<=|&&|\|\||\(|\)|,|\+|\*|\/|%|-|>|</g
+```
+Converts matched tokens to `buildOperatorChip` nodes. **Exception:** when `(` is matched, checks if the text immediately before it is a known function name (`FN_NAME_SUFFIX_RE`) — if so, chips the function name first, then chips `(`.
+
+**Key constraint:** `AUTO_CHIP_RE` fires per-keystroke. Multi-char operators like `>=` do NOT auto-chip from keystrokes (the `>` is chipped first before `=` is typed). To get a `>=` chip, paste the string with surrounding spaces ` >= ` so `OP_TOKEN_RE` can match the full insert form.
+
+### Undo/Redo history
+
+Custom history stack via `historyRef` / `historyIdxRef`. Rules:
+- When `rechipCurrentTextNode` returns `true` (chip was created), call `pushHistory` **immediately** (not debounced) so each chip is its own undo step.
+- When plain text is typed, use `pushHistoryDebounced` (400ms) to group strokes.
+- In `handleKeyDown` for Cmd+Z / Cmd+Shift+Z, **cancel the pending debounce timer** (`clearTimeout(historyTimerRef.current)`) before executing undo/redo to prevent stale snapshots from corrupting the redo stack.
+
+### Copy / Cut / Paste
+
+- **Copy** (`handleCopy`): serialises the selected fragment via `serializeRangeFromEditor` to a raw formula string and writes to clipboard. HTML chips are NOT copied.
+- **Cut** (`handleCut`): same as copy + deletes the selected content. Calls `normalizeEditorContent` after deletion.
+- **Paste** (`handlePaste`): reads plain text, conditionally calls `restoreCaret()` (only when no live selection), then `insertPastedFormulaAtCaret`. Calls `normalizeEditorContent` after insertion to clean up any stray blocks.
+
+`restoreCaret()` is guarded: it only restores the saved range when the editor is **not** focused and has no active selection, to avoid overwriting a live Cmd+A selection.
+
+### Normalisation (`normalizeEditorContent`)
+
+Called on `onInput`, after paste, and after cut. Two passes:
+1. **Pass 1** — removes stray `<br>` and unwraps browser-injected `<div>`/`<p>` blocks (caused by backspace next to non-editable chips).
+2. **Pass 2** — inserts a Zero-Width Space (`\u200b`) between every pair of directly adjacent non-editable chips to give the browser a stable cursor anchor.
+
+`\u200b` is stripped during serialisation (`serializeEditor`, `serializeRangeFromEditor`).
+
+### Data tab chip colours
+
+Collection header pills (`data-testid="fe-collection-pill-*"`) and `DataTreeNode` field-name buttons must use the same colours as collection chips in the editor:
+- Background: `#1d4ed8` (hover: `#2563eb`)
+- Text: `#bfdbfe`
+- Border: `1px solid #2563eb`
+- Padding: `2px 4px`
+- Font-size: `11px`, `font-weight:600`, `font-family:monospace`
+
+This gives users visual continuity between what they click in the tree and what they see as chips in the formula input.
+
+### Layout — Current value section
+
+"Current value" and "Expected" labels are rendered as **separate column rows** (not inline), each with its preview box spanning full width:
+
+```tsx
+<div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+  {/* Row 1 — Current value (full width) */}
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <span>Current value</span>
+    <div style={{ width: '100%' }}>...</div>
+  </div>
+  {/* Row 2 — Expected (only when set) */}
+  {(hint || expectedType !== 'any') && (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <span>Expected</span>
+      <div style={{ width: '100%' }}>...</div>
+    </div>
+  )}
+</div>
+```
+
+### E2E test file
+
+`e2e/builder-formula-chips.spec.ts` — Groups M–T (FE-M01 to FE-T05, 40 tests):
+
+| Group | What is tested |
+|---|---|
+| M | Auto-chip on typing each operator (40 tests, one per operator) |
+| N | Function auto-chip when `(` follows a known function name |
+| O | Undo/redo history: per-chip steps, stale-debounce fix, round-trip |
+| P | Copy/cut/paste: clipboard content, selection replace, no new-lines |
+| Q | Normalisation: no `<br>` on backspace, no block injection |
+| R | Select-all includes chips (no `user-select:none`) |
+| S | "Current value" and "Expected" layout (separate rows) |
+| T | Data tab renders; collection pills have blue chip colours (skipped when no datasources) |
+
+**E2E patterns for contenteditable formula input:**
+
+```ts
+// Clear the editor reliably (avoids keyboard interaction with chips)
+await page.evaluate(() => {
+  const el = document.querySelector('[data-testid="formula-input"]') as HTMLElement;
+  el.innerHTML = '';
+  el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+});
+await page.waitForTimeout(600); // wait for 400ms debounce to push history
+
+// Type into contenteditable to trigger auto-chip
+await page.locator('[data-testid="formula-input"]').click();
+await page.keyboard.type('(');
+await page.waitForTimeout(200);
+await expect(page.locator('[data-testid="formula-input"] [data-type="operator"][data-formula="("]')).toBeVisible();
+
+// Paste a formula string with correct insert-form spacing (OP_TOKEN_RE requires spaces)
+await page.evaluate(async () => { await navigator.clipboard.writeText(' >= '); });
+await page.keyboard.press('Meta+v');
+
+// Serialise editor to raw formula string
+const formula = await page.evaluate(() => {
+  const el = document.querySelector('[data-testid="formula-input"]') as HTMLElement;
+  let out = '';
+  for (const node of el.childNodes) {
+    if (node.nodeType === Node.TEXT_NODE) out += (node.textContent ?? '').replace(/\u200b/g, '');
+    else if ((node as HTMLElement).dataset?.formula) out += (node as HTMLElement).dataset.formula;
+  }
+  return out;
+});
+```

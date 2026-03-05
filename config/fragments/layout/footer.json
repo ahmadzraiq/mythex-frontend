@@ -46,7 +46,7 @@
                   "children": [
                     {
                       "type": "Box",
-                      "map": "nav.collections",
+                      "map": "collections.a7b8c9d0-e1f2-3456-abcd-567890123456.data.collections.items",
                       "key": "footerCol",
                       "props": {
                         "className": "contents"
@@ -59,7 +59,7 @@
                               "action": "navigate",
                               "payload": {
                                 "routeConfig": "collection",
-                                "slug": "{{$item.slug}}"
+                                "slug": "{{context.item.slug}}"
                               }
                             }
                           },
@@ -69,7 +69,7 @@
                               "props": {
                                 "className": "text-sm text-[var(--theme-footer-textMuted)] hover:text-[var(--theme-foreground)]"
                               },
-                              "text": "{{$item.name}}"
+                              "text": "{{context.item.name}}"
                             }
                           ]
                         }

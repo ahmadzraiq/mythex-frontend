@@ -12,8 +12,8 @@
       },
       "actions": {
         "click": {
-          "type": "set",
-          "path": "checkout.step",
+          "type": "setVar",
+          "path": "d9e0f1a2-b3c4-5678-defa-789012345678",
           "value": "contact"
         }
       },
@@ -27,7 +27,7 @@
             {
               "type": "Box",
               "props": {
-                "className": { "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + (({{auth.user}} || {{checkout.order.customer.emailAddress}}) ? 'bg-green-500 !text-white' : ({{checkout.step}} === 'contact' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]'))" }
+                "className": { "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + (({{auth.user}} || {{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.emailAddress}}) ? 'bg-green-500 !text-white' : ({{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'contact' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]'))" }
               },
               "children": [
                 {
@@ -37,7 +37,7 @@
                     "size": 16,
                     "className": "!text-white"
                   },
-                  "condition": "{{auth.user}} || {{checkout.order.customer.emailAddress}}"
+                  "condition": "{{auth.user}} || {{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.emailAddress}}"
                 },
                 {
                   "type": "Text",
@@ -45,7 +45,7 @@
                     "className": "font-semibold text-sm !text-white"
                   },
                   "text": "1",
-                  "condition": "!({{auth.user}} || {{checkout.order.customer.emailAddress}}) && {{checkout.step}} === 'contact'"
+                  "condition": "!({{auth.user}} || {{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.emailAddress}}) && {{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'contact'"
                 },
                 {
                   "type": "Text",
@@ -53,7 +53,7 @@
                     "className": "font-semibold text-sm !text-[var(--theme-muted-foreground)]"
                   },
                   "text": "1",
-                  "condition": "!({{auth.user}} || {{checkout.order.customer.emailAddress}}) && {{checkout.step}} !== 'contact'"
+                  "condition": "!({{auth.user}} || {{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.emailAddress}}) && {{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} !== 'contact'"
                 }
               ]
             },
@@ -79,7 +79,7 @@
                 "size": 16,
                 "className": "!text-[var(--theme-muted-foreground)]"
               },
-              "condition": "{{checkout.step}} === 'contact'"
+              "condition": "{{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'contact'"
             },
             {
               "type": "NavIcon",
@@ -88,7 +88,7 @@
                 "size": 16,
                 "className": "!text-[var(--theme-muted-foreground)]"
               },
-              "condition": "{{checkout.step}} !== 'contact'"
+              "condition": "{{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} !== 'contact'"
             }
           ]
         }
@@ -99,7 +99,7 @@
       "props": {
         "className": "pb-6"
       },
-      "condition": "{{checkout.step}} === 'contact'",
+      "condition": "{{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'contact'",
       "children": [
         {
           "type": "Box",
@@ -156,18 +156,14 @@
                       "props": {
                         "type": "email",
                         "placeholder": "you@example.com",
-                        "value": "{{form.emailAddress}}"
+                        "value": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.emailAddress}}"
                       },
                       "actions": {
                         "change": {
                           "type": "runMultiple",
                           "actions": [
                             {
-                              "action": "setState",
-                              "payload": {
-                                "path": "screens.checkout.form.emailAddress",
-                                "value": "$event"
-                              }
+                              "type": "setFormField", "formId": "d1e2f3a4-b5c6-7890-defa-890123456789", "field": "emailAddress", "value": "$event"
                             },
                             {
                               "action": "setState",
@@ -187,14 +183,14 @@
                   "props": {
                     "className": "min-h-[20px]"
                   },
-                  "condition": "{{screens.checkout.errors.form.emailAddress}}",
+                  "condition": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].errors.emailAddress}}",
                   "children": [
                     {
                       "type": "Text",
                       "props": {
                         "className": "text-sm text-red-500 dark:text-red-400"
                       },
-                      "text": "{{errors.form.emailAddress}}"
+                      "text": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].errors.emailAddress}}"
                     }
                   ]
                 }
@@ -226,18 +222,14 @@
                           "type": "InputField",
                           "props": {
                             "placeholder": "Jane",
-                            "value": "{{form.firstName}}"
+                            "value": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.firstName}}"
                           },
                           "actions": {
                             "change": {
                               "type": "runMultiple",
                               "actions": [
                                 {
-                                  "action": "setState",
-                                  "payload": {
-                                    "path": "screens.checkout.form.firstName",
-                                    "value": "$event"
-                                  }
+                                  "type": "setFormField", "formId": "d1e2f3a4-b5c6-7890-defa-890123456789", "field": "firstName", "value": "$event"
                                 },
                                 {
                                   "action": "setState",
@@ -257,14 +249,14 @@
                       "props": {
                         "className": "min-h-[20px]"
                       },
-                      "condition": "{{screens.checkout.errors.form.firstName}}",
+                      "condition": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].errors.firstName}}",
                       "children": [
                         {
                           "type": "Text",
                           "props": {
                             "className": "text-sm text-red-500 dark:text-red-400"
                           },
-                          "text": "{{errors.form.firstName}}"
+                          "text": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].errors.firstName}}"
                         }
                       ]
                     }
@@ -290,18 +282,14 @@
                           "type": "InputField",
                           "props": {
                             "placeholder": "Doe",
-                            "value": "{{form.lastName}}"
+                            "value": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.lastName}}"
                           },
                           "actions": {
                             "change": {
                               "type": "runMultiple",
                               "actions": [
                                 {
-                                  "action": "setState",
-                                  "payload": {
-                                    "path": "screens.checkout.form.lastName",
-                                    "value": "$event"
-                                  }
+                                  "type": "setFormField", "formId": "d1e2f3a4-b5c6-7890-defa-890123456789", "field": "lastName", "value": "$event"
                                 },
                                 {
                                   "action": "setState",
@@ -321,14 +309,14 @@
                       "props": {
                         "className": "min-h-[20px]"
                       },
-                      "condition": "{{screens.checkout.errors.form.lastName}}",
+                      "condition": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].errors.lastName}}",
                       "children": [
                         {
                           "type": "Text",
                           "props": {
                             "className": "text-sm text-red-500 dark:text-red-400"
                           },
-                          "text": "{{errors.form.lastName}}"
+                          "text": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].errors.lastName}}"
                         }
                       ]
                     }

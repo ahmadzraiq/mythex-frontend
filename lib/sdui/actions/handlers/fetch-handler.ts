@@ -1,67 +1,107 @@
 /**
- * Handler for type: "fetch" - REST API calls
+ * REST fetch action handler — type: "fetch"
+ *
+ * Sends a REST HTTP request.
+ * Supports:
+ *   url (with {{interpolation}}), method, headers, body, queryParams,
+ *   responsePath, storeIn, storeFullResponseIn,
+ *   errorMessagePath, onSuccess
  */
 
 import { getNestedValue } from '../../nested-utils';
-import { interpolateUrl, resolvePayload } from '../resolve-value';
+import { resolveValue, interpolateUrl } from '../resolve-value';
 import type { ActionDef, ActionHandlerContext } from './types';
 
 export const fetchHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
   (ctx) => async (actionDef) => {
-    const CONVENTIONS = ctx.CONVENTIONS as { defaultStoreIn?: string; defaultErrorMessagePath?: string };
-    const storeIn = (actionDef.storeIn ?? CONVENTIONS.defaultStoreIn) as string;
-    const storeFullResponseIn = actionDef.storeFullResponseIn as string | undefined;
-    const errorMessagePath = (actionDef.errorMessagePath ?? CONVENTIONS.defaultErrorMessagePath) as string;
-    const url = interpolateUrl(String(actionDef.url ?? ''), ctx.get, ctx.scope);
-    const map = actionDef.map as Record<string, string> | undefined;
-    const responsePath = actionDef.responsePath as string | undefined;
-    const body = actionDef.body as Record<string, unknown> | undefined;
-    const resolvedBody = body ? resolvePayload(body, ctx.get, ctx.scope) : undefined;
+    const storeIn = (actionDef.storeIn ?? '') as string;
+    const fullState = ctx.getFullMergedState();
 
-    ctx.setLoading(storeIn, true);
+    // ── URL ───────────────────────────────────────────────────────────────────
+    const rawUrl = (actionDef.url ?? '') as string;
+    if (!rawUrl) {
+      console.warn('[fetch] no url defined in action');
+      return;
+    }
+    let url = interpolateUrl(rawUrl, ctx.get, ctx.scope);
+
+    // Append query params defined in the action
+    const queryParams = actionDef.queryParams as Array<{ key: string; value: string; enabled?: boolean }> | undefined;
+    if (queryParams?.length) {
+      const qs = queryParams
+        .filter(p => p.enabled !== false && p.key.trim())
+        .map(p => `${encodeURIComponent(p.key)}=${encodeURIComponent(interpolateUrl(p.value, ctx.get, ctx.scope))}`)
+        .join('&');
+      if (qs) url = `${url}${url.includes('?') ? '&' : '?'}${qs}`;
+    }
+
+    // ── Headers ───────────────────────────────────────────────────────────────
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const rawHeaders = actionDef.headers as Record<string, unknown> | undefined;
+    if (rawHeaders) {
+      for (const [k, v] of Object.entries(rawHeaders)) {
+        const resolved = resolveValue(v, ctx.get, ctx.scope, fullState);
+        if (resolved != null && resolved !== '') headers[k] = String(resolved);
+      }
+    }
+
+    // ── Body ──────────────────────────────────────────────────────────────────
+    const method = ((actionDef.method as string) ?? 'GET').toUpperCase();
+    let body: BodyInit | undefined;
+    const rawBody = actionDef.body;
+    if (rawBody != null && method !== 'GET' && method !== 'HEAD') {
+      if (typeof rawBody === 'string') {
+        body = interpolateUrl(rawBody, ctx.get, ctx.scope);
+      } else if (typeof rawBody === 'object') {
+        const resolved = resolveValue(rawBody, ctx.get, ctx.scope, fullState);
+        body = JSON.stringify(resolved);
+      }
+    }
+
+    if (storeIn) ctx.setLoading(storeIn, true);
+
     try {
-      const fetchOpts: RequestInit = { method: (actionDef.method as string) ?? 'GET' };
-      if (resolvedBody && (fetchOpts.method === 'POST' || fetchOpts.method === 'PUT' || fetchOpts.method === 'PATCH')) {
-        fetchOpts.headers = { 'Content-Type': 'application/json' };
-        fetchOpts.body = JSON.stringify(resolvedBody);
-      }
-      const res = await fetch(url, fetchOpts);
-      const rawResponse = await res.json().catch(() => ({}));
+      const res = await fetch(url, { method, headers, body });
+
       if (!res.ok) {
-        const msg =
-          (getNestedValue(rawResponse as Record<string, unknown>, errorMessagePath) as string) ??
-          `Fetch failed: ${res.status}`;
-        throw new Error(msg);
+        let errMsg = `HTTP ${res.status}`;
+        try {
+          const errBody = await res.json() as Record<string, unknown>;
+          const errPath = (actionDef.errorMessagePath ?? 'message') as string;
+          const extracted = getNestedValue(errBody, errPath);
+          if (extracted) errMsg = String(extracted);
+        } catch { /* ignore */ }
+        if (storeIn) ctx.setError(storeIn, errMsg);
+        return;
       }
-      let data: unknown = rawResponse;
-      if (storeFullResponseIn) {
-        ctx.setData(storeFullResponseIn, rawResponse);
+
+      const json = await res.json() as unknown;
+
+      if (actionDef.storeFullResponseIn) {
+        ctx.setData(actionDef.storeFullResponseIn as string, json);
       }
-      if (responsePath && typeof responsePath === 'string') {
-        const parts = responsePath.split('.');
-        for (const p of parts) {
-          data = (data as Record<string, unknown>)?.[p];
-        }
+
+      const responsePath = (actionDef.responsePath ?? '') as string;
+      const data = responsePath
+        ? getNestedValue(json as Record<string, unknown>, responsePath)
+        : json;
+
+      if (storeIn) {
+        ctx.setData(storeIn, data);
+        ctx.setError(storeIn, null);
       }
-      if (Array.isArray(data) && map && typeof map === 'object') {
-        data = (data as Record<string, unknown>[]).map((item: Record<string, unknown>) => {
-          const out: Record<string, unknown> = {};
-          for (const [ourKey, apiKey] of Object.entries(map)) {
-            const val = item[apiKey] ?? item[ourKey];
-            out[ourKey] = ourKey === 'id' && val != null ? String(val) : val;
-          }
-          return out;
-        });
-      }
-      ctx.setData(storeIn, data);
+
       const onSuccess = actionDef.onSuccess;
       if (onSuccess) {
-        const actions = Array.isArray(onSuccess) ? onSuccess : [onSuccess];
-        for (const a of actions) {
+        const nexts = Array.isArray(onSuccess) ? onSuccess : [onSuccess];
+        for (const a of nexts) {
           await ctx.runOne(a as import('../../types').SDUIAction);
         }
       }
-    } catch (err) {
-      ctx.setError(storeIn, err instanceof Error ? err.message : 'Fetch failed');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (storeIn) ctx.setError(storeIn, msg);
+    } finally {
+      if (storeIn) ctx.setLoading(storeIn, false);
     }
   };

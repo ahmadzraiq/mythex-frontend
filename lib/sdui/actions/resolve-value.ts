@@ -87,6 +87,7 @@ export function resolveValue(
       try {
         const stateForExpr = {
           ...fullState,
+          ...(scope ?? {}),
           _timestamp: Date.now(),
           _date: new Date().toISOString().slice(0, 10),
         };

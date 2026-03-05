@@ -6,6 +6,7 @@
 import routes from './routes.json';
 import storeJson from './store.json';
 import themeJson from './theme.json';
+import dataSourcesJson from './datasources.json';
 
 // Screens
 import home from './screens/home.json';
@@ -59,6 +60,7 @@ import checkoutActions from './actions/checkout.json';
 import accountActions from './actions/account.json';
 import productsActions from './actions/products.json';
 import layoutActions from './actions/layout.json';
+import dataSourceActions from './actions/datasource-actions.json';
 
 const screens = {
   home,
@@ -115,6 +117,7 @@ const actions = {
   ...accountActions,
   ...productsActions,
   ...layoutActions,
+  ...dataSourceActions,
 };
 
 const actionsByFile = {
@@ -124,6 +127,7 @@ const actionsByFile = {
   account: accountActions,
   products: productsActions,
   layout: layoutActions,
+  dataSources: dataSourceActions,
 };
 
 export const root = {
@@ -135,6 +139,7 @@ export const root = {
   fragments,
   actions,
   actionsByFile,
+  dataSources: dataSourcesJson as Record<string, import('./datasource-types').NamedDataSourceDef>,
 };
 
 export default root;

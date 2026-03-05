@@ -3,17 +3,6 @@
     "title": "Create Account"
   },
   "layout": "store",
-  "state": {
-    "form": {
-      "emailAddress": "",
-      "firstName": "",
-      "lastName": "",
-      "password": "",
-      "confirmPassword": "",
-      "phoneNumber": ""
-    },
-    "errors": {}
-  },
   "content": {
     "type": "Box",
     "props": {
@@ -87,7 +76,7 @@
                               "type": "email",
                               "placeholder": "you@example.com",
                               "placeholderTextColor": "#9ca3af",
-                              "value": "{{form.emailAddress}}",
+                              "value": "{{variables['f7a8b9c0-d1e2-3456-fabc-567890123456'].value.emailAddress}}",
                               "className": "!text-[var(--theme-foreground)]"
                             },
                             "actions": {
@@ -95,18 +84,15 @@
                                 "type": "runMultiple",
                                 "actions": [
                                   {
-                                    "action": "setState",
-                                    "payload": {
-                                      "path": "screens.register.form.emailAddress",
-                                      "value": "$event"
-                                    }
+                                    "type": "setFormField",
+                                    "formId": "f7a8b9c0-d1e2-3456-fabc-567890123456",
+                                    "field": "emailAddress",
+                                    "value": "$event"
                                   },
                                   {
-                                    "action": "setState",
-                                    "payload": {
-                                      "path": "screens.register.errors.form.emailAddress",
-                                      "value": ""
-                                    }
+                                    "type": "setVar",
+                                    "path": "f7a8b9c0-d1e2-3456-fabc-567890123456.errors.emailAddress",
+                                    "value": ""
                                   },
                                   {
                                     "action": "setState",
@@ -126,14 +112,14 @@
                         "props": {
                           "className": "min-h-[20px]"
                         },
-                        "condition": "{{screens.register.errors.form.emailAddress}}",
+                        "condition": "{{variables['f7a8b9c0-d1e2-3456-fabc-567890123456'].errors.emailAddress}}",
                         "children": [
                           {
                             "type": "Text",
                             "props": {
                               "className": "text-sm text-red-500 dark:text-red-400"
                             },
-                            "text": "{{errors.form.emailAddress}}"
+                            "text": "{{variables['f7a8b9c0-d1e2-3456-fabc-567890123456'].errors.emailAddress}}"
                           }
                         ]
                       }
@@ -171,7 +157,7 @@
                                 "props": {
                                   "placeholder": "John",
                                   "placeholderTextColor": "#9ca3af",
-                                  "value": "{{form.firstName}}",
+                                  "value": "{{variables['f7a8b9c0-d1e2-3456-fabc-567890123456'].value.firstName}}",
                                   "className": "!text-[var(--theme-foreground)]"
                                 },
                                 "actions": {
@@ -179,16 +165,15 @@
                                     "type": "runMultiple",
                                     "actions": [
                                       {
-                                        "action": "setState",
-                                        "payload": {
-                                          "path": "screens.register.form.firstName",
-                                          "value": "$event"
-                                        }
+                                        "type": "setFormField",
+                                        "formId": "f7a8b9c0-d1e2-3456-fabc-567890123456",
+                                        "field": "firstName",
+                                        "value": "$event"
                                       },
                                       {
                                         "action": "setState",
                                         "payload": {
-                                          "path": "screens.register.errors.form.firstName",
+                                          "path": "variables['f7a8b9c0-d1e2-3456-fabc-567890123456'].errors.firstName",
                                           "value": ""
                                         }
                                       },
@@ -210,14 +195,14 @@
                             "props": {
                               "className": "min-h-[20px]"
                             },
-                            "condition": "{{screens.register.errors.form.firstName}}",
+                            "condition": "{{variables['f7a8b9c0-d1e2-3456-fabc-567890123456'].errors.firstName}}",
                             "children": [
                               {
                                 "type": "Text",
                                 "props": {
                                   "className": "text-sm text-red-500 dark:text-red-400"
                                 },
-                                "text": "{{errors.form.firstName}}"
+                                "text": "{{variables['f7a8b9c0-d1e2-3456-fabc-567890123456'].errors.firstName}}"
                               }
                             ]
                           }
@@ -249,7 +234,7 @@
                                 "props": {
                                   "placeholder": "Doe",
                                   "placeholderTextColor": "#9ca3af",
-                                  "value": "{{form.lastName}}",
+                                  "value": "{{variables['f7a8b9c0-d1e2-3456-fabc-567890123456'].value.lastName}}",
                                   "className": "!text-[var(--theme-foreground)]"
                                 },
                                 "actions": {
@@ -257,16 +242,15 @@
                                     "type": "runMultiple",
                                     "actions": [
                                       {
-                                        "action": "setState",
-                                        "payload": {
-                                          "path": "screens.register.form.lastName",
-                                          "value": "$event"
-                                        }
+                                        "type": "setFormField",
+                                        "formId": "f7a8b9c0-d1e2-3456-fabc-567890123456",
+                                        "field": "lastName",
+                                        "value": "$event"
                                       },
                                       {
                                         "action": "setState",
                                         "payload": {
-                                          "path": "screens.register.errors.form.lastName",
+                                          "path": "variables['f7a8b9c0-d1e2-3456-fabc-567890123456'].errors.lastName",
                                           "value": ""
                                         }
                                       },
@@ -288,14 +272,14 @@
                             "props": {
                               "className": "min-h-[20px]"
                             },
-                            "condition": "{{screens.register.errors.form.lastName}}",
+                            "condition": "{{variables['f7a8b9c0-d1e2-3456-fabc-567890123456'].errors.lastName}}",
                             "children": [
                               {
                                 "type": "Text",
                                 "props": {
                                   "className": "text-sm text-red-500 dark:text-red-400"
                                 },
-                                "text": "{{errors.form.lastName}}"
+                                "text": "{{variables['f7a8b9c0-d1e2-3456-fabc-567890123456'].errors.lastName}}"
                               }
                             ]
                           }
@@ -330,7 +314,7 @@
                               "type": "tel",
                               "placeholder": "+1 234 567 8900",
                               "placeholderTextColor": "#9ca3af",
-                              "value": "{{form.phoneNumber}}",
+                              "value": "{{variables['f7a8b9c0-d1e2-3456-fabc-567890123456'].value.phoneNumber}}",
                               "className": "!text-[var(--theme-foreground)]"
                             },
                             "actions": {
@@ -338,11 +322,10 @@
                                 "type": "runMultiple",
                                 "actions": [
                                   {
-                                    "action": "setState",
-                                    "payload": {
-                                      "path": "screens.register.form.phoneNumber",
-                                      "value": "$event"
-                                    }
+                                    "type": "setFormField",
+                                    "formId": "f7a8b9c0-d1e2-3456-fabc-567890123456",
+                                    "field": "phoneNumber",
+                                    "value": "$event"
                                   },
                                   {
                                     "action": "setState",
@@ -386,7 +369,7 @@
                               "type": "password",
                               "placeholder": "••••••••",
                               "placeholderTextColor": "#9ca3af",
-                              "value": "{{form.password}}",
+                              "value": "{{variables['f7a8b9c0-d1e2-3456-fabc-567890123456'].value.password}}",
                               "className": "!text-[var(--theme-foreground)]"
                             },
                             "actions": {
@@ -394,25 +377,20 @@
                                 "type": "runMultiple",
                                 "actions": [
                                   {
-                                    "action": "setState",
-                                    "payload": {
-                                      "path": "screens.register.form.password",
-                                      "value": "$event"
-                                    }
+                                    "type": "setFormField",
+                                    "formId": "f7a8b9c0-d1e2-3456-fabc-567890123456",
+                                    "field": "password",
+                                    "value": "$event"
                                   },
                                   {
-                                    "action": "setState",
-                                    "payload": {
-                                      "path": "screens.register.errors.form.password",
-                                      "value": ""
-                                    }
+                                    "type": "setVar",
+                                    "path": "f7a8b9c0-d1e2-3456-fabc-567890123456.errors.password",
+                                    "value": ""
                                   },
                                   {
-                                    "action": "setState",
-                                    "payload": {
-                                      "path": "screens.register.errors.form.confirmPassword",
-                                      "value": ""
-                                    }
+                                    "type": "setVar",
+                                    "path": "f7a8b9c0-d1e2-3456-fabc-567890123456.errors.confirmPassword",
+                                    "value": ""
                                   },
                                   {
                                     "action": "setState",
@@ -432,14 +410,14 @@
                         "props": {
                           "className": "min-h-[20px]"
                         },
-                        "condition": "{{screens.register.errors.form.password}}",
+                        "condition": "{{variables['f7a8b9c0-d1e2-3456-fabc-567890123456'].errors.password}}",
                         "children": [
                           {
                             "type": "Text",
                             "props": {
                               "className": "text-sm text-red-500 dark:text-red-400"
                             },
-                            "text": "{{errors.form.password}}"
+                            "text": "{{variables['f7a8b9c0-d1e2-3456-fabc-567890123456'].errors.password}}"
                           }
                         ]
                       }
@@ -472,7 +450,7 @@
                               "type": "password",
                               "placeholder": "••••••••",
                               "placeholderTextColor": "#9ca3af",
-                              "value": "{{form.confirmPassword}}",
+                              "value": "{{variables['f7a8b9c0-d1e2-3456-fabc-567890123456'].value.confirmPassword}}",
                               "className": "!text-[var(--theme-foreground)]"
                             },
                             "actions": {
@@ -480,18 +458,15 @@
                                 "type": "runMultiple",
                                 "actions": [
                                   {
-                                    "action": "setState",
-                                    "payload": {
-                                      "path": "screens.register.form.confirmPassword",
-                                      "value": "$event"
-                                    }
+                                    "type": "setFormField",
+                                    "formId": "f7a8b9c0-d1e2-3456-fabc-567890123456",
+                                    "field": "confirmPassword",
+                                    "value": "$event"
                                   },
                                   {
-                                    "action": "setState",
-                                    "payload": {
-                                      "path": "screens.register.errors.form.confirmPassword",
-                                      "value": ""
-                                    }
+                                    "type": "setVar",
+                                    "path": "f7a8b9c0-d1e2-3456-fabc-567890123456.errors.confirmPassword",
+                                    "value": ""
                                   },
                                   {
                                     "action": "setState",
@@ -511,14 +486,14 @@
                         "props": {
                           "className": "min-h-[20px]"
                         },
-                        "condition": "{{screens.register.errors.form.confirmPassword}}",
+                        "condition": "{{variables['f7a8b9c0-d1e2-3456-fabc-567890123456'].errors.confirmPassword}}",
                         "children": [
                           {
                             "type": "Text",
                             "props": {
                               "className": "text-sm text-red-500 dark:text-red-400"
                             },
-                            "text": "{{errors.form.confirmPassword}}"
+                            "text": "{{variables['f7a8b9c0-d1e2-3456-fabc-567890123456'].errors.confirmPassword}}"
                           }
                         ]
                       }
@@ -600,9 +575,5 @@
       }
     ]
   },
-  "initActions": [
-    {
-      "action": "fetchNavCollections"
-    }
-  ]
+  "initActions": []
 }

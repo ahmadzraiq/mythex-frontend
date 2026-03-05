@@ -19,6 +19,15 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
+
+function Chevron({ open, size = 10, color = '#6b7280' }: { open?: boolean; size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+      style={{ flexShrink: 0, transition: 'transform 0.15s', transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
 import { useBuilderStore, findParentNode, findNode } from './_store';
 import type { BuilderStore, BuilderPage, CustomVar, PageMeta } from './_store';
 import type { SDUINode } from '@/lib/sdui/types/node';
@@ -128,6 +137,7 @@ const LAYER_CONTAINER_TYPES = new Set([
   'Modal', 'ModalContent', 'ModalHeader', 'ModalBody', 'ModalFooter',
   'Tooltip', 'AlertDialog', 'AlertDialogContent',
   'AlertDialogHeader', 'AlertDialogBody', 'AlertDialogFooter',
+  'FormContainer',
 ]);
 
 interface LayerDragState {
@@ -207,9 +217,15 @@ const LayerRow = memo(function LayerRow({
     badges.push({ key: 'if', label: 'if', color: '#60a5fa', bg: '#1e3a5f', title: `Condition: ${short}` });
   }
 
-  const mapPath = (node as { map?: string }).map;
+  const mapPath = (node as { map?: unknown }).map;
   if (mapPath != null) {
-    badges.push({ key: 'map', label: `⟳ ${mapPath.split('.').pop() ?? mapPath}`, color: '#c084fc', bg: '#2e1065', title: `Repeat over: ${mapPath}` });
+    const mapLabel = typeof mapPath === 'string'
+      ? (mapPath.split('.').pop() ?? mapPath)
+      : typeof mapPath === 'object'
+        ? JSON.stringify(mapPath).slice(0, 30)
+        : String(mapPath);
+    const mapTitle = typeof mapPath === 'string' ? mapPath : JSON.stringify(mapPath);
+    badges.push({ key: 'map', label: `⟳ ${mapLabel}`, color: '#c084fc', bg: '#2e1065', title: `Repeat over: ${mapTitle}` });
   }
 
   const nodeActions = (node as { actions?: Record<string, unknown> }).actions;
@@ -303,10 +319,10 @@ const LayerRow = memo(function LayerRow({
     >
       {/* Expand chevron — bigger, easier to click */}
       <span
-        style={{ fontSize: 13, width: 14, color: '#9ca3af', cursor: 'pointer', flexShrink: 0, lineHeight: 1, textAlign: 'center' }}
+        style={{ width: 14, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         onClick={e => { e.stopPropagation(); if (hasChildren) onToggleExpand(nodeId); }}
       >
-        {hasChildren ? (isExpanded ? '▾' : '▸') : ''}
+        {hasChildren ? <Chevron open={isExpanded} size={10} color="#9ca3af" /> : null}
       </span>
 
       <NodeIcon type={node.type} />
@@ -508,6 +524,22 @@ const PRIMITIVE_COMPONENTS: Record<string, { type: string; label: string; icon: 
     { type: 'Fab',       label: 'FAB',             icon: '⊕', defaultNode: { type: 'Fab', props: { className: 'flex flex-row items-center justify-center gap-2 px-5 py-3 rounded-full bg-primary shadow-lg' }, children: [{ type: 'NavIcon', props: { icon: 'Plus', size: 20, color: '#ffffff' } }, { type: 'FabLabel', text: 'Add', props: { className: 'text-sm font-medium text-primary-foreground' } }] } },
   ],
   Form: [
+    // FormContainer — wraps inputs and binds to a form variable UUID
+    {
+      type: 'FormContainer',
+      label: 'Form',
+      icon: '⊞',
+      defaultNode: {
+        type: 'FormContainer',
+        props: {
+          formId: '',
+          className: 'flex flex-col gap-4 w-full',
+        },
+        children: [
+          { type: 'Text', props: { className: 'text-sm text-gray-500' }, text: 'Drop inputs here. Set formId to a form variable UUID.' },
+        ],
+      },
+    },
     // Input — plain text
     { type: 'Input',    label: 'Input',       icon: '▭', defaultNode: { type: 'Input', props: { variant: 'outline', size: 'md', className: 'w-full !rounded-md !border-border !bg-background' }, children: [{ type: 'InputField', props: { placeholder: 'Enter text…', className: '!text-foreground' } }] } },
     // Input with leading search icon
@@ -936,7 +968,7 @@ function SectionHeader({ label, collapsible, collapsed, onToggle }: { label: str
       onClick={onToggle}
     >
       <span>{label}</span>
-      {collapsible && <span style={{ fontSize: 9 }}>{collapsed ? '▸' : '▾'}</span>}
+      {collapsible && <Chevron open={!collapsed} size={10} />}
     </div>
   );
 }
@@ -1359,7 +1391,7 @@ function StoreTab({ embedded = false }: { embedded?: boolean }) {
               onClick={() => setExpanded(p => ({ ...p, [group]: !p[group] }))}
               style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '4px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: '#d1d5db', fontSize: 11 }}
             >
-              <span style={{ color: '#4b5563', fontSize: 9 }}>{expanded[group] ? '▾' : '▸'}</span>
+              <Chevron open={!!expanded[group]} size={10} />
               <span style={{ fontWeight: 600, color: '#e5e7eb' }}>{group}</span>
               <span style={{ fontSize: 10, color: '#6b7280', marginLeft: 'auto' }}>{Object.keys(values).length} key{Object.keys(values).length !== 1 ? 's' : ''}</span>
             </button>
@@ -1451,7 +1483,7 @@ function ActionsTab() {
                 >
                   <span style={{ color: '#d1d5db', fontSize: 11, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
                   <ActionTypeBadge type={def.type} />
-                  <span style={{ color: '#4b5563', fontSize: 9 }}>{expanded[name] ? '▾' : '▸'}</span>
+                  <Chevron open={!!expanded[name]} size={10} />
                 </button>
                 {expanded[name] && (
                   <pre style={{ margin: 0, padding: '6px 16px', background: '#0f172a', color: '#9ca3af', fontSize: 10, fontFamily: 'monospace', overflow: 'auto', maxHeight: 120 }}>
@@ -1597,7 +1629,7 @@ function CustomVarsSection() {
     const trimmed = newName.trim();
     if (!trimmed) return;
     const defaults: Record<CustomVar['type'], unknown> = {
-      string: '', number: 0, boolean: false, object: {}, array: [],
+      string: '', number: 0, boolean: false, object: {}, array: [], form: {},
     };
     addCustomVar({ name: trimmed, type: newType, initialValue: defaults[newType] });
     setNewName('');
@@ -1709,7 +1741,7 @@ function VarsWorkflowsSection() {
               onClick={() => setExpanded(e => e === name ? null : name)}
               style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '5px 8px', background: 'none', border: 'none', cursor: 'pointer' }}
             >
-              <span style={{ fontSize: 9, color: '#6b7280' }}>{expanded === name ? '▾' : '▸'}</span>
+              <Chevron open={expanded === name} size={10} />
               <span style={{ fontSize: 11, color: '#c084fc', fontWeight: 600, flex: 1, textAlign: 'left' }}>{name}</span>
               <span style={{ fontSize: 9, color: '#4b5563' }}>{actions.length} step{actions.length !== 1 ? 's' : ''}</span>
               <button
@@ -1768,7 +1800,7 @@ function VarsFormulasSection() {
               onClick={() => setExpanded(e => e === name ? null : name)}
               style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '5px 8px', background: 'none', border: 'none', cursor: 'pointer' }}
             >
-              <span style={{ fontSize: 9, color: '#6b7280' }}>{expanded === name ? '▾' : '▸'}</span>
+              <Chevron open={expanded === name} size={10} />
               <span style={{ fontSize: 11, color: '#fbbf24', fontWeight: 600, flex: 1, textAlign: 'left' }}>{name}</span>
               <button
                 onClick={e => { e.stopPropagation(); removeGlobalFormula(name); }}
@@ -1970,6 +2002,7 @@ interface PanelLeftProps {
   logicSlideState: LogicSlideState;
   onSetLogicSlide: (s: LogicSlideState) => void;
   onOpenPageConfig: () => void;
+  onWidthChange?: (w: number) => void;
 }
 
 export default function PanelLeft({
@@ -1978,6 +2011,7 @@ export default function PanelLeft({
   logicSlideState,
   onSetLogicSlide,
   onOpenPageConfig,
+  onWidthChange,
 }: PanelLeftProps) {
   const [tab, setTab] = useState<'layers' | 'components' | 'data' | 'logic'>('components');
   const [search, setSearch] = useState('');
@@ -2180,7 +2214,7 @@ export default function PanelLeft({
 
       {tab === 'components' && <ComponentsTab />}
 
-      {tab === 'data' && <DataTab onSetSlide={onSetDataSlide} />}
+      {tab === 'data' && <DataTab onSetSlide={onSetDataSlide} onWidthChange={onWidthChange} />}
 
       {tab === 'logic' && <LogicTab onSetSlide={onSetLogicSlide} />}
 

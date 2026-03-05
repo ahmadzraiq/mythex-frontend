@@ -1,54 +1,18 @@
 {
-  "fetchActiveCustomer": {
-    "type": "graphql",
-    "query": "query GetActiveCustomer { activeCustomer { id firstName lastName emailAddress phoneNumber defaultShippingAddress { id fullName streetLine1 streetLine2 city province postalCode country { code name } phoneNumber defaultShippingAddress defaultBillingAddress } defaultBillingAddress { id fullName streetLine1 streetLine2 city province postalCode country { code name } phoneNumber defaultShippingAddress defaultBillingAddress } addresses { id fullName streetLine1 streetLine2 city province postalCode country { code name } phoneNumber defaultShippingAddress defaultBillingAddress } } }",
-    "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
-    },
-    "storeIn": "customer",
-    "responsePath": "data.activeCustomer",
-    "endpoint": "http://localhost:3000/shop-api"
-  },
-  "fetchCustomerOrders": {
-    "type": "graphql",
-    "query": "query GetCustomerOrders { activeCustomer { orders(options: { take: 20, sort: { createdAt: DESC } }) { items { id code state total totalWithTax currencyCode orderPlacedAt lines { id productVariant { product { featuredAsset { preview } } } quantity } } } } }",
-    "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
-    },
-    "storeIn": "orders",
-    "responsePath": "data.activeCustomer.orders.items",
-    "endpoint": "http://localhost:3000/shop-api"
-  },
-  "fetchOrderDetail": {
-    "type": "graphql",
-    "query": "query GetOrderDetail($code: String!) { orderByCode(code: $code) { id code state active createdAt updatedAt totalQuantity subTotal subTotalWithTax shipping shippingWithTax total totalWithTax currencyCode customer { id firstName lastName emailAddress } shippingAddress { fullName company streetLine1 streetLine2 city province postalCode country phoneNumber } shippingLines { shippingMethod { id name description } priceWithTax } payments { id method amount state transactionId createdAt } lines { id productVariant { id name sku product { id name slug featuredAsset { id preview } } } unitPriceWithTax quantity linePriceWithTax } discounts { description amountWithTax } } }",
-    "variables": {
-      "code": "{{route.slug}}"
-    },
-    "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
-    },
-    "storeIn": "account.orderDetail",
-    "responsePath": "data.orderByCode",
-    "endpoint": "http://localhost:3000/shop-api"
-  },
   "updateProfileMutation": {
     "type": "graphql",
     "query": "mutation UpdateCustomer($input: UpdateCustomerInput!) { updateCustomer(input: $input) { __typename id firstName lastName emailAddress } }",
     "variables": {
       "input": {
-        "firstName": "{{form.firstName}}",
-        "lastName": "{{form.lastName}}"
+        "firstName": "{{variables['e2f3a4b5-c6d7-8901-efab-901234567890'].value.firstName}}",
+        "lastName": "{{variables['e2f3a4b5-c6d7-8901-efab-901234567890'].value.lastName}}"
       }
     },
     "headers": {
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
     },
-    "storeIn": "account.profile",
+    "storeIn": "e7f8a9b0-c1d2-3456-efab-567890123456",
     "responsePath": "data.updateCustomer",
     "onSuccess": {
       "action": "showToast",
@@ -60,29 +24,7 @@
   },
   "saveAddress": {
     "type": "validate",
-    "rules": {
-      "form.fullName": {
-        "required": true,
-        "message": "Full name is required"
-      },
-      "form.streetLine1": {
-        "required": true,
-        "message": "Street address is required"
-      },
-      "form.city": {
-        "required": true,
-        "message": "City is required"
-      },
-      "form.postalCode": {
-        "required": true,
-        "message": "Postal code is required"
-      },
-      "form.countryCode": {
-        "required": true,
-        "message": "Country is required"
-      }
-    },
-    "storeErrorsIn": "errors",
+    "formId": "a4b5c6d7-e8f9-0123-abcd-123456789012",
     "onSuccess": {
       "action": "saveAddressMutation"
     }
@@ -92,16 +34,16 @@
     "query": "mutation CreateCustomerAddress($input: CreateAddressInput!) { createCustomerAddress(input: $input) { id fullName streetLine1 streetLine2 city province postalCode country { code name } phoneNumber defaultShippingAddress defaultBillingAddress } }",
     "variables": {
       "input": {
-        "fullName": "{{form.fullName}}",
-        "streetLine1": "{{form.streetLine1}}",
-        "streetLine2": "{{form.streetLine2}}",
-        "city": "{{form.city}}",
-        "province": "{{form.province}}",
-        "postalCode": "{{form.postalCode}}",
-        "countryCode": "{{form.countryCode}}",
-        "phoneNumber": "{{form.phoneNumber}}",
-        "defaultShippingAddress": "{{form.defaultShippingAddress}}",
-        "defaultBillingAddress": "{{form.defaultBillingAddress}}"
+        "fullName": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.fullName}}",
+        "streetLine1": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.streetLine1}}",
+        "streetLine2": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.streetLine2}}",
+        "city": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.city}}",
+        "province": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.province}}",
+        "postalCode": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.postalCode}}",
+        "countryCode": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.countryCode}}",
+        "phoneNumber": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.phoneNumber}}",
+        "defaultShippingAddress": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.defaultShippingAddress}}",
+        "defaultBillingAddress": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.defaultBillingAddress}}"
       }
     },
     "headers": {
@@ -126,24 +68,13 @@
     },
     "endpoint": "http://localhost:3000/shop-api"
   },
-  "fetchProfile": {
-    "type": "graphql",
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetActiveCustomer { activeCustomer { id firstName lastName emailAddress } }",
-    "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
-    },
-    "storeIn": "account.profile",
-    "responsePath": "data.activeCustomer"
-  },
   "changePasswordMutation": {
     "type": "graphql",
     "endpoint": "http://localhost:3000/shop-api",
     "query": "mutation UpdateCustomerPassword($currentPassword: String!, $newPassword: String!) { updateCustomerPassword(currentPassword: $currentPassword, newPassword: $newPassword) { __typename ... on Success { success } ... on ErrorResult { errorCode message } } }",
     "variables": {
-      "currentPassword": "{{form.currentPassword}}",
-      "newPassword": "{{form.newPassword}}"
+      "currentPassword": "{{variables['f3a4b5c6-d7e8-9012-fabc-012345678901'].value.currentPassword}}",
+      "newPassword": "{{variables['f3a4b5c6-d7e8-9012-fabc-012345678901'].value.newPassword}}"
     },
     "headers": {
       "Authorization": "{{auth.token}}",
@@ -157,8 +88,8 @@
     "endpoint": "http://localhost:3000/shop-api",
     "query": "mutation RequestUpdateCustomerEmailAddress($password: String!, $newEmailAddress: String!) { requestUpdateCustomerEmailAddress(password: $password, newEmailAddress: $newEmailAddress) { __typename ... on Success { success } ... on ErrorResult { errorCode message } } }",
     "variables": {
-      "password": "{{form.password}}",
-      "newEmailAddress": "{{form.newEmailAddress}}"
+      "password": "{{variables['c6d7e8f9-a0b1-2345-cdef-345678901234'].value.password}}",
+      "newEmailAddress": "{{variables['c6d7e8f9-a0b1-2345-cdef-345678901234'].value.newEmailAddress}}"
     },
     "headers": {
       "Authorization": "{{auth.token}}",
@@ -167,50 +98,22 @@
     "storeIn": "account._emailUpdateResult",
     "responsePath": "data.requestUpdateCustomerEmailAddress"
   },
-  "fetchOrders": {
-    "type": "graphql",
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetCustomerOrders($options: OrderListOptions) { activeCustomer { id orders(options: $options) { totalItems items { id code state totalWithTax currencyCode createdAt updatedAt lines { id productVariant { id name product { id name featuredAsset { id preview } } } } } } } }",
-    "variables": {
-      "options": {
-        "take": 10,
-        "skip": 0
-      }
-    },
-    "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
-    },
-    "storeIn": "account.orders",
-    "responsePath": "data.activeCustomer.orders"
-  },
-  "fetchAddresses": {
-    "type": "graphql",
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetCustomerAddresses { activeCustomer { id addresses { id fullName company streetLine1 streetLine2 city province postalCode country { id code name } phoneNumber defaultShippingAddress defaultBillingAddress } } }",
-    "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
-    },
-    "storeIn": "account.addresses",
-    "responsePath": "data.activeCustomer.addresses"
-  },
   "createAddressMutation": {
     "type": "graphql",
     "endpoint": "http://localhost:3000/shop-api",
     "query": "mutation CreateCustomerAddress($input: CreateAddressInput!) { createCustomerAddress(input: $input) { id fullName streetLine1 city postalCode country { id code name } defaultShippingAddress defaultBillingAddress } }",
     "variables": {
       "input": {
-        "fullName": "{{form.fullName}}",
-        "streetLine1": "{{form.streetLine1}}",
-        "streetLine2": "{{form.streetLine2}}",
-        "city": "{{form.city}}",
-        "province": "{{form.province}}",
-        "postalCode": "{{form.postalCode}}",
-        "countryCode": "{{form.countryCode}}",
-        "phoneNumber": "{{form.phoneNumber}}",
-        "defaultShippingAddress": "{{form.defaultShippingAddress}}",
-        "defaultBillingAddress": "{{form.defaultBillingAddress}}"
+        "fullName": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.fullName}}",
+        "streetLine1": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.streetLine1}}",
+        "streetLine2": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.streetLine2}}",
+        "city": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.city}}",
+        "province": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.province}}",
+        "postalCode": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.postalCode}}",
+        "countryCode": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.countryCode}}",
+        "phoneNumber": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.phoneNumber}}",
+        "defaultShippingAddress": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.defaultShippingAddress}}",
+        "defaultBillingAddress": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.defaultBillingAddress}}"
       }
     },
     "headers": {
@@ -225,7 +128,7 @@
     "endpoint": "http://localhost:3000/shop-api",
     "query": "mutation DeleteCustomerAddress($id: ID!) { deleteCustomerAddress(id: $id) { success } }",
     "variables": {
-      "id": "{{$item.id}}"
+      "id": "{{context.item.id}}"
     },
     "headers": {
       "Authorization": "{{auth.token}}",

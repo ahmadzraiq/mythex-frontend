@@ -1,0 +1,330 @@
+{
+  "variables": {
+    "a0b1c2d3-e4f5-6789-abcd-ef0123456789": {
+      "label": "Auth",
+      "type": "object",
+      "initialValue": { "user": null, "token": null },
+      "folder": "App"
+    },
+    "b1c2d3e4-f5a6-7890-bcde-f01234567890": {
+      "label": "Nav Drawer Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Layout"
+    },
+    "c2d3e4f5-a6b7-8901-cdef-012345678901": {
+      "label": "Cart Drawer Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Layout"
+    },
+    "d3e4f5a6-b7c8-9012-defa-123456789012": {
+      "label": "Color Scheme",
+      "type": "string",
+      "initialValue": "system",
+      "folder": "Navigation"
+    },
+    "e4f5a6b7-c8d9-0123-efab-234567890123": {
+      "label": "Theme Menu Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Navigation"
+    },
+    "f5a6b7c8-d9e0-1234-fabc-345678901234": {
+      "label": "Search Query",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Navigation"
+    },
+    "a6b7c8d9-e0f1-2345-abcd-456789012345": {
+      "label": "Collection Skip",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Pagination"
+    },
+    "b7c8d9e0-f1a2-3456-bcde-567890123456": {
+      "label": "Search Skip",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Pagination"
+    },
+    "c8d9e0f1-a2b3-4567-cdef-678901234567": {
+      "label": "Sort Menu Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Catalog"
+    },
+    "d9e0f1a2-b3c4-5678-defa-789012345678": {
+      "label": "Checkout Step",
+      "type": "string",
+      "initialValue": "contact",
+      "folder": "Checkout"
+    },
+    "e0f1a2b3-c4d5-6789-efab-890123456789": {
+      "label": "Contact Completed",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Checkout"
+    },
+    "f1a2b3c4-d5e6-7890-fabc-901234567890": {
+      "label": "Use Same for Billing",
+      "type": "boolean",
+      "initialValue": true,
+      "folder": "Checkout"
+    },
+    "a2b3c4d5-e6f7-8901-abcd-012345678901": {
+      "label": "Selected Shipping",
+      "type": "string",
+      "initialValue": null,
+      "folder": "Checkout"
+    },
+    "b3c4d5e6-f7a8-9012-bcde-123456789012": {
+      "label": "Selected Payment",
+      "type": "string",
+      "initialValue": null,
+      "folder": "Checkout"
+    },
+    "c4d5e6f7-a8b9-0123-cdef-234567890123": {
+      "label": "Selected Options",
+      "type": "object",
+      "initialValue": {},
+      "folder": "Product"
+    },
+    "d5e6f7a8-b9c0-1234-defa-345678901234": {
+      "label": "Image Index",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Product"
+    },
+    "e6f7a8b9-c0d1-2345-efab-456789012345": {
+      "label": "Sign In Form",
+      "type": "form",
+      "folder": "Auth",
+      "fields": [
+        {
+          "name": "username",
+          "type": "string",
+          "initialValue": "",
+          "validation": {
+            "required": true,
+            "pattern": "email",
+            "message": "Please enter a valid email address"
+          }
+        },
+        {
+          "name": "password",
+          "type": "string",
+          "initialValue": "",
+          "validation": {
+            "required": true,
+            "message": "Please enter your password"
+          }
+        }
+      ]
+    },
+    "f7a8b9c0-d1e2-3456-fabc-567890123456": {
+      "label": "Register Form",
+      "type": "form",
+      "folder": "Auth",
+      "fields": [
+        {
+          "name": "emailAddress",
+          "type": "string",
+          "initialValue": "",
+          "validation": {
+            "required": true,
+            "pattern": "email",
+            "message": "Please enter a valid email address"
+          }
+        },
+        {
+          "name": "firstName",
+          "type": "string",
+          "initialValue": "",
+          "validation": {
+            "required": true,
+            "message": "Please enter your first name"
+          }
+        },
+        {
+          "name": "lastName",
+          "type": "string",
+          "initialValue": "",
+          "validation": {
+            "required": true,
+            "message": "Please enter your last name"
+          }
+        },
+        {
+          "name": "password",
+          "type": "string",
+          "initialValue": "",
+          "validation": {
+            "required": true,
+            "minLength": 8,
+            "message": "Password must be at least 8 characters"
+          }
+        },
+        {
+          "name": "confirmPassword",
+          "type": "string",
+          "initialValue": "",
+          "validation": {
+            "required": true,
+            "equalsField": "form.password",
+            "message": "Passwords do not match"
+          }
+        },
+        {
+          "name": "phoneNumber",
+          "type": "string",
+          "initialValue": ""
+        }
+      ]
+    },
+    "a8b9c0d1-e2f3-4567-abcd-567890123456": {
+      "label": "Forgot Password Form",
+      "type": "form",
+      "folder": "Auth",
+      "fields": [
+        {
+          "name": "emailAddress",
+          "type": "string",
+          "initialValue": "",
+          "validation": {
+            "required": true,
+            "pattern": "email",
+            "message": "Please enter a valid email address"
+          }
+        }
+      ]
+    },
+    "b9c0d1e2-f3a4-5678-bcde-678901234567": {
+      "label": "Reset Password Form",
+      "type": "form",
+      "folder": "Auth",
+      "fields": [
+        {
+          "name": "password",
+          "type": "string",
+          "initialValue": "",
+          "validation": {
+            "required": true,
+            "minLength": 8,
+            "message": "Password must be at least 8 characters"
+          }
+        },
+        {
+          "name": "confirmPassword",
+          "type": "string",
+          "initialValue": "",
+          "validation": {
+            "required": true,
+            "equalsField": "password",
+            "message": "Passwords do not match"
+          }
+        }
+      ]
+    },
+    "c0d1e2f3-a4b5-6789-cdef-789012345678": {
+      "label": "Cart Coupon Form",
+      "type": "form",
+      "folder": "Cart",
+      "fields": [
+        {
+          "name": "couponCode",
+          "type": "string",
+          "initialValue": ""
+        }
+      ]
+    },
+    "d1e2f3a4-b5c6-7890-defa-890123456789": {
+      "label": "Checkout Address Form",
+      "type": "form",
+      "folder": "Checkout",
+      "fields": [
+        { "name": "emailAddress", "type": "string", "initialValue": "", "validation": { "required": true, "pattern": "email", "message": "Valid email required" } },
+        { "name": "firstName",    "type": "string", "initialValue": "", "validation": { "required": true, "message": "First name required" } },
+        { "name": "lastName",     "type": "string", "initialValue": "", "validation": { "required": true, "message": "Last name required" } },
+        { "name": "fullName",     "type": "string", "initialValue": "" },
+        { "name": "company",      "type": "string", "initialValue": "" },
+        { "name": "streetLine1",  "type": "string", "initialValue": "", "validation": { "required": true, "message": "Street address required" } },
+        { "name": "streetLine2",  "type": "string", "initialValue": "" },
+        { "name": "city",         "type": "string", "initialValue": "", "validation": { "required": true, "message": "City required" } },
+        { "name": "province",     "type": "string", "initialValue": "" },
+        { "name": "postalCode",   "type": "string", "initialValue": "", "validation": { "required": true, "message": "Postal code required" } },
+        { "name": "countryCode",  "type": "string", "initialValue": "US", "validation": { "required": true, "message": "Country required" } },
+        { "name": "phoneNumber",  "type": "string", "initialValue": "" }
+      ]
+    },
+    "e2f3a4b5-c6d7-8901-efab-901234567890": {
+      "label": "Account Profile Form",
+      "type": "form",
+      "folder": "Account",
+      "fields": [
+        { "name": "firstName",    "type": "string", "initialValue": "" },
+        { "name": "lastName",     "type": "string", "initialValue": "" },
+        { "name": "phoneNumber",  "type": "string", "initialValue": "" },
+        { "name": "emailAddress", "type": "string", "initialValue": "" }
+      ]
+    },
+    "f3a4b5c6-d7e8-9012-fabc-012345678901": {
+      "label": "Change Password Form",
+      "type": "form",
+      "folder": "Account",
+      "fields": [
+        { "name": "currentPassword", "type": "string", "initialValue": "", "validation": { "required": true, "message": "Current password required" } },
+        { "name": "newPassword",     "type": "string", "initialValue": "", "validation": { "required": true, "minLength": 8, "message": "New password must be at least 8 characters" } }
+      ]
+    },
+    "a4b5c6d7-e8f9-0123-abcd-123456789012": {
+      "label": "Account Address Form",
+      "type": "form",
+      "folder": "Account",
+      "fields": [
+        { "name": "fullName",     "type": "string", "initialValue": "", "validation": { "required": true, "message": "Full name required" } },
+        { "name": "company",      "type": "string", "initialValue": "" },
+        { "name": "streetLine1",  "type": "string", "initialValue": "", "validation": { "required": true, "message": "Street address required" } },
+        { "name": "streetLine2",  "type": "string", "initialValue": "" },
+        { "name": "city",         "type": "string", "initialValue": "", "validation": { "required": true, "message": "City required" } },
+        { "name": "province",     "type": "string", "initialValue": "" },
+        { "name": "postalCode",   "type": "string", "initialValue": "", "validation": { "required": true, "message": "Postal code required" } },
+        { "name": "countryCode",  "type": "string", "initialValue": "US", "validation": { "required": true, "message": "Country required" } },
+        { "name": "phoneNumber",  "type": "string", "initialValue": "" },
+        { "name": "defaultShippingAddress", "type": "boolean", "initialValue": false },
+        { "name": "defaultBillingAddress",  "type": "boolean", "initialValue": false }
+      ]
+    },
+    "b5c6d7e8-f9a0-1234-bcde-234567890123": {
+      "label": "Product Review Form",
+      "type": "form",
+      "folder": "Product",
+      "fields": [
+        { "name": "name",    "type": "string", "initialValue": "" },
+        { "name": "rating",  "type": "number", "initialValue": 5 },
+        { "name": "review",  "type": "string", "initialValue": "" }
+      ]
+    },
+    "c6d7e8f9-a0b1-2345-cdef-345678901234": {
+      "label": "Change Email Form",
+      "type": "form",
+      "folder": "Account",
+      "fields": [
+        { "name": "password",        "type": "string", "initialValue": "", "validation": { "required": true, "message": "Password required" } },
+        { "name": "newEmailAddress", "type": "string", "initialValue": "", "validation": { "required": true, "pattern": "email", "message": "Valid email required" } }
+      ]
+    }
+  },
+  "varFolders": [
+    { "id": "App",        "label": "App" },
+    { "id": "Layout",     "label": "Layout" },
+    { "id": "Navigation", "label": "Navigation" },
+    { "id": "Pagination", "label": "Pagination" },
+    { "id": "Catalog",    "label": "Catalog" },
+    { "id": "Checkout",   "label": "Checkout" },
+    { "id": "Product",    "label": "Product" },
+    { "id": "Auth",       "label": "Auth" },
+    { "id": "Cart",       "label": "Cart" },
+    { "id": "Account",    "label": "Account" }
+  ]
+}

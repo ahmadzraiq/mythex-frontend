@@ -4,11 +4,7 @@
   },
   "state": {},
   "layout": "store",
-  "initActions": [
-    {
-      "action": "fetchSearchResults"
-    }
-  ],
+  "initActions": [],
   "content": {
     "type": "Box",
     "props": {
@@ -27,7 +23,7 @@
         "props": {
           "className": "grid grid-cols-1 lg:grid-cols-4 gap-8"
         },
-        "condition": "!{{search.loading}}",
+        "condition": "!{{collections.e5f6a7b8-c9d0-1234-efab-345678901234.loading}}",
         "children": [
           {
             "type": "Box",
@@ -40,7 +36,9 @@
                 "props": {
                   "className": "text-3xl font-bold"
                 },
-                "text": { "expr": "({{route.q}} || '') !== '' ? 'Search results for \"' + ({{route.q}} || '') + '\"' : 'Search'" }
+                "text": {
+                  "expr": "({{route.q}} || '') !== '' ? 'Search results for \"' + ({{route.q}} || '') + '\"' : 'Search'"
+                }
               }
             ]
           },
@@ -99,8 +97,10 @@
                   },
                   {
                     "type": "Box",
-                    "map": { "expr": "groupBy({{search.facetValues}} || [], 'facetValue.facet.name', 'facetValue.facet.id')" },
-                    "key": "$item.id",
+                    "map": {
+                      "expr": "groupBy({{collections.e5f6a7b8-c9d0-1234-efab-345678901234.data.search.facetValues}} || [], 'facetValue.facet.name', 'facetValue.facet.id')"
+                    },
+                    "key": "context.item.id",
                     "props": {
                       "className": "flex flex-col gap-5"
                     },
@@ -116,7 +116,7 @@
                             "props": {
                               "className": "font-medium text-sm text-[var(--theme-foreground)] capitalize"
                             },
-                            "text": "{{$item.key}}"
+                            "text": "{{context.item.key}}"
                           },
                           {
                             "type": "Box",
@@ -126,71 +126,71 @@
                             "children": [
                               {
                                 "type": "Box",
-                                "map": "$item.items",
-                                "key": "$item.facetValue.id",
+                                "map": "context.item.items",
+                                "key": "context.item.facetValue.id",
                                 "props": {
                                   "className": "contents"
                                 },
                                 "children": [
-                              {
-                                "type": "Pressable",
-                                "props": {
-                                  "className": "flex flex-row items-center gap-2 cursor-pointer group"
-                                },
-                                "actions": {
-                  "click": {
-                    "type": "navigateWithQuery",
-                    "path": "{{route.path}}",
-                    "queryParams": {
-                      "facets": {
-                        "expr": "toggleInArray({{route.facets}} || [], {{$item.facetValue.id}})"
-                      },
-                      "page": "1"
-                    }
-                  }
-                                },
-                                "children": [
                                   {
-                                    "type": "Box",
+                                    "type": "Pressable",
                                     "props": {
-                                      "className": "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors border-[var(--theme-border)]"
+                                      "className": "flex flex-row items-center gap-2 cursor-pointer group"
                                     },
-                                    "condition": "!arrayIncludes({{route.facets}} || [], {{$item.facetValue.id}})",
-                                    "children": []
-                                  },
-                                  {
-                                    "type": "Box",
-                                    "props": {
-                                      "className": "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors bg-[var(--theme-shop-button)] border-[var(--theme-shop-button)]"
-                                    },
-                                    "condition": "arrayIncludes({{route.facets}} || [], {{$item.facetValue.id}})",
-                                    "children": [
-                                      {
-                                        "type": "NavIcon",
-                                        "props": {
-                                          "icon": "Check",
-                                          "size": 10,
-                                          "className": "!text-white"
+                                    "actions": {
+                                      "click": {
+                                        "type": "navigateWithQuery",
+                                        "path": "{{route.path}}",
+                                        "queryParams": {
+                                          "facets": {
+                                            "expr": "toggleInArray({{route.facets}} || [], {{context.item.facetValue.id}})"
+                                          },
+                                          "page": "1"
                                         }
                                       }
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "Box",
+                                        "props": {
+                                          "className": "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors border-[var(--theme-border)]"
+                                        },
+                                        "condition": "!arrayIncludes({{route.facets}} || [], {{context.item.facetValue.id}})",
+                                        "children": []
+                                      },
+                                      {
+                                        "type": "Box",
+                                        "props": {
+                                          "className": "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors bg-[var(--theme-shop-button)] border-[var(--theme-shop-button)]"
+                                        },
+                                        "condition": "arrayIncludes({{route.facets}} || [], {{context.item.facetValue.id}})",
+                                        "children": [
+                                          {
+                                            "type": "NavIcon",
+                                            "props": {
+                                              "icon": "Check",
+                                              "size": 10,
+                                              "className": "!text-white"
+                                            }
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-sm text-[var(--theme-foreground)] transition-colors"
+                                        },
+                                        "text": "{{context.item.facetValue.name}}"
+                                      },
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-xs text-[var(--theme-muted-foreground)]"
+                                        },
+                                        "text": "({{context.item.count}})"
+                                      }
                                     ]
-                                  },
-                                  {
-                                    "type": "Text",
-                                    "props": {
-                                      "className": "text-sm text-[var(--theme-foreground)] transition-colors"
-                                    },
-                                    "text": "{{$item.facetValue.name}}"
-                                  },
-                                  {
-                                    "type": "Text",
-                                    "props": {
-                                      "className": "text-xs text-[var(--theme-muted-foreground)]"
-                                    },
-                                    "text": "({{$item.count}})"
                                   }
-                                ]
-                              }
                                 ]
                               }
                             ]
@@ -220,7 +220,9 @@
                     "props": {
                       "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
-                    "text": { "expr": "({{search.totalItems}} || 0) === 1 ? '1 product' : ({{search.totalItems}} || 0) + ' products'" }
+                    "text": {
+                      "expr": "({{collections.e5f6a7b8-c9d0-1234-efab-345678901234.data.search.totalItems}} || 0) === 1 ? '1 product' : ({{collections.e5f6a7b8-c9d0-1234-efab-345678901234.data.search.totalItems}} || 0) + ' products'"
+                    }
                   },
                   {
                     "type": "Box",
@@ -233,11 +235,11 @@
                         "props": {
                           "className": "fixed inset-0 z-[9998]"
                         },
-                        "condition": "{{sortMenuOpen}}",
+                        "condition": "{{variables['c8d9e0f1-a2b3-4567-cdef-678901234567']}}",
                         "actions": {
                           "click": {
                             "type": "setVar",
-                            "path": "sortMenuOpen",
+                            "path": "c8d9e0f1-a2b3-4567-cdef-678901234567",
                             "value": false
                           }
                         }
@@ -250,7 +252,7 @@
                         "actions": {
                           "click": {
                             "type": "toggle",
-                            "path": "sortMenuOpen"
+                            "path": "c8d9e0f1-a2b3-4567-cdef-678901234567"
                           }
                         },
                         "children": [
@@ -275,7 +277,7 @@
                       },
                       {
                         "type": "Box",
-                        "condition": "{{sortMenuOpen}}",
+                        "condition": "{{variables['c8d9e0f1-a2b3-4567-cdef-678901234567']}}",
                         "props": {
                           "className": "absolute right-0 top-full mt-1 min-w-[180px] rounded-md border border-[var(--theme-border)] bg-[var(--theme-content-bg)] shadow-md z-[9999] py-1"
                         },
@@ -291,7 +293,7 @@
                                 "actions": [
                                   {
                                     "type": "setVar",
-                                    "path": "sortMenuOpen",
+                                    "path": "c8d9e0f1-a2b3-4567-cdef-678901234567",
                                     "value": false
                                   },
                                   {
@@ -301,7 +303,7 @@
                                   },
                                   {
                                     "type": "setVar",
-                                    "path": "searchSkip",
+                                    "path": "b7c8d9e0-f1a2-3456-bcde-567890123456",
                                     "value": 0
                                   },
                                   {
@@ -346,7 +348,7 @@
                                 "actions": [
                                   {
                                     "type": "setVar",
-                                    "path": "sortMenuOpen",
+                                    "path": "c8d9e0f1-a2b3-4567-cdef-678901234567",
                                     "value": false
                                   },
                                   {
@@ -356,7 +358,7 @@
                                   },
                                   {
                                     "type": "setVar",
-                                    "path": "searchSkip",
+                                    "path": "b7c8d9e0-f1a2-3456-bcde-567890123456",
                                     "value": 0
                                   },
                                   {
@@ -401,7 +403,7 @@
                                 "actions": [
                                   {
                                     "type": "setVar",
-                                    "path": "sortMenuOpen",
+                                    "path": "c8d9e0f1-a2b3-4567-cdef-678901234567",
                                     "value": false
                                   },
                                   {
@@ -411,7 +413,7 @@
                                   },
                                   {
                                     "type": "setVar",
-                                    "path": "searchSkip",
+                                    "path": "b7c8d9e0-f1a2-3456-bcde-567890123456",
                                     "value": 0
                                   },
                                   {
@@ -456,7 +458,7 @@
                                 "actions": [
                                   {
                                     "type": "setVar",
-                                    "path": "sortMenuOpen",
+                                    "path": "c8d9e0f1-a2b3-4567-cdef-678901234567",
                                     "value": false
                                   },
                                   {
@@ -466,7 +468,7 @@
                                   },
                                   {
                                     "type": "setVar",
-                                    "path": "searchSkip",
+                                    "path": "b7c8d9e0-f1a2-3456-bcde-567890123456",
                                     "value": 0
                                   },
                                   {
@@ -508,7 +510,7 @@
               },
               {
                 "type": "Box",
-                "condition": "({{search.totalItems}} || 0) === 0",
+                "condition": "({{collections.e5f6a7b8-c9d0-1234-efab-345678901234.data.search.totalItems}} || 0) === 0",
                 "props": {
                   "className": "text-center py-12"
                 },
@@ -524,14 +526,14 @@
               },
               {
                 "type": "Box",
-                "condition": "{{search.totalItems}} > 0",
+                "condition": "{{collections.e5f6a7b8-c9d0-1234-efab-345678901234.data.search.totalItems}} > 0",
                 "props": {
                   "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
                 },
                 "children": [
                   {
                     "type": "Box",
-                    "map": "search.items",
+                    "map": "collections.e5f6a7b8-c9d0-1234-efab-345678901234.data.search.items",
                     "key": "searchProduct",
                     "props": {
                       "className": "contents"

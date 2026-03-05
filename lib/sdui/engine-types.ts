@@ -4,6 +4,34 @@
 
 import type { SDUIConfig } from './types';
 
+/** Named data source definition (from config/datasources.json). The record key is the storeIn path. */
+export type NamedDataSourceDef = RestNamedDataSourceDef | GraphQLNamedDataSourceDef;
+
+export interface RestNamedDataSourceDef {
+  type: 'rest';
+  url: string;
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  headers?: Array<{ key: string; value: string; enabled?: boolean }> | Record<string, string>;
+  queryParams?: Array<{ key: string; value: string; enabled?: boolean }>;
+  body?: string;
+  responsePath?: string;
+  proxy?: boolean;
+  sendCredentials?: boolean;
+}
+
+export interface GraphQLNamedDataSourceDef {
+  type: 'graphql';
+  endpoint: string;
+  query: string;
+  variables?: Record<string, unknown>;
+  headers?: Record<string, string>;
+  responsePath?: string;
+  skipStoreWhenNull?: boolean;
+  cacheTag?: string;
+  cacheTTL?: number;
+  cacheKeyVars?: string[];
+}
+
 export interface ValidationRule {
   required?: boolean;
   minLength?: number;
@@ -67,6 +95,8 @@ export interface SDUIEngineProps {
   engineConfig?: EngineConfig;
   routes?: RouteConfig[];
   paramChangeAction?: string;
+  /** Named data sources from config/datasources.json — fetched on mount, stored at their name path. */
+  dataSources?: Record<string, NamedDataSourceDef>;
   /** When true, annotates every rendered node with data-builder-* attributes.
    *  Used by /dev/builder. */
   builderMode?: boolean;

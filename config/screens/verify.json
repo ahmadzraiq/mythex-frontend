@@ -3,11 +3,7 @@
     "title": "Verify Email"
   },
   "state": {},
-  "initActions": [
-    {
-      "action": "fetchNavCollections"
-    }
-  ],
+  "initActions": [],
   "ui": {
     "type": "Box",
     "props": {

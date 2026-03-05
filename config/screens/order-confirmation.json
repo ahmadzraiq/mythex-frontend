@@ -2,14 +2,9 @@
   "meta": {
     "title": "Order Confirmation"
   },
-  "state": {
-    "order": null
-  },
+  "state": {},
   "layout": "store",
   "initActions": [
-    {
-      "action": "fetchNavCollections"
-    },
     {
       "action": "fetchOrderByCode"
     }
@@ -31,7 +26,7 @@
             "props": {
               "className": "text-center py-16"
             },
-            "condition": "!{{order}}",
+            "condition": "!{{collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode}}",
             "children": [
               {
                 "type": "Text",
@@ -47,7 +42,7 @@
             "props": {
               "className": "text-center mb-8"
             },
-            "condition": "{{order}}",
+            "condition": "{{collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode}}",
             "children": [
               {
                 "type": "Box",
@@ -90,7 +85,7 @@
                     "props": {
                       "className": "font-semibold text-[var(--theme-foreground)]"
                     },
-                    "text": "{{order.code}}"
+                    "text": "{{collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode.code}}"
                   }
                 ]
               }
@@ -101,7 +96,7 @@
             "props": {
               "className": "mb-6 rounded-xl border border-[var(--theme-border)] shadow-sm bg-[var(--theme-content-bg)] p-0 overflow-hidden"
             },
-            "condition": "{{order}}",
+            "condition": "{{collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode}}",
             "children": [
               {
                 "type": "Box",
@@ -129,7 +124,7 @@
                     "props": {
                       "className": "space-y-4 flex flex-col"
                     },
-                    "map": "order.lines",
+                    "map": "collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode.lines",
                     "key": "orderConfLine",
                     "children": [
                       {
@@ -143,13 +138,13 @@
                             "props": {
                               "className": "flex-shrink-0"
                             },
-                            "condition": "{{$item.productVariant.product.featuredAsset.preview}}",
+                            "condition": "{{context.item.productVariant.product.featuredAsset.preview}}",
                             "children": [
                               {
                                 "type": "NextImage",
                                 "props": {
-                                  "src": "{{$item.productVariant.product.featuredAsset.preview}}",
-                                  "alt": "{{$item.productVariant.product.name}}",
+                                  "src": "{{context.item.productVariant.product.featuredAsset.preview}}",
+                                  "alt": "{{context.item.productVariant.product.name}}",
                                   "width": 80,
                                   "height": 80,
                                   "className": "rounded object-cover w-20 h-20 object-center"
@@ -168,15 +163,15 @@
                                 "props": {
                                   "className": "font-medium"
                                 },
-                                "text": "{{$item.productVariant.product.name}}"
+                                "text": "{{context.item.productVariant.product.name}}"
                               },
                               {
                                 "type": "Text",
                                 "props": {
                                   "className": "text-sm text-[var(--theme-muted-foreground)]"
                                 },
-                                "text": "{{$item.productVariant.name}}",
-                                "condition": "{{$item.productVariant.name}} !== {{$item.productVariant.product.name}}"
+                                "text": "{{context.item.productVariant.name}}",
+                                "condition": "{{context.item.productVariant.name}} !== {{context.item.productVariant.product.name}}"
                               }
                             ]
                           },
@@ -198,7 +193,7 @@
                                 "props": {
                                   "className": "font-medium"
                                 },
-                                "text": "{{$item.quantity}}"
+                                "text": "{{context.item.quantity}}"
                               }
                             ]
                           },
@@ -213,7 +208,9 @@
                                 "props": {
                                   "className": "font-semibold"
                                 },
-                                "text": { "expr": "formatCurrency({{$item.linePriceWithTax}} / 100, {{order.currencyCode}} || 'USD')" }
+                                "text": {
+                                  "expr": "formatCurrency({{context.item.linePriceWithTax}} / 100, {{collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode.currencyCode}} || 'USD')"
+                                }
                               }
                             ]
                           }
@@ -239,7 +236,9 @@
                       },
                       {
                         "type": "Text",
-                        "text": { "expr": "formatCurrency(({{order.totalWithTax}} || 0) / 100, {{order.currencyCode}} || 'USD')" }
+                        "text": {
+                          "expr": "formatCurrency(({{collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode.totalWithTax}} || 0) / 100, {{collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode.currencyCode}} || 'USD')"
+                        }
                       }
                     ]
                   }
@@ -252,7 +251,7 @@
             "props": {
               "className": "mb-6 rounded-xl border border-[var(--theme-border)] shadow-sm bg-[var(--theme-content-bg)] p-0 overflow-hidden"
             },
-            "condition": "{{order}} && {{order.shippingAddress}}",
+            "condition": "{{collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode}} && {{collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode.shippingAddress}}",
             "children": [
               {
                 "type": "Box",
@@ -280,28 +279,30 @@
                     "props": {
                       "className": "font-medium"
                     },
-                    "text": "{{order.shippingAddress.fullName}}"
+                    "text": "{{collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode.shippingAddress.fullName}}"
                   },
                   {
                     "type": "Text",
                     "props": {
                       "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                     },
-                    "text": { "expr": "{{order.shippingAddress.streetLine1}} + ({{order.shippingAddress.streetLine2}} ? ', ' + {{order.shippingAddress.streetLine2}} : '')" }
+                    "text": {
+                      "expr": "{{collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode.shippingAddress.streetLine1}} + ({{collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode.shippingAddress.streetLine2}} ? ', ' + {{collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode.shippingAddress.streetLine2}} : '')"
+                    }
                   },
                   {
                     "type": "Text",
                     "props": {
                       "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
-                    "text": "{{order.shippingAddress.city}}, {{order.shippingAddress.province}} {{order.shippingAddress.postalCode}}"
+                    "text": "{{collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode.shippingAddress.city}}, {{collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode.shippingAddress.province}} {{collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode.shippingAddress.postalCode}}"
                   },
                   {
                     "type": "Text",
                     "props": {
                       "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
-                    "text": "{{order.shippingAddress.country}}"
+                    "text": "{{collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode.shippingAddress.country}}"
                   }
                 ]
               }
@@ -312,7 +313,7 @@
             "props": {
               "className": "flex gap-4"
             },
-            "condition": "{{order}}",
+            "condition": "{{collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode}}",
             "children": [
               {
                 "type": "Pressable",

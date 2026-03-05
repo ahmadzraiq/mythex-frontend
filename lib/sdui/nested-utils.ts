@@ -64,3 +64,107 @@ export function setNestedValue(
       : {};
   return setAtPath(base, 0);
 }
+
+// ─── Data Source Reference Extraction ────────────────────────────────────────
+
+/**
+ * Recursively walks a resolved screen config tree and collects every state
+ * path that could reference a named data source. Three patterns are handled:
+ *
+ * 1. `{{path.to.data}}` interpolations in string values
+ * 2. `"map": "featured.products"` — bare string paths in "map" fields
+ * 3. `{"var": "nav.collections"}` / `{"var": ["path", default]}` — JSON Logic var
+ *
+ * Each path is recorded twice:
+ *   - root segment only  ("nav" from "nav.collections[0].name")
+ *   - dot-path prefix    ("nav.collections" — stops at first "[")
+ */
+function collectFormulaPaths(node: unknown, out: Set<string>, parentKey?: string): void {
+  if (node === null || node === undefined) return;
+
+  if (typeof node === 'string') {
+    // Pattern 1 — {{...}} interpolation
+    for (const m of node.matchAll(/\{\{([^}]+)\}\}/g)) {
+      const inner = m[1].trim();
+      out.add(inner.split(/[.[]/)[0]);
+      out.add(inner.split('[')[0]);
+    }
+    // Pattern 2 — bare path in "map" field (e.g. "map": "featured.products")
+    if (parentKey === 'map' && node.trim() && !node.includes('{{') && !node.includes(' ')) {
+      const clean = node.trim();
+      out.add(clean.split(/[.[]/)[0]);
+      out.add(clean.split('[')[0]);
+    }
+    // Pattern 3 — collections['UUID'] in formula strings (builder formula bindings stored
+    // as { formula: "collections['UUID']?.['field']..." } — no {{}} wrapper, so we must
+    // scan these strings directly to detect datasource references for auto-fetch.
+    for (const m of node.matchAll(/collections\['([^']+)'\]/g)) {
+      const uuid = m[1];
+      out.add(uuid);
+      out.add(`collections['${uuid}']`);
+    }
+    return;
+  }
+
+  if (Array.isArray(node)) {
+    for (const item of node) collectFormulaPaths(item, out);
+    return;
+  }
+
+  if (typeof node === 'object') {
+    const obj = node as Record<string, unknown>;
+
+    // Pattern 3 — JSON Logic { "var": "path" } or { "var": ["path", default] }
+    if ('var' in obj) {
+      const v = obj.var;
+      const raw = Array.isArray(v) ? v[0] : v;
+      if (typeof raw === 'string' && raw.trim()) {
+        const clean = raw.trim();
+        out.add(clean.split(/[.[]/)[0]);
+        out.add(clean.split('[')[0]);
+      }
+    }
+
+    for (const [k, val] of Object.entries(obj)) {
+      collectFormulaPaths(val, out, k);
+    }
+  }
+}
+
+/**
+ * Returns the subset of `dataSourceNames` that are actually referenced by
+ * `{{...}}` interpolations anywhere in the resolved config tree.
+ *
+ * Sorts by name length (longest first) so "nav.collections" is matched
+ * before "nav" when both exist.
+ */
+export function extractReferencedDataSources(
+  config: unknown,
+  dataSourceNames: string[]
+): string[] {
+  const formulaPaths = new Set<string>();
+  collectFormulaPaths(config, formulaPaths);
+
+  const sorted = [...dataSourceNames].sort((a, b) => b.length - a.length);
+  const needed = new Set<string>();
+
+  for (const formula of formulaPaths) {
+    for (const dsName of sorted) {
+      if (
+        formula === dsName ||
+        formula.startsWith(dsName + '.') ||
+        formula.startsWith(dsName + '[') ||
+        formula === `collections.${dsName}` ||
+        formula.startsWith(`collections.${dsName}.`) ||
+        formula.startsWith(`collections.${dsName}[`) ||
+        formula === `collections['${dsName}']` ||
+        formula.startsWith(`collections['${dsName}']`)
+      ) {
+        needed.add(dsName);
+        break;
+      }
+    }
+  }
+
+  return [...needed];
+}

@@ -2,20 +2,8 @@
   "meta": {
     "title": "Shopping Cart"
   },
-  "state": {
-    "form": {
-      "couponCode": ""
-    }
-  },
   "layout": "store",
-  "initActions": [
-    {
-      "action": "fetchNavCollections"
-    },
-    {
-      "action": "fetchCart"
-    }
-  ],
+  "initActions": [],
   "content": {
     "type": "Box",
     "props": {
@@ -34,7 +22,7 @@
         "props": {
           "className": "text-center py-16"
         },
-        "condition": "({{cart.totalQuantity}} || 0) === 0",
+        "condition": "({{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.totalQuantity}} || 0) === 0",
         "children": [
           {
             "type": "Heading",
@@ -80,7 +68,7 @@
         "props": {
           "className": "grid lg:grid-cols-3 gap-8"
         },
-        "condition": "{{cart.totalQuantity}} > 0",
+        "condition": "{{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.totalQuantity}} > 0",
         "children": [
           {
             "type": "Box",
@@ -97,7 +85,7 @@
                 "props": {
                   "className": "flex flex-col gap-4 w-full"
                 },
-                "map": "cart.lines",
+                "map": "collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.lines",
                 "key": "cartLine",
                 "children": [
                   {
@@ -116,7 +104,7 @@
                             "action": "navigate",
                             "payload": {
                               "routeConfig": "product",
-                              "slug": "{{$item.productVariant.product.slug}}"
+                              "slug": "{{context.item.productVariant.product.slug}}"
                             }
                           }
                         },
@@ -124,8 +112,8 @@
                           {
                             "type": "NextImage",
                             "props": {
-                              "src": "{{$item.productVariant.product.featuredAsset.preview}}",
-                              "alt": "{{$item.productVariant.name}}",
+                              "src": "{{context.item.productVariant.product.featuredAsset.preview}}",
+                              "alt": "{{context.item.productVariant.name}}",
                               "width": 120,
                               "height": 120,
                               "className": "rounded-md object-cover w-full sm:w-[120px] h-[120px]"
@@ -149,14 +137,14 @@
                                 "action": "navigate",
                                 "payload": {
                                   "routeConfig": "product",
-                                  "slug": "{{$item.productVariant.product.slug}}"
+                                  "slug": "{{context.item.productVariant.product.slug}}"
                                 }
                               }
                             },
                             "children": [
                               {
                                 "type": "Text",
-                                "text": "{{$item.productVariant.product.name}}"
+                                "text": "{{context.item.productVariant.product.name}}"
                               }
                             ]
                           },
@@ -165,15 +153,15 @@
                             "props": {
                               "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                             },
-                            "text": "{{$item.productVariant.name}}",
-                            "condition": "{{$item.productVariant.name}} !== {{$item.productVariant.product.name}}"
+                            "text": "{{context.item.productVariant.name}}",
+                            "condition": "{{context.item.productVariant.name}} !== {{context.item.productVariant.product.name}}"
                           },
                           {
                             "type": "Text",
                             "props": {
                               "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                             },
-                            "text": "SKU: {{$item.productVariant.sku}}"
+                            "text": "SKU: {{context.item.productVariant.sku}}"
                           },
                           {
                             "type": "Box",
@@ -192,7 +180,7 @@
                                     "props": {
                                       "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-[var(--theme-hero-bg)] rounded-none disabled:opacity-50 flex-row"
                                     },
-                                    "condition": "{{$item.quantity}} > 1",
+                                    "condition": "{{context.item.quantity}} > 1",
                                     "children": [
                                       {
                                         "type": "Text",
@@ -206,9 +194,9 @@
                                       "click": {
                                         "action": "adjustCartItemQuantity",
                                         "payload": {
-                                          "lineId": "{{$item.id}}",
+                                          "lineId": "{{context.item.id}}",
                                           "quantity": {
-                                            "expr": "{{$item.quantity}} - 1"
+                                            "expr": "{{context.item.quantity}} - 1"
                                           }
                                         }
                                       }
@@ -219,7 +207,7 @@
                                     "props": {
                                       "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-[var(--theme-hero-bg)] rounded-none disabled:opacity-50 flex-row"
                                     },
-                                    "condition": "({{$item.quantity}} || 0) === 1",
+                                    "condition": "({{context.item.quantity}} || 0) === 1",
                                     "children": [
                                       {
                                         "type": "Text",
@@ -241,7 +229,7 @@
                                     "props": {
                                       "className": "w-12 text-center font-medium text-sm"
                                     },
-                                    "text": "{{$item.quantity}}"
+                                    "text": "{{context.item.quantity}}"
                                   },
                                   {
                                     "type": "Pressable",
@@ -261,9 +249,9 @@
                                       "click": {
                                         "action": "adjustCartItemQuantity",
                                         "payload": {
-                                          "lineId": "{{$item.id}}",
+                                          "lineId": "{{context.item.id}}",
                                           "quantity": {
-                                            "expr": "{{$item.quantity}} + 1"
+                                            "expr": "{{context.item.quantity}} + 1"
                                           }
                                         }
                                       }
@@ -304,7 +292,7 @@
                                       "className": "font-semibold text-lg"
                                     },
                                     "text": {
-                                      "expr": "formatCurrency({{$item.linePriceWithTax}} / 100, {{cart.currencyCode}} || 'USD')"
+                                      "expr": "formatCurrency({{context.item.linePriceWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD')"
                                     }
                                   },
                                   {
@@ -313,7 +301,7 @@
                                       "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                                     },
                                     "text": {
-                                      "expr": "formatCurrency({{$item.unitPriceWithTax}} / 100, {{cart.currencyCode}} || 'USD') + ' each'"
+                                      "expr": "formatCurrency({{context.item.unitPriceWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD') + ' each'"
                                     }
                                   }
                                 ]
@@ -334,7 +322,7 @@
                               "className": "font-semibold text-lg"
                             },
                             "text": {
-                              "expr": "formatCurrency({{$item.linePriceWithTax}} / 100, {{cart.currencyCode}} || 'USD')"
+                              "expr": "formatCurrency({{context.item.linePriceWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD')"
                             }
                           },
                           {
@@ -343,7 +331,7 @@
                               "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                             },
                             "text": {
-                              "expr": "formatCurrency({{$item.unitPriceWithTax}} / 100, {{cart.currencyCode}} || 'USD') + ' each'"
+                              "expr": "formatCurrency({{context.item.unitPriceWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD') + ' each'"
                             }
                           }
                         ]
@@ -395,7 +383,7 @@
                           {
                             "type": "Text",
                             "text": {
-                              "expr": "formatCurrency({{cart.subTotalWithTax}} / 100, {{cart.currencyCode}} || 'USD')"
+                              "expr": "formatCurrency({{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.subTotalWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD')"
                             }
                           }
                         ]
@@ -405,9 +393,9 @@
                         "props": {
                           "className": "contents"
                         },
-                        "map": "cart.discounts",
+                        "map": "collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.discounts",
                         "key": "discount",
-                        "condition": "{{cart.discounts.length}} > 0",
+                        "condition": "{{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.discounts.length}} > 0",
                         "children": [
                           {
                             "type": "Box",
@@ -417,12 +405,12 @@
                             "children": [
                               {
                                 "type": "Text",
-                                "text": "{{$item.description}}"
+                                "text": "{{context.item.description}}"
                               },
                               {
                                 "type": "Text",
                                 "text": {
-                                  "expr": "formatCurrency({{$item.amountWithTax}} / 100, {{cart.currencyCode}} || 'USD')"
+                                  "expr": "formatCurrency({{context.item.amountWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD')"
                                 }
                               }
                             ]
@@ -445,7 +433,7 @@
                           {
                             "type": "Text",
                             "text": {
-                              "expr": "{{cart.shippingWithTax}} > 0 ? formatCurrency({{cart.shippingWithTax}} / 100, {{cart.currencyCode}} || 'USD') : 'Calculated at checkout'"
+                              "expr": "{{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.shippingWithTax}} > 0 ? formatCurrency({{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.shippingWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD') : 'Calculated at checkout'"
                             }
                           }
                         ]
@@ -471,7 +459,7 @@
                           {
                             "type": "Text",
                             "text": {
-                              "expr": "formatCurrency({{cart.totalWithTax}} / 100, {{cart.currencyCode}} || 'USD')"
+                              "expr": "formatCurrency({{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.totalWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD')"
                             }
                           }
                         ]
@@ -567,14 +555,14 @@
                     "props": {
                       "className": "space-y-2"
                     },
-                    "condition": "{{cart.couponCodes.length}} > 0",
+                    "condition": "{{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.couponCodes.length}} > 0",
                     "children": [
                       {
                         "type": "Box",
                         "props": {
                           "className": "contents"
                         },
-                        "map": "cart.couponCodes",
+                        "map": "collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.couponCodes",
                         "key": "code",
                         "children": [
                           {
@@ -640,7 +628,7 @@
                     "props": {
                       "className": "flex gap-2 flex-row"
                     },
-                    "condition": "({{cart.couponCodes.length}} || 0) === 0",
+                    "condition": "({{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.couponCodes.length}} || 0) === 0",
                     "children": [
                       {
                         "type": "Input",
@@ -654,16 +642,15 @@
                             "type": "InputField",
                             "props": {
                               "placeholder": "Enter code",
-                              "value": "{{form.couponCode}}",
+                              "value": "{{variables['c0d1e2f3-a4b5-6789-cdef-789012345678'].value.couponCode}}",
                               "className": "!text-[var(--theme-foreground)]"
                             },
                             "actions": {
                               "change": {
-                                "action": "setState",
-                                "payload": {
-                                  "path": "screens.cart.form.couponCode",
-                                  "value": "$event"
-                                }
+                                "type": "setFormField",
+                                "formId": "c0d1e2f3-a4b5-6789-cdef-789012345678",
+                                "field": "couponCode",
+                                "value": "$event"
                               }
                             }
                           }

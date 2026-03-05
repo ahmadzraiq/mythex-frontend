@@ -3,7 +3,6 @@
     "title": "Addresses"
   },
   "state": {
-    "addresses": [],
     "form": {
       "fullName": "",
       "streetLine1": "",
@@ -18,9 +17,6 @@
   },
   "layout": "account",
   "initActions": [
-    {
-      "action": "fetchNavCollections"
-    },
     {
       "action": "fetchCustomerAddresses"
     }
@@ -119,16 +115,12 @@
                       {
                         "type": "InputField",
                         "props": {
-                          "value": "{{form.fullName}}",
+                          "value": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.fullName}}",
                           "placeholder": "Jane Doe"
                         },
                         "actions": {
                           "change": {
-                            "action": "setState",
-                            "payload": {
-                              "path": "form.fullName",
-                              "value": "$event"
-                            }
+                            "type": "setFormField", "formId": "a4b5c6d7-e8f9-0123-abcd-123456789012", "field": "fullName", "value": "$event"
                           }
                         }
                       }
@@ -155,16 +147,12 @@
                       {
                         "type": "InputField",
                         "props": {
-                          "value": "{{form.streetLine1}}",
+                          "value": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.streetLine1}}",
                           "placeholder": "123 Main St"
                         },
                         "actions": {
                           "change": {
-                            "action": "setState",
-                            "payload": {
-                              "path": "form.streetLine1",
-                              "value": "$event"
-                            }
+                            "type": "setFormField", "formId": "a4b5c6d7-e8f9-0123-abcd-123456789012", "field": "streetLine1", "value": "$event"
                           }
                         }
                       }
@@ -197,16 +185,12 @@
                           {
                             "type": "InputField",
                             "props": {
-                              "value": "{{form.city}}",
+                              "value": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.city}}",
                               "placeholder": "New York"
                             },
                             "actions": {
                               "change": {
-                                "action": "setState",
-                                "payload": {
-                                  "path": "form.city",
-                                  "value": "$event"
-                                }
+                                "type": "setFormField", "formId": "a4b5c6d7-e8f9-0123-abcd-123456789012", "field": "city", "value": "$event"
                               }
                             }
                           }
@@ -233,16 +217,12 @@
                           {
                             "type": "InputField",
                             "props": {
-                              "value": "{{form.postalCode}}",
+                              "value": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.postalCode}}",
                               "placeholder": "10001"
                             },
                             "actions": {
                               "change": {
-                                "action": "setState",
-                                "payload": {
-                                  "path": "form.postalCode",
-                                  "value": "$event"
-                                }
+                                "type": "setFormField", "formId": "a4b5c6d7-e8f9-0123-abcd-123456789012", "field": "postalCode", "value": "$event"
                               }
                             }
                           }
@@ -271,16 +251,12 @@
                       {
                         "type": "InputField",
                         "props": {
-                          "value": "{{form.countryCode}}",
+                          "value": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.countryCode}}",
                           "placeholder": "US"
                         },
                         "actions": {
                           "change": {
-                            "action": "setState",
-                            "payload": {
-                              "path": "form.countryCode",
-                              "value": "$event"
-                            }
+                            "type": "setFormField", "formId": "a4b5c6d7-e8f9-0123-abcd-123456789012", "field": "countryCode", "value": "$event"
                           }
                         }
                       }
@@ -347,7 +323,7 @@
         "props": {
           "className": "text-center py-12"
         },
-        "condition": "({{addresses.length}} || 0) === 0",
+        "condition": "({{collections.a9b0c1d2-e3f4-5678-abcd-789012345678.data.activeCustomer.addresses.length}} || 0) === 0",
         "children": [
           {
             "type": "Text",
@@ -363,7 +339,7 @@
         "props": {
           "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
         },
-        "map": "addresses",
+        "map": "collections.a9b0c1d2-e3f4-5678-abcd-789012345678.data.activeCustomer.addresses",
         "key": "addressCard",
         "children": [
           {
@@ -380,28 +356,28 @@
                     "props": {
                       "className": "font-semibold"
                     },
-                    "text": "{{$item.fullName}}"
+                    "text": "{{context.item.fullName}}"
                   },
                   {
                     "type": "Text",
                     "props": {
                       "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                     },
-                    "text": "{{$item.streetLine1}}"
+                    "text": "{{context.item.streetLine1}}"
                   },
                   {
                     "type": "Text",
                     "props": {
                       "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
-                    "text": "{{$item.city}}, {{$item.postalCode}}"
+                    "text": "{{context.item.city}}, {{context.item.postalCode}}"
                   },
                   {
                     "type": "Text",
                     "props": {
                       "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
-                    "text": "{{$item.country.name}}"
+                    "text": "{{context.item.country.name}}"
                   },
                   {
                     "type": "Box",

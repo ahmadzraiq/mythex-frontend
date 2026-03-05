@@ -26,4 +26,5 @@ export default {
   rawScreens,
   registry,
   actions: root.actions,
+  dataSources: root.dataSources,
 } as const;

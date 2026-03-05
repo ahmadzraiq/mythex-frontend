@@ -3,14 +3,14 @@
   "props": {
     "className": "w-full border-t border-[var(--theme-border)] pt-8 flex flex-row items-center justify-center gap-2 flex-wrap"
   },
-  "condition": "{{collection.search.totalItems}} > {{collectionPageSize}}",
+  "condition": "{{collections.d4e5f6a7-b8c9-0123-defa-234567890123.data.search.totalItems}} > {{collectionPageSize}}",
   "children": [
     {
       "type": "Box",
       "props": {
         "className": "flex items-center justify-center h-9 w-9 rounded-md border border-[var(--theme-border)] bg-[var(--theme-hero-bg)] cursor-not-allowed pointer-events-none flex-shrink-0"
       },
-      "condition": "max(1, floor(({{collectionSkip}} || 0) / ({{collectionPageSize}} || 12) + 1)) <= 1",
+      "condition": "max(1, floor(({{variables['a6b7c8d9-e0f1-2345-abcd-456789012345']}} || 0) / ({{collectionPageSize}} || 12) + 1)) <= 1",
       "children": [
         {
           "type": "NavIcon",
@@ -27,7 +27,7 @@
       "props": {
         "className": "flex items-center justify-center h-9 w-9 rounded-md border border-[var(--theme-border)] bg-[var(--theme-content-bg)] hover:bg-[var(--theme-hero-bg)] transition-colors flex-shrink-0"
       },
-      "condition": "max(1, floor(({{collectionSkip}} || 0) / ({{collectionPageSize}} || 12) + 1)) > 1",
+      "condition": "max(1, floor(({{variables['a6b7c8d9-e0f1-2345-abcd-456789012345']}} || 0) / ({{collectionPageSize}} || 12) + 1)) > 1",
       "children": [
         {
           "type": "NavIcon",
@@ -44,7 +44,7 @@
           "actions": [
             {
               "type": "decrement",
-              "path": "collectionSkip",
+              "path": "a6b7c8d9-e0f1-2345-abcd-456789012345",
               "amount": "{{collectionPageSize}}"
             },
             {
@@ -54,7 +54,7 @@
               "action": "navigate",
               "payload": {
                 "path": {
-                  "expr": "cat({{route.path}}, '?page=', max(1, max(1, floor(({{collectionSkip}} || 0) / ({{collectionPageSize}} || 12) + 1)) - 1))"
+                  "expr": "cat({{route.path}}, '?page=', max(1, max(1, floor(({{variables['a6b7c8d9-e0f1-2345-abcd-456789012345']}} || 0) / ({{collectionPageSize}} || 12) + 1)) - 1))"
                 }
               }
             }
@@ -68,7 +68,7 @@
         "className": "contents"
       },
       "map": {
-        "expr": "paginationPages({{collection.search.totalItems}} || 0, {{collectionSkip}} || 0, {{collectionPageSize}} || 12)"
+        "expr": "paginationPages({{collections.d4e5f6a7-b8c9-0123-defa-234567890123.data.search.totalItems}} || 0, {{variables['a6b7c8d9-e0f1-2345-abcd-456789012345']}} || 0, {{collectionPageSize}} || 12)"
       },
       "children": [
         {
@@ -84,7 +84,7 @@
           "props": {
             "className": "flex items-center justify-center h-9 w-9 rounded-md border border-[var(--theme-shop-button)] bg-[var(--theme-shop-button)] text-white pointer-events-none flex-shrink-0"
           },
-          "condition": "{{$item}} !== '...' && {{$item}} === max(1, floor(({{collectionSkip}} || 0) / ({{collectionPageSize}} || 12) + 1))",
+          "condition": "{{$item}} !== '...' && {{$item}} === max(1, floor(({{variables['a6b7c8d9-e0f1-2345-abcd-456789012345']}} || 0) / ({{collectionPageSize}} || 12) + 1))",
           "children": [
             {
               "type": "Text",
@@ -100,7 +100,7 @@
           "props": {
             "className": "flex items-center justify-center h-9 w-9 rounded-md border border-[var(--theme-border)] bg-[var(--theme-content-bg)] hover:bg-[var(--theme-hero-bg)] transition-colors flex-shrink-0"
           },
-          "condition": "{{$item}} !== '...' && {{$item}} !== max(1, floor(({{collectionSkip}} || 0) / ({{collectionPageSize}} || 12) + 1))",
+          "condition": "{{$item}} !== '...' && {{$item}} !== max(1, floor(({{variables['a6b7c8d9-e0f1-2345-abcd-456789012345']}} || 0) / ({{collectionPageSize}} || 12) + 1))",
           "children": [
             {
               "type": "Text",
@@ -136,7 +136,7 @@
       "props": {
         "className": "flex items-center justify-center h-9 w-9 rounded-md border border-[var(--theme-border)] bg-[var(--theme-hero-bg)] cursor-not-allowed pointer-events-none flex-shrink-0"
       },
-      "condition": "max(1, floor(({{collectionSkip}} || 0) / ({{collectionPageSize}} || 12) + 1)) >= max(1, ceil(({{collection.search.totalItems}} || 0) / ({{collectionPageSize}} || 12)))",
+      "condition": "max(1, floor(({{variables['a6b7c8d9-e0f1-2345-abcd-456789012345']}} || 0) / ({{collectionPageSize}} || 12) + 1)) >= max(1, ceil(({{collections.d4e5f6a7-b8c9-0123-defa-234567890123.data.search.totalItems}} || 0) / ({{collectionPageSize}} || 12)))",
       "children": [
         {
           "type": "NavIcon",
@@ -153,7 +153,7 @@
       "props": {
         "className": "flex items-center justify-center h-9 w-9 rounded-md border border-[var(--theme-border)] bg-[var(--theme-content-bg)] hover:bg-[var(--theme-hero-bg)] transition-colors flex-shrink-0"
       },
-      "condition": "max(1, floor(({{collectionSkip}} || 0) / ({{collectionPageSize}} || 12) + 1)) < max(1, ceil(({{collection.search.totalItems}} || 0) / ({{collectionPageSize}} || 12)))",
+      "condition": "max(1, floor(({{variables['a6b7c8d9-e0f1-2345-abcd-456789012345']}} || 0) / ({{collectionPageSize}} || 12) + 1)) < max(1, ceil(({{collections.d4e5f6a7-b8c9-0123-defa-234567890123.data.search.totalItems}} || 0) / ({{collectionPageSize}} || 12)))",
       "children": [
         {
           "type": "NavIcon",
@@ -170,7 +170,7 @@
           "actions": [
             {
               "type": "increment",
-              "path": "collectionSkip",
+              "path": "a6b7c8d9-e0f1-2345-abcd-456789012345",
               "amount": "{{collectionPageSize}}"
             },
             {
@@ -180,7 +180,7 @@
               "action": "navigate",
               "payload": {
                 "path": {
-                  "expr": "cat({{route.path}}, '?page=', min(max(1, ceil(({{collection.search.totalItems}} || 0) / ({{collectionPageSize}} || 12))), max(1, floor(({{collectionSkip}} || 0) / ({{collectionPageSize}} || 12) + 1)) + 1))"
+                  "expr": "cat({{route.path}}, '?page=', min(max(1, ceil(({{collections.d4e5f6a7-b8c9-0123-defa-234567890123.data.search.totalItems}} || 0) / ({{collectionPageSize}} || 12))), max(1, floor(({{variables['a6b7c8d9-e0f1-2345-abcd-456789012345']}} || 0) / ({{collectionPageSize}} || 12) + 1)) + 1))"
                 }
               }
             }

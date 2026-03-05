@@ -104,6 +104,10 @@ export function finalizeMergedWithVariableStore(
   if (computedDefs.length > 0) {
     next = runComputed(next, computedDefs as Parameters<typeof runComputed>[1], {});
   }
+
+  // Inject `variables` namespace: the whole variable store so `variables['UUID']` works.
+  next['variables'] = vs;
+
   return next;
 }
 
@@ -119,5 +123,14 @@ export function computeMergedState(
   merged = mergeLoadingPaths(merged, state.loading);
   merged = mergeErrorPaths(merged, state.error);
   merged = applyComputed(merged, computedDefs);
+
+  // `collections` namespace is already built by mergeDataPaths:
+  // setData("collections.UUID", data) → setNestedValue creates merged.collections[UUID] = data.
+  // We only need to ensure the key exists; never overwrite what mergeDataPaths already built.
+  // Enables `collections['UUID']?.field` and `{{collections.UUID.field}}` syntax.
+  if (!merged['collections'] || typeof merged['collections'] !== 'object') {
+    merged['collections'] = {};
+  }
+
   return merged;
 }

@@ -1,63 +1,7 @@
 {
-  "fetchCheckoutOrder": {
-    "type": "graphql",
-    "query": "query GetActiveOrderForCheckout { activeOrder { id code state totalQuantity subTotal subTotalWithTax shipping shippingWithTax total totalWithTax currencyCode couponCodes customer { id firstName lastName emailAddress phoneNumber } shippingAddress { fullName company streetLine1 streetLine2 city province postalCode country countryCode phoneNumber } shippingLines { shippingMethod { id name description } priceWithTax } discounts { description amountWithTax } lines { id productVariant { id name sku product { id name slug featuredAsset { id preview } } } unitPriceWithTax quantity linePriceWithTax } } }",
-    "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
-    },
-    "storeIn": "checkout.order",
-    "responsePath": "data.activeOrder",
-    "onSuccess": {
-      "action": "syncCheckoutStep"
-    },
-    "endpoint": "http://localhost:3000/shop-api"
-  },
-  "fetchShippingMethods": {
-    "type": "graphql",
-    "query": "query GetEligibleShippingMethods { eligibleShippingMethods { id name code description priceWithTax } }",
-    "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
-    },
-    "storeIn": "checkout.shippingMethods",
-    "responsePath": "data.eligibleShippingMethods",
-    "endpoint": "http://localhost:3000/shop-api"
-  },
-  "fetchPaymentMethods": {
-    "type": "graphql",
-    "query": "query GetEligiblePaymentMethods { eligiblePaymentMethods { id name code description isEligible eligibilityMessage } }",
-    "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
-    },
-    "storeIn": "checkout.paymentMethods",
-    "responsePath": "data.eligiblePaymentMethods",
-    "endpoint": "http://localhost:3000/shop-api"
-  },
-  "fetchCountries": {
-    "type": "graphql",
-    "query": "query GetAvailableCountries { availableCountries { id code name } }",
-    "headers": {
-      "vendure-token": "__default_channel__"
-    },
-    "storeIn": "checkout.countries",
-    "responsePath": "data.availableCountries",
-    "endpoint": "http://localhost:3000/shop-api"
-  },
   "setShippingAddress": {
     "type": "validate",
-    "rules": {
-      "form.streetLine1": {
-        "required": true,
-        "message": "Street address is required"
-      },
-      "form.countryCode": {
-        "required": true,
-        "message": "Country is required"
-      }
-    },
-    "storeErrorsIn": "errors",
+    "formId": "d1e2f3a4-b5c6-7890-defa-890123456789",
     "onSuccess": {
       "action": "setShippingAddressMutation"
     }
@@ -67,15 +11,15 @@
     "query": "mutation SetOrderShippingAddress($input: CreateAddressInput!) { setOrderShippingAddress(input: $input) { __typename ... on Order { id code shippingAddress { fullName streetLine1 city postalCode country } } ... on ErrorResult { errorCode message } } }",
     "variables": {
       "input": {
-        "fullName": "{{form.fullName}}",
-        "company": "{{form.company}}",
-        "streetLine1": "{{form.streetLine1}}",
-        "streetLine2": "{{form.streetLine2}}",
-        "city": "{{form.city}}",
-        "province": "{{form.province}}",
-        "postalCode": "{{form.postalCode}}",
-        "countryCode": "{{form.countryCode}}",
-        "phoneNumber": "{{form.phoneNumber}}"
+        "fullName": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.fullName}}",
+        "company": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.company}}",
+        "streetLine1": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.streetLine1}}",
+        "streetLine2": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.streetLine2}}",
+        "city": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.city}}",
+        "province": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.province}}",
+        "postalCode": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.postalCode}}",
+        "countryCode": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.countryCode}}",
+        "phoneNumber": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.phoneNumber}}"
       }
     },
     "headers": {
@@ -91,11 +35,7 @@
           "action": "fetchShippingMethods"
         },
         {
-          "type": "set",
-          "path": "checkout.step",
-          "value": {
-            "expr": "!({{auth.user}} || {{checkout.order.customer.emailAddress}} || '') ? 'contact' : !({{checkout.order.shippingAddress.streetLine1}} || '') ? 'shipping' : ({{checkout.order.shippingLines.length}} || 0) <= 0 ? 'delivery' : !({{checkout.selectedPaymentMethodCode}} || '') ? 'payment' : 'review'"
-          }
+          "action": "syncCheckoutStep"
         }
       ]
     },
@@ -104,7 +44,7 @@
   "setShippingMethod": {
     "type": "validate",
     "rules": {
-      "checkout.selectedShippingMethodId": {
+      "variables.a2b3c4d5-e6f7-8901-abcd-012345678901": {
         "required": true,
         "message": "Please select a shipping method"
       }
@@ -119,7 +59,7 @@
     "query": "mutation AddPaymentToOrder($input: PaymentInput!) { addPaymentToOrder(input: $input) { __typename ... on Order { id code state payments { id method amount state } } ... on ErrorResult { errorCode message } } }",
     "variables": {
       "input": {
-        "method": "{{checkout.selectedPaymentMethodCode}}",
+        "method": "{{variables['b3c4d5e6-f7a8-9012-bcde-123456789012']}}",
         "metadata": {
           "shouldDecline": false,
           "shouldError": false,
@@ -160,8 +100,8 @@
           "action": "fetchPaymentMethods"
         },
         {
-          "type": "set",
-          "path": "checkout.step",
+          "type": "setVar",
+          "path": "d9e0f1a2-b3c4-5678-defa-789012345678",
           "value": "payment"
         }
       ]
@@ -172,22 +112,17 @@
     }
   },
   "goToShipping": {
-    "type": "runMultiple",
-    "actions": [
-      {
-        "type": "set",
-        "path": "checkout.step",
-        "value": "shipping"
-      }
-    ]
+    "type": "setVar",
+    "path": "d9e0f1a2-b3c4-5678-defa-789012345678",
+    "value": "shipping"
   },
   "goToDelivery": {
     "type": "runMultiple",
-    "condition": "({{checkout.order.shippingLines.length}} || 0) > 0",
+    "condition": "({{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingLines.length}} || 0) > 0",
     "actions": [
       {
-        "type": "set",
-        "path": "checkout.step",
+        "type": "setVar",
+        "path": "d9e0f1a2-b3c4-5678-defa-789012345678",
         "value": "delivery"
       }
     ]
@@ -196,14 +131,14 @@
     "action": "transitionToArrangingPayment"
   },
   "goToReview": {
-    "type": "set",
-    "path": "checkout.step",
+    "type": "setVar",
+    "path": "d9e0f1a2-b3c4-5678-defa-789012345678",
     "value": "review"
   },
   "placeOrder": {
     "type": "validate",
     "rules": {
-      "checkout.selectedPaymentMethodCode": {
+      "variables.b3c4d5e6-f7a8-9012-bcde-123456789012": {
         "required": true,
         "message": "Please select a payment method"
       }
@@ -213,34 +148,21 @@
       "action": "transitionToArrangingPayment"
     }
   },
-  "fetchConfirmationOrder": {
-    "type": "graphql",
-    "query": "query GetOrderByCode($code: String!) { orderByCode(code: $code) { id code state total totalWithTax currencyCode orderPlacedAt customer { firstName lastName emailAddress } shippingAddress { fullName streetLine1 streetLine2 city province postalCode country } lines { id productVariant { id name sku product { id name slug featuredAsset { id preview } } } unitPriceWithTax quantity linePriceWithTax } shippingLines { shippingMethod { name } priceWithTax } discounts { description amountWithTax } } }",
-    "variables": {
-      "code": "{{route.q}}"
-    },
-    "headers": {
-      "vendure-token": "__default_channel__"
-    },
-    "storeIn": "checkout.confirmedOrder",
-    "responsePath": "data.orderByCode",
-    "endpoint": "http://localhost:3000/shop-api"
-  },
   "setOrderBillingAddressMutation": {
     "type": "graphql",
     "endpoint": "http://localhost:3000/shop-api",
     "query": "mutation SetOrderBillingAddress($input: CreateAddressInput!) { setOrderBillingAddress(input: $input) { __typename ... on Order { id code billingAddress { fullName streetLine1 city postalCode country } } ... on ErrorResult { errorCode message } } }",
     "variables": {
       "input": {
-        "fullName": "{{form.fullName}}",
-        "company": "{{form.company}}",
-        "streetLine1": "{{form.streetLine1}}",
-        "streetLine2": "{{form.streetLine2}}",
-        "city": "{{form.city}}",
-        "province": "{{form.province}}",
-        "postalCode": "{{form.postalCode}}",
-        "countryCode": "{{form.countryCode}}",
-        "phoneNumber": "{{form.phoneNumber}}"
+        "fullName": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.fullName}}",
+        "company": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.company}}",
+        "streetLine1": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.streetLine1}}",
+        "streetLine2": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.streetLine2}}",
+        "city": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.city}}",
+        "province": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.province}}",
+        "postalCode": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.postalCode}}",
+        "countryCode": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.countryCode}}",
+        "phoneNumber": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.phoneNumber}}"
       }
     },
     "headers": {
@@ -256,7 +178,7 @@
     "query": "mutation SetOrderShippingMethod($shippingMethodId: [ID!]!) { setOrderShippingMethod(shippingMethodId: $shippingMethodId) { __typename ... on Order { id code shippingWithTax totalWithTax shippingLines { shippingMethod { id name description } priceWithTax } } ... on ErrorResult { errorCode message } } }",
     "variables": {
       "shippingMethodId": [
-        "{{checkout.selectedShippingMethodId}}"
+        "{{variables['a2b3c4d5-e6f7-8901-abcd-012345678901']}}"
       ]
     },
     "headers": {
@@ -265,19 +187,5 @@
     },
     "storeIn": "checkout._shippingMethodResult",
     "responsePath": "data.setOrderShippingMethod"
-  },
-  "fetchOrderByCode": {
-    "type": "graphql",
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetOrderByCode($code: String!) { orderByCode(code: $code) { id code state totalWithTax currencyCode lines { id productVariant { id name product { id name slug featuredAsset { id preview } } } quantity linePriceWithTax } shippingAddress { fullName streetLine1 streetLine2 city province postalCode country } } }",
-    "variables": {
-      "code": "{{route.slug}}"
-    },
-    "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
-    },
-    "storeIn": "order",
-    "responsePath": "data.orderByCode"
   }
 }

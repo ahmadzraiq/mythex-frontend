@@ -16,9 +16,6 @@
   "layout": "account",
   "initActions": [
     {
-      "action": "fetchNavCollections"
-    },
-    {
       "action": "fetchActiveCustomer"
     }
   ],
@@ -94,16 +91,12 @@
                               {
                                 "type": "InputField",
                                 "props": {
-                                  "value": "{{form.firstName}}",
+                                  "value": "{{variables['e2f3a4b5-c6d7-8901-efab-901234567890'].value.firstName}}",
                                   "placeholder": "Jane"
                                 },
                                 "actions": {
                                   "change": {
-                                    "action": "setState",
-                                    "payload": {
-                                      "path": "form.firstName",
-                                      "value": "$event"
-                                    }
+                                    "type": "setFormField", "formId": "e2f3a4b5-c6d7-8901-efab-901234567890", "field": "firstName", "value": "$event"
                                   }
                                 }
                               }
@@ -130,16 +123,12 @@
                               {
                                 "type": "InputField",
                                 "props": {
-                                  "value": "{{form.lastName}}",
+                                  "value": "{{variables['e2f3a4b5-c6d7-8901-efab-901234567890'].value.lastName}}",
                                   "placeholder": "Doe"
                                 },
                                 "actions": {
                                   "change": {
-                                    "action": "setState",
-                                    "payload": {
-                                      "path": "form.lastName",
-                                      "value": "$event"
-                                    }
+                                    "type": "setFormField", "formId": "e2f3a4b5-c6d7-8901-efab-901234567890", "field": "lastName", "value": "$event"
                                   }
                                 }
                               }
@@ -169,16 +158,12 @@
                             "type": "InputField",
                             "props": {
                               "type": "tel",
-                              "value": "{{form.phoneNumber}}",
+                              "value": "{{variables['e2f3a4b5-c6d7-8901-efab-901234567890'].value.phoneNumber}}",
                               "placeholder": "+1 (555) 000-0000"
                             },
                             "actions": {
                               "change": {
-                                "action": "setState",
-                                "payload": {
-                                  "path": "form.phoneNumber",
-                                  "value": "$event"
-                                }
+                                "type": "setFormField", "formId": "e2f3a4b5-c6d7-8901-efab-901234567890", "field": "phoneNumber", "value": "$event"
                               }
                             }
                           }
@@ -254,16 +239,12 @@
                             "type": "InputField",
                             "props": {
                               "type": "email",
-                              "value": "{{form.emailAddress}}",
+                              "value": "{{variables['e2f3a4b5-c6d7-8901-efab-901234567890'].value.emailAddress}}",
                               "placeholder": "you@example.com"
                             },
                             "actions": {
                               "change": {
-                                "action": "setState",
-                                "payload": {
-                                  "path": "form.emailAddress",
-                                  "value": "$event"
-                                }
+                                "type": "setFormField", "formId": "e2f3a4b5-c6d7-8901-efab-901234567890", "field": "emailAddress", "value": "$event"
                               }
                             }
                           }
@@ -339,16 +320,12 @@
                             "type": "InputField",
                             "props": {
                               "type": "password",
-                              "value": "{{form.currentPassword}}",
-                              "placeholder": "••••••••"
+                              "value": "{{variables['f3a4b5c6-d7e8-9012-fabc-012345678901'].value.currentPassword}}",
+                              "placeholder": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
                             },
                             "actions": {
                               "change": {
-                                "action": "setState",
-                                "payload": {
-                                  "path": "form.currentPassword",
-                                  "value": "$event"
-                                }
+                                "type": "setFormField", "formId": "f3a4b5c6-d7e8-9012-fabc-012345678901", "field": "currentPassword", "value": "$event"
                               }
                             }
                           }
@@ -376,16 +353,12 @@
                             "type": "InputField",
                             "props": {
                               "type": "password",
-                              "value": "{{form.newPassword}}",
-                              "placeholder": "••••••••"
+                              "value": "{{variables['f3a4b5c6-d7e8-9012-fabc-012345678901'].value.newPassword}}",
+                              "placeholder": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
                             },
                             "actions": {
                               "change": {
-                                "action": "setState",
-                                "payload": {
-                                  "path": "form.newPassword",
-                                  "value": "$event"
-                                }
+                                "type": "setFormField", "formId": "f3a4b5c6-d7e8-9012-fabc-012345678901", "field": "newPassword", "value": "$event"
                               }
                             }
                           }

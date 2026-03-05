@@ -7,7 +7,7 @@
     {
       "type": "Pressable",
       "props": {
-        "className": { "expr": "'flex flex-row items-center justify-between w-full py-4 ' + (({{checkout.order.shippingLines.length}} || 0) > 0 || {{checkout.selectedPaymentMethodCode}} ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')" }
+        "className": { "expr": "'flex flex-row items-center justify-between w-full py-4 ' + (({{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingLines.length}} || 0) > 0 || {{variables['b3c4d5e6-f7a8-9012-bcde-123456789012']}} ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')" }
       },
       "children": [
         {
@@ -19,7 +19,7 @@
             {
               "type": "Box",
               "props": {
-                "className": { "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + ({{checkout.selectedPaymentMethodCode}} ? 'bg-green-500 !text-white' : ({{checkout.step}} === 'payment' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]'))" }
+                "className": { "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + ({{variables['b3c4d5e6-f7a8-9012-bcde-123456789012']}} ? 'bg-green-500 !text-white' : ({{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'payment' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]'))" }
               },
               "children": [
                 {
@@ -29,14 +29,14 @@
                     "size": 16,
                     "className": "!text-white"
                   },
-                  "condition": "{{checkout.selectedPaymentMethodCode}}"
+                  "condition": "{{variables['b3c4d5e6-f7a8-9012-bcde-123456789012']}}"
                 },
                 {
                   "type": "Text",
                   "props": {
                     "className": "font-semibold text-sm !text-white"
                   },
-                  "condition": "!{{checkout.selectedPaymentMethodCode}} && {{checkout.step}} === 'payment'",
+                  "condition": "!{{variables['b3c4d5e6-f7a8-9012-bcde-123456789012']}} && {{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'payment'",
                   "text": "4"
                 },
                 {
@@ -44,7 +44,7 @@
                   "props": {
                     "className": "font-semibold text-sm !text-[var(--theme-muted-foreground)]"
                   },
-                  "condition": "!{{checkout.selectedPaymentMethodCode}} && {{checkout.step}} !== 'payment'",
+                  "condition": "!{{variables['b3c4d5e6-f7a8-9012-bcde-123456789012']}} && {{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} !== 'payment'",
                   "text": "4"
                 }
               ]
@@ -71,7 +71,7 @@
                 "size": 16,
                 "className": "!text-[var(--theme-muted-foreground)]"
               },
-              "condition": "{{checkout.step}} === 'payment'"
+              "condition": "{{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'payment'"
             },
             {
               "type": "NavIcon",
@@ -80,15 +80,15 @@
                 "size": 16,
                 "className": "!text-[var(--theme-muted-foreground)]"
               },
-              "condition": "{{checkout.step}} !== 'payment'"
+              "condition": "{{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} !== 'payment'"
             }
           ]
         }
       ],
       "actions": {
         "click": {
-          "type": "set",
-          "path": "checkout.step",
+          "type": "setVar",
+          "path": "d9e0f1a2-b3c4-5678-defa-789012345678",
           "value": "payment"
         }
       }
@@ -98,7 +98,7 @@
       "props": {
         "className": "pb-6 space-y-3"
       },
-      "condition": "{{checkout.step}} === 'payment'",
+      "condition": "{{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'payment'",
       "children": [
         {
           "type": "Text",
@@ -132,7 +132,7 @@
                       "props": {
                         "className": "w-2 h-2 rounded-full bg-white pointer-events-none"
                       },
-                      "condition": "{{checkout.selectedPaymentMethodCode}} === {{$item.code}}"
+                      "condition": "{{variables['b3c4d5e6-f7a8-9012-bcde-123456789012']}} === {{context.item.code}}"
                     }
                   ]
                 },
@@ -155,14 +155,14 @@
                       "props": {
                         "className": "font-medium text-sm text-[var(--theme-foreground)]"
                       },
-                      "text": "{{$item.name}}"
+                      "text": "{{context.item.name}}"
                     },
                     {
                       "type": "Text",
                       "props": {
                         "className": "text-xs text-[var(--theme-muted-foreground)]"
                       },
-                      "text": "{{$item.description}}"
+                      "text": "{{context.item.description}}"
                     }
                   ]
                 }
@@ -172,9 +172,9 @@
                   "type": "runMultiple",
                   "actions": [
                     {
-                      "type": "set",
-                      "path": "checkout.selectedPaymentMethodCode",
-                      "value": "{{$item.code}}"
+                      "type": "setVar",
+                      "path": "b3c4d5e6-f7a8-9012-bcde-123456789012",
+                      "value": "{{context.item.code}}"
                     },
                     {
                       "action": "setState",
@@ -205,8 +205,8 @@
           ],
           "actions": {
             "click": {
-              "type": "set",
-              "path": "checkout.step",
+              "type": "setVar",
+              "path": "d9e0f1a2-b3c4-5678-defa-789012345678",
               "value": "review"
             }
           }

@@ -4,14 +4,7 @@
   },
   "state": {},
   "layout": "account",
-  "initActions": [
-    {
-      "action": "fetchNavCollections"
-    },
-    {
-      "action": "fetchOrderDetail"
-    }
-  ],
+  "initActions": [],
   "content": {
     "type": "Box",
     "props": {
@@ -49,7 +42,7 @@
             "props": {
               "className": "text-3xl font-bold"
             },
-            "text": "Order #{{account.orderDetail.code}}"
+            "text": "Order #{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.code}}"
           },
           {
             "type": "Badge",
@@ -59,7 +52,7 @@
             "children": [
               {
                 "type": "BadgeText",
-                "text": "{{account.orderDetail.state}}"
+                "text": "{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.state}}"
               }
             ]
           }
@@ -86,7 +79,7 @@
                 "props": {
                   "className": "space-y-4 flex flex-col"
                 },
-                "map": "account.orderDetail.lines",
+                "map": "collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.lines",
                 "key": "orderDetailLine",
                 "children": [
                   {
@@ -98,8 +91,8 @@
                       {
                         "type": "NextImage",
                         "props": {
-                          "src": "{{$item.productVariant.product.featuredAsset.preview}}",
-                          "alt": "{{$item.productVariant.product.name}}",
+                          "src": "{{context.item.productVariant.product.featuredAsset.preview}}",
+                          "alt": "{{context.item.productVariant.product.name}}",
                           "width": 80,
                           "height": 80,
                           "className": "rounded-md object-cover w-20 h-20 flex-shrink-0 border border-[var(--theme-border)]"
@@ -116,21 +109,21 @@
                             "props": {
                               "className": "font-medium"
                             },
-                            "text": "{{$item.productVariant.product.name}}"
+                            "text": "{{context.item.productVariant.product.name}}"
                           },
                           {
                             "type": "Text",
                             "props": {
                               "className": "text-sm text-[var(--theme-muted-foreground)]"
                             },
-                            "text": "{{$item.productVariant.name}}"
+                            "text": "{{context.item.productVariant.name}}"
                           },
                           {
                             "type": "Text",
                             "props": {
                               "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                             },
-                            "text": "Qty: {{$item.quantity}}"
+                            "text": "Qty: {{context.item.quantity}}"
                           }
                         ]
                       },
@@ -140,7 +133,7 @@
                           "className": "font-semibold text-right flex-shrink-0"
                         },
                         "text": {
-                          "expr": "formatCurrency({{$item.linePriceWithTax}} / 100, {{account.orderDetail.currencyCode}} || 'USD')"
+                          "expr": "formatCurrency({{context.item.linePriceWithTax}} / 100, {{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.currencyCode}} || 'USD')"
                         }
                       }
                     ]
@@ -178,28 +171,28 @@
                     "props": {
                       "className": "text-sm"
                     },
-                    "text": "{{account.orderDetail.shippingAddress.fullName}}"
+                    "text": "{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.shippingAddress.fullName}}"
                   },
                   {
                     "type": "Text",
                     "props": {
                       "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
-                    "text": "{{account.orderDetail.shippingAddress.streetLine1}}"
+                    "text": "{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.shippingAddress.streetLine1}}"
                   },
                   {
                     "type": "Text",
                     "props": {
                       "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
-                    "text": "{{account.orderDetail.shippingAddress.city}}, {{account.orderDetail.shippingAddress.postalCode}}"
+                    "text": "{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.shippingAddress.city}}, {{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.shippingAddress.postalCode}}"
                   },
                   {
                     "type": "Text",
                     "props": {
                       "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
-                    "text": "{{account.orderDetail.shippingAddress.country}}"
+                    "text": "{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.shippingAddress.country}}"
                   }
                 ]
               }
@@ -237,7 +230,7 @@
                       {
                         "type": "Text",
                         "text": {
-                          "expr": "formatCurrency(({{account.orderDetail.subTotalWithTax}} || 0) / 100, {{account.orderDetail.currencyCode}} || 'USD')"
+                          "expr": "formatCurrency(({{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.subTotalWithTax}} || 0) / 100, {{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.currencyCode}} || 'USD')"
                         }
                       }
                     ]
@@ -258,7 +251,7 @@
                       {
                         "type": "Text",
                         "text": {
-                          "expr": "formatCurrency(({{account.orderDetail.shippingWithTax}} || 0) / 100, {{account.orderDetail.currencyCode}} || 'USD')"
+                          "expr": "formatCurrency(({{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.shippingWithTax}} || 0) / 100, {{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.currencyCode}} || 'USD')"
                         }
                       }
                     ]
@@ -279,7 +272,7 @@
                       {
                         "type": "Text",
                         "text": {
-                          "expr": "formatCurrency(({{account.orderDetail.totalWithTax}} || 0) / 100, {{account.orderDetail.currencyCode}} || 'USD')"
+                          "expr": "formatCurrency(({{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.totalWithTax}} || 0) / 100, {{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.currencyCode}} || 'USD')"
                         }
                       }
                     ]

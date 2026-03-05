@@ -8,7 +8,7 @@
       "action": "navigate",
       "payload": {
         "routeConfig": "product",
-        "slug": "{{$item.slug}}"
+        "slug": "{{context.item.slug}}"
       }
     }
   },
@@ -22,8 +22,8 @@
         {
           "type": "NextImage",
           "props": {
-            "src": "{{$item.productAsset.preview}}",
-            "alt": "{{$item.productName}}",
+            "src": "{{context.item.productAsset.preview}}",
+            "alt": "{{context.item.productName}}",
             "fill": true,
             "className": "object-cover group-hover:scale-105 transition-transform duration-300",
             "sizes": "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -34,7 +34,7 @@
           "props": {
             "className": "w-full h-full flex items-center justify-center text-[var(--theme-content-textMuted)]"
           },
-          "condition": "!{{$item.productAsset}}",
+          "condition": "!{{context.item.productAsset}}",
           "children": [
             {
               "type": "Text",
@@ -55,7 +55,7 @@
           "props": {
             "className": "font-medium line-clamp-2 group-hover:opacity-80 transition-colors text-[var(--theme-content-text)]"
           },
-          "text": "{{$item.productName}}"
+          "text": "{{context.item.productName}}"
         },
         {
           "type": "Text",
@@ -63,7 +63,7 @@
             "className": "text-lg font-bold text-[var(--theme-content-text)]"
           },
           "text": {
-            "expr": "{{$item.priceWithTax.__typename}} === 'SinglePrice' ? formatCurrency({{$item.priceWithTax.value}} / 100, {{$item.currencyCode}} || 'USD') : 'from ' + formatCurrency({{$item.priceWithTax.min}} / 100, {{$item.currencyCode}} || 'USD')"
+            "expr": "{{context.item.priceWithTax.__typename}} === 'SinglePrice' ? formatCurrency({{context.item.priceWithTax.value}} / 100, {{context.item.currencyCode}} || 'USD') : 'from ' + formatCurrency({{context.item.priceWithTax.min}} / 100, {{context.item.currencyCode}} || 'USD')"
           }
         }
       ]

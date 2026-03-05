@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useSduiStore } from '@/store/sdui-store';
 import { useLayoutGeneratorStore } from '@/store/layout-generator-store';
-import { SDUIEngine, paramChangeRunActionRef, type ActionsConfig } from '@/lib/sdui/sdui-engine';
+import { SDUIEngine, paramChangeRunActionRef, type ActionsConfig, type NamedDataSourceDef } from '@/lib/sdui/sdui-engine';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 import { syncSearchParams, type SearchParamSyncDef } from '@/lib/sdui/search-param-sync';
 import { sortRoutes, matchRoute } from '@/lib/sdui/route-utils';
@@ -172,6 +172,7 @@ export default function DynamicRoutePage() {
         actionsConfig={app.actions as ActionsConfig}
         routes={app.routes}
         paramChangeAction={(route as { paramChangeAction?: string })?.paramChangeAction}
+        dataSources={(app as { dataSources?: Record<string, NamedDataSourceDef> }).dataSources}
       />
     </main>
   );

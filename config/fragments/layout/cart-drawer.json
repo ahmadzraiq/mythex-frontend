@@ -3,7 +3,7 @@
   "props": {
     "anchor": "right"
   },
-  "condition": "{{layout.cartDrawerOpen}}",
+  "condition": "{{variables['c2d3e4f5-a6b7-8901-cdef-012345678901']}}",
   "children": [
     {
       "type": "DrawerBackdrop",
@@ -64,7 +64,7 @@
               "props": {
                 "className": "flex flex-col items-center justify-center py-12 text-center"
               },
-              "condition": "({{cart.totalQuantity}} || 0) === 0",
+              "condition": "({{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.totalQuantity}} || 0) === 0",
               "children": [
                 {
                   "type": "NavIcon",
@@ -87,8 +87,8 @@
               "props": {
                 "className": "space-y-3 flex flex-col"
               },
-              "condition": "{{cart.totalQuantity}} > 0",
-              "map": "cart.lines",
+              "condition": "{{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.totalQuantity}} > 0",
+              "map": "collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.lines",
               "key": "drawerLine",
               "children": [
                 {
@@ -100,8 +100,8 @@
                     {
                       "type": "NextImage",
                       "props": {
-                        "src": "{{$item.productVariant.product.featuredAsset.preview}}",
-                        "alt": "{{$item.productVariant.product.name}}",
+                        "src": "{{context.item.productVariant.product.featuredAsset.preview}}",
+                        "alt": "{{context.item.productVariant.product.name}}",
                         "width": 64,
                         "height": 64,
                         "className": "rounded-md object-cover w-16 h-16 flex-shrink-0 border border-[var(--theme-border)]"
@@ -118,14 +118,14 @@
                           "props": {
                             "className": "text-sm font-medium truncate"
                           },
-                          "text": "{{$item.productVariant.product.name}}"
+                          "text": "{{context.item.productVariant.product.name}}"
                         },
                         {
                           "type": "Text",
                           "props": {
                             "className": "text-xs text-[var(--theme-muted-foreground)] mt-0.5"
                           },
-                          "text": "{{$item.productVariant.name}}"
+                          "text": "{{context.item.productVariant.name}}"
                         },
                         {
                           "type": "Box",
@@ -138,7 +138,7 @@
                               "props": {
                                 "className": "text-sm"
                               },
-                              "text": "Qty: {{$item.quantity}}"
+                              "text": "Qty: {{context.item.quantity}}"
                             },
                             {
                               "type": "Text",
@@ -146,7 +146,7 @@
                                 "className": "text-sm font-medium"
                               },
                               "text": {
-                                "expr": "formatCurrency({{$item.linePriceWithTax}} / 100, {{cart.currencyCode}} || 'USD')"
+                                "expr": "formatCurrency({{context.item.linePriceWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD')"
                               }
                             }
                           ]
@@ -184,7 +184,7 @@
           "props": {
             "className": "border-t border-[var(--theme-border)] pt-4 space-y-3"
           },
-          "condition": "{{cart.totalQuantity}} > 0",
+          "condition": "{{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.totalQuantity}} > 0",
           "children": [
             {
               "type": "Box",
@@ -205,7 +205,7 @@
                     "className": "font-semibold"
                   },
                   "text": {
-                    "expr": "formatCurrency({{cart.subTotalWithTax}} / 100, {{cart.currencyCode}} || 'USD')"
+                    "expr": "formatCurrency({{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.subTotalWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD')"
                   }
                 }
               ]

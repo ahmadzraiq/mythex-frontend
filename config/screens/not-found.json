@@ -3,11 +3,7 @@
     "title": "Page Not Found"
   },
   "state": {},
-  "initActions": [
-    {
-      "action": "fetchNavCollections"
-    }
-  ],
+  "initActions": [],
   "ui": {
     "type": "Box",
     "props": {

@@ -1,151 +1,195 @@
 /**
- * Handler for type: "graphql" - GraphQL queries and mutations
+ * GraphQL action handler — type: "graphql"
+ *
+ * Sends a GraphQL query or mutation via HTTP POST.
+ * Supports:
+ *   endpoint, query, variables (JSON Logic-resolvable),
+ *   headers (merged on top of engineConventions.graphqlHeaders),
+ *   responsePath, storeIn, storeFullResponseIn, skipStoreWhenNull,
+ *   errorMessagePath, onSuccess, cacheTag/cacheTTL/cacheKeyVars (pass-through)
  */
 
-import { toast } from 'sonner';
 import { getNestedValue } from '../../nested-utils';
-import { cacheGet, cacheSet, cacheInvalidate } from '../../fetch-cache';
-import { interpolateUrl, resolvePayload } from '../resolve-value';
+import { resolveValue, interpolateUrl } from '../resolve-value';
 import type { ActionDef, ActionHandlerContext } from './types';
+
+// ─── Simple LRU cache ────────────────────────────────────────────────────────
+
+interface CacheEntry { value: unknown; expiresAt: number }
+const _cache = new Map<string, CacheEntry>();
+const MAX_CACHE_SIZE = 50;
+
+function cacheGet(key: string): unknown | undefined {
+  const entry = _cache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expiresAt) { _cache.delete(key); return undefined; }
+  return entry.value;
+}
+function cacheSet(key: string, value: unknown, ttlSec: number) {
+  if (_cache.size >= MAX_CACHE_SIZE) {
+    const firstKey = _cache.keys().next().value;
+    if (firstKey) _cache.delete(firstKey);
+  }
+  _cache.set(key, { value, expiresAt: Date.now() + ttlSec * 1000 });
+}
+
+// ─── UUID detection ───────────────────────────────────────────────────────────
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** When storeIn is a bare UUID, data lives under collections.UUID to match the
+ *  {{collections.UUID.data.*}} path convention used in all screen/fragment configs. */
+function resolveStoreKey(storeIn: string): string {
+  return UUID_RE.test(storeIn) ? `collections.${storeIn}` : storeIn;
+}
+
+// ─── Handler ──────────────────────────────────────────────────────────────────
 
 export const graphqlHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
   (ctx) => async (actionDef) => {
     const CONVENTIONS = ctx.CONVENTIONS as {
-      defaultStoreIn?: string;
-      defaultErrorMessagePath?: string;
       graphqlEndpoint?: string;
       graphqlHeaders?: Record<string, string>;
       graphqlCredentials?: RequestCredentials;
+      loadingSuffix?: string;
+      errorSuffix?: string;
     };
-    const storeIn = (actionDef.storeIn ?? CONVENTIONS.defaultStoreIn) as string;
-    const storeFullResponseIn = actionDef.storeFullResponseIn as string | undefined;
-    const errorMessagePath = (actionDef.errorMessagePath ?? CONVENTIONS.defaultErrorMessagePath) as string;
-    const rawEndpoint = (actionDef.endpoint as string) ?? CONVENTIONS.graphqlEndpoint ?? '';
-    const endpoint = interpolateUrl(rawEndpoint, ctx.get, ctx.scope);
-    const query = (actionDef.query as string) ?? '';
-    const rawVariables = actionDef.variables as Record<string, unknown> | undefined;
+
+    const storeIn = resolveStoreKey((actionDef.storeIn ?? '') as string);
     const fullState = ctx.getFullMergedState();
-    const stateWithScope = ctx.scope ? { ...fullState, ...ctx.scope } : fullState;
-    const baseVars = rawVariables ? resolvePayload(rawVariables, ctx.get, ctx.scope, stateWithScope) : {};
-    const payloadVars =
-      ctx.payload && typeof ctx.payload === 'object'
-        ? resolvePayload(ctx.payload, ctx.get, ctx.scope, stateWithScope)
-        : {};
-    const variables: Record<string, unknown> | undefined =
-      Object.keys(baseVars).length || Object.keys(payloadVars).length
-        ? { ...baseVars, ...payloadVars }
-        : undefined;
 
-    const rawHeaders = (actionDef.headers as Record<string, string>) ?? {};
-    const resolvedActionHeaders = resolvePayload(rawHeaders as Record<string, unknown>, ctx.get, ctx.scope, stateWithScope) as Record<string, string>;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...CONVENTIONS.graphqlHeaders,
-      ...resolvedActionHeaders,
-    };
-    for (const key of Object.keys(headers)) {
-      if (headers[key] == null || headers[key] === '' || headers[key] === 'null' || headers[key] === 'undefined') {
-        delete headers[key];
-      }
-    }
-
-    const responsePath = actionDef.responsePath as string | undefined;
-    const credentials = (actionDef.credentials as RequestCredentials) ?? CONVENTIONS.graphqlCredentials;
-    const storeHeaderIn = actionDef.storeHeaderIn as Record<string, string> | undefined;
-    const cacheTag = actionDef.cacheTag as string | undefined;
-    const cacheTTL = (actionDef.cacheTTL as number) ?? 0;
-    const invalidateCache = actionDef.invalidateCache as string[] | undefined;
-    const cacheKeyVars = actionDef.cacheKeyVars as string[] | undefined;
-    const isQuery = query.trim().toLowerCase().startsWith('query');
-    const canCache = isQuery && !!cacheTag && cacheTTL > 0;
-    const cacheVars =
-      canCache && cacheKeyVars?.length
-        ? { ...variables, ...Object.fromEntries(cacheKeyVars.map((p) => [p, ctx.get(p)])) }
-        : variables;
-
-    const cached = canCache ? cacheGet(cacheTag!, cacheVars) : null;
-    if (cached != null) {
-      let data: unknown = cached;
-      if (responsePath && typeof responsePath === 'string') {
-        const parts = responsePath.split('.');
-        for (const p of parts) data = (data as Record<string, unknown>)?.[p];
-      }
-      const skipStoreWhenNull = actionDef.skipStoreWhenNull as boolean | undefined;
-      if (!skipStoreWhenNull || data != null) {
-        const toStore =
-          data != null && typeof data === 'object' && !Array.isArray(data)
-            ? JSON.parse(JSON.stringify(data))
-            : data;
-        ctx.setData(storeIn, toStore);
-      }
+    // ── Endpoint ──────────────────────────────────────────────────────────────
+    const rawEndpoint = (actionDef.endpoint ?? CONVENTIONS.graphqlEndpoint ?? '') as string;
+    const endpoint = interpolateUrl(rawEndpoint, ctx.get, ctx.scope);
+    if (!endpoint) {
+      console.warn('[graphql] no endpoint defined; set engineConventions.graphqlEndpoint or action.endpoint');
       return;
     }
 
-    ctx.setLoading(storeIn, true);
+    // ── Headers ───────────────────────────────────────────────────────────────
+    const globalHeaders: Record<string, string> = {};
+    for (const [k, v] of Object.entries(CONVENTIONS.graphqlHeaders ?? {})) {
+      globalHeaders[k] = interpolateUrl(String(v), ctx.get, ctx.scope);
+    }
+    const actionHeaders: Record<string, string> = {};
+    const rawHeaders = actionDef.headers as Record<string, unknown> | undefined;
+    if (rawHeaders) {
+      for (const [k, v] of Object.entries(rawHeaders)) {
+        const resolved = resolveValue(v, ctx.get, ctx.scope, fullState);
+        if (resolved != null && resolved !== '') {
+          actionHeaders[k] = String(resolved);
+        }
+      }
+    }
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...globalHeaders,
+      ...actionHeaders,
+    };
+
+    // ── Variables ─────────────────────────────────────────────────────────────
+    // Start with actionDef.variables, then overlay ctx.payload so callers can
+    // override specific variables (e.g. adjusted quantity from a +/- button).
+    const rawVars = actionDef.variables as Record<string, unknown> | undefined;
+    const variables: Record<string, unknown> = {};
+    if (rawVars) {
+      for (const [k, v] of Object.entries(rawVars)) {
+        variables[k] = resolveValue(v, ctx.get, ctx.scope, fullState);
+      }
+    }
+    if (ctx.payload && typeof ctx.payload === 'object') {
+      for (const [k, v] of Object.entries(ctx.payload)) {
+        variables[k] = resolveValue(v as Parameters<typeof resolveValue>[0], ctx.get, ctx.scope, fullState);
+      }
+    }
+
+    // ── Cache check ───────────────────────────────────────────────────────────
+    const cacheTag = (actionDef.cacheTag ?? '') as string;
+    const cacheTTL = Number(actionDef.cacheTTL ?? 0);
+    const cacheKeyVars = (actionDef.cacheKeyVars as string[] | undefined) ?? [];
+    let cacheKey = '';
+    if (cacheTag && cacheTTL > 0) {
+      const keyParts = cacheKeyVars.map(p => String(ctx.get(p, ctx.scope) ?? ''));
+      cacheKey = `gql:${cacheTag}:${keyParts.join(':')}`;
+      const cached = cacheGet(cacheKey);
+      if (cached !== undefined) {
+        if (storeIn) ctx.setData(storeIn, cached);
+        return;
+      }
+    }
+
+    // ── Loading state ─────────────────────────────────────────────────────────
+    if (storeIn) ctx.setLoading(storeIn, true);
+
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ query, variables }),
-        ...(credentials ? { credentials } : {}),
+        body: JSON.stringify({ query: actionDef.query, variables }),
+        ...(CONVENTIONS.graphqlCredentials ? { credentials: CONVENTIONS.graphqlCredentials } : {}),
       });
-      const rawResponse = await res.json().catch(() => ({}));
+
+      // ── HTTP error ──────────────────────────────────────────────────────────
       if (!res.ok) {
-        const msg =
-          (getNestedValue(rawResponse as Record<string, unknown>, errorMessagePath) as string) ??
-          `GraphQL request failed: ${res.status}`;
-        throw new Error(msg);
-      }
-      const gqlErrors = (rawResponse as { errors?: Array<{ message: string }> }).errors;
-      if (gqlErrors && gqlErrors.length > 0) {
-        throw new Error(gqlErrors[0]?.message ?? 'GraphQL error');
+        let errMsg = `HTTP ${res.status}`;
+        try {
+          const errBody = await res.json() as Record<string, unknown>;
+          const errPath = (actionDef.errorMessagePath ?? 'errors[0].message') as string;
+          const extracted = getNestedValue(errBody, errPath);
+          if (extracted) errMsg = String(extracted);
+        } catch { /* ignore */ }
+        if (storeIn) ctx.setError(storeIn, errMsg);
+        return;
       }
 
-      if (storeHeaderIn) {
-        for (const [storePath, headerName] of Object.entries(storeHeaderIn)) {
-          const headerValue = res.headers.get(headerName);
-          if (headerValue) ctx.setData(storePath, headerValue);
+      const json = await res.json() as { data?: unknown; errors?: Array<{ message: string }> };
+
+      // ── GraphQL errors ──────────────────────────────────────────────────────
+      if (json.errors && json.errors.length > 0) {
+        const gqlErr = json.errors[0]?.message ?? 'GraphQL error';
+        if (storeIn) ctx.setError(storeIn, gqlErr);
+        return;
+      }
+
+      // ── Response extraction ─────────────────────────────────────────────────
+      if (actionDef.storeFullResponseIn) {
+        ctx.setData(actionDef.storeFullResponseIn as string, json);
+      }
+
+      const responsePath = (actionDef.responsePath ?? '') as string;
+      let data: unknown = json;
+      if (responsePath) {
+        data = getNestedValue(json as Record<string, unknown>, responsePath);
+      }
+
+      // ── Store ───────────────────────────────────────────────────────────────
+      if (storeIn) {
+        if (data === null && actionDef.skipStoreWhenNull) {
+          // skip
+        } else {
+          ctx.setData(storeIn, data);
         }
       }
-      if (storeFullResponseIn) {
-        ctx.setData(storeFullResponseIn, rawResponse);
+
+      // ── Cache write ─────────────────────────────────────────────────────────
+      if (cacheKey && cacheTTL > 0) {
+        cacheSet(cacheKey, data, cacheTTL);
       }
 
-      let data: unknown = rawResponse;
-      if (responsePath && typeof responsePath === 'string') {
-        const parts = responsePath.split('.');
-        for (const p of parts) {
-          data = (data as Record<string, unknown>)?.[p];
-        }
-      }
+      if (storeIn) ctx.setError(storeIn, null);
 
-      const addResult = data as { __typename?: string; errorCode?: string; message?: string } | undefined;
-      if (addResult?.errorCode || addResult?.__typename === 'ErrorResult') {
-        throw new Error(addResult?.message ?? 'Operation failed');
-      }
-
-      const skipStoreWhenNull = actionDef.skipStoreWhenNull as boolean | undefined;
-      if (!skipStoreWhenNull || data != null) {
-        const toStore =
-          data != null && typeof data === 'object' && !Array.isArray(data)
-            ? JSON.parse(JSON.stringify(data))
-            : data;
-        ctx.setData(storeIn, toStore);
-      }
-      if (canCache) cacheSet(cacheTag!, cacheVars, rawResponse, cacheTTL);
-      if (invalidateCache?.length) for (const t of invalidateCache) cacheInvalidate(t);
-
+      // ── onSuccess ───────────────────────────────────────────────────────────
       const onSuccess = actionDef.onSuccess;
       if (onSuccess) {
-        const actions = Array.isArray(onSuccess) ? onSuccess : [onSuccess];
-        for (const a of actions) {
+        const nexts = Array.isArray(onSuccess) ? onSuccess : [onSuccess];
+        for (const a of nexts) {
           await ctx.runOne(a as import('../../types').SDUIAction);
         }
       }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'GraphQL request failed';
-      ctx.setError(storeIn, msg);
-      toast.error(msg);
-      throw err;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (storeIn) ctx.setError(storeIn, msg);
+    } finally {
+      if (storeIn) ctx.setLoading(storeIn, false);
     }
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useRef } from 'react';
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
@@ -43,6 +43,18 @@ export function Carousel({
   const [emblaRef, emblaApi] = useEmblaCarousel({ align, loop });
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
+
+  // Reinitialize Embla when slide count changes (e.g. after data loads dynamically).
+  // Uses containerNode() since emblaRef is a callback ref, not a RefObject.
+  const slideCountRef = useRef(0);
+  useEffect(() => {
+    if (!emblaApi) return;
+    const count = emblaApi.containerNode().childElementCount;
+    if (count !== slideCountRef.current) {
+      slideCountRef.current = count;
+      emblaApi.reInit();
+    }
+  });
 
   return (
     <div className={`relative ${className ?? ""}`}>

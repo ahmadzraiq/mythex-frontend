@@ -505,6 +505,7 @@ export default function BuilderPage() {
   const initTheme = useBuilderStore(s => s.initTheme);
   const loadFromConfig = useBuilderStore(s => s.loadFromConfig);
   const [leftSlide, setLeftSlide] = useState<LeftSlideState>(null);
+  const [leftSlideWidth, setLeftSlideWidth] = useState(320);
 
   // Install Gluestack primary token bridge immediately on mount so Checkbox,
   // Radio, Switch etc. reflect --primary even before a preset is applied.
@@ -513,13 +514,16 @@ export default function BuilderPage() {
   // Seed builder panels from app config files on first load (if empty)
   useEffect(() => { void loadFromConfig(); }, [loadFromConfig]);
 
-  // Hydrate SDUI store from persisted preview data so Run/Use-as-preview data survives refresh
+  // Hydrate SDUI store from persisted preview data so Run/Use-as-preview data survives refresh.
+  // Migrate any legacy flat-UUID keys (stored before the collections.UUID convention) on the fly.
   useEffect(() => {
     const persisted = restorePreviewData();
     if (Object.keys(persisted).length === 0) return;
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const setData = useSduiStore.getState().setData;
     for (const [key, value] of Object.entries(persisted)) {
-      setData(key, value);
+      const storeKey = UUID_RE.test(key) ? `collections.${key}` : key;
+      setData(storeKey, value);
     }
   }, []);
 
@@ -616,34 +620,52 @@ export default function BuilderPage() {
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         <PanelLeft
           dataSlideState={leftSlide?.kind === 'data' ? leftSlide.subState : null}
-          onSetDataSlide={s => setLeftSlide(s ? { kind: 'data', subState: s } : null)}
+          onSetDataSlide={s => {
+            // Reset width to default when switching to a non-datasource slide (e.g. variable)
+            if (!s || s.kind !== 'dataSource') setLeftSlideWidth(320);
+            setLeftSlide(s ? { kind: 'data', subState: s } : null);
+          }}
           logicSlideState={leftSlide?.kind === 'logic' ? leftSlide.subState : null}
-          onSetLogicSlide={s => setLeftSlide(s ? { kind: 'logic', subState: s } : null)}
-          onOpenPageConfig={() => setLeftSlide({ kind: 'pageConfig' })}
+          onSetLogicSlide={s => { setLeftSlideWidth(320); setLeftSlide(s ? { kind: 'logic', subState: s } : null); }}
+          onOpenPageConfig={() => { setLeftSlideWidth(320); setLeftSlide({ kind: 'pageConfig' }); }}
+          onWidthChange={setLeftSlideWidth}
         />
 
         {/* Left SlidePanel — slides in between left panel and canvas */}
         {leftSlide && (
           <SlidePanel
-            title={leftSlideTitle(leftSlide)}
+            title={(() => {
+              if (leftSlide.kind === 'data' && leftSlide.subState?.kind === 'dataSource') {
+                const id = leftSlide.subState.editingId;
+                if (!id) return 'New Data Source';
+                const ds = store.pageDataSources.find(s => s.id === id);
+                if (!ds) return 'Data Source';
+                const typeLabel = ds.type === 'graphql' ? 'GraphQL' : 'REST';
+                const dsDisplayName = (ds as { _label?: string })._label ?? ds.name ?? ds.id;
+                return `${dsDisplayName} · ${typeLabel}`;
+              }
+              return leftSlideTitle(leftSlide);
+            })()}
             side="left"
-            onClose={() => setLeftSlide(null)}
+            onClose={() => { setLeftSlide(null); setLeftSlideWidth(320); }}
+            width={leftSlideWidth}
             testId="left-slide-panel"
           >
             {leftSlide.kind === 'data' && (
               <DataSlidePanelContent
                 slideState={leftSlide.subState}
-                onClose={() => setLeftSlide(null)}
+                onClose={() => { setLeftSlide(null); setLeftSlideWidth(320); }}
+                onWidthChange={setLeftSlideWidth}
               />
             )}
             {leftSlide.kind === 'logic' && (
               <LogicSlidePanelContent
                 slideState={leftSlide.subState}
-                onClose={() => setLeftSlide(null)}
+                onClose={() => { setLeftSlide(null); setLeftSlideWidth(320); }}
               />
             )}
             {leftSlide.kind === 'pageConfig' && (
-              <PageConfigSlidePanelContent onClose={() => setLeftSlide(null)} />
+              <PageConfigSlidePanelContent onClose={() => { setLeftSlide(null); setLeftSlideWidth(320); }} />
             )}
           </SlidePanel>
         )}

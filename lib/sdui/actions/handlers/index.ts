@@ -15,6 +15,8 @@ import { appendHandler, appendToPathHandler } from './append-handler';
 import { runMultipleHandler } from './run-multiple-handler';
 import { navigateHandler } from './navigate-handler';
 import { navigateWithQueryHandler } from './navigate-with-query-handler';
+import { refetchDataSourceHandler } from './refetch-datasource-handler';
+import { setFormFieldHandler, resetFormHandler } from './form-variable-handler';
 import {
   restoreHandler,
   clearPersistedPathsHandler,
@@ -56,6 +58,9 @@ export const ACTION_HANDLERS: Record<string, HandlerFactory> = {
   log: logHandler,
   cycleIndex: cycleIndexHandler,
   mergeAtPath: mergeAtPathHandler,
+  refetchDataSource: refetchDataSourceHandler,
+  setFormField: setFormFieldHandler,
+  resetForm: resetFormHandler,
 };
 
 /**

@@ -17,7 +17,15 @@ export type EvalResult = { value: unknown; error: null } | { value: null; error:
 // ─── Variable resolution ───────────────────────────────────────────────────────
 
 function getNestedVal(obj: Record<string, unknown>, path: string): unknown {
-  const parts = path.split('.');
+  // Split on ".", "[N]" (numeric index), and ['key'] / ["key"] (string bracket notation)
+  // e.g. "a.b[2].c" → ["a","b","2","c"]
+  // e.g. "collections['uuid']?.['data']?.[0]" → ["collections","uuid","data","0"]
+  // Strip leading ?. from the path before splitting so optional chaining in stored formulas
+  // (which would only be present if getNestedVal is called on a pre-processed string) works.
+  const cleaned = path.replace(/\?\./g, '.');
+  const parts = cleaned
+    .split(/\.|\[(\d+)\]|\['([^']+)'\]|\["([^"]+)"\]/)
+    .filter(p => p !== undefined && p !== '');
   let cur: unknown = obj;
   for (const p of parts) {
     if (cur == null || typeof cur !== 'object') return undefined;
@@ -29,7 +37,15 @@ function getNestedVal(obj: Record<string, unknown>, path: string): unknown {
 export function resolveVar(path: string, context: Record<string, unknown>): unknown {
   // Try flat key first (Zustand stores flat keys like "product.variants")
   if (path in context) return context[path];
-  // Try nested traversal
+  // Try flat-key prefix matching: find the longest context key that is a prefix of path
+  // e.g. "featured.products[0].slug" with flat key "featured.products" → resolve "[0].slug" inside it
+  for (const key of Object.keys(context).sort((a, b) => b.length - a.length)) {
+    if (path.startsWith(key) && (path[key.length] === '.' || path[key.length] === '[')) {
+      const rest = path.slice(key.length);
+      return getNestedVal({ _: context[key] } as Record<string, unknown>, '_' + rest);
+    }
+  }
+  // Try nested traversal as last resort
   return getNestedVal(context, path);
 }
 
@@ -326,9 +342,29 @@ export function evaluateFormula(formula: string | object, context: Record<string
   }
 
   try {
+    // Pass named params so formulas like collections['UUID'], variables['UUID'],
+    // context.item, globalContext.browser, pages['UUID'], theme.colors resolve correctly.
     // eslint-disable-next-line no-new-func
-    const fn = new Function('__fns__', `"use strict"; return (${processed});`);
-    const value = fn(FORMULA_FNS);
+    const fn = new Function(
+      '__fns__', '__collections__', '__variables__', '__ctx__', '__globalCtx__', '__pages__', '__theme__',
+      `"use strict"; ` +
+      `const collections = __collections__ ?? {}; ` +
+      `const variables = __variables__ ?? {}; ` +
+      `const context = __ctx__ ?? {}; ` +
+      `const globalContext = __globalCtx__ ?? {}; ` +
+      `const pages = __pages__ ?? {}; ` +
+      `const theme = __theme__ ?? {}; ` +
+      `return (${processed});`
+    );
+    const value = fn(
+      FORMULA_FNS,
+      (context.collections ?? {}) as Record<string, unknown>,
+      (context.variables ?? {}) as Record<string, unknown>,
+      (context.context ?? {}) as Record<string, unknown>,
+      (context.globalContext ?? {}) as Record<string, unknown>,
+      (context.pages ?? {}) as Record<string, unknown>,
+      (context.theme ?? {}) as Record<string, unknown>,
+    );
     return { value, error: null };
   } catch {
     // Fall back: try resolving as a bare variable path
@@ -498,6 +534,8 @@ export function isBoundValue(v: FormulaValue): boolean {
 export function formulaToStoredValue(formula: string): FormulaValue {
   const trimmed = formula.trim();
   if (!trimmed) return '';
+  // Pure numbers (int or float, optionally negative) are NOT variable names — store as formula
+  if (/^-?\d+(\.\d+)?$/.test(trimmed)) return { formula: trimmed };
   // Simple variable reference (no parens, no operators, no spaces): store as {{path}}
   const isSimpleVar = /^[\w.[\]]+$/.test(trimmed);
   if (isSimpleVar) return `{{${trimmed}}}`;
@@ -519,6 +557,8 @@ export function storedValueToFormula(value: FormulaValue): string {
   if (typeof value === 'object') {
     const v = value as Record<string, unknown>;
     if (typeof v.formula === 'string') return v.formula;
+    // SDUI engine inline expression format: { expr: "..." } — show just the expression
+    if (typeof v.expr === 'string') return v.expr;
     // Legacy json-logic — show as JSON
     return JSON.stringify(value, null, 2);
   }

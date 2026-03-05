@@ -43,8 +43,6 @@ export type ActionType =
   | 'toggle'
   | 'increment'
   | 'decrement'
-  | 'fetch'
-  | 'graphql'
   | 'validate'
   | 'animate'
   | 'runMultiple'
@@ -239,107 +237,6 @@ function ActionParams({ action, onChange, inMapContext }: {
           </div>
         </div>
       );
-
-    case 'fetch': {
-      const restSources = availableDataSources.filter(s => s.type === 'rest');
-      return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {restSources.length > 0 && (
-            <Field label="Data source (optional)">
-              <select
-                data-testid="fetch-datasource-select"
-                value={action.dataSourceId ?? ''}
-                onChange={e => {
-                  const id = e.target.value;
-                  if (!id) { onChange({ dataSourceId: undefined }); return; }
-                  const src = restSources.find(s => s.id === id);
-                  if (src) {
-                    onChange({
-                      dataSourceId: id,
-                      url: src.url ?? '',
-                      method: src.method ?? 'GET',
-                      storeIn: src.storeIn ?? '',
-                      responsePath: src.responsePath ?? '',
-                    });
-                  }
-                }}
-                style={{ ...SELECT_STYLE }}
-              >
-                <option value="">— manual —</option>
-                {restSources.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </Field>
-          )}
-          <Field label="URL">
-            <AutocompleteInput value={action.url ?? ''} onChange={v => onChange({ url: v })} context="text" placeholder="https://api.example.com/…" />
-          </Field>
-          <Field label="Method">
-            <select value={action.method ?? 'GET'} onChange={e => onChange({ method: e.target.value })} style={SELECT_STYLE}>
-              {['GET','POST','PUT','PATCH','DELETE'].map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </Field>
-          <Field label="Store in">
-            <PathPicker value={action.storeIn ?? ''} onChange={v => onChange({ storeIn: v })} />
-          </Field>
-          <Field label="Response path">
-            <input value={action.responsePath ?? ''} onChange={e => onChange({ responsePath: e.target.value })} placeholder="data.items" style={INPUT_STYLE} />
-          </Field>
-        </div>
-      );
-    }
-
-    case 'graphql': {
-      const gqlSources = availableDataSources.filter(s => s.type === 'graphql');
-      return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {gqlSources.length > 0 && (
-            <Field label="Data source (optional)">
-              <select
-                data-testid="graphql-datasource-select"
-                value={action.dataSourceId ?? ''}
-                onChange={e => {
-                  const id = e.target.value;
-                  if (!id) { onChange({ dataSourceId: undefined }); return; }
-                  const src = gqlSources.find(s => s.id === id);
-                  if (src) {
-                    onChange({
-                      dataSourceId: id,
-                      endpoint: src.endpoint ?? '',
-                      query: src.query ?? '',
-                      storeIn: src.storeIn ?? '',
-                      responsePath: src.responsePath ?? '',
-                    });
-                  }
-                }}
-                style={{ ...SELECT_STYLE }}
-              >
-                <option value="">— manual —</option>
-                {gqlSources.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </Field>
-          )}
-          <Field label="Endpoint (leave blank for default)">
-            <input value={action.endpoint ?? ''} onChange={e => onChange({ endpoint: e.target.value })} placeholder="(uses engineConventions.graphqlEndpoint)" style={INPUT_STYLE} />
-          </Field>
-          <Field label="Query">
-            <AutocompleteInput value={action.query ?? ''} onChange={v => onChange({ query: v })} context="general" multiline placeholder="query GetProducts { ... }" />
-          </Field>
-          <Field label="Variables">
-            <VariablesEditor
-              variables={action.variables ?? []}
-              onChange={v => onChange({ variables: v })}
-              inMapContext={inMapContext}
-            />
-          </Field>
-          <Field label="Store in">
-            <PathPicker value={action.storeIn ?? ''} onChange={v => onChange({ storeIn: v })} />
-          </Field>
-          <Field label="Response path">
-            <input value={action.responsePath ?? ''} onChange={e => onChange({ responsePath: e.target.value })} placeholder="data.products" style={INPUT_STYLE} />
-          </Field>
-        </div>
-      );
-    }
 
     case 'validate': {
       // rules can arrive as an object (from raw JSON config) or array (from builder UI)
@@ -537,8 +434,6 @@ const ACTION_TYPE_LABELS: Record<ActionType, string> = {
   toggle:       'Toggle',
   increment:    'Increment',
   decrement:    'Decrement',
-  fetch:        'Fetch (REST)',
-  graphql:      'GraphQL',
   validate:     'Validate form',
   animate:      'Animate',
   runMultiple:  'Run multiple',
@@ -564,7 +459,7 @@ function ActionRow({ action, onUpdate, onRemove, inMapContext, depth = 0 }: {
   const [showCondition, setShowCondition] = useState(action.conditionEnabled ?? false);
   const [showOnSuccess, setShowOnSuccess] = useState(false);
 
-  const hasChain = ['fetch', 'graphql', 'validate'].includes(action.type);
+  const hasChain = ['validate'].includes(action.type);
 
   return (
     <div style={{
@@ -835,8 +730,6 @@ function serializeAction(a: ActionDef): Record<string, unknown> {
     case 'toggle':    return { type: 'toggle', path: a.path };
     case 'increment': return { type: 'increment', path: a.path, amount: a.amount, min: a.min };
     case 'decrement': return { type: 'decrement', path: a.path, amount: a.amount, min: a.min };
-    case 'fetch':     return { type: 'fetch', url: a.url, method: a.method, storeIn: a.storeIn, responsePath: a.responsePath, ...(a.onSuccess ? { onSuccess: serializeAction(a.onSuccess) } : {}) };
-    case 'graphql':   return { type: 'graphql', endpoint: a.endpoint, query: a.query, variables: a.variables?.reduce((acc, v) => ({ ...acc, [v.key]: v.value }), {}), storeIn: a.storeIn, responsePath: a.responsePath, ...(a.onSuccess ? { onSuccess: serializeAction(a.onSuccess) } : {}) };
     case 'validate':  return { type: 'validate', rules: a.rules?.reduce((acc, r) => ({ ...acc, [r.field]: { required: r.required, minLength: r.minLength, pattern: r.pattern, message: r.message } }), {}), storeErrorsIn: a.storeErrorsIn, ...(a.onSuccess ? { onSuccess: serializeAction(a.onSuccess) } : {}) };
     case 'animate':   return { type: 'animate', targetNodeId: a.targetNodeId, animation: a.animation, duration: a.duration };
     case 'runMultiple': return { type: 'runMultiple', actions: (a.actions ?? []).map(serializeAction) };

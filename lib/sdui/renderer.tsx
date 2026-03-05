@@ -80,7 +80,16 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
   const get = createGet(store, merged, scope, mergedStore, screenName, screenScopedAliases);
   const storeState = store.getState().getFullState();
   const state = merged ? { ...storeState, ...merged } : storeState;
-  const stateWithScope = scope ? { ...state, $item: scope.$item, $index: scope.$index, $parent: scope.$parent } : state;
+  const stateWithScope = scope
+    ? {
+        ...state,
+        // Legacy scope vars — kept for backward compat
+        $item: scope.$item, $index: scope.$index, $parent: scope.$parent,
+        // New context object — mirrors weWeb's context.item / context.index / context.parent
+        // Also available directly on scope so createGet / isScopeVariable can resolve context.item.*
+        context: { item: scope.$item, index: scope.$index, parent: scope.$parent },
+      }
+    : state;
   const sduiContext: SDUIContext = {
     state: stateWithScope,
     setState: (updater) => store.getState().setState(updater),
@@ -91,19 +100,26 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
 
   if (!node) return null;
 
-  // Always evaluate conditions — builder mode respects them too so the canvas
-  // matches the real app. Hidden nodes are still accessible via the Layers panel.
-  if (node.condition === false) return null;
-  if (node.condition != null && !evaluateCondition(node.condition, sduiContext)) {
-    return null;
+  // In builder mode, _forceShowInEditor bypasses any condition so the node is
+  // always visible on the canvas regardless of its runtime condition.
+  const forceShow = builderMode && (node as { _forceShowInEditor?: boolean })._forceShowInEditor === true;
+
+  if (!forceShow) {
+    // Cast to unknown first — condition can be false at runtime (builder sets it) even though
+    // the ConditionValue type doesn't include boolean.
+    if ((node.condition as unknown) === false) return null;
+    if (node.condition != null && !evaluateCondition(node.condition, sduiContext)) {
+      return null;
+    }
   }
 
   if (node.map) {
     let arr: unknown[];
     if (typeof node.map === 'string') {
       arr = (get(node.map) as unknown[]) ?? [];
-    } else if (node.map && typeof node.map === 'object' && 'expr' in node.map) {
-      const expr = (node.map as { expr: string | object }).expr;
+    } else if (node.map && typeof node.map === 'object' && ('expr' in node.map || 'formula' in node.map)) {
+      const m = node.map as { expr?: string | object; formula?: string };
+      const expr = 'expr' in m ? m.expr! : m.formula!;
       arr = (evaluateFormula(expr, stateWithScope).value as unknown[]) ?? [];
     } else {
       arr = [];
@@ -116,7 +132,7 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
             key={node.key ? `${node.key}-${index}` : index}
             node={{ ...node, map: undefined, key: node.key ? `${node.key}-${index}` : String(index) }}
             context={context}
-            scope={{ ...scope, $item: item, $index: index, $parent: scope?.$item }}
+            scope={{ ...scope, $item: item, $index: index, $parent: scope?.$item, context: { item, index, parent: scope?.$item } }}
             builderPath={`${builderPath}-m${index}`}
           />
         ))}
@@ -155,6 +171,28 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
     if (overrideClass) {
       const base = (cleanProps.className as string | undefined) ?? '';
       cleanProps.className = mergeTailwindClasses(base, overrideClass);
+    }
+  }
+
+  // Merge classFormulas into className so formula-bound class fields survive React re-renders.
+  // classFormulas is a builder-side sidecar (node.props.classFormulas) that stores { formula } objects
+  // for class-based FieldWithBinding fields (selfAlignment, textAlign, shadow, etc.).
+  {
+    const classFormulas = node.props?.classFormulas as Record<string, { formula?: string }> | undefined;
+    if (classFormulas) {
+      let extraCls = '';
+      for (const [, fv] of Object.entries(classFormulas)) {
+        if (fv && typeof fv === 'object' && typeof fv.formula === 'string') {
+          const { value } = evaluateFormula(fv.formula, (sduiContext as { state?: Record<string, unknown> }).state ?? {});
+          if (typeof value === 'string' && value) extraCls += ' ' + value;
+        }
+      }
+      if (extraCls) {
+        cleanProps.className = mergeTailwindClasses(
+          (cleanProps.className as string) ?? '',
+          extraCls.trim()
+        );
+      }
     }
   }
 

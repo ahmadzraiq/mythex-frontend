@@ -3,14 +3,10 @@
     "title": "My Orders"
   },
   "state": {
-    "orders": [],
     "currentPage": 1
   },
   "layout": "account",
   "initActions": [
-    {
-      "action": "fetchNavCollections"
-    },
     {
       "action": "fetchCustomerOrders"
     }
@@ -30,7 +26,7 @@
         "props": {
           "className": "text-center py-12"
         },
-        "condition": "({{orders.length}} || 0) === 0",
+        "condition": "({{collections.c5d6e7f8-a9b0-1234-cdef-345678901234.data.activeCustomer.orders.items.length}} || 0) === 0",
         "children": [
           {
             "type": "Text",
@@ -46,7 +42,7 @@
         "props": {
           "className": "border rounded-lg overflow-hidden"
         },
-        "condition": "{{orders.length}} > 0",
+        "condition": "({{collections.c5d6e7f8-a9b0-1234-cdef-345678901234.data.activeCustomer.orders.items.length}} || 0) > 0",
         "children": [
           {
             "type": "Table",
@@ -117,7 +113,7 @@
                 "children": [
                   {
                     "type": "TableRow",
-                    "map": "orders",
+                    "map": "collections.c5d6e7f8-a9b0-1234-cdef-345678901234.data.activeCustomer.orders.items",
                     "key": "orderRow",
                     "props": {
                       "className": "hover:bg-[var(--theme-hero-bg)]"
@@ -139,14 +135,14 @@
                                 "action": "navigate",
                                 "payload": {
                                   "routeConfig": "order-detail",
-                                  "slug": "{{$item.code}}"
+                                  "slug": "{{context.item.code}}"
                                 }
                               }
                             },
                             "children": [
                               {
                                 "type": "Text",
-                                "text": "{{$item.code}}"
+                                "text": "{{context.item.code}}"
                               },
                               {
                                 "type": "NavIcon",
@@ -164,7 +160,7 @@
                         "children": [
                           {
                             "type": "Text",
-                            "text": "{{$item.createdAt}}"
+                            "text": "{{context.item.createdAt}}"
                           }
                         ]
                       },
@@ -179,7 +175,7 @@
                             "children": [
                               {
                                 "type": "BadgeText",
-                                "text": "{{$item.state}}"
+                                "text": "{{context.item.state}}"
                               }
                             ]
                           }
@@ -190,7 +186,7 @@
                         "children": [
                           {
                             "type": "Text",
-                            "text": "{{$item.lines.length}} item(s)"
+                            "text": "{{context.item.lines.length}} item(s)"
                           }
                         ]
                       },
@@ -206,7 +202,7 @@
                               "className": "font-medium"
                             },
                             "text": {
-                              "expr": "formatCurrency({{$item.totalWithTax}} / 100, {{$item.currencyCode}})"
+                              "expr": "formatCurrency({{context.item.totalWithTax}} / 100, {{context.item.currencyCode}})"
                             }
                           }
                         ]

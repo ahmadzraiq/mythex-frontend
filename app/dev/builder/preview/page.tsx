@@ -101,6 +101,7 @@ export default function PreviewPage() {
       configName={data.pageRoute?.replace(/[^a-zA-Z0-9]/g, '_') ?? 'preview'}
       actionsConfig={app.actions ?? {}}
       routes={app.routes ?? []}
+      dataSources={app.dataSources ?? {}}
     />
   );
 }
