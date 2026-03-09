@@ -29,14 +29,11 @@
                 {
                   "type": "Pressable",
                   "id": "navbar-logo",
-                  "actions": {
-                    "click": {
-                      "action": "navigate",
-                      "payload": {
-                        "path": "/"
-                      }
+                  "actions": [
+                    {
+                      "action": "9e33ef0a-706f-4555-b2ee-60fd95ebf416"
                     }
-                  },
+                  ],
                   "children": [
                     {
                       "type": "NextImage",
@@ -71,22 +68,18 @@
                           "props": {
                             "className": "px-2 py-1.5 rounded text-sm hover:bg-[var(--theme-content-text)]/10 text-[var(--theme-header-text)]"
                           },
-                          "actions": {
-                            "click": {
-                              "action": "navigate",
-                              "payload": {
-                                "routeConfig": "collection",
-                                "slug": "{{context.item.slug}}"
-                              }
+                          "actions": [
+                            {
+                              "action": "7ae5e4b1-51c4-4266-b001-971a30296623"
                             }
-                          },
+                          ],
                           "children": [
                             {
                               "type": "Text",
                               "props": {
                                 "className": "text-sm font-medium text-[var(--theme-header-text)]"
                               },
-                              "text": "{{context.item.name}}"
+                              "text": "{{context.item.data.name}}"
                             }
                           ]
                         }
@@ -131,11 +124,11 @@
                             "className": "fixed inset-0 z-40"
                           },
                           "condition": "{{variables['e4f5a6b7-c8d9-0123-efab-234567890123']}}",
-                          "actions": {
-                            "click": {
-                              "action": "closeThemeMenu"
+                          "actions": [
+                            {
+                              "action": "8a42349d-44fb-46f8-8489-4c0f52b1f380"
                             }
-                          }
+                          ]
                         },
                         {
                           "type": "Pressable",
@@ -143,11 +136,11 @@
                           "props": {
                             "className": "relative z-50 inline-flex items-center justify-center h-8 w-8 rounded hover:bg-[var(--theme-content-text)]/10"
                           },
-                          "actions": {
-                            "click": {
-                              "action": "toggleThemeMenu"
+                          "actions": [
+                            {
+                              "action": "7ab8940c-8483-4237-8cdb-38c0d2290df4"
                             }
-                          },
+                          ],
                           "children": [
                             {
                               "type": "NavIcon",
@@ -181,11 +174,11 @@
                               "props": {
                                 "className": "w-full flex flex-row items-center gap-2 px-3 py-2 hover:bg-[var(--theme-content-text)]/10"
                               },
-                              "actions": {
-                                "click": {
-                                  "action": "setThemeLight"
+                              "actions": [
+                                {
+                                  "action": "6e3af5bc-85bf-491e-984e-55faa5e975f9"
                                 }
-                              },
+                              ],
                               "children": [
                                 {
                                   "type": "NavIcon",
@@ -217,11 +210,11 @@
                               "props": {
                                 "className": "w-full flex flex-row items-center gap-2 px-3 py-2 hover:bg-[var(--theme-content-text)]/10"
                               },
-                              "actions": {
-                                "click": {
-                                  "action": "setThemeDark"
+                              "actions": [
+                                {
+                                  "action": "36658639-6572-46b6-b296-8a92ab9592b2"
                                 }
-                              },
+                              ],
                               "children": [
                                 {
                                   "type": "NavIcon",
@@ -253,11 +246,11 @@
                               "props": {
                                 "className": "w-full flex flex-row items-center gap-2 px-3 py-2 hover:bg-[var(--theme-content-text)]/10"
                               },
-                              "actions": {
-                                "click": {
-                                  "action": "setThemeSystem"
+                              "actions": [
+                                {
+                                  "action": "05784685-1412-4e52-81d7-026aa7a40663"
                                 }
-                              },
+                              ],
                               "children": [
                                 {
                                   "type": "NavIcon",
@@ -299,11 +292,11 @@
                           "props": {
                             "className": "relative inline-flex items-center justify-center h-8 w-8 rounded hover:bg-[var(--theme-content-text)]/10"
                           },
-                          "actions": {
-                            "click": {
-                              "action": "goToCart"
+                          "actions": [
+                            {
+                              "action": "398b94ec-901a-49c6-b19d-198854cefd07"
                             }
-                          },
+                          ],
                           "children": [
                             {
                               "type": "NavIcon",
@@ -346,14 +339,11 @@
                             "className": "inline-flex flex-row items-center h-8 px-2 rounded hover:bg-[var(--theme-content-text)]/10"
                           },
                           "condition": "!{{auth.user}}",
-                          "actions": {
-                            "click": {
-                              "action": "navigate",
-                              "payload": {
-                                "path": "/sign-in"
-                              }
+                          "actions": [
+                            {
+                              "action": "3517ed88-9e35-42fd-8d44-650cb590d210"
                             }
-                          },
+                          ],
                           "children": [
                             {
                               "type": "Text",
@@ -376,14 +366,11 @@
                               "props": {
                                 "className": "inline-flex flex-row items-center gap-1.5 h-8 px-2 rounded hover:bg-[var(--theme-hero-bg)]"
                               },
-                              "actions": {
-                                "click": {
-                                  "action": "navigate",
-                                  "payload": {
-                                    "path": "/account/orders"
-                                  }
+                              "actions": [
+                                {
+                                  "action": "d5d15a7d-ea78-467a-a181-2e801e93ce0f"
                                 }
-                              },
+                              ],
                               "children": [
                                 {
                                   "type": "NavIcon",
@@ -407,11 +394,11 @@
                               "props": {
                                 "className": "h-8 px-2 rounded hover:bg-[var(--theme-hero-bg)]"
                               },
-                              "actions": {
-                                "click": {
-                                  "action": "logout"
+                              "actions": [
+                                {
+                                  "action": "dcba4c53-5dc4-4b20-aded-4a2bdd76e2ea"
                                 }
-                              },
+                              ],
                               "children": [
                                 {
                                   "type": "Text",

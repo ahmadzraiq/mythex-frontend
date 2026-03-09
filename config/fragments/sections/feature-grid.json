@@ -1,1 +1,36 @@
-{"type":"Box","props":{"className":"w-full py-12 border-t border-[var(--border)]"},"children":[{"type":"Box","props":{"className":"w-full max-w-screen-xl mx-auto px-4 flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm text-[var(--theme-content-textMuted)]"},"children":[{"type":"Text","text":"Free shipping"},{"type":"Text","text":"•"},{"type":"Text","text":"Secure checkout"},{"type":"Text","text":"•"},{"type":"Text","text":"Easy returns"}]}]}
+{
+  "type": "Box",
+  "props": {
+    "className": "w-full py-12 border-t border-[var(--border)]"
+  },
+  "children": [
+    {
+      "type": "Box",
+      "props": {
+        "className": "w-full max-w-screen-xl mx-auto px-4 flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm text-[var(--theme-content-textMuted)]"
+      },
+      "children": [
+        {
+          "type": "Text",
+          "text": "Free shipping"
+        },
+        {
+          "type": "Text",
+          "text": "•"
+        },
+        {
+          "type": "Text",
+          "text": "Secure checkout"
+        },
+        {
+          "type": "Text",
+          "text": "•"
+        },
+        {
+          "type": "Text",
+          "text": "Easy returns"
+        }
+      ]
+    }
+  ]
+}

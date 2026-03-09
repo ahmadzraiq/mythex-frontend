@@ -21,12 +21,12 @@ When asked to migrate an existing app (React, Next.js, etc.) to this JSON-driven
 **Mapping guide:**
 - React component state → `state` in screen JSON + `{{form.field}}` interpolation
 - `useEffect` data fetching → `initActions` with `type: "graphql"` or `type: "fetch"`
-- `onClick` / form submit → `actions.click` / `submitAction` in JSON
-- React Router / Next.js `<Link>` → `{ "action": "navigate", "payload": { "path": "/..." } }`
-- Dynamic routes (e.g. `/product/:slug`) → `{ "action": "navigate", "payload": { "routeConfig": "product", "slug": { "var": "$item.slug" } } }`
+- `onClick` / form submit → `"actions": [{ "action": "namedWorkflow" }]` — trigger comes from the workflow definition
+- React Router / Next.js `<Link>` → a named navigate workflow (e.g. `navigateToHome`, `navigateToProduct`)
+- Dynamic routes (e.g. `/product/:slug`) → a named navigate workflow with `{{context.item.data.slug}}` in its step config
 - Shared UI (header, cards) → fragments with `$ref`
 - Conditional rendering → `condition` (JSON Logic) on nodes
-- Lists / `.map()` → `map` on the node with `{{$item.field}}`
+- Lists / `.map()` → `map` on the node with `{{context.item.data.field}}` (canonical) or `{{$item.field}}` (legacy, still works)
 
 ---
 
@@ -87,6 +87,68 @@ const actions = { ...authActions, ...layoutActions /*, ...*/ };
 
 export default { ...routes, screens, actions } as const;
 ```
+
+---
+
+## No Inline Actions — All Actions Must Be Named Workflows
+
+**Rule:** UI nodes in screens and fragments MUST NOT contain inline action definitions. Every action must be a named workflow in `config/actions/*.json`.
+
+**Why:** Inline actions are invisible to the builder's workflow canvas, cannot be reused, and break the trigger-based binding model.
+
+### Node binding — array format, trigger from workflow
+
+The `actions` field on a node is an **array of workflow references**. The trigger (click, change, valueChange, etc.) is defined in the workflow itself via the `trigger` field — never on the node.
+
+```json
+// ✅ CORRECT — array of named workflow refs, trigger comes from the workflow definition
+"actions": [{ "action": "submitSignIn" }]
+"actions": [{ "action": "setSignInUsername" }]
+
+// ❌ WRONG — inline action with payload (no named workflow)
+"actions": [{ "action": "navigate", "payload": { "path": "/" } }]
+
+// ❌ WRONG — old event-keyed object format
+"actions": { "click": { "action": "submitSignIn" } }
+```
+
+### Named workflow pattern
+
+All named workflows use `"type": "workflowSteps"` with a `trigger` field:
+
+```json
+// config/actions/auth.json
+"submitSignIn": {
+  "type": "workflowSteps",
+  "trigger": "click",
+  "steps": [
+    { "id": "step-1", "type": "submitForm", "config": { "fieldValidations": { ... }, "onSuccess": { "action": "loginMutation" } } }
+  ]
+},
+"setSignInUsername": {
+  "type": "workflowSteps",
+  "trigger": "change",
+  "steps": [
+    { "id": "step-1", "type": "setFormField", "config": { "field": "username", "value": "$event" } }
+  ]
+}
+```
+
+### Navigate actions — always named workflows
+
+Never use `{ "action": "navigate", "payload": { "path": "/..." } }` inline on a node. Create a named navigate workflow:
+
+```json
+// config/actions/layout.json
+"navigateToHome": { "type": "workflowSteps", "trigger": "click", "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/" } }] },
+"navigateToProduct": { "type": "workflowSteps", "trigger": "click", "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "routeConfig": "product", "slug": "{{context.item.data.slug}}" } }] }
+```
+
+Dynamic route slugs from map scope (`{{context.item.data.slug}}`) work correctly because `runOne` is a closure capturing the scope.
+
+**Existing named navigate workflows in `config/actions/layout.json`:** `navigateToHome`, `navigateToCheckout`, `navigateToSignIn`, `navigateToForgotPassword`, `navigateToRegister`, `navigateToOrders`, `navigateToAccountAddresses`, `navigateToAccountProfile`, `navigateToSearchPage`, `navigateToSearch`, `navigateToProduct`, `navigateToProductFromCart`, `navigateToOrderDetail`, `navigateToCollection`, `navigateToVerifyPending`, `navigateToCheckoutConfirmation`, `navigateToOrderConfirmation`.
+
+**Action schema:** `workflowSteps` type and `ActionRef` (`{ "action": "..." }`) are defined in `config/schema/action.schema.json`.
 
 ---
 

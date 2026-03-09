@@ -23,6 +23,93 @@ import { resolveScreenConfig, type ConfigRegistry } from '@/lib/sdui/config-reso
 const MAX_HISTORY = 50;
 
 /**
+ * Nodes that must always remain inside a specific parent type.
+ * Exported so _canvas.tsx can use the same source of truth for drag escalation.
+ */
+export const REQUIRED_PARENT: Record<string, string> = {
+  ButtonText:         'Button',
+  ButtonIcon:         'Button',
+  InputField:         'Input',
+  InputSlot:          'Input',
+  InputIcon:          'Input',
+  CheckboxIndicator:  'Checkbox',
+  CheckboxIcon:       'Checkbox',
+  CheckboxLabel:      'Checkbox',
+  RadioIndicator:     'Radio',
+  RadioLabel:         'Radio',
+  RadioIcon:          'Radio',
+  SelectInput:        'Select',
+  SelectIcon:         'Select',
+  SelectTrigger:      'Select',
+  SelectItem:         'Select',
+  SelectContent:      'Select',
+  SelectPortal:       'Select',
+  SelectBackdrop:     'Select',
+  AccordionItem:      'Accordion',
+  AccordionTrigger:   'Accordion',
+  AccordionContent:   'Accordion',
+  AccordionHeader:    'Accordion',
+  SliderThumb:        'Slider',
+  SliderTrack:        'Slider',
+  SliderFilledTrack:  'Slider',
+  BadgeText:          'Badge',
+  BadgeIcon:          'Badge',
+  FabLabel:           'Fab',
+  AvatarImage:        'Avatar',
+  AvatarFallbackText: 'Avatar',
+  ProgressFilledTrack: 'Progress',
+  TextareaInput:      'Textarea',
+  SkeletonText:       'Skeleton',
+  AlertText:          'Alert',
+  LinkText:           'Link',
+  Radio:              'RadioGroup',
+  ModalBackdrop:      'Modal',
+  ModalContent:       'Modal',
+  ModalHeader:        'ModalContent',
+  ModalBody:          'ModalContent',
+  ModalFooter:        'ModalContent',
+  ModalCloseButton:   'ModalContent',
+  TooltipContent:     'Tooltip',
+  TooltipText:        'TooltipContent',
+  AlertDialogBackdrop:    'AlertDialog',
+  AlertDialogContent:     'AlertDialog',
+  AlertDialogHeader:      'AlertDialogContent',
+  AlertDialogBody:        'AlertDialogContent',
+  AlertDialogFooter:      'AlertDialogContent',
+  AlertDialogCloseButton: 'AlertDialogContent',
+};
+
+/**
+ * Nodes that may only accept a specific set of child types.
+ * Exported so _canvas.tsx can pre-check before routing a drag "inside".
+ */
+export const ALLOWED_CHILDREN: Record<string, Set<string>> = {
+  Button:        new Set(['ButtonText', 'ButtonIcon', 'NavIcon']),
+  Input:         new Set(['InputField', 'InputSlot', 'InputIcon']),
+  Checkbox:      new Set(['CheckboxIndicator', 'CheckboxIcon', 'CheckboxLabel']),
+  Radio:         new Set(['RadioIndicator', 'RadioLabel', 'RadioIcon']),
+  Select:        new Set(['SelectTrigger', 'SelectInput', 'SelectIcon', 'SelectPortal', 'SelectBackdrop', 'SelectContent', 'SelectItem']),
+  Accordion:     new Set(['AccordionItem', 'AccordionTrigger', 'AccordionContent', 'AccordionHeader']),
+  Slider:        new Set(['SliderTrack', 'SliderThumb', 'SliderFilledTrack']),
+  Badge:         new Set(['BadgeText', 'BadgeIcon']),
+  Fab:           new Set(['FabLabel', 'FabIcon', 'NavIcon', 'Text']),
+  Avatar:        new Set(['AvatarImage', 'AvatarFallbackText']),
+  Progress:      new Set(['ProgressFilledTrack']),
+  Textarea:      new Set(['TextareaInput']),
+  Skeleton:      new Set(['SkeletonText']),
+  Alert:         new Set(['AlertIcon', 'AlertText', 'NavIcon']),
+  Link:          new Set(['LinkText']),
+  RadioGroup:    new Set(['Radio']),
+  CheckboxGroup: new Set(['Checkbox']),
+  Modal:         new Set(['ModalBackdrop', 'ModalContent']),
+  ModalContent:  new Set(['ModalHeader', 'ModalBody', 'ModalFooter', 'ModalCloseButton']),
+  Tooltip:       new Set(['TooltipContent', 'Pressable', 'Box', 'Text']),
+  TooltipContent: new Set(['TooltipText']),
+  AlertDialog:        new Set(['AlertDialogBackdrop', 'AlertDialogContent']),
+  AlertDialogContent: new Set(['AlertDialogHeader', 'AlertDialogBody', 'AlertDialogFooter', 'AlertDialogCloseButton']),
+};
+
+/**
  * Convert a hex color string to a space-separated RGB triplet,
  * which is the format ThemeStyles uses for CSS custom properties
  * so that Tailwind's `rgb(var(--X) / alpha)` syntax works.
@@ -185,6 +272,87 @@ function removeNodesByIds(nodes: SDUINode[], ids: Set<string>): SDUINode[] {
     }));
 }
 
+/**
+ * Slugify a string for use as a field name (lowercase, replace spaces/special with camelCase).
+ */
+function slugifyFieldName(s: string): string {
+  const trimmed = String(s || '').trim();
+  if (!trimmed) return '';
+  return trimmed
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .map((part, i) => (i === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1)))
+    .join('');
+}
+
+const FORM_CONTROLLED_TYPES = new Set(['InputField', 'TextareaInput', 'Checkbox']);
+const FORM_CONTAINER_TYPE = 'FormContainer';
+
+/**
+ * Check if node `targetId` has any ancestor with type FormContainer.
+ */
+export function hasFormContainerAncestor(nodes: SDUINode[], targetId: string, _path: SDUINode[] = []): boolean {
+  for (const node of nodes) {
+    const pathHere = [..._path, node];
+    if (node.id === targetId) {
+      return _path.some((a) => (a.type as string) === FORM_CONTAINER_TYPE);
+    }
+    if (node.children?.length) {
+      const found = hasFormContainerAncestor(node.children as SDUINode[], targetId, pathHere);
+      if (found) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Recursively walk subtree and add setFormField to InputField/TextareaInput/Checkbox
+ * that don't have it. Returns patched node and next field counter.
+ */
+function injectSetFormFieldRecursive(
+  n: SDUINode,
+  fieldCounter: { value: number }
+): SDUINode {
+  if (!FORM_CONTROLLED_TYPES.has(n.type as string)) {
+    return {
+      ...n,
+      children: n.children?.map((c) => injectSetFormFieldRecursive(c as SDUINode, fieldCounter)),
+    };
+  }
+  const actions = (n.actions ?? {}) as Record<string, unknown>;
+  const actionSlot = n.type === 'Checkbox' ? 'valueChange' : 'change';
+  const existing = actions[actionSlot];
+  const hasSetFormField = (a: unknown): boolean =>
+    a && typeof a === 'object' && (a as Record<string, unknown>).type === 'setFormField';
+  if (Array.isArray(existing) ? existing.some(hasSetFormField) : hasSetFormField(existing)) {
+    return { ...n, children: n.children?.map((c) => injectSetFormFieldRecursive(c as SDUINode, fieldCounter)) };
+  }
+  const props = (n.props ?? {}) as Record<string, unknown>;
+  const fieldName =
+    (typeof props.name === 'string' && props.name ? slugifyFieldName(props.name) : null) ||
+    (typeof props.placeholder === 'string' && props.placeholder ? slugifyFieldName(props.placeholder) : null) ||
+    `field${++fieldCounter.value}`;
+  const newAction = { type: 'setFormField', field: fieldName, value: '$event' };
+  const newActions = { ...actions, [actionSlot]: newAction };
+  return {
+    ...n,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    actions: newActions as any,
+    children: n.children?.map((c) => injectSetFormFieldRecursive(c as SDUINode, fieldCounter)),
+  };
+}
+
+/**
+ * If targetId is inside a FormContainer, patch its subtree to add setFormField to form inputs.
+ */
+function autoInjectSetFormFieldIfInForm(nodes: SDUINode[], targetId: string): SDUINode[] {
+  const hasForm = hasFormContainerAncestor(nodes, targetId);
+  if (!hasForm) return nodes;
+  return patchNodeById(nodes, targetId, (n) => injectSetFormFieldRecursive(n, { value: 0 }));
+}
+
 /** Insert `newNode` as a child of `parentId`, or at root level if parentId is null */
 function insertNode(
   nodes: SDUINode[],
@@ -315,6 +483,28 @@ export interface BuilderPage {
   pageInteractions?: Record<string, { workflow?: string }>;
 }
 
+// ─── Workflow types ───────────────────────────────────────────────────────────
+
+export interface WorkflowMeta {
+  id: string;
+  name: string;
+  folder?: string;
+  description?: string;
+  /** Event trigger (click, change, valueChange, created, etc.) */
+  trigger?: string;
+  /**
+   * True for auto-generated "set field value on change" workflows — these are
+   * system-managed and should not appear as user-editable entries in the right panel.
+   */
+  isSystem?: boolean;
+}
+
+export type WorkflowCanvasTarget =
+  | { kind: 'element'; nodeId: string; event: string }
+  | { kind: 'pageTrigger'; trigger: string }
+  | { kind: 'pageWorkflow'; name: string; isNew?: boolean; nodeId?: string }
+  | { kind: 'globalWorkflow'; id: string; isNew?: boolean };
+
 export interface BuilderStore {
   // ── Multi-page state ────────────────────────────────────────────────────────
   pages: BuilderPage[];
@@ -441,6 +631,9 @@ export interface BuilderStore {
   patchVariant: (id: string, variants: unknown[] | null) => void;
   /** Generic: patch any top-level or nested field on a node */
   patchNodeField: (id: string, field: string, value: unknown) => void;
+  /** Same as patchNodeField but does NOT push to history — use for live drag updates.
+   *  Call _pushHistory() once when the gesture ends (mouseup / blur / picker close). */
+  patchNodeFieldLive: (id: string, field: string, value: unknown) => void;
   setPreviewState: (state: string) => void;
   togglePreviewState: (state: string) => void;
   setShowInteractionLines: (on: boolean) => void;
@@ -466,16 +659,34 @@ export interface BuilderStore {
   // ── Workflows & Formulas ─────────────────────────────────────────────────────
   /** Named workflows (per-page action sequences, keyed by workflow name) */
   pageWorkflows: Record<string, object[]>;
+  /** Metadata (name, trigger, description) for each named workflow, keyed by name */
+  pageWorkflowMeta: Record<string, WorkflowMeta>;
+  /**
+   * Direct (non-workflowSteps) actions from config/actions/*.json, keyed by UUID.
+   * Used by the workflow canvas to resolve ActionRefs to their real type (e.g. graphql)
+   * instead of always showing them as "Call workflow".
+   */
+  directActionsMap: Record<string, Record<string, unknown>>;
   /** App-level workflows shared across all pages */
   globalWorkflows: Record<string, object[]>;
+  /** Metadata (name, folder, description, params) for each global workflow, keyed by id */
+  globalWorkflowMeta: Record<string, WorkflowMeta>;
   /** Named JSON Logic expressions usable as {{formula.name}} anywhere */
   globalFormulas: Record<string, object>;
   setPageWorkflow: (name: string, actions: object[]) => void;
   removePageWorkflow: (name: string) => void;
+  setPageWorkflowMeta: (name: string, meta: Partial<WorkflowMeta>) => void;
   setGlobalWorkflow: (name: string, actions: object[]) => void;
   removeGlobalWorkflow: (name: string) => void;
+  setGlobalWorkflowMeta: (id: string, meta: Partial<WorkflowMeta>) => void;
   setGlobalFormula: (name: string, expr: object) => void;
   removeGlobalFormula: (name: string) => void;
+
+  // ── Workflow Canvas ───────────────────────────────────────────────────────────
+  /** Which workflow is currently open in the full-screen canvas overlay */
+  workflowCanvasTarget: WorkflowCanvasTarget | null;
+  openWorkflowCanvas: (target: WorkflowCanvasTarget) => void;
+  closeWorkflowCanvas: () => void;
 
   // ── Folders ──────────────────────────────────────────────────────────────────
   /** Folders for organising variables */
@@ -691,8 +902,12 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   showInteractionLines: false,
   activeLogicSection: null,
   pageWorkflows: {},
+  pageWorkflowMeta: {},
+  directActionsMap: {},
   globalWorkflows: {},
+  globalWorkflowMeta: {},
   globalFormulas: {},
+  workflowCanvasTarget: null,
   varFolders: [],
   dsFolders: [],
   customVars: [],
@@ -830,10 +1045,17 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   },
 
   addNode: (node, parentId = null, atIdx) => {
-    set(s => ({
-      pageNodes: insertNode(s.pageNodes, node, parentId ?? null, atIdx),
-      selectedIds: node.id ? [node.id] : s.selectedIds,
-    }));
+    set(s => {
+      let pageNodes = insertNode(s.pageNodes, node, parentId ?? null, atIdx);
+      const insertedId = node.id;
+      if (insertedId) {
+        pageNodes = autoInjectSetFormFieldIfInForm(pageNodes, insertedId);
+      }
+      return {
+        pageNodes,
+        selectedIds: insertedId ? [insertedId] : s.selectedIds,
+      };
+    });
     get()._pushHistory();
   },
 
@@ -848,58 +1070,6 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
 
       // Context-dependent nodes must stay inside their required parent type.
       // Moving them out crashes the renderer (useStyleContext returns undefined → destructure error).
-      const REQUIRED_PARENT: Record<string, string> = {
-        ButtonText:         'Button',
-        ButtonIcon:         'Button',
-        InputField:         'Input',
-        InputSlot:          'Input',
-        InputIcon:          'Input',
-        CheckboxIndicator:  'Checkbox',
-        CheckboxIcon:       'Checkbox',
-        CheckboxLabel:      'Checkbox',
-        RadioIndicator:     'Radio',
-        RadioLabel:         'Radio',
-        RadioIcon:          'Radio',
-        SelectInput:        'Select',
-        SelectIcon:         'Select',
-        SelectTrigger:      'Select',
-        SelectItem:         'Select',
-        SelectContent:      'Select',
-        SelectPortal:       'Select',
-        SelectBackdrop:     'Select',
-        AccordionItem:      'Accordion',
-        AccordionTrigger:   'Accordion',
-        AccordionContent:   'Accordion',
-        AccordionHeader:    'Accordion',
-        SliderThumb:        'Slider',
-        SliderTrack:        'Slider',
-        SliderFilledTrack:  'Slider',
-        BadgeText:          'Badge',
-        BadgeIcon:          'Badge',
-        FabLabel:           'Fab',
-        AvatarImage:        'Avatar',
-        AvatarFallbackText: 'Avatar',
-        ProgressFilledTrack: 'Progress',
-        TextareaInput:      'Textarea',
-        SkeletonText:       'Skeleton',
-        AlertText:          'Alert',
-        LinkText:           'Link',
-        Radio:              'RadioGroup',
-        ModalBackdrop:      'Modal',
-        ModalContent:       'Modal',
-        ModalHeader:        'ModalContent',
-        ModalBody:          'ModalContent',
-        ModalFooter:        'ModalContent',
-        ModalCloseButton:   'ModalContent',
-        TooltipContent:     'Tooltip',
-        TooltipText:        'TooltipContent',
-        AlertDialogBackdrop:  'AlertDialog',
-        AlertDialogContent:   'AlertDialog',
-        AlertDialogHeader:    'AlertDialogContent',
-        AlertDialogBody:      'AlertDialogContent',
-        AlertDialogFooter:    'AlertDialogContent',
-        AlertDialogCloseButton: 'AlertDialogContent',
-      };
       if (node.type && REQUIRED_PARENT[node.type]) {
         const requiredType = REQUIRED_PARENT[node.type];
         const newParent = newParentId ? findNode(s.pageNodes, newParentId) : null;
@@ -907,33 +1077,8 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
       }
       // Also guard the destination: only allowed child types may enter certain parents.
       if (newParentId) {
-        const ALLOWED: Record<string, Set<string>> = {
-          Button:   new Set(['ButtonText', 'ButtonIcon', 'NavIcon']),
-          Input:    new Set(['InputField', 'InputSlot', 'InputIcon']),
-          Checkbox: new Set(['CheckboxIndicator', 'CheckboxIcon', 'CheckboxLabel']),
-          Radio:    new Set(['RadioIndicator', 'RadioLabel', 'RadioIcon']),
-          Select:   new Set(['SelectTrigger', 'SelectInput', 'SelectIcon', 'SelectPortal', 'SelectBackdrop', 'SelectContent', 'SelectItem']),
-          Accordion: new Set(['AccordionItem', 'AccordionTrigger', 'AccordionContent', 'AccordionHeader']),
-          Slider:   new Set(['SliderTrack', 'SliderThumb', 'SliderFilledTrack']),
-          Badge:         new Set(['BadgeText', 'BadgeIcon']),
-          Fab:           new Set(['FabLabel', 'FabIcon', 'NavIcon', 'Text']),
-          Avatar:        new Set(['AvatarImage', 'AvatarFallbackText']),
-          Progress:      new Set(['ProgressFilledTrack']),
-          Textarea:      new Set(['TextareaInput']),
-          Skeleton:      new Set(['SkeletonText']),
-          Alert:         new Set(['AlertIcon', 'AlertText', 'NavIcon']),
-          Link:          new Set(['LinkText']),
-        RadioGroup:    new Set(['Radio']),
-        CheckboxGroup: new Set(['Checkbox']),
-        Modal:         new Set(['ModalBackdrop', 'ModalContent']),
-        ModalContent:  new Set(['ModalHeader', 'ModalBody', 'ModalFooter', 'ModalCloseButton']),
-        Tooltip:       new Set(['TooltipContent', 'Pressable', 'Box', 'Text']),
-        TooltipContent: new Set(['TooltipText']),
-        AlertDialog:   new Set(['AlertDialogBackdrop', 'AlertDialogContent']),
-        AlertDialogContent: new Set(['AlertDialogHeader', 'AlertDialogBody', 'AlertDialogFooter', 'AlertDialogCloseButton']),
-        };
         const newParent = findNode(s.pageNodes, newParentId);
-        if (newParent && ALLOWED[newParent.type] && !ALLOWED[newParent.type].has(node.type)) return s;
+        if (newParent && ALLOWED_CHILDREN[newParent.type] && !ALLOWED_CHILDREN[newParent.type].has(node.type)) return s;
       }
 
       // Find current parent to correctly adjust the target index
@@ -1711,6 +1856,13 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     get()._pushHistory();
   },
 
+  patchNodeFieldLive: (id, field, value) => {
+    set(s => ({
+      pageNodes: patchNodeById(s.pageNodes, id, node => ({ ...node, [field]: value }) as SDUINode),
+    }));
+    // Intentionally no _pushHistory — caller must call _pushHistory() once on commit.
+  },
+
   setPreviewState: (state) => set({ activePreviewStates: [state] }),
   togglePreviewState: (state) =>
     set((s) => {
@@ -1740,11 +1892,21 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   setPageWorkflow: (name, actions) =>
     set(s => ({ pageWorkflows: { ...s.pageWorkflows, [name]: actions } })),
   removePageWorkflow: (name) =>
-    set(s => { const { [name]: _, ...rest } = s.pageWorkflows; return { pageWorkflows: rest }; }),
+    set(s => {
+      const { [name]: _pw, ...restWorkflows } = s.pageWorkflows;
+      const { [name]: _pm, ...restMeta } = s.pageWorkflowMeta;
+      return { pageWorkflows: restWorkflows, pageWorkflowMeta: restMeta };
+    }),
+  setPageWorkflowMeta: (name, meta) =>
+    set(s => ({ pageWorkflowMeta: { ...s.pageWorkflowMeta, [name]: { ...s.pageWorkflowMeta[name], ...meta, id: name } } })),
   setGlobalWorkflow: (name, actions) =>
     set(s => ({ globalWorkflows: { ...s.globalWorkflows, [name]: actions } })),
   removeGlobalWorkflow: (name) =>
     set(s => { const { [name]: _, ...rest } = s.globalWorkflows; return { globalWorkflows: rest }; }),
+  setGlobalWorkflowMeta: (id, meta) =>
+    set(s => ({ globalWorkflowMeta: { ...s.globalWorkflowMeta, [id]: { ...s.globalWorkflowMeta[id], ...meta, id } } })),
+  openWorkflowCanvas: (target) => set({ workflowCanvasTarget: target }),
+  closeWorkflowCanvas: () => set({ workflowCanvasTarget: null }),
   setGlobalFormula: (name, expr) =>
     set(s => ({ globalFormulas: { ...s.globalFormulas, [name]: expr } })),
   removeGlobalFormula: (name) =>
@@ -1813,6 +1975,8 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
         dsFolders?: Folder[];
         variables?: Array<{ id: string; label?: string; type?: string; initialValue?: unknown; folder?: string; fields?: CustomVar['fields'] }>;
         varFolders?: Array<{ id: string; label: string }>;
+        workflows?: Array<{ id: string; name: string; trigger: string; steps: object[]; onErrorSteps?: object[] }>;
+        directActions?: Record<string, Record<string, unknown>>;
       };
 
       set(s => {
@@ -1857,9 +2021,51 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
           const configFolderIds = new Set(json.varFolders.map(f => f.id));
           const userVarFolders = s.varFolders.filter(f => !configFolderIds.has(f.id));
           next.varFolders = [
-            ...json.varFolders.map(f => ({ id: f.id, name: f.label })),
+            ...json.varFolders.map(f => ({ id: f.id, name: f.label, parentId: undefined })),
             ...userVarFolders,
           ];
+        }
+
+        // ── Named workflows from config/actions/*.json ────────────────────────
+        if (Array.isArray(json.workflows) && json.workflows.length > 0) {
+          const configWorkflowIds = new Set(json.workflows.map(w => w.id));
+          // Keep user-added workflows that aren't from config
+          const userWorkflows = Object.fromEntries(
+            Object.entries(s.pageWorkflows).filter(([id]) => !configWorkflowIds.has(id))
+          );
+          const userMeta = Object.fromEntries(
+            Object.entries(s.pageWorkflowMeta).filter(([id]) => !configWorkflowIds.has(id))
+          );
+          // A workflow is "system" if it's an auto-generated onChange field setter:
+          // single step of type changeVariableValue or setFormField + trigger === 'change'
+          const SYSTEM_STEP_TYPES = new Set(['changeVariableValue', 'setFormField', 'setState', 'set']);
+          const isSystemWorkflow = (w: { trigger?: string; steps?: unknown[] }) =>
+            w.trigger === 'change' &&
+            Array.isArray(w.steps) && w.steps.length === 1 &&
+            SYSTEM_STEP_TYPES.has((w.steps[0] as Record<string, unknown>)?.type as string);
+
+          // Key by UUID id, display name comes from the "name" field in the definition.
+          // Convert raw camelCase/kebab names to human-readable text for the builder UI.
+          const toHumanName = (n: string) =>
+            n.replace(/([A-Z])/g, ' $1').replace(/[-_]/g, ' ').replace(/\s+/g, ' ')
+             .replace(/^./, s => s.toUpperCase()).trim();
+
+          const configWorkflows = Object.fromEntries(json.workflows.map(w => [w.id, w.steps]));
+          // Detect UUID-shaped strings (fall-through when no name is set)
+          const isUuidStr = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+          const configMeta = Object.fromEntries(json.workflows.map(w => [w.id, {
+            id: w.id,
+            name: w.name && !isUuidStr(w.name) ? toHumanName(w.name) : 'Unnamed Workflow',
+            trigger: w.trigger,
+            isSystem: isSystemWorkflow(w),
+          } as WorkflowMeta]));
+          next.pageWorkflows = { ...configWorkflows, ...userWorkflows };
+          next.pageWorkflowMeta = { ...configMeta, ...userMeta };
+        }
+
+        // ── Direct actions from config/actions/*.json ─────────────────────────
+        if (json.directActions && typeof json.directActions === 'object') {
+          next.directActionsMap = json.directActions as Record<string, Record<string, unknown>>;
         }
 
         return next;

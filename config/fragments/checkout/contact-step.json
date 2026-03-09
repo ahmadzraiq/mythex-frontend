@@ -10,13 +10,11 @@
       "props": {
         "className": "flex flex-row items-center justify-between w-full py-4"
       },
-      "actions": {
-        "click": {
-          "type": "setVar",
-          "path": "d9e0f1a2-b3c4-5678-defa-789012345678",
-          "value": "contact"
+      "actions": [
+        {
+          "action": "e89bedc2-a39c-4c83-861b-7fd20bcc63cd"
         }
-      },
+      ],
       "children": [
         {
           "type": "Box",
@@ -27,7 +25,9 @@
             {
               "type": "Box",
               "props": {
-                "className": { "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + (({{auth.user}} || {{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.emailAddress}}) ? 'bg-green-500 !text-white' : ({{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'contact' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]'))" }
+                "className": {
+                  "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + (({{auth.user}} || {{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.emailAddress}}) ? 'bg-green-500 !text-white' : ({{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'contact' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]'))"
+                }
               },
               "children": [
                 {
@@ -156,25 +156,13 @@
                       "props": {
                         "type": "email",
                         "placeholder": "you@example.com",
-                        "value": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.emailAddress}}"
+                        "value": "{{local.data.form.formData.emailAddress}}"
                       },
-                      "actions": {
-                        "change": {
-                          "type": "runMultiple",
-                          "actions": [
-                            {
-                              "type": "setFormField", "formId": "d1e2f3a4-b5c6-7890-defa-890123456789", "field": "emailAddress", "value": "$event"
-                            },
-                            {
-                              "action": "setState",
-                              "payload": {
-                                "path": "screens.checkout.errors.form.emailAddress",
-                                "value": ""
-                              }
-                            }
-                          ]
+                      "actions": [
+                        {
+                          "action": "5c58aa71-3ce1-41d2-bb5a-843420fd1f64"
                         }
-                      }
+                      ]
                     }
                   ]
                 },
@@ -183,14 +171,14 @@
                   "props": {
                     "className": "min-h-[20px]"
                   },
-                  "condition": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].errors.emailAddress}}",
+                  "condition": "{{local.data.form.fields.emailAddress.isValid}}",
                   "children": [
                     {
                       "type": "Text",
                       "props": {
                         "className": "text-sm text-red-500 dark:text-red-400"
                       },
-                      "text": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].errors.emailAddress}}"
+                      "text": "{{local.data.form.fields.emailAddress.isValid}}"
                     }
                   ]
                 }
@@ -222,25 +210,13 @@
                           "type": "InputField",
                           "props": {
                             "placeholder": "Jane",
-                            "value": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.firstName}}"
+                            "value": "{{local.data.form.formData.firstName}}"
                           },
-                          "actions": {
-                            "change": {
-                              "type": "runMultiple",
-                              "actions": [
-                                {
-                                  "type": "setFormField", "formId": "d1e2f3a4-b5c6-7890-defa-890123456789", "field": "firstName", "value": "$event"
-                                },
-                                {
-                                  "action": "setState",
-                                  "payload": {
-                                    "path": "screens.checkout.errors.form.firstName",
-                                    "value": ""
-                                  }
-                                }
-                              ]
+                          "actions": [
+                            {
+                              "action": "c0a77baf-974c-4d07-b006-4f4b4f5a6a15"
                             }
-                          }
+                          ]
                         }
                       ]
                     },
@@ -249,14 +225,14 @@
                       "props": {
                         "className": "min-h-[20px]"
                       },
-                      "condition": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].errors.firstName}}",
+                      "condition": "{{local.data.form.fields.firstName.isValid}}",
                       "children": [
                         {
                           "type": "Text",
                           "props": {
                             "className": "text-sm text-red-500 dark:text-red-400"
                           },
-                          "text": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].errors.firstName}}"
+                          "text": "{{local.data.form.fields.firstName.isValid}}"
                         }
                       ]
                     }
@@ -282,25 +258,13 @@
                           "type": "InputField",
                           "props": {
                             "placeholder": "Doe",
-                            "value": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].value.lastName}}"
+                            "value": "{{local.data.form.formData.lastName}}"
                           },
-                          "actions": {
-                            "change": {
-                              "type": "runMultiple",
-                              "actions": [
-                                {
-                                  "type": "setFormField", "formId": "d1e2f3a4-b5c6-7890-defa-890123456789", "field": "lastName", "value": "$event"
-                                },
-                                {
-                                  "action": "setState",
-                                  "payload": {
-                                    "path": "screens.checkout.errors.form.lastName",
-                                    "value": ""
-                                  }
-                                }
-                              ]
+                          "actions": [
+                            {
+                              "action": "a6836452-b059-47c2-932c-c60504eef105"
                             }
-                          }
+                          ]
                         }
                       ]
                     },
@@ -309,14 +273,14 @@
                       "props": {
                         "className": "min-h-[20px]"
                       },
-                      "condition": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].errors.lastName}}",
+                      "condition": "{{local.data.form.fields.lastName.isValid}}",
                       "children": [
                         {
                           "type": "Text",
                           "props": {
                             "className": "text-sm text-red-500 dark:text-red-400"
                           },
-                          "text": "{{variables['d1e2f3a4-b5c6-7890-defa-890123456789'].errors.lastName}}"
+                          "text": "{{local.data.form.fields.lastName.isValid}}"
                         }
                       ]
                     }
@@ -338,11 +302,11 @@
                   "text": "Continue"
                 }
               ],
-              "actions": {
-                "click": {
-                  "action": "setCustomerForOrder"
+              "actions": [
+                {
+                  "action": "a5c546d2-127a-4bdb-8b9f-f2c8a10471d7"
                 }
-              }
+              ]
             }
           ]
         }

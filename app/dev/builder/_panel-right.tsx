@@ -34,11 +34,12 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useBuilderStore } from './_store';
+import { useBuilderStore, findParentNode } from './_store';
+import { WorkflowBindButton, toHumanName } from './_workflow-canvas'; // used only for unbound slot picker
 import { ThemePanel } from './_theme-panel';
 import { PathPicker } from './_path-picker';
 import { ExprBuilder } from './_expr-builder';
-import { FieldWithBinding, BindingIcon, isBoundValue, type FormulaValue } from './_formula-panel';
+import { FieldWithBinding, BindingIcon, isBoundValue, type FormulaValue, closeAllEditors, registerEditorClose } from './_formula-panel';
 import { FormulaEditor } from './_formula-editor';
 import { evaluateFormula } from '@/lib/sdui/formula-evaluator';
 import { useSduiStore } from '@/store/sdui-store';
@@ -1587,20 +1588,15 @@ function DesignTab({ node }: { node: SDUINode }) {
       {/* ── Grid overlay toggle ── */}
       <GridOverlayPanel />
 
-      {/* ── Visibility ── */}
-      <VisibilityInDesign node={node} />
-
-      {/* ── Disable (interactive nodes only) ── */}
-      <DisableInDesign node={node} />
-
       {/* ── Repeat / List ── */}
       <RepeatInDesign node={node} />
 
-      {/* ── Validation (form input nodes only) ── */}
-      <ValidationInDesign node={node} />
+      {/* ── Visibility ── */}
+      <VisibilityInDesign node={node} />
 
-      {/* ── Interactions (workflow triggers) ── */}
-      <InteractionsInDesign node={node} />
+      {/* ── Disable (all nodes) ── */}
+      <DisableInDesign node={node} />
+
     </div>
   );
 }
@@ -1755,23 +1751,147 @@ function DisableInDesign({ node }: { node: SDUINode }) {
   const disabled = (node.props as Record<string, unknown> | undefined)?.disabled;
   const isBound = isBoundValue(disabled as FormulaValue);
   const isDisabled = !isBound && !!disabled;
+  const showOverlay = isDisabled || isBound;
 
-  if (!INTERACTIVE_TYPES.has(node.type as string)) return null;
+  const overlay = ((node as Record<string, unknown>)._disabledOverlay ?? {}) as {
+    color?: string; opacity?: number; blur?: number;
+  };
+  const forceShow = !!(node as Record<string, unknown>)._forceDisabledInEditor;
+
+  const patchOverlay = (patch: Partial<typeof overlay>) =>
+    store.patchNodeField(nodeId, '_disabledOverlay', { ...overlay, ...patch });
+
+  // Local state keeps the slider/number inputs responsive while rAF batches
+  // the store writes (live, no history) so the canvas gets a live update every
+  // animation frame. A single history snapshot is pushed only when the gesture ends.
+  const [localOpacity, setLocalOpacity] = useState(Math.round((overlay.opacity ?? 0.3) * 100));
+  const [localBlur, setLocalBlur] = useState(overlay.blur ?? 0);
+  const opacityRaf = useRef<number | null>(null);
+  const blurRaf    = useRef<number | null>(null);
+  const colorRaf   = useRef<number | null>(null);
+
+  // Sync local state when the selected node changes.
+  useEffect(() => {
+    setLocalOpacity(Math.round((overlay.opacity ?? 0.3) * 100));
+    setLocalBlur(overlay.blur ?? 0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodeId]);
+
+  // Snapshot the overlay at the start of each gesture so the rAF spread is accurate.
+  const overlayRef = useRef(overlay);
+  overlayRef.current = overlay;
+
+  const patchOpacityLive = (pct: number) => {
+    setLocalOpacity(pct);
+    if (opacityRaf.current !== null) cancelAnimationFrame(opacityRaf.current);
+    opacityRaf.current = requestAnimationFrame(() => {
+      store.patchNodeFieldLive(nodeId, '_disabledOverlay', { ...overlayRef.current, opacity: pct / 100 });
+      opacityRaf.current = null;
+    });
+  };
+
+  const patchBlurLive = (px: number) => {
+    setLocalBlur(px);
+    if (blurRaf.current !== null) cancelAnimationFrame(blurRaf.current);
+    blurRaf.current = requestAnimationFrame(() => {
+      store.patchNodeFieldLive(nodeId, '_disabledOverlay', { ...overlayRef.current, blur: px });
+      blurRaf.current = null;
+    });
+  };
+
+  // ColorPopover already rAF-throttles its onSelect call, so no second rAF needed here —
+  // a double rAF doubles the latency and makes the picker feel laggy.
+  const patchColorLive = (hex: string) => {
+    store.patchNodeFieldLive(nodeId, '_disabledOverlay', { ...overlayRef.current, color: hex });
+  };
+
+  const commitHistory = () => store._pushHistory();
 
   return (
-    <ToggleBind
-      rowLabel="Disabled"
-      fieldId="disabled-state"
-      hint="e.g. {{!isLoggedIn}}, {{form.loading}}"
-      expectedType="boolean"
-      isOn={isDisabled}
-      value={(isBound ? disabled : isDisabled) as FormulaValue}
-      onToggle={() => store.patchProp(nodeId, 'props.disabled', isDisabled ? undefined : true)}
-      onChange={v => {
-        if (isBoundValue(v)) store.patchProp(nodeId, 'props.disabled', v);
-        else store.patchProp(nodeId, 'props.disabled', undefined);
-      }}
-    />
+    <>
+      <ToggleBind
+        rowLabel="Disabled"
+        fieldId="disabled-state"
+        hint="e.g. {{!isLoggedIn}}, {{form.loading}}"
+        expectedType="boolean"
+        isOn={isDisabled}
+        value={(isBound ? disabled : isDisabled) as FormulaValue}
+        onToggle={() => store.patchProp(nodeId, 'props.disabled', isDisabled ? undefined : true)}
+        onChange={v => {
+          if (isBoundValue(v)) store.patchProp(nodeId, 'props.disabled', v);
+          else store.patchProp(nodeId, 'props.disabled', undefined);
+        }}
+      />
+      {showOverlay && (
+        <div style={{ borderTop: '1px solid #1f2937', padding: '6px 12px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span style={{ ...DESIGN_LABEL, marginBottom: 0 }}>Overlay</span>
+
+          {/* Color — full row */}
+          <div>
+            <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Color</span>
+            <FigmaColorPicker
+              value={overlay.color?.startsWith('#') ? overlay.color : '#000000'}
+              onChange={hex => patchColorLive(hex)}
+              onCommit={commitHistory}
+            />
+          </div>
+
+          {/* Opacity — own row so slider has full width and never overflows */}
+          <div>
+            <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Opacity %</span>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <input
+                type="number" min={0} max={100} step={5}
+                value={localOpacity}
+                onChange={e => patchOpacityLive(Math.min(100, Math.max(0, Number(e.target.value))))}
+                onBlur={() => commitHistory()}
+                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '2px 5px', width: 44, textAlign: 'center' as const, flexShrink: 0 }}
+              />
+              <input
+                type="range" min={0} max={100} step={1}
+                value={localOpacity}
+                onChange={e => patchOpacityLive(Number(e.target.value))}
+                onMouseUp={() => commitHistory()}
+                style={{ flex: 1, minWidth: 0, accentColor: '#3b82f6' }}
+              />
+            </div>
+          </div>
+
+          {/* Blur */}
+          <div>
+            <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Blur px</span>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <input
+                type="number" min={0} max={40} step={1}
+                value={localBlur}
+                onChange={e => patchBlurLive(Math.min(40, Math.max(0, Number(e.target.value))))}
+                onBlur={() => commitHistory()}
+                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '2px 5px', width: 44, textAlign: 'center' as const }}
+              />
+              <input
+                type="range" min={0} max={40} step={1}
+                value={localBlur}
+                onChange={e => patchBlurLive(Number(e.target.value))}
+                onMouseUp={() => commitHistory()}
+                style={{ flex: 1, accentColor: '#3b82f6' }}
+              />
+            </div>
+          </div>
+
+          {/* Force show in editor — only relevant when disabled is formula-bound */}
+          {isBound && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: '#9ca3af', cursor: 'pointer', paddingTop: 2 }}>
+              <input
+                type="checkbox"
+                checked={forceShow}
+                onChange={e => store.patchNodeField(nodeId, '_forceDisabledInEditor', e.target.checked || undefined)}
+              />
+              Force show in editor
+            </label>
+          )}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -1809,127 +1929,49 @@ function RepeatInDesign({ node }: { node: SDUINode }) {
   );
 }
 
-function ValidationInDesign({ node }: { node: SDUINode }) {
-  const store = useBuilderStore();
-  const nodeId = (node as { id?: string }).id ?? '';
-  const existing = (node as { _validation?: { rules: Array<{ type: string; value: string; message: string }> } })._validation;
-  const [rules, setRules] = useState(existing?.rules ?? []);
+/** Name input for the node — display label shown in formula editor component picker */
+function NodeNameInDesign({
+  node,
+  nodeId,
+  commitHistory,
+  store,
+}: {
+  node: SDUINode;
+  nodeId: string;
+  commitHistory: () => void;
+  store: ReturnType<typeof useBuilderStore>;
+}) {
+  const currentName = (node as { name?: string }).name ?? '';
+  const [draft, setDraft] = useState(currentName);
+  useEffect(() => { setDraft(currentName); }, [currentName]);
 
-  if (!FORM_INPUT_TYPES.has(node.type as string)) return null;
-
-  const saveRules = (next: typeof rules) => {
-    setRules(next);
-    store.patchNodeField(nodeId, '_validation', next.length > 0 ? { rules: next } : null);
+  const commit = (value: string) => {
+    const trimmed = value.trim() || undefined;
+    if (trimmed === currentName) return;
+    store.patchNodeField(nodeId, 'name', trimmed);
+    commitHistory();
   };
 
   return (
-    <div style={DESIGN_INLINE_STYLE}>
-      <span style={DESIGN_LABEL}>Validation</span>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {rules.map((r, i) => (
-          <div key={i} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-            <select value={r.type} onChange={e => saveRules(rules.map((x, xi) => xi === i ? { ...x, type: e.target.value } : x))}
-              style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 10, padding: '2px 4px' }}>
-              <option value="required">required</option>
-              <option value="minLength">minLength</option>
-              <option value="maxLength">maxLength</option>
-              <option value="pattern">pattern</option>
-              <option value="equalsField">equalsField</option>
-            </select>
-            <input value={r.value} onChange={e => saveRules(rules.map((x, xi) => xi === i ? { ...x, value: e.target.value } : x))}
-              placeholder="value" style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 10, padding: '2px 4px', flex: 1 }} />
-            <input value={r.message} onChange={e => saveRules(rules.map((x, xi) => xi === i ? { ...x, message: e.target.value } : x))}
-              placeholder="error msg" style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 10, padding: '2px 4px', flex: 1 }} />
-            <button onClick={() => saveRules(rules.filter((_, xi) => xi !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 12 }}>×</button>
-          </div>
-        ))}
-        <button onClick={() => saveRules([...rules, { type: 'required', value: '', message: 'Required' }])}
-          style={{ alignSelf: 'flex-start', background: 'none', border: '1px dashed #374151', borderRadius: 4, color: '#6b7280', fontSize: 10, padding: '2px 7px', cursor: 'pointer' }}>
-          + Add rule
-        </button>
-      </div>
+    <div style={SECTION_STYLE}>
+      <SectionHeader title="Name" />
+      <input
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={e => commit(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') { commit(draft); (e.target as HTMLInputElement).blur(); } }}
+        placeholder={`e.g. ${node.type}`}
+        style={{
+          width: '100%', boxSizing: 'border-box',
+          background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
+          color: '#f3f4f6', fontSize: 11, padding: '4px 7px', outline: 'none',
+        }}
+      />
     </div>
   );
 }
 
-// ─── Interactions (workflow picker per event) ─────────────────────────────────
 
-const INTERACTION_EVENTS = ['click', 'change', 'submit', 'mount'] as const;
-type InteractionEvent = typeof INTERACTION_EVENTS[number];
-
-function InteractionsInDesign({ node }: { node: SDUINode }) {
-  const store = useBuilderStore();
-  const nodeId = (node as { id?: string }).id ?? '';
-  const pageWorkflows = useBuilderStore(s => s.pageWorkflows);
-  const workflowNames = Object.keys(pageWorkflows);
-
-  const nodeActions = (node.actions ?? {}) as Record<string, unknown>;
-
-  const getWorkflow = (event: InteractionEvent): string => {
-    const action = nodeActions[event] as { type?: string; workflow?: string } | undefined;
-    return action?.type === 'runWorkflow' ? (action.workflow ?? '') : '';
-  };
-
-  const setWorkflow = (event: InteractionEvent, workflowName: string) => {
-    const newActions = { ...nodeActions };
-    if (workflowName) {
-      newActions[event] = { type: 'runWorkflow', workflow: workflowName };
-    } else {
-      delete newActions[event];
-    }
-    store.patchNodeField(nodeId, 'actions', Object.keys(newActions).length ? newActions : null);
-    store._pushHistory();
-  };
-
-  return (
-    <div
-      data-testid="interactions-section"
-      style={{ borderTop: '1px solid #1f2937', padding: '8px 12px' }}
-    >
-      <span style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 8 }}>
-        Interactions
-      </span>
-      {INTERACTION_EVENTS.map(event => {
-        const currentWorkflow = getWorkflow(event);
-        return (
-          <div key={event} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-            <span style={{ fontSize: 10, color: '#9ca3af', width: 50, flexShrink: 0, textTransform: 'capitalize' }}>{event}</span>
-            <select
-              data-testid={`interaction-picker-${event}`}
-              value={currentWorkflow}
-              onChange={e => setWorkflow(event, e.target.value)}
-              style={{
-                flex: 1,
-                background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
-                color: currentWorkflow ? '#fbbf24' : '#4b5563',
-                fontSize: 10, padding: '3px 6px', cursor: 'pointer', outline: 'none',
-              }}
-            >
-              <option value="">— no workflow —</option>
-              {workflowNames.map(name => (
-                <option key={name} value={name}>{name}</option>
-              ))}
-            </select>
-            {currentWorkflow && (
-              <button
-                data-testid={`interaction-clear-${event}`}
-                onClick={() => setWorkflow(event, '')}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 13, padding: '0 2px' }}
-              >
-                ×
-              </button>
-            )}
-          </div>
-        );
-      })}
-      {workflowNames.length === 0 && (
-        <div style={{ fontSize: 10, color: '#4b5563', fontStyle: 'italic', marginTop: 4 }}>
-          No workflows yet — add them in the Logic tab.
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─── Grid overlay mini-panel ──────────────────────────────────────────────────
 
@@ -2141,8 +2183,239 @@ function PreviewDataEditor() {
   );
 }
 
+// ─── Element Workflows Tab ────────────────────────────────────────────────────
+
+function WorkflowRowMenu({ uuid, onOpen, onRemove }: { uuid: string; onOpen: () => void; onRemove: () => void }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: 'relative', flexShrink: 0 }}>
+      <button
+        onClick={e => { e.stopPropagation(); setOpen(v => !v); }}
+        style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '2px 4px', fontSize: 16, lineHeight: 1, borderRadius: 4 }}
+        title="More options"
+      >
+        ⋮
+      </button>
+      {open && (
+        <div
+          style={{
+            position: 'absolute', right: 0, top: '100%', zIndex: 999,
+            background: '#1e293b', border: '1px solid #334155', borderRadius: 8,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.5)', minWidth: 150, overflow: 'hidden',
+          }}
+          onClick={e => e.stopPropagation()}
+        >
+          {uuid && (
+            <button
+              onClick={() => { setOpen(false); onOpen(); }}
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', background: 'none', border: 'none', color: '#e2e8f0', fontSize: 12, cursor: 'pointer' }}
+            >
+              ↗ Open in canvas
+            </button>
+          )}
+          <button
+            onClick={() => { setOpen(false); onRemove(); }}
+            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', background: 'none', border: 'none', color: '#f87171', fontSize: 12, cursor: 'pointer' }}
+          >
+            × Remove
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
+  const { openWorkflowCanvas, pageWorkflowMeta, patchNodeField, setPageWorkflow, setPageWorkflowMeta } = useBuilderStore();
+  const [hovered, setHovered] = useState<string | null>(null);
+
+  if (!node) {
+    return (
+      <div
+        data-testid="right-workflows-empty"
+        style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center', gap: 10 }}
+      >
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}>
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#d1d5db' }}>Workflows</span>
+        <span style={{ fontSize: 11, color: '#4b5563', lineHeight: 1.5 }}>Select an element to manage its workflows.</span>
+      </div>
+    );
+  }
+
+  const nodeId = (node as { id?: string }).id ?? '';
+
+  // Normalise actions: new format is an array of ActionRefs, legacy is an event-keyed object
+  const rawActions = node.actions;
+  type WorkflowEntry = { uuid: string; trigger: string; idx: number };
+  let workflowEntries: WorkflowEntry[] = [];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawActionsArr = Array.isArray(rawActions) ? (rawActions as any[]) : null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawActionsObj = (!Array.isArray(rawActions) && rawActions && typeof rawActions === 'object') ? (rawActions as Record<string, any>) : null;
+
+  if (rawActionsArr) {
+    // New format: [{ action: "uuid" }, ...]
+    workflowEntries = rawActionsArr
+      .filter((a: unknown) => a && typeof (a as Record<string, unknown>).action === 'string')
+      .map((a: Record<string, unknown>, idx: number) => {
+        const uuid = a.action as string;
+        const trigger = pageWorkflowMeta[uuid]?.trigger ?? 'click';
+        return { uuid, trigger, idx };
+      })
+      // Hide system-managed workflows (auto-generated onChange setters)
+      .filter(({ uuid }) => !pageWorkflowMeta[uuid]?.isSystem);
+  } else if (rawActionsObj) {
+    // Legacy event-keyed object format — skip inline system actions (e.g. setFormField)
+    // only show pure ActionRef entries { action: "uuid" } which have no "type" property
+    workflowEntries = Object.entries(rawActionsObj)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .filter(([, actionDef]) => !(actionDef as any)?.type)
+      .map(([event, actionDef], idx) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const uuid = (actionDef as any)?.action as string ?? event;
+        return { uuid, trigger: event, idx };
+      });
+  }
+
+  function handleBind(idx: number, newUuid: string) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const current: any[] = rawActionsArr ? [...rawActionsArr] : [];
+    if (!newUuid) {
+      const updated = current.filter((_: unknown, i: number) => i !== idx);
+      patchNodeField(nodeId, 'actions', updated.length > 0 ? updated : undefined);
+    } else {
+      current[idx] = { action: newUuid };
+      patchNodeField(nodeId, 'actions', current);
+    }
+  }
+
+  function handleAddNew() {
+    // Create a new empty workflow, attach it to this element, and open the canvas immediately
+    const uuid = crypto.randomUUID();
+    setPageWorkflow(uuid, []);
+    setPageWorkflowMeta(uuid, { id: uuid, name: 'New Workflow', trigger: 'click' });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const current: any[] = rawActionsArr ? [...rawActionsArr] : [];
+    patchNodeField(nodeId, 'actions', [...current, { action: uuid }]);
+    openWorkflowCanvas({ kind: 'pageWorkflow', name: uuid, nodeId });
+  }
+
+  return (
+    <div data-testid="right-workflows-panel" style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
+        <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: '#e5e7eb', letterSpacing: '0.01em' }}>
+          ⚡ Workflows
+        </span>
+        <button
+          data-testid="right-workflows-new-btn"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '4px 12px', background: '#1d4ed8', border: 'none',
+            borderRadius: 6, color: '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+          }}
+          onClick={handleAddNew}
+        >
+          + New
+        </button>
+      </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {workflowEntries.length === 0 ? (
+          <div
+            data-testid="right-workflows-create-cta"
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 24, gap: 8, textAlign: 'center' }}
+          >
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}>
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#d1d5db' }}>No workflows yet</span>
+            <span style={{ fontSize: 11, color: '#4b5563', lineHeight: 1.5 }}>Click + New to attach a workflow to this element.</span>
+          </div>
+        ) : (
+          workflowEntries.map(({ uuid, trigger, idx }) => {
+            const meta = pageWorkflowMeta[uuid];
+            const displayName = meta?.name ? toHumanName(meta.name) : 'Unnamed Workflow';
+            const triggerDisplay = trigger ? `On ${trigger}` : 'On click';
+            return (
+              <div
+                key={`${uuid}-${idx}`}
+                data-testid={`right-workflow-row-${idx}`}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 14px',
+                  borderBottom: '1px solid #1f2937',
+                  background: hovered === `${idx}` ? 'rgba(255,255,255,0.04)' : 'transparent',
+                  cursor: 'default',
+                }}
+                onMouseEnter={() => setHovered(`${idx}`)}
+                onMouseLeave={() => setHovered(null)}
+              >
+                {/* Left: trigger icon */}
+                <div style={{
+                  width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                  background: '#1e293b', border: '1px solid #334155',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 14, color: '#94a3b8',
+                }}>
+                  {/* cursor/pointer icon */}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 4l7.07 17 2.51-7.39L21 11.07z" />
+                  </svg>
+                </div>
+
+                {/* Center: name + trigger */}
+                {uuid ? (
+                  <div
+                    style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
+                    onClick={() => openWorkflowCanvas({ kind: 'pageWorkflow', name: uuid, nodeId })}
+                    title="Open workflow canvas"
+                  >
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#f1f5f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {displayName}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                      {triggerDisplay}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <WorkflowBindButton value="" onChange={newUuid => handleBind(idx, newUuid)} />
+                  </div>
+                )}
+
+                {/* Right: three-dot menu */}
+                <WorkflowRowMenu
+                  uuid={uuid}
+                  onOpen={() => uuid && openWorkflowCanvas({ kind: 'pageWorkflow', name: uuid, nodeId })}
+                  onRemove={() => handleBind(idx, '')}
+                />
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function PanelRight() {
-  const [tab, setTab] = useState<'design' | 'theme'>('design');
+  const [tab, setTab] = useState<'design' | 'settings' | 'theme' | 'workflows'>('design');
   const { selectedIds, pageNodes, activePreviewStates } = useBuilderStore();
   const activePreviewState = activePreviewStates?.[0] ?? 'normal';
 
@@ -2173,23 +2446,65 @@ export default function PanelRight() {
     return findNode(pageNodes as SDUINode[], selectedIds[0]);
   }, [selectedIds, pageNodes]);
 
+  const TABS: Array<{ id: 'design' | 'settings' | 'theme' | 'workflows'; label: string; icon: React.ReactNode }> = [
+    {
+      id: 'design',
+      label: 'Design',
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+      ),
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
+        </svg>
+      ),
+    },
+    {
+      id: 'theme',
+      label: 'Theme',
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M22 12h-2M4 12H2M19.07 19.07l-1.41-1.41M5.34 5.34L3.93 3.93M12 22v-2M12 4V2"/>
+        </svg>
+      ),
+    },
+    {
+      id: 'workflows',
+      label: 'Workflows',
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+      ),
+    },
+  ];
+
   return (
     <div data-testid="panel-right" style={PANEL_STYLE}>
       {/* Tab bar */}
       <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-        {(['design', 'theme'] as const).map(t => (
+        {TABS.map(t => (
           <button
-            key={t}
-            data-testid={`tab-right-${t}`}
-            style={{ flex: 1, padding: '9px 0', background: 'none', border: 'none', borderBottom: tab === t ? '2px solid #3b82f6' : '2px solid transparent', color: tab === t ? '#f3f4f6' : '#6b7280', fontSize: 11, cursor: 'pointer', textTransform: 'capitalize', marginBottom: -1 }}
-            onClick={() => setTab(t)}
+            key={t.id}
+            data-testid={`tab-right-${t.id}`}
+            title={t.label}
+            style={{ flex: 1, padding: '9px 0', background: 'none', border: 'none', borderBottom: tab === t.id ? '2px solid #3b82f6' : '2px solid transparent', color: tab === t.id ? '#f3f4f6' : '#6b7280', fontSize: 11, cursor: 'pointer', marginBottom: -1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            onClick={() => setTab(t.id)}
           >
-            {t}
+            {t.icon}
           </button>
         ))}
       </div>
 
       {tab === 'theme' && <ThemePanel />}
+
+      {tab === 'workflows' && <ElementWorkflowsTab node={selectedNode} />}
 
       {tab === 'design' && (
         <>
@@ -2207,9 +2522,728 @@ export default function PanelRight() {
           {selectedNode && <DesignTab node={selectedNode} />}
         </>
       )}
+
+      {tab === 'settings' && (
+        <>
+          {!selectedNode && selectedIds.length <= 1 && (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4b5563', fontSize: 12, textAlign: 'center', padding: 16 }}>
+              Select a node to edit its settings
+            </div>
+          )}
+          {selectedNode && <SettingsTab node={selectedNode} pageNodes={pageNodes as SDUINode[]} />}
+        </>
+      )}
     </div>
   );
 }
+
+// ─── Settings Tab ─────────────────────────────────────────────────────────────
+
+const SETTINGS_INPUT_TYPES = new Set(['Input', 'InputField', 'Select', 'TextArea', 'Checkbox', 'Radio', 'Switch', 'Button']);
+
+const INPUT_TYPE_OPTIONS: Array<{ label: string; value: string }> = [
+  { label: 'Email',    value: 'email' },
+  { label: 'Password', value: 'password' },
+  { label: 'Number',   value: 'number' },
+  { label: 'Decimal',  value: 'decimal' },
+  { label: 'Phone',    value: 'tel' },
+  { label: 'Currency', value: 'currency' },
+];
+
+/** Row layout for settings: label on left, control on right */
+function SettingsRow({
+  label,
+  children,
+  indent = false,
+}: {
+  label: string;
+  children: React.ReactNode;
+  indent?: boolean;
+}) {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
+      padding: `5px ${indent ? 12 : 12}px`,
+      paddingLeft: indent ? 20 : 12,
+    }}>
+      <span style={{ fontSize: 11, color: '#d1d5db', flexShrink: 0, minWidth: 80 }}>{label}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'flex-end' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** On/Off segmented toggle reused from design tab style */
+function OnOffToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  const btnBase: React.CSSProperties = {
+    padding: '2px 10px',
+    fontSize: 10,
+    border: 'none',
+    cursor: 'pointer',
+    borderRadius: 3,
+    fontWeight: 500,
+  };
+  return (
+    <div style={{ display: 'flex', background: '#1f2937', borderRadius: 4, padding: 2, gap: 2 }}>
+      <button
+        style={{ ...btnBase, background: value ? '#374151' : 'transparent', color: value ? '#f3f4f6' : '#6b7280' }}
+        onClick={() => onChange(true)}
+      >On</button>
+      <button
+        style={{ ...btnBase, background: !value ? '#374151' : 'transparent', color: !value ? '#f3f4f6' : '#6b7280' }}
+        onClick={() => onChange(false)}
+      >Off</button>
+    </div>
+  );
+}
+
+/** Small text input for settings rows */
+function SettingsTextInput({ value, onChange, placeholder, expandable = false }: { value: string; onChange: (v: string) => void; placeholder?: string; expandable?: boolean }) {
+  const [draft, setDraft] = useState(value);
+  useEffect(() => { setDraft(value); }, [value]);
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1, justifyContent: 'flex-end' }}>
+      <input
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={e => onChange(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') { onChange(draft); (e.target as HTMLInputElement).blur(); } }}
+        placeholder={placeholder}
+        style={{
+          background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
+          color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none',
+          width: 130, boxSizing: 'border-box',
+        }}
+      />
+      {expandable && (
+        <button style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: 0, fontSize: 12, lineHeight: 1 }} title="Expand">⤢</button>
+      )}
+    </div>
+  );
+}
+
+type ValidationRuleType = 'required' | 'email' | 'minLength' | 'maxLength' | 'phone' | 'url' | 'pattern' | 'formula';
+type ValidationRule = { type: ValidationRuleType; message: string; value?: string; formula?: FormulaValue };
+type NodeValidation = { trigger?: 'submit' | 'change'; rules?: ValidationRule[] };
+
+// Local-state text input: shows updates immediately, commits to store only on blur.
+// Prevents a Zustand write + re-render on every keystroke.
+function RuleMessageInput({ value, onChange, placeholder = 'Error message', style }: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  style?: React.CSSProperties;
+}) {
+  const [local, setLocal] = useState(value);
+  useEffect(() => setLocal(value), [value]);
+  return (
+    <input
+      value={local}
+      onChange={e => setLocal(e.target.value)}
+      onBlur={() => { if (local !== value) onChange(local); }}
+      placeholder={placeholder}
+      style={style}
+    />
+  );
+}
+
+function RuleValueInput({ value, onChange, placeholder = '', style }: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  style?: React.CSSProperties;
+}) {
+  const [local, setLocal] = useState(value);
+  useEffect(() => setLocal(value), [value]);
+  return (
+    <input
+      value={local}
+      onChange={e => setLocal(e.target.value)}
+      onBlur={() => { if (local !== value) onChange(local); }}
+      placeholder={placeholder}
+      style={style}
+    />
+  );
+}
+type NodeDebounce = { enabled?: boolean; delay?: number };
+
+const RULE_TYPE_OPTIONS: { value: ValidationRuleType; label: string; hasValue?: boolean; valuePlaceholder?: string }[] = [
+  { value: 'required',  label: 'Required' },
+  { value: 'email',     label: 'Email' },
+  { value: 'minLength', label: 'Min length', hasValue: true, valuePlaceholder: '2' },
+  { value: 'maxLength', label: 'Max length', hasValue: true, valuePlaceholder: '100' },
+  { value: 'phone',     label: 'Phone' },
+  { value: 'url',       label: 'URL' },
+  { value: 'pattern',   label: 'Pattern (regex)', hasValue: true, valuePlaceholder: '^[a-z]+$' },
+  { value: 'formula',   label: 'Custom formula' },
+];
+const RULE_DEFAULTS: Record<ValidationRuleType, Partial<ValidationRule>> = {
+  required:  { message: 'This field is required' },
+  email:     { message: 'Please enter a valid email address' },
+  minLength: { message: 'Must be at least N characters', value: '2' },
+  maxLength: { message: 'Must be at most N characters', value: '100' },
+  phone:     { message: 'Please enter a valid phone number' },
+  url:       { message: 'Please enter a valid URL' },
+  pattern:   { message: 'Invalid format', value: '' },
+  formula:   { message: 'Invalid value' },
+};
+
+function findSubmitButtonInTree(nodes: SDUINode[]): SDUINode | null {
+  for (const n of nodes) {
+    const actions = (n.actions ?? {}) as Record<string, unknown>;
+    if ((actions.click as Record<string, unknown> | undefined)?.type === 'submitForm') return n;
+    const child = n.children as SDUINode[] | undefined;
+    if (child?.length) { const found = findSubmitButtonInTree(child); if (found) return found; }
+  }
+  return null;
+}
+
+function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SDUINode[] }) {
+  const store = useBuilderStore();
+  const nodeId = (node as { id?: string }).id ?? '';
+  const nodeType = node.type as string;
+
+  // ── Node name (shown for all types) ──────────────────────────────────────────
+  const currentName = (node as { name?: string }).name ?? '';
+  const [nameDraft, setNameDraft] = useState(currentName);
+  useEffect(() => { setNameDraft(currentName); }, [currentName]);
+
+  // Walk up tree to find FormContainer ancestor
+  const formContainerAncestor = useMemo(() => {
+    let current = findParentNode(pageNodes, nodeId);
+    while (current) {
+      if ((current.type as string) === 'FormContainer') return current;
+      const parentId = (current as { id?: string }).id;
+      if (!parentId) break;
+      current = findParentNode(pageNodes, parentId);
+    }
+    return null;
+  }, [pageNodes, nodeId]);
+
+  const nodeActions = (node.actions ?? {}) as Record<string, unknown>;
+  const nodeProps = (node.props ?? {}) as Record<string, unknown>;
+  const nodeExtra = node as unknown as Record<string, unknown>;
+  const validation = nodeExtra._validation as NodeValidation | undefined;
+  const debounce = nodeExtra._debounce as NodeDebounce | undefined;
+
+  // Extract field name from setFormField action
+  const { formFieldSlot, fieldName } = useMemo(() => {
+    for (const [slot, action] of Object.entries(nodeActions)) {
+      if (action && typeof action === 'object') {
+        const a = action as Record<string, unknown>;
+        if (a.type === 'setFormField') {
+          return { formFieldSlot: slot, fieldName: String(a.field ?? '') };
+        }
+        // nested in runMultiple
+        if (a.type === 'runMultiple' && Array.isArray(a.actions)) {
+          const sub = (a.actions as Array<Record<string, unknown>>).find(x => x.type === 'setFormField');
+          if (sub) return { formFieldSlot: slot, fieldName: String(sub.field ?? '') };
+        }
+      }
+    }
+    return { formFieldSlot: null, fieldName: '' };
+  }, [nodeActions]);
+
+  const [fieldNameDraft, setFieldNameDraft] = useState(fieldName);
+  useEffect(() => { setFieldNameDraft(fieldName); }, [fieldName]);
+
+  // Index of the rule whose formula editor is open (-1 = none)
+  const [formulaOpenRuleIdx, setFormulaOpenRuleIdx] = useState(-1);
+
+  useEffect(() => {
+    if (formulaOpenRuleIdx < 0) return;
+    return registerEditorClose(() => setFormulaOpenRuleIdx(-1));
+  }, [formulaOpenRuleIdx]);
+
+  const openRuleFormula = (e: React.MouseEvent, idx: number) => {
+    e.stopPropagation();
+    if (formulaOpenRuleIdx === idx) { setFormulaOpenRuleIdx(-1); return; }
+    closeAllEditors();
+    setFormulaOpenRuleIdx(idx);
+  };
+
+  // ── helpers ──────────────────────────────────────────────────────────────────
+
+  const commitName = (value: string) => {
+    const trimmed = value.trim() || undefined;
+    if (trimmed === currentName) return;
+    store.patchNodeField(nodeId, 'name', trimmed);
+  };
+
+  const syncValidationToAction = (nextValidation: NodeValidation) => {
+    const rules = nextValidation.rules ?? [];
+    const reqRule = rules.find(r => r.type === 'required');
+
+    // 1. Update the InputField's setFormField action (for on-change validation)
+    if (formFieldSlot) {
+      const action = nodeActions[formFieldSlot] as Record<string, unknown>;
+      if (action) {
+        const validationPatch = {
+          validationTrigger: nextValidation.trigger ?? 'submit',
+          required: !!reqRule,
+          requiredMessage: reqRule?.message,
+          validationRules: rules,
+        };
+        if (action.type === 'setFormField') {
+          store.patchNodeField(nodeId, 'actions', {
+            ...nodeActions,
+            [formFieldSlot]: { ...action, ...validationPatch },
+          });
+        } else if (action.type === 'runMultiple' && Array.isArray(action.actions)) {
+          const updated = (action.actions as Array<Record<string, unknown>>).map(x =>
+            x.type === 'setFormField' ? { ...x, ...validationPatch } : x
+          );
+          store.patchNodeField(nodeId, 'actions', { ...nodeActions, [formFieldSlot]: { ...action, actions: updated } });
+        }
+      }
+    }
+
+    // 2. Also update the submit button's fieldValidations so submitForm knows about this field's rules
+    if (formContainerAncestor && fieldName) {
+      const submitBtn = findSubmitButtonInTree((formContainerAncestor.children ?? []) as SDUINode[]);
+      if (submitBtn) {
+        const sbId = (submitBtn as unknown as { id?: string }).id ?? '';
+        if (!sbId) return;
+        const sbActions = (submitBtn.actions ?? {}) as Record<string, unknown>;
+        const clickAction = sbActions.click as Record<string, unknown> | undefined;
+        if (clickAction?.type === 'submitForm') {
+          const existingFV = (clickAction.fieldValidations ?? {}) as Record<string, unknown>;
+          store.patchNodeField(sbId, 'actions', {
+            ...sbActions,
+            click: {
+              ...clickAction,
+              fieldValidations: {
+                ...existingFV,
+                [fieldName]: { required: !!reqRule, requiredMessage: reqRule?.message, validationRules: rules },
+              },
+            },
+          });
+        }
+      }
+    }
+  };
+
+  const patchValidation = (patch: Partial<NodeValidation>) => {
+    const next = { ...(validation ?? {}), ...patch } as NodeValidation;
+    store.patchNodeField(nodeId, '_validation', next);
+    syncValidationToAction(next);
+  };
+
+  const validationRules = (validation?.rules ?? []) as ValidationRule[];
+  const validationTrigger = (validation?.trigger ?? 'submit') as 'submit' | 'change';
+
+  const addRule = () => {
+    const type: ValidationRuleType = 'required';
+    const newRule: ValidationRule = { type, ...RULE_DEFAULTS[type] } as ValidationRule;
+    patchValidation({ rules: [...validationRules, newRule] });
+  };
+  const updateRule = (idx: number, patch: Partial<ValidationRule>) => {
+    patchValidation({ rules: validationRules.map((r, i) => i === idx ? { ...r, ...patch } : r) });
+  };
+  const changeRuleType = (idx: number, newType: ValidationRuleType) => {
+    patchValidation({ rules: validationRules.map((r, i) => i === idx ? { type: newType, message: r.message || (RULE_DEFAULTS[newType].message ?? ''), ...( RULE_DEFAULTS[newType].value !== undefined ? { value: RULE_DEFAULTS[newType].value } : {} ) } as ValidationRule : r) });
+  };
+  const removeRule = (idx: number) => {
+    if (formulaOpenRuleIdx === idx) setFormulaOpenRuleIdx(-1);
+    patchValidation({ rules: validationRules.filter((_, i) => i !== idx) });
+  };
+
+  const syncDebounceToAction = (next: NodeDebounce) => {
+    if (!formFieldSlot) return;
+    const action = nodeActions[formFieldSlot] as Record<string, unknown>;
+    if (!action) return;
+    if (action.type === 'setFormField') {
+      store.patchNodeField(nodeId, 'actions', {
+        ...nodeActions,
+        [formFieldSlot]: { ...action, _debounce: next },
+      });
+    } else if (action.type === 'runMultiple' && Array.isArray(action.actions)) {
+      const updated = (action.actions as Array<Record<string, unknown>>).map(x =>
+        x.type === 'setFormField' ? { ...x, _debounce: next } : x
+      );
+      store.patchNodeField(nodeId, 'actions', { ...nodeActions, [formFieldSlot]: { ...action, actions: updated } });
+    }
+  };
+
+  const patchDebounce = (patch: Partial<NodeDebounce>) => {
+    const next = { ...(debounce ?? {}), ...patch };
+    store.patchNodeField(nodeId, '_debounce', next);
+    syncDebounceToAction(next);
+  };
+
+  const patchProp = (key: string, value: unknown) => {
+    store.patchNodeField(nodeId, 'props', { ...nodeProps, [key]: value });
+  };
+
+  const patchInitialValue = (value: unknown) => {
+    store.patchNodeField(nodeId, '_initialValue', value);
+    // Sync to FormContainer's initialFormData so the field is pre-populated on mount
+    if (formContainerAncestor && fieldName) {
+      const fcId = (formContainerAncestor as { id?: string }).id ?? '';
+      if (fcId) {
+        const fcProps = (formContainerAncestor.props ?? {}) as Record<string, unknown>;
+        const current = (fcProps.initialFormData ?? {}) as Record<string, unknown>;
+        store.patchNodeField(fcId, 'props', { ...fcProps, initialFormData: { ...current, [fieldName]: value } });
+      }
+    }
+  };
+
+  const commitFieldName = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed || !formFieldSlot) return;
+    const oldName = fieldName;
+
+    // 1. Update setFormField action's field property
+    const action = nodeActions[formFieldSlot] as Record<string, unknown>;
+    if (action.type === 'setFormField') {
+      store.patchNodeField(nodeId, 'actions', { ...nodeActions, [formFieldSlot]: { ...action, field: trimmed } });
+    } else if (action.type === 'runMultiple' && Array.isArray(action.actions)) {
+      const updated = (action.actions as Array<Record<string, unknown>>).map(x =>
+        x.type === 'setFormField' ? { ...x, field: trimmed } : x
+      );
+      store.patchNodeField(nodeId, 'actions', { ...nodeActions, [formFieldSlot]: { ...action, actions: updated } });
+    }
+
+    // 2. Update node.name to match the new field name (field name IS the display name)
+    store.patchNodeField(nodeId, 'name', trimmed);
+
+    // 3. Rename the key in FormContainer's initialFormData so the formula path stays in sync
+    if (oldName && oldName !== trimmed && formContainerAncestor) {
+      const fcId = (formContainerAncestor as { id?: string }).id ?? '';
+      const fcProps = (formContainerAncestor.props ?? {}) as Record<string, unknown>;
+      const oldData = (fcProps.initialFormData ?? {}) as Record<string, unknown>;
+      if (oldName in oldData) {
+        const { [oldName]: oldVal, ...rest } = oldData;
+        store.patchNodeField(fcId, 'props', { ...fcProps, initialFormData: { ...rest, [trimmed]: oldVal } });
+      }
+    }
+  };
+
+  const isReadOnly = !!(nodeProps.readOnly ?? nodeProps.isReadOnly);
+  const autocomplete = nodeProps.autoComplete as string | undefined;
+  const placeholder = (nodeProps.placeholder as string | undefined) ?? '';
+  const initValue = ((node as Record<string, unknown>)._initialValue as string | undefined) ?? '';
+  const debounceEnabled = debounce?.enabled ?? false;
+  const debounceDelay = debounce?.delay ?? 500;
+
+  // Input type — map raw prop to option value
+  const rawInputType = (nodeProps.type as string | undefined) ?? 'text';
+  const currentInputType = rawInputType === 'number' && nodeProps.step === '0.01' ? 'decimal' : rawInputType;
+
+  // Button submit detection
+  const isSubmitButton = (nodeActions.click as Record<string, unknown> | undefined)?.type === 'submitForm';
+
+  const selectInputType = (val: string) => {
+    if (val === 'decimal' || val === 'currency') {
+      store.patchNodeField(nodeId, 'props', { ...nodeProps, type: 'number', step: '0.01' });
+    } else {
+      const { step: _s, ...rest } = nodeProps as Record<string, unknown>;
+      void _s;
+      store.patchNodeField(nodeId, 'props', { ...rest, type: val });
+    }
+  };
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+
+      {/* ── Name (all types; hidden when inside FormContainer — field name serves as name) ── */}
+      {!formContainerAncestor && (
+        <div style={{ borderBottom: '1px solid #1f2937', padding: '8px 12px' }}>
+          <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 4, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Name</div>
+          <input
+            data-testid="settings-name-input"
+            value={nameDraft}
+            onChange={e => setNameDraft(e.target.value)}
+            onBlur={e => commitName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { commitName(nameDraft); (e.target as HTMLInputElement).blur(); } }}
+            placeholder={`e.g. ${nodeType}`}
+            style={{ width: '100%', boxSizing: 'border-box' as const, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '4px 7px', outline: 'none' }}
+          />
+        </div>
+      )}
+
+      {/* ── Button-specific: Submit toggle ───────────────────────────────────── */}
+      {nodeType === 'Button' && (
+        <div style={{ borderBottom: '1px solid #1f2937', padding: '8px 0 4px' }}>
+          <div style={{ padding: '0 12px 4px', fontSize: 10, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Button</div>
+          <SettingsRow label="Submit">
+            <div data-testid="submit-toggle" style={{ display: 'flex', background: '#1f2937', borderRadius: 4, padding: 2, gap: 2 }}>
+              {[true, false].map(val => (
+                <button
+                  key={String(val)}
+                  data-testid={val ? 'submit-toggle-on' : 'submit-toggle-off'}
+                  style={{
+                    padding: '2px 10px', fontSize: 10, border: 'none', cursor: 'pointer',
+                    borderRadius: 3, fontWeight: 500,
+                    background: isSubmitButton === val ? '#374151' : 'transparent',
+                    color: isSubmitButton === val ? '#f3f4f6' : '#6b7280',
+                  }}
+                  onClick={() => {
+                    if (val) {
+                      store.patchNodeField(nodeId, 'actions', { ...nodeActions, click: { type: 'submitForm' } });
+                    } else {
+                      const { click: _c, ...rest } = nodeActions as Record<string, unknown>;
+                      void _c;
+                      store.patchNodeField(nodeId, 'actions', Object.keys(rest).length ? rest : undefined);
+                    }
+                  }}
+                >
+                  {val ? 'On' : 'Off'}
+                </button>
+              ))}
+            </div>
+          </SettingsRow>
+        </div>
+      )}
+
+      {/* ── For non-input, non-button types: show nothing more ───────────────── */}
+      {!SETTINGS_INPUT_TYPES.has(nodeType) && nodeType !== 'Button' && (
+        <div style={{ padding: 16, color: '#4b5563', fontSize: 11, textAlign: 'center' }}>
+          No specific settings for this element
+        </div>
+      )}
+
+      {/* ── Form Container Section (input types only) ────────────────────────── */}
+      {SETTINGS_INPUT_TYPES.has(nodeType) && nodeType !== 'Button' && formContainerAncestor && (
+        <div style={{ borderBottom: '1px solid #1f2937', padding: '8px 0 4px' }}>
+          <div style={{ padding: '0 12px 4px', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 12 11 14 15 10"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+            </svg>
+            <span style={{ fontSize: 10, color: '#10b981', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Form container</span>
+          </div>
+
+          {/* Field name */}
+          <SettingsRow label="Field name">
+            <BindingIcon isBound={false} onClick={() => {}} />
+            <input
+              data-testid="settings-field-name-input"
+              value={fieldNameDraft}
+              onChange={e => setFieldNameDraft(e.target.value)}
+              onBlur={e => commitFieldName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { commitFieldName(fieldNameDraft); (e.target as HTMLInputElement).blur(); } }}
+              placeholder="e.g. email"
+              style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', width: 110, boxSizing: 'border-box' as const }}
+            />
+          </SettingsRow>
+
+          {/* Validation trigger */}
+          <SettingsRow label="Validate">
+            <select
+              data-testid="settings-validation-trigger"
+              value={validationTrigger}
+              onChange={e => patchValidation({ trigger: e.target.value as 'submit' | 'change' })}
+              style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 6px', outline: 'none', flex: 1, maxWidth: 160 }}
+            >
+              <option value="submit">On form submit</option>
+              <option value="change">On input change</option>
+            </select>
+          </SettingsRow>
+
+          {/* ── Validation rules list ──────────────────────────────────────────── */}
+          <div style={{ padding: '4px 12px 2px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <span style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rules</span>
+              <button
+                onClick={addRule}
+                style={{ fontSize: 10, color: '#a78bfa', background: 'none', border: '1px solid #4c1d95', borderRadius: 3, padding: '1px 7px', cursor: 'pointer' }}
+              >
+                + Add rule
+              </button>
+            </div>
+
+            {validationRules.length === 0 && (
+              <div style={{ fontSize: 10, color: '#4b5563', padding: '4px 0 6px', fontStyle: 'italic' }}>No rules — click + Add rule</div>
+            )}
+
+            {validationRules.map((rule, idx) => {
+              const opt = RULE_TYPE_OPTIONS.find(o => o.value === rule.type);
+              const isFormulaOpen = formulaOpenRuleIdx === idx;
+              return (
+                <div key={idx} style={{ marginBottom: 6, background: '#0f1929', borderRadius: 4, border: '1px solid #1f2937', padding: '5px 6px' }}>
+                  {/* Row 1: type + message + remove */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <select
+                      value={rule.type}
+                      onChange={e => changeRuleType(idx, e.target.value as ValidationRuleType)}
+                      style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 3, color: '#f3f4f6', fontSize: 10, padding: '2px 4px', outline: 'none', flexShrink: 0, width: 100 }}
+                    >
+                      {RULE_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                    {rule.type !== 'formula' && !opt?.hasValue && (
+                      <RuleMessageInput
+                        value={rule.message}
+                        onChange={v => updateRule(idx, { message: v })}
+                        style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 3, color: '#d1d5db', fontSize: 10, padding: '2px 5px', outline: 'none', flex: 1, minWidth: 0 }}
+                      />
+                    )}
+                    <button
+                      onClick={() => removeRule(idx)}
+                      style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 13, lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+                      title="Remove rule"
+                    >×</button>
+                  </div>
+
+                  {/* Row 2: value input (minLength / maxLength / pattern) */}
+                  {opt?.hasValue && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                      <span style={{ fontSize: 9, color: '#6b7280', flexShrink: 0 }}>Value</span>
+                      <RuleValueInput
+                        value={rule.value ?? ''}
+                        onChange={v => updateRule(idx, { value: v })}
+                        placeholder={opt.valuePlaceholder ?? ''}
+                        style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 3, color: '#d1d5db', fontSize: 10, padding: '2px 5px', outline: 'none', width: 70 }}
+                      />
+                      <RuleMessageInput
+                        value={rule.message}
+                        onChange={v => updateRule(idx, { message: v })}
+                        style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 3, color: '#d1d5db', fontSize: 10, padding: '2px 5px', outline: 'none', flex: 1, minWidth: 0 }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Row 2: formula editor (formula type) */}
+                  {rule.type === 'formula' && (
+                    <div style={{ marginTop: 4 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ position: 'relative', flex: 1 }}>
+                          <button
+                            onClick={e => openRuleFormula(e, idx)}
+                            style={{ padding: '2px 8px', background: isFormulaOpen ? '#3b0764' : '#2e1065', border: '1px solid #7c3aed', borderRadius: 4, color: '#a78bfa', fontSize: 10, cursor: 'pointer', fontWeight: 500, width: '100%', textAlign: 'left' }}
+                          >
+                            ƒ {rule.formula ? 'Edit formula' : 'Add formula'}
+                          </button>
+                          {isFormulaOpen && (
+                            <FormulaEditor
+                              label="Validation formula"
+                              value={rule.formula ?? null}
+                              expectedType="any"
+                              hint='true = valid · false = invalid · "Error message" = invalid with message'
+                              anchor="right"
+                              hideUnbind
+                              onChange={v => { updateRule(idx, { formula: v }); setFormulaOpenRuleIdx(-1); }}
+                              onClose={() => setFormulaOpenRuleIdx(-1)}
+                            />
+                          )}
+                        </div>
+                      </div>
+                      <RuleMessageInput
+                        value={rule.message}
+                        onChange={v => updateRule(idx, { message: v })}
+                        placeholder="Error message (fallback)"
+                        style={{ marginTop: 4, background: '#111827', border: '1px solid #1f2937', borderRadius: 3, color: '#d1d5db', fontSize: 10, padding: '2px 5px', outline: 'none', width: '100%', boxSizing: 'border-box' as const }}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Specific section (input types only) ──────────────────────────────── */}
+      {SETTINGS_INPUT_TYPES.has(nodeType) && nodeType !== 'Button' && (
+        <div style={{ padding: '8px 0 4px' }}>
+          <div style={{ padding: '0 12px 6px', fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Specific</div>
+
+          {/* Input type (Input and InputField only) */}
+          {(nodeType === 'Input' || nodeType === 'InputField') && (
+            <SettingsRow label="Input type">
+              <select
+                data-testid="settings-input-type-select"
+                value={currentInputType}
+                onChange={e => selectInputType(e.target.value)}
+                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 6px', outline: 'none', flex: 1, maxWidth: 150 }}
+              >
+                {INPUT_TYPE_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </SettingsRow>
+          )}
+
+          {/* Init value */}
+          <SettingsRow label="Init value">
+            <FieldWithBinding
+              label="Init value"
+              value={initValue as import('./_formula-panel').FormulaValue}
+              onChange={v => patchInitialValue(v)}
+              expectedType="string"
+            >
+              <input
+                value={initValue}
+                onChange={e => patchInitialValue(e.target.value)}
+                placeholder=""
+                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', width: 130, boxSizing: 'border-box' as const }}
+              />
+            </FieldWithBinding>
+          </SettingsRow>
+
+          {/* Placeholder */}
+          <SettingsRow label="Placeholder">
+            <FieldWithBinding
+              label="Placeholder"
+              value={placeholder as import('./_formula-panel').FormulaValue}
+              onChange={v => patchProp('placeholder', v)}
+              expectedType="string"
+            >
+              <input
+                value={placeholder}
+                onChange={e => patchProp('placeholder', e.target.value)}
+                placeholder="Placeholder"
+                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', width: 130, boxSizing: 'border-box' as const }}
+              />
+            </FieldWithBinding>
+          </SettingsRow>
+
+          {/* Autocomplete */}
+          <SettingsRow label="Autocomplete">
+            <BindingIcon isBound={false} onClick={() => {}} />
+            <OnOffToggle value={autocomplete !== 'new-password' && autocomplete !== 'off'} onChange={v => patchProp('autoComplete', v ? 'on' : 'new-password')} />
+          </SettingsRow>
+
+          {/* Debounce */}
+          <SettingsRow label="Debounce">
+            <OnOffToggle value={debounceEnabled} onChange={v => patchDebounce({ enabled: v })} />
+          </SettingsRow>
+
+          {/* Delay (only when debounce is on) */}
+          {debounceEnabled && (
+            <SettingsRow label="Delay">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  type="number"
+                  value={debounceDelay}
+                  min={0}
+                  max={5000}
+                  step={50}
+                  onChange={e => patchDebounce({ delay: Math.max(0, Number(e.target.value)) })}
+                  style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 5px', outline: 'none', width: 52, textAlign: 'center' as const }}
+                />
+                <span style={{ fontSize: 10, color: '#6b7280', flexShrink: 0 }}>ms</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={2000}
+                  step={50}
+                  value={debounceDelay}
+                  onChange={e => patchDebounce({ delay: Number(e.target.value) })}
+                  style={{ flex: 1, accentColor: '#3b82f6', width: 60 }}
+                />
+              </div>
+            </SettingsRow>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 // ─── Align / Distribute Panel ─────────────────────────────────────────────────
 

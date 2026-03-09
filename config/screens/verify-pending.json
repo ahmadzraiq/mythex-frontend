@@ -59,14 +59,11 @@
                 "text": "Back to Sign In"
               }
             ],
-            "actions": {
-              "click": {
-                "action": "navigate",
-                "payload": {
-                  "path": "/sign-in"
-                }
+            "actions": [
+              {
+                "action": "3517ed88-9e35-42fd-8d44-650cb590d210"
               }
-            }
+            ]
           }
         ]
       }

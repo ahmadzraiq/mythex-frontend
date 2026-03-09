@@ -54,14 +54,11 @@
                         "props": {
                           "className": "inline-flex items-center justify-center min-w-[200px] h-11 px-8 rounded-lg bg-[var(--theme-shop-button)] hover:bg-[var(--theme-shop-buttonHover)]"
                         },
-                        "actions": {
-                          "click": {
-                            "action": "navigate",
-                            "payload": {
-                              "path": "/search"
-                            }
+                        "actions": [
+                          {
+                            "action": "2283a150-1c0a-46a8-bee0-bf9ba12033c7"
                           }
-                        },
+                        ],
                         "children": [
                           {
                             "type": "Text",
@@ -77,14 +74,11 @@
                         "props": {
                           "className": "inline-flex flex-row items-center justify-center gap-2 min-w-[200px] h-11 px-8 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-content-bg)] hover:bg-[var(--theme-hero-bg)]"
                         },
-                        "actions": {
-                          "click": {
-                            "action": "navigate",
-                            "payload": {
-                              "path": "/search"
-                            }
+                        "actions": [
+                          {
+                            "action": "2283a150-1c0a-46a8-bee0-bf9ba12033c7"
                           }
-                        },
+                        ],
                         "children": [
                           {
                             "type": "Text",
@@ -142,15 +136,11 @@
                         "props": {
                           "className": "group w-full text-left bg-[var(--theme-content-bg)] rounded-lg overflow-hidden border border-[var(--theme-border)] hover:shadow-lg transition-shadow duration-150"
                         },
-                        "actions": {
-                          "click": {
-                            "action": "navigate",
-                            "payload": {
-                              "routeConfig": "product",
-                              "slug": "{{context.item.slug}}"
-                            }
+                        "actions": [
+                          {
+                            "action": "f6046c33-0164-45b5-86aa-0710fc408247"
                           }
-                        },
+                        ],
                         "children": [
                           {
                             "type": "Box",
@@ -161,19 +151,19 @@
                               {
                                 "type": "NextImage",
                                 "props": {
-                                  "src": "{{context.item.productAsset.preview}}",
-                                  "alt": "{{context.item.productName}}",
+                                  "src": "{{context.item.data.productAsset.preview}}",
+                                  "alt": "{{context.item.data.productName}}",
                                   "fill": true,
                                   "className": "object-cover group-hover:scale-105 transition-transform duration-300"
                                 },
-                                "condition": "{{context.item.productAsset.preview}}"
+                                "condition": "{{context.item.data.productAsset.preview}}"
                               },
                               {
                                 "type": "Box",
                                 "props": {
                                   "className": "w-full h-full flex items-center justify-center"
                                 },
-                                "condition": "!{{context.item.productAsset.preview}}",
+                                "condition": "!{{context.item.data.productAsset.preview}}",
                                 "children": [
                                   {
                                     "type": "Text",
@@ -198,7 +188,7 @@
                                   "size": "sm",
                                   "className": "font-medium text-[var(--theme-foreground)] line-clamp-2 hover:opacity-70 transition-opacity"
                                 },
-                                "text": "{{context.item.productName}}"
+                                "text": "{{context.item.data.productName}}"
                               },
                               {
                                 "type": "Text",
@@ -206,7 +196,7 @@
                                   "className": "text-lg font-bold text-[var(--theme-foreground)]"
                                 },
                                 "text": {
-                                  "expr": "{{context.item.priceWithTax.__typename}} === 'SinglePrice' ? formatCurrency({{context.item.priceWithTax.value}}, {{context.item.currencyCode}}) : 'from ' + formatCurrency({{context.item.priceWithTax.min}}, {{context.item.currencyCode}})"
+                                  "expr": "{{context.item.data.priceWithTax.__typename}} === 'SinglePrice' ? formatCurrency({{context.item.data.priceWithTax.value}}, {{context.item.data.currencyCode}}) : 'from ' + formatCurrency({{context.item.data.priceWithTax.min}}, {{context.item.data.currencyCode}})"
                                 }
                               }
                             ]

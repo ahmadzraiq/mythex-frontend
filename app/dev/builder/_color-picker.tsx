@@ -150,7 +150,18 @@ function ColorPopover({
   hexInput, setHexInput, handleHexCommit, themeOverrides, selectedCssVar, editingCssVar, editingDefaultHex,
 }: PopoverProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const colorRafRef = useRef<number | null>(null);
+  const nativeInputRef = useRef<HTMLInputElement>(null);
   const displayColor = value.startsWith('#') ? value : '#000000';
+
+  // Sync native color input when value changes externally (e.g. swatch click) without
+  // making the input controlled — a controlled <input type="color"> re-renders the
+  // popover on every hue-wheel mousemove even with rAF throttling.
+  useEffect(() => {
+    if (nativeInputRef.current && nativeInputRef.current !== document.activeElement) {
+      nativeInputRef.current.value = displayColor;
+    }
+  }, [displayColor]);
 
   // When no editingCssVar (right panel), highlight first matching swatch — when multiple match (e.g. #ffffff = Background, Card, Destructive Text), prefer first in list
   const singleMatchCssVar = (() => {
@@ -221,9 +232,20 @@ function ColorPopover({
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <input
+            ref={nativeInputRef}
             type="color"
-            value={displayColor}
-            onChange={e => { setHexInput(e.target.value); onSelect(e.target.value, ''); /* '' = no swatch */ }}
+            defaultValue={displayColor}
+            onChange={e => {
+              const hex = e.target.value;
+              // rAF-throttle: batch both the hex display update and the store write
+              // into one frame so rapid hue-wheel drags don't cause per-event re-renders.
+              if (colorRafRef.current !== null) cancelAnimationFrame(colorRafRef.current);
+              colorRafRef.current = requestAnimationFrame(() => {
+                setHexInput(hex);
+                onSelect(hex, '');
+                colorRafRef.current = null;
+              });
+            }}
             style={{ width: 38, height: 38, padding: 0, border: '1px solid #374151', borderRadius: 6, background: 'none', cursor: 'pointer', flexShrink: 0 }}
           />
           <div style={{ flex: 1 }}>
@@ -258,6 +280,8 @@ export interface FigmaColorPickerProps {
   value: string;
   /** Called with the resolved hex and, when a theme swatch was clicked, its cssVar so the caller can store `var(--cssVar)` instead of a hardcoded hex */
   onChange: (hex: string, cssVar?: string) => void;
+  /** Called once when the popover closes — use to push a history snapshot after a color drag gesture. */
+  onCommit?: () => void;
   label?: string;
   testId?: string;
   /** When set (e.g. Theme panel editing a specific var), only that swatch is highlighted initially — avoids multiple highlights when vars share the same hex */
@@ -269,7 +293,7 @@ export interface FigmaColorPickerProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-export function FigmaColorPicker({ value, onChange, label, testId, editingCssVar, editingDefaultHex, open: controlledOpen, onOpenChange }: FigmaColorPickerProps) {
+export function FigmaColorPicker({ value, onChange, onCommit, label, testId, editingCssVar, editingDefaultHex, open: controlledOpen, onOpenChange }: FigmaColorPickerProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [hexInput, setHexInput]       = useState(value);
   const [anchorRect, setAnchorRect]   = useState<DOMRect | null>(null);
@@ -279,6 +303,8 @@ export function FigmaColorPicker({ value, onChange, label, testId, editingCssVar
   // Track whether the value change was triggered internally (swatch/hex input click)
   // so we do NOT reset selectedCssVar on the echo-back from the parent.
   const isInternalChangeRef = useRef(false);
+  const onCommitRef = useRef(onCommit);
+  useEffect(() => { onCommitRef.current = onCommit; }, [onCommit]);
 
   const isControlled = controlledOpen !== undefined && onOpenChange !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
@@ -286,16 +312,19 @@ export function FigmaColorPicker({ value, onChange, label, testId, editingCssVar
     const next = typeof v === 'function' ? v(open) : v;
     if (isControlled) onOpenChange!(next);
     else setInternalOpen(next);
+    // Fire onCommit when the picker closes so the caller can push a history snapshot.
+    if (!next) onCommitRef.current?.();
   }, [isControlled, onOpenChange, open]);
 
   useEffect(() => {
     if (isInternalChangeRef.current) {
-      // Internal change: only sync hexInput, preserve selectedCssVar highlight
+      // Internal change echoing back from the store — picker is driving the value,
+      // skip the hex re-sync to avoid an extra setState per rAF frame.
       isInternalChangeRef.current = false;
-      setHexInput(value);
       return;
     }
-    // External change (e.g. different node selected): reset everything
+    // External change (e.g. different node selected, or picker is closed):
+    // reset hex input and clear any swatch highlight.
     setHexInput(value);
     setSelectedCssVar(null);
   }, [value]);

@@ -38,29 +38,11 @@
           }
         }
       ],
-      "actions": {
-        "click": {
-          "type": "runMultiple",
-          "actions": [
-            {
-              "type": "decrement",
-              "path": "a6b7c8d9-e0f1-2345-abcd-456789012345",
-              "amount": "{{collectionPageSize}}"
-            },
-            {
-              "action": "fetchCollection"
-            },
-            {
-              "action": "navigate",
-              "payload": {
-                "path": {
-                  "expr": "cat({{route.path}}, '?page=', max(1, max(1, floor(({{variables['a6b7c8d9-e0f1-2345-abcd-456789012345']}} || 0) / ({{collectionPageSize}} || 12) + 1)) - 1))"
-                }
-              }
-            }
-          ]
+      "actions": [
+        {
+          "action": "5f0b09fc-9aed-4a27-a60d-d44a3b5a37c9"
         }
-      }
+      ]
     },
     {
       "type": "Box",
@@ -110,24 +92,11 @@
               "text": "{{$item}}"
             }
           ],
-          "actions": {
-            "click": {
-              "type": "runMultiple",
-              "actions": [
-                {
-                  "type": "goToPage",
-                  "page": "{{$item}}",
-                  "pageSize": "{{collectionPageSize}}"
-                },
-                {
-                  "action": "navigate",
-                  "payload": {
-                    "path": "{{route.path}}?page={{$item}}"
-                  }
-                }
-              ]
+          "actions": [
+            {
+              "action": "184bea54-8bde-4fd0-a4fd-e3f6766d99b8"
             }
-          }
+          ]
         }
       ]
     },
@@ -164,29 +133,11 @@
           }
         }
       ],
-      "actions": {
-        "click": {
-          "type": "runMultiple",
-          "actions": [
-            {
-              "type": "increment",
-              "path": "a6b7c8d9-e0f1-2345-abcd-456789012345",
-              "amount": "{{collectionPageSize}}"
-            },
-            {
-              "action": "fetchCollection"
-            },
-            {
-              "action": "navigate",
-              "payload": {
-                "path": {
-                  "expr": "cat({{route.path}}, '?page=', min(max(1, ceil(({{collections.d4e5f6a7-b8c9-0123-defa-234567890123.data.search.totalItems}} || 0) / ({{collectionPageSize}} || 12))), max(1, floor(({{variables['a6b7c8d9-e0f1-2345-abcd-456789012345']}} || 0) / ({{collectionPageSize}} || 12) + 1)) + 1))"
-                }
-              }
-            }
-          ]
+      "actions": [
+        {
+          "action": "585677d0-57d6-4868-b6f9-f1adf2d3215e"
         }
-      }
+      ]
     }
   ]
 }

@@ -19,9 +19,13 @@
           "children": [
             {
               "type": "NextImage",
-              "condition": { "expr": "at({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.assets}}, {{variables['d5e6f7a8-b9c0-1234-defa-345678901234']}} || 0)" },
+              "condition": {
+                "expr": "at({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.assets}}, {{variables['d5e6f7a8-b9c0-1234-defa-345678901234']}} || 0)"
+              },
               "props": {
-                "src": { "expr": "getKeyValue(at({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.assets}}, {{variables['d5e6f7a8-b9c0-1234-defa-345678901234']}} || 0), 'source')" },
+                "src": {
+                  "expr": "getKeyValue(at({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.assets}}, {{variables['d5e6f7a8-b9c0-1234-defa-345678901234']}} || 0), 'source')"
+                },
                 "alt": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.name}}",
                 "fill": true,
                 "className": "object-cover",
@@ -41,11 +45,11 @@
                   "props": {
                     "className": "h-10 w-10 rounded-full bg-[var(--theme-content-bg)]/80 hover:bg-[var(--theme-content-bg)] border border-[var(--theme-border)] flex flex-row items-center justify-center"
                   },
-                  "actions": {
-                    "click": {
-                      "action": "prevProductImage"
+                  "actions": [
+                    {
+                      "action": "84c5de07-4f71-44a3-904a-020758146a5f"
                     }
-                  },
+                  ],
                   "children": [
                     {
                       "type": "NavIcon",
@@ -70,11 +74,11 @@
                   "props": {
                     "className": "h-10 w-10 rounded-full bg-[var(--theme-content-bg)]/80 hover:bg-[var(--theme-content-bg)] border border-[var(--theme-border)] flex flex-row items-center justify-center"
                   },
-                  "actions": {
-                    "click": {
-                      "action": "nextProductImage"
+                  "actions": [
+                    {
+                      "action": "b5760629-bb22-4ace-a567-406e1afe14d1"
                     }
-                  },
+                  ],
                   "children": [
                     {
                       "type": "NavIcon",
@@ -142,16 +146,16 @@
               "props": {
                 "className": "aspect-square relative rounded-lg overflow-hidden border-2 transition-colors"
               },
-              "actions": {
-                "click": {
-                  "action": "selectProductImage"
+              "actions": [
+                {
+                  "action": "59bc7c99-d110-4e01-8563-de6371d2147e"
                 }
-              },
+              ],
               "children": [
                 {
                   "type": "NextImage",
                   "props": {
-                    "src": "{{context.item.preview}}",
+                    "src": "{{context.item.data.preview}}",
                     "alt": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.name}}",
                     "fill": true,
                     "className": "object-cover w-full h-full",

@@ -45,7 +45,7 @@
         "condition": { "oneOf": [{ "type": "string" }, { "type": "object" }] },
         "map": { "oneOf": [{ "type": "string" }, { "type": "object", "properties": { "expr": {} }, "required": ["expr"] }] },
         "key": { "type": "string" },
-        "actions": { "type": "object" },
+        "actions": { "oneOf": [{ "type": "object" }, { "type": "array" }] },
         "$ref": { "type": "string", "pattern": "^fragments/" },
         "$slot": { "type": "string" }
       },

@@ -228,25 +228,28 @@ function insertPastedFormulaAtCaret(
  *   globalContext.browser(?.['key'])*  |  globalContext.screen(?.['key'])*
  *   pages['UUID'](?.['key'])*
  *   theme.(colors|sections|fonts)(?.['key'])*
+ *   local.data(?.['key'])*   — weWeb-style FormContainer local state
  */
 // context.item supports both optional-chaining (context.item?.['k']) and dot notation (context.item.a.b)
-const CHIP_RE = /collections\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|variables\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|context\.(?:item|index|parent)(?:(?:\?\.\['[^']*'\]|\?\.\[\d+\])|(?:\.\w+))*|globalContext\.(?:browser|screen)(?:\?\.\['[^']*'\])*|pages\['[^']+'\](?:\?\.\['[^']*'\])*|theme\.(?:colors|sections|fonts)(?:\?\.\['[^']*'\])*/g;
+// theme supports both theme.colors?.['k'] and theme?.['colors']?.['k']
+const CHIP_RE = /collections\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|variables\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|local\.data(?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|context\.(?:item|index|parent)(?:(?:\?\.\['[^']*'\]|\?\.\[\d+\])|(?:\.\w+))*|globalContext\.(?:browser|screen)(?:\?\.\['[^']*'\])*|pages\['[^']+'\](?:\?\.\['[^']*'\])*|theme(?:\.(?:colors|sections|fonts|radius)|\?\.\['(?:colors|sections|fonts|radius)'\])(?:\?\.\['[^']*'\]|\.\w+)*/g;
 
 const CHIP_INNER_CSS = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;display:block';
 
 const CHIP_STYLE: Record<string, string> = {
   collection: 'background:#1d4ed8;color:#bfdbfe;border:1px solid #2563eb',
-  variable:   'background:#15803d;color:#bbf7d0;border:1px solid #16a34a',
+  variable:   'background:#0f766e;color:#ccfbf1;border:1px solid #0d9488',
   context:    'background:#7c3aed;color:#e9d5ff;border:1px solid #8b5cf6',
   pages:      'background:#0e7490;color:#cffafe;border:1px solid #0891b2',
   theme:      'background:#b45309;color:#fef3c7;border:1px solid #d97706',
+  form:       'background:#c2410c;color:#ffedd5;border:1px solid #ea580c',
 };
 
 /** Build a chip <span> element (not yet inserted into DOM). */
 function buildChipSpan(
   formulaPath: string,
   displayLabel: string,
-  type: 'collection' | 'variable' | 'context' | 'pages' | 'theme',
+  type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form',
 ): HTMLSpanElement {
   const span = document.createElement('span');
   span.contentEditable = 'false';
@@ -254,7 +257,21 @@ function buildChipSpan(
   span.dataset.formula = formulaPath;
   const colors = CHIP_STYLE[type] ?? CHIP_STYLE.variable;
   span.style.cssText =
-    colors + ';border-radius:5px;padding:2px 4px;display:inline-flex;align-items:center;font-size:11px;line-height:1.4;cursor:default;vertical-align:middle;margin:0 1px;font-family:monospace;font-weight:600';
+    colors + ';border-radius:5px;padding:2px 4px;display:inline-flex;align-items:center;gap:3px;font-size:11px;line-height:1.4;cursor:default;vertical-align:middle;margin:0 1px;font-family:monospace;font-weight:600';
+
+  // Add color swatch for theme color chips
+  if (type === 'theme' && formulaPath.includes("'colors'")) {
+    const colorKeyMatch = formulaPath.match(/\?\.\['([^']+)'\]\s*$/);
+    const colorKey = colorKeyMatch?.[1];
+    const tc = (themeConfig as Record<string, unknown>).colors as Record<string, string> | undefined;
+    const colorValue = colorKey && tc ? tc[colorKey] : undefined;
+    if (colorValue) {
+      const swatch = document.createElement('span');
+      swatch.style.cssText = `width:10px;height:10px;border-radius:2px;background:${colorValue};border:1px solid rgba(255,255,255,0.2);flex-shrink:0;display:inline-block`;
+      span.appendChild(swatch);
+    }
+  }
+
   const inner = document.createElement('span');
   inner.textContent = displayLabel;
   inner.setAttribute('title', displayLabel);
@@ -268,7 +285,7 @@ function insertChipAtCaret(
   editorEl: HTMLElement,
   formulaPath: string,
   displayLabel: string,
-  type: 'collection' | 'variable' | 'context' | 'pages' | 'theme',
+  type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form',
 ): void {
   editorEl.focus();
   const sel = window.getSelection();
@@ -522,6 +539,25 @@ function populateEditor(
       }
       const displayLabel = buildDisplayLabel(base, segs);
       el.appendChild(buildChipSpan(formulaPath, displayLabel, 'variable'));
+    } else if (formulaPath.startsWith('local.data')) {
+      // Normalize dot-notation to optional-chaining so the chip stores a consistent path.
+      // e.g. local.data.form.formData.username → local.data?.['form']?.['formData']?.['username']
+      const after = formulaPath.slice('local.data'.length);
+      let normalized: string;
+      if (!after || after.startsWith("?.['")) {
+        normalized = formulaPath; // already in optional-chaining format or bare local.data
+      } else {
+        // Plain dot notation: .form.formData.username
+        normalized = 'local.data';
+        for (const seg of after.slice(1).split('.')) {
+          if (seg) normalized += `?.['${seg}']`;
+        }
+      }
+      // Friendly display: local.data.form.formData.username
+      const friendly = normalized
+        .replace(/\?\.\['([^']+)'\]/g, '.$1')
+        .replace(/\?\.\[(\d+)\]/g, '[$1]');
+      el.appendChild(buildChipSpan(normalized, friendly, 'form'));
     } else if (formulaPath.startsWith('context.')) {
       // Convert dot-notation to optional-chaining for the stored formula path
       if (!formulaPath.includes("?.['")) {
@@ -542,8 +578,14 @@ function populateEditor(
     } else if (formulaPath.startsWith('pages[')) {
       const friendly = formulaPath.replace(/\?\.\['([^']+)'\]/g, '.$1').replace(/\?\.\[(\d+)\]/g, '[$1]');
       el.appendChild(buildChipSpan(formulaPath, friendly, 'pages'));
-    } else if (formulaPath.startsWith('theme.')) {
-      const friendly = formulaPath.replace(/\?\.\['([^']+)'\]/g, '.$1').replace(/\?\.\[(\d+)\]/g, '[$1]');
+    } else if (formulaPath.startsWith('theme.') || formulaPath.startsWith('theme?.')) {
+      // Detect category then show prefixed label, e.g. "Color - background", "Typography - heading", "Radius - sm"
+      const categoryMatch = formulaPath.match(/theme\??\.?\[?'?(colors|sections|fonts|radius)'\]?\??/);
+      const category = categoryMatch?.[1] ?? '';
+      const prefix = category === 'colors' ? 'Color' : category === 'fonts' ? 'Typography' : category === 'radius' ? 'Radius' : category === 'sections' ? 'Section' : '';
+      const lastKeyMatch = formulaPath.match(/\?\.\['([^']+)'\]\s*$/) ?? formulaPath.match(/\.(\w+)\s*$/);
+      const leaf = lastKeyMatch?.[1] ?? formulaPath;
+      const friendly = prefix ? `${prefix} - ${leaf}` : leaf;
       el.appendChild(buildChipSpan(formulaPath, friendly, 'theme'));
     }
     lastEnd = match.index + formulaPath.length;
@@ -561,7 +603,7 @@ function populateEditor(
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Tab = 'variables' | 'data' | 'formulas';
+type Tab = 'variables' | 'data' | 'formulas' | 'quick';
 
 export interface FormulaEditorProps {
   label: string;
@@ -582,6 +624,13 @@ export interface FormulaEditorProps {
    * placed after the 248px left panel). When set, takes precedence over `anchor`.
    */
   anchorLeft?: number;
+  /**
+   * Override the right position in pixels (e.g. 292 for the workflow canvas whose right
+   * panel is 288px wide). When set, takes precedence over `anchor` and `anchorLeft`.
+   */
+  anchorRight?: number;
+  /** When true, the Unbind button in the header is hidden */
+  hideUnbind?: boolean;
 }
 
 // ─── Function Library ─────────────────────────────────────────────────────────
@@ -595,20 +644,20 @@ interface FnDef {
 }
 
 const FUNCTION_LIBRARY: Record<string, FnDef[]> = {
-  CONDITIONAL: [
+  Conditional: [
     { name: 'if', signature: 'if(condition, value1, value2)', description: 'Returns value1 if condition is truthy, otherwise value2.', returnType: 'any', insert: 'if(' },
     { name: 'ifEmpty', signature: 'ifEmpty(value, fallback)', description: 'Returns value if it is not empty, otherwise returns fallback.', returnType: 'any', insert: 'ifEmpty(' },
     { name: 'not', signature: 'not(value)', description: 'Inverts a boolean — true becomes false, false becomes true.', returnType: 'boolean', insert: 'not(' },
     { name: 'switch', signature: 'switch(expression, case1, result1, ...default)', description: 'Tests expression against each case value and returns the matching result. Last argument is the default.', returnType: 'any', insert: 'switch(' },
   ],
-  MATH: [
+  Math: [
     { name: 'average', signature: 'average(...values)', description: 'Returns the average of all provided numbers or array values.', returnType: 'number', insert: 'average(' },
     { name: 'rollupSum', signature: 'rollupSum(array, key)', description: 'Sums the value of a specific key across all objects in an array.', returnType: 'number', insert: 'rollupSum(' },
     { name: 'round', signature: 'round(number, precision?)', description: 'Rounds a number. Optional precision sets the number of decimal places (default 0).', returnType: 'number', insert: 'round(' },
     { name: 'sum', signature: 'sum(...values)', description: 'Sums all provided numbers or an array of numbers.', returnType: 'number', insert: 'sum(' },
     { name: 'toNumber', signature: 'toNumber(value)', description: 'Converts a string to a number.', returnType: 'number', insert: 'toNumber(' },
   ],
-  ARRAY: [
+  Array: [
     { name: 'add', signature: 'add(array, ...values)', description: 'Adds one or more values to the end of an array (like push). Returns new array.', returnType: 'array', insert: 'add(' },
     { name: 'contains', signature: 'contains(array, value)', description: 'Returns true if value exists in the array.', returnType: 'boolean', insert: 'contains(' },
     { name: 'createArray', signature: 'createArray(...values)', description: 'Creates a new array from the provided values.', returnType: 'array', insert: 'createArray(' },
@@ -635,7 +684,7 @@ const FUNCTION_LIBRARY: Record<string, FnDef[]> = {
     { name: 'sort', signature: 'sort(array, order?, key?)', description: 'Sorts an array in "asc" or "desc" order. Provide key for arrays of objects.', returnType: 'array', insert: 'sort(' },
     { name: 'flat', signature: 'flat(array, depth?)', description: 'Flattens nested arrays into a single array up to the given depth (default 1).', returnType: 'array', insert: 'flat(' },
   ],
-  TEXT: [
+  Text: [
     { name: 'capitalize', signature: 'capitalize(text)', description: 'Capitalizes the first letter of each word in the string.', returnType: 'string', insert: 'capitalize(' },
     { name: 'concatenate', signature: 'concatenate(...values)', description: 'Joins multiple strings into one.', returnType: 'string', insert: 'concatenate(' },
     { name: 'contains', signature: 'contains(text, substring)', description: 'Returns true if substring exists within text.', returnType: 'boolean', insert: 'contains(' },
@@ -647,7 +696,7 @@ const FUNCTION_LIBRARY: Record<string, FnDef[]> = {
     { name: 'toText', signature: 'toText(value)', description: 'Converts a number, boolean, or array to a string.', returnType: 'string', insert: 'toText(' },
     { name: 'uppercase', signature: 'uppercase(text)', description: 'Converts a string to uppercase.', returnType: 'string', insert: 'uppercase(' },
   ],
-  OBJECT: [
+  Object: [
     { name: 'createObject', signature: 'createObject(key1, value1, ...)', description: 'Creates an object from key-value pairs.', returnType: 'object', insert: 'createObject(' },
     { name: 'getKeyValue', signature: 'getKeyValue(object, key)', description: 'Returns the value for a given key in an object.', returnType: 'any', insert: 'getKeyValue(' },
     { name: 'compare', signature: 'compare(object1, object2)', description: 'Returns true if both objects have the same keys and values.', returnType: 'boolean', insert: 'compare(' },
@@ -657,13 +706,23 @@ const FUNCTION_LIBRARY: Record<string, FnDef[]> = {
     { name: 'setKeyValue', signature: 'setKeyValue(object, key, value)', description: 'Returns a new object with the given key set to value.', returnType: 'object', insert: 'setKeyValue(' },
     { name: 'values', signature: 'values(object)', description: 'Returns all values of an object as an array.', returnType: 'array', insert: 'values(' },
   ],
-  UTILS: [
+  Utils: [
     { name: 'toBool', signature: 'toBool(value)', description: 'Converts a value to boolean based on truthiness or falsiness.', returnType: 'boolean', insert: 'toBool(' },
   ],
-  FORMAT: [
+  Format: [
     { name: 'formatCurrency', signature: 'formatCurrency(amount, currencyCode, locale?)', description: 'Formats a number as currency. amount is in the smallest unit (e.g. cents). currencyCode is e.g. "USD". Optional locale defaults to "en-US".', returnType: 'string', insert: 'formatCurrency(' },
     { name: 'formatDate', signature: 'formatDate(date, format?)', description: 'Formats a date string or timestamp. Optional format: "short", "long", "iso" (default "short").', returnType: 'string', insert: 'formatDate(' },
     { name: 'formatNumber', signature: 'formatNumber(number, decimals?, locale?)', description: 'Formats a number with decimal places and locale-aware separators.', returnType: 'string', insert: 'formatNumber(' },
+  ],
+  Validation: [
+    { name: 'isEmail', signature: 'isEmail(value)', description: 'Returns true if value is a valid email address.', returnType: 'boolean', insert: 'isEmail(' },
+    { name: 'isEmpty', signature: 'isEmpty(value)', description: 'Returns true if value is null, empty string, or empty array.', returnType: 'boolean', insert: 'isEmpty(' },
+    { name: 'isNotEmpty', signature: 'isNotEmpty(value)', description: 'Returns true if value is not null, not empty string, and not empty array.', returnType: 'boolean', insert: 'isNotEmpty(' },
+    { name: 'hasMinLength', signature: 'hasMinLength(value, n)', description: 'Returns true if value has at least n characters.', returnType: 'boolean', insert: 'hasMinLength(' },
+    { name: 'hasMaxLength', signature: 'hasMaxLength(value, n)', description: 'Returns true if value has at most n characters.', returnType: 'boolean', insert: 'hasMaxLength(' },
+    { name: 'isPhone', signature: 'isPhone(value)', description: 'Returns true if value looks like a valid phone number.', returnType: 'boolean', insert: 'isPhone(' },
+    { name: 'isUrl', signature: 'isUrl(value)', description: 'Returns true if value is a valid URL.', returnType: 'boolean', insert: 'isUrl(' },
+    { name: 'matchesPattern', signature: 'matchesPattern(value, pattern)', description: 'Returns true if value matches the given regular expression pattern.', returnType: 'boolean', insert: 'matchesPattern(' },
   ],
 };
 
@@ -1006,7 +1065,7 @@ const TYPE_BADGE_COLOR: Record<string, string> = {
 interface VarRowItem {
   formulaPath: string;
   displayLabel: string;
-  type: 'variable' | 'context' | 'pages' | 'theme';
+  type: 'variable' | 'context' | 'pages' | 'theme' | 'form';
   typeName: string;
   /** Sub-items for expandable types (form fields, object keys, etc.) */
   children?: VarRowItem[];
@@ -1119,88 +1178,341 @@ const ITEM_CONTEXT_VARS: VarRowItem[] = [
   { formulaPath: "context?.['item']?.['parent']", displayLabel: 'item.parent', type: 'context', typeName: 'object' },
 ];
 
-function VarRow({
-  item,
-  depth,
-  onSelect,
-  expanded,
-  onToggle,
+
+// ─── Variable Entry (mirrors CollectionEntry exactly, purple instead of blue) ──
+
+const VAR_CHIP = { bg: '#0f766e', bgHover: '#0d9488', border: '#0d9488', text: '#ccfbf1' };
+
+function VariableEntry({
+  variable,
+  liveValue,
+  onInsert,
+  search,
 }: {
-  item: VarRowItem;
-  depth: number;
-  onSelect: (formulaPath: string, displayLabel: string, type: VarRowItem['type']) => void;
-  expanded: Set<string>;
-  onToggle: (key: string) => void;
+  variable: import('./_store').CustomVar;
+  liveValue: unknown;
+  onInsert: (formulaPath: string, displayLabel: string, type: VarRowItem['type']) => void;
+  search: string;
 }) {
-  const isExpanded = expanded.has(item.formulaPath);
-  const hasChildren = (item.children?.length ?? 0) > 0;
-  const paddingLeft = 10 + depth * 12;
+  const [isOpen, setIsOpen] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [arrayIndices, setArrayIndices] = useState<Map<string, number>>(new Map());
+
+  const rootPath = `variables['${variable.id}']`;
+  const label = variable.label ?? variable.name ?? variable.id ?? '';
+
+  // For form variables, build a structured live object; otherwise use the live value
+  const treeData: unknown = (() => {
+    if (variable.type === 'form' && variable.fields) {
+      const live = (liveValue ?? {}) as Record<string, unknown>;
+      const value: Record<string, unknown> = {};
+      const errors: Record<string, unknown> = {};
+      for (const f of variable.fields) {
+        value[f.name] = (live.value as Record<string, unknown> | undefined)?.[f.name] ?? f.initialValue ?? '';
+        errors[f.name] = (live.errors as Record<string, unknown> | undefined)?.[f.name] ?? null;
+      }
+      return { value, errors, valid: (live.valid as boolean | undefined) ?? false };
+    }
+    return liveValue ?? variable.initialValue;
+  })();
+
+  // Convert DataTreeNode dot-path → variables['uuid']?.['seg1']?.['seg2'] chip path
+  const handleNodeInsert = useCallback((nodePath: string) => {
+    const uuid = variable.id ?? '';
+    const after = nodePath.replace(new RegExp(`^variables\\['${uuid}'\\]\\.?`), '');
+    const chained = after ? after.split('.').filter(Boolean).map(p => `?.['${p}']`).join('') : '';
+    const fp = `variables['${uuid}']${chained}`;
+    const friendly = after || label;
+    onInsert(fp, friendly, 'variable');
+  }, [variable.id, label, onInsert]);
+
+  const toggleExpand = (p: string) => setExpanded(prev => { const n = new Set(prev); n.has(p) ? n.delete(p) : n.add(p); return n; });
+  const setArrayIndex = (p: string, idx: number) => setArrayIndices(prev => new Map(prev).set(p, idx));
+
+  // useEffect must be before any conditional return (Rules of Hooks)
+  useEffect(() => { if (search) setIsOpen(true); }, [search]);
+
+  const lq = search.toLowerCase();
+  if (lq && !label.toLowerCase().includes(lq)) return null;
+
+  const isUndefined = treeData === undefined;
 
   return (
-    <>
-      <button
-        onClick={() => {
-          if (hasChildren) onToggle(item.formulaPath);
-          else onSelect(item.formulaPath, item.displayLabel, item.type);
-        }}
-        title={item.formulaPath}
-        style={{
-          display: 'flex', width: '100%', alignItems: 'center', gap: 4,
-          padding: `2px 10px 2px ${paddingLeft}px`,
-          background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
-        }}
-        onMouseEnter={ev => (ev.currentTarget.style.background = '#1f2937')}
-        onMouseLeave={ev => (ev.currentTarget.style.background = 'none')}
+    <div>
+      {/* Header row — matches CollectionEntry exactly */}
+      <div
+        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', cursor: 'default' }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
       >
-        {hasChildren && (
-          <span style={{ fontSize: 8, color: '#6b7280', flexShrink: 0 }}>{isExpanded ? '▾' : '▸'}</span>
-        )}
-        {!hasChildren && <span style={{ width: 10, flexShrink: 0 }} />}
-        <span style={{
-          fontSize: 8, color: TYPE_COLOR[item.typeName] ?? '#9ca3af',
-          background: TYPE_BADGE_COLOR[item.typeName] ?? '#1f2937',
-          borderRadius: 2, padding: '0 3px', flexShrink: 0, fontFamily: 'monospace',
-        }}>
-          {item.typeName.slice(0, 3)}
+        {/* Chevron — click to expand/collapse */}
+        <span
+          style={{ color: '#4b5563', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: 'pointer', padding: '2px' }}
+          onClick={() => setIsOpen(o => !o)}
+        >
+          <FEChevron open={isOpen} size={8} />
         </span>
-        {item._colorValue && (
-          <span style={{
-            width: 10, height: 10, borderRadius: 2, flexShrink: 0,
-            background: item._colorValue, border: '1px solid rgba(255,255,255,0.2)',
-            display: 'inline-block',
-          }} />
-        )}
-        <span style={{ fontSize: 10, color: '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-          {item.displayLabel}
-          {item._colorValue && (
-            <span style={{ fontSize: 9, color: '#6b7280', marginLeft: 4 }}>{item._colorValue}</span>
+        {/* Pill — click inserts root variable */}
+        <div
+          style={{ display: 'inline-flex', alignItems: 'center', background: VAR_CHIP.bg, border: `1px solid ${VAR_CHIP.border}`, borderRadius: 5, padding: '2px 6px', flexShrink: 0, cursor: 'pointer' }}
+          onClick={() => onInsert(rootPath, label, 'variable')}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = VAR_CHIP.bgHover; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = VAR_CHIP.bg; }}
+        >
+          <span style={{ fontSize: 11, color: VAR_CHIP.text, fontWeight: 600, fontFamily: 'monospace' }}>{label}</span>
+        </div>
+        {/* Live value preview for primitives; status for undefined */}
+        {isUndefined ? (
+          <span style={{ fontSize: 9, color: '#374151', fontStyle: 'italic', marginLeft: 'auto' }}>not set</span>
+        ) : typeof treeData !== 'object' || treeData === null ? (
+          <span style={{ fontSize: 10, color: FE_VALUE_COLOR[feInferType(treeData)] ?? '#9ca3af', fontFamily: 'monospace', marginLeft: 'auto', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {feValuePreview(treeData)}
+          </span>
+        ) : null}
+      </div>
+
+      {/* Expanded data tree — identical pattern to CollectionEntry */}
+      {isOpen && (
+        <div>
+          {isUndefined ? (
+            <div style={{ padding: '3px 10px 5px 34px', fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>
+              No value set yet
+            </div>
+          ) : typeof treeData === 'object' && treeData !== null && !Array.isArray(treeData) ? (
+            Object.entries(treeData as Record<string, unknown>).map(([k, v]) => (
+              <DataTreeNode
+                key={k} fieldName={k} path={`${rootPath}.${k}`} value={v}
+                depth={1} onInsert={handleNodeInsert}
+                expanded={expanded} toggleExpand={toggleExpand}
+                arrayIndices={arrayIndices} setArrayIndex={setArrayIndex}
+                chipColor={VAR_CHIP}
+              />
+            ))
+          ) : Array.isArray(treeData) ? (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 8px 3px 28px' }}>
+                <span style={{ fontSize: 9, color: VAR_CHIP.text, fontFamily: 'monospace', fontWeight: 700, minWidth: 14 }}>[]</span>
+                <select
+                  value={arrayIndices.get(rootPath) ?? 0}
+                  onChange={e => { e.stopPropagation(); setArrayIndex(rootPath, Number(e.target.value)); }}
+                  onClick={e => e.stopPropagation()}
+                  style={{ background: '#1f2937', color: '#d1d5db', border: '1px solid #374151', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
+                >
+                  {Array.from({ length: Math.min((treeData as unknown[]).length, 50) }, (_, i) => (
+                    <option key={i} value={i}>{i}</option>
+                  ))}
+                </select>
+                <span style={{ fontSize: 9, color: '#4b5563' }}>{(treeData as unknown[]).length} items</span>
+              </div>
+              {(treeData as unknown[]).length > 0 && (() => {
+                const idx = arrayIndices.get(rootPath) ?? 0;
+                return (
+                  <DataTreeNode
+                    fieldName={`${label}[${idx}]`} path={`${rootPath}[${idx}]`} value={(treeData as unknown[])[idx]}
+                    depth={1} onInsert={handleNodeInsert}
+                    expanded={expanded} toggleExpand={toggleExpand}
+                    arrayIndices={arrayIndices} setArrayIndex={setArrayIndex}
+                    chipColor={VAR_CHIP}
+                  />
+                );
+              })()}
+            </div>
+          ) : (
+            <div style={{ padding: '3px 10px 5px 34px', fontSize: 10, color: FE_VALUE_COLOR[feInferType(treeData)] ?? '#9ca3af', fontFamily: 'monospace' }}>
+              {feValuePreview(treeData)}
+            </div>
           )}
-        </span>
-        {!hasChildren && (
-          <span style={{ fontSize: 9, color: '#4b5563', marginLeft: 'auto', flexShrink: 0 }}>↗</span>
-        )}
-      </button>
-      {hasChildren && isExpanded && item.children!.map(child => (
-        <VarRow
-          key={child.formulaPath}
-          item={child}
-          depth={depth + 1}
-          onSelect={onSelect}
-          expanded={expanded}
-          onToggle={onToggle}
-        />
-      ))}
-    </>
+        </div>
+      )}
+    </div>
   );
 }
 
-function SectionHeader({ label, color = '#4b5563' }: { label: string; color?: string }) {
+// ─── Variables tab ────────────────────────────────────────────────────────────
+
+const FORM_CC = { bg: '#c2410c', border: '#ea580c', text: '#ffedd5' };
+/** Top-level controlled components (Input wraps InputField; we show Input not InputField) */
+const STANDALONE_CONTROLLED_TYPES = new Set(['Input', 'Textarea', 'Checkbox', 'Select']);
+
+/** Extract field names from a FormContainer's subtree (setFormField actions or initialFormData) */
+function extractFormFieldNames(formNode: { props?: { initialFormData?: Record<string, unknown> }; children?: Array<{ type?: string; actions?: Record<string, unknown>; props?: Record<string, unknown>; children?: unknown[] }> }): string[] {
+  const fromInitial = formNode.props?.initialFormData ? Object.keys(formNode.props.initialFormData) : [];
+  const fromActions = new Set<string>();
+  function walk(nodes: unknown[]) {
+    for (const n of nodes || []) {
+      const node = n as { type?: string; actions?: Record<string, unknown>; children?: unknown[] };
+      for (const a of Object.values(node.actions ?? {})) {
+        const action = Array.isArray(a) ? a[0] : a;
+        if (action && typeof action === 'object' && (action as Record<string, unknown>).type === 'setFormField') {
+          const f = (action as Record<string, unknown>).field;
+          if (typeof f === 'string') fromActions.add(f);
+        }
+      }
+      if (node.children?.length) walk(node.children);
+    }
+  }
+  walk(formNode.children ?? []);
+  return [...new Set([...fromInitial, ...fromActions])];
+}
+
+/** Check if node type is a top-level controlled component (for standalone listing) */
+function isStandaloneControlled(type: string): boolean {
+  return STANDALONE_CONTROLLED_TYPES.has(type);
+}
+
+/** Recursively collect FormContainers and standalone controlled components from page tree */
+function collectPageComponents(
+  nodes: import('./_store').SDUINode[],
+  parentInsideForm: boolean
+): { formContainers: Array<{ node: import('./_store').SDUINode; fields: string[] }>; standalones: import('./_store').SDUINode[] } {
+  const formContainers: Array<{ node: import('./_store').SDUINode; fields: string[] }> = [];
+  const standalones: import('./_store').SDUINode[] = [];
+  for (const node of nodes) {
+    const insideForm = parentInsideForm || node.type === 'FormContainer';
+    if (node.type === 'FormContainer') {
+      formContainers.push({ node, fields: extractFormFieldNames(node) });
+    } else if (isStandaloneControlled(node.type as string) && !insideForm) {
+      standalones.push(node);
+    }
+    if (node.children?.length) {
+      const sub = collectPageComponents(node.children as import('./_store').SDUINode[], insideForm);
+      formContainers.push(...sub.formContainers);
+      standalones.push(...sub.standalones);
+    }
+  }
+  return { formContainers, standalones };
+}
+
+function PageComponentsSection({
+  onInsert,
+  search,
+}: {
+  onInsert: (formulaPath: string, displayLabel: string, type: VarRowItem['type']) => void;
+  search: string;
+}) {
+  const [open, setOpen] = useState(true);
+  const pageNodes = useBuilderStore(s => s.pageNodes);
+  const vsData = getGlobalVariableStore()(state => state.data);
+
+  const { formContainers, standalones } = useMemo(
+    () => collectPageComponents(pageNodes, false),
+    [pageNodes]
+  );
+
+  const formState = useMemo(() => {
+    const local = (vsData['local'] ?? {}) as Record<string, unknown>;
+    const data = (local['data'] ?? {}) as Record<string, unknown>;
+    return (data['form'] ?? { formData: {}, fields: {} }) as { formData: Record<string, unknown>; fields: Record<string, { value: unknown }> };
+  }, [vsData]);
+
+  const componentsData = (vsData['components'] ?? {}) as Record<string, Record<string, unknown>>;
+  const lq = search.toLowerCase();
+
+  const handleInsertForm = (subPath: string, label: string) => {
+    const segs = subPath.split('.').filter(Boolean);
+    let formula = 'local.data';
+    for (const seg of segs) formula += `?.['${seg}']`;
+    onInsert(formula, `local.data.${subPath}`, 'form');
+  };
+
+  const handleInsertComponent = (nodeId: string, subPath: string) => {
+    const formula = `components?.['${nodeId}']?.['${subPath}']`;
+    onInsert(formula, `components.${nodeId}.${subPath}`, 'form');
+  };
+
+  const hasAny = formContainers.length > 0 || standalones.length > 0;
+  if (!hasAny) return null;
+
+  const matchesSearch = (label: string) => !lq || label.toLowerCase().includes(lq);
+
   return (
-    <div style={{
-      fontSize: 9, color, textTransform: 'uppercase', letterSpacing: '0.08em',
-      padding: '8px 12px 3px', fontWeight: 700, borderTop: '1px solid #1f2937',
-    }}>
-      {label}
+    <div style={{ borderTop: '1px solid #1f2937' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
+      >
+        <span style={{ color: '#e2e8f0' }}><FEChevron open={open} size={8} /></span>
+        <span style={{ fontSize: 10, color: '#e2e8f0', fontWeight: 600, letterSpacing: '0.05em' }}>From components in current page</span>
+        <span style={{ fontSize: 9, color: '#374151', marginLeft: 'auto' }}>{formContainers.length + standalones.length}</span>
+      </button>
+      {open && (
+        <div style={{ paddingLeft: 8, paddingBottom: 8 }}>
+          {formContainers.map(({ node, fields }) => {
+            const label = ((node as { name?: string }).name || 'Form container').trim() || 'Form container';
+            if (!matchesSearch(label) && !matchesSearch('form')) return null;
+            return (
+              <div key={node.id} style={{ paddingTop: 4 }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px', cursor: 'pointer' }}
+                  onClick={() => handleInsertForm('form', 'local.data.form')}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                >
+                  <ContextGroupPill icon="{}" label={label} bg={FORM_CC.bg} border={FORM_CC.border} textColor={FORM_CC.text} />
+                </div>
+                <div style={{ paddingLeft: 16 }}>
+                  <div
+                    onClick={() => handleInsertForm('form', 'local.data.form')}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2px 12px', cursor: 'pointer' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                  >
+                    <ContextGroupPill icon="{}" label="form" bg={FORM_CC.bg} border={FORM_CC.border} textColor={FORM_CC.text} />
+                  </div>
+                  {fields.map(fieldName => {
+                    if (!matchesSearch(fieldName)) return null;
+                    const val = formState.formData?.[fieldName];
+                    const displayVal = val === undefined ? '""' : JSON.stringify(val);
+                    return (
+                      <div
+                        key={fieldName}
+                        onClick={() => handleInsertForm(`form.formData.${fieldName}`, `local.data.form.formData.${fieldName}`)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2px 12px 2px 28px', cursor: 'pointer' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                      >
+                        <span style={{ background: FORM_CC.bg, color: FORM_CC.text, border: `1px solid ${FORM_CC.border}`, borderRadius: 5, padding: '1px 5px', fontSize: 10, fontWeight: 600, fontFamily: 'monospace' }}>
+                          {fieldName}
+                        </span>
+                        <span style={{ fontSize: 10, color: '#9ca3af', fontFamily: 'monospace', marginLeft: 'auto' }}>{displayVal}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+          {standalones.map(node => {
+            const nodeId = (node as { id?: string }).id;
+            if (!nodeId) return null;
+            const label = ((node as { name?: string }).name || node.type).trim() || 'Input';
+            if (!matchesSearch(label)) return null;
+            const valueNodeId = node.type === 'Input' || node.type === 'Textarea'
+              ? ((node.children as { id?: string }[] | undefined)?.find((c: { type?: string }) => c.type === 'InputField' || c.type === 'TextareaInput')?.id ?? nodeId)
+              : nodeId;
+            const compData = componentsData[valueNodeId];
+            const val = compData?.value;
+            const displayVal = val === undefined ? '""' : JSON.stringify(val);
+            return (
+              <div
+                key={nodeId}
+                onClick={() => handleInsertComponent(valueNodeId, 'value')}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px', cursor: 'pointer' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+              >
+                <span style={{ background: FORM_CC.bg, color: FORM_CC.text, border: `1px solid ${FORM_CC.border}`, borderRadius: 5, padding: '1px 5px', fontSize: 10, fontWeight: 600, fontFamily: 'monospace' }}>
+                  {label}
+                </span>
+                <span style={{ fontSize: 9, color: '#6b7280', marginLeft: 4 }}>- value</span>
+                <span style={{ fontSize: 10, color: '#9ca3af', fontFamily: 'monospace', marginLeft: 'auto' }}>{displayVal}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -1216,110 +1528,84 @@ function VariableTree({
   customVars: import('./_store').CustomVar[];
   varFolders: { id: string; name: string }[];
 }) {
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
-  const onToggle = (key: string) => setExpanded(p => { const n = new Set(p); n.has(key) ? n.delete(key) : n.add(key); return n; });
+  // Subscribe to variable store for live values
+  const [vsState, setVsState] = useState<Record<string, unknown>>(() =>
+    getGlobalVariableStore().getState().getFullState() as Record<string, unknown>
+  );
+  useEffect(() => {
+    const store = getGlobalVariableStore();
+    const unsub = store.subscribe(() => {
+      setVsState(store.getState().getFullState() as Record<string, unknown>);
+    });
+    return unsub;
+  }, []);
 
-  // Build rows from customVars grouped by folder
+  // Group variables by folder, preserving order
   const folderMap = useMemo(() => {
-    const fm: Map<string, VarRowItem[]> = new Map();
+    const fm: Map<string, import('./_store').CustomVar[]> = new Map();
     for (const v of customVars) {
-      if (!v.id) continue; // skip non-UUID vars
+      if (!v.id) continue;
       const folderId = v.folderId ?? 'Other';
       if (!fm.has(folderId)) fm.set(folderId, []);
-      const typeName = v.type ?? 'unknown';
-      const children: VarRowItem[] = [];
-      if (v.type === 'form' && v.fields) {
-        for (const f of v.fields) {
-          children.push({
-            formulaPath: `variables['${v.id}']?.['value']?.['${f.name}']`,
-            displayLabel: `${v.label ?? v.id}.value.${f.name}`,
-            type: 'variable', typeName: f.type ?? 'string',
-          });
-          children.push({
-            formulaPath: `variables['${v.id}']?.['errors']?.['${f.name}']`,
-            displayLabel: `${v.label ?? v.id}.errors.${f.name}`,
-            type: 'variable', typeName: 'string',
-          });
-        }
-        children.push({ formulaPath: `variables['${v.id}']?.['valid']`, displayLabel: `${v.label ?? v.id}.valid`, type: 'variable', typeName: 'boolean' });
-      } else if (v.type === 'object' && v.initialValue && typeof v.initialValue === 'object') {
-        for (const k of Object.keys(v.initialValue as object)) {
-          children.push({
-            formulaPath: `variables['${v.id}']?.['${k}']`,
-            displayLabel: `${v.label ?? v.id}.${k}`,
-            type: 'variable', typeName: typeof (v.initialValue as Record<string, unknown>)[k],
-          });
-        }
-      }
-      fm.get(folderId)!.push({
-        formulaPath: `variables['${v.id}']`,
-        displayLabel: v.label ?? v.name ?? v.id,
-        type: 'variable', typeName,
-        children: children.length > 0 ? children : undefined,
-      });
+      fm.get(folderId)!.push(v);
     }
     return fm;
   }, [customVars]);
 
-  // Order: configured folders first, then "Other"
   const orderedFolders = useMemo(() => {
     const configured = varFolders.map(f => f.id);
     const other = [...folderMap.keys()].filter(id => !configured.includes(id));
     return [...configured, ...other].filter(id => folderMap.has(id));
   }, [varFolders, folderMap]);
 
+  const [folderOpen, setFolderOpen] = useState<Record<string, boolean>>({});
+  const toggleFolder = (id: string) => setFolderOpen(p => ({ ...p, [id]: !(p[id] ?? true) }));
+
   const lq = search.toLowerCase();
 
-  const filterItems = (items: VarRowItem[]): VarRowItem[] =>
-    !lq ? items : items.filter(i =>
-      i.displayLabel.toLowerCase().includes(lq) ||
-      i.formulaPath.toLowerCase().includes(lq) ||
-      i.children?.some(c => c.displayLabel.toLowerCase().includes(lq) || c.formulaPath.toLowerCase().includes(lq))
-    );
-
-
+  if (orderedFolders.length === 0) {
   return (
     <div style={{ overflowY: 'auto', flex: 1 }}>
-
-      {/* ── VARIABLES (user-defined, from config/variables.json) ── */}
-      {orderedFolders.length > 0 && <SectionHeader label="Variables" color="#818cf8" />}
-      {orderedFolders.map(folderId => {
-        const folderName = varFolders.find(f => f.id === folderId)?.name ?? folderId;
-        const items = filterItems(folderMap.get(folderId)!);
-        if (items.length === 0) return null;
-        const key = `folder:${folderId}`;
-        const open = !expanded.has(`close:${key}`);
-        return (
-          <div key={folderId}>
-            <button
-              onClick={() => setExpanded(p => { const n = new Set(p); const ck = `close:${key}`; n.has(ck) ? n.delete(ck) : n.add(ck); return n; })}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, width: '100%', padding: '3px 10px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-            >
-              <span style={{ fontSize: 8, color: '#818cf8' }}>{open ? '▾' : '▸'}</span>
-              <span style={{ fontSize: 9, color: '#818cf8', fontWeight: 600 }}>{folderName}</span>
-            </button>
-            {open && items.map(item => (
-              <VarRow key={item.formulaPath} item={item} depth={1} onSelect={onSelect} expanded={expanded} onToggle={onToggle} />
-            ))}
-          </div>
-        );
-      })}
-
-      {/* ── CONTEXT (always visible, weWeb-style) ── */}
-      <ContextDataSection onInsert={onSelect} />
-
-      {/* ── PAGES ── */}
-      <PagesDataSection onInsert={onSelect} />
-
-      {/* ── THEME ── */}
-      <ColorsDataSection onInsert={onSelect} />
-      <TypographyDataSection onInsert={onSelect} />
-
-      {orderedFolders.length === 0 && (
         <div style={{ padding: '16px', fontSize: 11, color: '#4b5563', fontStyle: 'italic', textAlign: 'center' }}>
-          {search ? 'No variables match' : 'No variables configured'}
-        </div>
-      )}
+          {lq ? 'No variables match' : 'No variables configured'}
+          </div>
+      </div>
+    );
+  }
+
+            return (
+    <div style={{ overflowY: 'auto', flex: 1 }}>
+      {orderedFolders.map(folderId => {
+        const folderLabel = varFolders.find(f => f.id === folderId)?.name ?? folderId;
+        const vars = folderMap.get(folderId)!;
+        const isOpen = folderOpen[folderId] ?? true;
+        return (
+          <div key={folderId} style={{ borderTop: '1px solid #1f2937' }}>
+            {/* Folder header */}
+            <button
+              onClick={() => toggleFolder(folderId)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
+            >
+              <span style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center' }}>
+                <FEChevron open={isOpen} size={8} />
+              </span>
+              <span style={{ fontSize: 10, color: '#e2e8f0', fontWeight: 600, letterSpacing: '0.05em' }}>{folderLabel}</span>
+              <span style={{ fontSize: 9, color: '#374151', marginLeft: 'auto' }}>{vars.length}</span>
+                  </button>
+            {isOpen && vars.map(v => (
+              <VariableEntry
+                key={v.id}
+                variable={v}
+                liveValue={vsState[v.id!]}
+                onInsert={onSelect}
+                search={lq}
+              />
+                ))}
+              </div>
+            );
+          })}
     </div>
   );
 }
@@ -1425,8 +1711,6 @@ function DataTreeNode({
           {fieldName}
         </button>
 
-        {/* ⓘ icon */}
-        <span style={{ fontSize: 9, color: '#374151', flexShrink: 0 }}>ⓘ</span>
 
         {/* Array index selector — inline on the array row */}
         {type === 'array' && Array.isArray(value) && (value as unknown[]).length > 0 && (
@@ -1558,15 +1842,13 @@ function CollectionEntry({ src, onInsert, search }: {
         {/* Blue pill — click to insert collection chip for root path */}
         <div
           data-testid={`fe-collection-pill-${storeKey}`}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#1d4ed8', border: '1px solid #2563eb', borderRadius: 5, padding: '2px 4px', flexShrink: 0, cursor: 'pointer' }}
+          style={{ display: 'inline-flex', alignItems: 'center', background: '#1d4ed8', border: '1px solid #2563eb', borderRadius: 5, padding: '2px 6px', flexShrink: 0, cursor: 'pointer' }}
           onClick={() => onInsert(buildFormulaPath(storeKey, []), displayName, 'collection')}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#2563eb'; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#1d4ed8'; }}
         >
-          <span style={{ fontSize: 9, color: '#bfdbfe' }}>▣</span>
           <span style={{ fontSize: 11, color: '#bfdbfe', fontWeight: 600, fontFamily: 'monospace' }}>{displayName}</span>
         </div>
-        <span style={{ fontSize: 9, color: '#374151', flexShrink: 0 }}>ⓘ</span>
         {data === undefined && (
           <span style={{ fontSize: 9, color: '#374151', fontStyle: 'italic', marginLeft: 'auto' }}>not fetched</span>
         )}
@@ -1737,73 +2019,103 @@ function ContextGroupRow({
   );
 }
 
-/** Dynamic context.item group — reads from selected node's nearest map ancestor */
+/** Dynamic context.item group — shows full weWeb-style structure with data/parent/index/etc. */
 function ItemContextGroup({
   onInsert,
+  initialOpen = false,
 }: {
   onInsert: (formulaPath: string, displayLabel: string, type: VarRowItem['type']) => void;
+  initialOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [open, setOpen] = useState(initialOpen);
+  const [expanded, setExpanded] = useState<Set<string>>(() => initialOpen ? new Set(['data']) : new Set());
   const [arrayIndices, setArrayIndices] = useState<Map<string, number>>(new Map());
   const selectedIds = useBuilderStore(s => s.selectedIds);
   const pageNodes = useBuilderStore(s => s.pageNodes);
   const zustandData = useSduiStore(s => s.data);
 
-  // Find nearest ancestor (or self) with `map` property
-  const mapBinding = useMemo(() => {
+  // Find the nearest map ancestor (for inner repeat) and outer map ancestor (for nested repeat)
+  const { innerMap, outerMap } = useMemo(() => {
     const id = selectedIds[0];
-    if (!id) return null;
+    if (!id) return { innerMap: null, outerMap: null };
     let node = findNode(pageNodes, id);
+    let inner: string | null = null;
+    let outer: string | null = null;
     while (node) {
-      if (node.map) return node.map as string;
+      if (node.map) {
+        if (!inner) { inner = node.map as string; }
+        else if (!outer) { outer = node.map as string; break; }
+      }
       const parent = findParentNode(pageNodes, node.id ?? '');
       node = parent ?? null;
     }
-    return null;
+    return { innerMap: inner, outerMap: outer };
   }, [selectedIds, pageNodes]);
 
-  // Extract data from map binding — e.g. "collections.UUID.data.search.items"
-  const itemData = useMemo(() => {
-    if (!mapBinding) return undefined;
-    // Try to read from zustand store — map binding like "collections.UUID.data.search.items"
+  // Extract first item from a map binding path (e.g. "collections.UUID.data.search.items")
+  const resolveFirstItem = useCallback((mapBinding: string | null): Record<string, unknown> | null => {
+    if (!mapBinding) return null;
     const parts = mapBinding.split('.');
-    // Find the flat key pattern (e.g. "collections.UUID")
-    let data: unknown = null;
     for (let i = 2; i <= parts.length; i++) {
       const key = parts.slice(0, i).join('.');
       if (zustandData[key] !== undefined) {
-        // Navigate remaining parts
         let val: unknown = zustandData[key];
         for (let j = i; j < parts.length; j++) {
           if (val && typeof val === 'object' && !Array.isArray(val)) {
             val = (val as Record<string, unknown>)[parts[j]];
-          } else if (Array.isArray(val) && parts[j] === 'items') {
-            break;
-          } else { val = undefined; break; }
+          } else { break; }
         }
-        if (Array.isArray(val) && val.length > 0) { data = val[0]; break; }
-        if (val !== undefined) { data = val; break; }
+        if (Array.isArray(val) && val.length > 0) return val[0] as Record<string, unknown>;
+        if (val && typeof val === 'object' && !Array.isArray(val)) return val as Record<string, unknown>;
       }
     }
-    return data as Record<string, unknown> | null | undefined;
-  }, [mapBinding, zustandData]);
+    return null;
+  }, [zustandData]);
+
+  const itemData = useMemo(() => resolveFirstItem(innerMap), [resolveFirstItem, innerMap]);
+  const parentData = useMemo(() => resolveFirstItem(outerMap), [resolveFirstItem, outerMap]);
 
   const toggleExpand = (p: string) => setExpanded(prev => { const n = new Set(prev); n.has(p) ? n.delete(p) : n.add(p); return n; });
   const setArrayIndex = (p: string, idx: number) => setArrayIndices(prev => new Map(prev).set(p, idx));
 
-  const handleNodeInsert = (path: string) => {
-    const segs = path.split('.').filter(Boolean);
-    let formula = "context?.['item']";
+  // Convert a dot-path relative to context.item into a formula chip.
+  // Must use "context.item" (dot notation at root) so CHIP_RE can match it.
+  const handleItemInsert = useCallback((dotPath: string) => {
+    const segs = dotPath.split('.').filter(Boolean);
+    // "context.item" prefix so CHIP_RE matches; then optional-chaining brackets for sub-keys
+    let formula = 'context.item';
     for (const seg of segs) formula += `?.['${seg}']`;
-    // Display label: "item.fieldName" (no "context." prefix)
-    onInsert(formula, `item.${path}`, 'context');
-  };
+    // Friendly label: "item.data.productName" (always prefixed with "item.")
+    const friendly = segs.length > 0 ? `item.${segs.join('.')}` : 'item';
+    onInsert(formula, friendly, 'context');
+  }, [onInsert]);
 
-  const itemChipColor = CHIP_COLORS.purple;
+  const cc = CHIP_COLORS.purple;
+
+  // Build the full weWeb-style item context object for display.
+  // All fields — actual data AND repeat metadata — live under `data` so every
+  // path is item.data.xxx (consistent with the runtime structure).
+  const parentCtxValue = parentData
+    ? { data: { ...parentData, index: 0, repeatIndex: 0, isACopy: false, parent: null, repeatedItems: [parentData] } }
+    : null;
+  const fullItemCtx = innerMap ? {
+    data: {
+      ...(itemData ?? {}),
+      index: 0,
+      repeatIndex: 0,
+      isACopy: false,
+      parent: parentCtxValue,
+      repeatedItems: itemData ? [itemData] : [],
+    },
+  } : null;
+
+  const statusLabel = !innerMap ? 'no repeat context'
+    : !itemData ? 'fetch to inspect'
+    : null;
 
   return (
     <div>
+      {/* item row header */}
       <div
         style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px 5px 24px', cursor: 'default' }}
         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
@@ -1816,40 +2128,35 @@ function ItemContextGroup({
           <FEChevron open={open} size={8} />
         </span>
         <div
-          onClick={() => { onInsert("context?.['item']", 'item', 'context'); }}
+          onClick={() => { onInsert('context.item', 'item', 'context'); }}
+          style={{ cursor: 'pointer' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '0.8'; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
         >
-          <ContextGroupPill icon="{}" label="item" bg={itemChipColor.bg} border={itemChipColor.border} textColor={itemChipColor.text} />
+          <ContextGroupPill icon="{}" label="item" bg={cc.bg} border={cc.border} textColor={cc.text} />
         </div>
-        {!mapBinding && (
-          <span style={{ fontSize: 9, color: '#4b5563', fontStyle: 'italic', marginLeft: 4 }}>no repeat context</span>
-        )}
-        {mapBinding && itemData === undefined && (
-          <span style={{ fontSize: 9, color: '#374151', fontStyle: 'italic', marginLeft: 4 }}>fetch to inspect</span>
+        {statusLabel && (
+          <span style={{ fontSize: 9, color: '#4b5563', fontStyle: 'italic', marginLeft: 4 }}>{statusLabel}</span>
         )}
       </div>
-      {open && (
+
+      {/* Expanded: full weWeb-style tree */}
+      {open && fullItemCtx && (
         <div>
-          {!mapBinding ? (
-            <div style={{ padding: '3px 10px 5px 44px', fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>
-              Select a node inside a repeated list
-            </div>
-          ) : !itemData ? (
-            <div style={{ padding: '3px 10px 5px 44px', fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>
-              {itemData === null ? '{empty}' : `Bound to: ${mapBinding}`}
-            </div>
-          ) : (
-            Object.entries(itemData).map(([k, v]) => (
-              <DataTreeNode
-                key={k} fieldName={k} path={k} value={v}
-                depth={3} onInsert={handleNodeInsert}
-                expanded={expanded} toggleExpand={toggleExpand}
-                arrayIndices={arrayIndices} setArrayIndex={setArrayIndex}
-                chipColor={itemChipColor}
-              />
-            ))
-          )}
+          {Object.entries(fullItemCtx).map(([k, v]) => (
+            <DataTreeNode
+              key={k} fieldName={k} path={k} value={v}
+              depth={3} onInsert={handleItemInsert}
+              expanded={expanded} toggleExpand={toggleExpand}
+              arrayIndices={arrayIndices} setArrayIndex={setArrayIndex}
+              chipColor={cc}
+            />
+          ))}
+        </div>
+      )}
+      {open && !fullItemCtx && (
+        <div style={{ padding: '3px 10px 5px 44px', fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>
+          Select a node inside a repeated list
         </div>
       )}
     </div>
@@ -1857,6 +2164,165 @@ function ItemContextGroup({
 }
 
 /** CONTEXT section — weWeb-style: item, Current page, Browser, Screen */
+/** LOCAL section — shows FormContainer's local.data.form.* when inside a FormContainer */
+function FormLocalSection({
+  onInsert,
+}: {
+  onInsert: (formulaPath: string, displayLabel: string, type: VarRowItem['type']) => void;
+}) {
+  const [open, setOpen] = useState(true);
+  // Collapsible expanded state for the DataTreeNode sections
+  const [expanded, setExpanded] = useState<Set<string>>(() =>
+    new Set(['form.formData', 'form.fields'])
+  );
+  const toggleExpand = useCallback((path: string) => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path); else next.add(path);
+      return next;
+    });
+  }, []);
+
+  // Use Zustand selector directly — avoids useSyncExternalStore getSnapshot
+  // instability (getFullState creates a new object every call → infinite loop).
+  const vsData = getGlobalVariableStore()(state => state.data);
+
+  const formState = useMemo(() => {
+    const local = (vsData['local'] ?? {}) as Record<string, unknown>;
+    const data = (local['data'] ?? {}) as Record<string, unknown>;
+    return (data['form'] ?? { formData: {}, fields: {}, isSubmitting: false, isSubmitted: false, isValid: false }) as {
+      formData: Record<string, unknown>;
+      fields: Record<string, { value: unknown; isValid: boolean }>;
+      isSubmitting: boolean;
+      isSubmitted: boolean;
+      isValid: boolean;
+    };
+  }, [vsData]);
+
+  const FORM_CC = { bg: '#c2410c', border: '#ea580c', text: '#ffedd5' };
+
+  const handleInsert = (subPath: string, label: string) => {
+    // Build optional-chaining formula: local.data?.['form']?.['subPath']
+    const segs = subPath.split('.').filter(Boolean);
+    let formula = 'local.data';
+    for (const seg of segs) formula += `?.['${seg}']`;
+    onInsert(formula, `local.data.${subPath}`, 'form');
+  };
+
+  const [localDataOpen, setLocalDataOpen] = useState(true);
+  const [formOpen, setFormOpen] = useState(true);
+
+  return (
+    <div>
+      {/* LOCAL header */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
+      >
+        <span style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
+        <span style={{ fontSize: 10, color: '#e2e8f0', fontWeight: 600, letterSpacing: '0.05em' }}>Local</span>
+      </button>
+
+      {open && (
+        <div style={{ paddingLeft: 8 }}>
+          {/* local.data root pill — collapsible */}
+          <div>
+            <div
+              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 12px', cursor: 'pointer' }}
+              onClick={() => setLocalDataOpen(o => !o)}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+            >
+              <span style={{ color: '#6b7280', display: 'flex', alignItems: 'center', marginRight: 2 }}><FEChevron open={localDataOpen} size={7} /></span>
+              <div
+                onClick={e => { e.stopPropagation(); handleInsert('', 'local.data'); }}
+                style={{ cursor: 'pointer' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '0.8'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+              >
+                <ContextGroupPill icon="{}" label="local.data" bg={FORM_CC.bg} border={FORM_CC.border} textColor={FORM_CC.text} />
+              </div>
+            </div>
+
+            {localDataOpen && (
+              <div style={{ paddingLeft: 16 }}>
+                {/* form pill — collapsible */}
+                <div>
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 12px', cursor: 'pointer' }}
+                    onClick={() => setFormOpen(o => !o)}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                  >
+                    <span style={{ color: '#6b7280', display: 'flex', alignItems: 'center', marginRight: 2 }}><FEChevron open={formOpen} size={7} /></span>
+                    <div
+                      data-testid="formula-local-form-pill"
+                      onClick={e => { e.stopPropagation(); handleInsert('form', 'local.data.form'); }}
+                      style={{ cursor: 'pointer' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '0.8'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+                    >
+                      <ContextGroupPill icon="{}" label="form" bg={FORM_CC.bg} border={FORM_CC.border} textColor={FORM_CC.text} />
+                    </div>
+                  </div>
+
+                  {formOpen && (
+                    <div style={{ paddingLeft: 16 }}>
+                      {/* formData */}
+                      <DataTreeNode
+                        fieldName="formData" path="form.formData" value={formState.formData}
+                        depth={2} onInsert={(dotPath) => handleInsert(dotPath, `local.data.${dotPath}`)}
+                        expanded={expanded} toggleExpand={toggleExpand}
+                        arrayIndices={new Map()} setArrayIndex={() => {}}
+                        chipColor={FORM_CC}
+                      />
+
+                      {/* fields */}
+                      <DataTreeNode
+                        fieldName="fields" path="form.fields" value={formState.fields}
+                        depth={2} onInsert={(dotPath) => handleInsert(dotPath, `local.data.${dotPath}`)}
+                        expanded={expanded} toggleExpand={toggleExpand}
+                        arrayIndices={new Map()} setArrayIndex={() => {}}
+                        chipColor={FORM_CC}
+                      />
+
+                      {/* scalar flags */}
+                      {(['isSubmitting', 'isSubmitted', 'isValid'] as const).map(key => (
+                        <div
+                          key={key}
+                          data-testid={`formula-local-${key}`}
+                          onClick={() => handleInsert(`form.${key}`, `local.data.form.${key}`)}
+                          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 12px', cursor: 'pointer' }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                        >
+                          <span
+                            style={{
+                              background: FORM_CC.bg, color: FORM_CC.text, border: `1px solid ${FORM_CC.border}`,
+                              borderRadius: 5, padding: '1px 5px', fontSize: 10, fontWeight: 600, fontFamily: 'monospace', cursor: 'pointer',
+                            }}
+                          >
+                            {key}
+                          </span>
+                          <span style={{ fontSize: 10, color: String(formState[key]) === 'true' ? '#4ade80' : '#9ca3af', fontFamily: 'monospace', marginLeft: 'auto' }}>
+                            {String(formState[key])}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ContextDataSection({
   onInsert,
 }: {
@@ -1896,8 +2362,8 @@ function ContextDataSection({
         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
       >
-        <span style={{ color: '#6ee7b7', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
-        <span style={{ fontSize: 10, color: '#6ee7b7', fontWeight: 600, letterSpacing: '0.05em' }}>CONTEXT</span>
+        <span style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
+        <span style={{ fontSize: 10, color: '#e2e8f0', fontWeight: 600, letterSpacing: '0.05em' }}>Context</span>
       </button>
       {open && (
         <div>
@@ -1955,8 +2421,8 @@ function PagesDataSection({
         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
       >
-        <span style={{ color: '#93c5fd', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
-        <span style={{ fontSize: 10, color: '#93c5fd', fontWeight: 600, letterSpacing: '0.05em' }}>PAGES</span>
+        <span style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
+        <span style={{ fontSize: 10, color: '#e2e8f0', fontWeight: 600, letterSpacing: '0.05em' }}>Pages</span>
         <span style={{ fontSize: 9, color: '#374151', marginLeft: 'auto' }}>{routes.length}</span>
       </button>
       {open && (
@@ -1984,6 +2450,67 @@ function PagesDataSection({
 }
 
 /** COLORS section — theme colors with swatches */
+// ── Shared theme chip styles ──────────────────────────────────────────────────
+const THEME_CHIP    = { bg: '#92400e', bgHover: '#b45309', border: '#d97706', text: '#fef3c7' } as const;
+const THEME_ACCENT  = '#fdba74'; // unified accent for all theme section headers (COLORS, TYPOGRAPHY, BORDER RADIUS)
+
+/** A single theme row: swatch (optional) + colored chip + value preview */
+function ThemeRow({
+  icon, label, value, formulaPath, displayLabel, onInsert,
+  swatch,
+}: {
+  icon?: string;
+  label: string;
+  value: string;
+  formulaPath: string;
+  displayLabel: string;
+  onInsert: (fp: string, dl: string, t: VarRowItem['type']) => void;
+  swatch?: boolean;
+}) {
+  return (
+    <div
+      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px 4px 24px', cursor: 'pointer' }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+      onClick={() => onInsert(formulaPath, displayLabel, 'theme')}
+    >
+      {/* Color swatch OR text icon */}
+      {swatch
+        ? <span style={{ width: 14, height: 14, borderRadius: 3, background: value, border: '1px solid rgba(255,255,255,0.2)', flexShrink: 0 }} />
+        : <span style={{ fontSize: 10, color: THEME_CHIP.text, fontFamily: 'monospace', fontWeight: 700, flexShrink: 0, minWidth: 16 }}>{icon ?? 'Aa'}</span>
+      }
+      {/* Name chip */}
+      <button
+        style={{ background: THEME_CHIP.bg, color: THEME_CHIP.text, borderRadius: 5, padding: '2px 5px', fontSize: 11, border: `1px solid ${THEME_CHIP.border}`, cursor: 'pointer', fontFamily: 'monospace', fontWeight: 600, flexShrink: 0 }}
+        onClick={e => { e.stopPropagation(); onInsert(formulaPath, displayLabel, 'theme'); }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = THEME_CHIP.bgHover; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = THEME_CHIP.bg; }}
+      >
+        {label}
+      </button>
+      {/* Value preview */}
+      <span style={{ fontSize: 10, color: '#6b7280', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{value}</span>
+    </div>
+  );
+}
+
+/** Reusable collapsible theme section header */
+function ThemeSectionHeader({ open, onToggle, accent, label, count }: { open: boolean; onToggle: () => void; accent: string; label: string; count: number }) {
+  return (
+    <button
+      onClick={onToggle}
+      style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
+    >
+      <span style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
+      <span style={{ fontSize: 10, color: '#e2e8f0', fontWeight: 600, letterSpacing: '0.05em' }}>{label}</span>
+      <span style={{ fontSize: 9, color: '#374151', marginLeft: 'auto' }}>{count}</span>
+    </button>
+  );
+}
+
+/** COLORS section — all theme colors with swatches, consistent pink chips */
 function ColorsDataSection({
   onInsert,
 }: {
@@ -1995,40 +2522,16 @@ function ColorsDataSection({
 
   return (
     <div style={{ borderTop: '1px solid #1f2937' }}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
-      >
-        <span style={{ color: '#f9a8d4', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
-        <span style={{ fontSize: 10, color: '#f9a8d4', fontWeight: 600, letterSpacing: '0.05em' }}>COLORS</span>
-        <span style={{ fontSize: 9, color: '#374151', marginLeft: 'auto' }}>{Object.keys(colors).length}</span>
-      </button>
+      <ThemeSectionHeader open={open} onToggle={() => setOpen(o => !o)} accent={THEME_ACCENT} label="Colors" count={Object.keys(colors).length} />
       {open && (
         <div>
           {Object.entries(colors).map(([k, v]) => (
-            <div
-              key={k}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px 4px 24px', cursor: 'pointer' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-              onClick={() => onInsert(`theme?.['colors']?.['${k}']`, `colors.${k}`, 'theme')}
-            >
-              {/* Color swatch */}
-              <span style={{ width: 12, height: 12, borderRadius: 2, background: v, border: '1px solid rgba(255,255,255,0.15)', flexShrink: 0 }} />
-              {/* Name chip */}
-              <button
-                style={{ background: '#831843', color: '#fce7f3', borderRadius: 5, padding: '2px 4px', fontSize: 11, border: '1px solid #9d174d', cursor: 'pointer', fontFamily: 'monospace', fontWeight: 600 }}
-                onClick={e => { e.stopPropagation(); onInsert(`theme?.['colors']?.['${k}']`, `colors.${k}`, 'theme'); }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#9d174d'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#831843'; }}
-              >
-                {k}
-              </button>
-              {/* Hex value */}
-              <span style={{ fontSize: 10, color: '#6b7280', fontFamily: 'monospace' }}>{v}</span>
-            </div>
+            <ThemeRow
+              key={k} swatch label={k} value={v}
+              formulaPath={`theme?.['colors']?.['${k}']`}
+              displayLabel={`Color - ${k}`}
+              onInsert={onInsert}
+            />
           ))}
         </div>
       )}
@@ -2036,7 +2539,7 @@ function ColorsDataSection({
   );
 }
 
-/** TYPOGRAPHY section — theme fonts */
+/** TYPOGRAPHY section — fonts (heading, body) with live font preview */
 function TypographyDataSection({
   onInsert,
 }: {
@@ -2050,16 +2553,7 @@ function TypographyDataSection({
 
   return (
     <div style={{ borderTop: '1px solid #1f2937' }}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
-      >
-        <span style={{ color: '#c4b5fd', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
-        <span style={{ fontSize: 10, color: '#c4b5fd', fontWeight: 600, letterSpacing: '0.05em' }}>TYPOGRAPHY</span>
-        <span style={{ fontSize: 9, color: '#374151', marginLeft: 'auto' }}>{Object.keys(fonts).length}</span>
-      </button>
+      <ThemeSectionHeader open={open} onToggle={() => setOpen(o => !o)} accent={THEME_ACCENT} label="Typography" count={Object.keys(fonts).length} />
       {open && (
         <div>
           {Object.entries(fonts).map(([k, v]) => (
@@ -2068,18 +2562,75 @@ function TypographyDataSection({
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px 4px 24px', cursor: 'pointer' }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-              onClick={() => onInsert(`theme?.['fonts']?.['${k}']`, `fonts.${k}`, 'theme')}
+              onClick={() => onInsert(`theme?.['fonts']?.['${k}']`, `Typography - ${k}`, 'theme')}
             >
-              <span style={{ fontSize: 10, color: '#c4b5fd', fontFamily: 'monospace', fontWeight: 700 }}>Aa</span>
+              {/* Live font preview */}
+              <span style={{ fontSize: 13, color: THEME_ACCENT, fontWeight: 700, flexShrink: 0, minWidth: 20, letterSpacing: '-0.03em' }}>Aa</span>
               <button
-                style={{ background: '#3b0764', color: '#e9d5ff', borderRadius: 5, padding: '2px 4px', fontSize: 11, border: '1px solid #6d28d9', cursor: 'pointer', fontFamily: 'monospace', fontWeight: 600 }}
-                onClick={e => { e.stopPropagation(); onInsert(`theme?.['fonts']?.['${k}']`, `fonts.${k}`, 'theme'); }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#6d28d9'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#3b0764'; }}
+                style={{ background: THEME_CHIP.bg, color: THEME_CHIP.text, borderRadius: 5, padding: '2px 5px', fontSize: 11, border: `1px solid ${THEME_CHIP.border}`, cursor: 'pointer', fontFamily: 'monospace', fontWeight: 600, flexShrink: 0 }}
+                onClick={e => { e.stopPropagation(); onInsert(`theme?.['fonts']?.['${k}']`, `Typography - ${k}`, 'theme'); }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = THEME_CHIP.bgHover; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = THEME_CHIP.bg; }}
               >
                 {k}
               </button>
-              <span style={{ fontSize: 10, color: '#6b7280', fontFamily: String(v).includes(' ') ? JSON.stringify(v) : v }}>{v}</span>
+              <span style={{ fontSize: 10, color: '#6b7280', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{v}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** BORDER RADIUS section — reads --radius from cssVariables.root + common Tailwind tokens */
+function BorderRadiusDataSection({
+  onInsert,
+}: {
+  onInsert: (formulaPath: string, displayLabel: string, type: VarRowItem['type']) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const tc = themeConfig as Record<string, unknown>;
+  const cssRoot = ((tc.cssVariables as Record<string, unknown> | undefined)?.root ?? {}) as Record<string, string>;
+  const radiusValue = cssRoot['--radius'] ?? '0.5rem';
+
+  // Standard Tailwind border-radius tokens
+  const tokens: Array<{ label: string; value: string; cls: string }> = [
+    { label: 'none',   value: '0px',         cls: 'rounded-none'  },
+    { label: 'sm',     value: '0.125rem',     cls: 'rounded-sm'    },
+    { label: 'base',   value: radiusValue,    cls: 'rounded'       },
+    { label: 'md',     value: '0.375rem',     cls: 'rounded-md'    },
+    { label: 'lg',     value: '0.5rem',       cls: 'rounded-lg'    },
+    { label: 'xl',     value: '0.75rem',      cls: 'rounded-xl'    },
+    { label: '2xl',    value: '1rem',         cls: 'rounded-2xl'   },
+    { label: '3xl',    value: '1.5rem',       cls: 'rounded-3xl'   },
+    { label: 'full',   value: '9999px',       cls: 'rounded-full'  },
+  ];
+
+  return (
+    <div style={{ borderTop: '1px solid #1f2937' }}>
+      <ThemeSectionHeader open={open} onToggle={() => setOpen(o => !o)} accent={THEME_ACCENT} label="Border Radius" count={tokens.length} />
+      {open && (
+        <div>
+          {tokens.map(t => (
+            <div
+              key={t.label}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px 4px 24px', cursor: 'pointer' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+              onClick={() => onInsert(`theme?.['radius']?.['${t.label}']`, `Radius - ${t.label}`, 'theme')}
+            >
+              {/* Visual radius preview */}
+              <span style={{ width: 14, height: 14, borderRadius: t.label === 'full' ? '50%' : t.label === 'none' ? 0 : t.value, border: `1.5px solid ${THEME_ACCENT}`, flexShrink: 0, display: 'inline-block' }} />
+              <button
+                style={{ background: THEME_CHIP.bg, color: THEME_CHIP.text, borderRadius: 5, padding: '2px 5px', fontSize: 11, border: `1px solid ${THEME_CHIP.border}`, cursor: 'pointer', fontFamily: 'monospace', fontWeight: 600, flexShrink: 0 }}
+                onClick={e => { e.stopPropagation(); onInsert(`theme?.['radius']?.['${t.label}']`, `Radius - ${t.label}`, 'theme'); }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = THEME_CHIP.bgHover; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = THEME_CHIP.bg; }}
+              >
+                {t.label}
+              </button>
+              <span style={{ fontSize: 10, color: '#6b7280', fontFamily: 'monospace' }}>{t.cls === 'rounded' ? `${t.cls} (${radiusValue})` : t.value}</span>
             </div>
           ))}
         </div>
@@ -2113,8 +2664,8 @@ function CollectionsDataTab({ onInsert, search }: {
         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
       >
-        <span style={{ color: '#4b5563', display: 'flex', alignItems: 'center' }}><FEChevron open={collectionsOpen} size={8} /></span>
-        <span style={{ fontSize: 10, color: '#6b7280', fontWeight: 600, letterSpacing: '0.05em' }}>COLLECTIONS</span>
+        <span style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center' }}><FEChevron open={collectionsOpen} size={8} /></span>
+        <span style={{ fontSize: 10, color: '#e2e8f0', fontWeight: 600, letterSpacing: '0.05em' }}>Collections</span>
         <span style={{ fontSize: 9, color: '#374151', marginLeft: 'auto' }}>{filtered.length}</span>
       </button>
 
@@ -2142,6 +2693,8 @@ function CollectionsDataTab({ onInsert, search }: {
       <ColorsDataSection onInsert={onInsert} />
       {/* Typography */}
       <TypographyDataSection onInsert={onInsert} />
+      {/* Border Radius */}
+      <BorderRadiusDataSection onInsert={onInsert} />
     </div>
   );
 }
@@ -2172,7 +2725,7 @@ function FunctionLibrary({ onInsert, onInsertFn, search, globalFormulas }: {
   void allCategories;
 
   const allFns = q
-    ? Object.entries({ ...FUNCTION_LIBRARY, 'FROM PROJECT': fromProject })
+    ? Object.entries({ ...FUNCTION_LIBRARY, 'From Project': fromProject })
         .flatMap(([cat, fns]) => fns.filter(f => f.name.toLowerCase().includes(q) || f.description.toLowerCase().includes(q)).map(f => ({ ...f, cat })))
     : null;
 
@@ -2187,7 +2740,7 @@ function FunctionLibrary({ onInsert, onInsertFn, search, globalFormulas }: {
         </div>
       ) : (
         // Categorized
-        [...Object.entries(FUNCTION_LIBRARY), ['FROM PROJECT', fromProject] as [string, FnDef[]]].map(([cat, fns]) => {
+        [...Object.entries(FUNCTION_LIBRARY), ['From Project', fromProject] as [string, FnDef[]]].map(([cat, fns]) => {
           const open = expandedCats.has(cat as string);
           return (
             <div key={cat as string}>
@@ -2197,8 +2750,8 @@ function FunctionLibrary({ onInsert, onInsertFn, search, globalFormulas }: {
                 onMouseEnter={ev => (ev.currentTarget.style.background = '#0f172a')}
                 onMouseLeave={ev => (ev.currentTarget.style.background = 'none')}
               >
-                <span style={{ fontSize: 9, color: '#6b7280', width: 10 }}>{open ? '▾' : '▸'}</span>
-                <span style={{ fontSize: 10, color: '#9ca3af', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>{cat as string}</span>
+                <span style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
+                <span style={{ fontSize: 10, color: '#e2e8f0', fontWeight: 600, letterSpacing: '0.04em' }}>{cat as string}</span>
                 <span style={{ marginLeft: 'auto', fontSize: 9, color: '#374151' }}>{(fns as FnDef[]).length}</span>
               </button>
               {open && (
@@ -2239,7 +2792,7 @@ function FnRow({ fn, onInsertFn }: { fn: FnDef; onInsertFn: (fnInsert: string, s
 
 // ─── FormulaEditor ────────────────────────────────────────────────────────────
 
-export function FormulaEditor({ label, value, onChange, onClose, expectedType = 'any', hint, anchor = 'left', anchorLeft }: FormulaEditorProps) {
+export function FormulaEditor({ label, value, onChange, onClose, expectedType = 'any', hint, anchor = 'left', anchorLeft, anchorRight, hideUnbind }: FormulaEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const savedRangeRef = useRef<Range | null>(null);
@@ -2252,12 +2805,42 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   const selectedIds = useBuilderStore(s => s.selectedIds);
   const pageNodes = useBuilderStore(s => s.pageNodes);
   const [isFocused, setIsFocused] = useState(false);
+
+  // Detect if the selected node is inside a repeated context (has a map ancestor)
+  const isInsideRepeat = useMemo(() => {
+    const id = selectedIds[0];
+    if (!id) return false;
+    let node = findNode(pageNodes, id);
+    while (node) {
+      if (node.map) return true;
+      const parent = findParentNode(pageNodes, node.id ?? '');
+      node = parent ?? null;
+    }
+    return false;
+  }, [selectedIds, pageNodes]);
+
+  // Detect if the selected node is inside a FormContainer ancestor
+  const isInsideForm = useMemo(() => {
+    const id = selectedIds[0];
+    if (!id) return false;
+    let node = findParentNode(pageNodes, id);
+    while (node) {
+      if ((node as { type?: string }).type === 'FormContainer') return true;
+      const parent = findParentNode(pageNodes, node.id ?? '');
+      node = parent ?? null;
+    }
+    return false;
+  }, [selectedIds, pageNodes]);
   // Subscribe to live Zustand data so context stays fresh
   const zustandData = useSduiStore(s => s.data);
 
   // Derive initial formula string from stored value
   const initialFormula = useMemo(() => {
     const raw = storedValueToFormula(value);
+    // When editing a formula/expression (non-string expected type, or hideUnbind which flags
+    // formula-only contexts like validation), never JSON.stringify — that wraps the expression
+    // in quotes, making it a string literal instead of a boolean/expression.
+    if (expectedType !== 'string' || hideUnbind) return raw;
     if (raw && typeof value === 'string' && !isBoundValue(value)) {
       try {
         const parsed = JSON.parse(raw);
@@ -2274,8 +2857,14 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
 
   // formula state: serialized string from the contenteditable div
   const [formula, setFormula] = useState(initialFormula);
-  const [tab, setTab] = useState<Tab>('formulas');
+  const [tab, setTab] = useState<Tab>('variables');
   const [search, setSearch] = useState('');
+
+  // Switch to Quick when entering a repeat or form; fall back to Variables when leaving
+  useEffect(() => {
+    if (isInsideRepeat || isInsideForm) setTab('quick');
+    else if (tab === 'quick') setTab('variables');
+  }, [isInsideRepeat, isInsideForm]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Map UUID → label for collection chip display
   const dsMap = useMemo(
@@ -2368,8 +2957,8 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       if (k.startsWith(COLL_PREFIX)) {
         collStaging = setNestedValue(collStaging, k.slice(COLL_PREFIX.length), v);
       } else {
-        collectionsMap[k] = v;
-      }
+      collectionsMap[k] = v;
+    }
     }
     Object.assign(collectionsMap, collStaging);
 
@@ -2433,15 +3022,40 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       routes.map(r => [r.id ?? r.config, { id: r.id ?? r.config, path: r.path, name: r.config, dynamic: r.dynamic ?? false, auth: r.auth ?? false }])
     );
 
-    // Build theme from config
-    const theme = themeConfig as Record<string, unknown>;
+    // Build theme from config — augment with radius map so theme?.['radius']?.['sm'] → 'rounded-sm'
+    const RADIUS_MAP: Record<string, string> = {
+      none: 'rounded-none', sm: 'rounded-sm', base: 'rounded',
+      md: 'rounded-md', lg: 'rounded-lg', xl: 'rounded-xl',
+      '2xl': 'rounded-2xl', '3xl': 'rounded-3xl', full: 'rounded-full',
+    };
+    const theme = { ...(themeConfig as Record<string, unknown>), radius: RADIUS_MAP };
 
     return {
       ...zustandData,
       ...vs,
       collections: collectionsMap,
       variables: vs,
-      context: contextItem ? { item: contextItem, index: 0 } : {},
+      // Wrap contextItem in the same weWeb structure as renderer.tsx so
+      // context.item?.['data']?.['slug'] resolves correctly in the preview.
+      context: contextItem ? {
+        item: {
+          ...contextItem,   // backward compat: context.item?.['slug'] still resolves
+          data: {
+            ...contextItem,
+            index: 0,
+            repeatIndex: 0,
+            isACopy: false,
+            parent: null,
+            repeatedItems: [contextItem],
+          },
+          index: 0,
+          repeatIndex: 0,
+          isACopy: false,
+          parent: null,
+          repeatedItems: [contextItem],
+        },
+        index: 0,
+      } : {},
       globalContext,
       pages,
       theme,
@@ -2514,7 +3128,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   }, []);
 
   // Insert a chip at the current caret position
-  const insertChip = useCallback((formulaPath: string, displayLabel: string, type: 'collection' | 'variable' | 'context' | 'pages' | 'theme') => {
+  const insertChip = useCallback((formulaPath: string, displayLabel: string, type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form') => {
     const el = editorRef.current;
     if (!el) return;
     restoreCaret();
@@ -2602,7 +3216,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     const f = serializeEditor(el); setFormula(f); pushHistory(f);
   }, [dsMap, restoreCaret, pushHistory]);
 
-  const insertVar = useCallback((formulaPath: string, displayLabel: string, type: 'variable' | 'context' | 'pages' | 'theme' = 'variable') => {
+  const insertVar = useCallback((formulaPath: string, displayLabel: string, type: 'variable' | 'context' | 'pages' | 'theme' | 'form' = 'variable') => {
     insertChip(formulaPath, displayLabel, type);
   }, [insertChip]);
 
@@ -2739,11 +3353,13 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
         : '#86efac';
 
   const PANEL_W = 360;
-  const posStyle: React.CSSProperties = anchorLeft !== undefined
-    ? { left: anchorLeft }
-    : anchor === 'right'
-      ? { right: 260 }
-      : { left: 248 };
+  const posStyle: React.CSSProperties = anchorRight !== undefined
+    ? { right: anchorRight }
+    : anchorLeft !== undefined
+      ? { left: anchorLeft }
+      : anchor === 'right'
+        ? { right: 260 }
+        : { left: 248 };
 
   return createPortal(
     <div
@@ -2769,10 +3385,12 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       {/* ── Header ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
         <span style={{ fontSize: 11, fontWeight: 600, color: '#f3f4f6', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
-        <button onClick={unbind} data-testid="formula-unbind"
-          style={{ padding: '1px 6px', background: '#1f2937', border: '1px solid #374151', borderRadius: 3, color: '#9ca3af', fontSize: 10, cursor: 'pointer', flexShrink: 0 }}>
-          Unbind
-        </button>
+        {!hideUnbind && (
+          <button onClick={unbind} data-testid="formula-unbind"
+            style={{ padding: '1px 6px', background: '#1f2937', border: '1px solid #374151', borderRadius: 3, color: '#9ca3af', fontSize: 10, cursor: 'pointer', flexShrink: 0 }}>
+            Unbind
+          </button>
+        )}
         <button onClick={onClose} data-testid="formula-close"
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 14, lineHeight: 1, padding: '1px' }}>×</button>
       </div>
@@ -2853,47 +3471,47 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <span style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Current value</span>
           <div style={{ width: '100%' }}>
-            {evalResult.error ? (
+          {evalResult.error ? (
               <div style={{ fontSize: 10, color: '#f87171', fontFamily: 'monospace', wordBreak: 'break-all', lineHeight: 1.4, background: '#1a0a0a', border: '1px solid #3f1515', borderRadius: 4, padding: '3px 6px' }}>
-                {evalResult.error}
+              {evalResult.error}
               </div>
-            ) : evalResult.value === undefined ? (
+          ) : evalResult.value === undefined ? (
               <div style={{ fontSize: 10, color: '#4b5563', fontFamily: 'monospace', background: '#0f172a', border: '1px solid #1e293b', borderRadius: 4, padding: '3px 6px' }}>—</div>
-            ) : (() => {
-              let displayVal = evalResult.value;
-              if (typeof displayVal === 'string') {
-                try { displayVal = JSON.parse(displayVal); } catch { /* not JSON */ }
-              }
-              if (displayVal !== null && typeof displayVal === 'object') {
-                const pretty = JSON.stringify(displayVal, null, 2);
-                return (
-                  <pre
-                    style={{ margin: 0, width: '100%', boxSizing: 'border-box', fontSize: 9, fontFamily: '"JetBrains Mono","Fira Mono",monospace', background: '#0f172a', border: '1px solid #1e293b', padding: '3px 6px', borderRadius: 4, maxHeight: 80, overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all', lineHeight: 1.6 }}
-                    dangerouslySetInnerHTML={{ __html: highlightJson(pretty) }}
-                  />
-                );
-              }
+          ) : (() => {
+            let displayVal = evalResult.value;
+            if (typeof displayVal === 'string') {
+              try { displayVal = JSON.parse(displayVal); } catch { /* not JSON */ }
+            }
+            if (displayVal !== null && typeof displayVal === 'object') {
+              const pretty = JSON.stringify(displayVal, null, 2);
               return (
-                <div style={{ fontSize: 10, color: previewColor, fontFamily: 'monospace', wordBreak: 'break-all', lineHeight: 1.4, background: '#0f172a', border: '1px solid #1e293b', borderRadius: 4, padding: '3px 6px' }}>
-                  {String(displayVal)}
-                </div>
+                <pre
+                    style={{ margin: 0, width: '100%', boxSizing: 'border-box', fontSize: 9, fontFamily: '"JetBrains Mono","Fira Mono",monospace', background: '#0f172a', border: '1px solid #1e293b', padding: '3px 6px', borderRadius: 4, maxHeight: 80, overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all', lineHeight: 1.6 }}
+                  dangerouslySetInnerHTML={{ __html: highlightJson(pretty) }}
+                />
               );
-            })()}
-          </div>
+            }
+            return (
+                <div style={{ fontSize: 10, color: previewColor, fontFamily: 'monospace', wordBreak: 'break-all', lineHeight: 1.4, background: '#0f172a', border: '1px solid #1e293b', borderRadius: 4, padding: '3px 6px' }}>
+                {String(displayVal)}
+                </div>
+            );
+          })()}
+        </div>
         </div>
         {/* Row 2 — Expected format (full width, only when set) */}
         {(hint || expectedType !== 'any') && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <span style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Expected</span>
-              <Tooltip text={hint ? `${hint}\n\nReturn type: ${expectedType}` : `Expected return type: ${expectedType}`}>
-                <span style={{
+            <Tooltip text={hint ? `${hint}\n\nReturn type: ${expectedType}` : `Expected return type: ${expectedType}`}>
+              <span style={{
                   border: '1px solid #374151', borderRadius: '50%',
                   width: 11, height: 11, fontSize: 7, flexShrink: 0,
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#6b7280', cursor: 'default',
-                }}>?</span>
-              </Tooltip>
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                color: '#6b7280', cursor: 'default',
+              }}>?</span>
+            </Tooltip>
             </div>
             <div style={{ fontSize: 10, color: '#fbbf24', fontFamily: 'monospace', wordBreak: 'break-all', background: '#0f172a', border: '1px solid #1e293b', borderRadius: 4, padding: '3px 6px' }}>
               {hint || expectedType}
@@ -2905,6 +3523,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       {/* ── Tabs ── */}
       <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
         {([
+          ...((isInsideRepeat || isInsideForm) ? [{ id: 'quick' as Tab, icon: '⚡', label: 'Quick' }] : []),
           { id: 'variables' as Tab, icon: '{x}', label: 'Variables' },
           { id: 'data' as Tab, icon: '≡', label: 'Data' },
           { id: 'formulas' as Tab, icon: 'ƒ', label: 'Formulas' },
@@ -2939,18 +3558,36 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       {/* ── Tab Body ── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
         {tab === 'variables' && (
-          <VariableTree
-            onSelect={insertVar}
-            search={search}
-            customVars={customVars}
-            varFolders={varFolders}
-          />
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+            <PageComponentsSection onInsert={insertChip} search={search} />
+            <VariableTree
+              onSelect={insertVar}
+              search={search}
+              customVars={customVars}
+              varFolders={varFolders}
+            />
+          </div>
         )}
         {tab === 'data' && (
           <CollectionsDataTab onInsert={insertChip} search={search} />
         )}
         {tab === 'formulas' && (
           <FunctionLibrary onInsert={insertAtCursor} onInsertFn={insertFunction} search={search} globalFormulas={globalFormulas} />
+        )}
+        {tab === 'quick' && (
+          <div style={{ overflowY: 'auto', flex: 1 }}>
+            {isInsideForm && (
+              <FormLocalSection onInsert={insertChip} />
+            )}
+            {isInsideRepeat && (
+              <>
+                <div style={{ padding: '8px 12px 4px', fontSize: 10, color: '#6b7280', fontStyle: 'italic' }}>
+                  Fields from the repeated item
+                </div>
+                <ItemContextGroup onInsert={insertChip} initialOpen={true} />
+              </>
+            )}
+          </div>
         )}
       </div>
 
@@ -2959,10 +3596,10 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
         {OPERATORS.map(op => {
           const s = OP_STYLE[op.category];
           return (
-            <Tooltip key={op.label} text={op.description}>
-              <button
+          <Tooltip key={op.label} text={op.description}>
+            <button
                 onClick={() => insertOperatorChip(op.label, op.insert, op.category)}
-                style={{
+              style={{
                   padding: '2px 2px',
                   background: s.bg,
                   border: `1px solid ${s.border}`,
@@ -2977,10 +3614,10 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
                 }}
                 onMouseEnter={ev => { ev.currentTarget.style.background = s.hoverBg; }}
                 onMouseLeave={ev => { ev.currentTarget.style.background = s.bg; }}
-              >
-                {op.label}
-              </button>
-            </Tooltip>
+            >
+              {op.label}
+            </button>
+          </Tooltip>
           );
         })}
       </div>

@@ -1,11 +1,12 @@
 {
-  "updateProfileMutation": {
+  "56642a48-2ec2-4923-9506-cb86ef6b0661": {
+    "name": "updateProfileMutation",
     "type": "graphql",
     "query": "mutation UpdateCustomer($input: UpdateCustomerInput!) { updateCustomer(input: $input) { __typename id firstName lastName emailAddress } }",
     "variables": {
       "input": {
-        "firstName": "{{variables['e2f3a4b5-c6d7-8901-efab-901234567890'].value.firstName}}",
-        "lastName": "{{variables['e2f3a4b5-c6d7-8901-efab-901234567890'].value.lastName}}"
+        "firstName": "{{local.data.form.formData.firstName}}",
+        "lastName": "{{local.data.form.formData.lastName}}"
       }
     },
     "headers": {
@@ -22,28 +23,29 @@
     },
     "endpoint": "http://localhost:3000/shop-api"
   },
-  "saveAddress": {
+  "340318a1-6824-4e30-9880-7c9dcfb9cf3a": {
+    "name": "saveAddress",
     "type": "validate",
-    "formId": "a4b5c6d7-e8f9-0123-abcd-123456789012",
     "onSuccess": {
-      "action": "saveAddressMutation"
+      "action": "9e4ba82b-c14c-4b8d-9646-559d274fc9c5"
     }
   },
-  "saveAddressMutation": {
+  "9e4ba82b-c14c-4b8d-9646-559d274fc9c5": {
+    "name": "saveAddressMutation",
     "type": "graphql",
     "query": "mutation CreateCustomerAddress($input: CreateAddressInput!) { createCustomerAddress(input: $input) { id fullName streetLine1 streetLine2 city province postalCode country { code name } phoneNumber defaultShippingAddress defaultBillingAddress } }",
     "variables": {
       "input": {
-        "fullName": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.fullName}}",
-        "streetLine1": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.streetLine1}}",
-        "streetLine2": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.streetLine2}}",
-        "city": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.city}}",
-        "province": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.province}}",
-        "postalCode": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.postalCode}}",
-        "countryCode": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.countryCode}}",
-        "phoneNumber": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.phoneNumber}}",
-        "defaultShippingAddress": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.defaultShippingAddress}}",
-        "defaultBillingAddress": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.defaultBillingAddress}}"
+        "fullName": "{{local.data.form.formData.fullName}}",
+        "streetLine1": "{{local.data.form.formData.streetLine1}}",
+        "streetLine2": "{{local.data.form.formData.streetLine2}}",
+        "city": "{{local.data.form.formData.city}}",
+        "province": "{{local.data.form.formData.province}}",
+        "postalCode": "{{local.data.form.formData.postalCode}}",
+        "countryCode": "{{local.data.form.formData.countryCode}}",
+        "phoneNumber": "{{local.data.form.formData.phoneNumber}}",
+        "defaultShippingAddress": "{{local.data.form.formData.defaultShippingAddress}}",
+        "defaultBillingAddress": "{{local.data.form.formData.defaultBillingAddress}}"
       }
     },
     "headers": {
@@ -56,7 +58,7 @@
       "type": "runMultiple",
       "actions": [
         {
-          "action": "fetchActiveCustomer"
+          "action": "25936105-5bba-4563-8105-3e5218489469"
         },
         {
           "action": "showToast",
@@ -68,13 +70,14 @@
     },
     "endpoint": "http://localhost:3000/shop-api"
   },
-  "changePasswordMutation": {
+  "bd9e61f2-7964-4545-8167-4331ff17ec7a": {
+    "name": "changePasswordMutation",
     "type": "graphql",
     "endpoint": "http://localhost:3000/shop-api",
     "query": "mutation UpdateCustomerPassword($currentPassword: String!, $newPassword: String!) { updateCustomerPassword(currentPassword: $currentPassword, newPassword: $newPassword) { __typename ... on Success { success } ... on ErrorResult { errorCode message } } }",
     "variables": {
-      "currentPassword": "{{variables['f3a4b5c6-d7e8-9012-fabc-012345678901'].value.currentPassword}}",
-      "newPassword": "{{variables['f3a4b5c6-d7e8-9012-fabc-012345678901'].value.newPassword}}"
+      "currentPassword": "{{local.data.form.formData.currentPassword}}",
+      "newPassword": "{{local.data.form.formData.newPassword}}"
     },
     "headers": {
       "Authorization": "{{auth.token}}",
@@ -83,13 +86,14 @@
     "storeIn": "account._changePasswordResult",
     "responsePath": "data.updateCustomerPassword"
   },
-  "requestEmailUpdateMutation": {
+  "a6626679-62d9-4aa5-a842-7ebcc266e658": {
+    "name": "requestEmailUpdateMutation",
     "type": "graphql",
     "endpoint": "http://localhost:3000/shop-api",
     "query": "mutation RequestUpdateCustomerEmailAddress($password: String!, $newEmailAddress: String!) { requestUpdateCustomerEmailAddress(password: $password, newEmailAddress: $newEmailAddress) { __typename ... on Success { success } ... on ErrorResult { errorCode message } } }",
     "variables": {
-      "password": "{{variables['c6d7e8f9-a0b1-2345-cdef-345678901234'].value.password}}",
-      "newEmailAddress": "{{variables['c6d7e8f9-a0b1-2345-cdef-345678901234'].value.newEmailAddress}}"
+      "password": "{{local.data.form.formData.password}}",
+      "newEmailAddress": "{{local.data.form.formData.newEmailAddress}}"
     },
     "headers": {
       "Authorization": "{{auth.token}}",
@@ -98,22 +102,23 @@
     "storeIn": "account._emailUpdateResult",
     "responsePath": "data.requestUpdateCustomerEmailAddress"
   },
-  "createAddressMutation": {
+  "9c6e39a6-5495-4c2a-8ea9-fc5bbe0ef052": {
+    "name": "createAddressMutation",
     "type": "graphql",
     "endpoint": "http://localhost:3000/shop-api",
     "query": "mutation CreateCustomerAddress($input: CreateAddressInput!) { createCustomerAddress(input: $input) { id fullName streetLine1 city postalCode country { id code name } defaultShippingAddress defaultBillingAddress } }",
     "variables": {
       "input": {
-        "fullName": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.fullName}}",
-        "streetLine1": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.streetLine1}}",
-        "streetLine2": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.streetLine2}}",
-        "city": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.city}}",
-        "province": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.province}}",
-        "postalCode": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.postalCode}}",
-        "countryCode": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.countryCode}}",
-        "phoneNumber": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.phoneNumber}}",
-        "defaultShippingAddress": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.defaultShippingAddress}}",
-        "defaultBillingAddress": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.defaultBillingAddress}}"
+        "fullName": "{{local.data.form.formData.fullName}}",
+        "streetLine1": "{{local.data.form.formData.streetLine1}}",
+        "streetLine2": "{{local.data.form.formData.streetLine2}}",
+        "city": "{{local.data.form.formData.city}}",
+        "province": "{{local.data.form.formData.province}}",
+        "postalCode": "{{local.data.form.formData.postalCode}}",
+        "countryCode": "{{local.data.form.formData.countryCode}}",
+        "phoneNumber": "{{local.data.form.formData.phoneNumber}}",
+        "defaultShippingAddress": "{{local.data.form.formData.defaultShippingAddress}}",
+        "defaultBillingAddress": "{{local.data.form.formData.defaultBillingAddress}}"
       }
     },
     "headers": {
@@ -123,12 +128,13 @@
     "storeIn": "account._createAddressResult",
     "responsePath": "data.createCustomerAddress"
   },
-  "deleteAddress": {
+  "bffb584e-62c9-4da1-8a42-3763f943f51c": {
+    "name": "deleteAddress",
     "type": "graphql",
     "endpoint": "http://localhost:3000/shop-api",
     "query": "mutation DeleteCustomerAddress($id: ID!) { deleteCustomerAddress(id: $id) { success } }",
     "variables": {
-      "id": "{{context.item.id}}"
+      "id": "{{context.item.data.id}}"
     },
     "headers": {
       "Authorization": "{{auth.token}}",
@@ -136,5 +142,200 @@
     },
     "storeIn": "account._deleteAddressResult",
     "responsePath": "data.deleteCustomerAddress"
+  },
+  "012f5ea4-dd68-4ff7-8db7-628a9a70592f": {
+    "name": "showAddAddressForm",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "showAddForm",
+          "value": true
+        }
+      }
+    ]
+  },
+  "b374e4d3-4b89-42e4-b15c-55324bc0a95c": {
+    "name": "hideAddAddressForm",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "showAddForm",
+          "value": false
+        }
+      }
+    ]
+  },
+  "31e1e0c5-6fc4-47ae-bc1b-c441c0a4446e": {
+    "name": "setAddressFullName",
+    "type": "workflowSteps",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "setFormField",
+        "config": {
+          "field": "fullName",
+          "value": "$event"
+        }
+      }
+    ]
+  },
+  "3d2308d8-2b36-48e0-a2ad-8d209bea7588": {
+    "name": "setAddressStreetLine1",
+    "type": "workflowSteps",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "setFormField",
+        "config": {
+          "field": "streetLine1",
+          "value": "$event"
+        }
+      }
+    ]
+  },
+  "7f526c07-684e-4efb-a57c-4ae3caf04ba3": {
+    "name": "setAddressCity",
+    "type": "workflowSteps",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "setFormField",
+        "config": {
+          "field": "city",
+          "value": "$event"
+        }
+      }
+    ]
+  },
+  "b5dcaf0b-b72f-41bf-9c05-ca4131f19bd3": {
+    "name": "setAddressPostalCode",
+    "type": "workflowSteps",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "setFormField",
+        "config": {
+          "field": "postalCode",
+          "value": "$event"
+        }
+      }
+    ]
+  },
+  "bb8ab177-3ee7-4431-a6bc-d1ed69482dbc": {
+    "name": "setAddressCountryCode",
+    "type": "workflowSteps",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "setFormField",
+        "config": {
+          "field": "countryCode",
+          "value": "$event"
+        }
+      }
+    ]
+  },
+  "48ef6f2b-91f2-4383-aa36-5782cbdadc9b": {
+    "name": "setProfileFirstName",
+    "type": "workflowSteps",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "setFormField",
+        "config": {
+          "field": "firstName",
+          "value": "$event"
+        }
+      }
+    ]
+  },
+  "74f20b56-fc2a-46bf-8a64-1f511faa8499": {
+    "name": "setProfileLastName",
+    "type": "workflowSteps",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "setFormField",
+        "config": {
+          "field": "lastName",
+          "value": "$event"
+        }
+      }
+    ]
+  },
+  "8c8a590b-8b08-4c32-8486-c4002129191b": {
+    "name": "setProfilePhone",
+    "type": "workflowSteps",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "setFormField",
+        "config": {
+          "field": "phoneNumber",
+          "value": "$event"
+        }
+      }
+    ]
+  },
+  "f8b72b29-4013-491f-9aa8-0709aaff754b": {
+    "name": "setProfileEmail",
+    "type": "workflowSteps",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "setFormField",
+        "config": {
+          "field": "emailAddress",
+          "value": "$event"
+        }
+      }
+    ]
+  },
+  "12b0040c-4d65-40b5-9586-19bffc3a1a4e": {
+    "name": "setProfileCurrentPassword",
+    "type": "workflowSteps",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "setFormField",
+        "config": {
+          "field": "currentPassword",
+          "value": "$event"
+        }
+      }
+    ]
+  },
+  "095f52b4-3c26-4ff7-be9e-ed045949468e": {
+    "name": "setProfileNewPassword",
+    "type": "workflowSteps",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "setFormField",
+        "config": {
+          "field": "newPassword",
+          "value": "$event"
+        }
+      }
+    ]
   }
 }

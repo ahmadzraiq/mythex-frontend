@@ -6,7 +6,7 @@
   "layout": "store",
   "initActions": [
     {
-      "action": "fetchOrderByCode"
+      "action": "5da7f519-ddb0-42b7-b64e-38bb8f99897c"
     }
   ],
   "content": {
@@ -138,13 +138,13 @@
                             "props": {
                               "className": "flex-shrink-0"
                             },
-                            "condition": "{{context.item.productVariant.product.featuredAsset.preview}}",
+                            "condition": "{{context.item.data.productVariant.product.featuredAsset.preview}}",
                             "children": [
                               {
                                 "type": "NextImage",
                                 "props": {
-                                  "src": "{{context.item.productVariant.product.featuredAsset.preview}}",
-                                  "alt": "{{context.item.productVariant.product.name}}",
+                                  "src": "{{context.item.data.productVariant.product.featuredAsset.preview}}",
+                                  "alt": "{{context.item.data.productVariant.product.name}}",
                                   "width": 80,
                                   "height": 80,
                                   "className": "rounded object-cover w-20 h-20 object-center"
@@ -163,15 +163,15 @@
                                 "props": {
                                   "className": "font-medium"
                                 },
-                                "text": "{{context.item.productVariant.product.name}}"
+                                "text": "{{context.item.data.productVariant.product.name}}"
                               },
                               {
                                 "type": "Text",
                                 "props": {
                                   "className": "text-sm text-[var(--theme-muted-foreground)]"
                                 },
-                                "text": "{{context.item.productVariant.name}}",
-                                "condition": "{{context.item.productVariant.name}} !== {{context.item.productVariant.product.name}}"
+                                "text": "{{context.item.data.productVariant.name}}",
+                                "condition": "{{context.item.data.productVariant.name}} !== {{context.item.data.productVariant.product.name}}"
                               }
                             ]
                           },
@@ -193,7 +193,7 @@
                                 "props": {
                                   "className": "font-medium"
                                 },
-                                "text": "{{context.item.quantity}}"
+                                "text": "{{context.item.data.quantity}}"
                               }
                             ]
                           },
@@ -209,7 +209,7 @@
                                   "className": "font-semibold"
                                 },
                                 "text": {
-                                  "expr": "formatCurrency({{context.item.linePriceWithTax}} / 100, {{collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode.currencyCode}} || 'USD')"
+                                  "expr": "formatCurrency({{context.item.data.linePriceWithTax}} / 100, {{collections.a3b4c5d6-e7f8-9012-abcd-123456789012.data.orderByCode.currencyCode}} || 'USD')"
                                 }
                               }
                             ]
@@ -329,14 +329,11 @@
                     "text": "Continue Shopping"
                   }
                 ],
-                "actions": {
-                  "click": {
-                    "action": "navigate",
-                    "payload": {
-                      "path": "/"
-                    }
+                "actions": [
+                  {
+                    "action": "9e33ef0a-706f-4555-b2ee-60fd95ebf416"
                   }
-                }
+                ]
               }
             ]
           }

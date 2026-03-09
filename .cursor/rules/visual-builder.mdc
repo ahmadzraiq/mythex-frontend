@@ -1030,14 +1030,12 @@ Apply this pattern to **both** the `hovEl` siblings path and the root-level `nod
 
 **Fix:**
 1. `findDropTargetElAt(x, y, skipIds)` — iterates past elements in `skipIds` (dragging IDs) to find the real container beneath.
-2. "Home container" skips the 0.2–0.8 relY edge-zone so a node always stays inside when hovering its own parent:
-```typescript
-const isHomeCont = isContainer && allDraggingIds.some(id => {
-  const p = findParentNode(pageNodes, id);
-  return p?.id === nodeId;
-});
-const inDropZone = isHomeCont ? true : (relY > 0.2 && relY < 0.8);
-```
+2. Edge-zone escape is intentionally kept: `const inDropZone = relY > 0.2 && relY < 0.8;` — **no** `isHomeCont` override. This allows dragging a node OUT of any container (e.g. Input out of FormContainer) by hovering near the top/bottom edge. `REQUIRED_PARENT` in `moveNode` already prevents truly context-bound nodes (e.g. InputField → Input) from escaping — the drag will silently be rejected on drop, so no visual glitch occurs.
+
+  **Do NOT re-add** `isHomeCont ? true` to force the node to stay inside its home container. This was the original cause of the "can't drag Input out of FormContainer" bug.
+3. **skipIds must include full subtrees** — `draggingIdSet` must include not just the top-level dragged IDs but also every descendant. Without this, children of the dragged node (e.g. `InputField` inside `Input`) are hit by `findDropTargetElAt`. The nearest-gap algorithm then sets `parentId = dragged-node-id`, and `moveNode(node, node, …)` triggers the self-drop guard silently — preventing the move. The fix builds `draggingIdSet` with `collectSubtreeIds` before calling `findDropTargetElAt`. **Do NOT remove this expansion.**
+4. **ALLOWED_DROP_INTO check in onDragOver** — before routing to "inside container", check `ALLOWED_DROP_INTO[containerType]`. If the dragged types are not permitted (e.g. dragging `Input` over sibling `Input2` — `ALLOWED[Input]` only accepts `InputField/InputSlot/InputIcon`), fall through to "before/after in parent". Without this, `dropTargetRef` points inside the sibling, `moveNode` silently blocks it, and the user sees no drop indicator and no move.
+5. **Auto-escalation of context-bound nodes in onDragStart** — when the user clicks the visible text field (selects `InputField`) and drags, `REQUIRED_PARENT['InputField'] = 'Input'` would block the move. `onDragStart` now checks `DRAG_REQUIRED_PARENT[dragId.type]`: if set, walks up the DOM to find the required parent and escalates `dragId` to that parent. Also updates the selection so the correct node is highlighted. **Do NOT remove this — it's what makes clicking on a text input and dragging it work at all.**
 3. `isDroppingIntoSelf` correctly checks for cycles (hover container inside dragged subtree):
 ```typescript
 const isDroppingIntoSelf = isContainer && allDraggingIds.some(id => {
@@ -1750,3 +1748,851 @@ const formula = await page.evaluate(() => {
   return out;
 });
 ```
+
+---
+
+## §39 Formula Editor — Tabs, Data Sections, Context, Variables, Quick Action
+
+### Tab system
+
+Four tabs exist; **Quick** only renders when the selected node is inside a repeated context:
+
+| Tab ID | Icon | Label | Always shown? |
+|---|---|---|---|
+| `quick` | ⚡ | Quick | Only when inside a `map` ancestor |
+| `variables` | `{x}` | Variables | Always |
+| `data` | `≡` | Data | Always |
+| `formulas` | `ƒ` | Formulas | Always |
+
+**Tab order:** Quick (if visible) is always **first**. Remaining order: Variables → Data → Formulas.
+
+**Default tab:** `'variables'` — the first tab is always selected when the formula editor opens.
+
+**Auto-switch behaviour (implemented in `useEffect`):**
+- When `isInsideRepeat` becomes `true` → switch to `'quick'`
+- When `isInsideRepeat` becomes `false` and current tab is `'quick'` → fall back to `'variables'`
+
+```ts
+useEffect(() => {
+  if (isInsideRepeat) setTab('quick');
+  else if (tab === 'quick') setTab('variables');
+}, [isInsideRepeat]); // eslint-disable-line react-hooks/exhaustive-deps
+```
+
+**Repeat detection:** `isInsideRepeat` walks the node tree upward from the selected node checking for any ancestor with a `map` property:
+```ts
+const isInsideRepeat = useMemo(() => {
+  const id = selectedIds[0];
+  if (!id) return false;
+  let node = findNode(pageNodes, id);
+  while (node) {
+    if (node.map) return true;
+    const parent = findParentNode(pageNodes, node.id ?? '');
+    node = parent ?? null;
+  }
+  return false;
+}, [selectedIds, pageNodes]);
+```
+
+---
+
+### Section header styling (universal rule)
+
+**All** section/category headers in the formula editor use:
+- **Color:** `#e2e8f0` (near-white) — no accent colors on headers
+- **Chevron:** `<FEChevron open={open} size={8} />` SVG arrow — never text `▾`/`▸`
+- **Font:** `fontSize: 10, fontWeight: 600, letterSpacing: '0.05em'`
+
+This applies to: Collections, Context, Pages, Colors, Typography, Border Radius (Data tab), all function categories (Formulas tab), and variable folder labels (Variables tab).
+
+**Never use `textTransform: 'uppercase'`** on section labels — labels use title case (e.g. `Collections`, `Border Radius`, `From Project`).
+
+---
+
+### Function library categories
+
+Keys in `FUNCTION_LIBRARY` use title case (not ALL CAPS):
+
+| Key | Contents |
+|---|---|
+| `Conditional` | `if`, `ifEmpty`, `not`, `switch` |
+| `Math` | `average`, `rollupSum`, `round`, `sum`, `toNumber` |
+| `Array` | `add`, `contains`, `createArray`, `compare`, `distinct`, `filterByKey`, `findIndex`, … |
+| `Object` | object utilities |
+| `Text` | string utilities |
+| `Utils` | general utilities |
+| `Format` | `formatCurrency`, `formatDate`, `formatNumber` |
+| `From Project` | dynamic — global formulas defined in this project |
+
+The `'From Project'` literal key (used in the categorized render) must also match title case.
+
+---
+
+### Quick Action tab
+
+Renders `<ItemContextGroup onInsert={insertChip} initialOpen={true} />` inside a scrollable container. The `initialOpen` prop:
+- Sets `open` state to `true` on mount (item header expanded)
+- Pre-populates `expanded` with `new Set(['data'])` so the `data` sub-tree is also open immediately
+
+```ts
+// In ItemContextGroup:
+const [open, setOpen] = useState(initialOpen);
+const [expanded, setExpanded] = useState<Set<string>>(
+  () => initialOpen ? new Set(['data']) : new Set()
+);
+```
+
+**Purpose:** Provides one-click access to all `context.item.data.*` fields without navigating Data → Context → item. The tree is fully expanded on open so data fields are immediately visible.
+
+---
+
+### `context.item` structure (weWeb format)
+
+At runtime (`renderer.tsx`) and in the formula editor preview (`_formula-editor.tsx` `context` useMemo), `context.item` is structured as:
+
+```ts
+{
+  // Spread of raw item fields for backward compatibility (e.g. context.item?.['slug'])
+  ...rawItemFields,
+  data: {
+    ...rawItemFields,    // canonical path: context.item?.['data']?.['fieldName']
+    index: 0,
+    repeatIndex: 0,
+    isACopy: false,
+    parent: outerItemCtx | null,   // outer repeat's item context for nested repeats
+    repeatedItems: arr,
+  },
+  // Top-level aliases for backward compat:
+  parent: outerItemCtx | null,
+  index: 0,
+  repeatIndex: 0,
+  isACopy: false,
+  repeatedItems: arr,
+}
+```
+
+**Canonical formula path:** `context.item?.['data']?.['fieldName']`
+**Friendly label:** `item.data.fieldName`
+
+All config JSON files must use `context.item.data.xxx` paths (not flat `context.item.xxx`). A migration script was run to update 146 references across 21 files.
+
+`isScopeVariable` in `path-utils.ts` recognises all `context.*` paths:
+```ts
+path === 'context' || path.startsWith('context.')
+```
+
+---
+
+### Theme chip categories and labels
+
+Theme formulas use optional-chaining bracket notation: `theme?.['colors']?.['background']`
+
+`CHIP_RE` matches all four categories: `colors`, `sections`, `fonts`, `radius`.
+
+Display labels always include a category prefix:
+- `Color - background`
+- `Typography - heading`
+- `Radius - sm`
+- `Section - hero`
+
+`populateEditor` strips the prefix before building the chip and re-adds it as the friendly label.
+
+**Border radius:** `theme?.['radius']?.['sm']` resolves at runtime to `'rounded-sm'` via `THEME_OBJ.radius` map in `sdui-engine.tsx`.
+
+---
+
+### Variable chip color
+
+`CHIP_STYLE.variable` uses teal (`#0f766e` bg, `#ccfbf1` text) — distinct from collection blue and context purple. Both the panel pill and the inserted formula chip use the same teal color.
+
+**No `▣` or `ⓘ` icons** in `CollectionEntry`, `VariableEntry`, or `DataTreeNode` rows.
+
+---
+
+### Variables tab
+
+Shows **only** user-defined variables from `config/variables.json`, grouped by folder. Folder labels use original casing (no `.toUpperCase()`).
+
+`VariableEntry` mirrors `CollectionEntry` structure:
+- Collapsible header with chevron + teal pill + live value display
+- Expandable `DataTreeNode` for nested values
+- Subscribes to `getGlobalVariableStore()` for live data
+
+`VariableTree` subscribes to the global variable store so live data updates reflect immediately.
+
+---
+
+## §40 Form System — Builder Architecture
+
+### Overview
+
+The form system has two layers:
+
+1. **Runtime** — `FormContainer` component + `setFormField` / `submitForm` actions in `lib/sdui/actions/handlers/form-variable-handler.ts`
+2. **Builder** — Settings tab in `_panel-right.tsx` that configures per-field properties stored as `_`-prefixed node fields
+
+### Node-level form fields (underscore prefix)
+
+These fields live on the `SDUINode` (not in `props`) and are only meaningful at build/config time:
+
+| Field | Type | Purpose |
+|---|---|---|
+| `node.name` | `string` | Human label AND the `field` key used by `setFormField` |
+| `node._initialValue` | `unknown` | Seed value passed to `FormContainer.props.initialFormData[field]` |
+| `node._debounce` | `{ delay: number, minLength?: number }` | Propagated to the `setFormField` action so validation runs debounced |
+| `node._validation.rules` | `ValidationRule[]` | Array of rules run on change / submit |
+| `node._forceDisabledInEditor` | `boolean` | When `disabled` is formula-bound, force the overlay to show in the builder |
+| `node._disabledOverlay` | `{ color?, opacity?, blur? }` | Visual overlay rendered when disabled |
+| `node._forceShowInEditor` | `boolean` | When `condition` hides the node, force it visible in the builder |
+
+**Rule:** Never store these as `props.*` keys — they are builder metadata, not runtime props.
+
+### `SDUINode` type additions
+
+```ts
+// lib/sdui/types/node.ts
+export interface SDUINode {
+  // ...existing fields...
+  name?: string;
+  _initialValue?: unknown;
+  _debounce?: { delay: number; minLength?: number };
+  _disabledOverlay?: { color?: string; opacity?: number; blur?: number };
+  _forceDisabledInEditor?: boolean;
+  _forceShowInEditor?: boolean;
+}
+```
+
+---
+
+## §41 Form System — Settings Tab
+
+### Layout
+
+The Settings tab shows for every node type. Top-level structure:
+
+1. **Name** — always at the very top; edits `node.name` and syncs `field` in `setFormField` action
+2. **Input type** (Input / InputField only) — dropdown to set `props.type` / `props.inputMode`
+3. **Placeholder** (Input / InputField only) — edits `props.placeholder`
+4. **Initial value** (Input / InputField only) — edits `node._initialValue`; propagated to `FormContainer.props.initialFormData` via `patchInitialValue`
+5. **Browser autofill** (Input / InputField only) — edits `props.autoComplete`
+6. **Debounce** (Input / InputField only) — toggle + delay ms input; edits `node._debounce`; propagated to `setFormField` action via `syncDebounceToAction`
+7. **Validation trigger** (Input / InputField only) — "On submit" / "On input change"
+8. **Validation rules** (Input / InputField only) — list of `ValidationRule` items
+9. **Submit type** (Button only) — on/off toggle; sets `node.props.submitType = 'submit'`
+
+### Name field and `setFormField` sync
+
+When the user edits the name field, two things must happen simultaneously:
+- `store.patchNodeField(nodeId, 'name', newName)` — update the node name
+- Find the `setFormField` action in the node's `actions.change` (or nested in `runMultiple`) and update `field: newName`
+
+```ts
+// Helper to locate the setFormField action even inside runMultiple
+function findSetFormField(actions: Record<string, unknown> | undefined): Record<string, unknown> | null {
+  if (!actions) return null;
+  for (const a of Object.values(actions)) {
+    if ((a as { action?: string }).action === 'setFormField') return a as Record<string, unknown>;
+    const nested = (a as { actions?: unknown[] }).actions;
+    if (Array.isArray(nested)) {
+      for (const sub of nested) {
+        if ((sub as { action?: string }).action === 'setFormField') return sub as Record<string, unknown>;
+      }
+    }
+  }
+  return null;
+}
+```
+
+**Rule:** Changing `node.name` MUST also update the `field` key in `setFormField`. If not, the formula path `local.data.form.formData.username` breaks because the action still writes to the old field name.
+
+### `patchInitialValue` — syncing `_initialValue` to FormContainer
+
+When the user sets an initial value, it must reach `FormContainer.props.initialFormData`:
+
+```ts
+function patchInitialValue(nodeId: string, value: unknown, pageNodes: SDUINode[], store: BuilderStore) {
+  store.patchNodeField(nodeId, '_initialValue', value);
+  // Walk up to the nearest FormContainer ancestor and patch its initialFormData
+  const parent = findFormContainerAncestor(pageNodes, nodeId);
+  if (parent?.id) {
+    const existing = (parent.props as Record<string, unknown>)?.initialFormData ?? {};
+    const fieldName = (findNode(pageNodes, nodeId) as { name?: string })?.name ?? nodeId;
+    store.patchProp(parent.id, 'props.initialFormData', { ...(existing as object), [fieldName]: value });
+  }
+}
+```
+
+**Rule:** `node._initialValue` is the source of truth. `FormContainer.props.initialFormData` is derived from it. Never write to `props.defaultValue` directly — that conflicts with React's controlled/uncontrolled input warning.
+
+### `syncDebounceToAction` — propagating debounce to the action
+
+When `node._debounce` changes, the `setFormField` action's payload must be updated:
+
+```ts
+function syncDebounceToAction(nodeId: string, debounce: { delay: number } | undefined, pageNodes: SDUINode[], store: BuilderStore) {
+  store.patchNodeField(nodeId, '_debounce', debounce);
+  const node = findNode(pageNodes, nodeId);
+  const sff = findSetFormField(node?.actions as Record<string, unknown> | undefined);
+  if (sff) {
+    if (debounce) sff._debounce = debounce;
+    else delete sff._debounce;
+    store.patchActions(nodeId, node?.actions as Record<string, unknown>);
+  }
+}
+```
+
+---
+
+## §42 Form System — Validation Rules
+
+### `ValidationRule` type
+
+```ts
+interface ValidationRule {
+  type: 'required' | 'email' | 'minLength' | 'maxLength' | 'pattern' | 'custom';
+  message?: string;   // error message shown when rule fails
+  value?: string;     // for minLength / maxLength / pattern
+  formula?: string;   // for custom: formula string; return true = pass, false/string = error
+}
+```
+
+Rules are stored in `node._validation.rules` (array).
+
+### Rule types and their `value` field
+
+| Type | Needs `value`? | Description |
+|---|---|---|
+| `required` | No | Field must not be empty |
+| `email` | No | Validates email format |
+| `minLength` | Yes — number | Min character count |
+| `maxLength` | Yes — number | Max character count |
+| `pattern` | Yes — regex string | Custom regex |
+| `custom` | No (uses `formula`) | Formula returning `true` (pass) or error string (fail) |
+
+**Rule:** When `opt?.hasValue` is true (rule type requires a value input), show the value input in the FIRST row and the message input in the SECOND row. Never render two message inputs. The check prevents duplication:
+
+```tsx
+// First row: value input (for minLength, maxLength, pattern)
+{opt?.hasValue && <RuleValueInput ... />}
+// Second row: message input — ONLY if there is no value input (required, email, custom)
+{!opt?.hasValue && <RuleMessageInput ... />}
+// Always: message input in its own row after the value row
+{opt?.hasValue && <RuleMessageInput ... />}
+```
+
+### Validation trigger
+
+Stored as `node._validation.trigger`:
+
+| Value | Behaviour |
+|---|---|
+| `'submit'` (default) | Rules run only when the form's submit button is pressed |
+| `'change'` | Rules run on every input change (debounced if `node._debounce` is set) |
+
+**On-change validation must NOT block typing.** The `setFormFieldHandler` in `form-variable-handler.ts` must always update `formData` with the new value BEFORE running validation. If validation runs first and an error is stored, the controlled input value update must still be applied in the same state write.
+
+### Runtime validation — `form-variable-handler.ts`
+
+```ts
+// applyValidationRules — called both on change (debounced) and on submit
+function applyValidationRules(
+  rules: ValidationRule[],
+  value: unknown,
+  formData: Record<string, unknown>,
+  evaluate: (formula: string) => unknown
+): string | null {
+  for (const rule of rules) {
+    // run each rule; return first failure message or null if all pass
+  }
+  return null;
+}
+```
+
+`setFormFieldHandler` flow:
+1. Update `formData[field] = newValue` immediately (always, before any validation)
+2. If `trigger === 'change'`: schedule debounced validation using `debounceTimers` Map
+3. Update store state with the new `formData` (so the controlled input value is unblocked)
+4. When debounce fires: run `applyValidationRules`, update `fields[field].error`
+
+### Submit validation — `submitFormHandler`
+
+On submit:
+1. Collect all fields with `validationRules` (or legacy `_validation.rules`)
+2. Run `applyValidationRules` for each field synchronously
+3. If any error: store errors in `fields[field].error`, set `isValid = false`, abort
+4. If all pass: set `isValid = true`, `isSubmitted = true`, call `onSuccess` action
+
+---
+
+## §43 Form System — Input Component Wiring
+
+### `InputWithField` (`lib/sdui/components/InputWithField.tsx`)
+
+Wrapper that renders Gluestack's `Input` + `InputField` as a single composite. Key behaviors:
+
+- **No value+defaultValue conflict:** If `value` prop is present, delete `defaultValue` before passing to `InputField`
+- **readOnly mapping:** Extract `readOnly` from props; pass `editable={readOnly ? false : undefined}` to `InputField` (Gluestack uses `editable`, not `readOnly`)
+- **Controlled input:** When inside a `FormContainer`, `value` comes from `formData[field]`; `InputWithField` must not also have `defaultValue`
+
+### `ControlledInputField` (`lib/sdui/components/ControlledInputField.tsx`)
+
+Thin wrapper for standalone `InputField` nodes (not inside `InputWithField`):
+
+```ts
+export const ControlledInputField = React.forwardRef(function ControlledInputField({ readOnly, ...props }, ref) {
+  return <InputField ref={ref} readOnly={readOnly} editable={readOnly ? false : undefined} {...props} />;
+});
+```
+
+Registered in `component-registry.tsx` as `InputField: ControlledInputField`.
+
+### `autoComplete` workaround
+
+Chrome ignores `autoComplete="off"`. Use `autoComplete="new-password"` as the workaround for inputs where browser autofill should be suppressed.
+
+### `FormContainer` runtime state shape
+
+```ts
+{
+  formData: Record<string, unknown>;       // current field values
+  fields: Record<string, {
+    error: string | null;
+    touched: boolean;
+  }>;
+  isValid: boolean;
+  isSubmitting: boolean;
+  isSubmitted: boolean;
+  initialFormData: Record<string, unknown>;  // set from node.props.initialFormData
+}
+```
+
+Access in formulas: `local.data.form.formData.fieldName`, `local.data.form.fields.fieldName.error`
+
+### Formula paths inside FormContainer
+
+- **Current value:** `local.data.form.formData.username`
+- **Field error:** `local.data.form.fields.username.error`
+- **Form is valid:** `local.data.form.isValid`
+- **Form was submitted:** `local.data.form.isSubmitted`
+
+**Rule:** Formula paths use the `local.data.form.*` prefix because `FormContainer` writes its state to the local variable store under the `form` key. These are chip-selectable in the formula editor's Variables tab under "form".
+
+---
+
+## §44 Form System — Button Submit Type
+
+### Builder configuration
+
+Button nodes in the Settings tab show a "Submit" on/off toggle. When ON:
+- `node.props.submitType = 'submit'` is set
+- Clicking the button in preview calls the parent `FormContainer`'s `submitForm` action
+
+### Default on drop
+
+When a `FormContainer` is dropped onto the canvas, its default children include a `Button` with `submitType: 'submit'` already set. This avoids the user needing to manually configure the submit button.
+
+### Runtime behaviour in `renderer.tsx`
+
+```tsx
+if (resolvedProps.submitType === 'submit' && formCtx) {
+  // Wrap onClick to call formCtx.submit() before any configured action
+  const originalClick = resolvedProps.onClick;
+  resolvedProps.onClick = () => {
+    formCtx.submit();
+    originalClick?.();
+  };
+}
+```
+
+**Rule:** `submitType` is a builder convention. The SDUI JSON schema does not have a native `submitType` prop — the renderer intercepts it before passing props to the component.
+
+---
+
+## §45 Form System — Disabled Overlay
+
+### How it works
+
+When `props.disabled` is truthy (or `_forceDisabledInEditor` is set in builder mode), the renderer wraps the element in a `position: relative` container and places a configurable overlay `div` on top.
+
+### CSS rules
+
+**Critical:** Use `rgba()` background, NOT separate `backgroundColor` + `opacity` CSS properties.
+
+With a separate `opacity` property, the browser composites the entire element (including `backdrop-filter`) at that opacity level, which makes the blur effect invisible at low opacity values.
+
+```tsx
+// ❌ BAD — opacity composites the blur too
+{ backgroundColor: '#000000', opacity: 0.3, backdropFilter: 'blur(8px)' }
+
+// ✅ GOOD — rgba keeps blur at full strength independently
+{ backgroundColor: `rgba(${r}, ${g}, ${b}, ${alpha})`, backdropFilter: 'blur(8px)' }
+```
+
+Always add both `backdropFilter` and `WebkitBackdropFilter` for Safari support.
+
+### `pointerEvents` by mode
+
+```tsx
+pointerEvents: builderMode ? 'none' : 'all',
+```
+
+In builder mode the transparent capture overlay handles all click-to-select events. Setting `'none'` lets those events pass through the disabled overlay to the capture overlay beneath it, so the user can still select the disabled element in the canvas.
+
+In preview/production mode `'all'` ensures the overlay truly blocks interaction with the disabled element.
+
+### `_forceDisabledInEditor`
+
+When `props.disabled` is formula-bound (not literally `true`), the overlay doesn't show in the builder because the formula evaluates to a non-boolean at design time. The "Force show in editor" checkbox sets `node._forceDisabledInEditor = true`, which makes the renderer show the overlay unconditionally in builder mode.
+
+```tsx
+const showDisabledOverlay =
+  resolvedProps.disabled === true ||
+  (node._forceDisabledInEditor === true && builderMode);
+```
+
+**Rule:** Only show the "Force show in editor" checkbox when `isBound` is true (the disabled prop is a formula). When disabled is a plain boolean, the overlay automatically reflects the value.
+
+### Overlay configuration — Performance rules
+
+All three overlay properties (color, opacity, blur) use **rAF-throttled live updates** + **single history commit on gesture end**:
+
+```
+patchColorLive  → rAF → patchNodeFieldLive  ──────────────── onCommit (picker closes) → _pushHistory
+patchOpacityLive→ rAF → patchNodeFieldLive  ── onMouseUp / onBlur → _pushHistory
+patchBlurLive   → rAF → patchNodeFieldLive  ── onMouseUp / onBlur → _pushHistory
+```
+
+- **`patchNodeFieldLive`** — updates the node tree in Zustand but does NOT call `_pushHistory`. Use for all continuous drag/slide updates.
+- **`_pushHistory`** — call exactly once per gesture (on mouseup, blur, or color picker close) so undo/redo gets one clean snapshot per change.
+
+**Rule:** Never call `patchNodeField` (which calls `_pushHistory`) during a drag gesture. Flooding history with per-pixel snapshots makes undo useless and causes jank from repeated deep-clones of the node tree.
+
+### Color picker for overlay
+
+Use `FigmaColorPicker` (not native `<input type="color">`) so the user has access to theme swatches. Pass `onCommit` to push history when the picker popover closes:
+
+```tsx
+<FigmaColorPicker
+  value={overlay.color ?? '#000000'}
+  onChange={hex => patchColorLive(hex)}
+  onCommit={commitHistory}
+/>
+```
+
+`onCommit` is implemented in `FigmaColorPicker` via a ref-stable callback that fires when `open` transitions from `true` → `false` (regardless of whether the popover was closed by clicking outside or pressing Escape).
+
+---
+
+## §46 Form System — `patchNodeFieldLive` vs `patchNodeField`
+
+Two store methods exist for patching a node field:
+
+| Method | History | Use for |
+|---|---|---|
+| `patchNodeField(id, field, value)` | Yes — calls `_pushHistory` | Discrete changes (checkbox toggle, dropdown select, text commit on blur) |
+| `patchNodeFieldLive(id, field, value)` | No | Continuous drag/slide updates (slider drag, color picker circle) |
+
+**Rule:** When building any panel control that involves continuous user gestures (range slider, drag handle, color picker), always use `patchNodeFieldLive` for the onChange handler and call `store._pushHistory()` once in `onMouseUp` / `onBlur` / `onCommit`.
+
+This prevents:
+1. **History flooding** — undo jumps only milliseconds back instead of to the state before the gesture
+2. **Performance jank** — `_pushHistory` does a full deep-clone of the page node tree; calling it 60x/sec causes visible lag
+
+---
+
+## §47 Design Tab — Interactions Section Removed
+
+The `InteractionsInDesign` component (workflow-trigger pickers per event) has been **permanently removed** from the Design tab.
+
+- Do NOT re-add `<InteractionsInDesign />` to `DesignTab` in `_panel-right.tsx`
+- Do NOT re-add the `INTERACTION_EVENTS` constant or `InteractionEvent` type
+- Workflow wiring for nodes is handled exclusively through the **Workflows tab** (right panel) and the **Workflow Canvas** (`WorkflowCanvas` component)
+- `data-testid="interactions-section"` no longer exists; any test that checks for it must assert `toHaveCount(0)` (see ST-24)
+
+---
+
+## §48 Form System — Input Types
+
+The Settings tab Input Type dropdown maps to `props.type` and `props.inputMode`:
+
+| Label | `props.type` | `props.inputMode` |
+|---|---|---|
+| Text | `text` | — |
+| Email | `email` | `email` |
+| Password | `password` | — |
+| Number | `number` | `numeric` |
+| Decimal | `decimal` | `decimal` |
+| Phone | `tel` | `tel` |
+| Currency | `text` | `decimal` |
+| Multiline | (Textarea) | — |
+
+**Removed types** (do not re-add): Short answer, Long answer, Search, Date, Time, Color — these were confusing duplicates or not useful as input type selectors.
+
+**Rule:** Input type changes update `props.type` only. `inputMode` is a secondary hint for mobile keyboards and is set automatically based on the selected type.
+
+---
+
+## §48 Form System — E2E Test Patterns
+
+E2E tests for forms live in `e2e/builder-form-validation.spec.ts`.
+
+### Selecting form fields in Playwright
+
+Use placeholder-based selectors for Gluestack inputs (they do not render a visible `<input type="email">` — the type is set via `inputMode`):
+
+```ts
+// ❌ BAD — type-based selector unreliable with Gluestack
+await page.locator('input[type="email"]').fill('test@test.com');
+
+// ✅ GOOD — placeholder is always rendered
+await page.locator('input[placeholder="Email"]').fill('test@test.com');
+
+// ✅ ALSO GOOD — autocomplete attribute when placeholder is ambiguous
+await page.locator('input[autocomplete="email"]').fill('test@test.com');
+```
+
+### Submitting forms
+
+```ts
+// Use text-based button selector (role-based can fail with Gluestack Button)
+async function clickSubmit(page: Page, text = 'Sign In') {
+  const btn = page.locator(`button:has-text("${text}"), [role="button"]:has-text("${text}")`).first();
+  await btn.click();
+}
+```
+
+### Testing debounced validation
+
+```ts
+// Type quickly — error should NOT appear immediately
+await page.locator('input[placeholder="Phone"]').fill('12');
+await page.waitForTimeout(100); // less than debounce delay
+await expect(page.locator('text=Invalid phone')).not.toBeVisible();
+
+// Wait for debounce to fire
+await page.waitForTimeout(600); // debounce is 500ms
+await expect(page.locator('text=Invalid phone')).toBeVisible();
+```
+
+### Testing submit-trigger validation
+
+```ts
+// Clear field — no error yet
+await page.locator('input[placeholder="Email"]').fill('');
+// Error should NOT appear before submit
+await expect(page.locator('text=Required')).not.toBeVisible();
+// Submit — error should appear
+await clickSubmit(page);
+await expect(page.locator('text=Required')).toBeVisible();
+```
+
+### Validation clears on re-type
+
+```ts
+// After submit shows error, start typing — error must clear
+await page.locator('input[placeholder="Email"]').fill('a');
+await expect(page.locator('text=Required')).not.toBeVisible();
+```
+
+---
+
+## §49 Workflow Canvas — ActionRef (Named Action Reference) in Element Interactions
+
+**Problem:** A node's action is `{ "action": "submitSignIn" }` (ActionRef format). When the workflow canvas opens for the element's event, it wraps this as `[{ "action": "submitSignIn" }]`. Since `step.type` is `undefined`, the canvas renders an empty card with "Choose an action" in the right panel.
+
+**Root cause:** The canvas only understands `ActionStep` objects with a `type` field. ActionRef objects (`{ action: "xxx" }`) have no `type`, so they're unrecognized.
+
+**Fix:** Two helpers handle the conversion:
+
+```ts
+// Deserialize raw JSON → canvas ActionStep
+function deserializeStep(raw: unknown, id: string): ActionStep {
+  const obj = raw as Record<string, unknown>;
+  if (obj && typeof obj.action === 'string' && !obj.type) {
+    // ActionRef: { "action": "xxx" } → runNamedAction step
+    return { id, type: 'runNamedAction', action: obj.action, name: obj.action };
+  }
+  return { id, ...(obj as Omit<ActionStep, 'id'>) };
+}
+
+// Serialize canvas ActionStep → raw JSON for storage
+function serializeStep(step: ActionStep): unknown {
+  if (step.type === 'runNamedAction') return { action: step.action ?? '' };
+  const { id: _, ...rest } = step;
+  return rest;
+}
+```
+
+These are used in the init `useEffect` (load) and `handleClose` (save).
+
+**`runNamedAction` step type:**
+- Added to `ActionStepType` union and `ACTION_CATEGORIES` (under Actions, icon `▶`, label "Run named action")
+- Right panel shows "Action name *" input (edits `step.action`) instead of Type dropdown
+- Card subtext shows the referenced action name
+- Serializes back to `{ "action": "xxx" }` on save
+
+**`handleClose` element save:** For `element` kind, `handleClose` now serializes steps and saves via `store.patchNodeField(nodeId, 'actions', ...)`. Single-step arrays are unwrapped to a plain object; empty arrays clear the event. This was previously missing — element interaction edits were lost on canvas close.
+
+---
+
+## §50 Workflow Canvas — Dynamic SVG Line Geometry
+
+All connector lines in `BranchNode`, `MultiOptionBranchNode`, and `LoopNode` must be measured at runtime. Never use static constants for SVG coordinates.
+
+### Rule 1 — Use `ResizeObserver` for all geometry
+
+Use `rowRef` on the columns container and `colRefs[i]` on each column `<div>`. Measure `offsetHeight`, `offsetWidth`, and offset position in a single `useEffect`:
+
+```ts
+const colRefs = useRef<(HTMLDivElement | null)[]>([]);
+const rowRef = useRef<HTMLDivElement | null>(null);
+const [layout, setLayout] = useState<{ xCenters: number[]; heights: number[]; rowW: number }>({
+  xCenters: [], heights: [], rowW: totalW,
+});
+
+useEffect(() => {
+  const measure = () => {
+    const row = rowRef.current;
+    if (!row) return;
+    const xCenters = colRefs.current.map(el =>
+      el ? (el.offsetLeft - row.offsetLeft) + el.offsetWidth / 2 : 0
+    );
+    const heights = colRefs.current.map(el => el?.offsetHeight ?? 0);
+    setLayout({ xCenters, heights, rowW: row.offsetWidth });
+  };
+  const observers: ResizeObserver[] = [];
+  [rowRef.current, ...colRefs.current].filter(Boolean).forEach(el => {
+    const ro = new ResizeObserver(measure);
+    ro.observe(el!);
+    observers.push(ro);
+  });
+  measure();
+  return () => observers.forEach(ro => ro.disconnect());
+}, [/* allBranches.length for multi-option */]);
+```
+
+### Rule 2 — `offsetLeft` must be row-relative (critical for nested splits)
+
+**Problem:** `el.offsetLeft` is relative to `offsetParent`, which bubbles up to the nearest positioned ancestor — the canvas `worldRef`. For nested splits, a column at local x=0 inside a parent column at x=608 has `offsetLeft=608`, placing SVG lines completely outside the SVG viewport.
+
+**Fix:** Always subtract `row.offsetLeft` from every column's `offsetLeft`:
+
+```ts
+// ❌ BAD — relative to worldRef; breaks for any nested split
+el.offsetLeft + el.offsetWidth / 2
+
+// ✅ GOOD — relative to rowRef; correct at any nesting depth
+(el.offsetLeft - row.offsetLeft) + el.offsetWidth / 2
+```
+
+### Rule 3 — Use `minWidth` not `width` on branch columns
+
+**Problem:** `width: BRANCH_W` clamps the column — nested content (e.g. an inner 3-branch split = 876px) overflows invisibly and `offsetWidth` stays at `BRANCH_W`, producing wrong x-center calculations.
+
+**Fix:** Use `minWidth: BRANCH_W` so the column expands to fit its widest child:
+
+```ts
+// ❌ BAD
+style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: BRANCH_W }}
+
+// ✅ GOOD
+style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: BRANCH_W }}
+```
+
+### Rule 4 — Loop container needs horizontal padding
+
+**Problem:** `loopContainer` uses `alignItems: center`. When a nested `MultiOptionBranchNode` expands to fill the full width, the first and last column action cards touch the left/right dashed border of the loop.
+
+**Fix:** Add horizontal padding to `loopContainer` so content is inset from the borders:
+
+```ts
+loopContainer: {
+  // ...existing styles...
+  paddingLeft: 24,
+  paddingRight: 24,
+}
+```
+
+### Rule 5 — LoopNode pill height is dynamic
+
+The dashed border's top inset must match half the pill row height. Measure it with `ResizeObserver`:
+
+```ts
+const pillRowRef = useRef<HTMLDivElement | null>(null);
+const [pillRowH, setPillRowH] = useState(34);
+
+useEffect(() => {
+  const el = pillRowRef.current;
+  if (!el) return;
+  const ro = new ResizeObserver(() => setPillRowH(el.offsetHeight));
+  ro.observe(el);
+  setPillRowH(el.offsetHeight);
+  return () => ro.disconnect();
+}, []);
+
+// Use in the dashed border inset:
+inset: `-${Math.round(pillRowH / 2)}px 50% 14px 0px`
+```
+
+---
+
+## §42 Form Workflow Step Types — Builder Rules
+
+### Overview
+
+Three workflow step types are form-specific and only appear in the action-type picker when `isFormContext` is true (i.e. the selected element **is** a `FormContainer` or any descendant of one). They appear under the **"Other"** category in `FORM_ACTION_CATEGORY` inside `_workflow-canvas.tsx`.
+
+| Step type | Label | Config |
+|---|---|---|
+| `setFormState` | Set form state | `isSubmitting` (bool/formula), `isSubmitted` (bool/formula) |
+| `submitForm` | Submit form | `onSuccess: { action: "uuid" }`, `fieldValidations: Record<string, { required, message }>` |
+| `resetForm` | Reset form | No config — resets all fields to initial values |
+
+### `FORM_ACTION_CATEGORY` category label
+
+The category label is **`"Other"`** (not `"Form"`) to match the reference design. Do not change this label.
+
+### `FormContainer` element triggers
+
+`ELEMENT_TRIGGERS['FormContainer']` defines two triggers that appear at the top of the trigger dropdown when the selected element is a `FormContainer`:
+
+```ts
+FormContainer: [
+  { value: 'submit',                label: 'On submit' },
+  { value: 'submitValidationError', label: 'On submit validation error' },
+],
+```
+
+### `submitForm` config shape
+
+```ts
+{
+  onSuccess?: { action: string };           // ActionRef — UUID of workflow to run after success
+  fieldValidations?: {                       // Per-field validation rules
+    [fieldPath: string]: {
+      required: boolean;
+      message: string;
+    };
+  };
+}
+```
+
+The builder renders:
+- **On success** — `WorkflowBindButton` for selecting a named workflow
+- **Field validations** — a dynamic key-value list with field path input, required toggle, and error message input
+
+### `setFormField` inline actions — hidden from Workflows tab
+
+When a controlled input (e.g. `InputField`) is dropped inside a `FormContainer`, the builder auto-injects a `setFormField` inline action into the node's `actions.change`. This is a **system-managed** action — it is NOT user-created and should NOT appear in the right-panel Workflows tab.
+
+Filter rule applied in `ElementWorkflowsTab` (`_panel-right.tsx`): in the legacy `rawActionsObj` branch, skip any entry whose `actionDef.type` is set (inline action). Only pure `ActionRef` objects `{ action: "uuid" }` (which have no `type` property) are shown as user-editable workflows.
+
+```ts
+workflowEntries = Object.entries(rawActionsObj)
+  .filter(([, actionDef]) => !(actionDef as any)?.type)  // skip inline system actions
+  .map(...)
+```
+
+### `isFormContext` detection
+
+`isFormContext` is computed in `WorkflowCanvas` using `hasFormContainerAncestor(pageNodes, targetNodeId)` from `_store.ts`. It is passed to `NodePropsPanel` and `TypeSearchDropdown` to conditionally inject `FORM_ACTION_CATEGORY` into the picker.

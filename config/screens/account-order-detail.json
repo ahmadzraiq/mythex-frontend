@@ -19,14 +19,11 @@
         "children": [
           {
             "type": "Pressable",
-            "actions": {
-              "click": {
-                "action": "navigate",
-                "payload": {
-                  "path": "/account/orders"
-                }
+            "actions": [
+              {
+                "action": "d5d15a7d-ea78-467a-a181-2e801e93ce0f"
               }
-            },
+            ],
             "children": [
               {
                 "type": "Text",
@@ -91,8 +88,8 @@
                       {
                         "type": "NextImage",
                         "props": {
-                          "src": "{{context.item.productVariant.product.featuredAsset.preview}}",
-                          "alt": "{{context.item.productVariant.product.name}}",
+                          "src": "{{context.item.data.productVariant.product.featuredAsset.preview}}",
+                          "alt": "{{context.item.data.productVariant.product.name}}",
                           "width": 80,
                           "height": 80,
                           "className": "rounded-md object-cover w-20 h-20 flex-shrink-0 border border-[var(--theme-border)]"
@@ -109,21 +106,21 @@
                             "props": {
                               "className": "font-medium"
                             },
-                            "text": "{{context.item.productVariant.product.name}}"
+                            "text": "{{context.item.data.productVariant.product.name}}"
                           },
                           {
                             "type": "Text",
                             "props": {
                               "className": "text-sm text-[var(--theme-muted-foreground)]"
                             },
-                            "text": "{{context.item.productVariant.name}}"
+                            "text": "{{context.item.data.productVariant.name}}"
                           },
                           {
                             "type": "Text",
                             "props": {
                               "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                             },
-                            "text": "Qty: {{context.item.quantity}}"
+                            "text": "Qty: {{context.item.data.quantity}}"
                           }
                         ]
                       },
@@ -133,7 +130,7 @@
                           "className": "font-semibold text-right flex-shrink-0"
                         },
                         "text": {
-                          "expr": "formatCurrency({{context.item.linePriceWithTax}} / 100, {{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.currencyCode}} || 'USD')"
+                          "expr": "formatCurrency({{context.item.data.linePriceWithTax}} / 100, {{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.currencyCode}} || 'USD')"
                         }
                       }
                     ]

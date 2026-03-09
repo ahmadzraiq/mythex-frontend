@@ -16,7 +16,7 @@
   "layout": "account",
   "initActions": [
     {
-      "action": "fetchActiveCustomer"
+      "action": "25936105-5bba-4563-8105-3e5218489469"
     }
   ],
   "content": {
@@ -91,14 +91,14 @@
                               {
                                 "type": "InputField",
                                 "props": {
-                                  "value": "{{variables['e2f3a4b5-c6d7-8901-efab-901234567890'].value.firstName}}",
+                                  "value": "{{local.data.form.formData.firstName}}",
                                   "placeholder": "Jane"
                                 },
-                                "actions": {
-                                  "change": {
-                                    "type": "setFormField", "formId": "e2f3a4b5-c6d7-8901-efab-901234567890", "field": "firstName", "value": "$event"
+                                "actions": [
+                                  {
+                                    "action": "48ef6f2b-91f2-4383-aa36-5782cbdadc9b"
                                   }
-                                }
+                                ]
                               }
                             ]
                           }
@@ -123,14 +123,14 @@
                               {
                                 "type": "InputField",
                                 "props": {
-                                  "value": "{{variables['e2f3a4b5-c6d7-8901-efab-901234567890'].value.lastName}}",
+                                  "value": "{{local.data.form.formData.lastName}}",
                                   "placeholder": "Doe"
                                 },
-                                "actions": {
-                                  "change": {
-                                    "type": "setFormField", "formId": "e2f3a4b5-c6d7-8901-efab-901234567890", "field": "lastName", "value": "$event"
+                                "actions": [
+                                  {
+                                    "action": "74f20b56-fc2a-46bf-8a64-1f511faa8499"
                                   }
-                                }
+                                ]
                               }
                             ]
                           }
@@ -158,14 +158,14 @@
                             "type": "InputField",
                             "props": {
                               "type": "tel",
-                              "value": "{{variables['e2f3a4b5-c6d7-8901-efab-901234567890'].value.phoneNumber}}",
+                              "value": "{{local.data.form.formData.phoneNumber}}",
                               "placeholder": "+1 (555) 000-0000"
                             },
-                            "actions": {
-                              "change": {
-                                "type": "setFormField", "formId": "e2f3a4b5-c6d7-8901-efab-901234567890", "field": "phoneNumber", "value": "$event"
+                            "actions": [
+                              {
+                                "action": "8c8a590b-8b08-4c32-8486-c4002129191b"
                               }
-                            }
+                            ]
                           }
                         ]
                       }
@@ -185,11 +185,11 @@
                         "text": "Save Changes"
                       }
                     ],
-                    "actions": {
-                      "click": {
+                    "actions": [
+                      {
                         "action": "updateCustomer"
                       }
-                    }
+                    ]
                   }
                 ]
               }
@@ -239,14 +239,14 @@
                             "type": "InputField",
                             "props": {
                               "type": "email",
-                              "value": "{{variables['e2f3a4b5-c6d7-8901-efab-901234567890'].value.emailAddress}}",
+                              "value": "{{local.data.form.formData.emailAddress}}",
                               "placeholder": "you@example.com"
                             },
-                            "actions": {
-                              "change": {
-                                "type": "setFormField", "formId": "e2f3a4b5-c6d7-8901-efab-901234567890", "field": "emailAddress", "value": "$event"
+                            "actions": [
+                              {
+                                "action": "f8b72b29-4013-491f-9aa8-0709aaff754b"
                               }
-                            }
+                            ]
                           }
                         ]
                       }
@@ -266,11 +266,11 @@
                         "text": "Update Email"
                       }
                     ],
-                    "actions": {
-                      "click": {
+                    "actions": [
+                      {
                         "action": "updateCustomerEmail"
                       }
-                    }
+                    ]
                   }
                 ]
               }
@@ -320,14 +320,14 @@
                             "type": "InputField",
                             "props": {
                               "type": "password",
-                              "value": "{{variables['f3a4b5c6-d7e8-9012-fabc-012345678901'].value.currentPassword}}",
-                              "placeholder": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+                              "value": "{{local.data.form.formData.currentPassword}}",
+                              "placeholder": "••••••••"
                             },
-                            "actions": {
-                              "change": {
-                                "type": "setFormField", "formId": "f3a4b5c6-d7e8-9012-fabc-012345678901", "field": "currentPassword", "value": "$event"
+                            "actions": [
+                              {
+                                "action": "12b0040c-4d65-40b5-9586-19bffc3a1a4e"
                               }
-                            }
+                            ]
                           }
                         ]
                       }
@@ -353,14 +353,14 @@
                             "type": "InputField",
                             "props": {
                               "type": "password",
-                              "value": "{{variables['f3a4b5c6-d7e8-9012-fabc-012345678901'].value.newPassword}}",
-                              "placeholder": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+                              "value": "{{local.data.form.formData.newPassword}}",
+                              "placeholder": "••••••••"
                             },
-                            "actions": {
-                              "change": {
-                                "type": "setFormField", "formId": "f3a4b5c6-d7e8-9012-fabc-012345678901", "field": "newPassword", "value": "$event"
+                            "actions": [
+                              {
+                                "action": "095f52b4-3c26-4ff7-be9e-ed045949468e"
                               }
-                            }
+                            ]
                           }
                         ]
                       }
@@ -380,11 +380,11 @@
                         "text": "Change Password"
                       }
                     ],
-                    "actions": {
-                      "click": {
+                    "actions": [
+                      {
                         "action": "updateCustomerPassword"
                       }
-                    }
+                    ]
                   }
                 ]
               }

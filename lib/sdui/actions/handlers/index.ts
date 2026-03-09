@@ -16,7 +16,7 @@ import { runMultipleHandler } from './run-multiple-handler';
 import { navigateHandler } from './navigate-handler';
 import { navigateWithQueryHandler } from './navigate-with-query-handler';
 import { refetchDataSourceHandler } from './refetch-datasource-handler';
-import { setFormFieldHandler, resetFormHandler } from './form-variable-handler';
+import { setFormFieldHandler, setFormStateHandler, resetFormHandler, submitFormHandler } from './form-variable-handler';
 import {
   restoreHandler,
   clearPersistedPathsHandler,
@@ -30,6 +30,7 @@ import {
   cycleIndexHandler,
   mergeAtPathHandler,
 } from './misc-handlers';
+import { workflowStepsHandler } from './workflow-steps-handler';
 
 type HandlerFactory = (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void>;
 
@@ -60,7 +61,11 @@ export const ACTION_HANDLERS: Record<string, HandlerFactory> = {
   mergeAtPath: mergeAtPathHandler,
   refetchDataSource: refetchDataSourceHandler,
   setFormField: setFormFieldHandler,
+  setFormState: setFormStateHandler,
   resetForm: resetFormHandler,
+  submitForm: submitFormHandler,
+  // Visual workflow canvas step runner
+  workflowSteps: workflowStepsHandler,
 };
 
 /**

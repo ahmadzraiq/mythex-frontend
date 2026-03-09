@@ -15,6 +15,7 @@ import { useBuilderStore } from './_store';
 import { SP_BTN_PRIMARY, SP_BTN_SECONDARY, SP_INPUT, SP_LABEL, SP_SECTION } from './_slide-panel';
 import { ActionBuilder } from './_action-builder';
 import { ExprBuilder } from './_expr-builder';
+import { toHumanName } from './_workflow-canvas';
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
@@ -134,47 +135,65 @@ function WorkflowSlideContent({ workflowId, onClose }: WorkflowSlideContentProps
 function WorkflowRow({
   workflowId,
   stepCount,
+  trigger,
   onOpen,
   onDelete,
   isPinned,
 }: {
   workflowId: string;
   stepCount: number;
+  trigger?: string;
   onOpen: () => void;
   onDelete?: () => void;
   isPinned?: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
+  const triggerLabel = trigger ? `On ${trigger}` : 'On click';
+  const stepsLabel = stepCount === 0 ? '' : ` · ${stepCount} step${stepCount !== 1 ? 's' : ''}`;
 
   return (
     <div
       data-testid={`workflow-row-${workflowId}`}
       style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        padding: '8px 12px', borderBottom: '1px solid #1f2937',
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '10px 14px', borderBottom: '1px solid #1f2937',
         cursor: 'pointer',
-        background: hovered ? 'rgba(59,130,246,0.08)' : 'transparent',
+        background: hovered ? 'rgba(255,255,255,0.04)' : 'transparent',
       }}
       onClick={onOpen}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <span style={{ fontSize: 14, color: '#fbbf24', flexShrink: 0 }}>⚡</span>
+      {/* Icon */}
+      <div style={{
+        width: 30, height: 30, borderRadius: 7, flexShrink: 0,
+        background: '#1e293b', border: '1px solid #334155',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 13, color: '#94a3b8',
+      }}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+      </div>
+
+      {/* Name + trigger subtitle */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: isPinned ? '#60a5fa' : '#f3f4f6', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: isPinned ? '#60a5fa' : '#f1f5f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {workflowId}
         </div>
-        <div style={{ fontSize: 10, color: '#6b7280' }}>
-          {stepCount === 0 ? 'On execution' : `${stepCount} step${stepCount !== 1 ? 's' : ''} · On execution`}
+        <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+          {triggerLabel}{stepsLabel}
         </div>
       </div>
+
+      {/* Delete */}
       {!isPinned && onDelete && (
         <button
           data-testid={`delete-workflow-${workflowId}`}
           onClick={e => { e.stopPropagation(); onDelete(); }}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4b5563', fontSize: 14, padding: '0 2px', flexShrink: 0 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#475569', fontSize: 16, padding: '0 2px', flexShrink: 0, lineHeight: 1 }}
           onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#4b5563')}
+          onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
         >
           ×
         </button>
@@ -420,20 +439,23 @@ export function LogicTab({ onSetSlide }: LogicTabProps) {
   const [fmSearch, setFmSearch] = useState('');
   const [wfOpen, setWfOpen] = useState(true);
   const [fmOpen, setFmOpen] = useState(true);
-  const { pageWorkflows, setPageWorkflow, removePageWorkflow, globalFormulas, setGlobalFormula, removeGlobalFormula } = useBuilderStore();
+  const { globalWorkflows, setGlobalWorkflow, removeGlobalWorkflow, globalWorkflowMeta, setGlobalWorkflowMeta, globalFormulas, setGlobalFormula, removeGlobalFormula, openWorkflowCanvas } = useBuilderStore();
 
-  const allWorkflows = Object.entries(pageWorkflows);
-  const filteredWorkflows = allWorkflows.filter(([id]) => id.toLowerCase().includes(wfSearch.toLowerCase()));
+  // Only show truly global (project-level) workflows — NOT page-scoped ones
+  const filteredGlobalWorkflows = Object.keys(globalWorkflows).filter(id => {
+    const meta = globalWorkflowMeta[id];
+    const name = meta?.name ?? id;
+    return name.toLowerCase().includes(wfSearch.toLowerCase());
+  });
 
   const allFormulas = Object.keys(globalFormulas);
   const filteredFormulas = allFormulas.filter(n => n.toLowerCase().includes(fmSearch.toLowerCase()));
 
   const addWorkflow = () => {
-    let name = 'Untitled workflow';
-    let i = 1;
-    while (pageWorkflows[name]) { name = `Untitled workflow ${i++}`; }
-    setPageWorkflow(name, []);
-    onSetSlide({ kind: 'workflow', id: name });
+    const id = crypto.randomUUID();
+    setGlobalWorkflow(id, []);
+    setGlobalWorkflowMeta(id, { id, name: 'Untitled workflow' });
+    openWorkflowCanvas({ kind: 'globalWorkflow', id, isNew: true });
   };
 
   const addFormula = () => {
@@ -476,20 +498,27 @@ export function LogicTab({ onSetSlide }: LogicTabProps) {
               />
             </div>
             <div style={{ flex: 1, overflowY: 'auto' }}>
-              {filteredWorkflows.length === 0 && (
+              {filteredGlobalWorkflows.length === 0 && (
                 <div style={EMPTY}>
-                  {wfSearch ? 'No matching workflows.' : 'No workflows yet — click + New.'}
+                  {wfSearch ? 'No matching workflows.' : 'No global workflows yet — click + New to create one.'}
                 </div>
               )}
-              {filteredWorkflows.map(([id, steps]) => (
-                <WorkflowRow
-                  key={id}
-                  workflowId={id}
-                  stepCount={(steps as object[]).length}
-                  onOpen={() => onSetSlide({ kind: 'workflow', id })}
-                  onDelete={() => removePageWorkflow(id)}
-                />
-              ))}
+              {filteredGlobalWorkflows.map(id => {
+                const meta = globalWorkflowMeta[id];
+                const displayName = toHumanName(meta?.name ?? id);
+                const trigger = meta?.trigger;
+                const steps = globalWorkflows[id] ?? [];
+                return (
+                  <WorkflowRow
+                    key={id}
+                    workflowId={displayName}
+                    stepCount={(steps as object[]).length}
+                    trigger={trigger}
+                    onOpen={() => openWorkflowCanvas({ kind: 'globalWorkflow', id })}
+                    onDelete={() => removeGlobalWorkflow(id)}
+                  />
+                );
+              })}
             </div>
           </>
         )}

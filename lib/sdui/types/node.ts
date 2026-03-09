@@ -170,6 +170,8 @@ export interface SDUINode {
   type: SDUIComponentType;
   /** Stable identifier — used by visual builder for selection & annotation */
   id?: string;
+  /** User-visible display name shown in the formula editor's component picker */
+  name?: string;
   key?: string;
   condition?: ConditionValue;
   map?: string;
@@ -179,8 +181,19 @@ export interface SDUINode {
   text?: string | { expr: object; suffix?: string; prefix?: string; template?: string };
   src?: string;
   alt?: string;
-  /** Action handlers: onClick, onSubmit, onChange, etc. Can be single action or array */
-  actions?: Record<string, SDUIAction | SDUIAction[]>;
+  /**
+   * Action handlers.
+   * Array format (preferred): each item is a workflow ref; trigger is read from the workflow
+   * definition and the correct event (click/change/valueChange/etc.) is bound automatically.
+   * Object format (legacy): keys are event names, values are action refs.
+   */
+  actions?: SDUIAction[] | Record<string, SDUIAction | SDUIAction[]>;
   /** Data source - fetch on mount when this node is rendered */
   dataSource?: SDUIDataSource;
+  /** Initial value for form field — used by FormContainer.registerField on mount */
+  _initialValue?: unknown;
+  /** Overlay rendered on top of the element when props.disabled is truthy */
+  _disabledOverlay?: { color?: string; opacity?: number; blur?: number };
+  /** When disabled is formula-bound, force the overlay to render in the builder canvas */
+  _forceDisabledInEditor?: boolean;
 }

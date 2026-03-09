@@ -12,7 +12,7 @@
  */
 
 import React, { useRef, useEffect, useCallback, useMemo, useState, memo, useDeferredValue } from 'react';
-import { useBuilderStore, findNode, findParentNode, VIEWPORT_WIDTHS } from './_store';
+import { useBuilderStore, findNode, findParentNode, VIEWPORT_WIDTHS, REQUIRED_PARENT, ALLOWED_CHILDREN } from './_store';
 import BuilderOverlay, { type ResizeHandle } from './_overlay';
 import { SDUIEngine } from '@/lib/sdui/sdui-engine';
 import appConfig from '@/config/app';
@@ -34,6 +34,7 @@ const CONTAINER_TYPES = new Set([
   'AlertDialogHeader', 'AlertDialogBody', 'AlertDialogFooter',
   'FormContainer',
 ]);
+
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const app = appConfig as any;
@@ -129,14 +130,6 @@ const TEXT_NODE_TYPES = new Set([
   'ToastTitle', 'ToastDescription',
 ]);
 
-/**
- * Certain container types only accept specific child types.
- * Dropping anything else into them will crash the renderer.
- * Key = parent type, Value = allowed child types (empty Set = allow all).
- */
-const ALLOWED_CHILDREN: Record<string, Set<string>> = {
-  Button: new Set(['ButtonText', 'NavIcon']),
-};
 
 /**
  * Memoized wrapper around SDUIEngine for the active page.
@@ -1431,7 +1424,25 @@ export default function BuilderCanvas() {
     const allDraggingIds = multiDragIdsRef.current.length > 0
       ? multiDragIdsRef.current
       : (activeDragId ? [activeDragId] : []);
+
+    // Expand draggingIdSet to include the full subtrees of all dragged nodes.
+    // Without this, children of the dragged node (e.g. InputField inside Input)
+    // are still hit by findDropTargetElAt. That makes the nearest-gap compute
+    // parentId = dragged-node-id, which triggers the self-drop guard and the
+    // move is silently rejected — making it impossible to drag a compound node
+    // (Input, Checkbox, Button…) out of its container.
     const draggingIdSet = new Set(allDraggingIds);
+    const pn = useBuilderStore.getState().pageNodes;
+    function collectSubtreeIds(nodes: SDUINode[], out: Set<string>) {
+      for (const n of nodes) {
+        if (n.id) out.add(n.id);
+        if (n.children?.length) collectSubtreeIds(n.children as SDUINode[], out);
+      }
+    }
+    for (const id of allDraggingIds) {
+      const dragNode = findNode(pn, id);
+      if (dragNode?.children?.length) collectSubtreeIds(dragNode.children as SDUINode[], draggingIdSet);
+    }
 
     // Find the SDUI node under cursor. Dragged nodes (opacity 0.3, still in DOM)
     // are skipped so we always resolve to their parent container instead of
@@ -1460,17 +1471,24 @@ export default function BuilderCanvas() {
           return !!findNode((draggedNode.children as SDUINode[]), nodeId);
         });
 
-      // When hovering over the dragged node's own parent container, the edge
-      // zones (relY < 0.2 or > 0.8) would normally send the node to the parent's
-      // parent — but the user is trying to reorder within the same container.
-      // Skip the edge-zone check in that case so the node always stays inside.
-      const isHomeCont = isContainer && allDraggingIds.some(id => {
-        const p = findParentNode(useBuilderStore.getState().pageNodes, id);
-        return p?.id === nodeId;
-      });
-      const inDropZone = isHomeCont ? true : (relY > 0.2 && relY < 0.8);
+      // Edge zones (relY < 0.2 or > 0.8) allow escaping the container to drop
+      // before/after it in its parent. REQUIRED_PARENT in moveNode already
+      // protects truly context-bound nodes (e.g. InputField must stay in Input),
+      // so we don't need to override the edge-zone check here.
+      const inDropZone = relY > 0.2 && relY < 0.8;
 
-      if (isContainer && !isDroppingIntoSelf && inDropZone) {
+      // If the hovered container has ALLOWED restrictions, check whether ALL
+      // dragged nodes are permitted inside it. If any are blocked, fall through
+      // to "before/after in parent" so the user sees a visible drop indicator
+      // instead of a silent no-op on drop (e.g. dragging Input across Input2
+      // should show "insert before/after Input2" not "try to nest inside Input2").
+      const allowedSet = ALLOWED_CHILDREN[nodeType];
+      const allDraggedAllowed = !allowedSet || allDraggingIds.every(id => {
+        const dn = findNode(useBuilderStore.getState().pageNodes, id);
+        return dn?.type && allowedSet.has(dn.type);
+      });
+
+      if (isContainer && !isDroppingIntoSelf && inDropZone && allDraggedAllowed) {
         // ── Drop INSIDE the container ──
         // Find the nearest gap within the container's children so we insert at
         // the correct position and show the line exactly there.
@@ -2045,6 +2063,27 @@ export default function BuilderCanvas() {
                 // If we walked up without finding a selected ancestor, dragId is now
                 // the topmost ancestor — that is the intended drag target.
                 void found;
+              }
+
+              // Auto-escalate context-bound nodes to their required parent.
+              // e.g. dragging InputField → drag Input instead; ButtonText → Button.
+              // Without this, the user clicks on the text field (selecting InputField),
+              // tries to drag, and REQUIRED_PARENT in moveNode silently blocks the move.
+              const dragNodeForEscalation = findNode(useBuilderStore.getState().pageNodes, dragId);
+              if (dragNodeForEscalation?.type && REQUIRED_PARENT[dragNodeForEscalation.type]) {
+                const requiredParentType = REQUIRED_PARENT[dragNodeForEscalation.type];
+                let el2 = document.querySelector(`[data-builder-id="${dragId}"]`) as HTMLElement | null;
+                while (el2) {
+                  el2 = el2.parentElement?.closest('[data-builder-id]') as HTMLElement | null;
+                  if (!el2?.dataset.builderId) break;
+                  const parentNode = findNode(useBuilderStore.getState().pageNodes, el2.dataset.builderId);
+                  if (parentNode?.type === requiredParentType) {
+                    dragId = el2.dataset.builderId;
+                    // Also update the selection so the right thing is highlighted
+                    select(dragId, false);
+                    break;
+                  }
+                }
               }
 
               draggingNodeIdRef.current = dragId;

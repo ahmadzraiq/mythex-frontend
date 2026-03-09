@@ -62,6 +62,12 @@ const THEME_OBJ: Record<string, unknown> = {
   sectionsDark: (themeConfig as Record<string, unknown>).sectionsDark ?? {},
   fonts: (themeConfig as Record<string, unknown>).fonts ?? {},
   cssVariables: (themeConfig as Record<string, unknown>).cssVariables ?? {},
+  /** Border-radius token → Tailwind class, e.g. theme?.['radius']?.['sm'] → 'rounded-sm' */
+  radius: {
+    none: 'rounded-none', sm: 'rounded-sm', base: 'rounded',
+    md: 'rounded-md', lg: 'rounded-lg', xl: 'rounded-xl',
+    '2xl': 'rounded-2xl', '3xl': 'rounded-3xl', full: 'rounded-full',
+  },
 };
 const computedDepPaths = getComputedDeps(computedDefs as Parameters<typeof getComputedDeps>[0]);
 

@@ -42,23 +42,8 @@ import { LogicTab, type LogicSlideState } from './_logic-tab';
 
 // ─── Icons (inline SVG stubs) ─────────────────────────────────────────────────
 
-const TYPE_ICONS: Record<string, string> = {
-  Box:           '□',
-  VStack:        '⬇',
-  HStack:        '➡',
-  Text:          'T',
-  Heading:       'H',
-  Image:         '🖼',
-  Button:        '◻',
-  Pressable:     '●',
-  Input:         '▭',
-  NavIcon:       '✦',
-  default:       '◇',
-};
-
-function NodeIcon({ type }: { type: string }) {
-  const icon = TYPE_ICONS[type] ?? TYPE_ICONS.default;
-  return <span style={{ fontSize: 10, width: 14, display: 'inline-block', textAlign: 'center', opacity: 0.7 }}>{icon}</span>;
+function NodeIcon(_: { type: string }) {
+  return null;
 }
 
 // ─── Context menu ─────────────────────────────────────────────────────────────
@@ -202,19 +187,21 @@ const LayerRow = memo(function LayerRow({
   onLayerDrop,
 }: LayerRowProps) {
   const nodeId = (node as { id?: string }).id ?? node.type;
+  const nodeName = (node as { name?: string }).name;
+  const displayLabel = nodeName || node.type;
   const [editing, setEditing] = useState(false);
-  const [editVal, setEditVal] = useState(nodeId);
+  const [editVal, setEditVal] = useState(displayLabel);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Enriched badges with count + tooltip preview
-  type BadgeInfo = { key: string; label: string; color: string; bg: string; title: string };
+  type BadgeInfo = { key: string; label: string; icon: string; color: string; bg: string; title: string };
   const badges: BadgeInfo[] = [];
 
   const condition = (node as { condition?: unknown }).condition;
   if (condition != null) {
     const preview = JSON.stringify(condition);
     const short = preview.length > 40 ? preview.slice(0, 38) + '…' : preview;
-    badges.push({ key: 'if', label: 'if', color: '#60a5fa', bg: '#1e3a5f', title: `Condition: ${short}` });
+    badges.push({ key: 'if', label: 'if', icon: 'if', color: '#60a5fa', bg: '#1e3a5f', title: `Condition: ${short}` });
   }
 
   const mapPath = (node as { map?: unknown }).map;
@@ -225,33 +212,34 @@ const LayerRow = memo(function LayerRow({
         ? JSON.stringify(mapPath).slice(0, 30)
         : String(mapPath);
     const mapTitle = typeof mapPath === 'string' ? mapPath : JSON.stringify(mapPath);
-    badges.push({ key: 'map', label: `⟳ ${mapLabel}`, color: '#c084fc', bg: '#2e1065', title: `Repeat over: ${mapTitle}` });
+    badges.push({ key: 'map', label: `⟳ ${mapLabel}`, icon: '⟳', color: '#c084fc', bg: '#2e1065', title: `Repeat over: ${mapTitle}` });
   }
 
   const nodeActions = (node as { actions?: Record<string, unknown> }).actions;
   if (nodeActions != null) {
     const eventCount = Object.keys(nodeActions).length;
     const preview = Object.keys(nodeActions).join(', ');
-    badges.push({ key: 'act', label: `⚡ ${eventCount}`, color: '#818cf8', bg: '#1e1b4b', title: `Events: ${preview}` });
+    badges.push({ key: 'act', label: `⚡ ${eventCount}`, icon: '⚡', color: '#818cf8', bg: '#1e1b4b', title: `Events: ${preview}` });
   }
 
   const ds = (node as { dataSource?: unknown }).dataSource;
   if (ds != null) {
-    badges.push({ key: 'ds', label: '↓', color: '#34d399', bg: '#022c22', title: 'Has data source' });
+    badges.push({ key: 'ds', label: '↓', icon: '↓', color: '#34d399', bg: '#022c22', title: 'Has data source' });
   }
 
   const startEdit = useCallback(() => {
-    setEditVal(nodeId);
+    setEditVal(displayLabel);
     setEditing(true);
     setTimeout(() => inputRef.current?.select(), 0);
-  }, [nodeId]);
+  }, [displayLabel]);
 
   const commitEdit = useCallback(() => {
     setEditing(false);
-    if (editVal && editVal !== nodeId) {
-      onRename(nodeId, editVal);
+    const trimmed = editVal.trim();
+    if (trimmed && trimmed !== displayLabel) {
+      onRename(nodeId, trimmed);
     }
-  }, [editVal, nodeId, onRename]);
+  }, [editVal, displayLabel, nodeId, onRename]);
 
   const bg = isSelected
     ? '#1d4ed8'
@@ -270,15 +258,15 @@ const LayerRow = memo(function LayerRow({
         display: 'flex',
         alignItems: 'center',
         gap: 2,
-        paddingLeft: 8 + depth * 14,
+        paddingLeft: 2 + depth * 8,
         paddingRight: 4,
-        height: 28,
+        height: 22,
         background: bg,
         cursor: 'grab',
         opacity: isHidden ? 0.4 : 1,
         userSelect: 'none',
-        borderRadius: 3,
-        margin: '1px 4px',
+        borderRadius: 2,
+        margin: '0 2px',
         position: 'relative',
         borderTop:    isDragOverAbove  ? '2px solid #3b82f6' : '2px solid transparent',
         borderBottom: isDragOverBelow  ? '2px solid #3b82f6' : '2px solid transparent',
@@ -317,12 +305,12 @@ const LayerRow = memo(function LayerRow({
       }}
       onDragEnd={() => onLayerDrop()}
     >
-      {/* Expand chevron — bigger, easier to click */}
+      {/* Expand chevron */}
       <span
-        style={{ width: 14, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        style={{ width: 16, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         onClick={e => { e.stopPropagation(); if (hasChildren) onToggleExpand(nodeId); }}
       >
-        {hasChildren ? <Chevron open={isExpanded} size={10} color="#9ca3af" /> : null}
+        {hasChildren ? <Chevron open={isExpanded} size={8} color="#6b7280" /> : null}
       </span>
 
       <NodeIcon type={node.type} />
@@ -336,58 +324,62 @@ const LayerRow = memo(function LayerRow({
             onChange={e => setEditVal(e.target.value)}
             onBlur={commitEdit}
             onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditing(false); }}
-            style={{ background: '#111827', border: '1px solid #3b82f6', borderRadius: 3, color: '#f3f4f6', fontSize: 11, padding: '1px 4px', width: '100%' }}
+            style={{ background: '#111827', border: '1px solid #3b82f6', borderRadius: 2, color: '#f3f4f6', fontSize: 10, padding: '0 4px', width: '100%' }}
             onClick={e => e.stopPropagation()}
           />
         ) : (
-          <span style={{ fontSize: 11, color: isSelected ? '#fff' : '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
-            {nodeId}
+          <span
+            style={{ fontSize: 10, color: isSelected ? '#fff' : '#c9d1d9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}
+            title={`${displayLabel}  [${nodeId}]`}
+          >
+            {displayLabel}
           </span>
         )}
       </span>
 
-      {/* SDUI badges — enriched with counts and tooltips */}
+      {/* SDUI badges — icon-only at rest, labeled when hovered/selected */}
       {badges.map(b => (
         <span
           key={b.key}
           title={b.title}
           style={{
-            fontSize: 9,
+            fontSize: 8,
             background: b.bg,
             color: b.color,
-            borderRadius: 3,
-            padding: '0 4px',
-            marginLeft: 2,
+            borderRadius: 2,
+            padding: '0 3px',
+            marginLeft: 1,
             flexShrink: 0,
             border: `1px solid ${b.color}40`,
-            lineHeight: '14px',
+            lineHeight: '13px',
             cursor: 'default',
-            maxWidth: 52,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
           }}
         >
-          {b.label}
+          {isHovered || isSelected ? b.label : b.icon}
         </span>
       ))}
 
-      {/* Visibility / Lock icons (appear on hover) */}
-      <span
-        style={{ fontSize: 10, opacity: isHidden ? 1 : 0, marginLeft: 2 }}
-        className="layer-vis"
-        onClick={e => { e.stopPropagation(); onToggleVisibility(nodeId); }}
-        title={isHidden ? 'Show' : 'Hide'}
-      >
-        {isHidden ? '🙈' : '👁'}
-      </span>
-      <span
-        style={{ fontSize: 10, opacity: isLocked ? 1 : 0, marginLeft: 2 }}
-        onClick={e => { e.stopPropagation(); onToggleLock(nodeId); }}
-        title={isLocked ? 'Unlock' : 'Lock'}
-      >
-        {isLocked ? '🔒' : '🔓'}
-      </span>
+      {/* Visibility — only shown when hidden (always) or hovered */}
+      {isHidden && (
+        <span
+          style={{ fontSize: 9, opacity: 0.7, marginLeft: 2, cursor: 'pointer', flexShrink: 0, color: '#f87171', lineHeight: 1 }}
+          onClick={e => { e.stopPropagation(); onToggleVisibility(nodeId); }}
+          title="Show"
+        >
+          ⊘
+        </span>
+      )}
+      {/* Lock — only shown when locked */}
+      {isLocked && (
+        <span
+          style={{ fontSize: 9, opacity: 0.7, marginLeft: 1, cursor: 'pointer', flexShrink: 0, color: '#fbbf24', lineHeight: 1 }}
+          onClick={e => { e.stopPropagation(); onToggleLock(nodeId); }}
+          title="Unlock"
+        >
+          ⊠
+        </span>
+      )}
     </div>
   );
 });
@@ -446,7 +438,7 @@ function LayerTree({
               onHover={store.hover}
               onToggleExpand={store.toggleExpanded}
               onContextMenu={contextMenuHandlers.show}
-              onRename={store.renameNode}
+              onRename={(id, newName) => store.patchNodeField(id, 'name', newName || undefined)}
               onToggleVisibility={store.toggleVisibility}
               onToggleLock={store.toggleLock}
               onLayerDragStart={onLayerDragStart}
@@ -524,19 +516,55 @@ const PRIMITIVE_COMPONENTS: Record<string, { type: string; label: string; icon: 
     { type: 'Fab',       label: 'FAB',             icon: '⊕', defaultNode: { type: 'Fab', props: { className: 'flex flex-row items-center justify-center gap-2 px-5 py-3 rounded-full bg-primary shadow-lg' }, children: [{ type: 'NavIcon', props: { icon: 'Plus', size: 20, color: '#ffffff' } }, { type: 'FabLabel', text: 'Add', props: { className: 'text-sm font-medium text-primary-foreground' } }] } },
   ],
   Form: [
-    // FormContainer — wraps inputs and binds to a form variable UUID
+    // FormContainer — weWeb-style local form state (local.data.form.*)
     {
       type: 'FormContainer',
       label: 'Form',
       icon: '⊞',
       defaultNode: {
         type: 'FormContainer',
-        props: {
-          formId: '',
-          className: 'flex flex-col gap-4 w-full',
-        },
+        props: { className: 'flex flex-col gap-4 w-full', initialFormData: { email: '', password: '' } },
         children: [
-          { type: 'Text', props: { className: 'text-sm text-gray-500' }, text: 'Drop inputs here. Set formId to a form variable UUID.' },
+          {
+            type: 'Input',
+            props: { variant: 'outline', size: 'md', className: 'w-full !rounded-md !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900' },
+            children: [
+              {
+                type: 'InputField',
+                props: { placeholder: 'Email', name: 'email', className: '!text-gray-900 dark:!text-gray-100' },
+                actions: {
+                  change: {
+                    type: 'setFormField',
+                    field: 'email',
+                    value: '$event',
+                  },
+                },
+              },
+            ],
+          },
+          {
+            type: 'Input',
+            props: { variant: 'outline', size: 'md', className: 'w-full !rounded-md !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900' },
+            children: [
+              {
+                type: 'InputField',
+                props: { placeholder: 'Password', name: 'password', type: 'password', className: '!text-gray-900 dark:!text-gray-100' },
+                actions: {
+                  change: {
+                    type: 'setFormField',
+                    field: 'password',
+                    value: '$event',
+                  },
+                },
+              },
+            ],
+          },
+          {
+            type: 'Button',
+            props: { action: 'primary', className: 'w-full' },
+            children: [{ type: 'ButtonText', text: 'Submit' }],
+            actions: { click: { type: 'submitForm' } },
+          },
         ],
       },
     },

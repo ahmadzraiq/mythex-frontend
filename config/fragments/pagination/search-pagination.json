@@ -38,29 +38,11 @@
           }
         }
       ],
-      "actions": {
-        "click": {
-          "type": "runMultiple",
-          "actions": [
-            {
-              "type": "decrement",
-              "path": "b7c8d9e0-f1a2-3456-bcde-567890123456",
-              "amount": "{{collectionPageSize}}"
-            },
-            {
-              "action": "fetchSearchResults"
-            },
-            {
-              "action": "navigate",
-              "payload": {
-                "path": {
-                  "expr": "cat({{route.path}}, '?page=', max(1, max(1, floor(({{variables['b7c8d9e0-f1a2-3456-bcde-567890123456']}} || 0) / ({{collectionPageSize}} || 12) + 1)) - 1))"
-                }
-              }
-            }
-          ]
+      "actions": [
+        {
+          "action": "e3a8111d-44c3-4461-b71c-698d1785bb52"
         }
-      }
+      ]
     },
     {
       "type": "Box",
@@ -110,29 +92,11 @@
               "text": "{{$item}}"
             }
           ],
-          "actions": {
-            "click": {
-              "type": "runMultiple",
-              "actions": [
-                {
-                  "type": "goToPage",
-                  "path": "b7c8d9e0-f1a2-3456-bcde-567890123456",
-                  "page": "{{$item}}",
-                  "pageSize": "{{collectionPageSize}}",
-                  "fetchAction": "fetchSearchResults"
-                },
-                {
-                  "action": "fetchSearchResults"
-                },
-                {
-                  "action": "navigate",
-                  "payload": {
-                    "path": "{{route.path}}?page={{$item}}"
-                  }
-                }
-              ]
+          "actions": [
+            {
+              "action": "182725e0-e189-4bf1-ac8f-572221061727"
             }
-          }
+          ]
         }
       ]
     },
@@ -169,29 +133,11 @@
           }
         }
       ],
-      "actions": {
-        "click": {
-          "type": "runMultiple",
-          "actions": [
-            {
-              "type": "increment",
-              "path": "b7c8d9e0-f1a2-3456-bcde-567890123456",
-              "amount": "{{collectionPageSize}}"
-            },
-            {
-              "action": "fetchSearchResults"
-            },
-            {
-              "action": "navigate",
-              "payload": {
-                "path": {
-                  "expr": "cat({{route.path}}, '?page=', min(max(1, ceil(({{collections.e5f6a7b8-c9d0-1234-efab-345678901234.data.search.totalItems}} || 0) / ({{collectionPageSize}} || 12))), max(1, floor(({{variables['b7c8d9e0-f1a2-3456-bcde-567890123456']}} || 0) / ({{collectionPageSize}} || 12) + 1)) + 1))"
-                }
-              }
-            }
-          ]
+      "actions": [
+        {
+          "action": "091be296-4048-45a1-a65d-8205c636215b"
         }
-      }
+      ]
     }
   ]
 }

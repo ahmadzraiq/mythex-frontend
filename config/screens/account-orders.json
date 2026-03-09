@@ -8,7 +8,7 @@
   "layout": "account",
   "initActions": [
     {
-      "action": "fetchCustomerOrders"
+      "action": "fa3e69c7-2ad2-44bb-ba4e-b2052136b5ba"
     }
   ],
   "content": {
@@ -130,19 +130,15 @@
                             "props": {
                               "className": "inline-flex items-center gap-1 px-3 py-1.5 border border-[var(--theme-border)] rounded-md text-sm hover:bg-[var(--theme-hero-bg)] transition-colors"
                             },
-                            "actions": {
-                              "click": {
-                                "action": "navigate",
-                                "payload": {
-                                  "routeConfig": "order-detail",
-                                  "slug": "{{context.item.code}}"
-                                }
+                            "actions": [
+                              {
+                                "action": "476b28a3-7e9c-44f9-8913-a6f8c4904630"
                               }
-                            },
+                            ],
                             "children": [
                               {
                                 "type": "Text",
-                                "text": "{{context.item.code}}"
+                                "text": "{{context.item.data.code}}"
                               },
                               {
                                 "type": "NavIcon",
@@ -160,7 +156,7 @@
                         "children": [
                           {
                             "type": "Text",
-                            "text": "{{context.item.createdAt}}"
+                            "text": "{{context.item.data.createdAt}}"
                           }
                         ]
                       },
@@ -175,7 +171,7 @@
                             "children": [
                               {
                                 "type": "BadgeText",
-                                "text": "{{context.item.state}}"
+                                "text": "{{context.item.data.state}}"
                               }
                             ]
                           }
@@ -186,7 +182,7 @@
                         "children": [
                           {
                             "type": "Text",
-                            "text": "{{context.item.lines.length}} item(s)"
+                            "text": "{{context.item.data.lines.length}} item(s)"
                           }
                         ]
                       },
@@ -202,7 +198,7 @@
                               "className": "font-medium"
                             },
                             "text": {
-                              "expr": "formatCurrency({{context.item.totalWithTax}} / 100, {{context.item.currencyCode}})"
+                              "expr": "formatCurrency({{context.item.data.totalWithTax}} / 100, {{context.item.data.currencyCode}})"
                             }
                           }
                         ]

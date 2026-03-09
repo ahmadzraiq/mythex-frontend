@@ -24,10 +24,15 @@ export { isBoundValue } from '@/lib/sdui/formula-evaluator';
 /** Close callbacks — cleared and called when a new editor opens */
 const openEditorSubscribers = new Set<() => void>();
 
-function closeAllEditors() {
+export function closeAllEditors() {
   const cbs = Array.from(openEditorSubscribers);
   openEditorSubscribers.clear();
   cbs.forEach(fn => fn());
+}
+
+export function registerEditorClose(closeSelf: () => void): () => void {
+  openEditorSubscribers.add(closeSelf);
+  return () => { openEditorSubscribers.delete(closeSelf); };
 }
 
 // ─── BindingIcon ──────────────────────────────────────────────────────────────
@@ -41,6 +46,7 @@ interface BindingIconProps {
 export function BindingIcon({ isBound, onClick, 'data-testid': testId }: BindingIconProps) {
   return (
     <button
+      type="button"
       data-testid={testId ?? 'binding-icon'}
       onClick={onClick}
       title={isBound ? 'Edit formula binding' : 'Bind to variable or expression'}

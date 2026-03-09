@@ -358,29 +358,51 @@ function useFormulaField(fieldId: string, formulaState: FormulaFieldState, setFo
 
 /** Section header: label + optional bind icon + Add button */
 function SectionRow({
-  label, onAdd, addTestId, bindActive, onBind,
+  label, onAdd, addTestId, bindActive, onBind, onEditFormula,
 }: {
   label: string;
   onAdd?: () => void;
   addTestId?: string;
   bindActive?: boolean;
   onBind?: () => void;
+  /** Called when clicking the ƒ Edit formula button in the bound state. */
+  onEditFormula?: () => void;
 }) {
+  if (bindActive && onEditFormula) {
+    // Bound state: show label + ƒ Edit formula button + active BindingIcon
+    return (
+      <div style={{ marginBottom: 6 }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: '#d1d5db', display: 'block', marginBottom: 4 }}>{label}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button
+            onClick={onEditFormula}
+            style={{ flex: 1, padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed',
+              borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+              textAlign: 'left' }}
+          >
+            ƒ Edit formula
+          </button>
+          <BindingIcon isBound onClick={onEditFormula} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
       <span style={{ fontSize: 12, fontWeight: 500, color: '#d1d5db' }}>{label}</span>
       {onBind && <BindingIcon isBound={!!bindActive} onClick={onBind} />}
       <span style={{ flex: 1 }} />
       {onAdd && (
-            <button
+        <button
           data-testid={addTestId}
           onClick={onAdd}
           style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: '#1e3a5f', border: '1px solid #2563eb', borderRadius: 6, color: '#93c5fd', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}
         >
           + Add
-                </button>
+        </button>
       )}
-            </div>
+    </div>
   );
 }
 
@@ -756,12 +778,13 @@ function RestForm({ initial, onSave, onBack, onWidthChange }: {
             onAdd={headersBound ? undefined : () => setHeaders(h => [...h, { key: '', value: '', keyBound: false, valueBound: false }])}
             addTestId="ds-add-header"
             bindActive={headersBound}
-            onBind={() => { setHeadersBound(true); openHdrsFE(); }}
+            onBind={() => { openHdrsFE(); }}
+            onEditFormula={headersBound ? openHdrsFE : undefined}
           />
           {hdrsFEOpen && (
             <FormulaEditor label="Headers (formula)" value={''} anchorLeft={FORMULA_ANCHOR_LEFT}
-              onChange={v => { if (!v && v !== 0) setHeadersBound(false); closeHdrsFE(); }}
-              onClose={() => { setHeadersBound(false); closeHdrsFE(); }}
+              onChange={v => { if (!v && v !== 0) { setHeadersBound(false); } else { setHeadersBound(true); } closeHdrsFE(); }}
+              onClose={() => { if (!headersBound) setHeadersBound(false); closeHdrsFE(); }}
             />
           )}
           {!headersBound && headers.map((h, i) => (
@@ -781,12 +804,13 @@ function RestForm({ initial, onSave, onBack, onWidthChange }: {
             onAdd={qsBound ? undefined : () => setQueryParams(p => [...p, { key: '', value: '', keyBound: false, valueBound: false }])}
             addTestId="ds-add-param"
             bindActive={qsBound}
-            onBind={() => { setQsBound(true); openQsFE(); }}
+            onBind={() => { openQsFE(); }}
+            onEditFormula={qsBound ? openQsFE : undefined}
           />
           {qsFEOpen && (
             <FormulaEditor label="Query string (formula)" value={''} anchorLeft={FORMULA_ANCHOR_LEFT}
-              onChange={v => { if (!v && v !== 0) setQsBound(false); closeQsFE(); }}
-              onClose={() => { setQsBound(false); closeQsFE(); }}
+              onChange={v => { if (!v && v !== 0) { setQsBound(false); } else { setQsBound(true); } closeQsFE(); }}
+              onClose={() => { if (!qsBound) setQsBound(false); closeQsFE(); }}
             />
           )}
           {!qsBound && queryParams.map((p, i) => (
@@ -1034,12 +1058,13 @@ function GraphQLForm({ initial, onSave, onBack, onWidthChange }: {
             onAdd={varsBound ? undefined : () => setVariables(v => [...v, { key: '', value: '', keyBound: false, valueBound: false }])}
             addTestId="ds-add-variable"
             bindActive={varsBound}
-            onBind={() => { setVarsBound(true); openVarsFE(); }}
+            onBind={() => { openVarsFE(); }}
+            onEditFormula={varsBound ? openVarsFE : undefined}
           />
           {varsFEOpen && (
             <FormulaEditor label="Variables (formula)" value={''} anchorLeft={FORMULA_ANCHOR_LEFT}
-              onChange={v => { if (!v && v !== 0) setVarsBound(false); closeVarsFE(); }}
-              onClose={() => { setVarsBound(false); closeVarsFE(); }}
+              onChange={v => { if (!v && v !== 0) { setVarsBound(false); } else { setVarsBound(true); } closeVarsFE(); }}
+              onClose={() => { if (!varsBound) setVarsBound(false); closeVarsFE(); }}
             />
           )}
           {!varsBound && variables.map((v, i) => (
@@ -1059,12 +1084,13 @@ function GraphQLForm({ initial, onSave, onBack, onWidthChange }: {
             onAdd={gqlHdrsBound ? undefined : () => setHeaders(h => [...h, { key: '', value: '', keyBound: false, valueBound: false }])}
             addTestId="ds-add-header"
             bindActive={gqlHdrsBound}
-            onBind={() => { setGqlHdrsBound(true); openGqlHdrsFE(); }}
+            onBind={() => { openGqlHdrsFE(); }}
+            onEditFormula={gqlHdrsBound ? openGqlHdrsFE : undefined}
           />
           {gqlHdrsFEOpen && (
             <FormulaEditor label="Headers (formula)" value={''} anchorLeft={FORMULA_ANCHOR_LEFT}
-              onChange={v => { if (!v && v !== 0) setGqlHdrsBound(false); closeGqlHdrsFE(); }}
-              onClose={() => { setGqlHdrsBound(false); closeGqlHdrsFE(); }}
+              onChange={v => { if (!v && v !== 0) { setGqlHdrsBound(false); } else { setGqlHdrsBound(true); } closeGqlHdrsFE(); }}
+              onClose={() => { if (!gqlHdrsBound) setGqlHdrsBound(false); closeGqlHdrsFE(); }}
             />
           )}
           {!gqlHdrsBound && headers.map((h, i) => (

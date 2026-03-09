@@ -25,13 +25,13 @@
   "layout": "store",
   "initActions": [
     {
-      "action": "fetchCountries"
+      "action": "84de06d5-bacc-47c3-a917-44c1b5e8c901"
     },
     {
-      "action": "fetchShippingMethods"
+      "action": "62c64842-4b76-40b3-87ae-d2f0275cb926"
     },
     {
-      "action": "fetchPaymentMethods"
+      "action": "5b47500d-b49f-45ba-918f-dd51cc221e7b"
     }
   ],
   "content": {
@@ -82,13 +82,11 @@
                         "expr": "'flex flex-row items-center justify-between w-full py-4 ' + ({{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine1}} ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')"
                       }
                     },
-                    "actions": {
-                      "click": {
-                        "type": "setVar",
-                        "path": "d9e0f1a2-b3c4-5678-defa-789012345678",
-                        "value": "delivery"
+                    "actions": [
+                      {
+                        "action": "8289418c-8066-45cd-ad60-212a0c45faef"
                       }
-                    },
+                    ],
                     "children": [
                       {
                         "type": "Box",
@@ -200,34 +198,20 @@
                                 "type": "Pressable",
                                 "props": {
                                   "className": {
-                                    "expr": "'flex flex-row items-center gap-3 p-4 border-2 rounded-lg w-full cursor-pointer transition-colors ' + ({{variables['a2b3c4d5-e6f7-8901-abcd-012345678901']}} === {{context.item.id}} ? 'border-[var(--theme-shop-button)] bg-[var(--theme-hero-bg)]' : 'border-[var(--theme-border)] hover:border-[var(--theme-shop-button)]')"
+                                    "expr": "'flex flex-row items-center gap-3 p-4 border-2 rounded-lg w-full cursor-pointer transition-colors ' + ({{variables['a2b3c4d5-e6f7-8901-abcd-012345678901']}} === {{context.item.data.id}} ? 'border-[var(--theme-shop-button)] bg-[var(--theme-hero-bg)]' : 'border-[var(--theme-border)] hover:border-[var(--theme-shop-button)]')"
                                   }
                                 },
-                                "actions": {
-                                  "click": {
-                                    "type": "runMultiple",
-                                    "actions": [
-                                      {
-                                        "type": "setVar",
-                                        "path": "a2b3c4d5-e6f7-8901-abcd-012345678901",
-                                        "value": "{{context.item.id}}"
-                                      },
-                                      {
-                                        "action": "setState",
-                                        "payload": {
-                                          "path": "screens.checkout.errors.checkout.selectedShippingMethodId",
-                                          "value": ""
-                                        }
-                                      }
-                                    ]
+                                "actions": [
+                                  {
+                                    "action": "474818f4-095e-4f42-ae78-08e613b0f40b"
                                   }
-                                },
+                                ],
                                 "children": [
                                   {
                                     "type": "Box",
                                     "props": {
                                       "className": {
-                                        "expr": "'w-5 h-5 min-w-5 min-h-5 rounded-full border-2 flex items-center justify-center shrink-0 ' + ({{variables['a2b3c4d5-e6f7-8901-abcd-012345678901']}} === {{context.item.id}} ? 'border-[var(--theme-shop-button)] bg-[var(--theme-shop-button)]' : 'border-[var(--theme-border)]')"
+                                        "expr": "'w-5 h-5 min-w-5 min-h-5 rounded-full border-2 flex items-center justify-center shrink-0 ' + ({{variables['a2b3c4d5-e6f7-8901-abcd-012345678901']}} === {{context.item.data.id}} ? 'border-[var(--theme-shop-button)] bg-[var(--theme-shop-button)]' : 'border-[var(--theme-border)]')"
                                       }
                                     },
                                     "children": [
@@ -236,7 +220,7 @@
                                         "props": {
                                           "className": "w-2 h-2 rounded-full bg-white pointer-events-none"
                                         },
-                                        "condition": "{{variables['a2b3c4d5-e6f7-8901-abcd-012345678901']}} === {{context.item.id}}"
+                                        "condition": "{{variables['a2b3c4d5-e6f7-8901-abcd-012345678901']}} === {{context.item.data.id}}"
                                       }
                                     ]
                                   },
@@ -259,14 +243,14 @@
                                         "props": {
                                           "className": "font-medium text-sm text-[var(--theme-foreground)]"
                                         },
-                                        "text": "{{context.item.name}}"
+                                        "text": "{{context.item.data.name}}"
                                       },
                                       {
                                         "type": "Text",
                                         "props": {
                                           "className": "text-xs text-[var(--theme-muted-foreground)]"
                                         },
-                                        "text": "{{context.item.description}}"
+                                        "text": "{{context.item.data.description}}"
                                       }
                                     ]
                                   },
@@ -276,7 +260,7 @@
                                       "className": "font-semibold text-sm text-[var(--theme-foreground)] shrink-0"
                                     },
                                     "text": {
-                                      "expr": "formatCurrency({{context.item.priceWithTax}} / 100, 'USD')"
+                                      "expr": "formatCurrency({{context.item.data.priceWithTax}} / 100, 'USD')"
                                     }
                                   }
                                 ]
@@ -317,11 +301,11 @@
                             "text": "Continue to payment"
                           }
                         ],
-                        "actions": {
-                          "click": {
-                            "action": "setShippingMethod"
+                        "actions": [
+                          {
+                            "action": "8d925e49-6061-4cf6-a5d8-6ff3e54a52ce"
                           }
-                        }
+                        ]
                       }
                     ]
                   }
@@ -343,13 +327,11 @@
                         "expr": "'flex flex-row items-center justify-between w-full py-4 ' + (({{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'review' || (({{auth.user}} || {{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.emailAddress}}) && {{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine1}} && ({{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingLines.length}} || 0) > 0 && {{variables['b3c4d5e6-f7a8-9012-bcde-123456789012']}})) ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')"
                       }
                     },
-                    "actions": {
-                      "click": {
-                        "type": "setVar",
-                        "path": "d9e0f1a2-b3c4-5678-defa-789012345678",
-                        "value": "review"
+                    "actions": [
+                      {
+                        "action": "d5ca8a52-a828-47d6-b647-50f0ff204985"
                       }
-                    },
+                    ],
                     "children": [
                       {
                         "type": "Box",
@@ -483,13 +465,11 @@
                                     "props": {}
                                   }
                                 ],
-                                "actions": {
-                                  "click": {
-                                    "type": "setVar",
-                                    "path": "d9e0f1a2-b3c4-5678-defa-789012345678",
-                                    "value": "contact"
+                                "actions": [
+                                  {
+                                    "action": "e89bedc2-a39c-4c83-861b-7fd20bcc63cd"
                                   }
-                                }
+                                ]
                               }
                             ]
                           },
@@ -543,13 +523,11 @@
                                     "props": {}
                                   }
                                 ],
-                                "actions": {
-                                  "click": {
-                                    "type": "setVar",
-                                    "path": "d9e0f1a2-b3c4-5678-defa-789012345678",
-                                    "value": "shipping"
+                                "actions": [
+                                  {
+                                    "action": "42e0738d-1f45-4424-8f96-7ecbb017ce42"
                                   }
-                                }
+                                ]
                               }
                             ]
                           },
@@ -597,13 +575,11 @@
                                     "props": {}
                                   }
                                 ],
-                                "actions": {
-                                  "click": {
-                                    "type": "setVar",
-                                    "path": "d9e0f1a2-b3c4-5678-defa-789012345678",
-                                    "value": "delivery"
+                                "actions": [
+                                  {
+                                    "action": "8289418c-8066-45cd-ad60-212a0c45faef"
                                   }
-                                }
+                                ]
                               }
                             ]
                           },
@@ -650,13 +626,11 @@
                                     "props": {}
                                   }
                                 ],
-                                "actions": {
-                                  "click": {
-                                    "type": "setVar",
-                                    "path": "d9e0f1a2-b3c4-5678-defa-789012345678",
-                                    "value": "payment"
+                                "actions": [
+                                  {
+                                    "action": "dfd32ed5-dbac-41bd-b18b-ec7a17cd5549"
                                   }
-                                }
+                                ]
                               }
                             ]
                           }
@@ -694,11 +668,11 @@
                             "text": "Place Order"
                           }
                         ],
-                        "actions": {
-                          "click": {
-                            "action": "placeOrder"
+                        "actions": [
+                          {
+                            "action": "dad64254-6780-4e72-beed-3f3179710a50"
                           }
-                        }
+                        ]
                       }
                     ]
                   }
@@ -744,13 +718,13 @@
                             "props": {
                               "className": "flex-shrink-0 w-16 h-16 rounded overflow-hidden bg-[var(--theme-hero-bg)]"
                             },
-                            "condition": "{{context.item.productVariant.product.featuredAsset.preview}}",
+                            "condition": "{{context.item.data.productVariant.product.featuredAsset.preview}}",
                             "children": [
                               {
                                 "type": "NextImage",
                                 "props": {
-                                  "src": "{{context.item.productVariant.product.featuredAsset.preview}}",
-                                  "alt": "{{context.item.productVariant.product.name}}",
+                                  "src": "{{context.item.data.productVariant.product.featuredAsset.preview}}",
+                                  "alt": "{{context.item.data.productVariant.product.name}}",
                                   "width": 64,
                                   "height": 64,
                                   "className": "w-16 h-16 object-cover"
@@ -769,22 +743,22 @@
                                 "props": {
                                   "className": "font-medium line-clamp-2"
                                 },
-                                "text": "{{context.item.productVariant.product.name}}"
+                                "text": "{{context.item.data.productVariant.product.name}}"
                               },
                               {
                                 "type": "Text",
                                 "props": {
                                   "className": "text-xs text-[var(--theme-muted-foreground)]"
                                 },
-                                "condition": "{{context.item.productVariant.name}} !== {{context.item.productVariant.product.name}}",
-                                "text": "{{context.item.productVariant.name}}"
+                                "condition": "{{context.item.data.productVariant.name}} !== {{context.item.data.productVariant.product.name}}",
+                                "text": "{{context.item.data.productVariant.name}}"
                               },
                               {
                                 "type": "Text",
                                 "props": {
                                   "className": "text-xs text-[var(--theme-muted-foreground)]"
                                 },
-                                "text": "Qty: {{context.item.quantity}}"
+                                "text": "Qty: {{context.item.data.quantity}}"
                               }
                             ]
                           },
@@ -794,7 +768,7 @@
                               "className": "font-medium flex-shrink-0"
                             },
                             "text": {
-                              "expr": "formatCurrency({{context.item.linePriceWithTax}} / 100, {{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.currencyCode}} || 'USD')"
+                              "expr": "formatCurrency({{context.item.data.linePriceWithTax}} / 100, {{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.currencyCode}} || 'USD')"
                             }
                           }
                         ]
@@ -851,12 +825,12 @@
                             "children": [
                               {
                                 "type": "Text",
-                                "text": "{{context.item.description}}"
+                                "text": "{{context.item.data.description}}"
                               },
                               {
                                 "type": "Text",
                                 "text": {
-                                  "expr": "formatCurrency({{context.item.amountWithTax}} / 100, 'USD')"
+                                  "expr": "formatCurrency({{context.item.data.amountWithTax}} / 100, 'USD')"
                                 }
                               }
                             ]

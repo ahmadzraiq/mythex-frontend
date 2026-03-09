@@ -113,6 +113,38 @@ Or use `bg-transparent` if the parent already has the correct background. The `!
 
 ---
 
+## `map` Nodes — Use `context.item.data.*` for Item Field Access
+
+**Canonical path for accessing fields of a repeated item:**
+
+```json
+"text": "{{context.item.data.productName}}"
+"condition": { "var": "context.item.data.inStock" }
+```
+
+**Legacy `$item.*` still resolves** (backward compat via renderer scope spreading), but all new config must use `context.item.data.*`.
+
+**`context.item` full structure at runtime:**
+```
+context.item
+  .data.*          ← raw item fields + repeat metadata (index, repeatIndex, isACopy, parent, repeatedItems)
+  .parent          ← outer repeat's item context (for nested repeats)
+  .index           ← top-level alias (same as .data.index)
+  .repeatIndex     ← top-level alias
+  .isACopy         ← top-level alias
+  .repeatedItems   ← top-level alias
+  .[fieldName]     ← top-level field alias for backward compat
+```
+
+**`isScopeVariable`** in `path-utils.ts` recognises `context` and all `context.*` sub-paths. Never remove this; it gates scope variable resolution in the renderer.
+
+**Navigate payload still uses `$item`** for dynamic routes (this is a JSON Logic `var` expression, not a template):
+```json
+{ "action": "navigate", "payload": { "routeConfig": "product", "slug": { "var": "$item.slug" } } }
+```
+
+---
+
 ## Duplicate React Keys ($index, $item)
 
 **Problem:** Multiple children with `key: "$index"` or `key: "$item"` cause React warnings.
@@ -549,3 +581,83 @@ const hitTest = (clientX: number, clientY: number) => {
 - `pointer-events: none` assignment is synchronous; `elementFromPoint` fires in the same task, so the overlay is invisible to hit-testing for exactly one call with zero latency impact.
 
 **E2E tests:** Canvas click-to-select can be unreliable in Playwright/headless — the overlay's `onPointerDown` may not fire. For tests that need selection, use the Layers panel (`tab-layers` → `layer-row` click) instead of `page.mouse.click` on canvas. See `visual-builder.mdc` E2E section.
+
+---
+
+## Popover / Context Menu — Three Classic Event-Bubbling Bugs
+
+### Bug 1 — Popover Condition Based on Current Length Misses Empty State
+
+**Problem:** A condition like `insertIdx < currentSteps.length` is used to decide whether to show an insert popover. When the list is empty (`length === 0`) and the user clicks the first `+` button (`insertIdx === 0`), `0 < 0` is `false` — the popover never renders.
+
+**Fix:** Always render the popover whenever `addPopoverState` is set (non-null). Do not gate it on list length or index comparisons:
+
+```tsx
+// ❌ BAD — evaluates to false on empty list; popover never shows
+{addPopoverState && (addPopoverState.pathPrefix.length > 0 || addPopoverState.insertIdx < currentSteps.length) && (
+  <AddActionPopover ... />
+)}
+
+// ✅ GOOD — always render when state is set; let the state speak for itself
+{addPopoverState && (
+  <div style={{ position: 'fixed', top: addPopoverState.y + 8, left: addPopoverState.x + 8 }}>
+    <AddActionPopover ... />
+  </div>
+)}
+```
+
+---
+
+### Bug 2 — Overlay onClick Closes Popover Immediately After + Button Opens It
+
+**Problem:** A full-screen overlay div has `onClick={() => setPopoverState(null)}`. The `+` insert button is rendered inside the overlay. Clicking `+` sets state (opens popover), but the click then bubbles up to the overlay which immediately clears state — the popover flashes open and closes in the same render cycle.
+
+**Fix:** Call `e.stopPropagation()` on every interactive element that opens a popover:
+
+```tsx
+// ❌ BAD — click bubbles to overlay, immediately closes what was just opened
+<button onClick={() => setPopoverState({ ... })}>+</button>
+
+// ✅ GOOD — stop propagation first, then open
+<button onClick={e => { e.stopPropagation(); setPopoverState({ ... }); }}>+</button>
+```
+
+Also stop propagation on the popover's wrapper div so clicks inside the popover don't close it:
+
+```tsx
+<div style={{ position: 'fixed', ... }} onClick={e => e.stopPropagation()}>
+  <AddActionPopover ... />
+</div>
+```
+
+**Also:** Track mouse position through `(x, y)` in the popover state so the popover appears near the cursor, not at a hardcoded location. Pass `e.clientX, e.clientY` from the trigger button and use them for `position: fixed` placement.
+
+---
+
+### Bug 3 — Capture-Phase `mousedown` Handler Closes Menu Before Button Click Fires
+
+**Problem:** A floating menu (context menu, dropdown) registers a `window` `mousedown` capture-phase handler to close itself on outside clicks. Because the capture phase fires **before** any element's own handlers, clicking a button *inside* the menu closes it before the button's own `onClick` fires — the button action never executes.
+
+```tsx
+// ❌ BAD — always calls onClose, even when clicking buttons inside the menu
+useEffect(() => {
+  const handler = () => onClose();
+  window.addEventListener('mousedown', handler, true); // capture = true fires first
+  return () => window.removeEventListener('mousedown', handler, true);
+}, [onClose]);
+```
+
+**Fix:** Check whether the click target is *inside* the menu before calling `onClose`:
+
+```tsx
+// ✅ GOOD — only closes when clicking outside
+useEffect(() => {
+  const handler = (e: MouseEvent) => {
+    if (!(e.target as HTMLElement).closest('[data-testid="my-menu"]')) onClose();
+  };
+  window.addEventListener('mousedown', handler, true);
+  return () => window.removeEventListener('mousedown', handler, true);
+}, [onClose]);
+```
+
+**Rule:** Any floating UI that closes on outside click must use `.closest('[data-selector]')` to guard its own interior. Never use a bare `() => onClose()` capture listener — it will break all click handlers inside the menu.

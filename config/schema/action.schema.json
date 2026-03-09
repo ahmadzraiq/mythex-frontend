@@ -2,23 +2,2175 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "sdui-actions",
   "title": "SDUI Actions",
-  "description": "Action definitions - keys are action names, values are action configs",
+  "description": "Named action definitions. Keys are action names; values are action configs matching one of the defined action types.",
   "type": "object",
   "additionalProperties": {
-    "type": "object",
-    "properties": {
-      "type": { "type": "string" },
-      "url": { "type": "string" },
-      "query": { "type": "string" },
-      "variables": { "type": "object" },
-      "storeIn": { "type": "string" },
-      "responsePath": { "type": "string" },
-      "path": { "type": "string" },
-      "rules": { "type": "object" },
-      "storeErrorsIn": { "type": "string" },
-      "onSuccess": {},
-      "actions": { "type": "array" }
+    "$ref": "#/$defs/ActionConfig"
+  },
+  "$defs": {
+    "ActionConfig": {
+      "description": "A single action definition — one of the supported SDUI action types.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ActionRef"
+        },
+        {
+          "$ref": "#/$defs/WorkflowStepsAction"
+        },
+        {
+          "$ref": "#/$defs/FetchAction"
+        },
+        {
+          "$ref": "#/$defs/GraphqlAction"
+        },
+        {
+          "$ref": "#/$defs/SetAction"
+        },
+        {
+          "$ref": "#/$defs/SetVarAction"
+        },
+        {
+          "$ref": "#/$defs/ValidateAction"
+        },
+        {
+          "$ref": "#/$defs/NavigateAction"
+        },
+        {
+          "$ref": "#/$defs/RunMultipleAction"
+        },
+        {
+          "$ref": "#/$defs/IncrementAction"
+        },
+        {
+          "$ref": "#/$defs/DecrementAction"
+        },
+        {
+          "$ref": "#/$defs/ToggleAction"
+        },
+        {
+          "$ref": "#/$defs/AppendToPathAction"
+        },
+        {
+          "$ref": "#/$defs/GoToPageAction"
+        },
+        {
+          "$ref": "#/$defs/NavigateWithQueryAction"
+        },
+        {
+          "$ref": "#/$defs/SetFormFieldAction"
+        },
+        {
+          "$ref": "#/$defs/OpenDrawerAction"
+        },
+        {
+          "$ref": "#/$defs/CloseDrawerAction"
+        },
+        {
+          "$ref": "#/$defs/SetThemeAction"
+        },
+        {
+          "$ref": "#/$defs/ShareAction"
+        },
+        {
+          "$ref": "#/$defs/ResetFormAction"
+        },
+        {
+          "$ref": "#/$defs/WfBranchAction"
+        },
+        {
+          "$ref": "#/$defs/WfMultiOptionBranchAction"
+        },
+        {
+          "$ref": "#/$defs/WfForEachAction"
+        },
+        {
+          "$ref": "#/$defs/WfWhileLoopAction"
+        },
+        {
+          "$ref": "#/$defs/WfBreakLoopAction"
+        },
+        {
+          "$ref": "#/$defs/WfContinueLoopAction"
+        },
+        {
+          "$ref": "#/$defs/WfPassThroughConditionAction"
+        },
+        {
+          "$ref": "#/$defs/WfNavigateToAction"
+        },
+        {
+          "$ref": "#/$defs/WfNavigatePrevAction"
+        },
+        {
+          "$ref": "#/$defs/WfPageLoaderAction"
+        },
+        {
+          "$ref": "#/$defs/WfChangeLanguageAction"
+        },
+        {
+          "$ref": "#/$defs/WfChangeVariableValueAction"
+        },
+        {
+          "$ref": "#/$defs/WfFetchCollectionAction"
+        },
+        {
+          "$ref": "#/$defs/WfFetchCollectionsParallelAction"
+        },
+        {
+          "$ref": "#/$defs/WfUpdateCollectionAction"
+        },
+        {
+          "$ref": "#/$defs/WfResetVariableValueAction"
+        },
+        {
+          "$ref": "#/$defs/WfExecuteComponentActionAction"
+        },
+        {
+          "$ref": "#/$defs/WfReturnValueAction"
+        },
+        {
+          "$ref": "#/$defs/WfTimeDelayAction"
+        },
+        {
+          "$ref": "#/$defs/WfUploadFileAction"
+        },
+        {
+          "$ref": "#/$defs/WfStopPropagationAction"
+        },
+        {
+          "$ref": "#/$defs/WfCopyToClipboardAction"
+        },
+        {
+          "$ref": "#/$defs/WfDownloadFileFromUrlAction"
+        },
+        {
+          "$ref": "#/$defs/WfCreateUrlFromBase64Action"
+        },
+        {
+          "$ref": "#/$defs/WfEncodeFileAsBase64Action"
+        },
+        {
+          "$ref": "#/$defs/WfOpenPopupAction"
+        },
+        {
+          "$ref": "#/$defs/WfCloseAllPopupsAction"
+        },
+        {
+          "$ref": "#/$defs/WfRunProjectWorkflowAction"
+        },
+        {
+          "$ref": "#/$defs/RefetchDataSourceAction"
+        },
+        {
+          "$ref": "#/$defs/MergeAtPathAction"
+        },
+        {
+          "$ref": "#/$defs/SubmitFormAction"
+        },
+        {
+          "$ref": "#/$defs/SetStateAction"
+        },
+        {
+          "$ref": "#/$defs/CycleIndexAction"
+        },
+        {
+          "$ref": "#/$defs/ClearPersistedPathsAction"
+        }
+      ]
     },
-    "additionalProperties": true
+    "JsonLogicExpr": {
+      "description": "A JSON Logic expression or a plain value.",
+      "oneOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "array"
+        }
+      ]
+    },
+    "ActionArray": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/StepConfig"
+      }
+    },
+    "StepConfig": {
+      "description": "A workflow step: an action type (or ActionRef) plus optional step metadata (id, name, disabled, condition, config, structural branches).",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "condition": {},
+        "_debounce": {},
+        "action": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": {}
+        },
+        "trueBranch": {
+          "$ref": "#/$defs/ActionArray"
+        },
+        "falseBranch": {
+          "$ref": "#/$defs/ActionArray"
+        },
+        "branches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BranchDef"
+          }
+        },
+        "defaultBranch": {
+          "$ref": "#/$defs/ActionArray"
+        },
+        "loopBody": {
+          "$ref": "#/$defs/ActionArray"
+        }
+      }
+    },
+    "BranchDef": {
+      "type": "object",
+      "required": [
+        "label",
+        "steps"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "steps": {
+          "$ref": "#/$defs/ActionArray"
+        }
+      }
+    },
+    "ActionRef": {
+      "description": "A reference to a named action defined elsewhere in the actions registry.",
+      "type": "object",
+      "required": [
+        "action"
+      ],
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "payload": {
+          "type": "object"
+        },
+        "condition": {},
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "WorkflowStepsAction": {
+      "description": "A sequential workflow of steps executed by workflow-steps-handler.",
+      "type": "object",
+      "required": [
+        "type",
+        "steps"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "workflowSteps"
+          ]
+        },
+        "trigger": {
+          "type": "string",
+          "description": "The event that triggers this workflow (e.g. click, change, submit, valueChange)."
+        },
+        "steps": {
+          "$ref": "#/$defs/ActionArray"
+        },
+        "onErrorSteps": {
+          "$ref": "#/$defs/ActionArray"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "FetchAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "fetch"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "description": "REST endpoint URL. Supports {{variable}} interpolation."
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE"
+          ],
+          "default": "GET"
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "body": {
+          "description": "Request body — plain object or JSON Logic expression."
+        },
+        "storeIn": {
+          "type": "string",
+          "description": "Zustand data path to store the response."
+        },
+        "storeFullResponseIn": {
+          "type": "string"
+        },
+        "responsePath": {
+          "type": "string",
+          "description": "Dot-path to extract from the response."
+        },
+        "errorMessagePath": {
+          "type": "string"
+        },
+        "onSuccess": {
+          "$ref": "#/$defs/ActionConfig"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "GraphqlAction": {
+      "type": "object",
+      "required": [
+        "type",
+        "query"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "graphql"
+          ]
+        },
+        "query": {
+          "type": "string",
+          "description": "GraphQL query or mutation string."
+        },
+        "variables": {
+          "description": "Query variables — plain object or JSON Logic."
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "Override for engineConventions.graphqlEndpoint."
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "storeIn": {
+          "type": "string"
+        },
+        "storeFullResponseIn": {
+          "type": "string"
+        },
+        "responsePath": {
+          "type": "string"
+        },
+        "storeHeaderIn": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Map response header names to store paths."
+        },
+        "errorMessagePath": {
+          "type": "string"
+        },
+        "invalidateCache": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "stopPropagation": {
+          "type": "boolean"
+        },
+        "onSuccess": {
+          "$ref": "#/$defs/ActionConfig"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "SetAction": {
+      "type": "object",
+      "required": [
+        "type",
+        "path",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "set"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "value": {},
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "SetVarAction": {
+      "type": "object",
+      "required": [
+        "type",
+        "path",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "setVar"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "value": {},
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "ValidateAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "validate"
+          ]
+        },
+        "formId": {
+          "type": "string"
+        },
+        "rules": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "required": {
+                "type": "boolean"
+              },
+              "minLength": {
+                "type": "number"
+              },
+              "maxLength": {
+                "type": "number"
+              },
+              "pattern": {
+                "type": "string"
+              },
+              "equals": {},
+              "equalsField": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "storeErrorsIn": {
+          "type": "string"
+        },
+        "onSuccess": {
+          "$ref": "#/$defs/ActionConfig"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "NavigateAction": {
+      "type": "object",
+      "required": [
+        "action"
+      ],
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "navigate"
+          ]
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "$ref": "#/$defs/JsonLogicExpr"
+            },
+            "routeConfig": {
+              "type": "string"
+            },
+            "slug": {
+              "$ref": "#/$defs/JsonLogicExpr"
+            }
+          }
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "RunMultipleAction": {
+      "type": "object",
+      "required": [
+        "type",
+        "actions"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "runMultiple"
+          ]
+        },
+        "actions": {
+          "$ref": "#/$defs/ActionArray"
+        },
+        "condition": {},
+        "_debounce": {
+          "type": "number"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "IncrementAction": {
+      "type": "object",
+      "required": [
+        "type",
+        "path"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "increment"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "amount": {
+          "$ref": "#/$defs/JsonLogicExpr"
+        },
+        "min": {
+          "type": "number",
+          "default": 0
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "DecrementAction": {
+      "type": "object",
+      "required": [
+        "type",
+        "path"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "decrement"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "amount": {
+          "$ref": "#/$defs/JsonLogicExpr"
+        },
+        "min": {
+          "type": "number",
+          "default": 0
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "ToggleAction": {
+      "type": "object",
+      "required": [
+        "type",
+        "path"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "toggle"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "AppendToPathAction": {
+      "type": "object",
+      "required": [
+        "type",
+        "targetPath",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "appendToPath"
+          ]
+        },
+        "targetPath": {
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/JsonLogicExpr"
+        },
+        "resetFormPath": {
+          "type": "string"
+        },
+        "resetFormValue": {},
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "GoToPageAction": {
+      "type": "object",
+      "required": [
+        "type",
+        "page"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "goToPage"
+          ]
+        },
+        "page": {
+          "$ref": "#/$defs/JsonLogicExpr"
+        },
+        "path": {
+          "type": "string"
+        },
+        "paginationPath": {
+          "type": "string"
+        },
+        "pageSize": {
+          "$ref": "#/$defs/JsonLogicExpr"
+        },
+        "fetchAction": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "NavigateWithQueryAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "navigateWithQuery"
+          ]
+        },
+        "path": {
+          "$ref": "#/$defs/JsonLogicExpr"
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": {}
+        },
+        "queryParams": {
+          "type": "object",
+          "additionalProperties": {}
+        },
+        "remove": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "replace": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "SetFormFieldAction": {
+      "type": "object",
+      "required": [
+        "type",
+        "field"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "setFormField"
+          ]
+        },
+        "formId": {
+          "type": "string"
+        },
+        "field": {
+          "type": "string"
+        },
+        "value": {},
+        "validationTrigger": {
+          "type": "string",
+          "enum": [
+            "submit",
+            "change",
+            "blur"
+          ]
+        },
+        "validationRules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "value": {}
+            }
+          }
+        },
+        "_debounce": {},
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "OpenDrawerAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "openDrawer"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "CloseDrawerAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "closeDrawer"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "SetThemeAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "setTheme"
+          ]
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "light",
+            "dark",
+            "system"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "enum": [
+            "light",
+            "dark",
+            "system"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "ShareAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "share"
+          ]
+        },
+        "slug": {
+          "$ref": "#/$defs/JsonLogicExpr"
+        },
+        "title": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "ResetFormAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "resetForm"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfBranchAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "branch"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "condition": {
+              "description": "Expression that evaluates to boolean."
+            }
+          }
+        },
+        "trueBranch": {
+          "$ref": "#/$defs/ActionArray"
+        },
+        "falseBranch": {
+          "$ref": "#/$defs/ActionArray"
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfMultiOptionBranchAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "multiOptionBranch"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "condition": {
+              "description": "Expression whose value is matched against branch labels."
+            },
+            "defaultBranch": {
+              "type": "boolean"
+            }
+          }
+        },
+        "branches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BranchDef"
+          }
+        },
+        "defaultBranch": {
+          "$ref": "#/$defs/ActionArray"
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfForEachAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "forEach"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "description": "Array expression to iterate over."
+            }
+          }
+        },
+        "loopBody": {
+          "$ref": "#/$defs/ActionArray"
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfWhileLoopAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "whileLoop"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "condition": {
+              "description": "Boolean expression evaluated before each iteration."
+            }
+          }
+        },
+        "loopBody": {
+          "$ref": "#/$defs/ActionArray"
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfBreakLoopAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "breakLoop"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "condition": {
+              "description": "Boolean expression — break if true."
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfContinueLoopAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "continueLoop"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "condition": {
+              "description": "Boolean expression — skip iteration if true."
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfPassThroughConditionAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "passThroughCondition"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "condition": {
+              "description": "Boolean expression — pass through if true (default: true).",
+              "default": "true"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfNavigateToAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "navigateTo"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "linkType": {
+              "type": "string",
+              "enum": [
+                "internal",
+                "external"
+              ],
+              "default": "internal"
+            },
+            "path": {},
+            "routeConfig": {
+              "type": "string"
+            },
+            "externalUrl": {
+              "type": "string"
+            },
+            "pageMode": {
+              "type": "string",
+              "enum": [
+                "page",
+                "path"
+              ],
+              "default": "page"
+            },
+            "newTab": {
+              "type": "boolean"
+            },
+            "showLoader": {
+              "type": "boolean"
+            },
+            "queryParams": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "replace": {
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfNavigatePrevAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "navigatePrev"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "defaultPage": {
+              "type": "string",
+              "description": "Route to redirect to when no history exists.",
+              "default": "home"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfPageLoaderAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "pageLoader"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "showLoader": {
+              "type": "boolean"
+            },
+            "loaderColor": {
+              "type": "string",
+              "description": "Hex color for the loader indicator."
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfChangeLanguageAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "changeLanguage"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "language": {
+              "description": "Language code or expression."
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfChangeVariableValueAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "changeVariableValue"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "variableName": {
+              "type": "string"
+            },
+            "value": {
+              "description": "New value — plain or JSON Logic expression."
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfFetchCollectionAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "fetchCollection"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "collectionId": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfFetchCollectionsParallelAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "fetchCollectionsParallel"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "collectionIds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfUpdateCollectionAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "updateCollection"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "collectionId": {
+              "type": "string"
+            },
+            "updateType": {
+              "type": "string",
+              "enum": [
+                "replaceAll",
+                "append"
+              ],
+              "default": "replaceAll"
+            },
+            "data": {
+              "description": "New data — expression."
+            },
+            "refreshFilters": {
+              "type": "boolean"
+            },
+            "refreshSort": {
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfResetVariableValueAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "resetVariableValue"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "variableNames": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfExecuteComponentActionAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "executeComponentAction"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "componentId": {
+              "type": "string"
+            },
+            "action": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfReturnValueAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "returnValue"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "valueType": {
+              "type": "string",
+              "enum": [
+                "text",
+                "number",
+                "boolean",
+                "object",
+                "array"
+              ],
+              "default": "text"
+            },
+            "value": {
+              "description": "Return value expression."
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfTimeDelayAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "timeDelay"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "required": [
+            "time"
+          ],
+          "properties": {
+            "time": {
+              "description": "Delay in milliseconds — number or expression."
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfUploadFileAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "uploadFile"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "uploadElementId": {
+              "type": "string"
+            },
+            "tag": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfStopPropagationAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "stopPropagation"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfCopyToClipboardAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "copyToClipboard"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "description": "Value to copy — string or expression."
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfDownloadFileFromUrlAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "downloadFileFromUrl"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "required": [
+            "url"
+          ],
+          "properties": {
+            "url": {
+              "description": "File URL — string or expression."
+            },
+            "filename": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfCreateUrlFromBase64Action": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "createUrlFromBase64"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "base64": {
+              "description": "Base64 string or expression."
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfEncodeFileAsBase64Action": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "encodeFileAsBase64"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "fileVariableId": {
+              "type": "string"
+            },
+            "outputFormat": {
+              "type": "string",
+              "enum": [
+                "dataUrl",
+                "base64"
+              ],
+              "default": "dataUrl"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfOpenPopupAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "openPopup"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "popupModelId": {
+              "type": "string"
+            },
+            "waitClose": {
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfCloseAllPopupsAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "closeAllPopups"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "popupModelId": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WfRunProjectWorkflowAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "runProjectWorkflow"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "workflowId": {
+              "type": "string"
+            },
+            "params": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "RefetchDataSourceAction": {
+      "type": "object",
+      "required": [
+        "type",
+        "name"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "refetchDataSource"
+          ]
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "MergeAtPathAction": {
+      "type": "object",
+      "required": [
+        "type",
+        "path"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "mergeAtPath"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "key": {
+          "$ref": "#/$defs/JsonLogicExpr"
+        },
+        "value": {
+          "$ref": "#/$defs/JsonLogicExpr"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "SubmitFormAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "submitForm"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "fieldValidations": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "onSuccess": {
+              "$ref": "#/$defs/ActionConfig"
+            },
+            "onError": {
+              "$ref": "#/$defs/ActionConfig"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "SetStateAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "setState"
+          ]
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "value": {}
+          }
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "CycleIndexAction": {
+      "type": "object",
+      "required": [
+        "type",
+        "path"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "cycleIndex"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "arrayPath": {
+          "type": "string"
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "next",
+            "prev"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    },
+    "ClearPersistedPathsAction": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "clearPersistedPaths"
+          ]
+        },
+        "onSuccess": {
+          "$ref": "#/$defs/ActionConfig"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name for this action."
+        }
+      },
+      "additionalProperties": false
+    }
   }
 }

@@ -16,7 +16,9 @@
         },
         {
           "type": "Text",
-          "condition": { "expr": "findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}}))" },
+          "condition": {
+            "expr": "findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}}))"
+          },
           "props": {
             "className": "text-2xl font-bold mt-2"
           },
@@ -54,7 +56,7 @@
               "props": {
                 "className": "text-base font-semibold"
               },
-              "text": "{{context.item.name}}"
+              "text": "{{context.item.data.name}}"
             },
             {
               "type": "Box",
@@ -64,7 +66,7 @@
               "children": [
                 {
                   "type": "Box",
-                  "map": "context.item.options",
+                  "map": "context.item.data.options",
                   "key": "variantOption",
                   "props": {
                     "className": "contents"
@@ -72,37 +74,37 @@
                   "children": [
                     {
                       "type": "Pressable",
-                      "condition": "getFromMap({{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}}, {{$parent.id}}) === {{context.item.id}}",
+                      "condition": "getFromMap({{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}}, {{$parent.id}}) === {{context.item.data.id}}",
                       "props": {
                         "className": "flex items-center justify-center rounded-md border-2 border-[var(--theme-shop-button)] bg-[var(--theme-shop-button)]/5 px-4 py-3 transition-colors"
                       },
-                      "actions": {
-                        "click": {
-                          "action": "selectProductOption"
+                      "actions": [
+                        {
+                          "action": "a1b2ce90-4498-47d2-b42f-e50f0a6972a7"
                         }
-                      },
+                      ],
                       "children": [
                         {
                           "type": "Text",
-                          "text": "{{context.item.name}}"
+                          "text": "{{context.item.data.name}}"
                         }
                       ]
                     },
                     {
                       "type": "Pressable",
-                      "condition": "getFromMap({{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}}, {{$parent.id}}) !== {{context.item.id}}",
+                      "condition": "getFromMap({{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}}, {{$parent.id}}) !== {{context.item.data.id}}",
                       "props": {
                         "className": "flex items-center justify-center rounded-md border-2 border-[var(--theme-border)] bg-[var(--theme-hero-bg)] px-4 py-3 hover:bg-[var(--theme-content-bg)] transition-colors"
                       },
-                      "actions": {
-                        "click": {
-                          "action": "selectProductOption"
+                      "actions": [
+                        {
+                          "action": "a1b2ce90-4498-47d2-b42f-e50f0a6972a7"
                         }
-                      },
+                      ],
                       "children": [
                         {
                           "type": "Text",
-                          "text": "{{context.item.name}}"
+                          "text": "{{context.item.data.name}}"
                         }
                       ]
                     }
@@ -116,11 +118,15 @@
     },
     {
       "type": "Box",
-      "condition": { "expr": "findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}}))" },
+      "condition": {
+        "expr": "findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}}))"
+      },
       "children": [
         {
           "type": "Text",
-          "condition": { "expr": "getKeyValue(findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}})), 'stockLevel') !== 'OUT_OF_STOCK'" },
+          "condition": {
+            "expr": "getKeyValue(findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}})), 'stockLevel') !== 'OUT_OF_STOCK'"
+          },
           "props": {
             "className": "text-sm text-green-600 font-medium"
           },
@@ -128,7 +134,9 @@
         },
         {
           "type": "Text",
-          "condition": { "expr": "getKeyValue(findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}})), 'stockLevel') === 'OUT_OF_STOCK'" },
+          "condition": {
+            "expr": "getKeyValue(findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}})), 'stockLevel') === 'OUT_OF_STOCK'"
+          },
           "props": {
             "className": "text-sm text-red-600 font-medium"
           },
@@ -144,7 +152,9 @@
       "children": [
         {
           "type": "Pressable",
-          "condition": { "expr": "findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}})) && getKeyValue(findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}})), 'stockLevel') !== 'OUT_OF_STOCK'" },
+          "condition": {
+            "expr": "findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}})) && getKeyValue(findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}})), 'stockLevel') !== 'OUT_OF_STOCK'"
+          },
           "props": {
             "className": "w-full !bg-[var(--theme-shop-button)] hover:!bg-[var(--theme-shop-buttonHover)] !text-white flex flex-row items-center justify-center py-3 rounded-md"
           },
@@ -157,15 +167,17 @@
               "text": "Add to Cart"
             }
           ],
-          "actions": {
-            "click": {
-              "action": "addToCart"
+          "actions": [
+            {
+              "action": "c5c43e71-0991-4923-abad-7755eb230f6b"
             }
-          }
+          ]
         },
         {
           "type": "Pressable",
-          "condition": { "expr": "!findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}})) || getKeyValue(findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}})), 'stockLevel') === 'OUT_OF_STOCK'" },
+          "condition": {
+            "expr": "!findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}})) || getKeyValue(findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}})), 'stockLevel') === 'OUT_OF_STOCK'"
+          },
           "props": {
             "className": "w-full !bg-[var(--theme-border)] !text-[var(--theme-muted-foreground)] cursor-not-allowed flex flex-row items-center justify-center py-3 rounded-md",
             "disabled": true
@@ -186,14 +198,18 @@
     },
     {
       "type": "Box",
-      "condition": { "expr": "findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}})) && getKeyValue(findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}})), 'sku')" },
+      "condition": {
+        "expr": "findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}})) && getKeyValue(findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}})), 'sku')"
+      },
       "children": [
         {
           "type": "Text",
           "props": {
             "className": "text-xs text-[var(--theme-muted-foreground)]"
           },
-          "text": { "expr": "'SKU: ' + getKeyValue(findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}})), 'sku')" }
+          "text": {
+            "expr": "'SKU: ' + getKeyValue(findItemById({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, findItemByOptionsMatch({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.variants}}, {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups}}, {{variables['c4d5e6f7-a8b9-0123-cdef-234567890123']}})), 'sku')"
+          }
         }
       ]
     }

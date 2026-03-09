@@ -102,20 +102,19 @@ test.describe('VT — Variables Tab', () => {
     expect(content).toMatch(/Layout|Navigation|Auth/);
   });
 
-  test('VT-04: Form variable expands to show value sub-fields', async ({ page }) => {
+  test('VT-04: Variables tab does not contain removed form variables', async ({ page }) => {
+    // Form variables (Sign In Form, Register Form, etc.) were migrated to weWeb-style
+    // local.data.form.* and removed from config/variables.json. This test ensures they
+    // no longer appear in the Variables tab.
     await gotoBuilder(page);
     await addAndSelectBox(page, 'vt04-box');
     await openFormulaEditor(page);
     await switchToVariablesTab(page);
     await page.waitForTimeout(1000);
-    // Find "Sign In Form" (a form variable) and click to expand
-    const formVarBtn = page.locator('button').filter({ hasText: 'Sign In Form' }).first();
-    await expect(formVarBtn).toBeVisible({ timeout: 5_000 });
-    await formVarBtn.click();
-    await page.waitForTimeout(300);
-    // After expansion, should see "value.username" sub-item
     const content = await page.locator('body').textContent();
-    expect(content).toMatch(/Sign In Form\.value\.username|value\.username/);
+    expect(content).not.toContain('Sign In Form');
+    expect(content).not.toContain('Register Form');
+    expect(content).not.toContain('Cart Coupon Form');
   });
 
   test('VT-05: Clicking a simple variable inserts a chip', async ({ page }) => {

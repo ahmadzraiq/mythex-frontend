@@ -3,6 +3,12 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import dataSourcesJson from '@/config/datasources.json';
 import variablesJson from '@/config/variables.json';
+import authActions from '@/config/actions/auth.json';
+import cartActions from '@/config/actions/cart.json';
+import checkoutActions from '@/config/actions/checkout.json';
+import accountActions from '@/config/actions/account.json';
+import productsActions from '@/config/actions/products.json';
+import layoutActions from '@/config/actions/layout.json';
 import type { NamedDataSourceDef } from '@/config/datasource-types';
 
 /**
@@ -103,7 +109,36 @@ export async function GET() {
     label: f.label,
   }));
 
-  return NextResponse.json({ dataSources: dataSourceList, dsFolders, variables, varFolders });
+  // ── Named workflows from config/actions/*.json ────────────────────────────
+  const allActions: Record<string, Record<string, unknown>> = {
+    ...authActions as Record<string, Record<string, unknown>>,
+    ...cartActions as Record<string, Record<string, unknown>>,
+    ...checkoutActions as Record<string, Record<string, unknown>>,
+    ...accountActions as Record<string, Record<string, unknown>>,
+    ...productsActions as Record<string, Record<string, unknown>>,
+    ...layoutActions as Record<string, Record<string, unknown>>,
+  };
+
+  const workflows = Object.entries(allActions)
+    .filter(([, def]) => def.type === 'workflowSteps')
+    .map(([id, def]) => ({
+      id,
+      // After migration, "name" field holds the human-readable name; fall back to the UUID key
+      name: (def.name as string) ?? id,
+      trigger: (def.trigger as string) ?? 'click',
+      steps: (def.steps as object[]) ?? [],
+      onErrorSteps: (def.onErrorSteps as object[] | undefined),
+    }));
+
+  // Direct (non-workflowSteps) actions: graphql mutations, fetch, navigate, etc.
+  // The canvas uses this map to resolve ActionRef UUIDs to their real type so a
+  // step that calls loginMutation shows as "GraphQL" rather than "Call workflow".
+  const directActions = Object.fromEntries(
+    Object.entries(allActions)
+      .filter(([, def]) => def.type && def.type !== 'workflowSteps')
+  );
+
+  return NextResponse.json({ dataSources: dataSourceList, dsFolders, variables, varFolders, workflows, directActions });
 }
 
 /**

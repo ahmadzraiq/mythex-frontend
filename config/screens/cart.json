@@ -52,14 +52,11 @@
                 "text": "Continue Shopping"
               }
             ],
-            "actions": {
-              "click": {
-                "action": "navigate",
-                "payload": {
-                  "path": "/"
-                }
+            "actions": [
+              {
+                "action": "9e33ef0a-706f-4555-b2ee-60fd95ebf416"
               }
-            }
+            ]
           }
         ]
       },
@@ -99,21 +96,17 @@
                         "props": {
                           "className": "flex-shrink-0"
                         },
-                        "actions": {
-                          "click": {
-                            "action": "navigate",
-                            "payload": {
-                              "routeConfig": "product",
-                              "slug": "{{context.item.productVariant.product.slug}}"
-                            }
+                        "actions": [
+                          {
+                            "action": "85a454be-bb92-4878-a266-b54e35d2d4d5"
                           }
-                        },
+                        ],
                         "children": [
                           {
                             "type": "NextImage",
                             "props": {
-                              "src": "{{context.item.productVariant.product.featuredAsset.preview}}",
-                              "alt": "{{context.item.productVariant.name}}",
+                              "src": "{{context.item.data.productVariant.product.featuredAsset.preview}}",
+                              "alt": "{{context.item.data.productVariant.name}}",
                               "width": 120,
                               "height": 120,
                               "className": "rounded-md object-cover w-full sm:w-[120px] h-[120px]"
@@ -132,19 +125,15 @@
                             "props": {
                               "className": "font-semibold hover:underline block"
                             },
-                            "actions": {
-                              "click": {
-                                "action": "navigate",
-                                "payload": {
-                                  "routeConfig": "product",
-                                  "slug": "{{context.item.productVariant.product.slug}}"
-                                }
+                            "actions": [
+                              {
+                                "action": "85a454be-bb92-4878-a266-b54e35d2d4d5"
                               }
-                            },
+                            ],
                             "children": [
                               {
                                 "type": "Text",
-                                "text": "{{context.item.productVariant.product.name}}"
+                                "text": "{{context.item.data.productVariant.product.name}}"
                               }
                             ]
                           },
@@ -153,15 +142,15 @@
                             "props": {
                               "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                             },
-                            "text": "{{context.item.productVariant.name}}",
-                            "condition": "{{context.item.productVariant.name}} !== {{context.item.productVariant.product.name}}"
+                            "text": "{{context.item.data.productVariant.name}}",
+                            "condition": "{{context.item.data.productVariant.name}} !== {{context.item.data.productVariant.product.name}}"
                           },
                           {
                             "type": "Text",
                             "props": {
                               "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                             },
-                            "text": "SKU: {{context.item.productVariant.sku}}"
+                            "text": "SKU: {{context.item.data.productVariant.sku}}"
                           },
                           {
                             "type": "Box",
@@ -180,7 +169,7 @@
                                     "props": {
                                       "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-[var(--theme-hero-bg)] rounded-none disabled:opacity-50 flex-row"
                                     },
-                                    "condition": "{{context.item.quantity}} > 1",
+                                    "condition": "{{context.item.data.quantity}} > 1",
                                     "children": [
                                       {
                                         "type": "Text",
@@ -190,24 +179,18 @@
                                         "text": "−"
                                       }
                                     ],
-                                    "actions": {
-                                      "click": {
-                                        "action": "adjustCartItemQuantity",
-                                        "payload": {
-                                          "lineId": "{{context.item.id}}",
-                                          "quantity": {
-                                            "expr": "{{context.item.quantity}} - 1"
-                                          }
-                                        }
+                                    "actions": [
+                                      {
+                                        "action": "26266968-8914-4e63-acfe-338ca69a0095"
                                       }
-                                    }
+                                    ]
                                   },
                                   {
                                     "type": "Pressable",
                                     "props": {
                                       "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-[var(--theme-hero-bg)] rounded-none disabled:opacity-50 flex-row"
                                     },
-                                    "condition": "({{context.item.quantity}} || 0) === 1",
+                                    "condition": "({{context.item.data.quantity}} || 0) === 1",
                                     "children": [
                                       {
                                         "type": "Text",
@@ -217,19 +200,18 @@
                                         "text": "−"
                                       }
                                     ],
-                                    "actions": {
-                                      "click": {
-                                        "action": "removeFromCart",
-                                        "stopPropagation": true
+                                    "actions": [
+                                      {
+                                        "action": "16fcea3b-13a7-4a58-b890-d2fc91ee0408"
                                       }
-                                    }
+                                    ]
                                   },
                                   {
                                     "type": "Text",
                                     "props": {
                                       "className": "w-12 text-center font-medium text-sm"
                                     },
-                                    "text": "{{context.item.quantity}}"
+                                    "text": "{{context.item.data.quantity}}"
                                   },
                                   {
                                     "type": "Pressable",
@@ -245,17 +227,11 @@
                                         "text": "+"
                                       }
                                     ],
-                                    "actions": {
-                                      "click": {
-                                        "action": "adjustCartItemQuantity",
-                                        "payload": {
-                                          "lineId": "{{context.item.id}}",
-                                          "quantity": {
-                                            "expr": "{{context.item.quantity}} + 1"
-                                          }
-                                        }
+                                    "actions": [
+                                      {
+                                        "action": "7e13b3e3-daf0-430b-83b8-0447ad9a94c3"
                                       }
-                                    }
+                                    ]
                                   },
                                   {
                                     "type": "Pressable",
@@ -271,12 +247,11 @@
                                         "text": "✕"
                                       }
                                     ],
-                                    "actions": {
-                                      "click": {
-                                        "action": "removeFromCart",
-                                        "stopPropagation": true
+                                    "actions": [
+                                      {
+                                        "action": "16fcea3b-13a7-4a58-b890-d2fc91ee0408"
                                       }
-                                    }
+                                    ]
                                   }
                                 ]
                               },
@@ -292,7 +267,7 @@
                                       "className": "font-semibold text-lg"
                                     },
                                     "text": {
-                                      "expr": "formatCurrency({{context.item.linePriceWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD')"
+                                      "expr": "formatCurrency({{context.item.data.linePriceWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD')"
                                     }
                                   },
                                   {
@@ -301,7 +276,7 @@
                                       "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                                     },
                                     "text": {
-                                      "expr": "formatCurrency({{context.item.unitPriceWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD') + ' each'"
+                                      "expr": "formatCurrency({{context.item.data.unitPriceWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD') + ' each'"
                                     }
                                   }
                                 ]
@@ -322,7 +297,7 @@
                               "className": "font-semibold text-lg"
                             },
                             "text": {
-                              "expr": "formatCurrency({{context.item.linePriceWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD')"
+                              "expr": "formatCurrency({{context.item.data.linePriceWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD')"
                             }
                           },
                           {
@@ -331,7 +306,7 @@
                               "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                             },
                             "text": {
-                              "expr": "formatCurrency({{context.item.unitPriceWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD') + ' each'"
+                              "expr": "formatCurrency({{context.item.data.unitPriceWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD') + ' each'"
                             }
                           }
                         ]
@@ -405,12 +380,12 @@
                             "children": [
                               {
                                 "type": "Text",
-                                "text": "{{context.item.description}}"
+                                "text": "{{context.item.data.description}}"
                               },
                               {
                                 "type": "Text",
                                 "text": {
-                                  "expr": "formatCurrency({{context.item.amountWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD')"
+                                  "expr": "formatCurrency({{context.item.data.amountWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD')"
                                 }
                               }
                             ]
@@ -480,14 +455,11 @@
                         "text": "Proceed to Checkout"
                       }
                     ],
-                    "actions": {
-                      "click": {
-                        "action": "navigate",
-                        "payload": {
-                          "path": "/checkout"
-                        }
+                    "actions": [
+                      {
+                        "action": "13a93f84-964f-4116-84da-d2af7cc3bc81"
                       }
-                    }
+                    ]
                   },
                   {
                     "type": "Pressable",
@@ -503,14 +475,11 @@
                         "text": "Continue Shopping"
                       }
                     ],
-                    "actions": {
-                      "click": {
-                        "action": "navigate",
-                        "payload": {
-                          "path": "/"
-                        }
+                    "actions": [
+                      {
+                        "action": "9e33ef0a-706f-4555-b2ee-60fd95ebf416"
                       }
-                    }
+                    ]
                   }
                 ]
               },
@@ -608,14 +577,11 @@
                                     "text": "Remove"
                                   }
                                 ],
-                                "actions": {
-                                  "click": {
-                                    "action": "removePromotionCode",
-                                    "payload": {
-                                      "couponCode": "{{$item}}"
-                                    }
+                                "actions": [
+                                  {
+                                    "action": "9d025c9c-1fef-460d-9238-faec04029ad6"
                                   }
-                                }
+                                ]
                               }
                             ]
                           }
@@ -642,17 +608,14 @@
                             "type": "InputField",
                             "props": {
                               "placeholder": "Enter code",
-                              "value": "{{variables['c0d1e2f3-a4b5-6789-cdef-789012345678'].value.couponCode}}",
+                              "value": "{{local.data.form.formData.couponCode}}",
                               "className": "!text-[var(--theme-foreground)]"
                             },
-                            "actions": {
-                              "change": {
-                                "type": "setFormField",
-                                "formId": "c0d1e2f3-a4b5-6789-cdef-789012345678",
-                                "field": "couponCode",
-                                "value": "$event"
+                            "actions": [
+                              {
+                                "action": "4c7b10f3-8d3d-4c58-a652-1b55984f1c74"
                               }
-                            }
+                            ]
                           }
                         ]
                       },
@@ -670,11 +633,11 @@
                             "text": "Apply"
                           }
                         ],
-                        "actions": {
-                          "click": {
-                            "action": "applyPromotionCode"
+                        "actions": [
+                          {
+                            "action": "85346c1c-0613-4776-9cba-3a7c3172a764"
                           }
-                        }
+                        ]
                       }
                     ]
                   }

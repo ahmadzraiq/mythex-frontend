@@ -54,22 +54,18 @@
                       "children": [
                         {
                           "type": "Pressable",
-                          "actions": {
-                            "click": {
-                              "action": "navigate",
-                              "payload": {
-                                "routeConfig": "collection",
-                                "slug": "{{context.item.slug}}"
-                              }
+                          "actions": [
+                            {
+                              "action": "7ae5e4b1-51c4-4266-b001-971a30296623"
                             }
-                          },
+                          ],
                           "children": [
                             {
                               "type": "Text",
                               "props": {
                                 "className": "text-sm text-[var(--theme-footer-textMuted)] hover:text-[var(--theme-foreground)]"
                               },
-                              "text": "{{context.item.name}}"
+                              "text": "{{context.item.data.name}}"
                             }
                           ]
                         }

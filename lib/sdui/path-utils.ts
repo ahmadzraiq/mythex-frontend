@@ -16,13 +16,11 @@ export function isScopeVariable(path: string): boolean {
     path.startsWith('$item.') ||
     path.startsWith('$index.') ||
     path.startsWith('$parent.') ||
-    // New context.* scope variables (weWeb-style)
+    // context.* scope variables (weWeb-style)
+    // Covers: context.item, context.item.data.*, context.item.parent.*,
+    //         context.item.index, context.item.repeatIndex, context.item.isACopy,
+    //         context.item.repeatedItems, context.index, context.parent.*
     path === 'context' ||
-    path === 'context.item' ||
-    path === 'context.index' ||
-    path === 'context.parent' ||
-    path.startsWith('context.item.') ||
-    path.startsWith('context.index.') ||
-    path.startsWith('context.parent.')
+    path.startsWith('context.')
   );
 }

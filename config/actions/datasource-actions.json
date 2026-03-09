@@ -1,33 +1,108 @@
 {
-  "fetchNavCollections": { "type": "refetchDataSource", "name": "a7b8c9d0-e1f2-3456-abcd-567890123456" },
-  "fetchCollection": { "type": "refetchDataSource", "name": "d4e5f6a7-b8c9-0123-defa-234567890123" },
-  "fetchSearchResults": { "type": "refetchDataSource", "name": "e5f6a7b8-c9d0-1234-efab-345678901234" },
-  "fetchProduct": { "type": "refetchDataSource", "name": "b2c3d4e5-f6a7-8901-bcde-f12345678901" },
-  "fetchRelatedProducts": { "type": "refetchDataSource", "name": "f6a7b8c9-d0e1-2345-fabc-456789012345" },
-  "fetchFeaturedProducts": { "type": "refetchDataSource", "name": "c3d4e5f6-a7b8-9012-cdef-123456789012" },
-  "fetchCart": {
+  "bba88789-91bf-46f8-97bc-6c5ace12db58": {
+    "name": "a7b8c9d0-e1f2-3456-abcd-567890123456",
+    "type": "refetchDataSource"
+  },
+  "e36a0249-ae5c-4482-b7f0-8b481f23605d": {
+    "name": "d4e5f6a7-b8c9-0123-defa-234567890123",
+    "type": "refetchDataSource"
+  },
+  "b5768eaf-390c-476c-ab67-803e00d27f23": {
+    "name": "e5f6a7b8-c9d0-1234-efab-345678901234",
+    "type": "refetchDataSource"
+  },
+  "d4a4e595-bbc6-46a5-91a5-3a83b38fc10b": {
+    "name": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    "type": "refetchDataSource"
+  },
+  "e8df5af1-3e0c-4c8f-a745-12dddb063768": {
+    "name": "f6a7b8c9-d0e1-2345-fabc-456789012345",
+    "type": "refetchDataSource"
+  },
+  "2581ca97-d8e7-4d7b-a0eb-483c4f919cc2": {
+    "name": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+    "type": "refetchDataSource"
+  },
+  "00def351-2ff3-4614-a79b-1f34f45d60e2": {
+    "name": "fetchCart",
     "type": "graphql",
     "query": "query GetActiveOrder { activeOrder { id code state totalQuantity subTotal subTotalWithTax shipping shippingWithTax total totalWithTax currencyCode couponCodes discounts { description amountWithTax } lines { id productVariant { id name sku product { id name slug featuredAsset { id preview } } } unitPriceWithTax quantity linePriceWithTax } } }",
     "storeIn": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "endpoint": "http://localhost:3000/shop-api",
-    "headers": { "vendure-token": "__default_channel__" }
+    "headers": {
+      "vendure-token": "__default_channel__"
+    }
   },
-  "fetchCheckoutOrder": { "type": "refetchDataSource", "name": "b8c9d0e1-f2a3-4567-bcde-678901234567" },
-  "fetchCheckoutShippingMethods": { "type": "refetchDataSource", "name": "c9d0e1f2-a3b4-5678-cdef-789012345678" },
-  "fetchCheckoutPaymentMethods": { "type": "refetchDataSource", "name": "d0e1f2a3-b4c5-6789-defa-890123456789" },
-  "fetchCheckoutCountries": { "type": "refetchDataSource", "name": "e1f2a3b4-c5d6-7890-efab-901234567890" },
-  "fetchShippingMethods": { "type": "refetchDataSource", "name": "c9d0e1f2-a3b4-5678-cdef-789012345678" },
-  "fetchPaymentMethods": { "type": "refetchDataSource", "name": "d0e1f2a3-b4c5-6789-defa-890123456789" },
-  "fetchCountries": { "type": "refetchDataSource", "name": "e1f2a3b4-c5d6-7890-efab-901234567890" },
-  "fetchOrderConfirmation": { "type": "refetchDataSource", "name": "f2a3b4c5-d6e7-8901-fabc-012345678901" },
-  "fetchOrderByCode": { "type": "refetchDataSource", "name": "a3b4c5d6-e7f8-9012-abcd-123456789012" },
-  "fetchOrder": { "type": "refetchDataSource", "name": "a3b4c5d6-e7f8-9012-abcd-123456789012" },
-  "fetchOrders": { "type": "refetchDataSource", "name": "f8a9b0c1-d2e3-4567-fabc-678901234567" },
-  "fetchOrderDetail": { "type": "refetchDataSource", "name": "d6e7f8a9-b0c1-2345-defa-456789012345" },
-  "fetchProfile": { "type": "refetchDataSource", "name": "e7f8a9b0-c1d2-3456-efab-567890123456" },
-  "fetchAccountOrders": { "type": "refetchDataSource", "name": "c5d6e7f8-a9b0-1234-cdef-345678901234" },
-  "fetchCustomerOrders": { "type": "refetchDataSource", "name": "c5d6e7f8-a9b0-1234-cdef-345678901234" },
-  "fetchAddresses": { "type": "refetchDataSource", "name": "a9b0c1d2-e3f4-5678-abcd-789012345678" },
-  "fetchCustomerAddresses": { "type": "refetchDataSource", "name": "a9b0c1d2-e3f4-5678-abcd-789012345678" },
-  "fetchActiveCustomer": { "type": "refetchDataSource", "name": "b4c5d6e7-f8a9-0123-bcde-234567890123" }
+  "adf68fbe-c9d0-4f2d-b141-e772451e2026": {
+    "name": "b8c9d0e1-f2a3-4567-bcde-678901234567",
+    "type": "refetchDataSource"
+  },
+  "0b944095-86db-4764-ba16-6cb031b88a40": {
+    "name": "c9d0e1f2-a3b4-5678-cdef-789012345678",
+    "type": "refetchDataSource"
+  },
+  "8a7e2d5e-0d64-4e1c-837e-b0f74316fd87": {
+    "name": "d0e1f2a3-b4c5-6789-defa-890123456789",
+    "type": "refetchDataSource"
+  },
+  "0cc82aec-906a-4703-8dd6-26e53cf90f38": {
+    "name": "e1f2a3b4-c5d6-7890-efab-901234567890",
+    "type": "refetchDataSource"
+  },
+  "62c64842-4b76-40b3-87ae-d2f0275cb926": {
+    "name": "c9d0e1f2-a3b4-5678-cdef-789012345678",
+    "type": "refetchDataSource"
+  },
+  "5b47500d-b49f-45ba-918f-dd51cc221e7b": {
+    "name": "d0e1f2a3-b4c5-6789-defa-890123456789",
+    "type": "refetchDataSource"
+  },
+  "84de06d5-bacc-47c3-a917-44c1b5e8c901": {
+    "name": "e1f2a3b4-c5d6-7890-efab-901234567890",
+    "type": "refetchDataSource"
+  },
+  "a62b4889-72f5-4f5d-bd30-2c940e78ede7": {
+    "name": "f2a3b4c5-d6e7-8901-fabc-012345678901",
+    "type": "refetchDataSource"
+  },
+  "5da7f519-ddb0-42b7-b64e-38bb8f99897c": {
+    "name": "a3b4c5d6-e7f8-9012-abcd-123456789012",
+    "type": "refetchDataSource"
+  },
+  "2008d322-c830-4e9e-97b8-ae7f78d7f1f3": {
+    "name": "a3b4c5d6-e7f8-9012-abcd-123456789012",
+    "type": "refetchDataSource"
+  },
+  "32947e71-9bf9-4225-a59e-7629ac84b410": {
+    "name": "f8a9b0c1-d2e3-4567-fabc-678901234567",
+    "type": "refetchDataSource"
+  },
+  "84322563-f8d0-4207-8ee0-fe46f120a52b": {
+    "name": "d6e7f8a9-b0c1-2345-defa-456789012345",
+    "type": "refetchDataSource"
+  },
+  "c95bedec-3198-40b2-b29c-e418dfd0d2d8": {
+    "name": "e7f8a9b0-c1d2-3456-efab-567890123456",
+    "type": "refetchDataSource"
+  },
+  "5da24dbf-117f-4fbc-ab9c-b525eda6535d": {
+    "name": "c5d6e7f8-a9b0-1234-cdef-345678901234",
+    "type": "refetchDataSource"
+  },
+  "fa3e69c7-2ad2-44bb-ba4e-b2052136b5ba": {
+    "name": "c5d6e7f8-a9b0-1234-cdef-345678901234",
+    "type": "refetchDataSource"
+  },
+  "75eb6f19-d23f-4edd-9bd0-2cfe958fd76a": {
+    "name": "a9b0c1d2-e3f4-5678-abcd-789012345678",
+    "type": "refetchDataSource"
+  },
+  "3ed5758e-a5de-4a2d-8284-30a47e2a83c2": {
+    "name": "a9b0c1d2-e3f4-5678-abcd-789012345678",
+    "type": "refetchDataSource"
+  },
+  "25936105-5bba-4563-8105-3e5218489469": {
+    "name": "b4c5d6e7-f8a9-0123-bcde-234567890123",
+    "type": "refetchDataSource"
+  }
 }

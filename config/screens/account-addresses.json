@@ -18,7 +18,7 @@
   "layout": "account",
   "initActions": [
     {
-      "action": "fetchCustomerAddresses"
+      "action": "3ed5758e-a5de-4a2d-8284-30a47e2a83c2"
     }
   ],
   "content": {
@@ -66,13 +66,11 @@
                 "text": "+ Add Address"
               }
             ],
-            "actions": {
-              "click": {
-                "type": "set",
-                "path": "showAddForm",
-                "value": true
+            "actions": [
+              {
+                "action": "012f5ea4-dd68-4ff7-8db7-628a9a70592f"
               }
-            }
+            ]
           }
         ]
       },
@@ -115,14 +113,14 @@
                       {
                         "type": "InputField",
                         "props": {
-                          "value": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.fullName}}",
+                          "value": "{{local.data.form.formData.fullName}}",
                           "placeholder": "Jane Doe"
                         },
-                        "actions": {
-                          "change": {
-                            "type": "setFormField", "formId": "a4b5c6d7-e8f9-0123-abcd-123456789012", "field": "fullName", "value": "$event"
+                        "actions": [
+                          {
+                            "action": "31e1e0c5-6fc4-47ae-bc1b-c441c0a4446e"
                           }
-                        }
+                        ]
                       }
                     ]
                   }
@@ -147,14 +145,14 @@
                       {
                         "type": "InputField",
                         "props": {
-                          "value": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.streetLine1}}",
+                          "value": "{{local.data.form.formData.streetLine1}}",
                           "placeholder": "123 Main St"
                         },
-                        "actions": {
-                          "change": {
-                            "type": "setFormField", "formId": "a4b5c6d7-e8f9-0123-abcd-123456789012", "field": "streetLine1", "value": "$event"
+                        "actions": [
+                          {
+                            "action": "3d2308d8-2b36-48e0-a2ad-8d209bea7588"
                           }
-                        }
+                        ]
                       }
                     ]
                   }
@@ -185,14 +183,14 @@
                           {
                             "type": "InputField",
                             "props": {
-                              "value": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.city}}",
+                              "value": "{{local.data.form.formData.city}}",
                               "placeholder": "New York"
                             },
-                            "actions": {
-                              "change": {
-                                "type": "setFormField", "formId": "a4b5c6d7-e8f9-0123-abcd-123456789012", "field": "city", "value": "$event"
+                            "actions": [
+                              {
+                                "action": "7f526c07-684e-4efb-a57c-4ae3caf04ba3"
                               }
-                            }
+                            ]
                           }
                         ]
                       }
@@ -217,14 +215,14 @@
                           {
                             "type": "InputField",
                             "props": {
-                              "value": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.postalCode}}",
+                              "value": "{{local.data.form.formData.postalCode}}",
                               "placeholder": "10001"
                             },
-                            "actions": {
-                              "change": {
-                                "type": "setFormField", "formId": "a4b5c6d7-e8f9-0123-abcd-123456789012", "field": "postalCode", "value": "$event"
+                            "actions": [
+                              {
+                                "action": "b5dcaf0b-b72f-41bf-9c05-ca4131f19bd3"
                               }
-                            }
+                            ]
                           }
                         ]
                       }
@@ -251,14 +249,14 @@
                       {
                         "type": "InputField",
                         "props": {
-                          "value": "{{variables['a4b5c6d7-e8f9-0123-abcd-123456789012'].value.countryCode}}",
+                          "value": "{{local.data.form.formData.countryCode}}",
                           "placeholder": "US"
                         },
-                        "actions": {
-                          "change": {
-                            "type": "setFormField", "formId": "a4b5c6d7-e8f9-0123-abcd-123456789012", "field": "countryCode", "value": "$event"
+                        "actions": [
+                          {
+                            "action": "bb8ab177-3ee7-4431-a6bc-d1ed69482dbc"
                           }
-                        }
+                        ]
                       }
                     ]
                   }
@@ -284,11 +282,11 @@
                         "text": "Save Address"
                       }
                     ],
-                    "actions": {
-                      "click": {
+                    "actions": [
+                      {
                         "action": "createCustomerAddress"
                       }
-                    }
+                    ]
                   },
                   {
                     "type": "Pressable",
@@ -304,13 +302,11 @@
                         "text": "Cancel"
                       }
                     ],
-                    "actions": {
-                      "click": {
-                        "type": "set",
-                        "path": "showAddForm",
-                        "value": false
+                    "actions": [
+                      {
+                        "action": "b374e4d3-4b89-42e4-b15c-55324bc0a95c"
                       }
-                    }
+                    ]
                   }
                 ]
               }
@@ -356,28 +352,28 @@
                     "props": {
                       "className": "font-semibold"
                     },
-                    "text": "{{context.item.fullName}}"
+                    "text": "{{context.item.data.fullName}}"
                   },
                   {
                     "type": "Text",
                     "props": {
                       "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                     },
-                    "text": "{{context.item.streetLine1}}"
+                    "text": "{{context.item.data.streetLine1}}"
                   },
                   {
                     "type": "Text",
                     "props": {
                       "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
-                    "text": "{{context.item.city}}, {{context.item.postalCode}}"
+                    "text": "{{context.item.data.city}}, {{context.item.data.postalCode}}"
                   },
                   {
                     "type": "Text",
                     "props": {
                       "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
-                    "text": "{{context.item.country.name}}"
+                    "text": "{{context.item.data.country.name}}"
                   },
                   {
                     "type": "Box",
@@ -414,11 +410,11 @@
                             "text": "Delete"
                           }
                         ],
-                        "actions": {
-                          "click": {
+                        "actions": [
+                          {
                             "action": "deleteCustomerAddress"
                           }
-                        }
+                        ]
                       }
                     ]
                   }

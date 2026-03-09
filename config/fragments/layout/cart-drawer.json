@@ -7,11 +7,11 @@
   "children": [
     {
       "type": "DrawerBackdrop",
-      "actions": {
-        "click": {
-          "action": "closeCartDrawer"
+      "actions": [
+        {
+          "action": "90ca7f64-f883-45db-95b6-b2bb3c46033e"
         }
-      }
+      ]
     },
     {
       "type": "DrawerContent",
@@ -43,11 +43,11 @@
                   "props": {
                     "className": "h-8 w-8 rounded-md border-0 bg-transparent hover:bg-[var(--theme-hero-bg)] flex items-center justify-center"
                   },
-                  "actions": {
-                    "click": {
-                      "action": "closeCartDrawer"
+                  "actions": [
+                    {
+                      "action": "90ca7f64-f883-45db-95b6-b2bb3c46033e"
                     }
-                  }
+                  ]
                 }
               ]
             }
@@ -100,8 +100,8 @@
                     {
                       "type": "NextImage",
                       "props": {
-                        "src": "{{context.item.productVariant.product.featuredAsset.preview}}",
-                        "alt": "{{context.item.productVariant.product.name}}",
+                        "src": "{{context.item.data.productVariant.product.featuredAsset.preview}}",
+                        "alt": "{{context.item.data.productVariant.product.name}}",
                         "width": 64,
                         "height": 64,
                         "className": "rounded-md object-cover w-16 h-16 flex-shrink-0 border border-[var(--theme-border)]"
@@ -118,14 +118,14 @@
                           "props": {
                             "className": "text-sm font-medium truncate"
                           },
-                          "text": "{{context.item.productVariant.product.name}}"
+                          "text": "{{context.item.data.productVariant.product.name}}"
                         },
                         {
                           "type": "Text",
                           "props": {
                             "className": "text-xs text-[var(--theme-muted-foreground)] mt-0.5"
                           },
-                          "text": "{{context.item.productVariant.name}}"
+                          "text": "{{context.item.data.productVariant.name}}"
                         },
                         {
                           "type": "Box",
@@ -138,7 +138,7 @@
                               "props": {
                                 "className": "text-sm"
                               },
-                              "text": "Qty: {{context.item.quantity}}"
+                              "text": "Qty: {{context.item.data.quantity}}"
                             },
                             {
                               "type": "Text",
@@ -146,7 +146,7 @@
                                 "className": "text-sm font-medium"
                               },
                               "text": {
-                                "expr": "formatCurrency({{context.item.linePriceWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD')"
+                                "expr": "formatCurrency({{context.item.data.linePriceWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD')"
                               }
                             }
                           ]
@@ -158,11 +158,11 @@
                       "props": {
                         "className": "text-[var(--theme-muted-foreground)] hover:text-red-500 transition-colors p-1"
                       },
-                      "actions": {
-                        "click": {
-                          "action": "removeFromCart"
+                      "actions": [
+                        {
+                          "action": "16fcea3b-13a7-4a58-b890-d2fc91ee0408"
                         }
-                      },
+                      ],
                       "children": [
                         {
                           "type": "Text",
@@ -224,11 +224,11 @@
                   "text": "View Cart"
                 }
               ],
-              "actions": {
-                "click": {
-                  "action": "goToCart"
+              "actions": [
+                {
+                  "action": "398b94ec-901a-49c6-b19d-198854cefd07"
                 }
-              }
+              ]
             },
             {
               "type": "Pressable",
@@ -244,14 +244,11 @@
                   "text": "Checkout"
                 }
               ],
-              "actions": {
-                "click": {
-                  "action": "navigate",
-                  "payload": {
-                    "path": "/checkout"
-                  }
+              "actions": [
+                {
+                  "action": "13a93f84-964f-4116-84da-d2af7cc3bc81"
                 }
-              }
+              ]
             }
           ]
         }

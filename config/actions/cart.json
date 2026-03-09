@@ -1,5 +1,6 @@
 {
-  "addToCart": {
+  "c5c43e71-0991-4923-abad-7755eb230f6b": {
+    "name": "addToCart",
     "type": "graphql",
     "query": "mutation AddToCart($variantId: ID!, $quantity: Int!) { addItemToOrder(productVariantId: $variantId, quantity: $quantity) { __typename ... on Order { id totalQuantity } ... on ErrorResult { errorCode message } } }",
     "variables": {
@@ -15,62 +16,132 @@
     "onSuccess": {
       "type": "runMultiple",
       "actions": [
-        { "action": "fetchCart" },
-        { "action": "showToast", "payload": { "message": "Added to cart" } }
+        {
+          "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
+        },
+        {
+          "action": "showToast",
+          "payload": {
+            "message": "Added to cart"
+          }
+        }
       ]
     },
-    "invalidateCache": ["cart"],
+    "invalidateCache": [
+      "cart"
+    ],
     "endpoint": "http://localhost:3000/shop-api"
   },
-  "addToCartFromCard": {
+  "7a44a326-2c68-4d7f-9266-c83457ef057b": {
+    "name": "addToCartFromCard",
     "type": "graphql",
     "query": "mutation AddToCart($variantId: ID!, $quantity: Int!) { addItemToOrder(productVariantId: $variantId, quantity: $quantity) { __typename ... on Order { id totalQuantity } ... on ErrorResult { errorCode message } } }",
     "variables": {
-      "variantId": "{{context.item.variantId}}",
+      "variantId": "{{context.item.data.variantId}}",
       "quantity": 1
     },
     "headers": {
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
     },
-    "onSuccess": { "action": "fetchCart" },
-    "invalidateCache": ["cart"],
+    "onSuccess": {
+      "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
+    },
+    "invalidateCache": [
+      "cart"
+    ],
     "endpoint": "http://localhost:3000/shop-api"
   },
-  "removeFromCart": {
+  "16fcea3b-13a7-4a58-b890-d2fc91ee0408": {
+    "name": "removeFromCart",
     "type": "graphql",
+    "stopPropagation": true,
     "query": "mutation RemoveFromCart($lineId: ID!) { removeOrderLine(orderLineId: $lineId) { __typename ... on Order { id totalQuantity } ... on ErrorResult { errorCode message } } }",
     "variables": {
-      "lineId": "{{context.item.id}}"
+      "lineId": "{{context.item.data.id}}"
     },
     "headers": {
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
     },
-    "onSuccess": { "action": "fetchCart" },
-    "invalidateCache": ["cart"],
+    "onSuccess": {
+      "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
+    },
+    "invalidateCache": [
+      "cart"
+    ],
     "endpoint": "http://localhost:3000/shop-api"
   },
-  "adjustCartItemQuantity": {
+  "d5907b1b-3ecf-40b0-b150-6eb47c8d5733": {
+    "name": "adjustCartItemQuantity",
     "type": "graphql",
     "query": "mutation AdjustCartItem($lineId: ID!, $quantity: Int!) { adjustOrderLine(orderLineId: $lineId, quantity: $quantity) { __typename ... on Order { id totalQuantity } ... on ErrorResult { errorCode message } } }",
     "variables": {
-      "lineId": "{{context.item.id}}",
-      "quantity": "{{context.item.quantity}}"
+      "lineId": "{{context.item.data.id}}",
+      "quantity": "{{context.item.data.quantity}}"
     },
     "headers": {
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
     },
-    "onSuccess": { "action": "fetchCart" },
-    "invalidateCache": ["cart"],
+    "onSuccess": {
+      "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
+    },
+    "invalidateCache": [
+      "cart"
+    ],
     "endpoint": "http://localhost:3000/shop-api"
   },
-  "applyPromotionCode": {
+  "26266968-8914-4e63-acfe-338ca69a0095": {
+    "name": "decrementCartItem",
+    "type": "graphql",
+    "query": "mutation AdjustCartItem($lineId: ID!, $quantity: Int!) { adjustOrderLine(orderLineId: $lineId, quantity: $quantity) { __typename ... on Order { id totalQuantity } ... on ErrorResult { errorCode message } } }",
+    "variables": {
+      "lineId": "{{context.item.data.id}}",
+      "quantity": {
+        "expr": "{{context.item.data.quantity}} - 1"
+      }
+    },
+    "headers": {
+      "Authorization": "{{auth.token}}",
+      "vendure-token": "__default_channel__"
+    },
+    "onSuccess": {
+      "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
+    },
+    "invalidateCache": [
+      "cart"
+    ],
+    "endpoint": "http://localhost:3000/shop-api"
+  },
+  "7e13b3e3-daf0-430b-83b8-0447ad9a94c3": {
+    "name": "incrementCartItem",
+    "type": "graphql",
+    "query": "mutation AdjustCartItem($lineId: ID!, $quantity: Int!) { adjustOrderLine(orderLineId: $lineId, quantity: $quantity) { __typename ... on Order { id totalQuantity } ... on ErrorResult { errorCode message } } }",
+    "variables": {
+      "lineId": "{{context.item.data.id}}",
+      "quantity": {
+        "expr": "{{context.item.data.quantity}} + 1"
+      }
+    },
+    "headers": {
+      "Authorization": "{{auth.token}}",
+      "vendure-token": "__default_channel__"
+    },
+    "onSuccess": {
+      "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
+    },
+    "invalidateCache": [
+      "cart"
+    ],
+    "endpoint": "http://localhost:3000/shop-api"
+  },
+  "85346c1c-0613-4776-9cba-3a7c3172a764": {
+    "name": "applyPromotionCode",
     "type": "graphql",
     "query": "mutation ApplyPromotionCode($couponCode: String!) { applyCouponCode(couponCode: $couponCode) { __typename ... on Order { id code totalWithTax couponCodes discounts { description amountWithTax } } ... on ErrorResult { errorCode message } } }",
     "variables": {
-      "couponCode": "{{variables['c0d1e2f3-a4b5-6789-cdef-789012345678'].value.couponCode}}"
+      "couponCode": "{{local.data.form.formData.couponCode}}"
     },
     "headers": {
       "Authorization": "{{auth.token}}",
@@ -82,11 +153,10 @@
       "type": "runMultiple",
       "actions": [
         {
-          "action": "fetchCart"
+          "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
         },
         {
-          "type": "resetForm",
-          "formId": "c0d1e2f3-a4b5-6789-cdef-789012345678"
+          "type": "resetForm"
         }
       ]
     },
@@ -95,7 +165,8 @@
     ],
     "endpoint": "http://localhost:3000/shop-api"
   },
-  "removePromotionCode": {
+  "9d025c9c-1fef-460d-9238-faec04029ad6": {
+    "name": "removePromotionCode",
     "type": "graphql",
     "query": "mutation RemovePromotionCode($couponCode: String!) { removeCouponCode(couponCode: $couponCode) { id code totalWithTax couponCodes discounts { description amountWithTax } } }",
     "variables": {
@@ -108,21 +179,38 @@
     "storeIn": "cart._removePromoResult",
     "responsePath": "data.removeCouponCode",
     "onSuccess": {
-      "action": "fetchCart"
+      "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
     },
     "invalidateCache": [
       "cart"
     ],
     "endpoint": "http://localhost:3000/shop-api"
   },
-  "openCartDrawer": {
+  "bb24976b-f167-48bb-a683-14cd4fe86d26": {
+    "name": "openCartDrawer",
     "type": "set",
     "path": "layout.cartDrawerOpen",
     "value": true
   },
-  "closeCartDrawer": {
+  "90ca7f64-f883-45db-95b6-b2bb3c46033e": {
+    "name": "closeCartDrawer",
     "type": "set",
     "path": "layout.cartDrawerOpen",
     "value": false
+  },
+  "4c7b10f3-8d3d-4c58-a652-1b55984f1c74": {
+    "name": "setCouponCode",
+    "type": "workflowSteps",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "setFormField",
+        "config": {
+          "field": "couponCode",
+          "value": "$event"
+        }
+      }
+    ]
   }
 }

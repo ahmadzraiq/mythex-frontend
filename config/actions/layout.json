@@ -1,283 +1,774 @@
 {
-  "openDrawer": {
-    "type": "setVar",
-    "path": "b1c2d3e4-f5a6-7890-bcde-f01234567890",
-    "value": true
-  },
-  "closeDrawer": {
-    "type": "setVar",
-    "path": "b1c2d3e4-f5a6-7890-bcde-f01234567890",
-    "value": false
-  },
-  "openCartDrawer": {
-    "type": "setVar",
-    "path": "c2d3e4f5-a6b7-8901-cdef-012345678901",
-    "value": true
-  },
-  "closeCartDrawer": {
-    "type": "setVar",
-    "path": "c2d3e4f5-a6b7-8901-cdef-012345678901",
-    "value": false
-  },
-  "toggleThemeMenu": {
-    "type": "toggle",
-    "path": "e4f5a6b7-c8d9-0123-efab-234567890123"
-  },
-  "closeThemeMenu": {
-    "type": "setVar",
-    "path": "e4f5a6b7-c8d9-0123-efab-234567890123",
-    "value": false
-  },
-  "applyThemeLight": {
-    "type": "setTheme",
-    "value": "light"
-  },
-  "applyThemeDark": {
-    "type": "setTheme",
-    "value": "dark"
-  },
-  "applyThemeSystem": {
-    "type": "setTheme",
-    "value": "system"
-  },
-  "setThemeLight": {
-    "type": "runMultiple",
-    "actions": [
+  "eff1f469-2744-4ffc-93b2-12163ff2cc01": {
+    "name": "openDrawer",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
       {
-        "action": "applyThemeLight"
-      },
-      {
-        "action": "closeThemeMenu"
-      }
-    ]
-  },
-  "setThemeDark": {
-    "type": "runMultiple",
-    "actions": [
-      {
-        "action": "applyThemeDark"
-      },
-      {
-        "action": "closeThemeMenu"
-      }
-    ]
-  },
-  "setThemeSystem": {
-    "type": "runMultiple",
-    "actions": [
-      {
-        "action": "applyThemeSystem"
-      },
-      {
-        "action": "closeThemeMenu"
-      }
-    ]
-  },
-  "navigateToSearch": {
-    "action": "navigate",
-    "payload": {
-      "path": "/search?q={{variables['f5a6b7c8-d9e0-1234-fabc-345678901234']}}"
-    }
-  },
-  "submitSearch": {
-    "action": "navigate",
-    "payload": {
-      "path": "/search?q={{variables['f5a6b7c8-d9e0-1234-fabc-345678901234']}}"
-    }
-  },
-  "goToCart": {
-    "action": "navigate",
-    "payload": {
-      "path": "/cart"
-    }
-  },
-  "changePassword": {
-    "type": "validate",
-    "formId": "f3a4b5c6-d7e8-9012-fabc-012345678901",
-    "onSuccess": {
-      "action": "changePasswordMutation"
-    }
-  },
-  "requestEmailUpdate": {
-    "type": "validate",
-    "formId": "c6d7e8f9-a0b1-2345-cdef-345678901234",
-    "onSuccess": {
-      "action": "requestEmailUpdateMutation"
-    }
-  },
-  "createAddress": {
-    "type": "validate",
-    "formId": "a4b5c6d7-e8f9-0123-abcd-123456789012",
-    "onSuccess": {
-      "action": "createAddressMutation"
-    }
-  },
-  "syncCheckoutStep": {
-    "type": "setVar",
-    "path": "d9e0f1a2-b3c4-5678-defa-789012345678",
-    "value": {
-      "expr": "!({{auth.user}} || {{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.emailAddress}} || '') ? 'contact' : !({{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine1}} || '') ? 'shipping' : ({{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingLines.length}} || 0 || 0) <= 0 ? 'delivery' : !({{variables['b3c4d5e6-f7a8-9012-bcde-123456789012']}} || '') ? 'payment' : 'review'"
-    }
-  },
-  "populateCheckoutForm": {
-    "type": "runMultiple",
-    "actions": [
-      {
-        "type": "setFormField",
-        "formId": "d1e2f3a4-b5c6-7890-defa-890123456789",
-        "field": "emailAddress",
-        "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.emailAddress}}"
-      },
-      {
-        "type": "setFormField",
-        "formId": "d1e2f3a4-b5c6-7890-defa-890123456789",
-        "field": "firstName",
-        "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.firstName}}"
-      },
-      {
-        "type": "setFormField",
-        "formId": "d1e2f3a4-b5c6-7890-defa-890123456789",
-        "field": "lastName",
-        "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.lastName}}"
-      },
-      {
-        "type": "setFormField",
-        "formId": "d1e2f3a4-b5c6-7890-defa-890123456789",
-        "field": "fullName",
-        "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.fullName}}"
-      },
-      {
-        "type": "setFormField",
-        "formId": "d1e2f3a4-b5c6-7890-defa-890123456789",
-        "field": "company",
-        "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.company}}"
-      },
-      {
-        "type": "setFormField",
-        "formId": "d1e2f3a4-b5c6-7890-defa-890123456789",
-        "field": "streetLine1",
-        "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine1}}"
-      },
-      {
-        "type": "setFormField",
-        "formId": "d1e2f3a4-b5c6-7890-defa-890123456789",
-        "field": "streetLine2",
-        "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine2}}"
-      },
-      {
-        "type": "setFormField",
-        "formId": "d1e2f3a4-b5c6-7890-defa-890123456789",
-        "field": "city",
-        "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.city}}"
-      },
-      {
-        "type": "setFormField",
-        "formId": "d1e2f3a4-b5c6-7890-defa-890123456789",
-        "field": "province",
-        "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.province}}"
-      },
-      {
-        "type": "setFormField",
-        "formId": "d1e2f3a4-b5c6-7890-defa-890123456789",
-        "field": "postalCode",
-        "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.postalCode}}"
-      },
-      {
-        "type": "setFormField",
-        "formId": "d1e2f3a4-b5c6-7890-defa-890123456789",
-        "field": "countryCode",
-        "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.countryCode}}"
-      },
-      {
-        "type": "setFormField",
-        "formId": "d1e2f3a4-b5c6-7890-defa-890123456789",
-        "field": "phoneNumber",
-        "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.phoneNumber}}"
-      },
-      {
-        "type": "setVar",
-        "path": "a2b3c4d5-e6f7-8901-abcd-012345678901",
-        "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingLines.0.shippingMethod.id}}"
-      }
-    ]
-  },
-  "fetchCheckoutDependentData": {
-    "type": "runMultiple",
-    "actions": [
-      {
-        "condition": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine1}}",
-        "action": "fetchShippingMethods"
-      },
-      {
-        "condition": "({{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingLines.length}} || 0) > 0",
-        "action": "fetchPaymentMethods"
-      }
-    ]
-  },
-  "clearCartAfterOrder": {
-    "type": "set",
-    "path": "cart",
-    "value": {
-      "id": null,
-      "code": null,
-      "state": null,
-      "totalQuantity": 0,
-      "subTotalWithTax": 0,
-      "shippingWithTax": 0,
-      "totalWithTax": 0,
-      "currencyCode": "USD",
-      "couponCodes": [],
-      "discounts": [],
-      "lines": []
-    }
-  },
-  "clearCheckoutSessionAndNavigate": {
-    "type": "runMultiple",
-    "actions": [
-      {
-        "action": "clearCartAfterOrder"
-      },
-      {
-        "type": "clearPersistedPaths",
-        "onSuccess": {
-          "action": "navigateToOrderConfirmation"
+        "id": "step-1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "b1c2d3e4-f5a6-7890-bcde-f01234567890",
+          "value": true
         }
       }
     ]
   },
-  "navigateToOrderConfirmation": {
-    "action": "navigate",
-    "payload": {
-      "routeConfig": "orderConfirmation",
-      "slug": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.code}}"
+  "3d865a41-2f70-4992-b8a1-b24c02a47e51": {
+    "name": "closeDrawer",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "b1c2d3e4-f5a6-7890-bcde-f01234567890",
+          "value": false
+        }
+      }
+    ]
+  },
+  "bb24976b-f167-48bb-a683-14cd4fe86d26": {
+    "name": "openCartDrawer",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "c2d3e4f5-a6b7-8901-cdef-012345678901",
+          "value": true
+        }
+      }
+    ]
+  },
+  "90ca7f64-f883-45db-95b6-b2bb3c46033e": {
+    "name": "closeCartDrawer",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "c2d3e4f5-a6b7-8901-cdef-012345678901",
+          "value": false
+        }
+      }
+    ]
+  },
+  "7ab8940c-8483-4237-8cdb-38c0d2290df4": {
+    "name": "toggleThemeMenu",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "toggle",
+        "config": {
+          "path": "e4f5a6b7-c8d9-0123-efab-234567890123"
+        }
+      }
+    ]
+  },
+  "8a42349d-44fb-46f8-8489-4c0f52b1f380": {
+    "name": "closeThemeMenu",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "e4f5a6b7-c8d9-0123-efab-234567890123",
+          "value": false
+        }
+      }
+    ]
+  },
+  "9b3dad1d-504c-4fe8-b270-52aac8b88ac2": {
+    "name": "applyThemeLight",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "setTheme",
+        "config": {
+          "value": "light"
+        }
+      }
+    ]
+  },
+  "74948f69-b319-4b64-805f-ea51ea6e6cd9": {
+    "name": "applyThemeDark",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "setTheme",
+        "config": {
+          "value": "dark"
+        }
+      }
+    ]
+  },
+  "6a527b9d-4dea-4465-b126-8e1d88811f9b": {
+    "name": "applyThemeSystem",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "setTheme",
+        "config": {
+          "value": "system"
+        }
+      }
+    ]
+  },
+  "6e3af5bc-85bf-491e-984e-55faa5e975f9": {
+    "name": "setThemeLight",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "action": "9b3dad1d-504c-4fe8-b270-52aac8b88ac2"
+      },
+      {
+        "id": "step-2",
+        "action": "8a42349d-44fb-46f8-8489-4c0f52b1f380"
+      }
+    ]
+  },
+  "36658639-6572-46b6-b296-8a92ab9592b2": {
+    "name": "setThemeDark",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "action": "74948f69-b319-4b64-805f-ea51ea6e6cd9"
+      },
+      {
+        "id": "step-2",
+        "action": "8a42349d-44fb-46f8-8489-4c0f52b1f380"
+      }
+    ]
+  },
+  "05784685-1412-4e52-81d7-026aa7a40663": {
+    "name": "setThemeSystem",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "action": "6a527b9d-4dea-4465-b126-8e1d88811f9b"
+      },
+      {
+        "id": "step-2",
+        "action": "8a42349d-44fb-46f8-8489-4c0f52b1f380"
+      }
+    ]
+  },
+  "9e33ef0a-706f-4555-b2ee-60fd95ebf416": {
+    "name": "navigateToHome",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/",
+          "linkType": "internal"
+        }
+      }
+    ]
+  },
+  "13a93f84-964f-4116-84da-d2af7cc3bc81": {
+    "name": "navigateToCheckout",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/checkout",
+          "linkType": "internal"
+        }
+      }
+    ]
+  },
+  "3517ed88-9e35-42fd-8d44-650cb590d210": {
+    "name": "navigateToSignIn",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/sign-in",
+          "linkType": "internal"
+        }
+      }
+    ]
+  },
+  "765e9a1e-6248-4449-9b88-6d454fbfda1a": {
+    "name": "navigateToForgotPassword",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/forgot-password",
+          "linkType": "internal"
+        }
+      }
+    ]
+  },
+  "f72de6d3-1e5c-4632-80b2-a2785dc4b0ee": {
+    "name": "navigateToRegister",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/register",
+          "linkType": "internal"
+        }
+      }
+    ]
+  },
+  "d5d15a7d-ea78-467a-a181-2e801e93ce0f": {
+    "name": "navigateToOrders",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/account/orders",
+          "linkType": "internal"
+        }
+      }
+    ]
+  },
+  "08b2f4a8-16d3-4e61-bcce-e17a2097b8da": {
+    "name": "navigateToAccountAddresses",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/account/addresses",
+          "linkType": "internal"
+        }
+      }
+    ]
+  },
+  "72ba89df-9230-4ca9-85dc-9294fa2062fb": {
+    "name": "navigateToAccountProfile",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/account/profile",
+          "linkType": "internal"
+        }
+      }
+    ]
+  },
+  "2283a150-1c0a-46a8-bee0-bf9ba12033c7": {
+    "name": "navigateToSearchPage",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/search",
+          "linkType": "internal"
+        }
+      }
+    ]
+  },
+  "d0c34073-30be-448f-bb74-442b32bfebd1": {
+    "name": "navigateToVerifyPending",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/verify-pending",
+          "linkType": "internal"
+        }
+      }
+    ]
+  },
+  "f867ff1e-dc6b-4694-8dca-44d6e1a23756": {
+    "name": "navigateToCheckoutConfirmation",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/checkout/confirmation",
+          "queryParams": {
+            "code": "{{checkout.completedOrder.code}}"
+          }
+        }
+      }
+    ]
+  },
+  "f6046c33-0164-45b5-86aa-0710fc408247": {
+    "name": "navigateToProduct",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "routeConfig": "product",
+          "slug": "{{context.item.data.slug}}"
+        }
+      }
+    ]
+  },
+  "85a454be-bb92-4878-a266-b54e35d2d4d5": {
+    "name": "navigateToProductFromCart",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "routeConfig": "product",
+          "slug": "{{context.item.data.productVariant.product.slug}}"
+        }
+      }
+    ]
+  },
+  "476b28a3-7e9c-44f9-8913-a6f8c4904630": {
+    "name": "navigateToOrderDetail",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "routeConfig": "order-detail",
+          "slug": "{{context.item.data.code}}"
+        }
+      }
+    ]
+  },
+  "7ae5e4b1-51c4-4266-b001-971a30296623": {
+    "name": "navigateToCollection",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "routeConfig": "collection",
+          "slug": "{{context.item.data.slug}}"
+        }
+      }
+    ]
+  },
+  "e274e7f2-6c19-4697-9504-9c6ca450a5bd": {
+    "name": "navigateToSearch",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/search?q={{variables['f5a6b7c8-d9e0-1234-fabc-345678901234']}}",
+          "linkType": "internal"
+        }
+      }
+    ]
+  },
+  "9b2e0d51-893e-4a63-834c-f669440fb548": {
+    "name": "submitSearch",
+    "type": "workflowSteps",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/search?q={{variables['f5a6b7c8-d9e0-1234-fabc-345678901234']}}",
+          "linkType": "internal"
+        }
+      }
+    ]
+  },
+  "398b94ec-901a-49c6-b19d-198854cefd07": {
+    "name": "goToCart",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/cart",
+          "linkType": "internal"
+        }
+      }
+    ]
+  },
+  "67b23496-bf70-442c-8c51-b90ac28edf9c": {
+    "name": "changePassword",
+    "type": "validate",
+    "onSuccess": {
+      "action": "bd9e61f2-7964-4545-8167-4331ff17ec7a"
     }
   },
-  "goToCheckoutStep": {
-    "type": "setVar",
-    "path": "d9e0f1a2-b3c4-5678-defa-789012345678",
-    "value": "{{$item}}"
+  "f8470519-2136-4bd3-8ff3-91f62251ee6f": {
+    "name": "requestEmailUpdate",
+    "type": "validate",
+    "onSuccess": {
+      "action": "a6626679-62d9-4aa5-a842-7ebcc266e658"
+    }
   },
-  "selectProductOption": {
-    "type": "mergeAtPath",
-    "path": "c4d5e6f7-a8b9-0123-cdef-234567890123",
-    "key": "{{$parent.id}}",
-    "value": "{{context.item.id}}"
+  "f9106f2c-916a-427e-9c8f-1bf9495b8c8e": {
+    "name": "createAddress",
+    "type": "validate",
+    "onSuccess": {
+      "action": "9c6e39a6-5495-4c2a-8ea9-fc5bbe0ef052"
+    }
   },
-  "prevProductImage": {
-    "type": "cycleIndex",
-    "path": "d5e6f7a8-b9c0-1234-defa-345678901234",
-    "arrayPath": "product.assets",
-    "direction": "prev"
+  "82e7ed48-3f76-4130-af0d-8ecb1d2ae52a": {
+    "name": "syncCheckoutStep",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d9e0f1a2-b3c4-5678-defa-789012345678",
+          "value": {
+            "expr": "!({{auth.user}} || {{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.emailAddress}} || '') ? 'contact' : !({{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine1}} || '') ? 'shipping' : ({{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingLines.length}} || 0 || 0) <= 0 ? 'delivery' : !({{variables['b3c4d5e6-f7a8-9012-bcde-123456789012']}} || '') ? 'payment' : 'review'"
+          }
+        }
+      }
+    ]
   },
-  "nextProductImage": {
-    "type": "cycleIndex",
-    "path": "d5e6f7a8-b9c0-1234-defa-345678901234",
-    "arrayPath": "product.assets",
-    "direction": "next"
+  "5a65813b-1ea8-4680-b22b-2097c4ac32e1": {
+    "name": "populateCheckoutForm",
+    "type": "workflowSteps",
+    "trigger": "created",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "setFormField",
+        "config": {
+          "field": "emailAddress",
+          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.emailAddress}}"
+        }
+      },
+      {
+        "id": "step-2",
+        "type": "setFormField",
+        "config": {
+          "field": "firstName",
+          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.firstName}}"
+        }
+      },
+      {
+        "id": "step-3",
+        "type": "setFormField",
+        "config": {
+          "field": "lastName",
+          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.lastName}}"
+        }
+      },
+      {
+        "id": "step-4",
+        "type": "setFormField",
+        "config": {
+          "field": "fullName",
+          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.fullName}}"
+        }
+      },
+      {
+        "id": "step-5",
+        "type": "setFormField",
+        "config": {
+          "field": "company",
+          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.company}}"
+        }
+      },
+      {
+        "id": "step-6",
+        "type": "setFormField",
+        "config": {
+          "field": "streetLine1",
+          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine1}}"
+        }
+      },
+      {
+        "id": "step-7",
+        "type": "setFormField",
+        "config": {
+          "field": "streetLine2",
+          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine2}}"
+        }
+      },
+      {
+        "id": "step-8",
+        "type": "setFormField",
+        "config": {
+          "field": "city",
+          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.city}}"
+        }
+      },
+      {
+        "id": "step-9",
+        "type": "setFormField",
+        "config": {
+          "field": "province",
+          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.province}}"
+        }
+      },
+      {
+        "id": "step-10",
+        "type": "setFormField",
+        "config": {
+          "field": "postalCode",
+          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.postalCode}}"
+        }
+      },
+      {
+        "id": "step-11",
+        "type": "setFormField",
+        "config": {
+          "field": "countryCode",
+          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.countryCode}}"
+        }
+      },
+      {
+        "id": "step-12",
+        "type": "setFormField",
+        "config": {
+          "field": "phoneNumber",
+          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.phoneNumber}}"
+        }
+      },
+      {
+        "id": "step-13",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "a2b3c4d5-e6f7-8901-abcd-012345678901",
+          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingLines.0.shippingMethod.id}}"
+        }
+      }
+    ]
   },
-  "selectProductImage": {
-    "type": "setVar",
-    "path": "d5e6f7a8-b9c0-1234-defa-345678901234",
-    "value": "{{$index}}"
+  "3dad612a-930c-4798-8219-3221363ea500": {
+    "name": "fetchCheckoutDependentData",
+    "type": "workflowSteps",
+    "trigger": "created",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "branch",
+        "config": {
+          "conditionPath": "collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine1"
+        },
+        "trueBranch": [
+          {
+            "id": "step-1a",
+            "action": "62c64842-4b76-40b3-87ae-d2f0275cb926"
+          }
+        ],
+        "falseBranch": []
+      },
+      {
+        "id": "step-2",
+        "type": "branch",
+        "config": {
+          "conditionPath": "collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingLines.length"
+        },
+        "trueBranch": [
+          {
+            "id": "step-2a",
+            "action": "5b47500d-b49f-45ba-918f-dd51cc221e7b"
+          }
+        ],
+        "falseBranch": []
+      }
+    ]
+  },
+  "be1e38dd-eb02-41af-9e6d-d91b2130bb48": {
+    "name": "clearCartAfterOrder",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "cart",
+          "value": {
+            "id": null,
+            "code": null,
+            "state": null,
+            "totalQuantity": 0,
+            "subTotalWithTax": 0,
+            "shippingWithTax": 0,
+            "totalWithTax": 0,
+            "currencyCode": "USD",
+            "couponCodes": [],
+            "discounts": [],
+            "lines": []
+          }
+        }
+      }
+    ]
+  },
+  "eb7ad905-c8aa-41fb-8153-139882d25eea": {
+    "name": "clearCheckoutSessionAndNavigate",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "action": "be1e38dd-eb02-41af-9e6d-d91b2130bb48"
+      },
+      {
+        "id": "step-2",
+        "type": "clearPersistedPaths",
+        "config": {
+          "onSuccess": {
+            "action": "6d3e7961-7a06-4841-a1c9-0a16b7827bd3"
+          }
+        }
+      }
+    ]
+  },
+  "6d3e7961-7a06-4841-a1c9-0a16b7827bd3": {
+    "name": "navigateToOrderConfirmation",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "routeConfig": "orderConfirmation",
+          "slug": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.code}}"
+        }
+      }
+    ]
+  },
+  "b1d69f5b-5a86-4987-a1ac-ce84880554ad": {
+    "name": "goToCheckoutStep",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d9e0f1a2-b3c4-5678-defa-789012345678",
+          "value": "{{$item}}"
+        }
+      }
+    ]
+  },
+  "a1b2ce90-4498-47d2-b42f-e50f0a6972a7": {
+    "name": "selectProductOption",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "mergeAtPath",
+        "config": {
+          "path": "c4d5e6f7-a8b9-0123-cdef-234567890123",
+          "key": "{{$parent.id}}",
+          "value": "{{context.item.data.id}}"
+        }
+      }
+    ]
+  },
+  "84c5de07-4f71-44a3-904a-020758146a5f": {
+    "name": "prevProductImage",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "cycleIndex",
+        "config": {
+          "path": "d5e6f7a8-b9c0-1234-defa-345678901234",
+          "arrayPath": "product.assets",
+          "direction": "prev"
+        }
+      }
+    ]
+  },
+  "b5760629-bb22-4ace-a567-406e1afe14d1": {
+    "name": "nextProductImage",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "cycleIndex",
+        "config": {
+          "path": "d5e6f7a8-b9c0-1234-defa-345678901234",
+          "arrayPath": "product.assets",
+          "direction": "next"
+        }
+      }
+    ]
+  },
+  "59bc7c99-d110-4e01-8563-de6371d2147e": {
+    "name": "selectProductImage",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d5e6f7a8-b9c0-1234-defa-345678901234",
+          "value": "{{$index}}"
+        }
+      }
+    ]
   }
 }

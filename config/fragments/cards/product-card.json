@@ -3,15 +3,11 @@
   "props": {
     "className": "group block bg-[var(--theme-content-bg)] rounded-lg overflow-hidden border border-[var(--border)] hover:shadow-lg transition-shadow"
   },
-  "actions": {
-    "click": {
-      "action": "navigate",
-      "payload": {
-        "routeConfig": "product",
-        "slug": "{{context.item.slug}}"
-      }
+  "actions": [
+    {
+      "action": "f6046c33-0164-45b5-86aa-0710fc408247"
     }
-  },
+  ],
   "children": [
     {
       "type": "Box",
@@ -22,8 +18,8 @@
         {
           "type": "NextImage",
           "props": {
-            "src": "{{context.item.productAsset.preview}}",
-            "alt": "{{context.item.productName}}",
+            "src": "{{context.item.data.productAsset.preview}}",
+            "alt": "{{context.item.data.productName}}",
             "fill": true,
             "className": "object-cover group-hover:scale-105 transition-transform duration-300",
             "sizes": "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -34,7 +30,7 @@
           "props": {
             "className": "w-full h-full flex items-center justify-center text-[var(--theme-content-textMuted)]"
           },
-          "condition": "!{{context.item.productAsset}}",
+          "condition": "!{{context.item.data.productAsset}}",
           "children": [
             {
               "type": "Text",
@@ -55,7 +51,7 @@
           "props": {
             "className": "font-medium line-clamp-2 group-hover:opacity-80 transition-colors text-[var(--theme-content-text)]"
           },
-          "text": "{{context.item.productName}}"
+          "text": "{{context.item.data.productName}}"
         },
         {
           "type": "Text",
@@ -63,7 +59,7 @@
             "className": "text-lg font-bold text-[var(--theme-content-text)]"
           },
           "text": {
-            "expr": "{{context.item.priceWithTax.__typename}} === 'SinglePrice' ? formatCurrency({{context.item.priceWithTax.value}} / 100, {{context.item.currencyCode}} || 'USD') : 'from ' + formatCurrency({{context.item.priceWithTax.min}} / 100, {{context.item.currencyCode}} || 'USD')"
+            "expr": "{{context.item.data.priceWithTax.__typename}} === 'SinglePrice' ? formatCurrency({{context.item.data.priceWithTax.value}} / 100, {{context.item.data.currencyCode}} || 'USD') : 'from ' + formatCurrency({{context.item.data.priceWithTax.min}} / 100, {{context.item.data.currencyCode}} || 'USD')"
           }
         }
       ]

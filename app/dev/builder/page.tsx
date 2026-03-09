@@ -44,6 +44,7 @@ import {
   type LogicSlideState,
 } from './_logic-tab';
 import routes from '@/config/routes.json';
+import { WorkflowCanvas } from './_workflow-canvas';
 
 void useRef; void useState; // suppress unused-import lint
 
@@ -504,6 +505,8 @@ export default function BuilderPage() {
   const store = useBuilderStore();
   const initTheme = useBuilderStore(s => s.initTheme);
   const loadFromConfig = useBuilderStore(s => s.loadFromConfig);
+  const workflowCanvasTarget = useBuilderStore(s => s.workflowCanvasTarget);
+  const closeWorkflowCanvas = useBuilderStore(s => s.closeWorkflowCanvas);
   const [leftSlide, setLeftSlide] = useState<LeftSlideState>(null);
   const [leftSlideWidth, setLeftSlideWidth] = useState(320);
 
@@ -673,6 +676,14 @@ export default function BuilderPage() {
         <BuilderCanvas />
         <PanelRight />
       </div>
+
+      {/* Workflow canvas overlay — full-screen, mounts above everything */}
+      {workflowCanvasTarget && (
+        <WorkflowCanvas
+          target={workflowCanvasTarget}
+          onClose={closeWorkflowCanvas}
+        />
+      )}
     </div>
   );
 }

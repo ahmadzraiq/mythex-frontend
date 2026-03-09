@@ -293,6 +293,16 @@ export const FORMULA_FNS: Record<string, (...args: unknown[]) => unknown> = {
     const v = k ? m[k] : undefined;
     return v !== undefined && v !== null ? v : null;
   },
+
+  // ── VALIDATION ───────────────────────────────────────────────────────────────
+  isEmail: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v ?? '')),
+  isEmpty: (v) => v == null || v === '' || (Array.isArray(v) && v.length === 0),
+  isNotEmpty: (v) => !(v == null || v === '' || (Array.isArray(v) && v.length === 0)),
+  hasMinLength: (v, n) => String(v ?? '').length >= Number(n),
+  hasMaxLength: (v, n) => String(v ?? '').length <= Number(n),
+  isPhone: (v) => /^\+?[\d\s\-().]{7,20}$/.test(String(v ?? '')),
+  isUrl: (v) => { try { new URL(String(v)); return true; } catch { return false; } },
+  matchesPattern: (v, pattern) => new RegExp(String(pattern)).test(String(v ?? '')),
 };
 
 // ─── Core evaluator ───────────────────────────────────────────────────────────

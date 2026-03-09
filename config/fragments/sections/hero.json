@@ -1,1 +1,47 @@
-{"type":"Box","props":{"className":"w-full py-20 md:py-28 border-b border-[var(--border)]"},"children":[{"type":"Box","props":{"className":"w-full max-w-3xl mx-auto px-4 text-center"},"children":[{"type":"Heading","props":{"className":"text-3xl md:text-4xl font-bold text-[var(--theme-content-text)] mb-3"},"text":"Welcome"},{"type":"Text","props":{"className":"text-[var(--theme-content-textMuted)] mb-6"},"text":"Your one-stop shop for quality products"},{"type":"Pressable","props":{"className":"text-sm font-medium text-[var(--theme-content-text)] underline underline-offset-4"},"actions":{"click":{"action":"navigate","payload":{"path":"/search"}}},"children":[{"type":"Text","text":"Browse"}]}]}]}
+{
+  "type": "Box",
+  "props": {
+    "className": "w-full py-20 md:py-28 border-b border-[var(--border)]"
+  },
+  "children": [
+    {
+      "type": "Box",
+      "props": {
+        "className": "w-full max-w-3xl mx-auto px-4 text-center"
+      },
+      "children": [
+        {
+          "type": "Heading",
+          "props": {
+            "className": "text-3xl md:text-4xl font-bold text-[var(--theme-content-text)] mb-3"
+          },
+          "text": "Welcome"
+        },
+        {
+          "type": "Text",
+          "props": {
+            "className": "text-[var(--theme-content-textMuted)] mb-6"
+          },
+          "text": "Your one-stop shop for quality products"
+        },
+        {
+          "type": "Pressable",
+          "props": {
+            "className": "text-sm font-medium text-[var(--theme-content-text)] underline underline-offset-4"
+          },
+          "actions": [
+            {
+              "action": "2283a150-1c0a-46a8-bee0-bf9ba12033c7"
+            }
+          ],
+          "children": [
+            {
+              "type": "Text",
+              "text": "Browse"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

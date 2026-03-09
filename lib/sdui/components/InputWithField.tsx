@@ -1,6 +1,10 @@
 /**
  * Input wrapper: with children renders real Input; without children auto-injects InputField.
  * Uses forwardRef so the builder can attach data-builder-id via a ref callback.
+ *
+ * readOnly handling: React Native TextInput uses `editable={false}` for read-only.
+ * On web, NativeWind maps editable={false} → readonly DOM attribute. We accept `readOnly`
+ * from SDUI props and convert it to `editable={false}` for the InputField.
  */
 
 import React from 'react';
@@ -9,6 +13,7 @@ import { Input, InputField } from '@/components/ui/input';
 type InputWithFieldProps = {
   placeholder?: string;
   value?: string;
+  readOnly?: boolean;
   onChange?: (e: unknown) => void;
   onChangeText?: (text: string) => void;
   children?: React.ReactNode;
@@ -19,10 +24,27 @@ export const InputWithField = React.forwardRef<
   React.ComponentRef<typeof Input>,
   InputWithFieldProps
 >(function InputWithField(props, ref) {
-  const { placeholder, value, onChange, onChangeText, children, ...rest } = props;
+  const { placeholder, value, readOnly, onChange, onChangeText, children, ...rest } = props;
+
+  // When a controlled `value` is present, remove `defaultValue` to avoid React's
+  // "both value and defaultValue" warning on the underlying input element.
+  if (value !== undefined) {
+    delete (rest as Record<string, unknown>).defaultValue;
+  }
 
   if (children) {
-    return <Input ref={ref} {...(rest as React.ComponentProps<typeof Input>)}>{children}</Input>;
+    // Children path: pass readOnly-derived editable to children via context is complex;
+    // instead pass it on the Input wrapper — Gluestack Input forwards unknown props to
+    // the fieldContext so slotted InputField inherits editable state.
+    return (
+      <Input
+        ref={ref}
+        {...(rest as React.ComponentProps<typeof Input>)}
+        {...(readOnly ? { readOnly: true } : {})}
+      >
+        {children}
+      </Input>
+    );
   }
 
   const handleChange = onChange ?? onChangeText;
@@ -31,6 +53,7 @@ export const InputWithField = React.forwardRef<
       <InputField
         placeholder={placeholder as string}
         value={value ?? ''}
+        editable={readOnly ? false : undefined}
         onChange={handleChange as React.ComponentProps<typeof InputField>['onChange']}
         onChangeText={handleChange as React.ComponentProps<typeof InputField>['onChangeText']}
       />

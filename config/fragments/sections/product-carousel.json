@@ -19,22 +19,31 @@
         },
         {
           "type": "Box",
-          "props": { "className": "flex flex-col items-center gap-4 py-20" },
+          "props": {
+            "className": "flex flex-col items-center gap-4 py-20"
+          },
           "condition": "!{{collections.c3d4e5f6-a7b8-9012-cdef-123456789012.data.search.items.0}}",
           "children": [
             {
               "type": "Text",
-              "props": { "className": "text-5xl" },
+              "props": {
+                "className": "text-5xl"
+              },
               "text": "🛍️"
             },
             {
               "type": "Heading",
-              "props": { "size": "xl", "className": "font-semibold text-center text-[var(--theme-content-text)]" },
+              "props": {
+                "size": "xl",
+                "className": "font-semibold text-center text-[var(--theme-content-text)]"
+              },
               "text": "No products yet"
             },
             {
               "type": "Text",
-              "props": { "className": "text-center text-[var(--theme-muted-foreground)] max-w-sm" },
+              "props": {
+                "className": "text-center text-[var(--theme-muted-foreground)] max-w-sm"
+              },
               "text": "Connect your store to start displaying featured products here."
             }
           ]
@@ -60,15 +69,11 @@
                   "props": {
                     "className": "group w-full text-left bg-[var(--theme-content-bg)] rounded-lg overflow-hidden border border-[var(--border)] hover:shadow-lg transition-shadow duration-150"
                   },
-                  "actions": {
-                    "click": {
-                      "action": "navigate",
-                      "payload": {
-                        "routeConfig": "product",
-                        "slug": "{{context.item.slug}}"
-                      }
+                  "actions": [
+                    {
+                      "action": "f6046c33-0164-45b5-86aa-0710fc408247"
                     }
-                  },
+                  ],
                   "children": [
                     {
                       "type": "Box",
@@ -79,19 +84,19 @@
                         {
                           "type": "NextImage",
                           "props": {
-                            "src": "{{context.item.productAsset.preview}}",
-                            "alt": "{{context.item.productName}}",
+                            "src": "{{context.item.data.productAsset.preview}}",
+                            "alt": "{{context.item.data.productName}}",
                             "fill": true,
                             "className": "object-cover group-hover:scale-105 transition-transform duration-300"
                           },
-                          "condition": "!!{{context.item.productAsset.preview}}"
+                          "condition": "!!{{context.item.data.productAsset.preview}}"
                         },
                         {
                           "type": "Box",
                           "props": {
                             "className": "w-full h-full flex items-center justify-center"
                           },
-                          "condition": "!{{context.item.productAsset.preview}}",
+                          "condition": "!{{context.item.data.productAsset.preview}}",
                           "children": [
                             {
                               "type": "Text",
@@ -116,16 +121,16 @@
                             "size": "sm",
                             "className": "font-medium text-[var(--theme-content-text)] line-clamp-2 group-hover:opacity-80 transition-colors"
                           },
-                          "text": "{{context.item.productName}}"
+                          "text": "{{context.item.data.productName}}"
                         },
                         {
                           "type": "Text",
                           "props": {
                             "className": "text-lg font-bold text-[var(--theme-content-text)]"
                           },
-                        "text": {
-                          "expr": "{{context.item.priceWithTax.__typename}} === 'SinglePrice' ? formatCurrency({{context.item.priceWithTax.value}}, {{context.item.currencyCode}}) : 'from ' + formatCurrency({{context.item.priceWithTax.min}}, {{context.item.currencyCode}})"
-                        }
+                          "text": {
+                            "expr": "{{context.item.data.priceWithTax.__typename}} === 'SinglePrice' ? formatCurrency({{context.item.data.priceWithTax.value}}, {{context.item.data.currencyCode}}) : 'from ' + formatCurrency({{context.item.data.priceWithTax.min}}, {{context.item.data.currencyCode}})"
+                          }
                         }
                       ]
                     }

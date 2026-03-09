@@ -52,14 +52,11 @@
               "text": "Continue Shopping"
             }
           ],
-          "actions": {
-            "click": {
-              "action": "navigate",
-              "payload": {
-                "path": "/"
-              }
+          "actions": [
+            {
+              "action": "9e33ef0a-706f-4555-b2ee-60fd95ebf416"
             }
-          }
+          ]
         }
       ]
     },
