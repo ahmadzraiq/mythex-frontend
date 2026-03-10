@@ -32,7 +32,7 @@ import {
 } from './misc-handlers';
 import { workflowStepsHandler } from './workflow-steps-handler';
 
-type HandlerFactory = (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void>;
+type HandlerFactory = (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<unknown>;
 
 export const ACTION_HANDLERS: Record<string, HandlerFactory> = {
   fetch: fetchHandler,
@@ -70,18 +70,17 @@ export const ACTION_HANDLERS: Record<string, HandlerFactory> = {
 
 /**
  * Dispatches an action to the registered handler if one exists.
- * Returns true if handled, false if no handler registered.
+ * Returns the handler's result, or `false` if no handler is registered.
  */
 export async function dispatchToHandler(
   actionDef: ActionDef,
   ctx: ActionHandlerContext
-): Promise<boolean> {
+): Promise<unknown> {
   const type = actionDef.type;
   if (!type || typeof type !== 'string') return false;
 
   const factory = ACTION_HANDLERS[type];
   if (!factory) return false;
 
-  await factory(ctx)(actionDef);
-  return true;
+  return await factory(ctx)(actionDef);
 }

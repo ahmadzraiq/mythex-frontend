@@ -6,11 +6,89 @@
  */
 
 import React, { useEffect, memo, useSyncExternalStore, useContext } from 'react';
-import { FormContext, type FieldValidationConfig } from './form-context';
+import { FormContext, type FieldValidationConfig, type FormContextValue } from './form-context';
 import { getGlobalVariableStore } from './global-variable-store';
 
 /** Stable empty object for useSyncExternalStore fallback — avoids infinite loop from new {} each call */
 const STABLE_EMPTY_OBJECT: Record<string, unknown> = {};
+
+// ── Form-context binding helpers ──────────────────────────────────────────────
+
+/** Components that use onPress (not onClick) for their primary interaction */
+const PRESS_ONLY_TYPES = new Set(['Button', 'Pressable', 'Link', 'MenuItem', 'MenuItemLabel']);
+
+/** Components that natively handle their own press/click (no transparent wrapper needed) */
+const SUBMIT_BUTTON_TYPES = new Set(['Button', 'Pressable']);
+
+/**
+ * Returns true if any workflow in `actions` contains a step of `stepType`.
+ * Checks both inline workflowSteps wrappers (element workflows) and named
+ * action references resolved via actionsConfig (page/global workflows).
+ */
+function detectWorkflowStepType(
+  stepType: string,
+  actions: unknown,
+  actionsConfig: Record<string, unknown> | undefined,
+): boolean {
+  if (!Array.isArray(actions)) return false;
+  const has = (steps: unknown[]) =>
+    (steps as Array<{ type?: string }>).some(s => s.type === stepType);
+  for (const item of actions as Array<Record<string, unknown>>) {
+    if (item.type === 'workflowSteps' && Array.isArray(item.steps) && has(item.steps)) return true;
+    if (typeof item.action === 'string' && item.action) {
+      const def = actionsConfig?.[item.action] as Record<string, unknown> | undefined;
+      if (def?.type === 'workflowSteps' && Array.isArray(def.steps) && has(def.steps as unknown[])) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Rewires click/press handlers on non-FormContainer nodes that are inside a FormContainer
+ * so that form-related workflow steps correctly call into the FormContext API.
+ *
+ * Precedence (first match wins):
+ *  1. submitForm step    → formCtx.submit()           — FormContainer's chain runs (validate → mutation)
+ *  2. resetForm step     → formCtx.reset()            — clears FormContainer's local state
+ *  3. onSubmit trigger   → formCtx.submit(handler)    — trigger:"submit" workflow redirected from onSubmit
+ *  4. type="submit" btn  → chains formCtx.submit() after existing handler (legacy JSON approach)
+ */
+function applyFormContextBindings(
+  node: SDUINode,
+  cleanProps: Record<string, unknown>,
+  formCtx: FormContextValue | null,
+  actionsConfig: Record<string, unknown> | undefined,
+): void {
+  if (!formCtx || (node.type as string) === 'FormContainer') return;
+
+  const isPressType = PRESS_ONLY_TYPES.has(node.type as string);
+
+  /** Set the primary handler for the node's component type.
+   * Press-type components (Button, Pressable, etc.) use onPress.
+   * All other elements use onClick only — never set onPress on DOM elements,
+   * as React logs "Unknown event handler property `onPress`" for them. */
+  const setHandlers = (fn: () => void) => {
+    if (isPressType) {
+      cleanProps.onPress = fn;
+      cleanProps.onClick ??= fn;
+    } else {
+      cleanProps.onClick = fn;
+    }
+  };
+
+  if (detectWorkflowStepType('submitForm', node.actions, actionsConfig)) {
+    setHandlers(() => formCtx.submit());
+  } else if (detectWorkflowStepType('resetForm', node.actions, actionsConfig)) {
+    setHandlers(() => formCtx.reset());
+  } else if (cleanProps.onSubmit) {
+    const submitHandler = cleanProps.onSubmit as () => void;
+    delete cleanProps.onSubmit;
+    setHandlers(() => formCtx.submit(submitHandler));
+  } else if (SUBMIT_BUTTON_TYPES.has(node.type as string) && cleanProps.type === 'submit') {
+    const existingFn = (cleanProps.onPress ?? cleanProps.onClick) as ((...a: unknown[]) => void) | undefined;
+    setHandlers(existingFn ? () => { existingFn(); formCtx.submit(); } : () => formCtx.submit());
+  }
+}
 import { evaluateFormula } from './formula-evaluator';
 import { getComponent } from './component-registry';
 import { evaluateCondition, interpolate, resolveProps, resolveText } from './utils';
@@ -317,17 +395,7 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
   }
 
   Object.assign(cleanProps, bindActionsToProps(node.actions, runAction, actionsConfig, scope, node.type));
-
-  // When a Button/Pressable with type="submit" is inside a FormContainer, wire its press/click
-  // to call formCtx.submit(). Gluestack Button renders as <div role="button"> (not <button>),
-  // so the HTML form's onSubmit never fires naturally from a button click.
-  const SUBMIT_BUTTON_TYPES = new Set(['Button', 'Pressable']);
-  if (SUBMIT_BUTTON_TYPES.has(node.type) && cleanProps.type === 'submit' && formCtx) {
-    const existingPress = cleanProps.onPress as ((...args: unknown[]) => void) | undefined;
-    const existingClick = cleanProps.onClick as ((...args: unknown[]) => void) | undefined;
-    cleanProps.onPress = (...args: unknown[]) => { existingPress?.(...args); formCtx.submit(); };
-    cleanProps.onClick = (...args: unknown[]) => { existingClick?.(...args); formCtx.submit(); };
-  }
+  applyFormContextBindings(node, cleanProps, formCtx, actionsConfig);
 
   // Builder mode: annotate nodes via a ref callback that writes directly onto
   // the real DOM element. We cannot use cleanProps['data-builder-id'] because
@@ -370,7 +438,35 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
     children = textContent;
   }
 
+  // Guard: strip onPress from any component that is NOT a press-type.
+  // This prevents React from logging "Unknown event handler property `onPress`" when
+  // onPress accidentally ends up in cleanProps (e.g. from node.props JSON or any other path).
+  if (!PRESS_ONLY_TYPES.has(node.type as string)) {
+    delete cleanProps.onPress;
+  }
+
   const element = React.createElement(Component, { ...cleanProps, key: node.key }, children);
+
+  // Wrap any non-interactive element that has a click handler in a transparent div.
+  // display:contents makes the wrapper invisible to layout (no size, padding, margin, background)
+  // so the inner element's styles are completely unaffected.
+  // Skipped in builder mode — the capture overlay handles all pointer events there.
+  const ALREADY_CLICKABLE = new Set([
+    'Pressable', 'Button', 'Link', 'MenuItem', 'MenuItemLabel', 'FormContainer',
+  ]);
+  const hasClickHandler = !!(cleanProps.onClick || cleanProps.onPress);
+  const needsClickWrapper = hasClickHandler
+    && !ALREADY_CLICKABLE.has(node.type as string)
+    && !builderMode;
+
+  if (needsClickWrapper) {
+    const clickHandler = (cleanProps.onClick ?? cleanProps.onPress) as React.MouseEventHandler;
+    return React.createElement(
+      'div',
+      { onClick: clickHandler, style: { display: 'contents', cursor: 'pointer' }, 'data-clickable': 'true' },
+      element
+    );
+  }
 
   if (node.dataSource) {
     return (

@@ -12,7 +12,7 @@ import { getNestedValue } from '../../nested-utils';
 import { resolveValue, interpolateUrl } from '../resolve-value';
 import type { ActionDef, ActionHandlerContext } from './types';
 
-export const fetchHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
+export const fetchHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<unknown> =
   (ctx) => async (actionDef) => {
     const storeIn = (actionDef.storeIn ?? '') as string;
     const fullState = ctx.getFullMergedState();
@@ -72,7 +72,8 @@ export const fetchHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef)
           if (extracted) errMsg = String(extracted);
         } catch { /* ignore */ }
         if (storeIn) ctx.setError(storeIn, errMsg);
-        return;
+        ctx.setStepResult?.(undefined, errMsg);
+        return undefined;
       }
 
       const json = await res.json() as unknown;
@@ -91,6 +92,8 @@ export const fetchHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef)
         ctx.setError(storeIn, null);
       }
 
+      ctx.setStepResult?.(json, null);
+
       const onSuccess = actionDef.onSuccess;
       if (onSuccess) {
         const nexts = Array.isArray(onSuccess) ? onSuccess : [onSuccess];
@@ -98,9 +101,13 @@ export const fetchHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef)
           await ctx.runOne(a as import('../../types').SDUIAction);
         }
       }
+
+      return json;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       if (storeIn) ctx.setError(storeIn, msg);
+      ctx.setStepResult?.(undefined, msg);
+      return undefined;
     } finally {
       if (storeIn) ctx.setLoading(storeIn, false);
     }

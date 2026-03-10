@@ -439,7 +439,7 @@ export function SDUIEngine({
       const getFullMergedState = () =>
         mergedStore.getState().merged as Record<string, unknown>;
 
-      const runOne = async (a: SDUIAction) => {
+      const runOne = async (a: SDUIAction): Promise<unknown> => {
         const actionName = String((a as { action: string }).action);
         let payload = a.payload;
         let actionDef = actionsConfig[actionName] as {
@@ -466,6 +466,11 @@ export function SDUIEngine({
           const alias = actionDef as { action: string; payload?: Record<string, unknown> };
           return runOne({ action: alias.action, payload: alias.payload ?? payload });
         }
+
+        // Per-call result ref — populated by setStepResult so workflow-steps-handler
+        // can capture the return value without changing the runOne call signature.
+        const resultRef: { current: unknown } = { current: undefined };
+
         const handlerCtx: import('./actions/handlers/types').ActionHandlerContext = {
           get,
           getFullMergedState,
@@ -488,19 +493,35 @@ export function SDUIEngine({
           setColorScheme,
           useSduiStore: useSduiStore as { getState: () => { setData: (path: string, value: unknown) => void } },
           triggerDataSourceRefetch: (name: string) => triggerDataSourceRefetchRef.current(name),
+          setStepResult: (result) => { resultRef.current = result; },
         };
-        if (actionDef && (await dispatchToHandler(actionDef as import('./actions/handlers/types').ActionDef, handlerCtx))) {
-          return;
+        const handlerResult = await dispatchToHandler(actionDef as import('./actions/handlers/types').ActionDef, handlerCtx);
+        if (handlerResult !== false) {
+          // Handler was found and ran — return the result it produced.
+          return resultRef.current !== undefined ? resultRef.current : handlerResult;
         }
         if (!actionDef && payload && typeof payload === 'object') {
           const synthetic: Record<string, unknown> = { type: actionName, ...payload };
-          if (['navigate', 'setState', 'showToast', 'log'].includes(actionName) && (await dispatchToHandler(synthetic as import('./actions/handlers/types').ActionDef, handlerCtx))) {
-            return;
+          if (['navigate', 'setState', 'showToast', 'log'].includes(actionName)) {
+            const r = await dispatchToHandler(synthetic as import('./actions/handlers/types').ActionDef, handlerCtx);
+            if (r !== false) return resultRef.current;
           }
         }
         if (actionName === 'fetch' && payload && typeof payload === 'object' && 'url' in payload) {
           await fetchDataStable(payload as SDUIDataSource);
+          return undefined;
         }
+        // Canvas step type fallback: if actionDef.type has no registered handler, treat it
+        // as a single-step workflow so workflowStepsHandler can convert canvas types like
+        // navigateTo, changeVariableValue, etc. (backward compat with flat element workflows).
+        if (actionDef?.type && typeof actionDef.type === 'string') {
+          const singleStep: import('./actions/handlers/types').ActionDef = {
+            type: 'workflowSteps',
+            steps: [{ id: '__auto', ...actionDef }],
+          };
+          await dispatchToHandler(singleStep, handlerCtx);
+        }
+        return undefined;
       };
 
       const workflowPath = CONVENTIONS.workflowPath;

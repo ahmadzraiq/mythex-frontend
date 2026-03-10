@@ -22,7 +22,7 @@ export interface ActionHandlerContext {
   setLoading: (storeIn: string, loading: boolean) => void;
   setError: (storeIn: string, error: string | null) => void;
   append: (path: string, value: unknown) => void;
-  runOne: (a: SDUIAction) => Promise<void>;
+  runOne: (a: SDUIAction) => Promise<unknown>;
   store: { getState: () => { setState: (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void } };
   configName: string;
   actionName: string;
@@ -38,9 +38,15 @@ export interface ActionHandlerContext {
   useSduiStore?: { getState: () => { setData: (path: string, value: unknown) => void } };
   /** Clears the DS cache for `name` and triggers the engine to re-fetch it. */
   triggerDataSourceRefetch?: (name: string) => void;
+  /**
+   * Called by the workflow-steps runner to capture the result/error of the
+   * current step. Populated per-call by sdui-engine so handlers don't need to
+   * know about the surrounding workflow context.
+   */
+  setStepResult?: (result: unknown, error?: unknown) => void;
 }
 
 export type ActionHandler = (
   actionDef: ActionDef,
   ctx: ActionHandlerContext
-) => Promise<void>;
+) => Promise<unknown>;

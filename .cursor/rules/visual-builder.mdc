@@ -14,11 +14,18 @@ A Figma-like visual page builder that renders SDUI components directly in the sa
 | File | Purpose |
 |---|---|
 | `page.tsx` | Top-level layout: left panel + canvas + right panel. |
-| `_store.ts` | Zustand store: `pageNodes`, `selectedIds`, `hoveredId`, history (undo/redo), clipboard, locked/hidden sets. Exposes `window.__builderStore` at module level (before React hydration) for Playwright. Also exports `findNode`, `findParentNode`, `REQUIRED_PARENT`, `ALLOWED_CHILDREN`. |
+| `_store.ts` | Zustand store: `pageNodes`, `selectedIds`, `hoveredId`, history (undo/redo), clipboard, locked/hidden sets. Exposes `window.__builderStore` for Playwright. Also exports `findNode`, `findParentNode`, `REQUIRED_PARENT`, `ALLOWED_CHILDREN`. Includes `directActionsMap` (non-workflowSteps actions from config, used by workflow canvas to resolve ActionRefs). |
+| `_store-types.ts` | All TypeScript interfaces/types extracted from `_store.ts`: `GridOverlayConfig`, `ViewportSize`, `DataSourceConfig`, `PageMeta`, `BuilderPage`, `WorkflowMeta`, `WorkflowCanvasTarget`, `BuilderStore`. Import from here, not `_store.ts`, when only types are needed. |
+| `_store-helpers.ts` | Tree helpers extracted from `_store.ts`: `ALLOWED_CHILDREN`, `REQUIRED_PARENT`, `findNode`, `findParentNode`, `hasFormContainerAncestor`, and all node-path utilities. |
 | `_canvas.tsx` | Renders the page frame and SDUI node tree in `builderMode`. Handles drop targets, drag-and-drop reordering, click-to-select. |
 | `_overlay.tsx` | Renders visual overlays: selection box, hover outline, crosshair lines, padding fills, gap fills, distance lines, drop zone indicators. All overlays use `data-testid` for Playwright. |
 | `_panel-left.tsx` | Left panel: Layers tree tab + Components palette tab. `PRIMITIVE_COMPONENTS` defines all palette groups and `defaultNode` templates. |
-| `_panel-right.tsx` | Right panel: Design / Props / JSON tabs. Full design properties panel. Node classifications: `isContainer`, `isTextNode`, `isLeafWidget`. |
+| `_panel-right.tsx` | Right panel: Design / Props / JSON / Settings tabs. Orchestrates tab routing; delegates to split files below. |
+| `_panel-right-design.tsx` | `DesignTab` — all 17 design-property sections (layout, spacing, typography, border, shadow, etc.) plus `ToggleBind`, visibility, repeat, and node-name subsections. |
+| `_panel-right-settings.tsx` | `SettingsTab` — form field `_validation` rules editor: add/remove/configure per-field validation rules displayed in the right panel when a FormContainer descendant is selected. |
+| `_panel-right-workflows.tsx` | `ElementWorkflowsTab`, `WorkflowRowMenu`, `PreviewDataEditor` — workflow binding UI shown in the right panel Logic tab. |
+| `_workflow-canvas.tsx` | Full-screen workflow editor overlay. Orchestrates the canvas; imports types from `_workflow-types.ts` and step-config panels. |
+| `_workflow-types.ts` | All pure types and constants for the workflow canvas: `ActionStepType` union, `BranchDef`, `ActionStep`, `ActionTypeDef`, `WorkflowMeta`, `FORM_ACTION_CATEGORY`, `ACTION_CATEGORIES`, `getTriggerCategories`. Import from here instead of `_workflow-canvas.tsx` when only types are needed. |
 | `_tw-utils.ts` | Tailwind class utilities: token tables, parse/replace/remove helpers, spacing helpers, border-radius helpers, alignment helpers. |
 | `e2e/builder.spec.ts` | Main Playwright E2E test suite (selection, DnD, overlays). |
 | `e2e/test-dnd.spec.ts` | DnD, right-panel property tests (T*, U*, V* series), drop-line direction tests (DI-01..04). |
@@ -2596,3 +2603,27 @@ workflowEntries = Object.entries(rawActionsObj)
 ### `isFormContext` detection
 
 `isFormContext` is computed in `WorkflowCanvas` using `hasFormContainerAncestor(pageNodes, targetNodeId)` from `_store.ts`. It is passed to `NodePropsPanel` and `TypeSearchDropdown` to conditionally inject `FORM_ACTION_CATEGORY` into the picker.
+
+---
+
+## Workflow Canvas — ActionRef Resolution via `directActionsMap`
+
+**Problem:** A workflow step serialized as `{ "action": "uuid" }` (ActionRef) previously always deserialized to `type: "runProjectWorkflow"` ("Call workflow") even when the UUID pointed to a direct `graphql` or `fetch` action — making the canvas show the wrong type and hiding the mutation config.
+
+**Root cause:** The config API only sent `workflowSteps` actions to the builder. `deserializeStep` had no way to know the real type of the referenced UUID.
+
+**Fix:**
+- `GET /api/builder/config` now also returns `directActions` — a map of all non-`workflowSteps` actions keyed by UUID (graphql, fetch, navigate, etc.)
+- `_store.ts` stores this as `directActionsMap: Record<string, Record<string, unknown>>`
+- `deserializeStep(raw, id, directActionsMap?)` — when it encounters `{ "action": "uuid" }` and the UUID is in `directActionsMap`, it **inlines the action's type and config** into the step so the canvas renders it as a `graphql` step (or whichever real type it is)
+- `serializeStep` checks `step._actionRef`: if set, writes back `{ "action": "uuid" }` to keep the JSON clean
+
+**`_actionRef` field on `ActionStep`:**
+```ts
+/** Original UUID when a step was inlined from an ActionRef — causes serializeStep to write { "action": "uuid" } */
+_actionRef?: string;
+```
+
+**Rule:** Never assume `{ "action": "uuid" }` always means "Call workflow". After this fix, the canvas displays the step's real type. When saving, `serializeStep` preserves the compact ActionRef format.
+
+**Adding new direct action types to the API:** If you add actions to `config/actions/*.json`, import the file in `app/api/builder/config/route.ts` and include it in `allActions`. Non-`workflowSteps` entries are automatically included in `directActions`.

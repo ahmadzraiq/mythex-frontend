@@ -534,7 +534,7 @@ export default function BuilderPage() {
 
   /** Serialize current page + active theme overrides to localStorage then open preview. */
   const openPreview = useCallback(() => {
-    const { pageNodes, viewport, pages, currentPageId, themeOverrides, themeDarkOverrides } = useBuilderStore.getState();
+    const { pageNodes, viewport, pages, currentPageId, themeOverrides, themeDarkOverrides, pageWorkflows, pageWorkflowMeta, globalWorkflows, globalWorkflowMeta } = useBuilderStore.getState();
     const currentPage = pages.find(p => p.id === currentPageId);
     localStorage.setItem(BUILDER_PREVIEW_KEY, JSON.stringify({
       nodes: pageNodes,
@@ -543,6 +543,12 @@ export default function BuilderPage() {
       pageRoute: currentPage?.route ?? '/',
       themeOverrides,
       themeDarkOverrides,
+      // Workflow definitions must travel with the page so the engine can resolve
+      // { action: uuid } references stored on each node.
+      pageWorkflows,
+      pageWorkflowMeta,
+      globalWorkflows,
+      globalWorkflowMeta,
     }));
     window.open('/dev/builder/preview', '_blank');
   }, []);

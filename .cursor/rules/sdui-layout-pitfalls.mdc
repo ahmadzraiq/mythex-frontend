@@ -661,3 +661,59 @@ useEffect(() => {
 ```
 
 **Rule:** Any floating UI that closes on outside click must use `.closest('[data-selector]')` to guard its own interior. Never use a bare `() => onClose()` capture listener — it will break all click handlers inside the menu.
+
+---
+
+## FormContainer Submit — Gluestack Button Is Not a Native `<button>`
+
+**Problem:** Gluestack's `Button` component renders as `<div role="button">` (via React Native's `Pressable`), NOT as a native `<button type="submit">`. Clicking it does **not** trigger the HTML `<form>`'s `onSubmit` event. Any validation logic inside `FormContainer.handleSubmit` is never reached.
+
+**Why it's subtle:** Adding `"type": "submit"` to the Button's props has no effect on the Gluestack/Pressable `<div>` — the browser only submits a form when a native `<button type="submit">` is clicked or `form.requestSubmit()` is called.
+
+**Fix:** `FormContainer` exposes a `submit()` method via `FormContext`. The renderer auto-wires it to `onPress`/`onClick` whenever a `Button` or `Pressable` inside a `FormContainer` has `type="submit"` in its props:
+
+```tsx
+// renderer.tsx — after bindActionsToProps
+const SUBMIT_BUTTON_TYPES = new Set(['Button', 'Pressable']);
+if (SUBMIT_BUTTON_TYPES.has(node.type) && cleanProps.type === 'submit' && formCtx) {
+  const existingPress = cleanProps.onPress as ((...args: unknown[]) => void) | undefined;
+  const existingClick = cleanProps.onClick as ((...args: unknown[]) => void) | undefined;
+  cleanProps.onPress = (...args) => { existingPress?.(...args); formCtx.submit(); };
+  cleanProps.onClick = (...args) => { existingClick?.(...args); formCtx.submit(); };
+}
+```
+
+**`FormContext.submit()` flow:**
+1. Reads current form data from global variable store (not stale React state)
+2. Validates all fields registered via `_validation` + `trigger: "submit"`
+3. Writes per-field errors to global variable store → error nodes re-render immediately
+4. Only calls `onSubmitAction` (the bound workflow) if all fields pass
+
+**How to wire up a form in JSON:**
+```json
+// FormContainer: bind the mutation workflow to trigger "submit"
+{
+  "type": "FormContainer",
+  "actions": [{ "action": "submitSignIn" }]
+}
+
+// submitSignIn workflow in config/actions/auth.json:
+{
+  "type": "workflowSteps",
+  "trigger": "submit",
+  "steps": [{ "id": "step-1", "action": "49c32a35-..." }]
+}
+
+// The sign-in Button — type="submit" is all it needs; no actions array required
+{
+  "type": "Button",
+  "props": { "type": "submit" },
+  "children": [{ "type": "ButtonText", "text": "Sign In" }]
+}
+```
+
+**Rules:**
+- Button inside FormContainer with `type="submit"` → renderer auto-calls `formCtx.submit()` on press
+- No `submitForm` step needed in the workflow — validation is implicit via `FormContainer`
+- `_validation` rules on InputField nodes are registered via `FormContext.registerFieldValidation`; `submit()` reads them all at call time
+- Do NOT rely on HTML form's native `onSubmit` firing from a Gluestack Button click — it never will

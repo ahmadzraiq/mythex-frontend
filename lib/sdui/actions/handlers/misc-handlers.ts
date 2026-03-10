@@ -124,6 +124,10 @@ export const setStateHandler: (ctx: ActionHandlerContext) => (actionDef: ActionD
       const v = (value as { var: string | [string, unknown] }).var;
       const varPath = Array.isArray(v) ? v[0] : v;
       value = ctx.get(String(varPath), ctx.scope) ?? (Array.isArray(v) ? v[1] : undefined);
+    } else if (typeof value === 'string' && value.includes('{{') && ctx.getFullMergedState) {
+      const fullState = ctx.getFullMergedState();
+      const resolved = resolveValue(value, ctx.get, ctx.scope, fullState);
+      if (resolved !== value) value = resolved;
     }
     ctx.store.getState().setState((prev) => {
       const finalValue = value ?? getNestedValue(prev, p.path);

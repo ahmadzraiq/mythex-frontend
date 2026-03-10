@@ -3,6 +3,9 @@
     "title": "Sign In"
   },
   "layout": "store",
+  "state": {
+    "errors": {}
+  },
   "content": {
     "type": "Box",
     "props": {
@@ -218,6 +221,22 @@
                             "text": "{{local.data.form.fields.password.isValid}}"
                           }
                         ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "min-h-[20px]"
+                    },
+                    "condition": "{{variables['f2a3b4c5-d6e7-8901-fabc-012345678901']}}",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-red-500 dark:text-red-400"
+                        },
+                        "text": "{{variables['f2a3b4c5-d6e7-8901-fabc-012345678901']}}"
                       }
                     ]
                   },

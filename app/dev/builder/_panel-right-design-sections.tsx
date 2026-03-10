@@ -1,0 +1,505 @@
+'use client';
+
+/**
+ * _panel-right-design-sections.tsx
+ *
+ * Standalone design-related section components that live outside the DesignTab function.
+ * Extracted from _panel-right.tsx.
+ *
+ * Exports:
+ *  - ToggleBind            — bind-icon + value toggle pair
+ *  - VisibilityInDesign    — visibility condition editor
+ *  - DisableInDesign       — disabled-when condition editor
+ *  - RepeatInDesign        — map/repeat configuration
+ *  - NodeNameInDesign      — node ID rename
+ *  - GridOverlayPanel      — grid column overlay controls
+ *  - PropsTab              — props editor tab
+ *  - JsonTab               — JSON view tab
+ */
+
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useBuilderStore } from './_store';
+import type { SDUINode } from '@/lib/sdui/types/node';
+import { BindingIcon, isBoundValue, type FormulaValue } from './_formula-panel';
+import { FormulaEditor } from './_formula-editor';
+import { PANEL_STYLE, SECTION_STYLE, LABEL_STYLE, SectionHeader, NumberInput, SelectInput, ToggleBtn } from './_panel-primitives';
+
+// ─── Design-tab inline sections (moved from Logic) ────────────────────────────
+
+export const INTERACTIVE_TYPES = new Set(['Button', 'Input', 'InputField', 'Select', 'SelectTrigger', 'Pressable', 'Checkbox', 'Switch', 'Radio', 'TextArea']);
+export const FORM_INPUT_TYPES = new Set(['Input', 'InputField', 'Select', 'TextArea', 'Checkbox', 'Radio', 'Switch']);
+
+export const DESIGN_INLINE_STYLE: React.CSSProperties = {
+  borderTop: '1px solid #1f2937',
+  padding: '8px 12px',
+};
+
+const DESIGN_LABEL: React.CSSProperties = {
+  fontSize: 10,
+  color: '#6b7280',
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.05em',
+  // marginBottom intentionally omitted here — set per usage
+  display: 'block',
+  marginBottom: 4,
+};
+
+// ─── ToggleBind ───────────────────────────────────────────────────────────────
+// Compact row: LABEL | [toggle / ƒ Edit formula] [≈]
+// Used for Visible, Disabled, and Repeat sections.
+export function ToggleBind({
+  rowLabel, fieldId, hint, expectedType = 'boolean',
+  isOn, value,
+  onToggle, onChange, style,
+}: {
+  rowLabel: string;
+  fieldId: string;
+  hint?: string;
+  expectedType?: 'string' | 'number' | 'boolean' | 'any';
+  isOn: boolean;
+  value: FormulaValue;
+  onToggle: () => void;
+  onChange: (v: FormulaValue) => void;
+  style?: React.CSSProperties;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const bound = isBoundValue(value);
+
+  const openEditor = () => {
+    setOpen(true);
+  };
+
+  return (
+    <div style={{ ...DESIGN_INLINE_STYLE, display: 'flex', alignItems: 'center', justifyContent: 'space-between', ...style }}>
+      {/* Bind icon before label on the left */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <BindingIcon isBound={bound} onClick={openEditor} />
+        <span style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          {rowLabel}
+        </span>
+      </div>
+
+      {/* Toggle or formula button on the right */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, position: 'relative', flexShrink: 0 }}>
+        {bound ? (
+          <button
+            data-testid={`edit-formula-btn-${fieldId}`}
+            onClick={openEditor}
+            style={{
+              padding: '3px 10px', background: '#2e1065', border: '1px solid #7c3aed',
+              borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            ƒ Edit formula
+          </button>
+        ) : (
+          <button
+            data-testid={`toggle-${fieldId}`}
+            onClick={onToggle}
+            style={{
+              width: 32, height: 18, borderRadius: 9,
+              background: isOn ? '#3b82f6' : '#374151',
+              border: 'none', cursor: 'pointer', position: 'relative', flexShrink: 0,
+            }}
+          >
+            <span style={{
+              position: 'absolute', top: 2, left: isOn ? 16 : 2,
+              width: 14, height: 14, borderRadius: '50%', background: '#fff',
+              transition: 'left 0.15s',
+            }} />
+          </button>
+        )}
+        {open && (
+          <FormulaEditor
+            label={fieldId}
+            value={value}
+            expectedType={expectedType}
+            hint={hint}
+            anchor="right"
+            onChange={v => { onChange(v); setOpen(false); }}
+            onClose={() => setOpen(false)}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function VisibilityInDesign({ node }: { node: SDUINode }) {
+  const store = useBuilderStore();
+  const nodeId = (node as { id?: string }).id ?? '';
+  const condition = (node as { condition?: unknown }).condition;
+  const isBound = isBoundValue(condition as FormulaValue);
+  const isHidden = !isBound && condition === false;
+  const hasCondition = condition != null;
+  const forceShow = !!(node as { _forceShowInEditor?: boolean })._forceShowInEditor;
+
+  return (
+    <div style={DESIGN_INLINE_STYLE}>
+      <ToggleBind
+        rowLabel="Visible"
+        fieldId="visibility-condition"
+        hint="e.g. {{isLoggedIn}}, {{cart.items.length > 0}}"
+        expectedType="boolean"
+        isOn={!isHidden}
+        value={(isBound ? condition : !isHidden) as FormulaValue}
+        onToggle={() => store.patchCondition(nodeId, isHidden ? null : false as unknown as object)}
+        onChange={v => {
+          if (isBoundValue(v)) store.patchCondition(nodeId, v as object);
+          else store.patchCondition(nodeId, null);
+        }}
+        style={{ borderTop: 'none', padding: 0 }}
+      />
+      {hasCondition && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, paddingTop: 6, borderTop: '1px solid #1f2937' }}>
+          <span style={{ fontSize: 10, color: '#4b5563' }}>Force show in editor</span>
+          <button
+            data-testid="force-show-toggle"
+            onClick={() => store.patchNodeField(nodeId, '_forceShowInEditor', forceShow ? undefined : true)}
+            title="Override condition — always render this node on the canvas"
+            style={{ width: 32, height: 18, borderRadius: 9, background: forceShow ? '#f59e0b' : '#374151', border: 'none', cursor: 'pointer', position: 'relative', flexShrink: 0 }}
+          >
+            <span style={{ position: 'absolute', top: 2, left: forceShow ? 16 : 2, width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function DisableInDesign({ node }: { node: SDUINode }) {
+  const store = useBuilderStore();
+  const nodeId = (node as { id?: string }).id ?? '';
+  const disabled = (node.props as Record<string, unknown> | undefined)?.disabled;
+  const isBound = isBoundValue(disabled as FormulaValue);
+  const isDisabled = !isBound && !!disabled;
+  const showOverlay = isDisabled || isBound;
+
+  const overlay = ((node as Record<string, unknown>)._disabledOverlay ?? {}) as {
+    color?: string; opacity?: number; blur?: number;
+  };
+  const forceShow = !!(node as Record<string, unknown>)._forceDisabledInEditor;
+
+  const patchOverlay = (patch: Partial<typeof overlay>) =>
+    store.patchNodeField(nodeId, '_disabledOverlay', { ...overlay, ...patch });
+
+  // Local state keeps the slider/number inputs responsive while rAF batches
+  // the store writes (live, no history) so the canvas gets a live update every
+  // animation frame. A single history snapshot is pushed only when the gesture ends.
+  const [localOpacity, setLocalOpacity] = useState(Math.round((overlay.opacity ?? 0.3) * 100));
+  const [localBlur, setLocalBlur] = useState(overlay.blur ?? 0);
+  const opacityRaf = useRef<number | null>(null);
+  const blurRaf    = useRef<number | null>(null);
+  const colorRaf   = useRef<number | null>(null);
+
+  // Sync local state when the selected node changes.
+  useEffect(() => {
+    setLocalOpacity(Math.round((overlay.opacity ?? 0.3) * 100));
+    setLocalBlur(overlay.blur ?? 0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodeId]);
+
+  // Snapshot the overlay at the start of each gesture so the rAF spread is accurate.
+  const overlayRef = useRef(overlay);
+  overlayRef.current = overlay;
+
+  const patchOpacityLive = (pct: number) => {
+    setLocalOpacity(pct);
+    if (opacityRaf.current !== null) cancelAnimationFrame(opacityRaf.current);
+    opacityRaf.current = requestAnimationFrame(() => {
+      store.patchNodeFieldLive(nodeId, '_disabledOverlay', { ...overlayRef.current, opacity: pct / 100 });
+      opacityRaf.current = null;
+    });
+  };
+
+  const patchBlurLive = (px: number) => {
+    setLocalBlur(px);
+    if (blurRaf.current !== null) cancelAnimationFrame(blurRaf.current);
+    blurRaf.current = requestAnimationFrame(() => {
+      store.patchNodeFieldLive(nodeId, '_disabledOverlay', { ...overlayRef.current, blur: px });
+      blurRaf.current = null;
+    });
+  };
+
+  // ColorPopover already rAF-throttles its onSelect call, so no second rAF needed here —
+  // a double rAF doubles the latency and makes the picker feel laggy.
+  const patchColorLive = (hex: string) => {
+    store.patchNodeFieldLive(nodeId, '_disabledOverlay', { ...overlayRef.current, color: hex });
+  };
+
+  const commitHistory = () => store._pushHistory();
+
+  return (
+    <>
+      <ToggleBind
+        rowLabel="Disabled"
+        fieldId="disabled-state"
+        hint="e.g. {{!isLoggedIn}}, {{form.loading}}"
+        expectedType="boolean"
+        isOn={isDisabled}
+        value={(isBound ? disabled : isDisabled) as FormulaValue}
+        onToggle={() => store.patchProp(nodeId, 'props.disabled', isDisabled ? undefined : true)}
+        onChange={v => {
+          if (isBoundValue(v)) store.patchProp(nodeId, 'props.disabled', v);
+          else store.patchProp(nodeId, 'props.disabled', undefined);
+        }}
+      />
+      {showOverlay && (
+        <div style={{ borderTop: '1px solid #1f2937', padding: '6px 12px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span style={{ ...DESIGN_LABEL, marginBottom: 0 }}>Overlay</span>
+
+          {/* Color — full row */}
+          <div>
+            <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Color</span>
+            <FigmaColorPicker
+              value={overlay.color?.startsWith('#') ? overlay.color : '#000000'}
+              onChange={hex => patchColorLive(hex)}
+              onCommit={commitHistory}
+            />
+          </div>
+
+          {/* Opacity — own row so slider has full width and never overflows */}
+          <div>
+            <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Opacity %</span>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <input
+                type="number" min={0} max={100} step={5}
+                value={localOpacity}
+                onChange={e => patchOpacityLive(Math.min(100, Math.max(0, Number(e.target.value))))}
+                onBlur={() => commitHistory()}
+                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '2px 5px', width: 44, textAlign: 'center' as const, flexShrink: 0 }}
+              />
+              <input
+                type="range" min={0} max={100} step={1}
+                value={localOpacity}
+                onChange={e => patchOpacityLive(Number(e.target.value))}
+                onMouseUp={() => commitHistory()}
+                style={{ flex: 1, minWidth: 0, accentColor: '#3b82f6' }}
+              />
+            </div>
+          </div>
+
+          {/* Blur */}
+          <div>
+            <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Blur px</span>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <input
+                type="number" min={0} max={40} step={1}
+                value={localBlur}
+                onChange={e => patchBlurLive(Math.min(40, Math.max(0, Number(e.target.value))))}
+                onBlur={() => commitHistory()}
+                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '2px 5px', width: 44, textAlign: 'center' as const }}
+              />
+              <input
+                type="range" min={0} max={40} step={1}
+                value={localBlur}
+                onChange={e => patchBlurLive(Number(e.target.value))}
+                onMouseUp={() => commitHistory()}
+                style={{ flex: 1, accentColor: '#3b82f6' }}
+              />
+            </div>
+          </div>
+
+          {/* Force show in editor — only relevant when disabled is formula-bound */}
+          {isBound && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: '#9ca3af', cursor: 'pointer', paddingTop: 2 }}>
+              <input
+                type="checkbox"
+                checked={forceShow}
+                onChange={e => store.patchNodeField(nodeId, '_forceDisabledInEditor', e.target.checked || undefined)}
+              />
+              Force show in editor
+            </label>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
+export function RepeatInDesign({ node }: { node: SDUINode }) {
+  const store = useBuilderStore();
+  const nodeId = (node as { id?: string }).id ?? '';
+  const mapValue = (node as { map?: unknown }).map;
+  const hasMap = !!mapValue;
+  // Normalise: plain string paths become { formula } so the editor can display/edit them
+  const mapFormulaValue: FormulaValue = isBoundValue(mapValue as FormulaValue)
+    ? (mapValue as FormulaValue)
+    : typeof mapValue === 'string' && mapValue
+      ? { formula: mapValue }
+      : false;
+
+  return (
+    <ToggleBind
+      rowLabel="Repeat / List"
+      fieldId="repeat-map"
+      hint="e.g. store.products, cart.items"
+      expectedType="any"
+      isOn={hasMap}
+      value={mapFormulaValue}
+      onToggle={() => store.patchMap(nodeId, hasMap ? null : 'store.items')}
+      onChange={v => {
+        if (isBoundValue(v)) {
+          const f = (v as { formula: string }).formula.trim();
+          const isSimplePath = /^[\w$.]+$/.test(f);
+          store.patchNodeField(nodeId, 'map', isSimplePath ? f : v);
+        } else {
+          store.patchMap(nodeId, null);
+        }
+      }}
+    />
+  );
+}
+
+/** Name input for the node — display label shown in formula editor component picker */
+export function NodeNameInDesign({
+  node,
+  nodeId,
+  commitHistory,
+  store,
+}: {
+  node: SDUINode;
+  nodeId: string;
+  commitHistory: () => void;
+  store: ReturnType<typeof useBuilderStore>;
+}) {
+  const currentName = (node as { name?: string }).name ?? '';
+  const [draft, setDraft] = useState(currentName);
+  useEffect(() => { setDraft(currentName); }, [currentName]);
+
+  const commit = (value: string) => {
+    const trimmed = value.trim() || undefined;
+    if (trimmed === currentName) return;
+    store.patchNodeField(nodeId, 'name', trimmed);
+    commitHistory();
+  };
+
+  return (
+    <div style={SECTION_STYLE}>
+      <SectionHeader title="Name" />
+      <input
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={e => commit(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') { commit(draft); (e.target as HTMLInputElement).blur(); } }}
+        placeholder={`e.g. ${node.type}`}
+        style={{
+          width: '100%', boxSizing: 'border-box',
+          background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
+          color: '#f3f4f6', fontSize: 11, padding: '4px 7px', outline: 'none',
+        }}
+      />
+    </div>
+  );
+}
+
+
+
+// ─── Grid overlay mini-panel ──────────────────────────────────────────────────
+
+export function GridOverlayPanel() {
+  const { gridOverlay, setGridOverlay } = useBuilderStore();
+  return (
+    <div style={SECTION_STYLE}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <span style={LABEL_STYLE}>Layout Guide</span>
+        <button
+          onClick={() => setGridOverlay({ enabled: !gridOverlay.enabled })}
+          style={{ width: 32, height: 18, borderRadius: 9, background: gridOverlay.enabled ? '#3b82f6' : '#374151', border: 'none', cursor: 'pointer', position: 'relative' }}
+        >
+          <span style={{ position: 'absolute', top: 2, left: gridOverlay.enabled ? 16 : 2, width: 14, height: 14, borderRadius: '50%', background: '#fff' }} />
+        </button>
+      </div>
+      {gridOverlay.enabled && (
+        <div style={{ display: 'flex', gap: 6 }}>
+          <SelectInput
+            label="Type"
+            value={gridOverlay.type}
+            options={['columns', 'rows', 'grid']}
+            onChange={v => setGridOverlay({ type: v as 'columns' | 'rows' | 'grid' })}
+          />
+          <NumberInput
+            label="Count"
+            value={gridOverlay.count}
+            min={1} max={48}
+            onChange={n => setGridOverlay({ count: n })}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Props Tab ────────────────────────────────────────────────────────────────
+
+// Props managed by the Design tab — hide from raw Props tab to avoid confusion
+const DESIGN_MANAGED_PROPS = new Set(['className', 'style']);
+// Props managed by Design tab for specific node types
+const IMAGE_MANAGED_PROPS = new Set(['width', 'height', 'src', 'alt', 'fill', 'objectFit']);
+
+export function PropsTab({ node }: { node: SDUINode }) {
+  const store = useBuilderStore();
+  const nodeId = (node as { id?: string }).id ?? '';
+  const props = (node.props ?? {}) as Record<string, unknown>;
+  const [localProps, setLocalProps] = useState<Record<string, string>>({});
+  const isImageNode = node.type === 'NextImage' || node.type === 'Image';
+
+  useEffect(() => {
+    const flat: Record<string, string> = {};
+    for (const [k, v] of Object.entries(props)) {
+      flat[k] = typeof v === 'string' ? v : JSON.stringify(v);
+    }
+    setLocalProps(flat);
+  }, [node]);
+
+  const commitProp = (key: string, value: string) => {
+    try { store.patchProp(nodeId, `props.${key}`, JSON.parse(value)); }
+    catch { store.patchProp(nodeId, `props.${key}`, value); }
+    store._pushHistory();
+  };
+
+  const filteredEntries = Object.entries(localProps).filter(([key]) => {
+    if (DESIGN_MANAGED_PROPS.has(key)) return false;
+    if (isImageNode && IMAGE_MANAGED_PROPS.has(key)) return false;
+    return true;
+  });
+
+  return (
+    <div style={{ flex: 1, overflow: 'auto', padding: 12 }}>
+      <div style={{ fontSize: 10, color: '#4b5563', marginBottom: 10, fontStyle: 'italic' }}>
+        className and layout props are managed in the Design tab.
+      </div>
+      {filteredEntries.map(([key, val]) => (
+        <div key={key} style={{ marginBottom: 8 }}>
+          <span style={{ fontSize: 10, color: '#6b7280', display: 'block', marginBottom: 2 }}>{key}</span>
+          <input
+            type="text"
+            value={val}
+            onChange={e => setLocalProps(prev => ({ ...prev, [key]: e.target.value }))}
+            onBlur={() => commitProp(key, localProps[key])}
+            onKeyDown={e => { if (e.key === 'Enter') commitProp(key, localProps[key]); }}
+            style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '4px 6px', boxSizing: 'border-box' }}
+          />
+        </div>
+      ))}
+      {filteredEntries.length === 0 && (
+        <div style={{ color: '#4b5563', fontSize: 12 }}>
+          No additional props — use the Design tab to adjust layout and style.
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── JSON Tab ─────────────────────────────────────────────────────────────────
+
+export function JsonTab({ node }: { node: SDUINode }) {
+  return (
+    <div style={{ flex: 1, overflow: 'auto', padding: 12 }}>
+      <pre style={{ fontSize: 10, color: '#86efac', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+        {JSON.stringify(node, null, 2)}
+      </pre>
+    </div>
+  );
+}

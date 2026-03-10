@@ -183,7 +183,7 @@ export function FormContainer({ children, className, style, onSubmitAction, init
    * with type="submit" is pressed (Gluestack Button is a <div>, not <button>,
    * so the HTML form's onSubmit never fires naturally from a button click).
    */
-  const doSubmit = useCallback(() => {
+  const doSubmit = useCallback((onSuccess?: () => void) => {
     if (builderMode) return;
 
     // setFormField writes directly to the global variable store (not to FormContainer React state).
@@ -222,7 +222,10 @@ export function FormContainer({ children, className, style, onSubmitAction, init
       return;
     }
 
-    if (onSubmitAction) onSubmitAction();
+    // Use the caller-provided success callback (e.g. from a child element with trigger:"submit")
+    // or fall back to the FormContainer's own onSubmitAction workflow.
+    if (onSuccess) onSuccess();
+    else if (onSubmitAction) onSubmitAction();
   }, [onSubmitAction, builderMode]);
 
   const handleSubmit = useCallback(

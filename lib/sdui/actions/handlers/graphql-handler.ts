@@ -45,7 +45,7 @@ function resolveStoreKey(storeIn: string): string {
 
 // ─── Handler ──────────────────────────────────────────────────────────────────
 
-export const graphqlHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
+export const graphqlHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<unknown> =
   (ctx) => async (actionDef) => {
     const CONVENTIONS = ctx.CONVENTIONS as {
       graphqlEndpoint?: string;
@@ -121,6 +121,11 @@ export const graphqlHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDe
     // ── Loading state ─────────────────────────────────────────────────────────
     if (storeIn) ctx.setLoading(storeIn, true);
 
+    // Holds the full JSON response so the workflow context always gets the raw data,
+    // regardless of whether storeIn / responsePath are configured.
+    let stepResult: unknown = undefined;
+    let stepError: unknown = undefined;
+
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -132,14 +137,25 @@ export const graphqlHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDe
       // ── HTTP error ──────────────────────────────────────────────────────────
       if (!res.ok) {
         let errMsg = `HTTP ${res.status}`;
+        let errBody: unknown;
         try {
-          const errBody = await res.json() as Record<string, unknown>;
+          errBody = await res.json() as Record<string, unknown>;
           const errPath = (actionDef.errorMessagePath ?? 'errors[0].message') as string;
-          const extracted = getNestedValue(errBody, errPath);
+          const extracted = getNestedValue(errBody as Record<string, unknown>, errPath);
           if (extracted) errMsg = String(extracted);
         } catch { /* ignore */ }
+        const richError = {
+          type: 'http_error',
+          message: errMsg,
+          status: res.status,
+          statusText: res.statusText,
+          url: endpoint,
+          body: errBody,
+        };
         if (storeIn) ctx.setError(storeIn, errMsg);
-        return;
+        stepError = richError;
+        ctx.setStepResult?.(undefined, richError);
+        return undefined;
       }
 
       const json = await res.json() as { data?: unknown; errors?: Array<{ message: string }> };
@@ -147,8 +163,11 @@ export const graphqlHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDe
       // ── GraphQL errors ──────────────────────────────────────────────────────
       if (json.errors && json.errors.length > 0) {
         const gqlErr = json.errors[0]?.message ?? 'GraphQL error';
+        const richError = { type: 'graphql_error', message: gqlErr, errors: json.errors };
         if (storeIn) ctx.setError(storeIn, gqlErr);
-        return;
+        stepError = richError;
+        ctx.setStepResult?.(undefined, richError);
+        return undefined;
       }
 
       // ── Response extraction ─────────────────────────────────────────────────
@@ -161,6 +180,10 @@ export const graphqlHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDe
       if (responsePath) {
         data = getNestedValue(json as Record<string, unknown>, responsePath);
       }
+
+      // Workflow context always gets the full json.data so formulas can navigate
+      // the full response tree (e.g. context.workflow['id'].result?.login?.__typename).
+      stepResult = json.data ?? json;
 
       // ── Store ───────────────────────────────────────────────────────────────
       if (storeIn) {
@@ -178,6 +201,9 @@ export const graphqlHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDe
 
       if (storeIn) ctx.setError(storeIn, null);
 
+      // ── Notify workflow context ──────────────────────────────────────────────
+      ctx.setStepResult?.(stepResult, null);
+
       // ── onSuccess ───────────────────────────────────────────────────────────
       const onSuccess = actionDef.onSuccess;
       if (onSuccess) {
@@ -186,10 +212,19 @@ export const graphqlHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDe
           await ctx.runOne(a as import('../../types').SDUIAction);
         }
       }
+
+      return stepResult;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
+      const richError = err instanceof Error
+        ? { type: 'network_error', name: err.name, message: err.message, stack: err.stack, ...(err as unknown as Record<string, unknown>) }
+        : { type: 'network_error', message: msg };
       if (storeIn) ctx.setError(storeIn, msg);
+      stepError = richError;
+      ctx.setStepResult?.(undefined, richError);
+      return undefined;
     } finally {
       if (storeIn) ctx.setLoading(storeIn, false);
+      void stepError; // suppress unused warning when stepError only set in error paths
     }
   };

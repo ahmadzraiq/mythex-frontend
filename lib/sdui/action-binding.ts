@@ -105,8 +105,12 @@ export function bindActionsToProps(
       const actionRef = item as Record<string, unknown>;
       const workflowName = typeof actionRef.action === 'string' ? actionRef.action : '';
       const workflowDef = workflowName ? actionsConfig?.[workflowName] as Record<string, unknown> | undefined : undefined;
-      // Use the workflow's declared trigger, defaulting to 'click'
-      const trigger = (typeof workflowDef?.trigger === 'string' ? workflowDef.trigger : null) ?? 'click';
+      // Resolve trigger: named workflow def > item's own trigger field > default 'click'
+      // The item's own trigger field is set by the workflow canvas for element workflows
+      // (format: { type: 'workflowSteps', trigger: 'click', steps: [...] })
+      const trigger = (typeof workflowDef?.trigger === 'string' ? workflowDef.trigger : null)
+        ?? (typeof actionRef.trigger === 'string' ? actionRef.trigger : null)
+        ?? 'click';
       bindEventHandler(trigger, item, result, runAction, actionsConfig, scope, componentType);
     }
     return result;

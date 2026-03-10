@@ -15,746 +15,54 @@
 
 import { create } from 'zustand';
 import type { SDUINode } from '@/lib/sdui/types/node';
+export type { SDUINode };
 import routesConfig from '@/config/routes.json';
 import { showcaseNodes } from './_showcase';
 import root from '@/config/root';
 import { resolveScreenConfig, type ConfigRegistry } from '@/lib/sdui/config-resolver';
 
+// ─── Node-tree helpers (extracted to _store-node-helpers.ts) ────────────────
+// Single import for internal use; explicit re-exports for external consumers.
+import {
+  REQUIRED_PARENT, ALLOWED_CHILDREN,
+  findNode, findParentNode, patchNodeById, insertNode,
+  hasFormContainerAncestor,
+  clone, removeNodesByIds, autoInjectSetFormFieldIfInForm,
+  _applyLightOverrides, _applyDarkOverrides, hexToRgbTriplet, _getManagedStyle,
+  GLUESTACK_PRIMARY_BRIDGE, slugifyFieldName, FORM_CONTROLLED_TYPES, FORM_CONTAINER_TYPE,
+  injectSetFormFieldRecursive,
+} from './_store-node-helpers';
+
+export {
+  REQUIRED_PARENT, ALLOWED_CHILDREN,
+  findNode, findParentNode, patchNodeById, insertNode,
+  hasFormContainerAncestor,
+};
+
 const MAX_HISTORY = 50;
 
-/**
- * Nodes that must always remain inside a specific parent type.
- * Exported so _canvas.tsx can use the same source of truth for drag escalation.
- */
-export const REQUIRED_PARENT: Record<string, string> = {
-  ButtonText:         'Button',
-  ButtonIcon:         'Button',
-  InputField:         'Input',
-  InputSlot:          'Input',
-  InputIcon:          'Input',
-  CheckboxIndicator:  'Checkbox',
-  CheckboxIcon:       'Checkbox',
-  CheckboxLabel:      'Checkbox',
-  RadioIndicator:     'Radio',
-  RadioLabel:         'Radio',
-  RadioIcon:          'Radio',
-  SelectInput:        'Select',
-  SelectIcon:         'Select',
-  SelectTrigger:      'Select',
-  SelectItem:         'Select',
-  SelectContent:      'Select',
-  SelectPortal:       'Select',
-  SelectBackdrop:     'Select',
-  AccordionItem:      'Accordion',
-  AccordionTrigger:   'Accordion',
-  AccordionContent:   'Accordion',
-  AccordionHeader:    'Accordion',
-  SliderThumb:        'Slider',
-  SliderTrack:        'Slider',
-  SliderFilledTrack:  'Slider',
-  BadgeText:          'Badge',
-  BadgeIcon:          'Badge',
-  FabLabel:           'Fab',
-  AvatarImage:        'Avatar',
-  AvatarFallbackText: 'Avatar',
-  ProgressFilledTrack: 'Progress',
-  TextareaInput:      'Textarea',
-  SkeletonText:       'Skeleton',
-  AlertText:          'Alert',
-  LinkText:           'Link',
-  Radio:              'RadioGroup',
-  ModalBackdrop:      'Modal',
-  ModalContent:       'Modal',
-  ModalHeader:        'ModalContent',
-  ModalBody:          'ModalContent',
-  ModalFooter:        'ModalContent',
-  ModalCloseButton:   'ModalContent',
-  TooltipContent:     'Tooltip',
-  TooltipText:        'TooltipContent',
-  AlertDialogBackdrop:    'AlertDialog',
-  AlertDialogContent:     'AlertDialog',
-  AlertDialogHeader:      'AlertDialogContent',
-  AlertDialogBody:        'AlertDialogContent',
-  AlertDialogFooter:      'AlertDialogContent',
-  AlertDialogCloseButton: 'AlertDialogContent',
-};
 
-/**
- * Nodes that may only accept a specific set of child types.
- * Exported so _canvas.tsx can pre-check before routing a drag "inside".
- */
-export const ALLOWED_CHILDREN: Record<string, Set<string>> = {
-  Button:        new Set(['ButtonText', 'ButtonIcon', 'NavIcon']),
-  Input:         new Set(['InputField', 'InputSlot', 'InputIcon']),
-  Checkbox:      new Set(['CheckboxIndicator', 'CheckboxIcon', 'CheckboxLabel']),
-  Radio:         new Set(['RadioIndicator', 'RadioLabel', 'RadioIcon']),
-  Select:        new Set(['SelectTrigger', 'SelectInput', 'SelectIcon', 'SelectPortal', 'SelectBackdrop', 'SelectContent', 'SelectItem']),
-  Accordion:     new Set(['AccordionItem', 'AccordionTrigger', 'AccordionContent', 'AccordionHeader']),
-  Slider:        new Set(['SliderTrack', 'SliderThumb', 'SliderFilledTrack']),
-  Badge:         new Set(['BadgeText', 'BadgeIcon']),
-  Fab:           new Set(['FabLabel', 'FabIcon', 'NavIcon', 'Text']),
-  Avatar:        new Set(['AvatarImage', 'AvatarFallbackText']),
-  Progress:      new Set(['ProgressFilledTrack']),
-  Textarea:      new Set(['TextareaInput']),
-  Skeleton:      new Set(['SkeletonText']),
-  Alert:         new Set(['AlertIcon', 'AlertText', 'NavIcon']),
-  Link:          new Set(['LinkText']),
-  RadioGroup:    new Set(['Radio']),
-  CheckboxGroup: new Set(['Checkbox']),
-  Modal:         new Set(['ModalBackdrop', 'ModalContent']),
-  ModalContent:  new Set(['ModalHeader', 'ModalBody', 'ModalFooter', 'ModalCloseButton']),
-  Tooltip:       new Set(['TooltipContent', 'Pressable', 'Box', 'Text']),
-  TooltipContent: new Set(['TooltipText']),
-  AlertDialog:        new Set(['AlertDialogBackdrop', 'AlertDialogContent']),
-  AlertDialogContent: new Set(['AlertDialogHeader', 'AlertDialogBody', 'AlertDialogFooter', 'AlertDialogCloseButton']),
-};
-
-/**
- * Convert a hex color string to a space-separated RGB triplet,
- * which is the format ThemeStyles uses for CSS custom properties
- * so that Tailwind's `rgb(var(--X) / alpha)` syntax works.
- * Non-hex values (font strings, 'inherit', etc.) are passed through unchanged.
- */
-function hexToRgbTriplet(value: string): string {
-  if (!value.startsWith('#')) return value;
-  const clean = value.replace('#', '');
-  const full = clean.length === 3
-    ? clean.split('').map(c => c + c).join('')
-    : clean;
-  const r = parseInt(full.slice(0, 2), 16);
-  const g = parseInt(full.slice(2, 4), 16);
-  const b = parseInt(full.slice(4, 6), 16);
-  return `${r} ${g} ${b}`;
-}
-
-/**
- * Managed <style> tag helpers.
- *
- * WHY style tags instead of inline styles:
- *   Inline styles on document.documentElement have the highest specificity and
- *   override EVERY CSS rule — including `.dark {}` rules. This breaks dark mode
- *   because the light-mode inline values win even when the `dark` class is active.
- *
- *   Using :root {} and .dark {} style tags instead keeps everything at the same
- *   specificity (0,1,0). The builder's style tags are appended AFTER ThemeStyles
- *   in the <head>, so they win by DOM order. And our dark override tag comes after
- *   our light override tag, so .dark {} correctly wins in dark mode. ✓
- */
-function _getManagedStyle(id: string): HTMLStyleElement {
-  if (typeof document === 'undefined') return {} as HTMLStyleElement;
-  let el = document.getElementById(id) as HTMLStyleElement | null;
-  if (!el) {
-    el = document.createElement('style');
-    el.id = id;
-    document.head.appendChild(el);
-  }
-  return el;
-}
-
-/**
- * Injects light-mode overrides.
- *
- * Colors (hex/RGB values) go into `html:not(.dark) {}` so they are
- * invisible to dark-mode CSS — dark overrides in `.dark {}` take over
- * without any specificity fight.
- *
- * Non-color values (fonts, radius) go into `:root {}` so they apply in
- * both light AND dark mode.
- */
-/**
- * Gluestack's Checkbox, Radio, Switch etc. use internal `--color-primary-*`
- * tokens set as inline styles via NativeWind vars(). We bridge them to our
- * `--primary` variable using `!important`, which (per the CSS spec) is the
- * only way to override inline-style custom properties from a stylesheet rule.
- */
-const GLUESTACK_PRIMARY_BRIDGE = [
-  '  --color-primary-400: var(--primary) !important;',
-  '  --color-primary-500: var(--primary) !important;',
-  '  --color-primary-600: var(--primary) !important;',
-  '  --color-primary-700: var(--primary) !important;',
-  '  --color-primary-800: var(--primary) !important;',
-].join('\n');
-
-function _applyLightOverrides(overrides: Record<string, string>) {
-  const el = _getManagedStyle('builder-light-overrides');
-
-  const colorLines: string[] = [];
-  const baseLines: string[]  = [];
-
-  for (const [k, v] of Object.entries(overrides)) {
-    if (v.startsWith('#')) {
-      // hex color → convert to RGB triplet, scope to light mode only
-      colorLines.push(`  --${k}: ${hexToRgbTriplet(v)};`);
-    } else {
-      // font family string, rem value, etc. → applies in both modes
-      baseLines.push(`  --${k}: ${v};`);
-    }
-  }
-
-  const parts: string[] = [];
-  if (baseLines.length) parts.push(`:root {\n${baseLines.join('\n')}\n}`);
-  // Always include the bridge so Gluestack components follow the active --primary
-  parts.push(`html:not(.dark) {\n${colorLines.join('\n')}${colorLines.length ? '\n' : ''}${GLUESTACK_PRIMARY_BRIDGE}\n}`);
-  el.textContent = parts.join('\n\n');
-}
-
-/**
- * Injects dark-mode overrides as `html.dark { }` (specificity 0,1,1) so they
- * beat ThemeStyles's `.dark { }` (specificity 0,1,0) without relying on DOM order.
- * Also bridges Gluestack's internal primary tokens to `--primary` with !important.
- */
-function _applyDarkOverrides(overrides: Record<string, string>) {
-  const el = _getManagedStyle('builder-dark-overrides');
-  const vars = Object.entries(overrides)
-    .map(([k, v]) => `  --${k}: ${hexToRgbTriplet(v)};`)
-    .join('\n');
-  el.textContent = `html.dark {\n${vars ? vars + '\n' : ''}${GLUESTACK_PRIMARY_BRIDGE}\n}`;
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function clone<T>(v: T): T {
-  return structuredClone(v);
-}
-
-export function findNode(nodes: SDUINode[], targetId: string): SDUINode | null {
-  for (const node of nodes) {
-    if (node.id === targetId) return node;
-    if (node.children?.length) {
-      const found = findNode(node.children as SDUINode[], targetId);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-
-/**
- * Returns the parent node of `targetId`, or null if it is a root node.
- * Returns undefined if `targetId` is not found anywhere.
- */
-export function findParentNode(
-  nodes: SDUINode[],
-  targetId: string,
-  _parent: SDUINode | null = null
-): SDUINode | null | undefined {
-  for (const node of nodes) {
-    if (node.id === targetId) return _parent;
-    if (node.children?.length) {
-      const result = findParentNode(node.children as SDUINode[], targetId, node);
-      if (result !== undefined) return result;
-    }
-  }
-  return undefined;
-}
-
-function patchNodeById(
-  nodes: SDUINode[],
-  targetId: string,
-  patcher: (n: SDUINode) => SDUINode
-): SDUINode[] {
-  return nodes.map(node => {
-    if (node.id === targetId) return patcher(node);
-    if (node.children?.length) {
-      return { ...node, children: patchNodeById(node.children as SDUINode[], targetId, patcher) };
-    }
-    return node;
-  });
-}
-
-function removeNodesByIds(nodes: SDUINode[], ids: Set<string>): SDUINode[] {
-  return nodes
-    .filter(n => !ids.has(n.id ?? ''))
-    .map(n => ({
-      ...n,
-      children: n.children?.length
-        ? removeNodesByIds(n.children as SDUINode[], ids)
-        : n.children,
-    }));
-}
-
-/**
- * Slugify a string for use as a field name (lowercase, replace spaces/special with camelCase).
- */
-function slugifyFieldName(s: string): string {
-  const trimmed = String(s || '').trim();
-  if (!trimmed) return '';
-  return trimmed
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim()
-    .split(/\s+/)
-    .map((part, i) => (i === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1)))
-    .join('');
-}
-
-const FORM_CONTROLLED_TYPES = new Set(['InputField', 'TextareaInput', 'Checkbox']);
-const FORM_CONTAINER_TYPE = 'FormContainer';
-
-/**
- * Check if node `targetId` has any ancestor with type FormContainer.
- */
-export function hasFormContainerAncestor(nodes: SDUINode[], targetId: string, _path: SDUINode[] = []): boolean {
-  for (const node of nodes) {
-    const pathHere = [..._path, node];
-    if (node.id === targetId) {
-      return _path.some((a) => (a.type as string) === FORM_CONTAINER_TYPE);
-    }
-    if (node.children?.length) {
-      const found = hasFormContainerAncestor(node.children as SDUINode[], targetId, pathHere);
-      if (found) return true;
-    }
-  }
-  return false;
-}
-
-/**
- * Recursively walk subtree and add setFormField to InputField/TextareaInput/Checkbox
- * that don't have it. Returns patched node and next field counter.
- */
-function injectSetFormFieldRecursive(
-  n: SDUINode,
-  fieldCounter: { value: number }
-): SDUINode {
-  if (!FORM_CONTROLLED_TYPES.has(n.type as string)) {
-    return {
-      ...n,
-      children: n.children?.map((c) => injectSetFormFieldRecursive(c as SDUINode, fieldCounter)),
-    };
-  }
-  const actions = (n.actions ?? {}) as Record<string, unknown>;
-  const actionSlot = n.type === 'Checkbox' ? 'valueChange' : 'change';
-  const existing = actions[actionSlot];
-  const hasSetFormField = (a: unknown): boolean =>
-    a && typeof a === 'object' && (a as Record<string, unknown>).type === 'setFormField';
-  if (Array.isArray(existing) ? existing.some(hasSetFormField) : hasSetFormField(existing)) {
-    return { ...n, children: n.children?.map((c) => injectSetFormFieldRecursive(c as SDUINode, fieldCounter)) };
-  }
-  const props = (n.props ?? {}) as Record<string, unknown>;
-  const fieldName =
-    (typeof props.name === 'string' && props.name ? slugifyFieldName(props.name) : null) ||
-    (typeof props.placeholder === 'string' && props.placeholder ? slugifyFieldName(props.placeholder) : null) ||
-    `field${++fieldCounter.value}`;
-  const newAction = { type: 'setFormField', field: fieldName, value: '$event' };
-  const newActions = { ...actions, [actionSlot]: newAction };
-  return {
-    ...n,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    actions: newActions as any,
-    children: n.children?.map((c) => injectSetFormFieldRecursive(c as SDUINode, fieldCounter)),
-  };
-}
-
-/**
- * If targetId is inside a FormContainer, patch its subtree to add setFormField to form inputs.
- */
-function autoInjectSetFormFieldIfInForm(nodes: SDUINode[], targetId: string): SDUINode[] {
-  const hasForm = hasFormContainerAncestor(nodes, targetId);
-  if (!hasForm) return nodes;
-  return patchNodeById(nodes, targetId, (n) => injectSetFormFieldRecursive(n, { value: 0 }));
-}
-
-/** Insert `newNode` as a child of `parentId`, or at root level if parentId is null */
-function insertNode(
-  nodes: SDUINode[],
-  newNode: SDUINode,
-  parentId: string | null,
-  atIdx?: number
-): SDUINode[] {
-  if (!parentId) {
-    const copy = clone(nodes);
-    const idx = atIdx !== undefined ? atIdx : copy.length;
-    copy.splice(idx, 0, newNode);
-    return copy;
-  }
-  return patchNodeById(nodes, parentId, parent => {
-    const children = clone((parent.children ?? []) as SDUINode[]);
-    const idx = atIdx !== undefined ? atIdx : children.length;
-    children.splice(idx, 0, newNode);
-    return { ...parent, children };
-  });
-}
-
-// ─── Store shape ──────────────────────────────────────────────────────────────
-
-export interface GridOverlayConfig {
-  enabled: boolean;
-  type: 'columns' | 'rows' | 'grid';
-  count: number;
-  color: string;
-}
-
-export type ViewportSize = 'mobile' | 'tablet' | 'laptop' | 'desktop';
-
-export const VIEWPORT_WIDTHS: Record<ViewportSize, number> = {
-  mobile:  390,
-  tablet:  768,
-  laptop:  1024,
-  desktop: 1280,
-};
-
-// ─── Data Source Config ───────────────────────────────────────────────────────
-
-export interface DataSourceHeader { key: string; value: string; enabled?: boolean; }
-
-export interface DataSourceParam { key: string; value: string; enabled: boolean; }
-
-export interface DataSourceAuth {
-  type: 'none' | 'bearer' | 'basic' | 'apikey';
-  token?: string;
-  username?: string;
-  password?: string;
-  apiKey?: string;
-  apiKeyHeader?: string;
-}
-
-export interface Folder {
-  id: string;
-  name: string;
-  parentId: string | null;
-}
-
-export interface CustomVar {
-  /** UUID key from config/variables.json (only set for config-driven variables) */
-  id?: string;
-  name: string;
-  label?: string;
-  type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'form';
-  initialValue?: unknown;
-  description?: string;
-  saveInLocalStorage?: boolean;
-  folderId?: string;
-  /** For form-type variables: field definitions */
-  fields?: Array<{ name: string; type?: string; initialValue?: unknown; validation?: Record<string, unknown> }>;
-}
-
-export interface DataSourceConfig {
-  id: string;
-  name: string;
-  type: 'rest' | 'graphql';
-  // REST
-  url?: string;
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-  headers?: DataSourceHeader[];
-  body?: string;
-  queryParams?: DataSourceParam[];
-  auth?: DataSourceAuth;
-  // GraphQL
-  endpoint?: string;
-  query?: string;
-  variables?: string;
-  // Common
-  responsePath?: string;
-  storeIn?: string;
-  trigger?: 'mount' | 'action';
-  triggerActionName?: string;
-  /** Proxy the request through the server to avoid CORS issues. */
-  proxy?: boolean;
-  /** Include credentials (cookies) in the request. */
-  sendCredentials?: boolean;
-  /** Human-readable display label (from config label field) */
-  _label?: string;
-  /** Whether this datasource came from config/datasources.json */
-  _fromConfig?: boolean;
-  /** Origin actions/*.json file name (without .json) — used for write-back */
-  _sourceFile?: string;
-  /** Last manual fetch result — persisted so the result panel reopens on edit */
-  _lastFetch?: { status: 'success' | 'error'; data?: unknown; error?: string; fetchedAt?: number };
-  folderId?: string;
-}
-
-export interface PageMeta {
-  title?: string;
-  description?: string;
-  ogImage?: string;
-}
-
-export interface BuilderPage {
-  id: string;
-  name: string;
-  /** App route path — omitted for builder-internal canvases (e.g. Component Showcase). */
-  route?: string;
-  nodes: SDUINode[];
-  /** Flat key-value dummy data for the "Data" preview state.
-   *  Keys match Zustand data paths (e.g. "cart.totalQuantity", "cart.lines"). */
-  previewData?: Record<string, unknown>;
-  /** Page-level SEO / meta fields */
-  meta?: PageMeta;
-  /** Page-level interactions keyed by event name (e.g. "mount") */
-  pageInteractions?: Record<string, { workflow?: string }>;
-}
-
-// ─── Workflow types ───────────────────────────────────────────────────────────
-
-export interface WorkflowMeta {
-  id: string;
-  name: string;
-  folder?: string;
-  description?: string;
-  /** Event trigger (click, change, valueChange, created, etc.) */
-  trigger?: string;
-  /**
-   * True for auto-generated "set field value on change" workflows — these are
-   * system-managed and should not appear as user-editable entries in the right panel.
-   */
-  isSystem?: boolean;
-}
-
-export type WorkflowCanvasTarget =
-  | { kind: 'element'; nodeId: string; event: string }
-  | { kind: 'pageTrigger'; trigger: string }
-  | { kind: 'pageWorkflow'; name: string; isNew?: boolean; nodeId?: string }
-  | { kind: 'globalWorkflow'; id: string; isNew?: boolean };
-
-export interface BuilderStore {
-  // ── Multi-page state ────────────────────────────────────────────────────────
-  pages: BuilderPage[];
-  currentPageId: string;
-
-  // ── Page state (active page working copy) ───────────────────────────────────
-  pageNodes: SDUINode[];
-
-  // ── Selection ───────────────────────────────────────────────────────────────
-  selectedIds: string[];
-  hoveredId: string | null;
-  altHoveredId: string | null;
-  altMode: boolean;
-
-  // ── Layer state ─────────────────────────────────────────────────────────────
-  lockedIds: Set<string>;
-  hiddenIds: Set<string>;
-  expandedIds: Set<string>;
-
-  // ── Tool ────────────────────────────────────────────────────────────────────
-  tool: 'select' | 'hand';
-
-  // ── Viewport (zoom / pan) ───────────────────────────────────────────────────
-  zoom: number;
-  panX: number;
-  panY: number;
-
-  // ── Responsive viewport ──────────────────────────────────────────────────────
-  viewport: ViewportSize;
-
-  // ── Grid overlay ─────────────────────────────────────────────────────────────
-  gridOverlay: GridOverlayConfig;
-
-  // ── Clipboard ───────────────────────────────────────────────────────────────
-  clipboard: SDUINode[];
-
-  // ── History ─────────────────────────────────────────────────────────────────
-  history: SDUINode[][];
-  historyIdx: number;
-
-  // ── Actions ─────────────────────────────────────────────────────────────────
-
-  // Page mutations
-  addSection: (variantId: string, node: SDUINode, atIdx?: number) => void;
-  addNode: (node: SDUINode, parentId?: string | null, atIdx?: number) => void;
-  moveNode: (nodeId: string, newParentId: string | null, atIdx: number) => void;
-  moveNodes: (nodeIds: string[], newParentId: string | null, atIdx: number) => void;
-  deleteNodes: (ids: string[]) => void;
-  duplicateNodes: (ids: string[]) => void;
-  groupNodes: (ids: string[]) => void;
-  moveSection: (fromIdx: number, toIdx: number) => void;
-  moveNodeUp: (id: string) => void;
-  moveNodeDown: (id: string) => void;
-  patchProp: (id: string, propPath: string, value: unknown) => void;
-  patchClassName: (id: string, oldToken: string, newToken: string) => void;
-  renameNode: (id: string, newId: string) => void;
-
-  // Selection
-  select: (id: string | null, multi?: boolean) => void;
-  selectAll: () => void;
-  selectParent: (id: string) => void;
-  selectFirstChild: (id: string) => void;
-  hover: (id: string | null) => void;
-  setAltMode: (on: boolean) => void;
-  setAltHovered: (id: string | null) => void;
-
-  // Layer toggles
-  toggleVisibility: (id: string) => void;
-  toggleLock: (id: string) => void;
-  toggleExpanded: (id: string) => void;
-  setExpandedIds: (ids: Set<string>) => void;
-
-  // Tool
-  setTool: (t: 'select' | 'hand') => void;
-
-  // Viewport
-  setZoom: (z: number) => void;
-  setPan:  (x: number, y: number) => void;
-  setViewport: (v: ViewportSize) => void;
-
-  // Grid overlay
-  setGridOverlay: (cfg: Partial<GridOverlayConfig>) => void;
-
-  // Clipboard
-  copyToClipboard: () => void;
-  pasteFromClipboard: () => void;
-  pasteInPlace: () => void;
-
-  // Align / Distribute (reads live DOM rects, sets inline style.position/left/top)
-  alignNodes: (ids: string[], edge: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom') => void;
-  distributeNodes: (ids: string[], axis: 'h' | 'v') => void;
-
-  // History
-  undo: () => void;
-  redo: () => void;
-
-  // Cross-page move — removes node from a source page and inserts into the current page
-  moveNodeFromPage: (nodeId: string, fromPageId: string, parentId: string | null, atIdx: number) => void;
-
-  // Pages
-  addPage: (route: string, name?: string) => void;
-  switchPage: (pageId: string) => void;
-  /** Switch to a page AND signal the canvas to pan/zoom to it. */
-  navigatePage: (pageId: string) => void;
-  renamePage: (pageId: string, name: string) => void;
-  removePage: (pageId: string) => void;
-
-  // Canvas navigation trigger (set by navigatePage, consumed by _canvas.tsx)
-  pendingFitToPage: boolean;
-  clearPendingFit: () => void;
-
-  // ── Logic / Behavior layer ───────────────────────────────────────────────────
-  /** Which component states are being previewed on the canvas (builder-only mock). Multi-select supported. */
-  activePreviewStates: string[];
-  /** Show interaction lines on the canvas overlay */
-  showInteractionLines: boolean;
-  /** Signal to the Logic panel to scroll to / open a specific section */
-  activeLogicSection: string | null;
-
-  patchCondition: (id: string, condition: object | null) => void;
-  patchActions: (id: string, actions: Record<string, unknown> | null) => void;
-  patchMap: (id: string, mapPath: string | null, keyField?: string) => void;
-  patchDataSource: (id: string, ds: Record<string, unknown> | null) => void;
-  patchVariant: (id: string, variants: unknown[] | null) => void;
-  /** Generic: patch any top-level or nested field on a node */
-  patchNodeField: (id: string, field: string, value: unknown) => void;
-  /** Same as patchNodeField but does NOT push to history — use for live drag updates.
-   *  Call _pushHistory() once when the gesture ends (mouseup / blur / picker close). */
-  patchNodeFieldLive: (id: string, field: string, value: unknown) => void;
-  setPreviewState: (state: string) => void;
-  togglePreviewState: (state: string) => void;
-  setShowInteractionLines: (on: boolean) => void;
-  openLogicSection: (section: string | null) => void;
-  /** Set the dummy preview data for the current page (used by "Data" preview state) */
-  setCurrentPagePreviewData: (data: Record<string, unknown>) => void;
-  /** Set meta fields for the current page */
-  setCurrentPageMeta: (meta: PageMeta) => void;
-  /** Set page-level interactions for the current page */
-  setCurrentPageInteractions: (interactions: Record<string, { workflow?: string }>) => void;
-  /** Engine conventions loaded from store.json (graphqlEndpoint, graphqlHeaders, etc.) */
-  engineConventions: {
-    graphqlEndpoint?: string;
-    graphqlHeaders?: Record<string, string>;
-    graphqlCredentials?: string;
-  };
-
-  /** App-level global preview data shared across all pages (overridden per-page) */
-  appPreviewData: Record<string, unknown>;
-  /** Set global app-level preview data */
-  setAppPreviewData: (data: Record<string, unknown>) => void;
-
-  // ── Workflows & Formulas ─────────────────────────────────────────────────────
-  /** Named workflows (per-page action sequences, keyed by workflow name) */
-  pageWorkflows: Record<string, object[]>;
-  /** Metadata (name, trigger, description) for each named workflow, keyed by name */
-  pageWorkflowMeta: Record<string, WorkflowMeta>;
-  /**
-   * Direct (non-workflowSteps) actions from config/actions/*.json, keyed by UUID.
-   * Used by the workflow canvas to resolve ActionRefs to their real type (e.g. graphql)
-   * instead of always showing them as "Call workflow".
-   */
-  directActionsMap: Record<string, Record<string, unknown>>;
-  /** App-level workflows shared across all pages */
-  globalWorkflows: Record<string, object[]>;
-  /** Metadata (name, folder, description, params) for each global workflow, keyed by id */
-  globalWorkflowMeta: Record<string, WorkflowMeta>;
-  /** Named JSON Logic expressions usable as {{formula.name}} anywhere */
-  globalFormulas: Record<string, object>;
-  setPageWorkflow: (name: string, actions: object[]) => void;
-  removePageWorkflow: (name: string) => void;
-  setPageWorkflowMeta: (name: string, meta: Partial<WorkflowMeta>) => void;
-  setGlobalWorkflow: (name: string, actions: object[]) => void;
-  removeGlobalWorkflow: (name: string) => void;
-  setGlobalWorkflowMeta: (id: string, meta: Partial<WorkflowMeta>) => void;
-  setGlobalFormula: (name: string, expr: object) => void;
-  removeGlobalFormula: (name: string) => void;
-
-  // ── Workflow Canvas ───────────────────────────────────────────────────────────
-  /** Which workflow is currently open in the full-screen canvas overlay */
-  workflowCanvasTarget: WorkflowCanvasTarget | null;
-  openWorkflowCanvas: (target: WorkflowCanvasTarget) => void;
-  closeWorkflowCanvas: () => void;
-
-  // ── Folders ──────────────────────────────────────────────────────────────────
-  /** Folders for organising variables */
-  varFolders: Folder[];
-  addVarFolder: (f: Folder) => void;
-  updateVarFolder: (id: string, name: string) => void;
-  removeVarFolder: (id: string) => void;
-  /** Folders for organising data sources */
-  dsFolders: Folder[];
-  addDsFolder: (f: Folder) => void;
-  updateDsFolder: (id: string, name: string) => void;
-  removeDsFolder: (id: string) => void;
-
-  // ── Custom Variables ─────────────────────────────────────────────────────────
-  /** User-defined variables with an initial value and type */
-  customVars: CustomVar[];
-  addCustomVar: (v: CustomVar) => void;
-  updateCustomVar: (name: string, patch: Partial<CustomVar>) => void;
-  removeCustomVar: (name: string) => void;
-
-  // ── Data Sources ─────────────────────────────────────────────────────────────
-  /** Page-level API data sources (REST or GraphQL) */
-  pageDataSources: DataSourceConfig[];
-  addPageDataSource: (cfg: DataSourceConfig) => void;
-  updatePageDataSource: (id: string, patch: Partial<DataSourceConfig>) => void;
-  removePageDataSource: (id: string) => void;
-
-  // ── Theme overrides ──────────────────────────────────────────────────────────
-  /** Light-mode CSS variable overrides (key = var name without --) */
-  themeOverrides: Record<string, string>;
-  /** Dark-mode CSS variable overrides (key = var name without --) */
-  themeDarkOverrides: Record<string, string>;
-  /**
-   * Apply a CSS variable override for the given mode.
-   * Light-mode vars are set inline on :root; dark-mode vars are injected into
-   * a managed <style id="builder-dark-overrides"> rule so they only apply when
-   * document.documentElement has the `dark` class.
-   * Values are stored as hex in state; CSS vars are set as RGB triplets so
-   * `rgb(var(--X))` syntax in the showcase works correctly.
-   */
-  /** Install the Gluestack primary token bridge on page mount (no-op if already installed). */
-  initTheme: () => void;
-  patchTheme: (cssVar: string, value: string, mode?: 'light' | 'dark') => void;
-  resetTheme: () => void;
-  /** Apply a complete theme preset atomically — light colors, dark colors, and fonts. */
-  applyThemePreset: (
-    light: Record<string, string>,
-    dark: Record<string, string>,
-    fonts?: { heading?: string; body?: string },
-  ) => void;
-
-  /** Load Data Sources, Workflows, Variables, Formulas from the app config files via the API.
-   *  Only runs if panels are empty (user hasn't manually edited), unless forceReload=true. */
-  loadFromConfig: () => Promise<void>;
-
-  // Internal (debounce wrapper)
-  _pushHistory: () => void;
-  _setPageNodes: (nodes: SDUINode[]) => void;
-  /** E2E only — resets undo/redo history to a single empty snapshot so tests start clean. */
-  _clearHistory: () => void;
-  // Overlay update callback — set by _canvas.tsx, called by _panel-right.tsx for imperative ring updates
-  _requestOverlayUpdate: () => void;
-  _setOverlayUpdateCallback: (fn: (() => void) | null) => void;
-  // Lightweight ring-only update — skips fills/getComputedStyle; called from patchStyle RAF
-  // with already-computed BCR so the overlay doesn't need to re-read the DOM.
-  _requestRingUpdate: (elRect: DOMRect, frameRect: DOMRect) => void;
-  _setRingUpdateCallback: (fn: ((elRect: DOMRect, frameRect: DOMRect) => void) | null) => void;
-}
+// ─── Store shape — types extracted to _store-types.ts ─────────────────────────
+// Re-exported here for backward compat; import from _store-types.ts directly
+// when you only need the type shapes (avoids loading the full Zustand store).
+
+export type {
+  GridOverlayConfig, ViewportSize,
+  DataSourceHeader, DataSourceParam, DataSourceAuth,
+  Folder, CustomVar, DataSourceConfig,
+  PageMeta, BuilderPage,
+  WorkflowMeta, WorkflowCanvasTarget,
+  BuilderStore,
+} from './_store-types';
+export { VIEWPORT_WIDTHS } from './_store-types';
+
+// Local alias used by the implementation below (avoids re-importing each name)
+import type {
+  GridOverlayConfig, ViewportSize, DataSourceConfig, CustomVar,
+  Folder, WorkflowMeta, WorkflowCanvasTarget, BuilderStore,
+  BuilderPage, PageMeta,
+} from './_store-types';
+import { VIEWPORT_WIDTHS } from './_store-types';
 
 // ─── localStorage persistence helpers ────────────────────────────────────────
 
@@ -808,6 +116,27 @@ export function persistDsLastFetch(id: string, fetch: DataSourceConfig['_lastFet
 /** Restore all persisted last-fetch results (keyed by datasource ID). */
 export function restoreDsLastFetches(): Record<string, DataSourceConfig['_lastFetch']> {
   return _loadJson(BUILDER_DS_FETCH_KEY, {});
+}
+
+/** localStorage key for workflow step test results. Keyed by step ID. */
+const BUILDER_WORKFLOW_TEST_KEY = 'builder:workflowTest';
+
+/** Persist a single workflow step test result. Pass `undefined` to clear. */
+export function persistWorkflowStepTestResult(stepId: string, entry: import('./_store-types').WorkflowTestEntry | undefined) {
+  if (typeof window === 'undefined') return;
+  const current = _loadJson<Record<string, unknown>>(BUILDER_WORKFLOW_TEST_KEY, {});
+  if (entry) {
+    _saveJson(BUILDER_WORKFLOW_TEST_KEY, { ...current, [stepId]: entry });
+  } else {
+    const next = { ...current };
+    delete next[stepId];
+    _saveJson(BUILDER_WORKFLOW_TEST_KEY, next);
+  }
+}
+
+/** Restore all persisted workflow step test results on store init. */
+export function restoreWorkflowTestResults(): Record<string, import('./_store-types').WorkflowTestEntry> {
+  return _loadJson(BUILDER_WORKFLOW_TEST_KEY, {});
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -907,6 +236,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   globalWorkflows: {},
   globalWorkflowMeta: {},
   globalFormulas: {},
+  workflowTestResults: restoreWorkflowTestResults(),
   workflowCanvasTarget: null,
   varFolders: [],
   dsFolders: [],
@@ -1905,6 +1235,11 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     set(s => { const { [name]: _, ...rest } = s.globalWorkflows; return { globalWorkflows: rest }; }),
   setGlobalWorkflowMeta: (id, meta) =>
     set(s => ({ globalWorkflowMeta: { ...s.globalWorkflowMeta, [id]: { ...s.globalWorkflowMeta[id], ...meta, id } } })),
+  setWorkflowStepTestResult: (stepId, result, error, stepIndex, actionName = 'Action') => {
+    const entry: import('./_store-types').WorkflowTestEntry = { result, error, actionName, stepIndex, ranAt: Date.now() };
+    persistWorkflowStepTestResult(stepId, entry);
+    set(s => ({ workflowTestResults: { ...s.workflowTestResults, [stepId]: entry } }));
+  },
   openWorkflowCanvas: (target) => set({ workflowCanvasTarget: target }),
   closeWorkflowCanvas: () => set({ workflowCanvasTarget: null }),
   setGlobalFormula: (name, expr) =>

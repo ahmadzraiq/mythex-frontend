@@ -10,12 +10,23 @@ import { BUILDER_PREVIEW_KEY } from '../page';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const app = appConfig as any;
 
+interface WorkflowMeta {
+  trigger?: string;
+  [key: string]: unknown;
+}
+
 interface PreviewData {
   nodes: SDUINode[];
   pageName: string;
   pageRoute: string;
   themeOverrides?: Record<string, string>;
   themeDarkOverrides?: Record<string, string>;
+  /** Page-scoped workflow definitions keyed by UUID */
+  pageWorkflows?: Record<string, unknown[]>;
+  pageWorkflowMeta?: Record<string, WorkflowMeta>;
+  /** Project-wide global workflow definitions keyed by UUID */
+  globalWorkflows?: Record<string, unknown[]>;
+  globalWorkflowMeta?: Record<string, WorkflowMeta>;
 }
 
 /** Convert hex → space-separated RGB triplet (matches ThemeStyles format). */
@@ -93,13 +104,39 @@ export default function PreviewPage() {
     } as SDUIConfig['ui'],
   }), [data]);
 
+  // Convert builder page/global workflows into the actionsConfig format so the engine
+  // can resolve { action: uuid } references stored on each node.
+  // Format: uuid → { type: 'workflowSteps', trigger, steps: [...] }
+  const workflowActionsConfig = useMemo(() => {
+    const result: Record<string, unknown> = {};
+
+    const addWorkflows = (
+      workflows: Record<string, unknown[]> | undefined,
+      meta: Record<string, WorkflowMeta> | undefined
+    ) => {
+      if (!workflows) return;
+      for (const [uuid, steps] of Object.entries(workflows)) {
+        result[uuid] = {
+          type: 'workflowSteps',
+          trigger: meta?.[uuid]?.trigger ?? 'click',
+          steps,
+        };
+      }
+    };
+
+    addWorkflows(data?.pageWorkflows, data?.pageWorkflowMeta);
+    addWorkflows(data?.globalWorkflows, data?.globalWorkflowMeta);
+
+    return result;
+  }, [data]);
+
   if (!data) return null;
 
   return (
     <SDUIEngine
       config={config}
       configName={data.pageRoute?.replace(/[^a-zA-Z0-9]/g, '_') ?? 'preview'}
-      actionsConfig={app.actions ?? {}}
+      actionsConfig={{ ...app.actions ?? {}, ...workflowActionsConfig }}
       routes={app.routes ?? []}
       dataSources={app.dataSources ?? {}}
     />

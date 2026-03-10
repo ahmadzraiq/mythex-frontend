@@ -5,6 +5,10 @@
  * and dispatches it through the existing runOne pipeline, so all registered
  * handlers (graphql, fetch, navigate, validate, submitForm, etc.) continue to work.
  *
+ * After each step, the result/error is written to context.workflow[stepId] in the
+ * variable store, making it accessible via formulas like:
+ *   context.workflow['step-id'].result?.login?.__typename
+ *
  * Usage in JSON:
  *   "actions": { "click": { "type": "workflowSteps", "steps": [ ... ] } }
  *
@@ -13,6 +17,9 @@
  */
 
 import type { ActionHandlerContext, ActionDef } from './types';
+import { evaluateFormula } from '../../formula-evaluator';
+import { getGlobalVariableStore } from '../../global-variable-store';
+import { setNestedValue } from '../../nested-utils';
 
 interface WorkflowStep {
   id: string;
@@ -22,9 +29,10 @@ interface WorkflowStep {
   config?: Record<string, unknown>;
   trueBranch?: WorkflowStep[];
   falseBranch?: WorkflowStep[];
-  branches?: { label: string; steps: WorkflowStep[] }[];
   loopBody?: WorkflowStep[];
 }
+
+export type WorkflowCtx = Record<string, { result: unknown; error: unknown }>;
 
 /** Convert a canvas ActionStep into an inline SDUI action definition. */
 function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
@@ -73,7 +81,7 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
 
     // ── Project workflow reference (legacy builder format) ───────────────────
     case 'runProjectWorkflow':
-      return { action: (cfg.workflowId ?? cfg.workflowName ?? step.action ?? '') as string };
+      return { action: (cfg.workflowId ?? cfg.workflowName ?? (step as unknown as Record<string, unknown>).action ?? '') as string };
 
     // ── Forms ────────────────────────────────────────────────────────────────
     case 'validateForm':
@@ -125,7 +133,6 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
     case 'append':
     case 'appendToPath':
     case 'removeAt':
-    case 'showToast' as string:
     case 'log':
     case 'cycleIndex':
     case 'mergeAtPath':
@@ -137,14 +144,13 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
     case 'setFormField':
     case 'clearPersistedPaths':
     case 'validate':
-    case 'submitForm':
+    case 'submitForm' as string:
     case 'graphql' as string:
     case 'refetchDataSource':
       return { type: step.type, ...cfg };
 
     // ── Skip structural / utility placeholders ───────────────────────────────
     case 'branch':
-    case 'multiOptionBranch':
     case 'forEach':
     case 'whileLoop':
     case 'breakLoop':
@@ -159,32 +165,40 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
   }
 }
 
-/** Recursively execute a list of workflow steps. */
+/** Write the current workflowCtx snapshot to the variable store so formulas
+ *  in subsequent steps can access context.workflow['stepId'].result. */
+function flushWorkflowCtx(workflowCtx: WorkflowCtx) {
+  getGlobalVariableStore().getState().setState((prev) =>
+    setNestedValue(prev, 'context.workflow', { ...(workflowCtx) })
+  );
+}
+
+/** Recursively execute a list of workflow steps.
+ *  workflowCtx is passed by reference so branch/loop sub-steps share the same map. */
 async function runSteps(
   steps: WorkflowStep[],
   ctx: ActionHandlerContext,
+  workflowCtx: WorkflowCtx,
 ): Promise<void> {
   for (const step of steps) {
     if (step.disabled) continue;
 
     // ── Structural: True/False branch ────────────────────────────────────────
+    // Exactly two outputs: True and False. Condition is a formula string that
+    // can reference context.workflow['prevStepId'].result — no "on error" or
+    // "default" branches; the formula itself handles error cases.
     if (step.type === 'branch') {
-      // Evaluate condition via get(); falsy = false branch
-      const condPath = (step.config?.conditionPath as string) ?? '';
-      const condResult = condPath ? ctx.get(condPath) : false;
-      const branch = condResult ? (step.trueBranch ?? []) : (step.falseBranch ?? []);
-      await runSteps(branch, ctx);
-      continue;
-    }
-
-    // ── Structural: Multi-option branch ──────────────────────────────────────
-    if (step.type === 'multiOptionBranch') {
-      const condPath = (step.config?.conditionPath as string) ?? '';
-      const condValue = condPath ? String(ctx.get(condPath)) : '';
-      const matchedBranch = (step.branches ?? []).find(b => b.label === condValue);
-      if (matchedBranch) {
-        await runSteps(matchedBranch.steps, ctx);
+      const condFormula = step.config?.condition as string | undefined;
+      const condPath    = step.config?.conditionPath as string | undefined;
+      let condResult: unknown;
+      if (condFormula) {
+        const vsState = getGlobalVariableStore().getState().getFullState();
+        condResult = evaluateFormula(condFormula, vsState).value;
+      } else {
+        condResult = condPath ? ctx.get(condPath) : false;
       }
+      const branch = condResult ? (step.trueBranch ?? []) : (step.falseBranch ?? []);
+      await runSteps(branch, ctx, workflowCtx);
       continue;
     }
 
@@ -194,7 +208,7 @@ async function runSteps(
       const items = itemsPath ? (ctx.get(itemsPath) as unknown[]) : [];
       if (Array.isArray(items)) {
         for (const _item of items) {
-          await runSteps(step.loopBody ?? [], ctx);
+          await runSteps(step.loopBody ?? [], ctx, workflowCtx);
         }
       }
       continue;
@@ -205,7 +219,7 @@ async function runSteps(
       const condPath = (step.config?.conditionPath as string) ?? '';
       let guard = 0; // safety limit
       while (condPath && ctx.get(condPath) && guard < 100) {
-        await runSteps(step.loopBody ?? [], ctx);
+        await runSteps(step.loopBody ?? [], ctx, workflowCtx);
         guard++;
       }
       continue;
@@ -231,6 +245,16 @@ async function runSteps(
       continue;
     }
 
+    // External URL navigation — cfg stores externalUrl + linkType:'external'
+    if (step.type === 'navigateTo' && ((step.config?.linkType as string) === 'external' || step.config?.externalUrl)) {
+      const url = String(step.config?.externalUrl ?? step.config?.path ?? '');
+      const newTab = (step.config?.newTab as boolean | undefined) !== false; // default: new tab
+      if (url && typeof window !== 'undefined') {
+        window.open(url, newTab ? '_blank' : '_self', 'noopener,noreferrer');
+      }
+      continue;
+    }
+
     if (step.type === 'printPdf') {
       if (typeof window !== 'undefined') window.print();
       continue;
@@ -238,14 +262,28 @@ async function runSteps(
 
     // ── Raw ActionRef (serialized runNamedAction: { action: "name" }) ─────────
     if (!step.type && (step as unknown as Record<string, unknown>).action) {
-      await ctx.runOne(step as unknown as import('../../types').SDUIAction);
+      const result = await ctx.runOne(step as unknown as unknown as import('../../types').SDUIAction);
+      if (step.id) {
+        workflowCtx[step.id] = { result: result ?? null, error: null };
+        flushWorkflowCtx(workflowCtx);
+      }
       continue;
     }
 
     // ── Dispatch to existing SDUI handler ─────────────────────────────────────
     const sduiDef = stepToSdui(step);
     if (sduiDef) {
-      await ctx.runOne(sduiDef as import('../../types').SDUIAction);
+      let stepResult: unknown = undefined;
+      let stepError: unknown = null;
+      try {
+        stepResult = await ctx.runOne(sduiDef as unknown as import('../../types').SDUIAction);
+      } catch (err) {
+        stepError = err instanceof Error ? err.message : String(err);
+      }
+      // Store in workflowCtx and flush to variable store so subsequent steps
+      // and branch conditions can read context.workflow['stepId'].result.
+      workflowCtx[step.id] = { result: stepResult ?? null, error: stepError };
+      flushWorkflowCtx(workflowCtx);
     }
   }
 }
@@ -254,5 +292,12 @@ export const workflowStepsHandler =
   (ctx: ActionHandlerContext) =>
   async (actionDef: ActionDef): Promise<void> => {
     const steps = (actionDef.steps ?? []) as WorkflowStep[];
-    await runSteps(steps, ctx);
+    // workflowCtx is shared across all steps (including sub-branches).
+    // Pre-populate with any existing workflow context so chained workflow calls
+    // can read results from prior top-level steps.
+    const existing = getGlobalVariableStore().getState().getFullState()['context.workflow'];
+    const workflowCtx: WorkflowCtx = typeof existing === 'object' && existing !== null
+      ? { ...(existing as WorkflowCtx) }
+      : {};
+    await runSteps(steps, ctx, workflowCtx);
   };

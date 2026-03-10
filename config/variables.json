@@ -98,6 +98,12 @@
       "type": "number",
       "initialValue": 0,
       "folder": "Product"
+    },
+    "f2a3b4c5-d6e7-8901-fabc-012345678901": {
+      "label": "Sign In Error",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Login"
     }
   },
   "varFolders": [
@@ -128,6 +134,10 @@
     {
       "id": "Product",
       "label": "Product"
+    },
+    {
+      "id": "Login",
+      "label": "Login"
     },
     {
       "id": "Auth",

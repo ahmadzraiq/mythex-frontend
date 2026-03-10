@@ -1,0 +1,691 @@
+'use client';
+
+/**
+ * _workflow-flow-nodes.tsx
+ *
+ * Step-tree utilities and canvas node components for WorkflowCanvas.
+ * Extracted from _workflow-canvas.tsx.
+ *
+ * Exports (tree helpers):
+ *  - getStepAtPath, updateStepAtPath, insertStepAtPath, removeStepAtPath
+ *
+ * Exports (canvas nodes):
+ *  - Connector, InsertButton
+ *  - FlowRenderer, ActionNode, PassThroughNode
+ *  - BranchNode, MultiOptionBranchNode, LoopNode
+ *  - FlowRendererProps (interface)
+ */
+
+import React, { useState, useRef, useEffect, useContext, createContext } from 'react';
+import { S } from './_workflow-styles';
+import { type ActionStep, getActionLabel, getActionIcon, isConfigured, canTest } from './_workflow-types';
+import type { WorkflowTestEntry } from './_store-types';
+
+// ─── Workflow canvas context — avoids prop-drilling onTestStep / testResults ──
+
+interface WorkflowCanvasCtx {
+  onTestStep?: (step: ActionStep, stepPath: (string | number)[]) => void;
+  testResults?: Record<string, WorkflowTestEntry>;
+}
+
+const WorkflowCanvasContext = createContext<WorkflowCanvasCtx>({});
+export { WorkflowCanvasContext };
+
+// ─── Flow step tree helpers ───────────────────────────────────────────────────
+
+export function getStepAtPath(steps: ActionStep[], path: number[]): ActionStep | null {
+  if (!path.length) return null;
+  const [idx, ...rest] = path;
+  const step = steps[idx];
+  if (!step) return null;
+  if (!rest.length) return step;
+  // Navigate into children
+  if (rest[0] === -1 && rest[1] !== undefined) {
+    // -1 = trueBranch, -2 = falseBranch, -3 = loopBody, -4 = defaultBranch
+    // We encode branch path as [parentIdx, branchCode, ...childPath]
+    // branchCode: 0 = trueBranch, 1 = falseBranch, 2+ = branches[n-2], -1 = defaultBranch
+    return null; // simplified — full deep navigation handled in FlowRenderer
+  }
+  return null;
+}
+
+export function updateStepAtPath(
+  steps: ActionStep[],
+  path: number[],
+  updater: (s: ActionStep) => ActionStep
+): ActionStep[] {
+  if (!path.length) return steps;
+  const [idx, ...rest] = path;
+  if (!rest.length) {
+    return steps.map((s, i) => (i === idx ? updater(s) : s));
+  }
+  return steps.map((s, i) => {
+    if (i !== idx) return s;
+    // Recurse into sub-collections based on rest[0] being a string tag
+    const [tag, ...subPath] = rest as [string, ...number[]];
+    if (tag === 'true' && s.trueBranch) return { ...s, trueBranch: updateStepAtPath(s.trueBranch, subPath, updater) };
+    if (tag === 'false' && s.falseBranch) return { ...s, falseBranch: updateStepAtPath(s.falseBranch, subPath, updater) };
+    if (tag === 'loop' && s.loopBody) return { ...s, loopBody: updateStepAtPath(s.loopBody, subPath, updater) };
+    if (tag === 'default' && s.defaultBranch) return { ...s, defaultBranch: updateStepAtPath(s.defaultBranch, subPath, updater) };
+    if (tag?.startsWith('branch-') && s.branches) {
+      const bIdx = parseInt(tag.split('-')[1], 10);
+      return { ...s, branches: s.branches.map((b, bi) => bi === bIdx ? { ...b, steps: updateStepAtPath(b.steps, subPath, updater) } : b) };
+    }
+    return s;
+  });
+}
+
+export function insertStepAtPath(
+  steps: ActionStep[],
+  path: number[],
+  newStep: ActionStep
+): ActionStep[] {
+  if (!path.length) return steps;
+  if (path.length === 1) {
+    const copy = [...steps];
+    copy.splice(path[0], 0, newStep);
+    return copy;
+  }
+  const [idx, tag, ...subPath] = path as [number, string, ...number[]];
+  return steps.map((s, i) => {
+    if (i !== idx) return s;
+    if (tag === 'true' && s.trueBranch) return { ...s, trueBranch: insertStepAtPath(s.trueBranch, subPath, newStep) };
+    if (tag === 'false' && s.falseBranch) return { ...s, falseBranch: insertStepAtPath(s.falseBranch, subPath, newStep) };
+    if (tag === 'loop' && s.loopBody) return { ...s, loopBody: insertStepAtPath(s.loopBody, subPath, newStep) };
+    if (tag === 'default' && s.defaultBranch) return { ...s, defaultBranch: insertStepAtPath(s.defaultBranch, subPath, newStep) };
+    if (tag?.startsWith('branch-') && s.branches) {
+      const bIdx = parseInt(tag.split('-')[1], 10);
+      return { ...s, branches: s.branches.map((b, bi) => bi === bIdx ? { ...b, steps: insertStepAtPath(b.steps, subPath, newStep) } : b) };
+    }
+    return s;
+  });
+}
+
+export function removeStepAtPath(steps: ActionStep[], path: number[]): ActionStep[] {
+  if (!path.length) return steps;
+  if (path.length === 1) return steps.filter((_, i) => i !== path[0]);
+  const [idx, tag, ...subPath] = path as [number, string, ...number[]];
+  return steps.map((s, i) => {
+    if (i !== idx) return s;
+    if (tag === 'true' && s.trueBranch) return { ...s, trueBranch: removeStepAtPath(s.trueBranch, subPath) };
+    if (tag === 'false' && s.falseBranch) return { ...s, falseBranch: removeStepAtPath(s.falseBranch, subPath) };
+    if (tag === 'loop' && s.loopBody) return { ...s, loopBody: removeStepAtPath(s.loopBody, subPath) };
+    if (tag === 'default' && s.defaultBranch) return { ...s, defaultBranch: removeStepAtPath(s.defaultBranch, subPath) };
+    if (tag?.startsWith('branch-') && s.branches) {
+      const bIdx = parseInt(tag.split('-')[1], 10);
+      return { ...s, branches: s.branches.map((b, bi) => bi === bIdx ? { ...b, steps: removeStepAtPath(b.steps, subPath) } : b) };
+    }
+    return s;
+  });
+}
+
+// ─── Connector component ──────────────────────────────────────────────────────
+
+export function Connector({ showArrow = true }: { showArrow?: boolean }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={S.vLine} />
+      {showArrow && <div style={S.arrowHead} />}
+    </div>
+  );
+}
+
+// ─── Insert button ────────────────────────────────────────────────────────────
+
+export function InsertButton({ onClick }: { onClick: (x: number, y: number) => void }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={S.vLine} />
+      <button
+        data-testid="insert-btn"
+        style={S.insertBtn(hovered)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onClick={e => { e.stopPropagation(); onClick(e.clientX, e.clientY); }}
+        title="Insert action here"
+      >
+        +
+      </button>
+      <div style={S.vLine} />
+    </div>
+  );
+}
+
+// ─── FlowRenderer — recursive ─────────────────────────────────────────────────
+
+export interface FlowRendererProps {
+  steps: ActionStep[];
+  pathPrefix: (string | number)[];
+  selectedPath: (string | number)[] | null;
+  copiedStep: ActionStep | null;
+  onSelect: (path: (string | number)[]) => void;
+  onInsert: (insertIdx: number, pathPrefix: (string | number)[], x: number, y: number) => void;
+  onContextMenu: (e: React.MouseEvent, step: ActionStep, path: (string | number)[]) => void;
+  onUpdateStep: (path: (string | number)[], patch: Partial<ActionStep>) => void;
+  /** Callback to run a single step as a test — provided by WorkflowCanvas via context */
+  onTestStep?: (step: ActionStep, stepPath: (string | number)[]) => void;
+  /** Persisted test results keyed by step ID — provided by WorkflowCanvas via context */
+  testResults?: Record<string, WorkflowTestEntry>;
+}
+
+export function pathEquals(a: (string | number)[] | null, b: (string | number)[]): boolean {
+  if (!a) return false;
+  if (a.length !== b.length) return false;
+  return a.every((v, i) => v === b[i]);
+}
+
+export function FlowRenderer({
+  steps,
+  pathPrefix,
+  selectedPath,
+  copiedStep,
+  onSelect,
+  onInsert,
+  onContextMenu,
+  onUpdateStep,
+}: FlowRendererProps) {
+  return (
+    <div style={S.flowColumn}>
+      {steps.length === 0 && (
+        <InsertButton onClick={(x, y) => onInsert(0, pathPrefix, x, y)} />
+      )}
+      {steps.map((step, idx) => {
+        const stepPath = [...pathPrefix, idx];
+        const isSelected = pathEquals(selectedPath, stepPath);
+
+        return (
+          <React.Fragment key={step.id}>
+            {/* Insert button before first item only if there are items */}
+            {idx === 0 && steps.length > 0 && (
+              <InsertButton onClick={(x, y) => onInsert(0, pathPrefix, x, y)} />
+            )}
+
+            {/* Render the step */}
+            {(step.type === 'branch') && (
+              <BranchNode step={step} stepPath={stepPath} isSelected={isSelected} selectedPath={selectedPath} copiedStep={copiedStep} onSelect={onSelect} onInsert={onInsert} onContextMenu={onContextMenu} onUpdateStep={onUpdateStep} />
+            )}
+            {(step.type === 'multiOptionBranch') && (
+              <MultiOptionBranchNode step={step} stepPath={stepPath} isSelected={isSelected} selectedPath={selectedPath} copiedStep={copiedStep} onSelect={onSelect} onInsert={onInsert} onContextMenu={onContextMenu} onUpdateStep={onUpdateStep} />
+            )}
+            {(step.type === 'forEach' || step.type === 'whileLoop') && (
+              <LoopNode step={step} stepPath={stepPath} isSelected={isSelected} selectedPath={selectedPath} copiedStep={copiedStep} onSelect={onSelect} onInsert={onInsert} onContextMenu={onContextMenu} onUpdateStep={onUpdateStep} />
+            )}
+            {(step.type === 'passThroughCondition') && (
+              <PassThroughNode step={step} stepPath={stepPath} isSelected={isSelected} onSelect={onSelect} onContextMenu={onContextMenu} />
+            )}
+            {!['branch', 'multiOptionBranch', 'forEach', 'whileLoop', 'passThroughCondition'].includes(step.type) && (
+              <ActionNode step={step} stepPath={stepPath} isSelected={isSelected} onSelect={onSelect} onContextMenu={onContextMenu} />
+            )}
+
+            {/* Insert button after each step */}
+            <InsertButton onClick={(x, y) => onInsert(idx + 1, pathPrefix, x, y)} />
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Action card node ─────────────────────────────────────────────────────────
+
+export function ActionNode({
+  step,
+  stepPath,
+  isSelected,
+  onSelect,
+  onContextMenu,
+}: {
+  step: ActionStep;
+  stepPath: (string | number)[];
+  isSelected: boolean;
+  onSelect: (path: (string | number)[]) => void;
+  onContextMenu: (e: React.MouseEvent, step: ActionStep, path: (string | number)[]) => void;
+}) {
+  const { onTestStep, testResults } = useContext(WorkflowCanvasContext);
+  const testResult = testResults?.[step.id];
+  const [testing, setTesting] = useState(false);
+
+  const incomplete = !isConfigured(step);
+  const testable = canTest(step);
+  const label = incomplete ? 'Action' : getActionLabel(step.type);
+  const icon = incomplete ? '⚡' : getActionIcon(step.type);
+  const subtextLabel = incomplete ? 'Click to configure' : (
+    step.type === 'runProjectWorkflow' && (step.config?.workflowId || step.action) ? String(step.config?.workflowId ?? step.action) :
+    step.type === 'timeDelay' && step.config?.time ? `${step.config.time}ms` : undefined
+  );
+
+  const handleTest = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onTestStep || !testable || testing) return;
+    setTesting(true);
+    try {
+      await onTestStep(step, stepPath);
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  // Badge: show success / error dot after test
+  const badge = testResult
+    ? testResult.error
+      ? { color: '#f87171', symbol: '✕', title: `Error: ${testResult.error}` }
+      : { color: '#34d399', symbol: '✓', title: 'Test passed' }
+    : null;
+
+  return (
+    <div
+      data-testid={`action-node-${step.id}`}
+      style={S.card(isSelected, incomplete)}
+      onClick={() => onSelect(stepPath)}
+    >
+      <div style={S.cardTopRow}>
+        <span style={S.cardIcon}>{icon}</span>
+        <span style={S.cardName}>{step.name || label}</span>
+        {badge && (
+          <span title={badge.title} style={{ fontSize: 11, color: badge.color, flexShrink: 0 }}>{badge.symbol}</span>
+        )}
+        {testable && onTestStep && (
+          <button
+            data-testid={`test-step-btn-${step.id}`}
+            style={{
+              background: 'none', border: 'none', cursor: testing ? 'default' : 'pointer',
+              color: testing ? '#6b7280' : '#9ca3af', fontSize: 11, padding: '2px 4px',
+              lineHeight: 1, borderRadius: 3, flexShrink: 0,
+            }}
+            title="Test action"
+            onPointerDown={e => e.stopPropagation()}
+            onClick={handleTest}
+            disabled={testing}
+          >
+            {testing ? '…' : '▶'}
+          </button>
+        )}
+        <button
+          data-testid="context-menu-btn"
+          style={S.moreBtn}
+          type="button"
+          onPointerDown={e => { e.stopPropagation(); onContextMenu(e as unknown as React.MouseEvent, step, stepPath); }}
+          onClick={e => e.stopPropagation()}
+          title="More options"
+        >
+          ⋮
+        </button>
+      </div>
+      {(subtextLabel || incomplete) && (
+        <div style={S.cardSubtext(incomplete)}>
+          {subtextLabel ?? (incomplete ? 'Click to configure' : '')}
+        </div>
+      )}
+      {testResult && (
+        <div style={{ fontSize: 10, color: testResult.error ? '#f87171' : '#34d399', marginTop: 4, fontFamily: 'monospace', maxHeight: 48, overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-all' }}>
+          {testResult.error
+            ? `Error: ${testResult.error}`
+            : `OK · ${new Date(testResult.ranAt).toLocaleTimeString()}`}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Pass through condition (oval shape) ─────────────────────────────────────
+
+export function PassThroughNode({
+  step,
+  stepPath,
+  isSelected,
+  onSelect,
+  onContextMenu,
+}: {
+  step: ActionStep;
+  stepPath: (string | number)[];
+  isSelected: boolean;
+  onSelect: (path: (string | number)[]) => void;
+  onContextMenu: (e: React.MouseEvent, step: ActionStep, path: (string | number)[]) => void;
+}) {
+  return (
+    <div
+      style={{ ...S.pillNode(isSelected, true), gap: 8 }}
+      onClick={() => onSelect(stepPath)}
+    >
+      <span style={{ fontSize: 12 }}>▽</span>
+      <span>{step.name || 'Pass through condition'}</span>
+      <button
+        style={{ ...S.moreBtn, fontSize: 14 }}
+        type="button"
+        onPointerDown={e => { e.stopPropagation(); onContextMenu(e as unknown as React.MouseEvent, step, stepPath); }}
+        onClick={e => e.stopPropagation()}
+      >
+        ⋮
+      </button>
+    </div>
+  );
+}
+
+// ─── True/False branch node ───────────────────────────────────────────────────
+
+export function BranchNode({
+  step, stepPath, isSelected, selectedPath, copiedStep,
+  onSelect, onInsert, onContextMenu, onUpdateStep,
+}: {
+  step: ActionStep; stepPath: (string | number)[]; isSelected: boolean;
+  selectedPath: (string | number)[] | null; copiedStep: ActionStep | null;
+  onSelect: (p: (string | number)[]) => void;
+  onInsert: (idx: number, prefix: (string | number)[], x: number, y: number) => void;
+  onContextMenu: (e: React.MouseEvent, s: ActionStep, p: (string | number)[]) => void;
+  onUpdateStep: (p: (string | number)[], patch: Partial<ActionStep>) => void;
+}) {
+  const trueBranch = step.trueBranch ?? [];
+  const falseBranch = step.falseBranch ?? [];
+  const BRANCH_W = 280;
+  const GAP = 64;
+  const totalW = BRANCH_W * 2 + GAP;
+  // Fallback constants (used until DOM is measured)
+  const fallbackXCenters = [BRANCH_W / 2, totalW - BRANCH_W / 2];
+
+  const colRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const [layout, setLayout] = useState<{ xCenters: number[]; heights: number[]; rowW: number }>({
+    xCenters: fallbackXCenters,
+    heights: [0, 0],
+    rowW: totalW,
+  });
+
+  useEffect(() => {
+    const measure = () => {
+      const row = rowRef.current;
+      if (!row) return;
+      const xCenters = colRefs.current.map(el =>
+        el ? (el.offsetLeft - row.offsetLeft) + el.offsetWidth / 2 : 0
+      );
+      const heights = colRefs.current.map(el => el?.offsetHeight ?? 0);
+      setLayout({ xCenters, heights, rowW: row.offsetWidth });
+    };
+
+    const observers: ResizeObserver[] = [];
+    const targets = [rowRef.current, ...colRefs.current].filter(Boolean) as HTMLDivElement[];
+    targets.forEach(el => {
+      const ro = new ResizeObserver(measure);
+      ro.observe(el);
+      observers.push(ro);
+    });
+    measure();
+
+    return () => observers.forEach(ro => ro.disconnect());
+  }, []);
+
+  const rowW = layout.rowW || totalW;
+  const xL = layout.xCenters[0] ?? fallbackXCenters[0];
+  const xR = layout.xCenters[1] ?? fallbackXCenters[1];
+  const maxH = layout.heights.length ? Math.max(...layout.heights) : 0;
+
+  return (
+    <div data-testid={`action-node-${step.id}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {/* Pill header */}
+      <div
+        style={S.pillNode(isSelected)}
+        onClick={() => onSelect(stepPath)}
+      >
+        <span>⟐</span>
+        <span>{step.name || 'True/False split'}</span>
+        <button style={S.moreBtn} type="button" onPointerDown={e => { e.stopPropagation(); onContextMenu(e as unknown as React.MouseEvent, step, stepPath); }} onClick={e => e.stopPropagation()}>⋮</button>
+      </div>
+      {/* Top split SVG: center drop → horizontal bar → per-column drops */}
+      <svg width={rowW} height={32} style={{ flexShrink: 0, overflow: 'visible' }}>
+        <line x1={rowW / 2} y1={0} x2={rowW / 2} y2={16} stroke="#4b5563" strokeWidth={1} />
+        <line x1={xL} y1={16} x2={xR} y2={16} stroke="#4b5563" strokeWidth={1} />
+        <line x1={xL} y1={16} x2={xL} y2={32} stroke="#4b5563" strokeWidth={1} />
+        <line x1={xR} y1={16} x2={xR} y2={32} stroke="#4b5563" strokeWidth={1} />
+      </svg>
+      {/* Branch columns */}
+      <div ref={rowRef} style={{ display: 'flex', alignItems: 'flex-start', gap: GAP }}>
+        {/* True */}
+        <div
+          ref={el => { colRefs.current[0] = el; }}
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: BRANCH_W }}
+        >
+          <span style={{ fontSize: 11, fontWeight: 600, color: '#34d399', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 20, padding: '2px 10px', marginBottom: 6 }}>true</span>
+          <FlowRenderer
+            steps={trueBranch}
+            pathPrefix={[...stepPath, 'true']}
+            selectedPath={selectedPath}
+            copiedStep={copiedStep}
+            onSelect={onSelect}
+            onInsert={onInsert}
+            onContextMenu={onContextMenu}
+            onUpdateStep={onUpdateStep}
+          />
+        </div>
+        {/* False */}
+        <div
+          ref={el => { colRefs.current[1] = el; }}
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: BRANCH_W }}
+        >
+          <span style={{ fontSize: 11, fontWeight: 600, color: '#f87171', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 20, padding: '2px 10px', marginBottom: 6 }}>false</span>
+          <FlowRenderer
+            steps={falseBranch}
+            pathPrefix={[...stepPath, 'false']}
+            selectedPath={selectedPath}
+            copiedStep={copiedStep}
+            onSelect={onSelect}
+            onInsert={onInsert}
+            onContextMenu={onContextMenu}
+            onUpdateStep={onUpdateStep}
+          />
+        </div>
+      </div>
+      {/* Rejoin SVG: vertical drops from each column center, single bottom merge bar, center drop */}
+      <svg width={rowW} height={36} style={{ flexShrink: 0, overflow: 'visible' }}>
+        <line x1={xL} y1={-(maxH - (layout.heights[0] ?? 0))} x2={xL} y2={24} stroke="#4b5563" strokeWidth={1} />
+        <line x1={xR} y1={-(maxH - (layout.heights[1] ?? 0))} x2={xR} y2={24} stroke="#4b5563" strokeWidth={1} />
+        <line x1={xL} y1={24} x2={xR} y2={24} stroke="#4b5563" strokeWidth={1} />
+        <line x1={rowW / 2} y1={24} x2={rowW / 2} y2={36} stroke="#4b5563" strokeWidth={1} />
+      </svg>
+      <Connector />
+    </div>
+  );
+}
+
+// ─── Multi-option branch node ─────────────────────────────────────────────────
+
+export function MultiOptionBranchNode({
+  step, stepPath, isSelected, selectedPath, copiedStep,
+  onSelect, onInsert, onContextMenu, onUpdateStep,
+}: {
+  step: ActionStep; stepPath: (string | number)[]; isSelected: boolean;
+  selectedPath: (string | number)[] | null; copiedStep: ActionStep | null;
+  onSelect: (p: (string | number)[]) => void;
+  onInsert: (idx: number, prefix: (string | number)[], x: number, y: number) => void;
+  onContextMenu: (e: React.MouseEvent, s: ActionStep, p: (string | number)[]) => void;
+  onUpdateStep: (p: (string | number)[], patch: Partial<ActionStep>) => void;
+}) {
+  const branches = step.branches ?? [
+    { label: 'First value', steps: [] },
+    { label: 'Second value', steps: [] },
+    { label: 'Third value', steps: [] },
+  ];
+  const defaultBranch = step.defaultBranch;
+  const allBranches = defaultBranch !== undefined ? [...branches, { label: 'default', steps: defaultBranch }] : branches;
+  const BRANCH_W = 260;
+  const GAP = 48;
+  const totalW = allBranches.length * BRANCH_W + (allBranches.length - 1) * GAP;
+  // Fallback constants (used until DOM is measured)
+  const fallbackXCenters = allBranches.map((_, bi) => bi * (BRANCH_W + GAP) + BRANCH_W / 2);
+
+  const colRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const [layout, setLayout] = useState<{ xCenters: number[]; heights: number[]; rowW: number }>({
+    xCenters: fallbackXCenters,
+    heights: new Array(allBranches.length).fill(0),
+    rowW: totalW,
+  });
+
+  useEffect(() => {
+    const measure = () => {
+      const row = rowRef.current;
+      if (!row) return;
+      const xCenters = colRefs.current.slice(0, allBranches.length).map(el =>
+        el ? (el.offsetLeft - row.offsetLeft) + el.offsetWidth / 2 : 0
+      );
+      const heights = colRefs.current.slice(0, allBranches.length).map(el => el?.offsetHeight ?? 0);
+      setLayout({ xCenters, heights, rowW: row.offsetWidth });
+    };
+
+    const observers: ResizeObserver[] = [];
+    const targets = [rowRef.current, ...colRefs.current.slice(0, allBranches.length)].filter(Boolean) as HTMLDivElement[];
+    targets.forEach(el => {
+      const ro = new ResizeObserver(measure);
+      ro.observe(el);
+      observers.push(ro);
+    });
+    measure();
+
+    return () => observers.forEach(ro => ro.disconnect());
+  }, [allBranches.length]);
+
+  const rowW = layout.rowW || totalW;
+  const xCenters = layout.xCenters.length === allBranches.length ? layout.xCenters : fallbackXCenters;
+  const maxH = layout.heights.length ? Math.max(...layout.heights) : 0;
+
+  return (
+    <div data-testid={`action-node-${step.id}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={S.pillNode(isSelected)} onClick={() => onSelect(stepPath)}>
+        <span>⟐</span>
+        <span>{step.name || 'Multi-option split'}</span>
+        <button style={S.moreBtn} type="button" onPointerDown={e => { e.stopPropagation(); onContextMenu(e as unknown as React.MouseEvent, step, stepPath); }} onClick={e => e.stopPropagation()}>⋮</button>
+      </div>
+      {/* Top split SVG: center drop → horizontal bar → per-column drops */}
+      <svg width={rowW} height={32} style={{ flexShrink: 0, overflow: 'visible' }}>
+        <line x1={rowW / 2} y1={0} x2={rowW / 2} y2={16} stroke="#4b5563" strokeWidth={1} />
+        <line x1={xCenters[0]} y1={16} x2={xCenters[xCenters.length - 1]} y2={16} stroke="#4b5563" strokeWidth={1} />
+        {xCenters.map((cx, bi) => (
+          <line key={bi} x1={cx} y1={16} x2={cx} y2={32} stroke="#4b5563" strokeWidth={1} />
+        ))}
+      </svg>
+      <div ref={rowRef} style={{ display: 'flex', alignItems: 'flex-start', gap: GAP }}>
+        {allBranches.map((branch, bi) => {
+          const branchKey = bi < branches.length ? `branch-${bi}` : 'default';
+          return (
+            <div
+              key={bi}
+              ref={el => { colRefs.current[bi] = el; }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: BRANCH_W }}
+            >
+              <span style={{
+                fontSize: 11,
+                fontWeight: 600,
+                borderRadius: 20,
+                padding: '2px 10px',
+                marginBottom: 6,
+                ...(bi >= branches.length
+                  ? { color: '#9ca3af', background: 'rgba(107,114,128,0.12)', border: '1px solid rgba(107,114,128,0.3)' }
+                  : { color: '#a5b4fc', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(165,180,252,0.3)' }),
+              }}>
+                {branch.label}
+              </span>
+              <FlowRenderer
+                steps={branch.steps}
+                pathPrefix={[...stepPath, branchKey]}
+                selectedPath={selectedPath}
+                copiedStep={copiedStep}
+                onSelect={onSelect}
+                onInsert={onInsert}
+                onContextMenu={onContextMenu}
+                onUpdateStep={onUpdateStep}
+              />
+            </div>
+          );
+        })}
+      </div>
+      {/* Rejoin SVG: vertical drops from each column center, single bottom merge bar, center drop */}
+      <svg width={rowW} height={36} style={{ flexShrink: 0, overflow: 'visible' }}>
+        {xCenters.map((cx, bi) => {
+          const drop = layout.heights[bi] != null ? maxH - layout.heights[bi] : 0;
+          return <line key={bi} x1={cx} y1={-drop} x2={cx} y2={24} stroke="#4b5563" strokeWidth={1} />;
+        })}
+        <line x1={xCenters[0]} y1={24} x2={xCenters[xCenters.length - 1]} y2={24} stroke="#4b5563" strokeWidth={1} />
+        <line x1={rowW / 2} y1={24} x2={rowW / 2} y2={36} stroke="#4b5563" strokeWidth={1} />
+      </svg>
+      <Connector />
+    </div>
+  );
+}
+
+// ─── Loop node (Iterator / While) ─────────────────────────────────────────────
+
+export function LoopNode({
+  step, stepPath, isSelected, selectedPath, copiedStep,
+  onSelect, onInsert, onContextMenu, onUpdateStep,
+}: {
+  step: ActionStep; stepPath: (string | number)[]; isSelected: boolean;
+  selectedPath: (string | number)[] | null; copiedStep: ActionStep | null;
+  onSelect: (p: (string | number)[]) => void;
+  onInsert: (idx: number, prefix: (string | number)[], x: number, y: number) => void;
+  onContextMenu: (e: React.MouseEvent, s: ActionStep, p: (string | number)[]) => void;
+  onUpdateStep: (p: (string | number)[], patch: Partial<ActionStep>) => void;
+}) {
+  const loopBody = step.loopBody ?? [];
+  const icon = step.type === 'whileLoop' ? '∞' : '↻';
+  const label = step.type === 'whileLoop' ? 'While loop' : 'Iterator (for loop)';
+
+  const pillRowRef = useRef<HTMLDivElement | null>(null);
+  const [pillRowH, setPillRowH] = useState(34);
+
+  useEffect(() => {
+    const el = pillRowRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setPillRowH(el.offsetHeight));
+    ro.observe(el);
+    setPillRowH(el.offsetHeight);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div data-testid={`action-node-${step.id}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {/* Loop pill with play button to the left */}
+      <div ref={pillRowRef} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {/* Arrowhead pointing right at the top-left junction — indicates loop-back direction */}
+        <div style={{
+          width: 0,
+          height: 0,
+          borderTop: '5px solid transparent',
+          borderBottom: '5px solid transparent',
+          borderLeft: '8px solid rgb(55, 65, 81)',
+          zIndex: 1,
+        }} />
+        <div style={S.pillNode(isSelected)} onClick={() => onSelect(stepPath)}>
+          <span>{icon}</span>
+          <span>{step.name || label}</span>
+          <button style={S.moreBtn} type="button" onPointerDown={e => { e.stopPropagation(); onContextMenu(e as unknown as React.MouseEvent, step, stepPath); }} onClick={e => e.stopPropagation()}>⋮</button>
+        </div>
+      </div>
+      {/* Loop body row: left back-arrow | right dashed container */}
+      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch' }}>
+        {/* Dashed loop body container */}
+        <div data-testid="loop-body-container" style={S.loopContainer}>
+          <div style={{
+           position: 'absolute',
+           inset: `-${Math.round(pillRowH / 2)}px 50% 14px 0px`,
+           borderLeft: '1px dashed rgb(55, 65, 81)',
+           borderTop: '1px dashed rgb(55, 65, 81)',
+           borderBottom: '1px dashed rgb(55, 65, 81)',
+           zIndex: -1,
+          }} />
+          <FlowRenderer
+            steps={loopBody}
+            pathPrefix={[...stepPath, 'loop']}
+            selectedPath={selectedPath}
+            copiedStep={copiedStep}
+            onSelect={onSelect}
+            onInsert={onInsert}
+            onContextMenu={onContextMenu}
+            onUpdateStep={onUpdateStep}
+          />
+          <div style={S.endLoopLabel}>End Loop</div>
+        </div>
+      </div>
+      <Connector />
+    </div>
+  );
+}
+

@@ -48,10 +48,11 @@ export type FormContextValue = {
   unregisterFieldValidation: (name: string) => void;
   /**
    * Programmatically submit the form: validates all registered _validation fields,
-   * shows errors if any, and calls onSubmitAction if all valid.
-   * Called by the renderer when a Button with type="submit" is clicked inside this container.
+   * shows errors if any, and calls onSubmitAction (or the provided callback) if all valid.
+   * Called by the renderer when a Button with type="submit" is clicked, or when any
+   * element with trigger:"submit" is clicked inside this container.
    */
-  submit: () => void;
+  submit: (onSuccess?: () => void) => void;
 };
 
 export const FormContext = createContext<FormContextValue | null>(null);

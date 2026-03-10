@@ -12,7 +12,14 @@
  */
 
 import React, { useRef, useEffect, useCallback, useMemo, useState, memo, useDeferredValue } from 'react';
+import {
+  VIEWPORT_H,
+  CanvasContextMenu, type CanvasCtxMenuProps,
+  ZoomBtn, EmptyCanvas,
+  PageEngine, InactivePageEngine,
+} from './_canvas-helpers';
 import { useBuilderStore, findNode, findParentNode, VIEWPORT_WIDTHS, REQUIRED_PARENT, ALLOWED_CHILDREN } from './_store';
+import { useCanvasPanZoom, MIN_ZOOM, MAX_ZOOM, PAGE_GAP } from './_canvas-hooks';
 import BuilderOverlay, { type ResizeHandle } from './_overlay';
 import { SDUIEngine } from '@/lib/sdui/sdui-engine';
 import appConfig from '@/config/app';
@@ -39,65 +46,8 @@ const CONTAINER_TYPES = new Set([
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const app = appConfig as any;
 
-const VIEWPORT_H   = 900;
 
-// ─── Canvas context menu ──────────────────────────────────────────────────────
-
-interface CanvasCtxMenuProps {
-  x: number; y: number;
-  nodeId: string | null;
-  onClose: () => void;
-}
-
-function CanvasContextMenu({ x, y, nodeId, onClose }: CanvasCtxMenuProps) {
-  const store = useBuilderStore();
-
-  useEffect(() => {
-    const close = (e: MouseEvent) => { if (!(e.target as Element).closest('[data-canvas-ctx-menu]')) onClose(); };
-    window.addEventListener('mousedown', close);
-    return () => window.removeEventListener('mousedown', close);
-  }, [onClose]);
-
-  const nodeItems = nodeId ? [
-    { label: 'Copy',         action: () => { store.select(nodeId); store.copyToClipboard(); } },
-    { label: 'Duplicate',    action: () => store.duplicateNodes([nodeId]) },
-    { label: 'Move Up',      action: () => store.moveNodeUp(nodeId) },
-    { label: 'Move Down',    action: () => store.moveNodeDown(nodeId) },
-    { label: 'Select Parent',action: () => store.selectParent(nodeId) },
-    null,
-    { label: 'Delete', action: () => store.deleteNodes([nodeId]), danger: true },
-  ] : [
-    { label: 'Select All',    action: () => store.selectAll() },
-    { label: 'Paste',         action: () => store.pasteFromClipboard() },
-    { label: 'Paste in Place',action: () => store.pasteInPlace() },
-  ];
-
-  return (
-    <div
-      data-canvas-ctx-menu="1"
-      data-testid={nodeId ? 'canvas-node-ctx-menu' : 'canvas-empty-ctx-menu'}
-      style={{ position: 'fixed', left: x, top: y, background: '#1f2937', border: '1px solid #374151', borderRadius: 6, zIndex: 99999, minWidth: 160, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.6)' }}
-    >
-      {nodeItems.map((item, i) =>
-        item === null ? (
-          <div key={i} style={{ height: 1, background: '#374151', margin: '2px 0' }} />
-        ) : (
-          <button
-            key={item.label}
-            style={{ display: 'block', width: '100%', padding: '7px 14px', background: 'none', border: 'none', color: (item as { danger?: boolean }).danger ? '#f87171' : '#d1d5db', fontSize: 12, fontFamily: 'system-ui', textAlign: 'left', cursor: 'pointer' }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#374151')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-            onClick={() => { item.action(); onClose(); }}
-          >
-            {item.label}
-          </button>
-        )
-      )}
-    </div>
-  );
-}
-const MIN_ZOOM     = 0.01;
-const MAX_ZOOM     = 4;
+// MIN_ZOOM / MAX_ZOOM / PAGE_GAP are re-exported from _canvas-hooks.ts
 const DRAG_THRESHOLD = 4;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -137,107 +87,16 @@ const TEXT_NODE_TYPES = new Set([
  * state changes — those updates only affect the canvas transforms and overlays,
  * not the page content.
  */
-const PageEngine = memo(function PageEngine({
-  pageConfig,
-  configName,
-  previewStates,
-  previewData,
-}: {
-  pageConfig: SDUIConfig;
-  configName: string;
-  previewStates?: string[];
-  previewData?: Record<string, unknown>;
-}) {
-  if (!pageConfig.ui) return <EmptyCanvas />;
-  return (
-    <SDUIEngine
-      key="builder-engine"
-      config={pageConfig}
-      configName={configName}
-      actionsConfig={app.actions}
-      routes={app.routes}
-      builderMode
-      previewStates={previewStates}
-      previewData={previewData}
-    />
-  );
-});
-
-/**
- * Memoized wrapper around SDUIEngine for inactive (background) pages.
- * Receives a stable `nodes` reference — only re-renders when that page's
- * node tree actually changes, not on every pan/zoom/hover update.
- */
-const InactivePageEngine = memo(function InactivePageEngine({
-  pageId,
-  configName,
-  nodes,
-  previewStates,
-  previewData,
-}: {
-  pageId: string;
-  configName: string;
-  nodes: SDUINode[];
-  previewStates?: string[];
-  previewData?: Record<string, unknown>;
-}) {
-  // Defer preview state changes for inactive pages so the active page always
-  // updates first. This keeps the UI responsive when many pages are visible.
-  const deferredPreviewStates = useDeferredValue(previewStates);
-  const deferredPreviewData = useDeferredValue(previewData);
-
-  const cfg = useMemo<SDUIConfig>(() => {
-    const screenState = (app.screens?.[configName] as { state?: Record<string, unknown> } | undefined)?.state ?? {};
-    return {
-      state: screenState,
-      ui: {
-        type: 'Box',
-        props: { className: 'flex flex-col w-full min-h-screen items-start relative' },
-        children: nodes,
-      } as SDUIConfig['ui'],
-    };
-  }, [configName, nodes]);
-
-  if (!nodes.length) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: VIEWPORT_H, gap: 8, color: '#9ca3af', fontFamily: 'system-ui', userSelect: 'none' }}>
-        <div style={{ fontSize: 24, opacity: 0.3 }}>+</div>
-        <div style={{ fontSize: 12 }}>Empty page</div>
-      </div>
-    );
-  }
-  return (
-    <SDUIEngine
-      key={`pg-${pageId}`}
-      config={cfg}
-      configName={configName}
-      actionsConfig={app.actions ?? {}}
-      routes={app.routes ?? []}
-      builderMode
-      previewStates={deferredPreviewStates}
-      previewData={deferredPreviewData}
-    />
-  );
-});
-
 export default function BuilderCanvas() {
   const canvasRef          = useRef<HTMLDivElement>(null);
   const pageFrameRef       = useRef<HTMLDivElement>(null);
   const captureOverlayRef  = useRef<HTMLDivElement>(null);
   // Track the last hovered id so we skip Zustand updates when it hasn't changed.
   const lastHoveredIdRef   = useRef<string | null>(null);
-  // World container and dot-grid pattern — updated imperatively during pan/zoom
-  // so React never re-renders just because the viewport moved.
-  const worldRef           = useRef<HTMLDivElement>(null);
-  const gridPatternRef     = useRef<SVGPatternElement>(null);
-  // Debounce timer for syncing pan/zoom state back to Zustand after gesture ends.
-  const syncTimerRef       = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Ref populated by BuilderOverlay — call to trigger a burst of measurement ticks.
   const overlayNotifyRef          = useRef<(() => void) | null>(null);
   // Ref populated by BuilderOverlay — synchronous BCR update, zero lag during pan.
   const overlayInstantUpdateRef   = useRef<(() => void) | null>(null);
-  // Tracks the page a canvas-node drag originated from, so cross-page drops work correctly.
-  const dragSourcePageIdRef       = useRef<string | null>(null);
 
   const {
     pageNodes,
@@ -279,6 +138,19 @@ export default function BuilderCanvas() {
     openLogicSection,
   } = useBuilderStore();
 
+  // ── Pan / Zoom hook ───────────────────────────────────────────────────────
+  const {
+    worldRef, gridPatternRef,
+    zoomRef, panXRef, panYRef,
+    dragRef,
+    applyWorldTransform, scheduleStoreSync, fitToCanvas,
+  } = useCanvasPanZoom(
+    { canvasRef, pageFrameRef, overlayInstantUpdateRef, overlayNotifyRef },
+    { zoom, panX, panY, setZoom, setPan, pendingFitToPage, clearPendingFit, pageNodes },
+  );
+
+  // Tracks the page a canvas-node drag originated from, so cross-page drops work correctly.
+  const dragSourcePageIdRef       = useRef<string | null>(null);
 
   // Use the route config name (page.name) so screen-scoped paths (screens.signIn.form, etc.) resolve correctly
   const currentPageConfigName = useMemo(() => {
@@ -354,74 +226,8 @@ export default function BuilderCanvas() {
 
   // ── World transform helpers ───────────────────────────────────────────────
   //
-  // Applies pan/zoom directly to the DOM world container and the dot grid
-  // pattern WITHOUT going through React state → zero re-renders during scroll.
-
-  /** Apply pan/zoom directly to the world container and dot-grid pattern. */
-  const applyWorldTransform = useCallback((px: number, py: number, z: number) => {
-    if (worldRef.current) {
-      worldRef.current.style.transform = `translate(${px}px, ${py}px) scale(${z})`;
-    }
-    if (gridPatternRef.current) {
-      const size = 20 * z;
-      gridPatternRef.current.setAttribute('x', String(px % size));
-      gridPatternRef.current.setAttribute('y', String(py % size));
-      gridPatternRef.current.setAttribute('width', String(size));
-      gridPatternRef.current.setAttribute('height', String(size));
-    }
-    // Synchronously reposition the selection ring — getBoundingClientRect() called
-    // here forces a layout reflow that already accounts for the new transform, so
-    // the ring updates in the same frame with zero React re-render lag.
-    overlayInstantUpdateRef.current?.();
-    // Also kick the async RAF for hover rings, padding fills, etc.
-    overlayNotifyRef.current?.();
-  }, []);
-
-  /**
-   * Debounced Zustand sync — called after a scroll/pan gesture settles.
-   * Triggers exactly one React re-render per gesture instead of one per frame.
-   */
-  const scheduleStoreSync = useCallback((px: number, py: number, z: number) => {
-    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-    syncTimerRef.current = setTimeout(() => {
-      setZoom(z);
-      setPan(px, py);
-      syncTimerRef.current = null;
-    }, 80);
-  }, [setZoom, setPan]);
-
   // ── Dynamic viewport width ────────────────────────────────────────────────
   const vpWidth = VIEWPORT_WIDTHS[viewport];
-
-  // When the viewport breakpoint changes, the page frame width changes and all DOM
-  // elements re-layout at new dimensions. We use a ResizeObserver on the page frame
-  // so the overlay re-measures AFTER the browser finishes layout (ResizeObserver
-  // callbacks fire post-layout, giving correct getBoundingClientRect() values).
-  // A rAF is used so the overlay reads positions in the same frame as the paint,
-  // avoiding a stale-layout read if ResizeObserver fires mid-commit.
-  useEffect(() => {
-    const frame = pageFrameRef.current;
-    if (!frame) return;
-    let rafId: number | undefined;
-    const ro = new ResizeObserver(() => {
-      if (rafId !== undefined) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        rafId = undefined;
-        overlayInstantUpdateRef.current?.();
-        overlayNotifyRef.current?.();
-      });
-    });
-    ro.observe(frame);
-    return () => {
-      ro.disconnect();
-      if (rafId !== undefined) cancelAnimationFrame(rafId);
-    };
-  // pageFrameRef is stable; only re-run if the ref object itself changes.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  /** Horizontal gap (content-px) between page frames on the canvas. */
-  const PAGE_GAP = 80;
 
   /** Index of the active page frame. */
   const activePageIdx = pages.findIndex(p => p.id === currentPageId);
@@ -604,18 +410,7 @@ export default function BuilderCanvas() {
   // Track the last page frame hovered during a panel drag (prevents redundant switchPage calls)
   const lastDragHoverPageRef = useRef<string | null>(null);
 
-  // Keep refs in sync for wheel/drag handlers (avoids stale closure).
-  // Also update the world container and dot grid when store values change
-  // externally (e.g. fitToPage, toolbar zoom buttons).
-  const zoomRef = useRef(zoom);
-  const panXRef = useRef(panX);
-  const panYRef = useRef(panY);
-  useEffect(() => {
-    zoomRef.current = zoom;
-    panXRef.current = panX;
-    panYRef.current = panY;
-    applyWorldTransform(panX, panY, zoom);
-  }, [zoom, panX, panY, applyWorldTransform]);
+  // zoomRef, panXRef, panYRef and their sync effect are now owned by useCanvasPanZoom.
 
   // ── Drop state ────────────────────────────────────────────────────────────
 
@@ -685,46 +480,9 @@ export default function BuilderCanvas() {
   const dropTargetRef = useRef<{ parentId: string | null; index: number } | null>(null);
 
   // ── Pan drag ──────────────────────────────────────────────────────────────
+  // dragRef is owned by useCanvasPanZoom; accessed via destructured return above.
 
-  const dragRef = useRef({ active: false, startX: 0, startY: 0, startPX: 0, startPY: 0, moved: false });
-
-  // ── Fit to canvas (run once on mount) ────────────────────────────────────
-
-  const fitToCanvas = useCallback(() => {
-    const c = canvasRef.current;
-    if (!c) return;
-    const w        = VIEWPORT_WIDTHS[useBuilderStore.getState().viewport];
-    const gap      = PAGE_GAP;
-    const pgs      = useBuilderStore.getState().pages;
-    const activeId = useBuilderStore.getState().currentPageId;
-    const activeIdx = Math.max(0, pgs.findIndex(p => p.id === activeId));
-    // Fit zoom so the active page fills ~85% of the canvas
-    const z        = Math.min(c.clientWidth / w, c.clientHeight / VIEWPORT_H) * 0.85;
-    // Center the active page frame horizontally
-    const pageOffsetX = activeIdx * (w + gap); // content-space left edge of active page
-    const px = (c.clientWidth - w * z) / 2 - pageOffsetX * z;
-    const py = (c.clientHeight - VIEWPORT_H * z) / 2;
-    setZoom(z); setPan(px, py);
-  }, [setZoom, setPan]);
-
-  useEffect(() => { fitToCanvas(); }, [fitToCanvas]);
-
-  // When page content changes (prop edits, position changes, etc.) the selected
-  // node may have moved. Re-measure immediately so the ring and handles don't
-  // linger at the old position (e.g. after switching a node from static → absolute).
-  useEffect(() => {
-    overlayInstantUpdateRef.current?.();
-    overlayNotifyRef.current?.();
-  }, [pageNodes]);
-
-  // Respond to explicit "navigate to page" requests from the pages panel.
-  // When pendingFitToPage is set, the active page has already been switched
-  // (currentPageId is up-to-date), so fitToCanvas will center on it correctly.
-  useEffect(() => {
-    if (!pendingFitToPage) return;
-    fitToCanvas();
-    clearPendingFit();
-  }, [pendingFitToPage, fitToCanvas, clearPendingFit]);
+  // pageNodes change / pendingFitToPage effects are now handled by useCanvasPanZoom.
 
   // ── Build SDUI config ────────────────────────────────────────────────────
 
@@ -742,47 +500,7 @@ export default function BuilderCanvas() {
     };
   }, [pageNodes, currentPageConfigName]);
 
-  // ── Wheel: Ctrl/Meta = zoom, else pan ─────────────────────────────────────
-  //
-  // Pan/zoom are applied DIRECTLY to the world container DOM element — no
-  // React state update, no re-render.  Zustand is synced once after the
-  // gesture settles via scheduleStoreSync (debounced ~80 ms).
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      let newPX = panXRef.current;
-      let newPY = panYRef.current;
-      let newZoom = zoomRef.current;
-
-      if (e.ctrlKey || e.metaKey) {
-        const delta = -e.deltaY * 0.002;
-        newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom * (1 + delta * 3)));
-        const rect  = canvas.getBoundingClientRect();
-        const cx    = e.clientX - rect.left;
-        const cy    = e.clientY - rect.top;
-        const ratio = newZoom / zoomRef.current;
-        newPX = cx - ratio * (cx - panXRef.current);
-        newPY = cy - ratio * (cy - panYRef.current);
-      } else {
-        newPX = panXRef.current - e.deltaX;
-        newPY = panYRef.current - e.deltaY;
-      }
-
-      panXRef.current = newPX;
-      panYRef.current = newPY;
-      zoomRef.current = newZoom;
-
-      // Instant visual update — zero React re-renders
-      applyWorldTransform(newPX, newPY, newZoom);
-      // Sync Zustand once the gesture settles
-      scheduleStoreSync(newPX, newPY, newZoom);
-    };
-    canvas.addEventListener('wheel', onWheel, { passive: false });
-    return () => canvas.removeEventListener('wheel', onWheel);
-  }, [applyWorldTransform, scheduleStoreSync]);
+  // Wheel handler (zoom + pan) is registered by useCanvasPanZoom.
 
   // ── Hit-test (must be defined before pointer handlers) ───────────────────
 
@@ -2414,20 +2132,3 @@ export default function BuilderCanvas() {
 }
 
 
-function ZoomBtn({ label, testId, onClick }: { label: string; testId?: string; onClick: () => void }) {
-  return (
-    <button data-testid={testId} style={{ fontSize: 14, color: '#d1d5db', background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', lineHeight: 1 }} onClick={onClick}>
-      {label}
-    </button>
-  );
-}
-
-function EmptyCanvas() {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 12, color: '#9ca3af', fontFamily: 'system-ui', userSelect: 'none' }}>
-      <div style={{ fontSize: 32, opacity: 0.4 }}>+</div>
-      <div style={{ fontSize: 13, fontWeight: 500 }}>Drop a component or section to get started</div>
-      <div style={{ fontSize: 11, opacity: 0.6 }}>Drag from the Components panel on the left</div>
-    </div>
-  );
-}
