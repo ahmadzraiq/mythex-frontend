@@ -21,6 +21,6 @@ export type AppConfig = {
     paramChangeAction?: string;
     keyBy?: string[];
   }>;
-  screens: Record<string, { meta?: object; state?: object; ui: object; initActions?: object[]; dataSources?: object[] }>;
+  screens: Record<string, { meta?: object; state?: object; ui: object; dataSources?: object[] }>;
   actions: Record<string, object>;
 };

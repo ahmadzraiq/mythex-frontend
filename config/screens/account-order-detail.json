@@ -4,7 +4,6 @@
   },
   "state": {},
   "layout": "account",
-  "initActions": [],
   "content": {
     "type": "Box",
     "props": {

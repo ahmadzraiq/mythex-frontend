@@ -123,18 +123,14 @@
                 },
                 {
                   "type": "Input",
+                        "id": "379f02f5-a9a2-42a5-a780-2fdca8210bc1",
                   "children": [
                     {
                       "type": "InputField",
                       "props": {
                         "placeholder": "Jane Doe",
                         "value": "{{local.data.form.formData.fullName}}"
-                      },
-                      "actions": [
-                        {
-                          "action": "98755959-7011-480b-b68f-68c25ae2c214"
-                        }
-                      ]
+                      }
                     }
                   ]
                 }
@@ -155,18 +151,14 @@
                 },
                 {
                   "type": "Input",
+                        "id": "31551507-b134-461a-846c-079bace012b0",
                   "children": [
                     {
                       "type": "InputField",
                       "props": {
                         "placeholder": "Acme Inc",
                         "value": "{{local.data.form.formData.company}}"
-                      },
-                      "actions": [
-                        {
-                          "action": "0b4d4140-b2aa-4eff-96ea-674a9cc70d2f"
-                        }
-                      ]
+                      }
                     }
                   ]
                 }
@@ -187,6 +179,7 @@
                 },
                 {
                   "type": "Input",
+                        "id": "5f7d8425-4db0-4694-93e7-307c4bf93c2d",
                   "children": [
                     {
                       "type": "InputField",
@@ -235,18 +228,14 @@
                 },
                 {
                   "type": "Input",
+                        "id": "8c526473-7985-459b-8ba3-b5ff1c99fed3",
                   "children": [
                     {
                       "type": "InputField",
                       "props": {
                         "placeholder": "Apt 4",
                         "value": "{{local.data.form.formData.streetLine2}}"
-                      },
-                      "actions": [
-                        {
-                          "action": "096d155e-f7ea-4cdf-ba52-850d59c367ab"
-                        }
-                      ]
+                      }
                     }
                   ]
                 }
@@ -273,18 +262,14 @@
                     },
                     {
                       "type": "Input",
+                        "id": "932e9e98-56ad-4c53-bb33-0d715bdd159e",
                       "children": [
                         {
                           "type": "InputField",
                           "props": {
                             "placeholder": "New York",
                             "value": "{{local.data.form.formData.city}}"
-                          },
-                          "actions": [
-                            {
-                              "action": "4c010e1b-149d-414f-aec5-1798a5308689"
-                            }
-                          ]
+                          }
                         }
                       ]
                     }
@@ -305,18 +290,14 @@
                     },
                     {
                       "type": "Input",
+                        "id": "15dcd140-b650-4076-9571-fab69accc117",
                       "children": [
                         {
                           "type": "InputField",
                           "props": {
                             "placeholder": "NY",
                             "value": "{{local.data.form.formData.province}}"
-                          },
-                          "actions": [
-                            {
-                              "action": "353f070d-4d45-4e7e-9af5-5d58a78d0edd"
-                            }
-                          ]
+                          }
                         }
                       ]
                     }
@@ -337,18 +318,14 @@
                     },
                     {
                       "type": "Input",
+                        "id": "6cf558a1-49b0-4ab7-a798-957d50884588",
                       "children": [
                         {
                           "type": "InputField",
                           "props": {
                             "placeholder": "10001",
                             "value": "{{local.data.form.formData.postalCode}}"
-                          },
-                          "actions": [
-                            {
-                              "action": "5206e496-6159-4911-b7aa-039945f4e8b6"
-                            }
-                          ]
+                          }
                         }
                       ]
                     }
@@ -485,6 +462,7 @@
                 },
                 {
                   "type": "Input",
+                        "id": "4513c0cd-5d4a-43c3-b804-ef8278843021",
                   "children": [
                     {
                       "type": "InputField",
@@ -492,12 +470,7 @@
                         "type": "tel",
                         "placeholder": "+1 234 567 8900",
                         "value": "{{local.data.form.formData.phoneNumber}}"
-                      },
-                      "actions": [
-                        {
-                          "action": "424fb238-f04f-4f8c-b9c7-c9b94c085798"
-                        }
-                      ]
+                      }
                     }
                   ]
                 }
@@ -555,7 +528,7 @@
               ],
               "actions": [
                 {
-                  "action": "8535e148-6aaa-4a53-856a-cb5f2ef2ae4e"
+                  "action": "1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6"
                 }
               ]
             }

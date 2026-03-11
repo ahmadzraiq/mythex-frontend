@@ -19,14 +19,7 @@
             "children": [
               {
                 "type": "Pressable",
-                "actions": {
-                  "click": {
-                    "action": "navigate",
-                    "payload": {
-                      "path": "/"
-                    }
-                  }
-                },
+                "actions": [{ "action": "navigateToHome" }],
                 "children": [
                   {
                     "type": "Text",
@@ -39,14 +32,7 @@
               },
               {
                 "type": "Pressable",
-                "actions": {
-                  "click": {
-                    "action": "navigate",
-                    "payload": {
-                      "path": "/cart"
-                    }
-                  }
-                },
+                "actions": [{ "action": "navigateToCart" }],
                 "children": [
                   {
                     "type": "Text",

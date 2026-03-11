@@ -23,17 +23,6 @@
     "errors": {}
   },
   "layout": "store",
-  "initActions": [
-    {
-      "action": "84de06d5-bacc-47c3-a917-44c1b5e8c901"
-    },
-    {
-      "action": "62c64842-4b76-40b3-87ae-d2f0275cb926"
-    },
-    {
-      "action": "5b47500d-b49f-45ba-918f-dd51cc221e7b"
-    }
-  ],
   "content": {
     "type": "Box",
     "props": {
@@ -274,7 +263,7 @@
                         "props": {
                           "className": "min-h-[20px]"
                         },
-                        "condition": "{{screens.checkout.errors.checkout.selectedShippingMethodId}}",
+                        "condition": "{{variables['b4c5d6e7-f8a9-0123-bcde-234567890123']}}",
                         "children": [
                           {
                             "type": "Text",
@@ -303,7 +292,7 @@
                         ],
                         "actions": [
                           {
-                            "action": "8d925e49-6061-4cf6-a5d8-6ff3e54a52ce"
+                            "action": "2b3c4d5e-6f7a-8b9c-0d1e-f2a3b4c5d6e7"
                           }
                         ]
                       }
@@ -641,7 +630,7 @@
                         "props": {
                           "className": "min-h-[20px]"
                         },
-                        "condition": "{{screens.checkout.errors.checkout.selectedPaymentMethodCode}}",
+                        "condition": "{{variables['c5d6e7f8-a9b0-1234-cdef-345678901234']}}",
                         "children": [
                           {
                             "type": "Text",
@@ -670,7 +659,7 @@
                         ],
                         "actions": [
                           {
-                            "action": "dad64254-6780-4e72-beed-3f3179710a50"
+                            "action": "3c4d5e6f-7a8b-9c0d-1e2f-a3b4c5d6e7f8"
                           }
                         ]
                       }

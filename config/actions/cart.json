@@ -13,24 +13,32 @@
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
     },
-    "onSuccess": {
-      "type": "runMultiple",
-      "actions": [
-        {
-          "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
-        },
-        {
-          "action": "showToast",
-          "payload": {
-            "message": "Added to cart"
-          }
-        }
-      ]
-    },
     "invalidateCache": [
       "cart"
     ],
     "endpoint": "http://localhost:3000/shop-api"
+  },
+  "aa100001-0000-0000-0000-000000000001": {
+    "name": "submitAddToCart",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-mutation",
+        "action": "c5c43e71-0991-4923-abad-7755eb230f6b"
+      },
+      {
+        "id": "step-fetch-cart",
+        "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
+      },
+      {
+        "id": "step-toast",
+        "action": "showToast",
+        "payload": {
+          "message": "Added to cart"
+        }
+      }
+    ]
   },
   "7a44a326-2c68-4d7f-9266-c83457ef057b": {
     "name": "addToCartFromCard",
@@ -44,13 +52,25 @@
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
     },
-    "onSuccess": {
-      "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
-    },
     "invalidateCache": [
       "cart"
     ],
     "endpoint": "http://localhost:3000/shop-api"
+  },
+  "aa100002-0000-0000-0000-000000000002": {
+    "name": "submitAddToCartFromCard",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-mutation",
+        "action": "7a44a326-2c68-4d7f-9266-c83457ef057b"
+      },
+      {
+        "id": "step-fetch-cart",
+        "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
+      }
+    ]
   },
   "16fcea3b-13a7-4a58-b890-d2fc91ee0408": {
     "name": "removeFromCart",
@@ -64,13 +84,25 @@
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
     },
-    "onSuccess": {
-      "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
-    },
     "invalidateCache": [
       "cart"
     ],
     "endpoint": "http://localhost:3000/shop-api"
+  },
+  "aa100003-0000-0000-0000-000000000003": {
+    "name": "submitRemoveFromCart",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-mutation",
+        "action": "16fcea3b-13a7-4a58-b890-d2fc91ee0408"
+      },
+      {
+        "id": "step-fetch-cart",
+        "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
+      }
+    ]
   },
   "d5907b1b-3ecf-40b0-b150-6eb47c8d5733": {
     "name": "adjustCartItemQuantity",
@@ -83,9 +115,6 @@
     "headers": {
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
-    },
-    "onSuccess": {
-      "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
     },
     "invalidateCache": [
       "cart"
@@ -106,13 +135,25 @@
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
     },
-    "onSuccess": {
-      "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
-    },
     "invalidateCache": [
       "cart"
     ],
     "endpoint": "http://localhost:3000/shop-api"
+  },
+  "aa100004-0000-0000-0000-000000000004": {
+    "name": "submitDecrementCartItem",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-mutation",
+        "action": "26266968-8914-4e63-acfe-338ca69a0095"
+      },
+      {
+        "id": "step-fetch-cart",
+        "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
+      }
+    ]
   },
   "7e13b3e3-daf0-430b-83b8-0447ad9a94c3": {
     "name": "incrementCartItem",
@@ -128,13 +169,25 @@
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
     },
-    "onSuccess": {
-      "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
-    },
     "invalidateCache": [
       "cart"
     ],
     "endpoint": "http://localhost:3000/shop-api"
+  },
+  "aa100005-0000-0000-0000-000000000005": {
+    "name": "submitIncrementCartItem",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-mutation",
+        "action": "7e13b3e3-daf0-430b-83b8-0447ad9a94c3"
+      },
+      {
+        "id": "step-fetch-cart",
+        "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
+      }
+    ]
   },
   "85346c1c-0613-4776-9cba-3a7c3172a764": {
     "name": "applyPromotionCode",
@@ -147,23 +200,29 @@
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
     },
-    "storeIn": "cart._promoResult",
-    "responsePath": "data.applyCouponCode",
-    "onSuccess": {
-      "type": "runMultiple",
-      "actions": [
-        {
-          "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
-        },
-        {
-          "type": "resetForm"
-        }
-      ]
-    },
     "invalidateCache": [
       "cart"
     ],
     "endpoint": "http://localhost:3000/shop-api"
+  },
+  "aa100006-0000-0000-0000-000000000006": {
+    "name": "submitApplyPromotionCode",
+    "type": "workflowSteps",
+    "trigger": "submit",
+    "steps": [
+      {
+        "id": "step-mutation",
+        "action": "85346c1c-0613-4776-9cba-3a7c3172a764"
+      },
+      {
+        "id": "step-fetch-cart",
+        "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
+      },
+      {
+        "id": "step-reset-form",
+        "type": "resetForm"
+      }
+    ]
   },
   "9d025c9c-1fef-460d-9238-faec04029ad6": {
     "name": "removePromotionCode",
@@ -176,15 +235,25 @@
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
     },
-    "storeIn": "cart._removePromoResult",
-    "responsePath": "data.removeCouponCode",
-    "onSuccess": {
-      "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
-    },
     "invalidateCache": [
       "cart"
     ],
     "endpoint": "http://localhost:3000/shop-api"
+  },
+  "aa100007-0000-0000-0000-000000000007": {
+    "name": "submitRemovePromotionCode",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-mutation",
+        "action": "9d025c9c-1fef-460d-9238-faec04029ad6"
+      },
+      {
+        "id": "step-fetch-cart",
+        "action": "00def351-2ff3-4614-a79b-1f34f45d60e2"
+      }
+    ]
   },
   "bb24976b-f167-48bb-a683-14cd4fe86d26": {
     "name": "openCartDrawer",
@@ -197,20 +266,5 @@
     "type": "set",
     "path": "layout.cartDrawerOpen",
     "value": false
-  },
-  "4c7b10f3-8d3d-4c58-a652-1b55984f1c74": {
-    "name": "setCouponCode",
-    "type": "workflowSteps",
-    "trigger": "change",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setFormField",
-        "config": {
-          "field": "couponCode",
-          "value": "$event"
-        }
-      }
-    ]
   }
 }

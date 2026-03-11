@@ -1,6 +1,6 @@
 # SDUI Code Architecture
 
-**For AI assistants:** Read this before modifying lib/sdui/, actions, or the engine. For JSON config changes, see [AI-BUILD-GUIDE.md](./AI-BUILD-GUIDE.md).
+Read this before modifying lib/sdui/, actions, or the engine. For JSON config changes, see [BUILD-GUIDE.md](./BUILD-GUIDE.md).
 
 ---
 
@@ -113,7 +113,7 @@ Screen-scoped paths (`form`, `errors`) resolve to `screens.{screenName}.{path}`.
 | config/store.json | initialData, engineConventions, computed, searchParamSync |
 | config/routes.json | Paths, auth, layout, paramChangeAction |
 | config/actions/*.json | Action definitions (fetch, graphql, validate, set, etc.) |
-| config/screens/*.json | Screen meta, state, layout, content, initActions |
+| config/screens/*.json | Screen meta, state, layout, content |
 | config/layouts/*.json | Layout structures with $ref, $slot |
 | config/fragments/**/*.json | Reusable UI fragments |
 | config/store-config.ts | Merges store.json with env vars (NEXT_PUBLIC_GRAPHQL_*, NEXT_PUBLIC_VENDURE_TOKEN) |

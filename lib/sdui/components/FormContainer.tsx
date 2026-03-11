@@ -11,7 +11,7 @@
  *   local.data.form.isValid              — all fields valid?
  *
  * State is synced to the global variable store so formula evaluation works.
- * Actions: setFormField, setFormState, resetForm, submitForm
+ * Actions: setFormState, resetForm, submitForm
  *
  * In builder mode, renders a <div> instead of <form> to prevent any form
  * submission from interfering with the builder UI (e.g. the formula editor).
@@ -74,10 +74,16 @@ interface FormContainerProps {
    * E.g. { email: '', password: '' } — values are the initial field values.
    */
   initialFormData?: Record<string, unknown>;
+  /**
+   * Injected by the SDUI renderer — the FormContainer's SDUI node ID.
+   * Used to write form state to variables['{_formNodeId}-form'] so formulas like
+   * variables['uuid-form']?.['formData']?.['fieldName'] resolve correctly.
+   */
+  _formNodeId?: string;
   [key: string]: unknown;
 }
 
-export function FormContainer({ children, className, style, onSubmitAction, initialFormData, ...rest }: FormContainerProps) {
+export function FormContainer({ children, className, style, onSubmitAction, initialFormData, _formNodeId, ...rest }: FormContainerProps) {
   const { builderMode } = useBuilderMode();
   const [formState, setFormState] = useState<FormState>(() => {
     if (initialFormData && Object.keys(initialFormData).length > 0) {
@@ -91,26 +97,42 @@ export function FormContainer({ children, className, style, onSubmitAction, init
   const stateRef = useRef(formState);
   stateRef.current = formState;
 
+  // Stable per-instance ID: prefer the injected SDUI node id, fall back to a generated UUID.
+  // This ref is set once on mount so the id is stable across re-renders even when the
+  // node has no explicit id in the JSON config (e.g. screens loaded from config/*.json).
+  const stableIdRef = useRef<string>(_formNodeId || `fc-${crypto.randomUUID()}`);
+  // If the renderer later provides an explicit id (after the first render), use it.
+  if (_formNodeId && stableIdRef.current.startsWith('fc-')) {
+    stableIdRef.current = _formNodeId;
+  }
+  const formStoreKey = `${stableIdRef.current}-form`;
+
   // Registry of field _validation rules — populated by child InputField nodes via context
   const fieldValidationsRef = useRef<Record<string, FieldValidationConfig>>({});
 
-  // Sync to global variable store so {{local.data.form.*}} resolves in formulas
+  // Sync to global variable store so {{local.data.form.*}} resolves in formulas.
+  // Also write to variables['{stableId}-form'] so formulas like
+  // variables['uuid-form']?.['formData']?.['fieldName'] resolve correctly.
   useEffect(() => {
-    getGlobalVariableStore().getState().setState((prev) => ({
-      ...prev,
-      local: { data: { form: formState } },
-    }));
-  }, [formState]);
+    getGlobalVariableStore().getState().setState((prev) => {
+      const next = { ...prev, local: { data: { form: formState } } };
+      next[formStoreKey] = formState;
+      return next;
+    });
+  }, [formState, formStoreKey]);
 
-  // Clean up local state on unmount so stale form data doesn't linger
+  // Clean up on unmount so stale form data doesn't linger
   useEffect(() => {
+    const key = formStoreKey;
     return () => {
       getGlobalVariableStore().getState().setState((prev) => {
         const next = { ...prev };
         delete next['local'];
+        delete next[key];
         return next;
       });
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const setField = useCallback((name: string, value: unknown, isValid = true) => {
@@ -141,7 +163,7 @@ export function FormContainer({ children, className, style, onSubmitAction, init
     setFormState(EMPTY_FORM_STATE);
   }, []);
 
-  /** Called by child nodes (via renderer) when they mount with a setFormField action */
+  /** Called by child nodes when they mount with a `name` prop inside a FormContainer */
   const registerField = useCallback((name: string, initialValue: unknown = '') => {
     setFormState((prev) => {
       if (name in prev.formData) return prev; // already registered — preserve current value
@@ -151,7 +173,7 @@ export function FormContainer({ children, className, style, onSubmitAction, init
     });
   }, []);
 
-  /** Called when a child node with setFormField unmounts */
+  /** Called when a child node with a `name` prop unmounts */
   const unregisterField = useCallback((name: string) => {
     setFormState((prev) => {
       if (!(name in prev.formData)) return prev;
@@ -175,7 +197,7 @@ export function FormContainer({ children, className, style, onSubmitAction, init
 
   /**
    * Core submit logic: reads current form data from the global variable store
-   * (where setFormField writes), validates all registered _validation fields,
+   * (written by the form-field-tracker on each change), validates all registered _validation fields,
    * writes errors immediately to the store so error nodes re-render, and if all
    * fields are valid calls onSubmitAction to run the bound workflow.
    *
@@ -186,7 +208,7 @@ export function FormContainer({ children, className, style, onSubmitAction, init
   const doSubmit = useCallback((onSuccess?: () => void) => {
     if (builderMode) return;
 
-    // setFormField writes directly to the global variable store (not to FormContainer React state).
+    // The form-field-tracker writes directly to the global variable store (not to FormContainer React state).
     // Read form data from there so validation runs against what the user actually typed.
     const vs = getGlobalVariableStore().getState().getFullState();
     const storedLocal = (vs['local'] ?? {}) as Record<string, unknown>;

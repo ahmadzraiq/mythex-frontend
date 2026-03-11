@@ -52,8 +52,7 @@ const DRAG_THRESHOLD = 4;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-let _nodeCounter = 0;
-function nextId(prefix: string) { return `${prefix}-${++_nodeCounter}`; }
+function nextId(_prefix: string) { return crypto.randomUUID(); }
 
 /** Recursively ensure every node in the tree has a stable `id`. */
 function ensureIds(node: SDUINode): SDUINode {
@@ -1365,12 +1364,6 @@ export default function BuilderCanvas() {
         }
         addNode(node, target.parentId, target.index);
       } catch (err) { console.warn('Primitive drop failed:', err); }
-    } else if (variantId) {
-      const { sectionLibrary } = await import('@/lib/ai/section-library');
-      try {
-        const node = ensureIds(sectionLibrary.instantiate(variantId, {}) as unknown as SDUINode);
-        addSection(variantId, node, target.index);
-      } catch (err) { console.warn('Section drop failed:', err); }
     }
 
     setDropLineY(null);

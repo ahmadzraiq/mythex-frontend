@@ -3,7 +3,6 @@
     "title": "Shopping Cart"
   },
   "layout": "store",
-  "initActions": [],
   "content": {
     "type": "Box",
     "props": {
@@ -181,7 +180,7 @@
                                     ],
                                     "actions": [
                                       {
-                                        "action": "26266968-8914-4e63-acfe-338ca69a0095"
+                                        "action": "aa100004-0000-0000-0000-000000000004"
                                       }
                                     ]
                                   },
@@ -202,7 +201,7 @@
                                     ],
                                     "actions": [
                                       {
-                                        "action": "16fcea3b-13a7-4a58-b890-d2fc91ee0408"
+                                        "action": "aa100003-0000-0000-0000-000000000003"
                                       }
                                     ]
                                   },
@@ -229,7 +228,7 @@
                                     ],
                                     "actions": [
                                       {
-                                        "action": "7e13b3e3-daf0-430b-83b8-0447ad9a94c3"
+                                        "action": "aa100005-0000-0000-0000-000000000005"
                                       }
                                     ]
                                   },
@@ -249,7 +248,7 @@
                                     ],
                                     "actions": [
                                       {
-                                        "action": "16fcea3b-13a7-4a58-b890-d2fc91ee0408"
+                                        "action": "aa100003-0000-0000-0000-000000000003"
                                       }
                                     ]
                                   }
@@ -579,7 +578,7 @@
                                 ],
                                 "actions": [
                                   {
-                                    "action": "9d025c9c-1fef-460d-9238-faec04029ad6"
+                                    "action": "aa100007-0000-0000-0000-000000000007"
                                   }
                                 ]
                               }
@@ -598,6 +597,7 @@
                     "children": [
                       {
                         "type": "Input",
+                        "id": "835d52a6-ac9f-4c42-90ef-90f286617010",
                         "props": {
                           "variant": "outline",
                           "size": "sm",
@@ -610,12 +610,7 @@
                               "placeholder": "Enter code",
                               "value": "{{local.data.form.formData.couponCode}}",
                               "className": "!text-[var(--theme-foreground)]"
-                            },
-                            "actions": [
-                              {
-                                "action": "4c7b10f3-8d3d-4c58-a652-1b55984f1c74"
-                              }
-                            ]
+                            }
                           }
                         ]
                       },
@@ -635,7 +630,7 @@
                         ],
                         "actions": [
                           {
-                            "action": "85346c1c-0613-4776-9cba-3a7c3172a764"
+                            "action": "aa100006-0000-0000-0000-000000000006"
                           }
                         ]
                       }

@@ -26,11 +26,6 @@ import StyledJsxRegistry from './registry';
 import { ThemeStyles } from '@/lib/ThemeStyles';
 import { ThemePresetOverlay } from '@/lib/ThemePresetOverlay';
 import { Toaster } from 'sonner';
-import { Suspense } from 'react';
-import { LayoutChatbot } from './components/LayoutChatbot';
-import { AiResponsePreviewOverlay } from './components/AiResponsePreviewOverlay';
-import { NavbarPreviewFromUrl } from './components/NavbarPreviewFromUrl';
-
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin'],
@@ -177,14 +172,9 @@ export default function RootLayout({
         <ThemePresetOverlay />
         <StyledJsxRegistry>
           <GluestackUIProvider mode="system">
-            <Suspense fallback={null}>
-              <NavbarPreviewFromUrl />
-            </Suspense>
             <div className="min-h-screen w-full overflow-auto">
               {children}
             </div>
-            <LayoutChatbot />
-            <AiResponsePreviewOverlay />
             <Toaster position="top-center" richColors />
           </GluestackUIProvider>
         </StyledJsxRegistry>

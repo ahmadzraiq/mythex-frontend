@@ -926,3 +926,218 @@ test.describe('FC — Drag Input out of FormContainer', () => {
     console.log('✅ Input (escalated from InputField drag) successfully moved to root');
   });
 });
+
+// ─── Group: Controlled component form-state tracking (FC-15, FC-16, FC-17) ────
+//
+// These tests verify that the generic applyFormValueTracking renderer function
+// correctly routes value changes from Checkbox, Switch, and TextareaInput into
+// the FormContainer's form state (local.data.form.formData.*).
+//
+// Pattern:
+//   1. Add FormContainer + controlled component (via __builderStore.addNode)
+//   2. Wait for the component to appear in the page frame
+//   3. Interact with the component
+//   4. Read local.data.form.formData via __globalVariableStore and assert
+
+type VariableStore = {
+  getState: () => {
+    getFullState: () => Record<string, unknown>;
+  };
+};
+
+/** Read a nested path from the global variable store's 'local' key. */
+async function getFormDataValue(page: Page, fieldName: string): Promise<unknown> {
+  return page.evaluate((field) => {
+    const store = (window as unknown as Record<string, VariableStore>).__globalVariableStore;
+    const state = store?.getState().getFullState() ?? {};
+    const local = state['local'] as Record<string, unknown> | undefined;
+    const data = local?.['data'] as Record<string, unknown> | undefined;
+    const form = data?.['form'] as Record<string, unknown> | undefined;
+    const formData = form?.['formData'] as Record<string, unknown> | undefined;
+    return formData?.[field];
+  }, fieldName);
+}
+
+test.describe('FC — Controlled Component Form-State Tracking', () => {
+  test.setTimeout(90_000);
+
+  /**
+   * FC-15: Checkbox inside FormContainer updates formData when checked.
+   *
+   * A Checkbox with name="agreed" starts unchecked (value: false / undefined).
+   * After the user clicks it, formCtx.setField("agreed", true) must be called
+   * by the generic applyFormValueTracking in the renderer, and the value must
+   * appear in local.data.form.formData.agreed via the global variable store.
+   */
+  test('FC-15: Checkbox inside FormContainer updates formData.agreed on click', async ({ page }) => {
+    await gotoBuilder(page);
+
+    // Wait for __globalVariableStore to be available
+    await page.waitForFunction(
+      () => !!(window as unknown as Record<string, unknown>).__globalVariableStore,
+      { timeout: 15_000, polling: 200 }
+    );
+
+    // Add FormContainer with a Checkbox (name="agreed")
+    await page.evaluate(() => {
+      const bs = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore;
+      const store = bs?.getState();
+      if (!store) return;
+      (store.addNode as (n: unknown, p: null) => void)(
+        {
+          type: 'FormContainer',
+          id: 'fc15-form',
+          props: { className: 'flex flex-col gap-4 p-4 w-full', style: {} },
+          children: [
+            {
+              type: 'Checkbox',
+              id: 'fc15-checkbox',
+              props: { name: 'agreed', value: false, style: {} },
+              children: [
+                { type: 'CheckboxIndicator', id: 'fc15-indicator', props: { style: {} } },
+                { type: 'CheckboxLabel', id: 'fc15-label', props: { style: {} }, text: 'I agree' },
+              ],
+            },
+          ],
+        },
+        null
+      );
+    });
+
+    // Wait for the checkbox to appear in the page frame
+    await page.waitForFunction(
+      () => !!document.querySelector('[data-builder-id="fc15-checkbox"]'),
+      { timeout: 10_000 }
+    );
+    await page.waitForTimeout(500);
+
+    // Click the Checkbox in the page frame
+    const checkboxEl = page.locator('[data-builder-id="fc15-checkbox"]');
+    await checkboxEl.click({ force: true });
+    await page.waitForTimeout(600);
+
+    // formData.agreed should now be true
+    const value = await getFormDataValue(page, 'agreed');
+    console.log('FC-15: formData.agreed after click:', value);
+    expect(value).toBe(true);
+    console.log('✅ FC-15: Checkbox correctly updates formData.agreed via generic form tracking');
+  });
+
+  /**
+   * FC-16: Switch inside FormContainer updates formData when toggled.
+   *
+   * A Switch with name="notify" starts off. After click, onValueChange/onToggle
+   * fires and applyFormValueTracking routes the boolean value to setField("notify", true).
+   */
+  test('FC-16: Switch inside FormContainer updates formData.notify on toggle', async ({ page }) => {
+    await gotoBuilder(page);
+
+    await page.waitForFunction(
+      () => !!(window as unknown as Record<string, unknown>).__globalVariableStore,
+      { timeout: 15_000, polling: 200 }
+    );
+
+    // Add FormContainer with a Switch (name="notify")
+    await page.evaluate(() => {
+      const bs = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore;
+      const store = bs?.getState();
+      if (!store) return;
+      (store.addNode as (n: unknown, p: null) => void)(
+        {
+          type: 'FormContainer',
+          id: 'fc16-form',
+          props: { className: 'flex flex-col gap-4 p-4 w-full', style: {} },
+          children: [
+            {
+              type: 'Switch',
+              id: 'fc16-switch',
+              props: { name: 'notify', value: false, style: {} },
+            },
+          ],
+        },
+        null
+      );
+    });
+
+    // Wait for the switch to appear in the page frame
+    await page.waitForFunction(
+      () => !!document.querySelector('[data-builder-id="fc16-switch"]'),
+      { timeout: 10_000 }
+    );
+    await page.waitForTimeout(500);
+
+    // Click the Switch to toggle it on
+    const switchEl = page.locator('[data-builder-id="fc16-switch"]');
+    await switchEl.click({ force: true });
+    await page.waitForTimeout(600);
+
+    // formData.notify should now be truthy (true or 'on')
+    const value = await getFormDataValue(page, 'notify');
+    console.log('FC-16: formData.notify after toggle:', value);
+    expect(value).toBeTruthy();
+    console.log('✅ FC-16: Switch correctly updates formData.notify via generic form tracking');
+  });
+
+  /**
+   * FC-17: TextareaInput inside FormContainer updates formData when text is typed.
+   *
+   * A TextareaInput with name="bio" inside a FormContainer. After typing text,
+   * onChangeText fires and applyFormValueTracking routes the value to setField("bio", text).
+   */
+  test('FC-17: TextareaInput inside FormContainer updates formData.bio on type', async ({ page }) => {
+    await gotoBuilder(page);
+
+    await page.waitForFunction(
+      () => !!(window as unknown as Record<string, unknown>).__globalVariableStore,
+      { timeout: 15_000, polling: 200 }
+    );
+
+    // Add FormContainer with a Textarea + TextareaInput (name="bio")
+    await page.evaluate(() => {
+      const bs = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore;
+      const store = bs?.getState();
+      if (!store) return;
+      (store.addNode as (n: unknown, p: null) => void)(
+        {
+          type: 'FormContainer',
+          id: 'fc17-form',
+          props: { className: 'flex flex-col gap-4 p-4 w-full', style: {} },
+          children: [
+            {
+              type: 'Textarea',
+              id: 'fc17-textarea',
+              props: { style: {} },
+              children: [
+                {
+                  type: 'TextareaInput',
+                  id: 'fc17-input',
+                  props: { name: 'bio', placeholder: 'Tell us about yourself', style: {} },
+                },
+              ],
+            },
+          ],
+        },
+        null
+      );
+    });
+
+    // Wait for the textarea to appear in the page frame
+    await page.waitForFunction(
+      () => !!document.querySelector('[data-builder-id="fc17-input"]'),
+      { timeout: 10_000 }
+    );
+    await page.waitForTimeout(500);
+
+    // Type text into the textarea
+    const textareaEl = page.locator('[data-builder-id="fc17-input"]');
+    await textareaEl.click({ force: true });
+    await textareaEl.fill('Hello world');
+    await page.waitForTimeout(600);
+
+    // formData.bio should now contain the typed text
+    const value = await getFormDataValue(page, 'bio');
+    console.log('FC-17: formData.bio after typing:', value);
+    expect(value).toBe('Hello world');
+    console.log('✅ FC-17: TextareaInput correctly updates formData.bio via generic form tracking');
+  });
+});

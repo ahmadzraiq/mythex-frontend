@@ -67,7 +67,6 @@
     },
     "graphqlCredentials": "include"
   },
-  "globalInitActions": [],
   "searchParamSync": [
     {
       "param": "q",

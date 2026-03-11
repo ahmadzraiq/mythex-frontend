@@ -10,7 +10,7 @@
       "comment": "{{local.data.form.formData.review}}",
       "date": "_date"
     },
-    "resetFormPath": "screens.product.form",
+    "resetFormPath": "local.data.form.formData",
     "resetFormValue": {
       "name": "",
       "rating": 5,

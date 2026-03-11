@@ -13,22 +13,29 @@
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
     },
-    "storeIn": "e7f8a9b0-c1d2-3456-efab-567890123456",
-    "responsePath": "data.updateCustomer",
-    "onSuccess": {
-      "action": "showToast",
-      "payload": {
-        "message": "Profile updated"
-      }
-    },
     "endpoint": "http://localhost:3000/shop-api"
+  },
+  "4d5e6f7a-8b9c-0d1e-2f3a-b4c5d6e7f8a9": {
+    "name": "submitUpdateProfile",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-mutation",
+        "action": "56642a48-2ec2-4923-9506-cb86ef6b0661"
+      },
+      {
+        "id": "step-toast",
+        "action": "showToast",
+        "payload": {
+          "message": "Profile updated"
+        }
+      }
+    ]
   },
   "340318a1-6824-4e30-9880-7c9dcfb9cf3a": {
     "name": "saveAddress",
-    "type": "validate",
-    "onSuccess": {
-      "action": "9e4ba82b-c14c-4b8d-9646-559d274fc9c5"
-    }
+    "type": "validate"
   },
   "9e4ba82b-c14c-4b8d-9646-559d274fc9c5": {
     "name": "saveAddressMutation",
@@ -52,23 +59,33 @@
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
     },
-    "storeIn": "customer._savedAddress",
-    "responsePath": "data.createCustomerAddress",
-    "onSuccess": {
-      "type": "runMultiple",
-      "actions": [
-        {
-          "action": "25936105-5bba-4563-8105-3e5218489469"
-        },
-        {
-          "action": "showToast",
-          "payload": {
-            "message": "Address saved"
-          }
-        }
-      ]
-    },
     "endpoint": "http://localhost:3000/shop-api"
+  },
+  "5e6f7a8b-9c0d-1e2f-3a4b-c5d6e7f8a9b0": {
+    "name": "submitSaveAddress",
+    "type": "workflowSteps",
+    "trigger": "submit",
+    "steps": [
+      {
+        "id": "step-validate",
+        "action": "340318a1-6824-4e30-9880-7c9dcfb9cf3a"
+      },
+      {
+        "id": "step-mutation",
+        "action": "9e4ba82b-c14c-4b8d-9646-559d274fc9c5"
+      },
+      {
+        "id": "step-fetch-customer",
+        "action": "25936105-5bba-4563-8105-3e5218489469"
+      },
+      {
+        "id": "step-toast",
+        "action": "showToast",
+        "payload": {
+          "message": "Address saved"
+        }
+      }
+    ]
   },
   "bd9e61f2-7964-4545-8167-4331ff17ec7a": {
     "name": "changePasswordMutation",
@@ -82,9 +99,7 @@
     "headers": {
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
-    },
-    "storeIn": "account._changePasswordResult",
-    "responsePath": "data.updateCustomerPassword"
+    }
   },
   "a6626679-62d9-4aa5-a842-7ebcc266e658": {
     "name": "requestEmailUpdateMutation",
@@ -98,9 +113,7 @@
     "headers": {
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
-    },
-    "storeIn": "account._emailUpdateResult",
-    "responsePath": "data.requestUpdateCustomerEmailAddress"
+    }
   },
   "9c6e39a6-5495-4c2a-8ea9-fc5bbe0ef052": {
     "name": "createAddressMutation",
@@ -124,9 +137,22 @@
     "headers": {
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
-    },
-    "storeIn": "account._createAddressResult",
-    "responsePath": "data.createCustomerAddress"
+    }
+  },
+  "8b9c0d1e-2f3a-4b5c-6d7e-f8a9b0c1d2e3": {
+    "name": "submitCreateAddress",
+    "type": "workflowSteps",
+    "trigger": "submit",
+    "steps": [
+      {
+        "id": "step-mutation",
+        "action": "9c6e39a6-5495-4c2a-8ea9-fc5bbe0ef052"
+      },
+      {
+        "id": "step-fetch-customer",
+        "action": "25936105-5bba-4563-8105-3e5218489469"
+      }
+    ]
   },
   "bffb584e-62c9-4da1-8a42-3763f943f51c": {
     "name": "deleteAddress",
@@ -139,9 +165,22 @@
     "headers": {
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
-    },
-    "storeIn": "account._deleteAddressResult",
-    "responsePath": "data.deleteCustomerAddress"
+    }
+  },
+  "9c0d1e2f-3a4b-5c6d-7e8f-a9b0c1d2e3f4": {
+    "name": "submitDeleteAddress",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-mutation",
+        "action": "bffb584e-62c9-4da1-8a42-3763f943f51c"
+      },
+      {
+        "id": "step-fetch-customer",
+        "action": "25936105-5bba-4563-8105-3e5218489469"
+      }
+    ]
   },
   "012f5ea4-dd68-4ff7-8db7-628a9a70592f": {
     "name": "showAddAddressForm",
@@ -169,171 +208,6 @@
         "config": {
           "variableName": "showAddForm",
           "value": false
-        }
-      }
-    ]
-  },
-  "31e1e0c5-6fc4-47ae-bc1b-c441c0a4446e": {
-    "name": "setAddressFullName",
-    "type": "workflowSteps",
-    "trigger": "change",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setFormField",
-        "config": {
-          "field": "fullName",
-          "value": "$event"
-        }
-      }
-    ]
-  },
-  "3d2308d8-2b36-48e0-a2ad-8d209bea7588": {
-    "name": "setAddressStreetLine1",
-    "type": "workflowSteps",
-    "trigger": "change",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setFormField",
-        "config": {
-          "field": "streetLine1",
-          "value": "$event"
-        }
-      }
-    ]
-  },
-  "7f526c07-684e-4efb-a57c-4ae3caf04ba3": {
-    "name": "setAddressCity",
-    "type": "workflowSteps",
-    "trigger": "change",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setFormField",
-        "config": {
-          "field": "city",
-          "value": "$event"
-        }
-      }
-    ]
-  },
-  "b5dcaf0b-b72f-41bf-9c05-ca4131f19bd3": {
-    "name": "setAddressPostalCode",
-    "type": "workflowSteps",
-    "trigger": "change",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setFormField",
-        "config": {
-          "field": "postalCode",
-          "value": "$event"
-        }
-      }
-    ]
-  },
-  "bb8ab177-3ee7-4431-a6bc-d1ed69482dbc": {
-    "name": "setAddressCountryCode",
-    "type": "workflowSteps",
-    "trigger": "change",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setFormField",
-        "config": {
-          "field": "countryCode",
-          "value": "$event"
-        }
-      }
-    ]
-  },
-  "48ef6f2b-91f2-4383-aa36-5782cbdadc9b": {
-    "name": "setProfileFirstName",
-    "type": "workflowSteps",
-    "trigger": "change",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setFormField",
-        "config": {
-          "field": "firstName",
-          "value": "$event"
-        }
-      }
-    ]
-  },
-  "74f20b56-fc2a-46bf-8a64-1f511faa8499": {
-    "name": "setProfileLastName",
-    "type": "workflowSteps",
-    "trigger": "change",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setFormField",
-        "config": {
-          "field": "lastName",
-          "value": "$event"
-        }
-      }
-    ]
-  },
-  "8c8a590b-8b08-4c32-8486-c4002129191b": {
-    "name": "setProfilePhone",
-    "type": "workflowSteps",
-    "trigger": "change",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setFormField",
-        "config": {
-          "field": "phoneNumber",
-          "value": "$event"
-        }
-      }
-    ]
-  },
-  "f8b72b29-4013-491f-9aa8-0709aaff754b": {
-    "name": "setProfileEmail",
-    "type": "workflowSteps",
-    "trigger": "change",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setFormField",
-        "config": {
-          "field": "emailAddress",
-          "value": "$event"
-        }
-      }
-    ]
-  },
-  "12b0040c-4d65-40b5-9586-19bffc3a1a4e": {
-    "name": "setProfileCurrentPassword",
-    "type": "workflowSteps",
-    "trigger": "change",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setFormField",
-        "config": {
-          "field": "currentPassword",
-          "value": "$event"
-        }
-      }
-    ]
-  },
-  "095f52b4-3c26-4ff7-be9e-ed045949468e": {
-    "name": "setProfileNewPassword",
-    "type": "workflowSteps",
-    "trigger": "change",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setFormField",
-        "config": {
-          "field": "newPassword",
-          "value": "$event"
         }
       }
     ]

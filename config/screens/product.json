@@ -4,18 +4,6 @@
   },
   "state": {},
   "layout": "store",
-  "initActions": [
-    {
-      "type": "setVar",
-      "path": "d5e6f7a8-b9c0-1234-defa-345678901234",
-      "value": 0
-    },
-    {
-      "type": "setVar",
-      "path": "c4d5e6f7-a8b9-0123-cdef-234567890123",
-      "value": {}
-    }
-  ],
   "content": [
     {
       "type": "Box",

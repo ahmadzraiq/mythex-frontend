@@ -1,31 +1,12 @@
 ---
-description: Layout part override pattern - navbar (structure-from-scratch), hero, footer, etc.
+description: Layout part override pattern - navbar, hero, footer overrides via layoutParts
 alwaysApply: false
-globs: ["config/schema/layout-schema.ts", "config/section-variants.ts", "config/component-names.ts", "config/ui-node-schema.ts", "config/fragments/**/*.json", "lib/ai/layout-generator.ts", "lib/ai/navbar-structure-spec.ts", "lib/ai/generate-navbar-structure.ts", "lib/ai/sdui-config-context.ts", "lib/ai/schema-to-screen.ts"]
+globs: ["config/fragments/**/*.json", "config/schema/layout-schema.ts"]
 ---
 
 # Layout Part Overrides
 
-When working on layout parts (navbar, hero, footer, product-grid, etc.) that support user/AI customization.
-
-## Navbar: Structure from Scratch
-
-The navbar uses **full AI control** — the AI outputs a complete SDUI node tree, not overrides. No base fragment.
-
-- **config/schema/layout-schema.ts**: `navbarStructureSchema`, `navbarGeneratorOutputSchema` — root must have `id: "navbar-root"`
-- **lib/ai/navbar-structure-spec.ts**: Builds prompt for structure generation; example as reference only
-- **lib/ai/generate-navbar-structure.ts**: Calls AI, returns `{ structure }`
-- **lib/sdui/config-resolver.ts**: When `layoutParts.navbar.structure` exists, use it; else fallback to minimal fragment
-
-## Section Content: AI-Generated Inline (Hero, Feature-Grid)
-
-Hero and feature-grid sections are **not** $ref fragments with static variants. The AI generates their content inline as part of the layout:
-
-- `LayoutSection.content` field (`config/schema/layout-schema.ts`): `{ heading, subheading, ctaText, ctaUrl, features[] }`
-- `lib/ai/schema-to-screen.ts`: `sectionToNode()` — when `section.content` is present, builds an inline SDUI node tree; otherwise falls back to `{ $ref }` for static sections (product-grid, footer)
-- `lib/ai/layout-generator.ts`: `BASE_SYSTEM_PROMPT` instructs the AI to always include `content` in hero and feature-grid entries; `buildFromFullContext` injects default content when bypassing AI
-- **No `hero-split.json`** or other variant fragment files — variants don't exist; each generation is unique
-- **config/section-variants.ts**: `SECTION_VARIANTS` is intentionally empty (`{} as const`); `LAYOUT_PART_REF_MAP` maps navbar/footer `$ref` to their layout part keys
+When working on layout parts (navbar, hero, footer, product-grid, etc.) that support customization.
 
 ## Override Types (Reusable for Any Part)
 
@@ -50,14 +31,6 @@ Hero and feature-grid sections are **not** $ref fragments with static variants. 
 - **Key IDs to add**: Images (e.g. `hero-bg-image`), inputs (e.g. `search-field`), badges, buttons—any node users commonly customize.
 - **Tailwind merge**: Use `mergeTailwindClasses` from `lib/sdui/tailwind-merge.ts` (uses `tailwind-merge` package) for classNameOverrides—no prefix whitelist.
 
-## Adding a New Layout Part (e.g. footer)
-
-1. **Schema** (`config/schema/layout-schema.ts`): Add a new field to `layoutSchema.layoutParts` (e.g. footer structure).
-2. **Section variants** (`config/section-variants.ts`): Add `$ref` → part key mapping to `LAYOUT_PART_REF_MAP` if the section uses a static fragment as a base.
-3. **Inline content** (for AI-generated sections): Add a new `content` sub-field to `layoutSectionSchema` and handle it in `schema-to-screen.ts` `sectionToNode()`.
-4. **Fragment IDs**: Add `id` to nodes in fragments that should be overridable.
-5. **Layout generator** (`lib/ai/layout-generator.ts`): Update `BASE_SYSTEM_PROMPT` to instruct the AI to generate inline content for the new section type.
-
 ## Navbar Structure Rules
 
 - Root must have `id: "navbar-root"` and `className` including `fixed top-0 left-0 right-0 z-50`
@@ -65,58 +38,6 @@ Hero and feature-grid sections are **not** $ref fragments with static variants. 
 - Only allowed component types from `COMPONENT_NAMES`
 - No `$ref` in output — everything inline
 
-## Extending an Existing Part
+## CountdownTimer
 
-When adding new override types or node ids to hero/footer (override pattern):
-
-1. Update schema in `layout-schema.ts`
-2. Update applicator (re-add when override pattern is restored)
-3. Add ids to fragment JSON where needed
-4. Update layout generator prompt if applicable
-
-## Layout Generator (lib/ai/layout-generator.ts)
-
-Used by the **Guided** chatbot flow (Design Builder). Generates a section schema + theme via AI, then converts to a screen config:
-
-- `buildFromFullContext` (async): builds layout schema from selected palette/fonts/sections + calls `generateNavbarStructure()` → sets `layoutParts.navbar.structure`
-- No standalone `/api/generate-navbar` endpoint. Navbar is always generated as part of the full screen.
-- `BASE_SYSTEM_PROMPT`: hero and feature-grid sections must include inline `content` (heading, subheading, ctaText, ctaUrl, features).
-- Output goes through `schemaToScreen()` before being returned.
-
-## Page Generator (lib/ai/page-generator.ts)
-
-Used by the **Custom Spec** chatbot tab. Takes a free-form page description and generates a complete SDUI screen config directly (no schema intermediary):
-
-- **`generatePage(prompt, options)`** — calls `gpt-4o` with section examples + design principles + SDUI reference
-- After AI output: calls `generateNavbarStructure()` with palette + mood → sets `layoutParts.navbar.structure` on result
-- **Output shape**: `{ meta, state, layout: "store", content, initActions, themeHint, layoutParts? }`
-- **`themeHint.palette`**: must have 6 keys per mode: `primary, secondary, accent, background, textPrimary, textSecondary` — maps directly to all `--theme-*` CSS vars via `ThemePresetOverlay`
-- **`content`**: root Box with all sections as direct children. No footer, no navbar (layout shell provides them).
-- **Section library**: `lib/ai/section-library/` — pre-built, validated SDUI JSON variants for 35+ section types. The StructureAgent now operates in two modes: (1) classic — generates full JSON from scratch; (2) library mode — picks variant IDs + fills [[SLOT]] markers, then `SectionLibrary.instantiate()` assembles the final JSON. Library mode is faster, less error-prone, and produces more combinatorial variety. See `ai-section-library.mdc` for the full pattern.
-- **CountdownTimer**: always use `target="{{flashSale.endsAt}}"` prop (renderer interpolates from screen state). Never `targetPath`.
-- **Footer**: never in content — `store` layout already has one. Adding it duplicates the footer.
-- **API**: `POST /api/generate-page` → `{ prompt, palette?, fontPairing?, pageName? }` → `{ screen, style, theme }`
-- **Eval**: `npm run eval:page` → `lib/ai/eval/page.json` (single case: `fashion-homepage-full`)
-- **Logging**: log is called AFTER navbar generation so the log entry contains the full `layoutParts`
-
-## Applying Page Generator Output (AiResponsePreviewOverlay.tsx)
-
-When `entry.generator === 'page'`, the overlay:
-1. Takes raw `output` (PageGeneratorOutput with optional `layoutParts`)
-2. Calls `resolveScreenConfig(output, registry)` — expands `$ref`, injects content into `$slot`, applies `layoutParts.navbar.structure` override
-3. Calls `setGenerated(screen, style, theme)` — `ThemePresetOverlay` applies palette → CSS vars, fonts → `--font-*` vars
-
-## SDUI Config Context (lib/ai/sdui-config-context.ts)
-
-Shared reference for all AI generators. Import `buildSduiReference()` in navbar-structure-spec; `buildActionContextCompact()` in layout-generator.
-
-**Sources (stay in sync):** config/component-names.ts, lib/sdui/computed-runner (JSON_LOGIC_CUSTOM_OPS), lib/sdui/engine-types (VALIDATION_RULE_KEYS), config/ui-node-schema.ts, config/store.json, config/actions/*.json, config/fragments/index.ts, config/routes.json. When adding a component to the registry, add to config/component-names.ts. Run `npm run check:component-sync` to verify.
-
-**Theme options** (fonts, colors, etc.): The prompt must document all theme fields the schema supports. Use `SUPPORTED_FONTS` (from FONT_IDS + ThemePresetOverlay extras) so the font list stays in sync. Theme colors: flat format (heroBg, headerBg, headerText, headerBorder, button, buttonHover, buttonText, footerBg, footerText, footerTextMuted) or palette format (light/dark with primary, secondary, accent, background, textPrimary, textSecondary). ThemePresetOverlay applies these via COLOR_TO_THEME_VAR and FONT_VAR_MAP.
-
-## AI Response Logging & Preview
-
-- `lib/ai/response-logger.ts`: `logAiResponse(generator, input, output, { source, evalResult, page? })` — always pass `page` (e.g. `'home'`, `'collection'`) so entries are grouped correctly in the overlay
-- `app/components/AiResponsePreviewOverlay.tsx`: Tabs are **page-based** (Home | Collection | Product | Cart | All), not generator-based. Fetches from `/api/ai-responses?page=home`. Apply logic dispatches based on `entry.generator` field.
-- `app/api/ai-responses/route.ts`: Supports both `?page=` and `?generator=` filters. New entries must have `page` set to appear in the correct tab.
-- `app/api/generate-screen/route.ts`: Accepts `page` in request body; logs with that page.
+Always use `target="{{flashSale.endsAt}}"` prop (renderer interpolates from screen state). Never `targetPath`.

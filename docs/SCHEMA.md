@@ -34,8 +34,7 @@ content: { ... } or [ ... ]  → injected into layout's $slot
   "meta": { "title": "Dashboard", "description": "..." },
   "state": { "modal": { "create": false } },
   "layout": "authenticated",
-  "content": { "type": "Box", "children": [...] },
-  "initActions": [{ "action": "fetchProducts" }]
+  "content": { "type": "Box", "children": [...] }
 }
 ```
 
@@ -49,8 +48,7 @@ ui: { ... }  → direct root
 {
   "meta": { "title": "Login" },
   "state": { "form": { "email": "", "password": "" } },
-  "ui": { "type": "Box", "children": [...] },
-  "initActions": []
+  "ui": { "type": "Box", "children": [...] }
 }
 ```
 
@@ -63,7 +61,6 @@ ui: { ... }  → direct root
 | layout | string | no | "authenticated" or omit |
 | content | node or array | if layout | Content for $slot |
 | ui | node | if no layout | Root UI tree |
-| initActions | array | no | Actions to run on mount |
 
 ---
 
@@ -86,7 +83,7 @@ Every UI node has:
 
 ### Anchor ID Convention (Section Library)
 
-When building or editing section library variants (`lib/ai/section-library/variants/`), **key nodes must carry a stable `id` attribute** so the 4-tier edit system can locate them without AI.
+Key nodes in reusable sections should carry a stable `id` attribute so the builder can locate and target them programmatically.
 
 **Standard IDs by section:**
 
@@ -101,7 +98,7 @@ When building or editing section library variants (`lib/ai/section-library/varia
 | Flash Sale | `flash-sale-section`, `flash-sale-title`, `flash-sale-timer` |
 | Brand Story | `brand-story-section`, `brand-story-heading`, `brand-story-body` |
 
-**The `id` field on a node is NOT rendered as HTML `id`** — it's used by the node locator (`lib/ai/editing/node-locator.ts`) to traverse the JSON tree programmatically.
+**The `id` field on a node is NOT rendered as HTML `id`** — it's used by the builder to traverse the JSON tree programmatically.
 
 **Rules:**
 - `id` values must be unique within a page
@@ -225,18 +222,12 @@ Actions live in `config/actions/*.json`. Reference by name: `{ "action": "login"
   "type": "fetch",
   "url": "/api/products",
   "method": "GET",
-  "storeIn": "products.list",
   "storeFullResponseIn": "products._raw",
-  "responsePath": "data",
-  "errorMessagePath": "message",
-  "body": { "email": { "var": "form.email" } },
-  "onSuccess": { "action": "navigate", "payload": { "path": "/dashboard" } }
+  "body": { "email": { "var": "form.email" } }
 }
 ```
 
-- `storeIn` – where to store extracted response (default from `store.json` engineConventions.defaultStoreIn)
-- `storeFullResponseIn` – optional; store raw API response before responsePath extraction
-- `errorMessagePath` – dot path into error JSON for message (default: "message")
+- `storeFullResponseIn` – optional; store the full raw API response
 
 ### graphql
 
@@ -253,12 +244,7 @@ Sends a GraphQL query or mutation. Always uses HTTP POST. Handles both HTTP erro
   "endpoint": "{{config.graphqlEndpoint}}",
   "headers": {
     "X-Shopify-Storefront-Access-Token": "{{config.storefrontToken}}"
-  },
-  "responsePath": "data.products.edges",
-  "storeIn": "products.list",
-  "storeFullResponseIn": "products._raw",
-  "errorMessagePath": "errors[0].message",
-  "onSuccess": { "action": "..." }
+  }
 }
 ```
 
@@ -268,12 +254,6 @@ Sends a GraphQL query or mutation. Always uses HTTP POST. Handles both HTTP erro
 | `variables` | Variables object; values support `{ "var": "path" }` and `{ "expr": <JSON Logic> }` |
 | `endpoint` | GraphQL URL; supports `{{var}}` interpolation; falls back to `engineConventions.graphqlEndpoint` |
 | `headers` | Per-action headers merged on top of `engineConventions.graphqlHeaders`; values support `{ "var": "path" }` |
-| `responsePath` | Dot path into response (e.g. `data.products.edges`); applied after GraphQL error check |
-| `storeIn` | State path to store the extracted data |
-| `skipStoreWhenNull` | When true, do not overwrite storeIn when response data is null |
-| `storeFullResponseIn` | Optional; stores the full raw response before `responsePath` extraction |
-| `errorMessagePath` | Dot path for error message in HTTP error body (default from `engineConventions.defaultErrorMessagePath`) |
-| `onSuccess` | Action(s) to run on success |
 
 **Global config in `store.json`:**
 
@@ -318,7 +298,7 @@ Sends a GraphQL query or mutation. Always uses HTTP POST. Handles both HTTP erro
 
 ### validate
 
-Validates form fields before running `onSuccess`. Stores errors in nested structure at `storeErrorsIn` (default `errors`). Use per-field error display—see `.cursor/rules/sdui-layout-pitfalls.mdc` → "Form Validation with Per-Field Errors".
+Validates form fields. Stores errors in nested structure at `storeErrorsIn` (default `errors`).
 
 | Rule | Description |
 |------|-------------|
@@ -338,8 +318,7 @@ Validates form fields before running `onSuccess`. Stores errors in nested struct
     "form.password": { "required": true, "minLength": 8, "message": "Password must be at least 8 characters" },
     "form.confirmPassword": { "required": true, "equalsField": "form.password", "message": "Passwords do not match" }
   },
-  "storeErrorsIn": "errors",
-  "onSuccess": { "action": "registerMutation" }
+  "storeErrorsIn": "errors"
 }
 ```
 
@@ -418,8 +397,7 @@ Append to a nested array (e.g. `product.reviews`). Supports `{ "var": "path" }` 
 | initialData | Initial Zustand state (layout, cart, route, etc.) |
 | paths | Optional key→path mapping (e.g. `authUser` → `auth.user`, `routePath` → `route.path`) |
 | computed | Optional array of `{ output, expr }` for shared derived state (JSON Logic) |
-| engineConventions | **Required** for apps using forms/fetch/workflow/graphql. No fallbacks in code—all values come from JSON: `loadingSuffix`, `errorSuffix`, `defaultStoreErrorsIn`, `defaultStoreIn`, `defaultErrorMessagePath`, `workflowPath`, `screenScopedAliases`, `defaultFormPath`, `graphqlEndpoint` (default GraphQL URL), `graphqlHeaders` (default headers applied to all graphql actions) |
-| globalInitActions | Actions run on every page load (e.g. `fetchNavCollections`, `fetchCart`). Use for layout-level data (navbar, cart badge) so it's available on all pages without duplicating in each screen's initActions |
+| engineConventions | **Required** for apps using forms/fetch/workflow/graphql. No fallbacks in code—all values come from JSON: `loadingSuffix`, `errorSuffix`, `defaultStoreErrorsIn`, `workflowPath`, `screenScopedAliases`, `defaultFormPath`, `graphqlEndpoint` (default GraphQL URL), `graphqlHeaders` (default headers applied to all graphql actions) |
 
 **Derived values – prefer inline expr:** For one-off computed values (cart count, subtotal, totals), use inline `text: { expr, suffix?, prefix?, template? }` in UI nodes. See §3 Interpolation & inline expr.
 

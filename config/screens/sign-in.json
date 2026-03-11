@@ -76,6 +76,7 @@
                       },
                       {
                         "type": "Input",
+                        "id": "4af26db4-61b8-4336-892d-a193e367247d",
                         "props": {
                           "variant": "outline",
                           "size": "sm",
@@ -105,12 +106,7 @@
                               "autoComplete": "email",
                               "value": "{{local.data.form.formData.username}}",
                               "className": "!text-[var(--theme-foreground)]"
-                            },
-                            "actions": [
-                              {
-                                "action": "2ae2eb2e-bdc9-4ee0-896f-a49739c0e941"
-                              }
-                            ]
+                            }
                           }
                         ]
                       },
@@ -172,6 +168,7 @@
                       },
                       {
                         "type": "Input",
+                        "id": "98eec7ff-2cc7-4b03-b19f-47a47e96ef77",
                         "props": {
                           "variant": "outline",
                           "size": "sm",
@@ -197,12 +194,7 @@
                               "autoComplete": "current-password",
                               "value": "{{local.data.form.formData.password}}",
                               "className": "!text-[var(--theme-foreground)]"
-                            },
-                            "actions": [
-                              {
-                                "action": "78a87824-94e3-4256-ae65-085cb8d2bcb7"
-                              }
-                            ]
+                            }
                           }
                         ]
                       },
@@ -297,6 +289,5 @@
         ]
       }
     ]
-  },
-  "initActions": []
+  }
 }

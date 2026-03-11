@@ -354,14 +354,6 @@ function TopBar({ onPreview }: { onPreview: () => void }) {
         zIndex: 10,
       }}
     >
-      {/* Logo / nav back */}
-      <a
-        href="/dev/sections"
-        style={{ color: '#6b7280', fontSize: 11, textDecoration: 'none', marginRight: 8, whiteSpace: 'nowrap' }}
-      >
-        ← Sections
-      </a>
-
       <div style={{ width: 1, height: 20, background: '#1f2937' }} />
 
       {/* History */}

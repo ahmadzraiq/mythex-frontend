@@ -16,7 +16,7 @@ import { runMultipleHandler } from './run-multiple-handler';
 import { navigateHandler } from './navigate-handler';
 import { navigateWithQueryHandler } from './navigate-with-query-handler';
 import { refetchDataSourceHandler } from './refetch-datasource-handler';
-import { setFormFieldHandler, setFormStateHandler, resetFormHandler, submitFormHandler } from './form-variable-handler';
+import { setFormStateHandler, resetFormHandler, submitFormHandler } from './form-variable-handler';
 import {
   restoreHandler,
   clearPersistedPathsHandler,
@@ -60,7 +60,6 @@ export const ACTION_HANDLERS: Record<string, HandlerFactory> = {
   cycleIndex: cycleIndexHandler,
   mergeAtPath: mergeAtPathHandler,
   refetchDataSource: refetchDataSourceHandler,
-  setFormField: setFormFieldHandler,
   setFormState: setFormStateHandler,
   resetForm: resetFormHandler,
   submitForm: submitFormHandler,

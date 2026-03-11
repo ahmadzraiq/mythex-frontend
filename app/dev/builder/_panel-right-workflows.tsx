@@ -210,8 +210,8 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
       // Hide system-managed workflows (auto-generated onChange setters)
       .filter(({ uuid }) => !pageWorkflowMeta[uuid]?.isSystem);
   } else if (rawActionsObj) {
-    // Legacy event-keyed object format — skip inline system actions (e.g. setFormField)
-    // only show pure ActionRef entries { action: "uuid" } which have no "type" property
+    // Legacy event-keyed object format — only show pure ActionRef entries { action: "uuid" }
+    // which have no "type" property; skip any inline action objects
     workflowEntries = Object.entries(rawActionsObj)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .filter(([, actionDef]) => !(actionDef as any)?.type)

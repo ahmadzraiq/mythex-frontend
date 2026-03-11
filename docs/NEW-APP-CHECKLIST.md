@@ -97,8 +97,8 @@ These three files are the wiring layer. Nothing renders without them. Create the
 
 ## 4. Actions (No Hardcoded Logic)
 
-- [ ] **Fetch** – Use `storeIn`, `responsePath`, `errorMessagePath`, `storeFullResponseIn`; all configurable
-- [ ] **GraphQL** – Use `type: "graphql"` with `query`, `variables` (supports `{ "var" }`, `{ "expr" }`), `endpoint`, `headers`, `responsePath`, `storeIn`. Set defaults in `engineConventions.graphqlEndpoint` + `graphqlHeaders`
+- [ ] **Fetch** – Use `type: "fetch"` with `url`, `method`, `body`, `storeFullResponseIn`; access results via `context.workflow[stepId]` in workflowSteps
+- [ ] **GraphQL** – Use `type: "graphql"` with `query`, `variables` (supports `{ "var" }`, `{ "expr" }`), `endpoint`, `headers`. Set defaults in `engineConventions.graphqlEndpoint` + `graphqlHeaders`
 - [ ] **Append to nested array** – Use `type: "appendToPath"` with `targetPath`, `value` (supports `{ "var" }`, `{ "expr" }`), `resetFormPath`, `resetFormValue`
 - [ ] **Special vars** – `_timestamp`, `_date` available in `{ "var": "_timestamp" }` and JSON Logic `expr`
 - [ ] **Never add app-specific action logic in engine** – Define in `config/actions/*.json`

@@ -14,11 +14,6 @@
     "errors": {}
   },
   "layout": "account",
-  "initActions": [
-    {
-      "action": "25936105-5bba-4563-8105-3e5218489469"
-    }
-  ],
   "content": {
     "type": "Box",
     "props": {
@@ -87,18 +82,14 @@
                           },
                           {
                             "type": "Input",
+                        "id": "f1cc6656-57da-4814-a981-e1530a57942b",
                             "children": [
                               {
                                 "type": "InputField",
                                 "props": {
                                   "value": "{{local.data.form.formData.firstName}}",
                                   "placeholder": "Jane"
-                                },
-                                "actions": [
-                                  {
-                                    "action": "48ef6f2b-91f2-4383-aa36-5782cbdadc9b"
-                                  }
-                                ]
+                                }
                               }
                             ]
                           }
@@ -119,18 +110,14 @@
                           },
                           {
                             "type": "Input",
+                        "id": "7a425bc1-4ee5-4292-9e43-e3e1664728bd",
                             "children": [
                               {
                                 "type": "InputField",
                                 "props": {
                                   "value": "{{local.data.form.formData.lastName}}",
                                   "placeholder": "Doe"
-                                },
-                                "actions": [
-                                  {
-                                    "action": "74f20b56-fc2a-46bf-8a64-1f511faa8499"
-                                  }
-                                ]
+                                }
                               }
                             ]
                           }
@@ -153,6 +140,7 @@
                       },
                       {
                         "type": "Input",
+                        "id": "2e8ed8ad-ffaa-4c28-9d74-78aa4302bb6f",
                         "children": [
                           {
                             "type": "InputField",
@@ -160,12 +148,7 @@
                               "type": "tel",
                               "value": "{{local.data.form.formData.phoneNumber}}",
                               "placeholder": "+1 (555) 000-0000"
-                            },
-                            "actions": [
-                              {
-                                "action": "8c8a590b-8b08-4c32-8486-c4002129191b"
-                              }
-                            ]
+                            }
                           }
                         ]
                       }
@@ -187,7 +170,7 @@
                     ],
                     "actions": [
                       {
-                        "action": "updateCustomer"
+                        "action": "4d5e6f7a-8b9c-0d1e-2f3a-b4c5d6e7f8a9"
                       }
                     ]
                   }
@@ -234,6 +217,7 @@
                       },
                       {
                         "type": "Input",
+                        "id": "1a9ca77f-87ba-4416-afdf-9da9892caec3",
                         "children": [
                           {
                             "type": "InputField",
@@ -241,12 +225,7 @@
                               "type": "email",
                               "value": "{{local.data.form.formData.emailAddress}}",
                               "placeholder": "you@example.com"
-                            },
-                            "actions": [
-                              {
-                                "action": "f8b72b29-4013-491f-9aa8-0709aaff754b"
-                              }
-                            ]
+                            }
                           }
                         ]
                       }
@@ -268,7 +247,7 @@
                     ],
                     "actions": [
                       {
-                        "action": "updateCustomerEmail"
+                        "action": "7a8b9c0d-1e2f-3a4b-5c6d-e7f8a9b0c1d2"
                       }
                     ]
                   }
@@ -315,6 +294,7 @@
                       },
                       {
                         "type": "Input",
+                        "id": "ff0a280b-c141-4099-bbe0-2d88dea510c2",
                         "children": [
                           {
                             "type": "InputField",
@@ -322,12 +302,7 @@
                               "type": "password",
                               "value": "{{local.data.form.formData.currentPassword}}",
                               "placeholder": "••••••••"
-                            },
-                            "actions": [
-                              {
-                                "action": "12b0040c-4d65-40b5-9586-19bffc3a1a4e"
-                              }
-                            ]
+                            }
                           }
                         ]
                       }
@@ -348,6 +323,7 @@
                       },
                       {
                         "type": "Input",
+                        "id": "95bf8303-fb42-4966-8f63-3dfd8da4e79c",
                         "children": [
                           {
                             "type": "InputField",
@@ -355,12 +331,7 @@
                               "type": "password",
                               "value": "{{local.data.form.formData.newPassword}}",
                               "placeholder": "••••••••"
-                            },
-                            "actions": [
-                              {
-                                "action": "095f52b4-3c26-4ff7-be9e-ed045949468e"
-                              }
-                            ]
+                            }
                           }
                         ]
                       }
@@ -382,7 +353,7 @@
                     ],
                     "actions": [
                       {
-                        "action": "updateCustomerPassword"
+                        "action": "6f7a8b9c-0d1e-2f3a-4b5c-d6e7f8a9b0c1"
                       }
                     ]
                   }

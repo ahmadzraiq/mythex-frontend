@@ -24,14 +24,8 @@
     "type": "refetchDataSource"
   },
   "00def351-2ff3-4614-a79b-1f34f45d60e2": {
-    "name": "fetchCart",
-    "type": "graphql",
-    "query": "query GetActiveOrder { activeOrder { id code state totalQuantity subTotal subTotalWithTax shipping shippingWithTax total totalWithTax currencyCode couponCodes discounts { description amountWithTax } lines { id productVariant { id name sku product { id name slug featuredAsset { id preview } } } unitPriceWithTax quantity linePriceWithTax } } }",
-    "storeIn": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "endpoint": "http://localhost:3000/shop-api",
-    "headers": {
-      "vendure-token": "__default_channel__"
-    }
+    "name": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "type": "refetchDataSource"
   },
   "adf68fbe-c9d0-4f2d-b141-e772451e2026": {
     "name": "b8c9d0e1-f2a3-4567-bcde-678901234567",

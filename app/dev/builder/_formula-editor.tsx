@@ -29,7 +29,7 @@ export { Tooltip, VariableTree, CollectionEntry, DataTreeNode, FunctionLibrary, 
 import {
   Tooltip, VariableTree, CollectionEntry, FunctionLibrary,
   CollectionsDataTab, PageComponentsSection, FormLocalSection, ItemContextGroup,
-  DataTreeNode, FEChevron,
+  DataTreeNode, FEChevron, collectPageComponents,
   type VarRowItem,
 } from './_formula-editor-tabs';
 import { useSduiStore } from '@/store/sdui-store';
@@ -139,7 +139,7 @@ function WorkflowResultsTab({
   const sorted = Object.entries(testResults).sort((a, b) => a[1].stepIndex - b[1].stepIndex);
 
   if (sorted.length === 0) {
-    return (
+  return (
       <div style={{ padding: 16, fontSize: 11, color: '#6b7280', textAlign: 'center' }}>
         No test results yet.<br />
         Run a step with the ▶ button in the workflow canvas.
@@ -147,7 +147,7 @@ function WorkflowResultsTab({
     );
   }
 
-  return (
+            return (
     <div style={{ overflowY: 'auto', flex: 1 }}>
       {sorted.map(([stepId, entry], idx) => (
         <WorkflowResultGroup
@@ -156,8 +156,8 @@ function WorkflowResultsTab({
           entry={entry}
           actionIndex={idx + 1}
           onSelect={onSelect}
-        />
-      ))}
+              />
+                ))}
     </div>
   );
 }
@@ -221,7 +221,7 @@ function WorkflowResultGroup({
       {open && (
         <div style={{ paddingBottom: 4 }}>
           {/* result node — always shown in blue */}
-          <DataTreeNode
+                      <DataTreeNode
             fieldName="result"
             path="result"
             value={entry.result ?? null}
@@ -235,7 +235,7 @@ function WorkflowResultGroup({
           />
           {/* error node — shown in red only when there is an error */}
           {entry.error !== null && (
-            <DataTreeNode
+                      <DataTreeNode
               fieldName="error"
               path="error"
               value={errorValue}
@@ -344,14 +344,42 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     [pageDataSources]
   );
 
-  // Map UUID → label for variable chip display
+  // Collect all controlled-input nodes and page-level form fields in one pass.
+  const { controlledInputVarEntries, formContainerVarEntries, pageFormFields } = useMemo(() => {
+    const { standalones, formContainers, pageFormFields: pff } = collectPageComponents(pageNodes, false);
+    return {
+      controlledInputVarEntries: standalones.map(({ node, insideForm }) => {
+        const name = (node as { name?: string }).name || node.type;
+        return {
+          id: node.id!,
+          label: insideForm ? `Form - ${name}` : name,
+        };
+      }),
+      // Form containers keyed by "{id}-form" so populateEditor can show readable labels
+      // for variables['formId-form']?.['formData']?.['fieldName'] chips.
+      formContainerVarEntries: formContainers
+        .map(({ node }) => {
+          const id = (node as { id?: string }).id;
+          const name = ((node as { name?: string }).name || 'Form').trim();
+          return id ? { id: `${id}-form`, label: `Form Container - ${name}` } : null;
+        })
+        .filter((e): e is { id: string; label: string } => e !== null),
+      pageFormFields: pff,
+    };
+  }, [pageNodes]);
+
+  // Map UUID → label for variable chip display (includes controlled-input virtual vars)
+  // Also maps "formId-form" → "Form Container - name" so chips for form-field formulas
+  // (variables['formId-form']?.['formData']?.['field']) show readable labels on reopen.
   const varMap = useMemo(
-    () => new Map(
-      customVars
+    () => new Map([
+      ...customVars
         .filter(v => v.id)
-        .map(v => [v.id!, { label: v.label ?? v.name ?? v.id! }])
-    ),
-    [customVars]
+        .map(v => [v.id!, { label: v.label ?? v.name ?? v.id! }] as [string, { label: string }]),
+      ...controlledInputVarEntries.map(e => [e.id, { label: e.label }] as [string, { label: string }]),
+      ...formContainerVarEntries.map(e => [e.id, { label: e.label }] as [string, { label: string }]),
+    ]),
+    [customVars, controlledInputVarEntries, formContainerVarEntries]
   );
 
   // Populate the editor on mount with the initial formula and seed history
@@ -1037,8 +1065,22 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
             <VariableTree
               onSelect={insertVar}
               search={search}
-              customVars={customVars}
-              varFolders={varFolders}
+              customVars={[
+                ...customVars,
+                // Virtual entries for each controlled Input node on the page
+                ...controlledInputVarEntries.map(e => ({
+                  id: e.id,
+                  label: e.label,
+                  name: e.label,
+                  type: 'string' as const,
+                  folderId: 'Page Inputs',
+                })),
+              ]}
+              varFolders={[
+                ...varFolders,
+                // Ensure the "Page Inputs" folder appears in the tree
+                ...(controlledInputVarEntries.length > 0 ? [{ id: 'Page Inputs', name: 'Page Inputs' }] : []),
+              ]}
             />
           </div>
         )}
@@ -1051,7 +1093,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
         {tab === 'quick' && (
           <div style={{ overflowY: 'auto', flex: 1 }}>
             {isInsideForm && (
-              <FormLocalSection onInsert={insertChip} />
+              <FormLocalSection onInsert={insertChip} pageFormFields={pageFormFields} />
             )}
             {isInsideRepeat && (
               <>

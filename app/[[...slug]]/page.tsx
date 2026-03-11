@@ -3,12 +3,10 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useSduiStore } from '@/store/sdui-store';
-import { useLayoutGeneratorStore } from '@/store/layout-generator-store';
 import { SDUIEngine, paramChangeRunActionRef, type ActionsConfig, type NamedDataSourceDef } from '@/lib/sdui/sdui-engine';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 import { syncSearchParams, type SearchParamSyncDef } from '@/lib/sdui/search-param-sync';
 import { sortRoutes, matchRoute } from '@/lib/sdui/route-utils';
-import { resolveScreenConfig, type ConfigRegistry } from '@/lib/sdui/config-resolver';
 import type { SDUIConfig } from '@/lib/sdui/types';
 import type { AppConfig, PageUI } from '@/config/types';
 
@@ -99,40 +97,8 @@ export default function DynamicRoutePage() {
     );
   }
 
-  const generatedScreen = useLayoutGeneratorStore((s) => s.generatedScreen);
-  const navbar = useLayoutGeneratorStore((s) => s.navbar);
-  const isHomepage = path === '/' || path === '';
-  const useGenerated = generatedScreen && isHomepage;
-  const configName = useGenerated ? 'generated' : (route?.config ?? 'notFound');
-  const rawScreens = (app as { rawScreens?: Record<string, Record<string, unknown>> }).rawScreens;
-  const registry = (app as { registry?: ConfigRegistry }).registry;
-  let config: Record<string, unknown> | undefined;
-  if (useGenerated) {
-    // Resolve layout + layoutParts when the generated screen declares a layout
-    // (e.g. layout: "store"). Without this the $slot is never filled and the page is blank.
-    const genRaw = generatedScreen as Record<string, unknown>;
-    if (registry && genRaw.layout) {
-      config = resolveScreenConfig(genRaw as Parameters<typeof resolveScreenConfig>[0], registry) as Record<string, unknown>;
-    } else {
-      config = genRaw;
-    }
-  } else if (navbar && rawScreens && registry && configName in rawScreens) {
-    const raw = rawScreens[configName] as Record<string, unknown>;
-    const structure =
-      navbar.structure && typeof navbar.structure === 'object'
-        ? navbar.structure
-        : undefined;
-    const withParts = {
-      ...raw,
-      layoutParts: {
-        ...((raw.layoutParts as object) ?? {}),
-        navbar: structure ? { structure } : undefined,
-      },
-    };
-    config = resolveScreenConfig(withParts as Parameters<typeof resolveScreenConfig>[0], registry) as Record<string, unknown>;
-  } else {
-    config = (app.screens[configName] ?? app.screens.notFound) as Record<string, unknown>;
-  }
+  const configName = route?.config ?? 'notFound';
+  const config = (app.screens[configName] ?? app.screens.notFound) as Record<string, unknown> | undefined;
 
   if (!config) {
     return (
@@ -145,28 +111,23 @@ export default function DynamicRoutePage() {
   const layoutClass = layoutClasses[route?.layout ?? 'full'] ?? layoutClasses.full;
 
   const keyByParams = (route as { keyBy?: string[] })?.keyBy ?? [];
-  const engineKey = useGenerated
-    ? 'generated'
-    : keyByParams.length > 0
-      ? `${path}-${keyByParams
-          .map((p) => {
-            const def = syncDefs.find((d) => d.param === p);
-            const v =
-              def?.type === 'array'
-                ? (searchParams?.getAll(p) ?? []).sort().join(',')
-                : searchParams?.get(p) ?? def?.default ?? '';
-            return v;
-          })
-          .join('-')}`
-      : path;
-  const navKey = navbar
-    ? `-nav-${JSON.stringify(navbar)}`
-    : '';
+  const engineKey = keyByParams.length > 0
+    ? `${path}-${keyByParams
+        .map((p) => {
+          const def = syncDefs.find((d) => d.param === p);
+          const v =
+            def?.type === 'array'
+              ? (searchParams?.getAll(p) ?? []).sort().join(',')
+              : searchParams?.get(p) ?? def?.default ?? '';
+          return v;
+        })
+        .join('-')}`
+    : path;
 
   return (
     <main className={layoutClass}>
       <SDUIEngine
-        key={engineKey + navKey}
+        key={engineKey}
         config={config as unknown as SDUIConfig}
         configName={configName}
         actionsConfig={app.actions as ActionsConfig}

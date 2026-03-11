@@ -1580,12 +1580,11 @@ test.describe('Form workflow context — form-specific action types', () => {
     expect(dropdownText).toContain('Element triggers');
   });
 
-  // FW-06: Input inside FormContainer shows NO workflows by default (setFormField is hidden)
+  // FW-06: Input inside FormContainer shows NO workflows by default (name-prop tracking, no actions)
   test('FW-06: controlled input inside FormContainer shows no workflows in right panel by default', async () => {
     const formId = 'fc-hide-' + Date.now();
     const inputId = 'fc-inp-' + Date.now();
 
-    // Inject a FormContainer with an InputField that has an inline setFormField action (the default)
     await sharedFormPage.evaluate(({ fId, iId }) => {
       const bs = (window as unknown as Record<string, BuilderStore>).__builderStore;
       bs?.getState().addNode?.({
@@ -1597,10 +1596,8 @@ test.describe('Form workflow context — form-specific action types', () => {
           id: iId,
           type: 'InputField',
           name: 'email',
-          props: {},
+          props: { name: 'email' },
           children: [],
-          // Simulate the auto-injected setFormField inline action
-          actions: { change: { type: 'setFormField', field: 'email', value: '$event' } },
         }],
       }, null);
     }, { fId: formId, iId: inputId });
@@ -1616,7 +1613,7 @@ test.describe('Form workflow context — form-specific action types', () => {
     await sharedFormPage.getByTestId('tab-right-workflows').click();
     await sharedFormPage.waitForTimeout(200);
 
-    // Should show no workflow rows (setFormField is filtered out)
+    // Should show no workflow rows (no actions on the node — only name-prop tracking)
     // Rows use dynamic testids like right-workflow-row-0, right-workflow-row-1, etc.
     const workflowRows = sharedFormPage.locator('[data-testid^="right-workflow-row-"]');
     await expect(workflowRows).toHaveCount(0);

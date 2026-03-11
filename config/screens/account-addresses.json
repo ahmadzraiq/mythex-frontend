@@ -16,11 +16,6 @@
     "showAddForm": false
   },
   "layout": "account",
-  "initActions": [
-    {
-      "action": "3ed5758e-a5de-4a2d-8284-30a47e2a83c2"
-    }
-  ],
   "content": {
     "type": "Box",
     "props": {
@@ -109,18 +104,14 @@
                   },
                   {
                     "type": "Input",
+                        "id": "ddc7570e-0709-4d9e-a8e0-ea73f60a49fe",
                     "children": [
                       {
                         "type": "InputField",
                         "props": {
                           "value": "{{local.data.form.formData.fullName}}",
                           "placeholder": "Jane Doe"
-                        },
-                        "actions": [
-                          {
-                            "action": "31e1e0c5-6fc4-47ae-bc1b-c441c0a4446e"
-                          }
-                        ]
+                        }
                       }
                     ]
                   }
@@ -141,18 +132,14 @@
                   },
                   {
                     "type": "Input",
+                        "id": "06219502-9af1-40b6-b1b3-0089df2b1431",
                     "children": [
                       {
                         "type": "InputField",
                         "props": {
                           "value": "{{local.data.form.formData.streetLine1}}",
                           "placeholder": "123 Main St"
-                        },
-                        "actions": [
-                          {
-                            "action": "3d2308d8-2b36-48e0-a2ad-8d209bea7588"
-                          }
-                        ]
+                        }
                       }
                     ]
                   }
@@ -179,18 +166,14 @@
                       },
                       {
                         "type": "Input",
+                        "id": "5be72730-114b-4fc3-b692-175b74c383d4",
                         "children": [
                           {
                             "type": "InputField",
                             "props": {
                               "value": "{{local.data.form.formData.city}}",
                               "placeholder": "New York"
-                            },
-                            "actions": [
-                              {
-                                "action": "7f526c07-684e-4efb-a57c-4ae3caf04ba3"
-                              }
-                            ]
+                            }
                           }
                         ]
                       }
@@ -211,18 +194,14 @@
                       },
                       {
                         "type": "Input",
+                        "id": "bc82cd04-3153-49b7-a1af-0cdea39f1d7d",
                         "children": [
                           {
                             "type": "InputField",
                             "props": {
                               "value": "{{local.data.form.formData.postalCode}}",
                               "placeholder": "10001"
-                            },
-                            "actions": [
-                              {
-                                "action": "b5dcaf0b-b72f-41bf-9c05-ca4131f19bd3"
-                              }
-                            ]
+                            }
                           }
                         ]
                       }
@@ -245,18 +224,14 @@
                   },
                   {
                     "type": "Input",
+                        "id": "079e999a-72c4-4389-b736-1a2c961ddb8e",
                     "children": [
                       {
                         "type": "InputField",
                         "props": {
                           "value": "{{local.data.form.formData.countryCode}}",
                           "placeholder": "US"
-                        },
-                        "actions": [
-                          {
-                            "action": "bb8ab177-3ee7-4431-a6bc-d1ed69482dbc"
-                          }
-                        ]
+                        }
                       }
                     ]
                   }
@@ -284,7 +259,7 @@
                     ],
                     "actions": [
                       {
-                        "action": "createCustomerAddress"
+                        "action": "8b9c0d1e-2f3a-4b5c-6d7e-f8a9b0c1d2e3"
                       }
                     ]
                   },
@@ -412,7 +387,7 @@
                         ],
                         "actions": [
                           {
-                            "action": "deleteCustomerAddress"
+                            "action": "9c0d1e2f-3a4b-5c6d-7e8f-a9b0c1d2e3f4"
                           }
                         ]
                       }

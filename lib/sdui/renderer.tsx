@@ -6,8 +6,9 @@
  */
 
 import React, { useEffect, memo, useSyncExternalStore, useContext } from 'react';
-import { FormContext, type FieldValidationConfig, type FormContextValue } from './form-context';
+import { FormContext, type FormContextValue } from './form-context';
 import { getGlobalVariableStore } from './global-variable-store';
+import { trackFormFieldProps, useFormFieldRegistration } from './form-field-tracker';
 
 /** Stable empty object for useSyncExternalStore fallback — avoids infinite loop from new {} each call */
 const STABLE_EMPTY_OBJECT: Record<string, unknown> = {};
@@ -89,6 +90,7 @@ function applyFormContextBindings(
     setHandlers(existingFn ? () => { existingFn(); formCtx.submit(); } : () => formCtx.submit());
   }
 }
+
 import { evaluateFormula } from './formula-evaluator';
 import { getComponent } from './component-registry';
 import { evaluateCondition, interpolate, resolveProps, resolveText } from './utils';
@@ -100,6 +102,7 @@ import { createGet } from './create-get';
 import { bindActionsToProps } from './action-binding';
 import { useBuilderMode } from './builder-context';
 import { mergeTailwindClasses } from './tailwind-merge';
+import { InputParentContext, useParentInputId } from './input-parent-context';
 
 interface RendererContext {
   store: ReturnType<typeof createVariableStore>;
@@ -178,85 +181,11 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
     fetchData,
   };
 
-  // Auto-register form fields — when a node has a setFormField action, declare
-  // the field in the nearest FormContainer immediately on mount so the formula
-  // editor shows it without requiring user input first.
-  // Also register _validation rules when present so FormContainer can validate on submit.
+  // Form field registration: handles all controlled components generically.
+  // See lib/sdui/form-field-tracker.ts for the full implementation.
   const formCtx = useContext(FormContext);
-  useEffect(() => {
-    if (formCtx) {
-      let cleanup: (() => void) | undefined;
-
-      // Register _validation rules if declared on this node (e.g. InputField with _validation)
-      const nodeName = (node as { name?: string }).name;
-      const nodeValidation = (node as { _validation?: unknown })._validation as FieldValidationConfig | undefined;
-      if (nodeName && nodeValidation?.rules?.length) {
-        formCtx.registerFieldValidation(nodeName, nodeValidation);
-        const prev = cleanup;
-        cleanup = () => { prev?.(); formCtx.unregisterFieldValidation(nodeName); };
-      }
-
-      // Register the field in formData via setFormField action detection
-      const actions = node.actions;
-      if (actions) {
-        // Find setFormField — may be direct or nested inside runMultiple
-        const findSetFormField = (a: unknown): Record<string, unknown> | null => {
-          if (!a || typeof a !== 'object' || Array.isArray(a)) return null;
-          const obj = a as Record<string, unknown>;
-          if (obj.type === 'setFormField') return obj;
-          if (obj.type === 'runMultiple' && Array.isArray(obj.actions)) {
-            for (const nested of obj.actions) {
-              const found = findSetFormField(nested);
-              if (found) return found;
-            }
-          }
-          return null;
-        };
-        for (const a of Object.values(actions)) {
-          const action = findSetFormField(a);
-          if (action) {
-            const fieldName = action.field;
-            if (typeof fieldName === 'string' && fieldName) {
-              const initialValue = node._initialValue ?? '';
-              formCtx.registerField(fieldName, initialValue);
-              const prev = cleanup;
-              cleanup = () => { prev?.(); formCtx.unregisterField(fieldName); };
-              break;
-            }
-          }
-        }
-      }
-
-      return cleanup;
-    }
-    // Standalone controlled components (outside FormContainer) — register value at
-    // components.nodeId.value so formula editor's "From components" section shows live data.
-    const standaloneTypes = new Set(['InputField', 'TextareaInput', 'Checkbox']);
-    if (standaloneTypes.has(node.type as string) && node.id) {
-      const path = `components.${node.id}.value`;
-      getGlobalVariableStore().getState().set(path, '');
-      return () => {
-        const store = getGlobalVariableStore().getState();
-        store.setState((prev) => {
-          const next = { ...prev };
-          const comp = next.components as Record<string, Record<string, unknown>> | undefined;
-          if (comp?.[node.id!]) {
-            const nodeData = { ...comp[node.id!] };
-            delete nodeData.value;
-            if (Object.keys(nodeData).length === 0) {
-              const newComp = { ...comp };
-              delete newComp[node.id!];
-              next.components = Object.keys(newComp).length ? newComp : undefined;
-            } else {
-              next.components = { ...comp, [node.id!]: nodeData };
-            }
-          }
-          return next;
-        });
-      };
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [node.actions, node.id, node.type, formCtx?.registerField, formCtx?.unregisterField, formCtx?.registerFieldValidation, formCtx?.unregisterFieldValidation]);
+  const parentInputId = useParentInputId();
+  useFormFieldRegistration(node, formCtx);
 
   if (!node) return null;
 
@@ -396,6 +325,14 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
 
   Object.assign(cleanProps, bindActionsToProps(node.actions, runAction, actionsConfig, scope, node.type));
   applyFormContextBindings(node, cleanProps, formCtx, actionsConfig);
+  trackFormFieldProps(node, cleanProps, formCtx, parentInputId);
+
+  // Pass the SDUI node ID to FormContainer so it can sync to variables['{id}-form'].
+  // When the node has no explicit id (e.g. screen JSON loaded from config), pass an empty
+  // string so FormContainer falls back to its own stable internal ID (see FormContainer.tsx).
+  if ((node.type as string) === 'FormContainer') {
+    cleanProps._formNodeId = node.id ?? '';
+  }
 
   // Builder mode: annotate nodes via a ref callback that writes directly onto
   // the real DOM element. We cannot use cleanProps['data-builder-id'] because
@@ -427,13 +364,18 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
 
   let children: React.ReactNode = null;
   if (node.children?.length) {
-    children = node.children.map((child, i) => {
+    const childElements = node.children.map((child, i) => {
       if (child == null) return null;
       const childKey = child.key;
       const isScopeVar = childKey === '$index' || childKey === '$item';
       const key = childKey && !isScopeVar ? childKey : `child-${i}`;
       return <SDURendererInner key={key} node={child} context={context} scope={scope} builderPath={`${builderPath}-${i}`} />;
     });
+    // Provide parent Input ID to descendant InputField nodes so they can write to
+    // variables['{inputId}-value'] on change (formula live-binding).
+    children = (node.type as string) === 'Input' && node.id
+      ? <InputParentContext.Provider value={node.id}>{childElements}</InputParentContext.Provider>
+      : childElements;
   } else if (textContent !== undefined) {
     children = textContent;
   }

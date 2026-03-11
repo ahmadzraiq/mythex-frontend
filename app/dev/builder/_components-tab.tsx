@@ -86,13 +86,6 @@ export const PRIMITIVE_COMPONENTS: Record<string, { type: string; label: string;
               {
                 type: 'InputField',
                 props: { placeholder: 'Email', name: 'email', className: '!text-gray-900 dark:!text-gray-100' },
-                actions: {
-                  change: {
-                    type: 'setFormField',
-                    field: 'email',
-                    value: '$event',
-                  },
-                },
               },
             ],
           },
@@ -103,13 +96,6 @@ export const PRIMITIVE_COMPONENTS: Record<string, { type: string; label: string;
               {
                 type: 'InputField',
                 props: { placeholder: 'Password', name: 'password', type: 'password', className: '!text-gray-900 dark:!text-gray-100' },
-                actions: {
-                  change: {
-                    type: 'setFormField',
-                    field: 'password',
-                    value: '$event',
-                  },
-                },
               },
             ],
           },

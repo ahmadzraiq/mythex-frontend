@@ -8,7 +8,7 @@
  * ST-05  Submit toggle On → actions.click.type === 'submitForm'
  * ST-06  Submit toggle Off → click action removed
  * ST-07  Selecting an InputField inside FormContainer shows Form container label + Field name
- * ST-08  Changing Field name updates the setFormField action's field property
+ * ST-08  Changing Field name updates node.props.name
  * ST-09  Input type dropdown exists and changing to 'email' sets props.type = 'email'
  * ST-10  Custom validation Off hides formula button; On reveals it
  * ST-11  Input type: Short answer → props.type = 'text'
@@ -226,8 +226,7 @@ test('ST-07: InputField inside FormContainer shows Form container label and Fiel
             {
               type: 'InputField',
               id: 'st07-field',
-              props: { placeholder: 'Email' },
-              actions: { change: { type: 'setFormField', field: 'email', value: '$event' } },
+              props: { placeholder: 'Email', name: 'email' },
             },
           ],
         },
@@ -246,7 +245,7 @@ test('ST-07: InputField inside FormContainer shows Form container label and Fiel
   await expect(fieldNameInput).toHaveValue('email');
 });
 
-test('ST-08: Changing Field name updates the setFormField action field', async ({ page }) => {
+test('ST-08: Changing Field name updates node.props.name', async ({ page }) => {
   await gotoBuilder(page);
 
   await page.evaluate(() => {
@@ -264,8 +263,7 @@ test('ST-08: Changing Field name updates the setFormField action field', async (
             {
               type: 'InputField',
               id: 'st08-field',
-              props: { placeholder: 'Username' },
-              actions: { change: { type: 'setFormField', field: 'username', value: '$event' } },
+              props: { placeholder: 'Username', name: 'username' },
             },
           ],
         },
@@ -282,9 +280,8 @@ test('ST-08: Changing Field name updates the setFormField action field', async (
   await page.waitForTimeout(300);
 
   const node = await getNodeFromStore(page, 'st08-field') as Record<string, unknown> | null;
-  const actions = node?.actions as Record<string, unknown> | undefined;
-  const changeAction = actions?.change as Record<string, unknown> | undefined;
-  expect(changeAction?.field).toBe('emailAddress');
+  const props = node?.props as Record<string, unknown> | undefined;
+  expect(props?.name).toBe('emailAddress');
 });
 
 test('ST-09: Input type dropdown changes props.type for InputField', async ({ page }) => {
@@ -336,8 +333,7 @@ test('ST-10: Custom validation Off hides formula button; On shows it', async ({ 
             {
               type: 'InputField',
               id: 'st10-field',
-              props: { placeholder: 'Value' },
-              actions: { change: { type: 'setFormField', field: 'value', value: '$event' } },
+              props: { placeholder: 'Value', name: 'value' },
             },
           ],
         },
@@ -452,8 +448,7 @@ test('ST-22: Validation trigger dropdown defaults to On form submit', async ({ p
             {
               type: 'InputField',
               id: 'st22-field',
-              props: { placeholder: 'Value' },
-              actions: { change: { type: 'setFormField', field: 'value', value: '$event' } },
+              props: { placeholder: 'Value', name: 'value' },
             },
           ],
         },
@@ -486,8 +481,7 @@ test('ST-23: Validation trigger dropdown changes to On input change', async ({ p
             {
               type: 'InputField',
               id: 'st23-field',
-              props: { placeholder: 'Value' },
-              actions: { change: { type: 'setFormField', field: 'value', value: '$event' } },
+              props: { placeholder: 'Value', name: 'value' },
             },
           ],
         },

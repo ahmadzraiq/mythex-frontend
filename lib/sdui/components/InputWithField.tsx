@@ -42,7 +42,7 @@ export const InputWithField = React.forwardRef<
         {...(rest as React.ComponentProps<typeof Input>)}
         {...(readOnly ? { readOnly: true } : {})}
       >
-        {children}
+        {children as React.ReactNode}
       </Input>
     );
   }
@@ -52,7 +52,11 @@ export const InputWithField = React.forwardRef<
     <Input ref={ref} {...(rest as React.ComponentProps<typeof Input>)}>
       <InputField
         placeholder={placeholder as string}
-        value={value ?? ''}
+        // Do NOT default to '' — an explicit undefined keeps the input uncontrolled
+        // so the user can type freely when no value binding is provided.
+        // When a live value IS supplied (e.g. "{{local.data.form.formData.email}}"),
+        // the SDUI engine passes the live string here and the input stays controlled.
+        value={value as string | undefined}
         editable={readOnly ? false : undefined}
         onChange={handleChange as React.ComponentProps<typeof InputField>['onChange']}
         onChangeText={handleChange as React.ComponentProps<typeof InputField>['onChangeText']}

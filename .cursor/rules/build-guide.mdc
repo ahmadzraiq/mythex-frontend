@@ -1,0 +1,205 @@
+---
+description: Build guide - read SCHEMA.md when building screens, layouts, fragments
+alwaysApply: true
+---
+
+# Build Guide
+
+## Migrating an Existing App to SDUI
+
+When migrating an existing app (React, Next.js, etc.) to this JSON-driven SDUI system, follow this order:
+
+1. **`config/store.json` first** — Define `initialData` (all global state: auth, cart, route, etc.), `engineConventions` (loadingSuffix, errorSuffix, defaultFormPath, screenScopedAliases, graphqlEndpoint, graphqlHeaders, etc.), and `paths` aliases.
+2. **`config/theme.json`** — Map brand colors and section themes. All colors become `var(--theme-*)` CSS variables.
+3. **`config/routes.json`** — Add every route. Dynamic routes (product, category, etc.) use `dynamic: true`. Set `auth: true` for protected routes.
+4. **Layouts** (`config/layouts/`) — Create shared layout shells (header + content slot + drawer/footer). Reuse across screens via `layout: "layoutName"`.
+5. **Fragments** (`config/fragments/`) — Extract shared UI: header, footer, drawer, nav, product cards, modals. Register in `fragments/index.ts`.
+6. **Actions** (`config/actions/`) — Map every data-fetch and mutation. Use `type: "graphql"` for GraphQL APIs or `type: "fetch"` for REST. Auth flows use `type: "validate"` then fetch/graphql.
+7. **Screens** (`config/screens/`) — One JSON per screen. Each maps to a route config name. On-mount data fetching is handled by workflows with `trigger: "created"`.
+8. **`config/app.ts`** — Import all screens and merge into the app config.
+
+**Mapping guide:**
+- React component state → `state` in screen JSON + `{{form.field}}` interpolation
+- `useEffect` data fetching → a `workflowSteps` workflow with `trigger: "created"` bound to the page or component
+- `onClick` / form submit → `"actions": [{ "action": "namedWorkflow" }]` — trigger comes from the workflow definition
+- React Router / Next.js `<Link>` → a named navigate workflow (e.g. `navigateToHome`, `navigateToProduct`)
+- Dynamic routes (e.g. `/product/:slug`) → a named navigate workflow with `{{context.item.data.slug}}` in its step config
+- Shared UI (header, cards) → fragments with `$ref`
+- Conditional rendering → `condition` (JSON Logic) on nodes
+- Lists / `.map()` → `map` on the node with `{{context.item.data.field}}` (canonical) or `{{$item.field}}` (legacy, still works)
+
+---
+
+## Bootstrap Files (Required When Starting Fresh)
+
+When `config/` is empty, create these 3 wiring files before anything else. Without them `$ref`, layouts, and `resolveScreenConfig` all fail.
+
+**Do NOT modify `app/[[...slug]]/page.tsx` or `lib/sdui/`** — they are generic and work as-is for any app.
+
+### `config/fragments/index.ts`
+Keys MUST use the full `'fragments/name'` prefix — `$ref` resolves by this exact string.
+```ts
+import header from './header.json';
+import drawer from './drawer.json';
+// import every fragment you create
+
+export const fragments = {
+  'fragments/header': header,
+  'fragments/drawer': drawer,
+  'fragments/modals/myModal': myModal,
+} as const;
+```
+
+### `config/layouts/index.ts`
+```ts
+import authenticated from './authenticated.json';
+// import every layout you create
+
+export const layouts = {
+  authenticated: authenticated as { structure: object },
+  minimal: minimal as { structure: object },
+} as const;
+```
+
+### `config/app.ts`
+```ts
+import routes from './routes.json';
+import { layouts } from './layouts';
+import { fragments } from './fragments';
+import { resolveScreenConfig } from '@/lib/sdui/config-resolver';
+// import every screen JSON
+import home from './screens/home.json';
+import login from './screens/login.json';
+// import every action file
+import authActions from './actions/auth.json';
+import layoutActions from './actions/layout.json';
+
+const registry = { layouts, fragments };
+
+const rawScreens = { home, login /*, ...*/ };
+const screens = Object.fromEntries(
+  Object.entries(rawScreens).map(([name, screen]) =>
+    [name, resolveScreenConfig(screen as Parameters<typeof resolveScreenConfig>[0], registry)]
+  )
+) as typeof rawScreens;
+
+const actions = { ...authActions, ...layoutActions /*, ...*/ };
+
+export default { ...routes, screens, actions } as const;
+```
+
+---
+
+## No Inline Actions — All Actions Must Be Named Workflows
+
+**Rule:** UI nodes in screens and fragments MUST NOT contain inline action definitions. Every action must be a named workflow in `config/actions/*.json`.
+
+**Why:** Inline actions are invisible to the builder's workflow canvas, cannot be reused, and break the trigger-based binding model.
+
+### Node binding — array format, trigger from workflow
+
+The `actions` field on a node is an **array of workflow references**. The trigger (click, change, valueChange, etc.) is defined in the workflow itself via the `trigger` field — never on the node.
+
+```json
+// ✅ CORRECT — array of named workflow refs, trigger comes from the workflow definition
+"actions": [{ "action": "submitSignIn" }]
+"actions": [{ "action": "setSignInUsername" }]
+
+// ❌ WRONG — inline action with payload (no named workflow)
+"actions": [{ "action": "navigate", "payload": { "path": "/" } }]
+
+// ❌ WRONG — old event-keyed object format
+"actions": { "click": { "action": "submitSignIn" } }
+```
+
+### Named workflow pattern
+
+All named workflows use `"type": "workflowSteps"` with a `trigger` field:
+
+```json
+// config/actions/auth.json
+"submitSignIn": {
+  "type": "workflowSteps",
+  "trigger": "submit",
+  "steps": [
+    { "id": "step-1", "action": "loginMutation-uuid" }
+  ]
+}
+```
+
+### Navigate actions — always named workflows
+
+Never use `{ "action": "navigate", "payload": { "path": "/..." } }` inline on a node. Create a named navigate workflow:
+
+```json
+// config/actions/layout.json
+"navigateToHome": { "type": "workflowSteps", "trigger": "click", "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/" } }] },
+"navigateToProduct": { "type": "workflowSteps", "trigger": "click", "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "routeConfig": "product", "slug": "{{context.item.data.slug}}" } }] }
+```
+
+Dynamic route slugs from map scope (`{{context.item.data.slug}}`) work correctly because `runOne` is a closure capturing the scope.
+
+**Existing named navigate workflows in `config/actions/layout.json`:** `navigateToHome`, `navigateToCart`, `navigateToCheckout`, `navigateToSignIn`, `navigateToForgotPassword`, `navigateToRegister`, `navigateToOrders`, `navigateToAccountAddresses`, `navigateToAccountProfile`, `navigateToSearchPage`, `navigateToSearch`, `navigateToProduct`, `navigateToProductFromCart`, `navigateToOrderDetail`, `navigateToCollection`, `navigateToVerifyPending`, `navigateToCheckoutConfirmation`, `navigateToOrderConfirmation`.
+
+**Action schema:** `workflowSteps` type and `ActionRef` (`{ "action": "..." }`) are defined in `config/schema/action.schema.json`.
+
+### Workflow step types — supported list
+
+Use only the following step types inside `workflowSteps.steps`:
+
+| Type | Purpose |
+|---|---|
+| `navigateTo` | Navigate to a path or route config |
+| `changeVariableValue` | Write a value to a global variable by UUID |
+| `setVar` | Write a value to any variable store path (use for programmatic form pre-population: `local.data.form.formData.fieldName`) |
+| `graphql` | Execute a GraphQL query or mutation |
+| `fetch` | Execute a REST API call |
+| `branch` | Conditional: `condition`, `trueBranch` steps, `falseBranch` steps |
+| `runMultiple` | Run multiple steps in parallel or sequence |
+
+**Only use the step types listed in the table above.** Any other type is not rendered in the workflow canvas and silently does nothing.
+
+**Form field tracking:** Input fields inside a `FormContainer` auto-track their value via the `name` prop — no workflow step needed. To programmatically pre-populate a field, use `setVar` with `path: "local.data.form.formData.fieldName"`.
+
+---
+
+## Building New Screens / Features
+
+When asked to build or add screens, layouts, modals, or features to this website:
+
+1. **Read `docs/SCHEMA.md`** – It defines the full JSON schema for screens, layouts, fragments, actions, and routes. For new apps, also use `docs/NEW-APP-CHECKLIST.md`.
+
+2. **Follow the schema exactly:**
+   - Screens with header/drawer: use `layout: "authenticated"` + `content`
+   - Screens without: use `ui` directly
+   - Reusable UI: create fragments in `config/fragments/`, register in `fragments/index.ts`, use `$ref`
+   - Modals: Form must wrap ModalBody + ModalFooter; FormSubmitButton must be inside Form
+   - **Button custom colors:** Use `className="!bg-blue-500 !text-white"` (or theme vars). Gluestack v3: Button auto-uses `action="default"` when className has bg-*/text-* so custom colors apply. See sdui-layout-pitfalls.mdc "Button — Custom Colors (Gluestack v3)".
+   - Derived values: use `text: { expr: <JSON Logic>, suffix?, prefix? }` for cart count, subtotal, totals; use `formatCurrency` for money
+
+3. **Add routes** in `config/routes.json` and **import** new screens in `config/app.ts`.
+
+4. **Actions** go in `config/actions/` (auth, products, layout, other). Use `type: "workflowSteps"` for all user-facing flows. Direct action types (`fetch`, `graphql`, `validate`, etc.) are used as `workflowSteps` step targets, not standalone top-level actions.
+   - **fetch**: REST calls; supports `url`, `method`, `body`, `storeFullResponseIn`
+   - **graphql**: GraphQL queries/mutations; supports `query`, `variables` (JSON Logic-resolvable), `endpoint` (falls back to `engineConventions.graphqlEndpoint`), `headers` (merged on top of `engineConventions.graphqlHeaders`). Handles both HTTP errors and `response.errors`. No API routes needed—calls external GraphQL endpoint directly.
+   - **validate**: Form validation. Use `rules` (required, minLength, pattern, equalsField).
+
+5. **Never hardcode** layout or shared UI in React—define everything in JSON config.
+
+6. **Config-driven, no hardcoded values:**
+ - Routes: `config/routes.json` (dynamic routes use `dynamic: true`)
+ - Initial state: `config/store.json` (`initialData`, optional `paths`, optional `computed`)
+ - Theme: `config/theme.json` (colors, sections); use `var(--theme-*)` in classNames
+ - GraphQL endpoint & headers: `engineConventions.graphqlEndpoint` + `engineConventions.graphqlHeaders` in `store.json`
+ - Dynamic navigation: `{ "action": "navigate", "payload": { "routeConfig": "product", "slug": { "var": "$item.slug" } } }`—not hardcoded action names like `navigateToProduct`
+ - **searchParamSync**: Use `variableStorePath` and `triggersParamChange` in `store.json`; never hardcode paths in `page.tsx`. **paramChangeAction**: Must exactly match action name in `config/actions/`. See `sdui-computed-and-sync.mdc`.
+ - **Computed ops**: Use generic ops (`findItemById`, `findItemByOptionsMatch`, `getFromMap`, etc.); never domain-specific ops. See `sdui-computed-and-sync.mdc`.
+ - **No Next.js API routes**: Data comes from external APIs (REST or GraphQL). Do not create `app/api/` routes.
+
+7. **UI/UX rules** (see `ui-ux-contrast.mdc`): No duplicate content, no dark-on-dark contrast, theme in JSON only, strong gradient + drop-shadow for text on images, light borders for outline buttons on dark backgrounds.
+
+8. **Never hardcode action logic in engine**: Use config-driven actions. For append-to-nested-array (e.g. reviews), use `type: "appendToPath"` with `targetPath`, `value` (supports `{ "var" }`, `{ "expr" }`), `resetFormPath`, `resetFormValue`. Special vars: `_timestamp`, `_date`.
+
+9. **No hardcoded conventions in code**: All engine behavior comes from `engineConventions` in `store.json`—`screenScopedAliases`, `defaultFormPath`, `loadingSuffix`, `errorSuffix`, etc. Zero fallbacks; config is the single source of truth.
+
+10. **Page must pass `configName`** to SDUIEngine so screen-scoped paths work. Route config name = screen name.

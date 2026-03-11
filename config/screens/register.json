@@ -77,6 +77,7 @@
                       },
                       {
                         "type": "Input",
+                        "id": "6d49365f-789e-417c-bdd6-263a14a54f68",
                         "props": {
                           "variant": "outline",
                           "size": "sm",
@@ -106,12 +107,7 @@
                               "autoComplete": "email",
                               "value": "{{local.data.form.formData.emailAddress}}",
                               "className": "!text-[var(--theme-foreground)]"
-                            },
-                            "actions": [
-                              {
-                                "action": "e815851f-a66a-4be6-b6fb-1ef92d8e1989"
-                              }
-                            ]
+                            }
                           }
                         ]
                       },
@@ -154,6 +150,7 @@
                           },
                           {
                             "type": "Input",
+                        "id": "b7c54d06-8b24-443d-81da-ced51881ae34",
                             "props": {
                               "variant": "outline",
                               "size": "sm",
@@ -183,12 +180,7 @@
                                   "autoComplete": "given-name",
                                   "value": "{{local.data.form.formData.firstName}}",
                                   "className": "!text-[var(--theme-foreground)]"
-                                },
-                                "actions": [
-                                  {
-                                    "action": "3c9f96dc-7f55-44c4-bf94-59adaeab5de2"
-                                  }
-                                ]
+                                }
                               }
                             ]
                           },
@@ -225,6 +217,7 @@
                           },
                           {
                             "type": "Input",
+                        "id": "09e3ef50-d78b-44d2-9635-c823f9c87964",
                             "props": {
                               "variant": "outline",
                               "size": "sm",
@@ -254,12 +247,7 @@
                                   "autoComplete": "family-name",
                                   "value": "{{local.data.form.formData.lastName}}",
                                   "className": "!text-[var(--theme-foreground)]"
-                                },
-                                "actions": [
-                                  {
-                                    "action": "ac4083d5-1c56-460a-9f89-00434a0d53f9"
-                                  }
-                                ]
+                                }
                               }
                             ]
                           },
@@ -298,6 +286,7 @@
                       },
                       {
                         "type": "Input",
+                        "id": "957459a9-0326-4fae-ad84-e92d95254897",
                         "props": {
                           "variant": "outline",
                           "size": "sm",
@@ -327,12 +316,7 @@
                               "autoComplete": "tel",
                               "value": "{{local.data.form.formData.phoneNumber}}",
                               "className": "!text-[var(--theme-foreground)]"
-                            },
-                            "actions": [
-                              {
-                                "action": "580435d3-d266-4442-b403-f2c1408c1260"
-                              }
-                            ]
+                            }
                           }
                         ]
                       },
@@ -369,6 +353,7 @@
                       },
                       {
                         "type": "Input",
+                        "id": "65068b99-5d5c-433a-b271-bafc413527ba",
                         "props": {
                           "variant": "outline",
                           "size": "sm",
@@ -399,12 +384,7 @@
                               "autoComplete": "new-password",
                               "value": "{{local.data.form.formData.password}}",
                               "className": "!text-[var(--theme-foreground)]"
-                            },
-                            "actions": [
-                              {
-                                "action": "6f2baa1b-ef1c-4d19-b057-b240fae8789b"
-                              }
-                            ]
+                            }
                           }
                         ]
                       },
@@ -441,6 +421,7 @@
                       },
                       {
                         "type": "Input",
+                        "id": "cca7f8b8-c894-451f-b08e-1f467d7f7f16",
                         "props": {
                           "variant": "outline",
                           "size": "sm",
@@ -473,12 +454,7 @@
                               "autoComplete": "new-password",
                               "value": "{{local.data.form.formData.confirmPassword}}",
                               "className": "!text-[var(--theme-foreground)]"
-                            },
-                            "actions": [
-                              {
-                                "action": "5d958b9c-b034-48b7-adf2-85ea363e7a92"
-                              }
-                            ]
+                            }
                           }
                         ]
                       },
@@ -570,6 +546,5 @@
         ]
       }
     ]
-  },
-  "initActions": []
+  }
 }

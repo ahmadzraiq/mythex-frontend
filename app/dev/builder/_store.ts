@@ -27,10 +27,9 @@ import {
   REQUIRED_PARENT, ALLOWED_CHILDREN,
   findNode, findParentNode, patchNodeById, insertNode,
   hasFormContainerAncestor,
-  clone, removeNodesByIds, autoInjectSetFormFieldIfInForm,
+  clone, removeNodesByIds,
   _applyLightOverrides, _applyDarkOverrides, hexToRgbTriplet, _getManagedStyle,
-  GLUESTACK_PRIMARY_BRIDGE, slugifyFieldName, FORM_CONTROLLED_TYPES, FORM_CONTAINER_TYPE,
-  injectSetFormFieldRecursive,
+  GLUESTACK_PRIMARY_BRIDGE,
 } from './_store-node-helpers';
 
 export {
@@ -376,11 +375,8 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
 
   addNode: (node, parentId = null, atIdx) => {
     set(s => {
-      let pageNodes = insertNode(s.pageNodes, node, parentId ?? null, atIdx);
+      const pageNodes = insertNode(s.pageNodes, node, parentId ?? null, atIdx);
       const insertedId = node.id;
-      if (insertedId) {
-        pageNodes = autoInjectSetFormFieldIfInForm(pageNodes, insertedId);
-      }
       return {
         pageNodes,
         selectedIds: insertedId ? [insertedId] : s.selectedIds,
@@ -1371,9 +1367,8 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
           const userMeta = Object.fromEntries(
             Object.entries(s.pageWorkflowMeta).filter(([id]) => !configWorkflowIds.has(id))
           );
-          // A workflow is "system" if it's an auto-generated onChange field setter:
-          // single step of type changeVariableValue or setFormField + trigger === 'change'
-          const SYSTEM_STEP_TYPES = new Set(['changeVariableValue', 'setFormField', 'setState', 'set']);
+          // A workflow is "system" if it's a single-step onChange setter (e.g. changeVariableValue)
+          const SYSTEM_STEP_TYPES = new Set(['changeVariableValue', 'setState', 'set']);
           const isSystemWorkflow = (w: { trigger?: string; steps?: unknown[] }) =>
             w.trigger === 'change' &&
             Array.isArray(w.steps) && w.steps.length === 1 &&
@@ -1461,5 +1456,10 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
   // Also expose the SDUI data store for E2E tests that verify page binding updates
   import('@/store/sdui-store').then(m => {
     (window as unknown as Record<string, unknown>).__sduiStore = m.useSduiStore;
+  });
+  // Expose the global variable store for E2E tests that verify form state updates
+  // (e.g. FormContainer + controlled components like Checkbox, Switch, TextareaInput)
+  import('@/lib/sdui/global-variable-store').then(m => {
+    (window as unknown as Record<string, unknown>).__globalVariableStore = m.getGlobalVariableStore();
   });
 }

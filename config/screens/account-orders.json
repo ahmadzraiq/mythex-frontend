@@ -6,11 +6,6 @@
     "currentPage": 1
   },
   "layout": "account",
-  "initActions": [
-    {
-      "action": "fa3e69c7-2ad2-44bb-ba4e-b2052136b5ba"
-    }
-  ],
   "content": {
     "type": "Box",
     "children": [

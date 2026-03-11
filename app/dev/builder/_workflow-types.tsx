@@ -37,7 +37,6 @@ export type ActionStepType =
   | 'pageLoader'
   // Form (shown only when inside a FormContainer)
   | 'setFormState'
-  | 'submitForm'
   | 'resetForm'
   // Actions category
   | 'changeLanguage'
@@ -385,7 +384,6 @@ export const FORM_ACTION_CATEGORY: { category: string; items: ActionTypeDef[] } 
   category: 'Other',
   items: [
     { type: 'setFormState', label: 'Set form state', icon: '⊟' },
-    { type: 'submitForm',   label: 'Submit form',   icon: '⊟' },
     { type: 'resetForm',    label: 'Reset form',    icon: '⊟' },
   ],
 };

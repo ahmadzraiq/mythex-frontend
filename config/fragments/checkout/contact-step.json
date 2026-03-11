@@ -150,6 +150,7 @@
                 },
                 {
                   "type": "Input",
+                        "id": "b95d1c1c-ee10-486d-87a6-7a0377f89c3c",
                   "children": [
                     {
                       "type": "InputField",
@@ -205,6 +206,7 @@
                     },
                     {
                       "type": "Input",
+                        "id": "f8b58a4e-cc33-4251-b011-03d9cbd2731f",
                       "children": [
                         {
                           "type": "InputField",
@@ -253,6 +255,7 @@
                     },
                     {
                       "type": "Input",
+                        "id": "b98e947e-6d8b-4bf4-8c1b-50150981624b",
                       "children": [
                         {
                           "type": "InputField",
@@ -304,7 +307,7 @@
               ],
               "actions": [
                 {
-                  "action": "a5c546d2-127a-4bdb-8b9f-f2c8a10471d7"
+                  "action": "b1c2d3e4-f5a6-7890-bcde-123456789012"
                 }
               ]
             }

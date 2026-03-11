@@ -449,24 +449,45 @@
   },
   "67b23496-bf70-442c-8c51-b90ac28edf9c": {
     "name": "changePassword",
-    "type": "validate",
-    "onSuccess": {
-      "action": "bd9e61f2-7964-4545-8167-4331ff17ec7a"
-    }
+    "type": "validate"
+  },
+  "6f7a8b9c-0d1e-2f3a-4b5c-d6e7f8a9b0c1": {
+    "name": "submitChangePassword",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-validate",
+        "action": "67b23496-bf70-442c-8c51-b90ac28edf9c"
+      },
+      {
+        "id": "step-mutation",
+        "action": "bd9e61f2-7964-4545-8167-4331ff17ec7a"
+      }
+    ]
   },
   "f8470519-2136-4bd3-8ff3-91f62251ee6f": {
     "name": "requestEmailUpdate",
-    "type": "validate",
-    "onSuccess": {
-      "action": "a6626679-62d9-4aa5-a842-7ebcc266e658"
-    }
+    "type": "validate"
+  },
+  "7a8b9c0d-1e2f-3a4b-5c6d-e7f8a9b0c1d2": {
+    "name": "submitRequestEmailUpdate",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-validate",
+        "action": "f8470519-2136-4bd3-8ff3-91f62251ee6f"
+      },
+      {
+        "id": "step-mutation",
+        "action": "a6626679-62d9-4aa5-a842-7ebcc266e658"
+      }
+    ]
   },
   "f9106f2c-916a-427e-9c8f-1bf9495b8c8e": {
     "name": "createAddress",
-    "type": "validate",
-    "onSuccess": {
-      "action": "9c6e39a6-5495-4c2a-8ea9-fc5bbe0ef052"
-    }
+    "type": "validate"
   },
   "82e7ed48-3f76-4130-af0d-8ecb1d2ae52a": {
     "name": "syncCheckoutStep",
@@ -492,97 +513,97 @@
     "steps": [
       {
         "id": "step-1",
-        "type": "setFormField",
+        "type": "setVar",
         "config": {
-          "field": "emailAddress",
+          "path": "local.data.form.formData.emailAddress",
           "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.emailAddress}}"
         }
       },
       {
         "id": "step-2",
-        "type": "setFormField",
+        "type": "setVar",
         "config": {
-          "field": "firstName",
+          "path": "local.data.form.formData.firstName",
           "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.firstName}}"
         }
       },
       {
         "id": "step-3",
-        "type": "setFormField",
+        "type": "setVar",
         "config": {
-          "field": "lastName",
+          "path": "local.data.form.formData.lastName",
           "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.lastName}}"
         }
       },
       {
         "id": "step-4",
-        "type": "setFormField",
+        "type": "setVar",
         "config": {
-          "field": "fullName",
+          "path": "local.data.form.formData.fullName",
           "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.fullName}}"
         }
       },
       {
         "id": "step-5",
-        "type": "setFormField",
+        "type": "setVar",
         "config": {
-          "field": "company",
+          "path": "local.data.form.formData.company",
           "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.company}}"
         }
       },
       {
         "id": "step-6",
-        "type": "setFormField",
+        "type": "setVar",
         "config": {
-          "field": "streetLine1",
+          "path": "local.data.form.formData.streetLine1",
           "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine1}}"
         }
       },
       {
         "id": "step-7",
-        "type": "setFormField",
+        "type": "setVar",
         "config": {
-          "field": "streetLine2",
+          "path": "local.data.form.formData.streetLine2",
           "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine2}}"
         }
       },
       {
         "id": "step-8",
-        "type": "setFormField",
+        "type": "setVar",
         "config": {
-          "field": "city",
+          "path": "local.data.form.formData.city",
           "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.city}}"
         }
       },
       {
         "id": "step-9",
-        "type": "setFormField",
+        "type": "setVar",
         "config": {
-          "field": "province",
+          "path": "local.data.form.formData.province",
           "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.province}}"
         }
       },
       {
         "id": "step-10",
-        "type": "setFormField",
+        "type": "setVar",
         "config": {
-          "field": "postalCode",
+          "path": "local.data.form.formData.postalCode",
           "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.postalCode}}"
         }
       },
       {
         "id": "step-11",
-        "type": "setFormField",
+        "type": "setVar",
         "config": {
-          "field": "countryCode",
+          "path": "local.data.form.formData.countryCode",
           "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.countryCode}}"
         }
       },
       {
         "id": "step-12",
-        "type": "setFormField",
+        "type": "setVar",
         "config": {
-          "field": "phoneNumber",
+          "path": "local.data.form.formData.phoneNumber",
           "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.phoneNumber}}"
         }
       },
@@ -669,12 +690,11 @@
       },
       {
         "id": "step-2",
-        "type": "clearPersistedPaths",
-        "config": {
-          "onSuccess": {
-            "action": "6d3e7961-7a06-4841-a1c9-0a16b7827bd3"
-          }
-        }
+        "type": "clearPersistedPaths"
+      },
+      {
+        "id": "step-3",
+        "action": "6d3e7961-7a06-4841-a1c9-0a16b7827bd3"
       }
     ]
   },
@@ -767,6 +787,20 @@
         "config": {
           "variableName": "d5e6f7a8-b9c0-1234-defa-345678901234",
           "value": "{{$index}}"
+        }
+      }
+    ]
+  },
+  "c1d2e3f4-a5b6-7890-cdef-123456789012": {
+    "name": "navigateToCart",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/cart"
         }
       }
     ]

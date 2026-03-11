@@ -1935,7 +1935,7 @@ Shows **only** user-defined variables from `config/variables.json`, grouped by f
 
 The form system has two layers:
 
-1. **Runtime** — `FormContainer` component + `setFormField` / `submitForm` actions in `lib/sdui/actions/handlers/form-variable-handler.ts`
+1. **Runtime** — `FormContainer` component + `ControlledInputField` auto-tracking via `FormContext` in `lib/sdui/components/`. Field values are written by `ControlledInputField.handleChange → formCtx.setField(name, value)`. To pre-populate fields programmatically, use `setVar` with `path: "local.data.form.formData.fieldName"`.
 2. **Builder** — Settings tab in `_panel-right.tsx` that configures per-field properties stored as `_`-prefixed node fields
 
 ### Node-level form fields (underscore prefix)
@@ -1944,9 +1944,9 @@ These fields live on the `SDUINode` (not in `props`) and are only meaningful at 
 
 | Field | Type | Purpose |
 |---|---|---|
-| `node.name` | `string` | Human label AND the `field` key used by `setFormField` |
+| `node.name` | `string` | Human label AND the `name` prop value used for `ControlledInputField` auto-tracking |
 | `node._initialValue` | `unknown` | Seed value passed to `FormContainer.props.initialFormData[field]` |
-| `node._debounce` | `{ delay: number, minLength?: number }` | Propagated to the `setFormField` action so validation runs debounced |
+| `node._debounce` | `{ delay: number, minLength?: number }` | Stored on the node; runtime debounce is handled by `ControlledInputField` |
 | `node._validation.rules` | `ValidationRule[]` | Array of rules run on change / submit |
 | `node._forceDisabledInEditor` | `boolean` | When `disabled` is formula-bound, force the overlay to show in the builder |
 | `node._disabledOverlay` | `{ color?, opacity?, blur? }` | Visual overlay rendered when disabled |
@@ -1977,40 +1977,23 @@ export interface SDUINode {
 
 The Settings tab shows for every node type. Top-level structure:
 
-1. **Name** — always at the very top; edits `node.name` and syncs `field` in `setFormField` action
+1. **Name** — always at the very top; edits `node.name` and syncs `node.props.name` (the auto-tracking key)
 2. **Input type** (Input / InputField only) — dropdown to set `props.type` / `props.inputMode`
 3. **Placeholder** (Input / InputField only) — edits `props.placeholder`
 4. **Initial value** (Input / InputField only) — edits `node._initialValue`; propagated to `FormContainer.props.initialFormData` via `patchInitialValue`
 5. **Browser autofill** (Input / InputField only) — edits `props.autoComplete`
-6. **Debounce** (Input / InputField only) — toggle + delay ms input; edits `node._debounce`; propagated to `setFormField` action via `syncDebounceToAction`
+6. **Debounce** (Input / InputField only) — toggle + delay ms input; edits `node._debounce`
 7. **Validation trigger** (Input / InputField only) — "On submit" / "On input change"
 8. **Validation rules** (Input / InputField only) — list of `ValidationRule` items
 9. **Submit type** (Button only) — on/off toggle; sets `node.props.submitType = 'submit'`
 
-### Name field and `setFormField` sync
+### Name field sync
 
 When the user edits the name field, two things must happen simultaneously:
-- `store.patchNodeField(nodeId, 'name', newName)` — update the node name
-- Find the `setFormField` action in the node's `actions.change` (or nested in `runMultiple`) and update `field: newName`
+- `store.patchNodeField(nodeId, 'name', newName)` — update the display name
+- `store.patchNodeField(nodeId, 'props', { ...nodeProps, name: newName })` — update `node.props.name` (the key `ControlledInputField` uses for auto-tracking)
 
-```ts
-// Helper to locate the setFormField action even inside runMultiple
-function findSetFormField(actions: Record<string, unknown> | undefined): Record<string, unknown> | null {
-  if (!actions) return null;
-  for (const a of Object.values(actions)) {
-    if ((a as { action?: string }).action === 'setFormField') return a as Record<string, unknown>;
-    const nested = (a as { actions?: unknown[] }).actions;
-    if (Array.isArray(nested)) {
-      for (const sub of nested) {
-        if ((sub as { action?: string }).action === 'setFormField') return sub as Record<string, unknown>;
-      }
-    }
-  }
-  return null;
-}
-```
-
-**Rule:** Changing `node.name` MUST also update the `field` key in `setFormField`. If not, the formula path `local.data.form.formData.username` breaks because the action still writes to the old field name.
+**Rule:** `node.props.name` is the single source of truth for field identity. It determines the key in `local.data.form.formData` where the value is written. Changing it MUST also rename the key in `FormContainer.props.initialFormData` so the formula path stays in sync.
 
 ### `patchInitialValue` — syncing `_initialValue` to FormContainer
 
@@ -2031,21 +2014,12 @@ function patchInitialValue(nodeId: string, value: unknown, pageNodes: SDUINode[]
 
 **Rule:** `node._initialValue` is the source of truth. `FormContainer.props.initialFormData` is derived from it. Never write to `props.defaultValue` directly — that conflicts with React's controlled/uncontrolled input warning.
 
-### `syncDebounceToAction` — propagating debounce to the action
+### `_debounce` storage
 
-When `node._debounce` changes, the `setFormField` action's payload must be updated:
+Debounce settings are stored directly on the node as `node._debounce`. The `ControlledInputField` reads this at runtime to debounce its `formCtx.setField` call. There is no action to sync — just write `node._debounce`:
 
 ```ts
-function syncDebounceToAction(nodeId: string, debounce: { delay: number } | undefined, pageNodes: SDUINode[], store: BuilderStore) {
-  store.patchNodeField(nodeId, '_debounce', debounce);
-  const node = findNode(pageNodes, nodeId);
-  const sff = findSetFormField(node?.actions as Record<string, unknown> | undefined);
-  if (sff) {
-    if (debounce) sff._debounce = debounce;
-    else delete sff._debounce;
-    store.patchActions(nodeId, node?.actions as Record<string, unknown>);
-  }
-}
+store.patchNodeField(nodeId, '_debounce', debounce ?? undefined);
 ```
 
 ---
@@ -2096,12 +2070,12 @@ Stored as `node._validation.trigger`:
 | `'submit'` (default) | Rules run only when the form's submit button is pressed |
 | `'change'` | Rules run on every input change (debounced if `node._debounce` is set) |
 
-**On-change validation must NOT block typing.** The `setFormFieldHandler` in `form-variable-handler.ts` must always update `formData` with the new value BEFORE running validation. If validation runs first and an error is stored, the controlled input value update must still be applied in the same state write.
+**On-change validation must NOT block typing.** `ControlledInputField` calls `formCtx.setField(name, value)` synchronously on every keystroke. Validation runs separately (debounced if `_debounce` is set) without blocking the value update.
 
 ### Runtime validation — `form-variable-handler.ts`
 
 ```ts
-// applyValidationRules — called both on change (debounced) and on submit
+// applyValidationRules — called on submit by submitFormHandler
 function applyValidationRules(
   rules: ValidationRule[],
   value: unknown,
@@ -2115,11 +2089,11 @@ function applyValidationRules(
 }
 ```
 
-`setFormFieldHandler` flow:
-1. Update `formData[field] = newValue` immediately (always, before any validation)
-2. If `trigger === 'change'`: schedule debounced validation using `debounceTimers` Map
-3. Update store state with the new `formData` (so the controlled input value is unblocked)
-4. When debounce fires: run `applyValidationRules`, update `fields[field].error`
+`ControlledInputField` change flow:
+1. `handleChange(newValue)` fires
+2. Calls `formCtx.setField(name, newValue)` → updates `local.data.form.formData[name]` in the variable store immediately
+3. If `_validation.trigger === 'change'` and `_debounce` is set: schedules debounced validation
+4. When debounce fires: runs `applyValidationRules`, updates `fields[name].isValid`
 
 ### Submit validation — `submitFormHandler`
 
@@ -2127,7 +2101,7 @@ On submit:
 1. Collect all fields with `validationRules` (or legacy `_validation.rules`)
 2. Run `applyValidationRules` for each field synchronously
 3. If any error: store errors in `fields[field].error`, set `isValid = false`, abort
-4. If all pass: set `isValid = true`, `isSubmitted = true`, call `onSuccess` action
+4. If all pass: set `isValid = true`, `isSubmitted = true`, run any bound submit workflow
 
 ---
 
@@ -2547,12 +2521,11 @@ inset: `-${Math.round(pillRowH / 2)}px 50% 14px 0px`
 
 ### Overview
 
-Three workflow step types are form-specific and only appear in the action-type picker when `isFormContext` is true (i.e. the selected element **is** a `FormContainer` or any descendant of one). They appear under the **"Other"** category in `FORM_ACTION_CATEGORY` inside `_workflow-canvas.tsx`.
+Two workflow step types are form-specific and only appear in the action-type picker when `isFormContext` is true (i.e. the selected element **is** a `FormContainer` or any descendant of one). They appear under the **"Other"** category in `FORM_ACTION_CATEGORY` inside `_workflow-canvas.tsx`.
 
 | Step type | Label | Config |
 |---|---|---|
 | `setFormState` | Set form state | `isSubmitting` (bool/formula), `isSubmitted` (bool/formula) |
-| `submitForm` | Submit form | `onSuccess: { action: "uuid" }`, `fieldValidations: Record<string, { required, message }>` |
 | `resetForm` | Reset form | No config — resets all fields to initial values |
 
 ### `FORM_ACTION_CATEGORY` category label
@@ -2570,35 +2543,17 @@ FormContainer: [
 ],
 ```
 
-### `submitForm` config shape
+### Inline actions — hidden from Workflows tab
 
-```ts
-{
-  onSuccess?: { action: string };           // ActionRef — UUID of workflow to run after success
-  fieldValidations?: {                       // Per-field validation rules
-    [fieldPath: string]: {
-      required: boolean;
-      message: string;
-    };
-  };
-}
-```
-
-The builder renders:
-- **On success** — `WorkflowBindButton` for selecting a named workflow
-- **Field validations** — a dynamic key-value list with field path input, required toggle, and error message input
-
-### `setFormField` inline actions — hidden from Workflows tab
-
-When a controlled input (e.g. `InputField`) is dropped inside a `FormContainer`, the builder auto-injects a `setFormField` inline action into the node's `actions.change`. This is a **system-managed** action — it is NOT user-created and should NOT appear in the right-panel Workflows tab.
-
-Filter rule applied in `ElementWorkflowsTab` (`_panel-right.tsx`): in the legacy `rawActionsObj` branch, skip any entry whose `actionDef.type` is set (inline action). Only pure `ActionRef` objects `{ action: "uuid" }` (which have no `type` property) are shown as user-editable workflows.
+The Workflows tab only shows user-created named workflow references (`{ action: "uuid" }`). Any entry in the legacy `rawActionsObj` format whose `actionDef` has a `type` property is an inline system action and is filtered out:
 
 ```ts
 workflowEntries = Object.entries(rawActionsObj)
-  .filter(([, actionDef]) => !(actionDef as any)?.type)  // skip inline system actions
+  .filter(([, actionDef]) => !(actionDef as any)?.type)  // skip inline action objects
   .map(...)
 ```
+
+**Note:** The builder no longer auto-injects any inline actions when a node is dropped inside a `FormContainer`. Field tracking is purely via `node.props.name`.
 
 ### `isFormContext` detection
 
@@ -2627,3 +2582,84 @@ _actionRef?: string;
 **Rule:** Never assume `{ "action": "uuid" }` always means "Call workflow". After this fix, the canvas displays the step's real type. When saving, `serializeStep` preserves the compact ActionRef format.
 
 **Adding new direct action types to the API:** If you add actions to `config/actions/*.json`, import the file in `app/api/builder/config/route.ts` and include it in `allActions`. Non-`workflowSteps` entries are automatically included in `directActions`.
+
+---
+
+## Workflow Test Results — Formula Picker
+
+### Architecture
+
+When a step is run in the workflow canvas, its result is stored in the builder Zustand store under `workflowTestResults`:
+
+```ts
+// WorkflowTestEntry (builder/_store-types.ts)
+interface WorkflowTestEntry {
+  stableKey: string;       // = step.id from JSON (e.g. "step-login")
+  actionName: string;      // e.g. "Login"
+  stepIndex: number;
+  ranAt: number;
+  result: unknown;         // full response data (null if errored)
+  error: unknown;          // full error object (null if success)
+}
+```
+
+**Stable key:** Each entry is keyed by `step.id` (the original JSON id, e.g. `step-login`). Running the same step again overwrites its existing entry rather than appending a new one.
+
+### Formula path format
+
+| Source | Formula path | Chip color |
+|---|---|---|
+| Result field | `context.workflow['step-id'].result?.field` | Blue (collection) |
+| Error field | `context.workflow['step-id'].error?.field` | Red (error) |
+
+**Chip label format:** `{actionName}.result.field` or `{actionName}.error.field` — e.g. `Login.result.login.errorCode`, `Login.error.message`.
+
+### Error object structure
+
+HTTP errors (from graphql-handler):
+```ts
+{ type: 'http_error', message: string, status: number, statusText: string, url: string, body: unknown }
+```
+
+GraphQL errors:
+```ts
+{ type: 'graphql_error', message: string, errors: { message: string, locations: ... }[] }
+```
+
+Network / general errors:
+```ts
+{ type: 'network_error', name: string, message: string, stack: string, ...otherFields }
+```
+
+The full object (including HTTP request/response details) is always stored — never just the message string.
+
+### Formula evaluation context
+
+`workflowTestResults` is injected into the formula evaluation context in `_formula-editor.tsx`:
+
+```ts
+const workflowMap = Object.fromEntries(
+  Object.entries(workflowTestResults ?? {}).map(([key, entry]) => [
+    key,
+    { result: entry.result, error: entry.error }
+  ])
+);
+// Injected as: context.workflow = workflowMap
+```
+
+This allows `context.workflow['step-login'].result?.login?.errorCode` to be evaluated live while editing a formula.
+
+### Workflow tab display in formula picker
+
+The "Workflow" tab in the formula picker mirrors the "Quick" tab design:
+- Uses `DataTreeNode` and `FEChevron` for expand/collapse tree rendering
+- `result` node always shown in blue (`WF_RESULT_CHIP` color scheme)
+- `error` node shown in red (`WF_ERROR_CHIP`) only when `entry.error` is not null
+- Clicking a leaf inserts a properly typed chip into the formula editor
+- Group header shows `FROM ACTION {actionName}` — no "ok"/"error" status labels
+
+### Rules
+- Never deduplicate by index — use `step.id` as the stable key
+- Never store only the error message — always store the full error object
+- Always inject `context.workflow` into the formula evaluation context
+- Chip color must match source: result → blue, error → red

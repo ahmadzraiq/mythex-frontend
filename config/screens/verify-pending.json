@@ -3,7 +3,6 @@
     "title": "Check Your Email"
   },
   "state": {},
-  "initActions": [],
   "ui": {
     "type": "Box",
     "props": {

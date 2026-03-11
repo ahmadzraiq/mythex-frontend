@@ -9,7 +9,7 @@ import type { ActionHandlerContext, ActionDef } from './types';
  *
  * Used by:
  *   - route.paramChangeAction  (filter/sort/page URL changes)
- *   - screen initActions       (explicit first-load fetch)
+ *   - on-mount workflows        (trigger: "created" — explicit first-load fetch)
  */
 export const refetchDataSourceHandler =
   (ctx: ActionHandlerContext) =>

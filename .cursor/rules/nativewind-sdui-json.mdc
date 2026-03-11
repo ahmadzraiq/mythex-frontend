@@ -31,14 +31,7 @@ alwaysApply: true
 {
   "type": "Select",
   "props": { "selectedValue": "{{form.countryCode}}" },
-  "actions": {
-    "valueChange": {
-      "type": "runMultiple",
-      "actions": [
-        { "action": "setState", "payload": { "path": "screens.checkout.form.countryCode", "value": "$event" } }
-      ]
-    }
-  },
+  "actions": [{ "action": "onCountryCodeChange" }],
   "children": [
     { "type": "SelectTrigger", "children": [
       { "type": "SelectInput", "props": { "placeholder": "Select..." } },
@@ -153,11 +146,11 @@ useEffect(() => {
 
 ## 7. Global Data Availability Across All Pages
 
-**Problem:** Actions that fetch shared data (navigation items, global config, etc.) are often only called from one screen's `initActions`. This leaves navbar/footer empty on all other pages.
+**Problem:** Shared data (navigation items, global config, etc.) is only fetched on one screen, leaving the navbar/footer empty on other pages.
 
 **Fix:**
 - Extract any data needed by layout-level UI (navbar, footer, sidebar) into a dedicated action (e.g. `fetchNavData`)
-- Add that action as the **first** entry in `initActions` for **every** screen
+- Create a `workflowSteps` workflow with `trigger: "created"` bound to the layout or page root component
 - This ensures shared data is always populated regardless of which page the user lands on
 
 ---

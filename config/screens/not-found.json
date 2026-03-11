@@ -3,7 +3,6 @@
     "title": "Page Not Found"
   },
   "state": {},
-  "initActions": [],
   "ui": {
     "type": "Box",
     "props": {

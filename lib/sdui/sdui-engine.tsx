@@ -31,7 +31,6 @@ import type { ValidationRule, ActionsConfig, EngineConfig, RouteConfig, SDUIEngi
 
 export type { ValidationRule, ActionsConfig, EngineConfig, RouteConfig, SDUIEngineProps, NamedDataSourceDef } from './engine-types';
 
-let globalInitHasRun = false;
 
 const computedDefs = (storeConfig as { computed?: unknown[] }).computed ?? [];
 
@@ -445,16 +444,13 @@ export function SDUIEngine({
         let actionDef = actionsConfig[actionName] as {
           type?: string;
           url?: string;
-          storeIn?: string;
           path?: string;
           value?: unknown;
           map?: Record<string, string>;
           method?: string;
           body?: Record<string, unknown>;
-          responsePath?: string;
           rules?: Record<string, ValidationRule>;
           storeErrorsIn?: string;
-          onSuccess?: { action: string; payload?: { path: string } };
           actions?: Array<{ action: string; payload?: Record<string, unknown> }>;
         } | undefined;
         // Fall back to treating the action object itself as the definition when no named action found
@@ -571,7 +567,6 @@ export function SDUIEngine({
     }
   }, [paramChangeAction]);
 
-  // initActions use ref so they always call the latest runAction (avoids stale closure)
   const variableStoreConfig = useMemo(
     () => ({
       initialState: config.state ?? {},
@@ -809,17 +804,6 @@ export function SDUIEngine({
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataSources, dsRefetchKeys]);
-
-  const globalInitActions = (storeConfig as { globalInitActions?: Array<{ action: string }> }).globalInitActions ?? [];
-  useEffect(() => {
-    if (globalInitHasRun) return;
-    globalInitHasRun = true;
-    globalInitActions.forEach((action) => runActionRef.current(action));
-  }, [globalInitActions]);
-
-  useEffect(() => {
-    config.initActions?.forEach((action) => runActionRef.current(action));
-  }, [config.initActions]); // runActionRef.current always has latest runAction
 
   const builderContextValue = useMemo(() => ({ builderMode }), [builderMode]);
 

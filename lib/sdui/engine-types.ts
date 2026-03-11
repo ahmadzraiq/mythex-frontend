@@ -59,10 +59,7 @@ export interface ActionsConfig {
     url?: string;
     method?: string;
     body?: Record<string, unknown>;
-    storeIn?: string;
     storeFullResponseIn?: string;
-    responsePath?: string;
-    errorMessagePath?: string;
     path?: string;
     value?: unknown;
     map?: Record<string, string>;
@@ -70,7 +67,6 @@ export interface ActionsConfig {
     storeErrorsIn?: string;
     payload?: Record<string, unknown>;
     actions?: Array<{ action: string; payload?: Record<string, unknown> }>;
-    onSuccess?: { action: string; payload?: Record<string, unknown> } | { action: string; payload?: Record<string, unknown> }[];
     formPath?: string;
     targetPath?: string;
     resetFormPath?: string;

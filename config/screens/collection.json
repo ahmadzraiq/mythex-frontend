@@ -4,7 +4,6 @@
   },
   "state": {},
   "layout": "store",
-  "initActions": [],
   "content": {
     "type": "Box",
     "props": {

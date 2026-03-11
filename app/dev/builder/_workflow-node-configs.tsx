@@ -1182,8 +1182,8 @@ function ChangeVariableValueConfig({
 
   const varId = cfg.variableName as string | undefined;
   const selected = customVars.find(v => (v.id ?? v.name) === varId);
-  // When varId is a raw path (e.g. screen-scoped "screens.signIn.errors.apiError")
-  // that doesn't match any customVars entry, treat it as a path-typed variable
+  // When varId is a raw path that doesn't match any customVars entry,
+  // treat it as a path-typed variable (legacy fallback — prefer declaring in config/variables.json)
   const rawPathSelected = varId && !selected ? varId : null;
   const filtered = customVars.filter(v => {
     const label = (v.label ?? v.name ?? '').toLowerCase();
@@ -1781,10 +1781,6 @@ export function NodePropsPanel({
 
       {step.type === 'setFormState' && (
         <SetFormStateConfig cfg={cfg} setCfg={setCfg} />
-      )}
-
-      {step.type === 'submitForm' && (
-        <div style={S.infoBox}>Submit the form</div>
       )}
 
       {step.type === 'resetForm' && (

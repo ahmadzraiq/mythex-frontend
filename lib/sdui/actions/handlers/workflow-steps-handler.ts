@@ -141,7 +141,6 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
     case 'share':
     case 'restore':
     case 'setTheme':
-    case 'setFormField':
     case 'clearPersistedPaths':
     case 'validate':
     case 'submitForm' as string:

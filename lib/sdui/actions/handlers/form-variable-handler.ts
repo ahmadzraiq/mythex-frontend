@@ -1,8 +1,9 @@
 /**
- * Handlers for form actions: setFormField, setFormState, resetForm, submitForm
+ * Handlers for form actions: setFormState, resetForm, submitForm
  *
  * weWeb-style: form state lives at local.data.form.* in the global variable store.
- * No UUID or formId needed — always writes to the nearest FormContainer's state.
+ * Field values are tracked automatically by the form-field-tracker (lib/sdui/form-field-tracker.ts)
+ * for any named field node inside a FormContainer. Use setVar to pre-populate field values programmatically.
  *
  * local.data.form = {
  *   formData:     { fieldName: value, ... }
@@ -13,7 +14,6 @@
  * }
  */
 
-import { resolveActionValue } from '../resolve-value';
 import type { ActionDef, ActionHandlerContext } from './types';
 import { getGlobalVariableStore } from '../../global-variable-store';
 import { evaluateFormula, storedValueToFormula, FORMULA_FNS, type FormulaValue } from '../../formula-evaluator';
@@ -21,9 +21,6 @@ import { evaluateFormula, storedValueToFormula, FORMULA_FNS, type FormulaValue }
 const LOCAL_PATH = 'local';
 
 type ValidationRule = { type: string; message?: string; value?: string; formula?: unknown };
-
-/** Module-level debounce timers keyed by field name */
-const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 /** Apply an array of validation rules to a single field value. Returns '' if valid, or an error message string. */
 function applyValidationRules(
@@ -94,119 +91,6 @@ function writeFormState(
     },
   };
 }
-
-function runValidationAndWrite(
-  field: string,
-  newValue: unknown,
-  actionDef: ActionDef,
-  baseFormState: ReturnType<typeof getFormState>,
-  vs: Record<string, unknown>,
-  store: ActionHandlerContext['store'],
-) {
-  const newFormData = { ...baseFormState.formData, [field]: newValue };
-  const formulaCtx = {
-    ...vs,
-    local: {
-      ...(vs['local'] as Record<string, unknown> ?? {}),
-      data: { form: { ...baseFormState, formData: newFormData } },
-    },
-  } as Record<string, unknown>;
-
-  let fieldIsValid: unknown = '';
-  const validationRules = actionDef.validationRules as ValidationRule[] | undefined;
-  if (validationRules && validationRules.length > 0) {
-    fieldIsValid = applyValidationRules(validationRules, newValue, formulaCtx);
-  } else {
-    const str = String(newValue ?? '').trim();
-    const required = actionDef.required as boolean | undefined;
-    const requiredMessage = (actionDef.requiredMessage as string | undefined) ?? 'This field is required';
-    const customFormula = actionDef.validationFormula;
-    if (required && !str) {
-      fieldIsValid = requiredMessage;
-    } else if (customFormula) {
-      const formulaStr = storedValueToFormula(customFormula as FormulaValue);
-      const result = evaluateFormula(formulaStr, formulaCtx);
-      if (result.value === true || result.value === '') fieldIsValid = '';
-      else if (typeof result.value === 'string' && result.value) fieldIsValid = result.value;
-      else fieldIsValid = typeof (actionDef.message) === 'string' ? actionDef.message : 'Invalid value';
-    }
-  }
-
-  // Read latest form state again (may have changed during debounce delay).
-  // Always update formData with newValue so the controlled input's bound value updates.
-  const latest = getFormState(getGlobalVariableStore().getState().getFullState());
-  const newFormDataFinal = { ...latest.formData, [field]: newValue };
-  const newFields = {
-    ...latest.fields,
-    [field]: { value: newValue, isValid: fieldIsValid },
-  };
-  const allValid = Object.values(newFields).every((f) => !f.isValid || f.isValid === true);
-  const nextForm = { ...latest, formData: newFormDataFinal, fields: newFields, isValid: allValid };
-
-  getGlobalVariableStore().getState().setState((prev) => writeFormState(prev, nextForm));
-  store.getState().setState((prev) => writeFormState(prev, nextForm));
-}
-
-/** setFormField — sets field value in local.data.form, updates fields + isValid */
-export const setFormFieldHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
-  (ctx) => async (actionDef) => {
-    const field = (actionDef.field ?? '') as string;
-    if (!field) return;
-
-    const rawValue = actionDef.value;
-    const newValue = rawValue === '$event' ? ctx.event : resolveActionValue(rawValue, ctx.get, ctx.scope, rawValue);
-
-    const vs = getGlobalVariableStore().getState().getFullState();
-    const current = getFormState(vs);
-    const newFormData = { ...current.formData, [field]: newValue };
-
-    // Always write the new value immediately (keeps controlled input responsive)
-    const debounce = actionDef._debounce as { enabled?: boolean; delay?: number } | undefined;
-    const isChangeTrigger = actionDef.validationTrigger === 'change';
-
-    if (isChangeTrigger && debounce?.enabled) {
-      // Write value now, keeping existing isValid until debounce fires
-      const existingIsValid = current.fields[field]?.isValid ?? '';
-      const quickFields = {
-        ...current.fields,
-        [field]: { value: newValue, isValid: existingIsValid },
-      };
-      const quickForm = { ...current, formData: newFormData, fields: quickFields };
-      getGlobalVariableStore().getState().setState((prev) => writeFormState(prev, quickForm));
-      ctx.store.getState().setState((prev) => writeFormState(prev, quickForm));
-
-      // Schedule debounced validation
-      clearTimeout(debounceTimers.get(field));
-      debounceTimers.set(field, setTimeout(() => {
-        debounceTimers.delete(field);
-        const freshVs = getGlobalVariableStore().getState().getFullState();
-        const freshForm = getFormState(freshVs);
-        runValidationAndWrite(field, newValue, actionDef, freshForm, freshVs, ctx.store);
-      }, debounce.delay ?? 300));
-      return;
-    }
-
-    // Non-debounced path
-    let fieldIsValid: unknown = current.fields[field]?.isValid ?? '';
-    if (isChangeTrigger) {
-      runValidationAndWrite(field, newValue, actionDef, current, vs, ctx.store);
-      return;
-    } else if (actionDef.validationTrigger === 'submit') {
-      fieldIsValid = '';
-    } else if (actionDef.isValid !== undefined) {
-      fieldIsValid = Boolean(actionDef.isValid);
-    }
-
-    const newFields = {
-      ...current.fields,
-      [field]: { value: newValue, isValid: fieldIsValid },
-    };
-    const allValid = Object.values(newFields).every((f) => !f.isValid || f.isValid === true);
-    const nextForm = { ...current, formData: newFormData, fields: newFields, isValid: allValid };
-
-    getGlobalVariableStore().getState().setState((prev) => writeFormState(prev, nextForm));
-    ctx.store.getState().setState((prev) => writeFormState(prev, nextForm));
-  };
 
 /** setFormState — sets isSubmitting / isSubmitted */
 export const setFormStateHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =

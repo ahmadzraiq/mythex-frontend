@@ -159,17 +159,9 @@ const key = childKey && !isScopeVar ? childKey : `child-${i}`;
 
 ## Product Not Found / route.slug Race
 
-**Problem:** `initActions` run before `route.slug` is set; fetch URL gets empty slug.
+**Problem:** Workflow `trigger: "created"` runs before `route.slug` is set; fetch URL gets empty slug.
 
 **Fix:** (1) Use `useLayoutEffect` in page to set route data before child effects. (2) In engine `get`, fallback to `computeMergedState(useSduiStore.getState())` when mergedState lacks the value.
-
----
-
-## initActions Stale Closure
-
-**Problem:** initActions effect may use outdated runAction if deps are wrong.
-
-**Fix:** Engine uses `runActionRef.current(action)` so initActions always call the latest runAction. Do not add runAction to the effect deps—that would re-run initActions on every runAction change.
 
 ---
 
@@ -325,7 +317,7 @@ if (!actionDef && 'type' in (a as object)) {
 }
 ```
 
-**Rule:** You can now use inline action types inside `runMultiple.actions`, `onSuccess`, etc.:
+**Rule:** You can use inline action types inside `runMultiple.actions`:
 ```json
 {
   "type": "runMultiple",
@@ -335,7 +327,6 @@ if (!actionDef && 'type' in (a as object)) {
   ]
 }
 ```
-This also applies to `onSuccess` chaining: `"onSuccess": { "type": "set", "path": "menuOpen", "value": false }`.
 
 ---
 
@@ -362,11 +353,11 @@ const next = Math.max(minVal, (Number(current) || 0) - amount);
 - Prev: `{{collectionPrevPage}}` (computed: max(1, current - 1))
 - Next: `{{collectionNextPage}}` (computed: min(totalPages, current + 1))
 
-**Problem 2 (initActions overwrites URL):** Screen has `setVar collectionSkip 0` in initActions; it overwrites the value synced from `?page=2`.
+**Problem 2 (created-workflow overwrites URL):** A `trigger: "created"` workflow step resets `collectionSkip` to 0, overwriting the value synced from `?page=2`.
 
-**Fix:** Remove setVar from initActions when collectionSkip is synced from URL via searchParamSync. The page sync sets it from `?page=N`.
+**Fix:** Do not reset `collectionSkip` in on-mount workflows when it is synced from the URL via `searchParamSync`. The page sync sets it from `?page=N`.
 
-**Problem 3 (double loading / flickering):** Adding `page` to route `keyBy` causes engine remount on every page change; initActions run again → fetchCollection runs twice → loading skeleton flickers.
+**Problem 3 (double loading / flickering):** Adding `page` to route `keyBy` causes engine remount on every page change; the created workflow runs again → fetchCollection runs twice → loading skeleton flickers.
 
 **Fix:** Do NOT add `page` to keyBy for collection route. Use `keyBy: ["sort", "facets"]` only. The engine stays mounted; only the click-triggered fetch runs.
 
@@ -374,7 +365,7 @@ const next = Math.max(minVal, (Number(current) || 0) - amount);
 
 **Fix:** Wrap in `max(1, floor(...))` in store.json computed so collectionCurrentPage is never &lt; 1.
 
-**Rule:** For pagination with URL sync: searchParamSync with `transform: "pageToSkip"`, navigate with explicit page values, no page in keyBy, no initActions that reset collectionSkip.
+**Rule:** For pagination with URL sync: searchParamSync with `transform: "pageToSkip"`, navigate with explicit page values, no page in keyBy, no created-workflow step that resets collectionSkip.
 
 ---
 
@@ -394,109 +385,6 @@ return <IconComponent size={numericSize} color={color} className={className} {..
 - Never use `<Icon as={...} />` for icons that need a specific color — always render Lucide components directly
 
 ---
-
-## Form Validation with Per-Field Errors
-
-**Pattern:** Show validation errors under each input, clear on change, and show API errors separately.
-
-### 1. Auth action — validate before mutation
-
-```json
-{
-  "login": {
-    "type": "validate",
-    "rules": {
-      "form.username": { "required": true, "pattern": "email", "message": "Please enter a valid email address" },
-      "form.password": { "required": true, "message": "Please enter your password" }
-    },
-    "storeErrorsIn": "errors",
-    "onSuccess": { "action": "loginMutation" }
-  }
-}
-```
-
-**Validation rules:** `required`, `minLength`, `maxLength`, `pattern: "email"`, `equals` (fixed value), `equalsField` (compare to another field, e.g. confirm password).
-
-### 2. Screen state — add `errors: {}`
-
-```json
-"state": { "form": { "email": "", "password": "" }, "errors": {} }
-```
-
-### 3. Per-field error — use full path in condition
-
-**Condition uses raw state** — screen-scoped aliases are NOT resolved. Use full path: `screens.{screenName}.errors.form.{field}`.
-
-```json
-{
-  "type": "Box",
-  "props": { "className": "min-h-[20px]" },
-  "condition": { "var": ["screens.signIn.errors.form.username"] },
-  "children": [
-    { "type": "Text", "props": { "className": "text-sm text-red-500 dark:text-red-400" }, "text": "{{errors.form.username}}" }
-  ]
-}
-```
-
-**Text uses alias** — `{{errors.form.username}}` works because interpolation resolves screen-scoped aliases.
-
-### 4. setState path — use full path for screen-scoped form/errors
-
-**Problem:** The setState handler does NOT resolve screen-scoped aliases. Using `path: "form.field"` writes to a top-level `form.field` that is never read (value comes from `screens.{screenName}.form.field`). Input appears read-only.
-
-**Fix:** Always use the full path: `screens.{screenName}.form.{field}` (e.g. `screens.cart.form.couponCode`, `screens.signIn.form.username`).
-
-### 5. Clear field error on change — runMultiple
-
-```json
-"actions": {
-  "change": {
-    "type": "runMultiple",
-    "actions": [
-      { "action": "setState", "payload": { "path": "screens.signIn.form.username", "value": "$event" } },
-      { "action": "setState", "payload": { "path": "screens.signIn.errors.form.username", "value": "" } }
-    ]
-  }
-}
-```
-
-### 6. API errors — show when mutation fails
-
-For screens that call a mutation after validate (e.g. register, login), show API errors (e.g. "Email already registered") above the submit button. Use `_workflow.lastAction` to distinguish validation vs API:
-
-```json
-{
-  "type": "Box",
-  "props": { "className": "text-sm text-red-500" },
-  "condition": { "and": [{ "==": [{ "var": ["_workflow.lastAction"] }, "registerMutation"] }, { "var": ["_workflow.lastError"] }] },
-  "children": [{ "type": "Text", "text": "{{_workflow.lastError}}" }]
-}
-```
-
-**Clear API error on input change** — add to each field's runMultiple: `{ "action": "setState", "payload": { "path": "_workflow.lastError", "value": "" } }`
-
-### 7. Password + confirm password
-
-Use `equalsField` to compare confirm to password. When password changes, also clear confirmPassword error:
-
-```json
-"actions": {
-  "change": {
-    "type": "runMultiple",
-    "actions": [
-      { "action": "setState", "payload": { "path": "screens.register.form.password", "value": "$event" } },
-      { "action": "setState", "payload": { "path": "screens.register.errors.form.password", "value": "" } },
-      { "action": "setState", "payload": { "path": "screens.register.errors.form.confirmPassword", "value": "" } }
-    ]
-  }
-}
-```
-
-**Rules:**
-- Per-field errors: condition = `screens.{screenName}.errors.form.{field}` (full path)
-- Per-field text: `{{errors.form.field}}` (alias works)
-- No global error box for validation-only screens (sign-in); use per-field only
-- API error box: condition on `lastAction === "mutationName"` so it only shows when the mutation ran and failed
 
 ---
 
@@ -524,7 +412,7 @@ Use `equalsField` to compare confirm to password. When password changes, also cl
 
 **Problem:** The AI copies section examples literally. If an example maps over `featured.categories` with empty state `[]`, the AI generates empty state too — the section heading renders but the grid is blank.
 
-**Fix:** Every section example that uses `map` must include a `_stateNote` documenting the required demo state. The AI reads this and includes the demo state in its output. `initActions` can then replace it with real API data.
+**Fix:** Every section example that uses `map` must include a `_stateNote` documenting the required demo state. The AI reads this and includes the demo state in its output. A `trigger: "created"` workflow can then replace it with real API data.
 
 ```typescript
 'featured-categories': {
@@ -717,3 +605,76 @@ if (SUBMIT_BUTTON_TYPES.has(node.type) && cleanProps.type === 'submit' && formCt
 - No `submitForm` step needed in the workflow — validation is implicit via `FormContainer`
 - `_validation` rules on InputField nodes are registered via `FormContext.registerFieldValidation`; `submit()` reads them all at call time
 - Do NOT rely on HTML form's native `onSubmit` firing from a Gluestack Button click — it never will
+
+---
+
+## Global Variables vs Screen-Scoped Paths
+
+**Problem:** Unsupported step types (anything not in the supported list in `build-guide.mdc`) and `screens.*` paths are not rendered in the workflow canvas.
+
+### Rule 1 — Only use supported step types in workflowSteps
+
+Always use `changeVariableValue` (for global variables) or `setVar` (for arbitrary variable store paths such as form pre-population).
+
+```json
+// ✅ CORRECT — changeVariableValue for global variable (error/UI state)
+{ "id": "step-2", "type": "changeVariableValue", "config": { "variableName": "f2a3b4c5-d6e7-8901-fabc-012345678901", "value": "" } }
+
+// ✅ CORRECT — setVar for programmatic form pre-population
+{ "id": "step-1", "type": "setVar", "config": { "path": "local.data.form.formData.emailAddress", "value": "{{...}}" } }
+```
+
+### Form field tracking — `name` prop, no workflow needed
+
+Input fields (`InputField`, `ControlledInputField`, etc.) inside a `FormContainer` **auto-track their value** via the `name` prop. The `ControlledInputField` calls `formCtx.setField(name, value)` on every change. **No onChange workflow is needed** — just set `name` on the node:
+
+```json
+{ "type": "InputField", "props": { "name": "emailAddress", "placeholder": "Email" } }
+```
+
+To pre-populate a field programmatically (e.g. from API data), use `setVar`:
+
+```json
+{ "id": "step-1", "type": "setVar", "config": { "path": "local.data.form.formData.emailAddress", "value": "{{collections.UUID.data.customer.emailAddress}}" } }
+```
+
+### Rule 2 — Never use `screens.*` paths
+
+`screens.*` paths (e.g. `screens.signIn.errors.apiError`) are not supported. Every error/UI state variable must be declared in `config/variables.json` with a UUID and referenced by UUID everywhere.
+
+```json
+// ❌ WRONG — screen-scoped path
+"condition": "{{screens.signIn.errors.apiError}}"
+"variableName": "screens.checkout.errors.form.emailAddress"
+
+// ✅ CORRECT — global variable by UUID
+"condition": "{{variables['f2a3b4c5-d6e7-8901-fabc-012345678901']}}"
+"variableName": "f2a3b4c5-d6e7-8901-fabc-012345678901"
+```
+
+### Rule 3 — `_workflow.lastError` clearing is automatic
+
+Do NOT use `setState` to clear `_workflow.lastError`. The workflow engine resets it automatically at the start of the next workflow run. Remove any step that does this.
+
+```json
+// ❌ REMOVE — unnecessary and unsupported
+{ "id": "step-2", "type": "setState", "config": { "payload": { "path": "_workflow.lastError", "value": "" } } }
+```
+
+If a screen displays an API error, create a dedicated global variable (e.g. "Sign In Error" → UUID), set it in the `falseBranch` via `changeVariableValue`, and clear it on field change via `changeVariableValue` with value `""`. See `config/variables.json` and `config/actions/auth.json` (submitSignIn workflow) for the reference pattern.
+
+### Rule 4 — Declare all error/UI state variables in `variables.json`
+
+Before using any UUID in `changeVariableValue` or `{{variables['UUID']}}`, the variable must exist in `config/variables.json`:
+
+```json
+// config/variables.json
+"f2a3b4c5-d6e7-8901-fabc-012345678901": {
+  "label": "Sign In Error",
+  "type": "string",
+  "initialValue": "",
+  "folder": "Login"
+}
+```
+
+**Applies to:** All `changeVariableValue` actions in `config/actions/`, all `{{variables[...]}}` conditions in screens and fragments.

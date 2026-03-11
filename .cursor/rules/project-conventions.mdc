@@ -11,7 +11,7 @@ alwaysApply: true
 
 ## Architecture
 - **JSON-driven UI**: Screens, layouts, fragments are defined in `config/` as JSON
-- **Global variable store** (`lib/sdui/global-variable-store.ts`): Single source of truth; path-based access; screen-scoped paths `screens.{screenName}.form.*`
+- **Global variable store** (`lib/sdui/global-variable-store.ts`): Single source of truth; path-based access. Form state lives at `local.data.form.formData.*`. Global UI state uses named variables from `config/variables.json`.
 - **Config resolver** (`lib/sdui/config-resolver.ts`): Resolves `$ref`, `$slot`, layout composition at build time
 - **Zustand SDUI Engine**: Renders resolved config, merges state (config + Zustand), runs actions
 - **Computed runner** (`lib/sdui/computed-runner.ts`): JSON Logic–based derived values; inline expr in `text` or optional `store.json` computed. **Generic ops only** — see `sdui-computed-and-sync.mdc`.
@@ -34,7 +34,7 @@ alwaysApply: true
 5. **No hardcoded values in code**: paths, routes, initial state, colors—all come from JSON config
 6. Use theme variables: `var(--theme-announcement-bg)`, `var(--theme-header-text)`, etc.
 7. **Derived values**: Use inline `text: { expr: <JSON Logic>, suffix?, prefix? }` for one-off computed (cart count, totals, etc.); use `formatCurrency` for money display.
-8. **Cross-screen state**: Use `screens.{screenName}.form.*`, `screens.{screenName}.errors.*`; access from anywhere via `{{screens.signup.form.password}}`.
+8. **Cross-screen state**: Declare variables in `config/variables.json` with a UUID. Reference them by UUID via `changeVariableValue` in workflows. Form field values are tracked automatically by `FormContainer` via the `name` prop. Use `setVar` for programmatic pre-population (e.g. `path: "local.data.form.formData.fieldName"`). Never use `screens.*` paths.
 9. **Workflow context**: `{{_workflow.lastAction}}`, `{{_workflow.lastError}}` for last action name and error (null if success). Configurable via `engineConventions.workflowPath`.
 10. **Data fetching**: Use `type: "fetch"` for REST or `type: "graphql"` for GraphQL. **Never create Next.js API routes** (`app/api/`)—data comes directly from external APIs/services.
 11. **GraphQL config**: Set `engineConventions.graphqlEndpoint` and `engineConventions.graphqlHeaders` in `store.json` for global defaults. Override per-action with `endpoint` and `headers` fields.

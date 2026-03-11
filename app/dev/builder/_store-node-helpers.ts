@@ -304,52 +304,6 @@ export function hasFormContainerAncestor(nodes: SDUINode[], targetId: string, _p
   return false;
 }
 
-/**
- * Recursively walk subtree and add setFormField to InputField/TextareaInput/Checkbox
- * that don't have it. Returns patched node and next field counter.
- */
-export function injectSetFormFieldRecursive(
-  n: SDUINode,
-  fieldCounter: { value: number }
-): SDUINode {
-  if (!FORM_CONTROLLED_TYPES.has(n.type as string)) {
-    return {
-      ...n,
-      children: n.children?.map((c) => injectSetFormFieldRecursive(c as SDUINode, fieldCounter)),
-    };
-  }
-  const actions = (n.actions ?? {}) as Record<string, unknown>;
-  const actionSlot = n.type === 'Checkbox' ? 'valueChange' : 'change';
-  const existing = actions[actionSlot];
-  const hasSetFormField = (a: unknown): boolean =>
-    a && typeof a === 'object' && (a as Record<string, unknown>).type === 'setFormField';
-  if (Array.isArray(existing) ? existing.some(hasSetFormField) : hasSetFormField(existing)) {
-    return { ...n, children: n.children?.map((c) => injectSetFormFieldRecursive(c as SDUINode, fieldCounter)) };
-  }
-  const props = (n.props ?? {}) as Record<string, unknown>;
-  const fieldName =
-    (typeof props.name === 'string' && props.name ? slugifyFieldName(props.name) : null) ||
-    (typeof props.placeholder === 'string' && props.placeholder ? slugifyFieldName(props.placeholder) : null) ||
-    `field${++fieldCounter.value}`;
-  const newAction = { type: 'setFormField', field: fieldName, value: '$event' };
-  const newActions = { ...actions, [actionSlot]: newAction };
-  return {
-    ...n,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    actions: newActions as any,
-    children: n.children?.map((c) => injectSetFormFieldRecursive(c as SDUINode, fieldCounter)),
-  };
-}
-
-/**
- * If targetId is inside a FormContainer, patch its subtree to add setFormField to form inputs.
- */
-export function autoInjectSetFormFieldIfInForm(nodes: SDUINode[], targetId: string): SDUINode[] {
-  const hasForm = hasFormContainerAncestor(nodes, targetId);
-  if (!hasForm) return nodes;
-  return patchNodeById(nodes, targetId, (n) => injectSetFormFieldRecursive(n, { value: 0 }));
-}
-
 /** Insert `newNode` as a child of `parentId`, or at root level if parentId is null */
 export function insertNode(
   nodes: SDUINode[],

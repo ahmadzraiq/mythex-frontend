@@ -874,21 +874,21 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
               {/* Main flow */}
               <Connector />
               <WorkflowCanvasContext.Provider value={canvasCtxValue}>
-                <FlowRenderer
-                  steps={currentSteps}
-                  pathPrefix={[]}
-                  selectedPath={selectedPath}
-                  copiedStep={copiedStep}
-                  onSelect={p => setSelectedPath(p)}
-                  onInsert={(insertIdx, pathPrefix, x, y) => setAddPopoverState({ insertIdx, pathPrefix, x, y })}
-                  onContextMenu={(e, step, path) => {
-                    e.stopPropagation();
-                    setContextMenuState({ x: e.clientX, y: e.clientY, step, path });
-                  }}
-                  onUpdateStep={(path, patch) => {
-                    setCurrentSteps(prev => updateStepAtPath(prev, path as number[], s => ({ ...s, ...patch })));
-                  }}
-                />
+              <FlowRenderer
+                steps={currentSteps}
+                pathPrefix={[]}
+                selectedPath={selectedPath}
+                copiedStep={copiedStep}
+                onSelect={p => setSelectedPath(p)}
+                onInsert={(insertIdx, pathPrefix, x, y) => setAddPopoverState({ insertIdx, pathPrefix, x, y })}
+                onContextMenu={(e, step, path) => {
+                  e.stopPropagation();
+                  setContextMenuState({ x: e.clientX, y: e.clientY, step, path });
+                }}
+                onUpdateStep={(path, patch) => {
+                  setCurrentSteps(prev => updateStepAtPath(prev, path as number[], s => ({ ...s, ...patch })));
+                }}
+              />
               </WorkflowCanvasContext.Provider>
 
               {/* Add action text link at the bottom */}

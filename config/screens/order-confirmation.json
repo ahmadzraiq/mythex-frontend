@@ -4,11 +4,6 @@
   },
   "state": {},
   "layout": "store",
-  "initActions": [
-    {
-      "action": "5da7f519-ddb0-42b7-b64e-38bb8f99897c"
-    }
-  ],
   "content": {
     "type": "Box",
     "props": {

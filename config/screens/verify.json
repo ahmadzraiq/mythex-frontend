@@ -3,7 +3,6 @@
     "title": "Verify Email"
   },
   "state": {},
-  "initActions": [],
   "ui": {
     "type": "Box",
     "props": {

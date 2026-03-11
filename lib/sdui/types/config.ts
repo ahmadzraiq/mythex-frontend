@@ -9,8 +9,6 @@ export interface SDUIConfig {
   state?: Record<string, unknown>;
   /** Data sources - fetched when config loads */
   dataSources?: SDUIDataSource[];
-  /** Actions to run on mount (e.g. redux_fetchProducts) */
-  initActions?: SDUIAction[];
   ui: SDUINode;
   meta?: { title?: string; description?: string };
 }

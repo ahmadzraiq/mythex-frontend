@@ -157,7 +157,7 @@ export function serializeRangeFromEditor(editorEl: HTMLElement, sel: Selection):
  *   theme.(colors|sections|fonts)(?.['key'])*
  *   local.data(?.['key'])*   — weWeb-style FormContainer local state
  */
-export const CHIP_RE = /collections\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|variables\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|local\.data(?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|context\.workflow\['[^']+'\](?:(?:\?)?\.[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|context\.(?:item|index|parent)(?:(?:\?\.\['[^']*'\]|\?\.\[\d+\])|(?:\.\w+))*|globalContext\.(?:browser|screen)(?:\?\.\['[^']*'\])*|pages\['[^']+'\](?:\?\.\['[^']*'\])*|theme(?:\.(?:colors|sections|fonts|radius)|\?\.\['(?:colors|sections|fonts|radius)'\])(?:\?\.\['[^']*'\]|\.\w+)*/g;
+export const CHIP_RE = /collections\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|variables\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|local\.data(?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|context\.workflow\['[^']+'\](?:(?:\?)?\.[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|context\.(?:item|index|parent)(?:(?:\?\.\['[^']*'\]|\?\.\[\d+\])|(?:\.\w+))*|globalContext\.(?:browser|screen)(?:\?\.\['[^']*'\])*|pages\['[^']+'\](?:\?\.\['[^']*'\])*|theme(?:\.(?:colors|sections|fonts|radius)|\?\.\['(?:colors|sections|fonts|radius)'\])(?:\?\.\['[^']*'\]|\.\w+)*|components\?\.\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*/g;
 
 export const CHIP_INNER_CSS = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;display:block';
 
@@ -711,8 +711,15 @@ export function populateEditor(
     let formulaPath = match[0];
     const collectionUUID = match[1];
     const variableUUID = match[2];
+    const legacyComponentId = match[3]; // backward compat: components?.['id']?.['value']
 
-    if (collectionUUID) {
+    if (legacyComponentId) {
+      // Old formula format written before WeWeb-style migration.
+      // Redirect to the new variables['{id}'] chip to avoid plain-text rendering.
+      const newFormula = `variables['${legacyComponentId}']`;
+      const displayLabel = varMap?.get(legacyComponentId)?.label ?? legacyComponentId;
+      el.appendChild(buildChipSpan(newFormula, displayLabel, 'variable'));
+    } else if (collectionUUID) {
       const base = dsMap.get(collectionUUID)?.label ?? collectionUUID;
       const afterRoot = formulaPath.slice(`collections['${collectionUUID}']`.length);
       const segs: Array<string | number> = [];

@@ -44,8 +44,7 @@ Use this order for predictable AI scanning: 1. `type` 2. `props` 3. `condition` 
   "meta": { "title": "..." },
   "state": { ... },
   "layout": "authenticated",
-  "content": { ... } or [ ... ],
-  "initActions": [ ... ]
+  "content": { ... } or [ ... ]
 }
 ```
 Screens without `layout` use `ui` directly (e.g. login, signup).

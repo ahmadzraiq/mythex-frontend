@@ -364,28 +364,29 @@ export function VariableEntry({
 // ─── Variables tab ────────────────────────────────────────────────────────────
 
 const FORM_CC = { bg: '#c2410c', border: '#ea580c', text: '#ffedd5' };
-/** Top-level controlled components (Input wraps InputField; we show Input not InputField) */
-const STANDALONE_CONTROLLED_TYPES = new Set(['Input', 'Textarea', 'Checkbox', 'Select']);
+/** Top-level controlled components tracked for variables['{id}'] entries */
+const STANDALONE_CONTROLLED_TYPES = new Set([
+  'Input', 'Textarea', 'TextareaInput', 'Checkbox', 'Switch', 'RadioGroup', 'Select', 'Slider',
+]);
 
-/** Extract field names from a FormContainer's subtree (setFormField actions or initialFormData) */
-function extractFormFieldNames(formNode: { props?: { initialFormData?: Record<string, unknown> }; children?: Array<{ type?: string; actions?: Record<string, unknown>; props?: Record<string, unknown>; children?: unknown[] }> }): string[] {
+/** Extract field names from a FormContainer's subtree.
+ * Sources: initialFormData keys, then props.name on input-type children. */
+function extractFormFieldNames(formNode: { props?: { initialFormData?: Record<string, unknown> }; children?: Array<{ type?: string; props?: Record<string, unknown>; children?: unknown[] }> }): string[] {
   const fromInitial = formNode.props?.initialFormData ? Object.keys(formNode.props.initialFormData) : [];
-  const fromActions = new Set<string>();
+  const INPUT_TYPES = new Set(['InputField', 'TextareaInput', 'Checkbox', 'Select']);
+  const fromNames = new Set<string>();
   function walk(nodes: unknown[]) {
     for (const n of nodes || []) {
-      const node = n as { type?: string; actions?: Record<string, unknown>; children?: unknown[] };
-      for (const a of Object.values(node.actions ?? {})) {
-        const action = Array.isArray(a) ? a[0] : a;
-        if (action && typeof action === 'object' && (action as Record<string, unknown>).type === 'setFormField') {
-          const f = (action as Record<string, unknown>).field;
-          if (typeof f === 'string') fromActions.add(f);
-        }
+      const node = n as { type?: string; props?: Record<string, unknown>; children?: unknown[] };
+      if (INPUT_TYPES.has(node.type ?? '')) {
+        const name = node.props?.name as string | undefined;
+        if (name) fromNames.add(name);
       }
       if (node.children?.length) walk(node.children);
     }
   }
   walk(formNode.children ?? []);
-  return [...new Set([...fromInitial, ...fromActions])];
+  return [...new Set([...fromInitial, ...fromNames])];
 }
 
 /** Check if node type is a top-level controlled component (for standalone listing) */
@@ -393,27 +394,184 @@ function isStandaloneControlled(type: string): boolean {
   return STANDALONE_CONTROLLED_TYPES.has(type);
 }
 
-/** Recursively collect FormContainers and standalone controlled components from page tree */
-function collectPageComponents(
+export type StandaloneEntry = { node: SDUINode; insideForm: boolean };
+export type FormEntry = { node: SDUINode; fields: string[] };
+
+/** Recursively collect FormContainers and ALL controlled components from page tree.
+ * Each standalone entry tracks whether the node is inside a FormContainer so the
+ * UI can show "Form - {name}" vs just "{name}" in the Variables tab. */
+export function collectPageComponents(
   nodes: SDUINode[],
   parentInsideForm: boolean
-): { formContainers: Array<{ node: SDUINode; fields: string[] }>; standalones: SDUINode[] } {
-  const formContainers: Array<{ node: SDUINode; fields: string[] }> = [];
-  const standalones: SDUINode[] = [];
+): {
+  formContainers: FormEntry[];
+  standalones: StandaloneEntry[];
+  /** All form field names registered across all FormContainers on this page */
+  pageFormFields: string[];
+} {
+  const formContainers: FormEntry[] = [];
+  const standalones: StandaloneEntry[] = [];
+  const pageFormFields: string[] = [];
+
   for (const node of nodes) {
-    const insideForm = parentInsideForm || node.type === 'FormContainer';
-    if (node.type === 'FormContainer') {
-      formContainers.push({ node, fields: extractFormFieldNames(node) });
-    } else if (isStandaloneControlled(node.type as string) && !insideForm) {
-      standalones.push(node);
+    const nodeType = node.type as string;
+    const insideForm = parentInsideForm || nodeType === 'FormContainer';
+    if (nodeType === 'FormContainer') {
+      const fields = extractFormFieldNames(node);
+      formContainers.push({ node, fields });
+      pageFormFields.push(...fields);
+    } else if (isStandaloneControlled(nodeType)) {
+      standalones.push({ node, insideForm: parentInsideForm });
     }
     if (node.children?.length) {
       const sub = collectPageComponents(node.children as SDUINode[], insideForm);
       formContainers.push(...sub.formContainers);
       standalones.push(...sub.standalones);
+      pageFormFields.push(...sub.pageFormFields);
     }
   }
-  return { formContainers, standalones };
+  return { formContainers, standalones, pageFormFields };
+}
+
+// ─── FormContainerEntry ───────────────────────────────────────────────────────
+/** Renders one FormContainer as the full tree matching the image:
+ *  ▾ { } Form Container - {name}
+ *      ▾ { } formData
+ *            T fieldName  ""
+ *      > { } fields
+ *        ⊗ isSubmitting  false
+ *        ⊗ isSubmitted   false
+ *        ⊗ isValid       true
+ *
+ * All formulas use variables['{formId}-form']?.['...'] so they live-update
+ * whenever FormContainer writes its state to the global variable store.
+ */
+function FormContainerEntry({
+  formId,
+  formName,
+  onInsert,
+  search,
+}: {
+  formId: string;
+  formName: string;
+  onInsert: (formulaPath: string, displayLabel: string, type: VarRowItem['type']) => void;
+  search: string;
+}) {
+  const [open, setOpen] = useState(true);
+  // formData is expanded by default (matching the image); fields collapsed
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(['formData']));
+  const toggleExpand = useCallback((p: string) => {
+    setExpanded(prev => { const n = new Set(prev); n.has(p) ? n.delete(p) : n.add(p); return n; });
+  }, []);
+
+  const vsData = getGlobalVariableStore()(state => state.data);
+  const formState = vsData[`${formId}-form`] as {
+    formData?: Record<string, unknown>;
+    fields?: Record<string, unknown>;
+    isSubmitting?: boolean;
+    isSubmitted?: boolean;
+    isValid?: boolean;
+  } | undefined;
+
+  const formDataVal = formState?.formData ?? {};
+  const fieldsVal   = formState?.fields   ?? {};
+
+  const CC = { bg: '#0f766e', bgHover: '#115e59', border: '#0d9488', text: '#ccfbf1' };
+
+  // Build formula from a dotPath relative to the root form object
+  const formula = (dotPath: string) => {
+    const segs = dotPath.split('.').filter(Boolean);
+    let f = `variables['${formId}-form']`;
+    for (const s of segs) f += `?.['${s}']`;
+    return f;
+  };
+
+  const lq = search.toLowerCase();
+  const matches = (s: string) => !lq || s.toLowerCase().includes(lq);
+
+  const visibleFd = Object.keys(formDataVal).filter(k => matches(k) || matches(formName));
+  const visibleFl = Object.keys(fieldsVal).filter(k => matches(k) || matches(formName));
+  if (!matches(formName) && visibleFd.length === 0 && visibleFl.length === 0 &&
+      !matches('isSubmitting') && !matches('isSubmitted') && !matches('isValid')) return null;
+
+  const pillStyle: React.CSSProperties = {
+    background: CC.bg, color: CC.text, border: `1px solid ${CC.border}`,
+    borderRadius: 5, padding: '1px 5px', fontSize: 10, fontWeight: 600, fontFamily: 'monospace',
+  };
+  const rowStyle = (depth: number): React.CSSProperties => ({
+    display: 'flex', alignItems: 'center', gap: 6,
+    padding: `3px 12px 3px ${12 + depth * 12}px`, cursor: 'pointer',
+  });
+  const hover = (e: React.MouseEvent, on: boolean) => {
+    (e.currentTarget as HTMLElement).style.background = on ? '#0f1929' : 'transparent';
+  };
+
+  return (
+    <div data-testid={`form-container-entry-${formId}`}>
+      {/* Header: "Form Container - {name}" */}
+      <div
+        style={rowStyle(0)}
+        onClick={() => setOpen(o => !o)}
+        onMouseEnter={e => hover(e, true)} onMouseLeave={e => hover(e, false)}
+      >
+        <span style={{ color: '#6b7280', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={7} /></span>
+        <span
+          data-testid={`form-container-chip-${formId}`}
+          style={{ ...pillStyle, cursor: 'pointer' }}
+          onClick={e => { e.stopPropagation(); onInsert(formula(''), `Form Container - ${formName}`, 'variable'); }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '0.8'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+        >
+          Form Container - {formName}
+        </span>
+      </div>
+
+      {open && (
+        <div>
+          {/* formData — DataTreeNode handles expand/collapse, starts expanded */}
+          <DataTreeNode
+            fieldName="formData" path="formData" value={formDataVal}
+            depth={1}
+            onInsert={dotPath => onInsert(formula(dotPath), `Form Container - ${formName}.${dotPath}`, 'variable')}
+            expanded={expanded} toggleExpand={toggleExpand}
+            arrayIndices={new Map()} setArrayIndex={() => {}}
+            chipColor={CC}
+          />
+
+          {/* fields — starts collapsed */}
+          <DataTreeNode
+            fieldName="fields" path="fields" value={fieldsVal}
+            depth={1}
+            onInsert={dotPath => onInsert(formula(dotPath), `Form Container - ${formName}.${dotPath}`, 'variable')}
+            expanded={expanded} toggleExpand={toggleExpand}
+            arrayIndices={new Map()} setArrayIndex={() => {}}
+            chipColor={CC}
+          />
+
+          {/* Boolean flags */}
+          {(['isSubmitting', 'isSubmitted', 'isValid'] as const).map(key => {
+            if (!matches(key) && !matches(formName)) return null;
+            const val = formState?.[key];
+            return (
+              <div
+                key={key}
+                data-testid={`form-flag-${key}`}
+                style={rowStyle(1)}
+                onClick={() => onInsert(formula(key), `Form Container - ${formName}.${key}`, 'variable')}
+                onMouseEnter={e => hover(e, true)} onMouseLeave={e => hover(e, false)}
+              >
+                <span style={{ ...pillStyle, opacity: 0.7, fontSize: 9 }}>⊗</span>
+                <span style={{ ...pillStyle }}>{key}</span>
+                <span style={{ fontSize: 10, color: '#ef4444', fontFamily: 'monospace', marginLeft: 'auto' }}>
+                  {String(val ?? false)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function PageComponentsSection({
@@ -425,38 +583,21 @@ export function PageComponentsSection({
 }) {
   const [open, setOpen] = useState(true);
   const pageNodes = useBuilderStore(s => s.pageNodes);
+  // Subscribe to variable store so live values update in the list
   const vsData = getGlobalVariableStore()(state => state.data);
 
-  const { formContainers, standalones } = useMemo(
+  const { standalones, formContainers } = useMemo(
     () => collectPageComponents(pageNodes, false),
     [pageNodes]
   );
 
-  const formState = useMemo(() => {
-    const local = (vsData['local'] ?? {}) as Record<string, unknown>;
-    const data = (local['data'] ?? {}) as Record<string, unknown>;
-    return (data['form'] ?? { formData: {}, fields: {} }) as { formData: Record<string, unknown>; fields: Record<string, { value: unknown }> };
-  }, [vsData]);
-
-  const componentsData = (vsData['components'] ?? {}) as Record<string, Record<string, unknown>>;
   const lq = search.toLowerCase();
-
-  const handleInsertForm = (subPath: string, label: string) => {
-    const segs = subPath.split('.').filter(Boolean);
-    let formula = 'local.data';
-    for (const seg of segs) formula += `?.['${seg}']`;
-    onInsert(formula, `local.data.${subPath}`, 'form');
-  };
-
-  const handleInsertComponent = (nodeId: string, subPath: string) => {
-    const formula = `components?.['${nodeId}']?.['${subPath}']`;
-    onInsert(formula, `components.${nodeId}.${subPath}`, 'form');
-  };
-
-  const hasAny = formContainers.length > 0 || standalones.length > 0;
-  if (!hasAny) return null;
-
   const matchesSearch = (label: string) => !lq || label.toLowerCase().includes(lq);
+  const totalCount = standalones.length + formContainers.length;
+
+  if (totalCount === 0) return null;
+
+  const CC = { bg: '#0f766e', border: '#0d9488', text: '#ccfbf1' };
 
   return (
     <div style={{ borderTop: '1px solid #1f2937' }}>
@@ -468,76 +609,46 @@ export function PageComponentsSection({
       >
         <span style={{ color: '#e2e8f0' }}><FEChevron open={open} size={8} /></span>
         <span style={{ fontSize: 10, color: '#e2e8f0', fontWeight: 600, letterSpacing: '0.05em' }}>From components in current page</span>
-        <span style={{ fontSize: 9, color: '#374151', marginLeft: 'auto' }}>{formContainers.length + standalones.length}</span>
+        <span style={{ fontSize: 9, color: '#374151', marginLeft: 'auto' }}>{totalCount}</span>
       </button>
       {open && (
         <div style={{ paddingLeft: 8, paddingBottom: 8 }}>
-          {formContainers.map(({ node, fields }) => {
-            const label = ((node as { name?: string }).name || 'Form container').trim() || 'Form container';
-            if (!matchesSearch(label) && !matchesSearch('form')) return null;
+
+          {/* FormContainers — full tree (formData / fields / booleans) */}
+          {formContainers.map(({ node }) => {
+            const formId = (node as { id?: string }).id;
+            if (!formId) return null;
+            const formName = ((node as { name?: string }).name || 'Form').trim();
             return (
-              <div key={node.id} style={{ paddingTop: 4 }}>
-                <div
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px', cursor: 'pointer' }}
-                  onClick={() => handleInsertForm('form', 'local.data.form')}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-                >
-                  <ContextGroupPill icon="{}" label={label} bg={FORM_CC.bg} border={FORM_CC.border} textColor={FORM_CC.text} />
-                </div>
-                <div style={{ paddingLeft: 16 }}>
-                  <div
-                    onClick={() => handleInsertForm('form', 'local.data.form')}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2px 12px', cursor: 'pointer' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-                  >
-                    <ContextGroupPill icon="{}" label="form" bg={FORM_CC.bg} border={FORM_CC.border} textColor={FORM_CC.text} />
-                  </div>
-                  {fields.map(fieldName => {
-                    if (!matchesSearch(fieldName)) return null;
-                    const val = formState.formData?.[fieldName];
-                    const displayVal = val === undefined ? '""' : JSON.stringify(val);
-                    return (
-                      <div
-                        key={fieldName}
-                        onClick={() => handleInsertForm(`form.formData.${fieldName}`, `local.data.form.formData.${fieldName}`)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2px 12px 2px 28px', cursor: 'pointer' }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-                      >
-                        <span style={{ background: FORM_CC.bg, color: FORM_CC.text, border: `1px solid ${FORM_CC.border}`, borderRadius: 5, padding: '1px 5px', fontSize: 10, fontWeight: 600, fontFamily: 'monospace' }}>
-                          {fieldName}
-                        </span>
-                        <span style={{ fontSize: 10, color: '#9ca3af', fontFamily: 'monospace', marginLeft: 'auto' }}>{displayVal}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <FormContainerEntry
+                key={formId}
+                formId={formId}
+                formName={formName}
+                onInsert={onInsert}
+                search={search}
+              />
             );
           })}
-          {standalones.map(node => {
+
+          {/* Standalone controlled inputs — insert variables['{id}'] */}
+          {standalones.map(({ node, insideForm }) => {
             const nodeId = (node as { id?: string }).id;
             if (!nodeId) return null;
-            const label = ((node as { name?: string }).name || node.type).trim() || 'Input';
-            if (!matchesSearch(label)) return null;
-            const valueNodeId = node.type === 'Input' || node.type === 'Textarea'
-              ? ((node.children as { id?: string }[] | undefined)?.find((c: { type?: string }) => c.type === 'InputField' || c.type === 'TextareaInput')?.id ?? nodeId)
-              : nodeId;
-            const compData = componentsData[valueNodeId];
-            const val = compData?.value;
+            const name = ((node as { name?: string }).name || node.type).trim() || 'Input';
+            const chipLabel = insideForm ? `Form - ${name}` : name;
+            if (!matchesSearch(chipLabel)) return null;
+            const val = vsData[nodeId];
             const displayVal = val === undefined ? '""' : JSON.stringify(val);
             return (
               <div
                 key={nodeId}
-                onClick={() => handleInsertComponent(valueNodeId, 'value')}
+                onClick={() => onInsert(`variables['${nodeId}']`, chipLabel, 'variable')}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px', cursor: 'pointer' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
               >
-                <span style={{ background: FORM_CC.bg, color: FORM_CC.text, border: `1px solid ${FORM_CC.border}`, borderRadius: 5, padding: '1px 5px', fontSize: 10, fontWeight: 600, fontFamily: 'monospace' }}>
-                  {label}
+                <span style={{ background: CC.bg, color: CC.text, border: `1px solid ${CC.border}`, borderRadius: 5, padding: '1px 5px', fontSize: 10, fontWeight: 600, fontFamily: 'monospace' }}>
+                  {chipLabel}
                 </span>
                 <span style={{ fontSize: 9, color: '#6b7280', marginLeft: 4 }}>- value</span>
                 <span style={{ fontSize: 10, color: '#9ca3af', fontFamily: 'monospace', marginLeft: 'auto' }}>{displayVal}</span>
@@ -1197,11 +1308,18 @@ export function ItemContextGroup({
 }
 
 /** CONTEXT section — weWeb-style: item, Current page, Browser, Screen */
-/** LOCAL section — shows FormContainer's local.data.form.* when inside a FormContainer */
+/** LOCAL section — shows FormContainer's local.data.form.* when inside a FormContainer.
+ * `pageFormFields` filters displayed fields to those registered on the current page.
+ * `variant="variables"` shows a green "Form container - form" tree (for the Variables tab).
+ * Default variant shows the orange "Local > local.data > form" tree (for the Quick tab). */
 export function FormLocalSection({
   onInsert,
+  pageFormFields,
+  variant = 'quick',
 }: {
   onInsert: (formulaPath: string, displayLabel: string, type: VarRowItem['type']) => void;
+  pageFormFields?: string[];
+  variant?: 'quick' | 'variables';
 }) {
   const [open, setOpen] = useState(true);
   // Collapsible expanded state for the DataTreeNode sections
@@ -1223,16 +1341,32 @@ export function FormLocalSection({
   const formState = useMemo(() => {
     const local = (vsData['local'] ?? {}) as Record<string, unknown>;
     const data = (local['data'] ?? {}) as Record<string, unknown>;
-    return (data['form'] ?? { formData: {}, fields: {}, isSubmitting: false, isSubmitted: false, isValid: false }) as {
+    const raw = (data['form'] ?? { formData: {}, fields: {}, isSubmitting: false, isSubmitted: false, isValid: false }) as {
       formData: Record<string, unknown>;
       fields: Record<string, { value: unknown; isValid: boolean }>;
       isSubmitting: boolean;
       isSubmitted: boolean;
       isValid: boolean;
     };
-  }, [vsData]);
+    // Filter formData and fields to only keys present on the current page.
+    // This prevents field names from other pages (e.g. phoneNumber from account profile)
+    // from leaking into the Quick tab for other forms.
+    if (pageFormFields && pageFormFields.length > 0) {
+      const allowed = new Set(pageFormFields);
+      const filteredFormData = Object.fromEntries(
+        Object.entries(raw.formData).filter(([k]) => allowed.has(k))
+      );
+      const filteredFields = Object.fromEntries(
+        Object.entries(raw.fields).filter(([k]) => allowed.has(k))
+      );
+      return { ...raw, formData: filteredFormData, fields: filteredFields };
+    }
+    return raw;
+  }, [vsData, pageFormFields]);
 
-  const FORM_CC = { bg: '#c2410c', border: '#ea580c', text: '#ffedd5' };
+  const FORM_CC   = { bg: '#c2410c', bgHover: '#b91c0c', border: '#ea580c', text: '#ffedd5' };
+  // Green chips for the Variables tab variant
+  const VAR_GREEN = { bg: '#0f766e', bgHover: '#0d9488', border: '#0d9488', text: '#ccfbf1' };
 
   const handleInsert = (subPath: string, label: string) => {
     // Build optional-chaining formula: local.data?.['form']?.['subPath']
@@ -1244,6 +1378,81 @@ export function FormLocalSection({
 
   const [localDataOpen, setLocalDataOpen] = useState(true);
   const [formOpen, setFormOpen] = useState(true);
+
+  // ── Variables-tab variant: green "Form container - form" tree ────────────────
+  if (variant === 'variables') {
+    const cc = VAR_GREEN;
+    return (
+      <div style={{ borderTop: '1px solid #1f2937' }}>
+        <button
+          onClick={() => setOpen(o => !o)}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
+        >
+          <span style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
+          <span style={{ fontSize: 10, color: '#e2e8f0', fontWeight: 600, letterSpacing: '0.05em' }}>Form container</span>
+        </button>
+        {open && (
+          <div style={{ paddingLeft: 8 }}>
+            {/* "form" pill — collapsible, mirrors Quick tab structure */}
+            <div>
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 12px', cursor: 'pointer' }}
+                onClick={() => setFormOpen(o => !o)}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+              >
+                <span style={{ color: '#6b7280', display: 'flex', alignItems: 'center', marginRight: 2 }}><FEChevron open={formOpen} size={7} /></span>
+                <div
+                  onClick={e => { e.stopPropagation(); handleInsert('form', 'local.data.form'); }}
+                  style={{ cursor: 'pointer' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '0.8'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+                >
+                  <ContextGroupPill icon="{}" label="form" bg={cc.bg} border={cc.border} textColor={cc.text} />
+                </div>
+              </div>
+              {formOpen && (
+                <div style={{ paddingLeft: 16 }}>
+                  <DataTreeNode
+                    fieldName="formData" path="form.formData" value={formState.formData}
+                    depth={2} onInsert={(dotPath) => handleInsert(dotPath, `local.data.${dotPath}`)}
+                    expanded={expanded} toggleExpand={toggleExpand}
+                    arrayIndices={new Map()} setArrayIndex={() => {}}
+                    chipColor={cc}
+                  />
+                  <DataTreeNode
+                    fieldName="fields" path="form.fields" value={formState.fields}
+                    depth={2} onInsert={(dotPath) => handleInsert(dotPath, `local.data.${dotPath}`)}
+                    expanded={expanded} toggleExpand={toggleExpand}
+                    arrayIndices={new Map()} setArrayIndex={() => {}}
+                    chipColor={cc}
+                  />
+                  {/* Boolean flags */}
+                  {(['isSubmitting', 'isSubmitted', 'isValid'] as const).map(key => (
+                    <div
+                      key={key}
+                      onClick={() => handleInsert(`form.${key}`, `local.data.form.${key}`)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 12px', cursor: 'pointer' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                    >
+                      <span style={{ background: cc.bg, color: cc.text, border: `1px solid ${cc.border}`, borderRadius: 5, padding: '1px 5px', fontSize: 10, fontWeight: 600, fontFamily: 'monospace', opacity: 0.8 }}>⊗</span>
+                      <span style={{ fontSize: 10, color: '#9ca3af', fontFamily: 'monospace' }}>{key}</span>
+                      <span style={{ fontSize: 10, color: '#ef4444', fontFamily: 'monospace', marginLeft: 'auto' }}>
+                        {String(formState[key])}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -1675,7 +1884,7 @@ export function BorderRadiusDataSection({
 // ─── Collections data tab (replaces DataSourceList) ──────────────────────────
 
 export function CollectionsDataTab({ onInsert, search }: {
-  onInsert: (formulaPath: string, displayLabel: string, type: 'collection' | 'variable' | 'context' | 'pages' | 'theme') => void;
+  onInsert: (formulaPath: string, displayLabel: string, type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form') => void;
   search: string;
 }) {
   const pageDataSources = useBuilderStore(s => s.pageDataSources);

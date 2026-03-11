@@ -209,23 +209,10 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
   const validation = nodeExtra._validation as NodeValidation | undefined;
   const debounce = nodeExtra._debounce as NodeDebounce | undefined;
 
-  // Extract field name from setFormField action
-  const { formFieldSlot, fieldName } = useMemo(() => {
-    for (const [slot, action] of Object.entries(nodeActions)) {
-      if (action && typeof action === 'object') {
-        const a = action as Record<string, unknown>;
-        if (a.type === 'setFormField') {
-          return { formFieldSlot: slot, fieldName: String(a.field ?? '') };
-        }
-        // nested in runMultiple
-        if (a.type === 'runMultiple' && Array.isArray(a.actions)) {
-          const sub = (a.actions as Array<Record<string, unknown>>).find(x => x.type === 'setFormField');
-          if (sub) return { formFieldSlot: slot, fieldName: String(sub.field ?? '') };
-        }
-      }
-    }
-    return { formFieldSlot: null, fieldName: '' };
-  }, [nodeActions]);
+  // Extract field name from node.props.name
+  const fieldName = useMemo(() => {
+    return (nodeProps.name as string | undefined) ?? '';
+  }, [nodeProps]);
 
   const [fieldNameDraft, setFieldNameDraft] = useState(fieldName);
   useEffect(() => { setFieldNameDraft(fieldName); }, [fieldName]);
@@ -257,31 +244,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
     const rules = nextValidation.rules ?? [];
     const reqRule = rules.find(r => r.type === 'required');
 
-    // 1. Update the InputField's setFormField action (for on-change validation)
-    if (formFieldSlot) {
-      const action = nodeActions[formFieldSlot] as Record<string, unknown>;
-      if (action) {
-        const validationPatch = {
-          validationTrigger: nextValidation.trigger ?? 'submit',
-          required: !!reqRule,
-          requiredMessage: reqRule?.message,
-          validationRules: rules,
-        };
-        if (action.type === 'setFormField') {
-          store.patchNodeField(nodeId, 'actions', {
-            ...nodeActions,
-            [formFieldSlot]: { ...action, ...validationPatch },
-          });
-        } else if (action.type === 'runMultiple' && Array.isArray(action.actions)) {
-          const updated = (action.actions as Array<Record<string, unknown>>).map(x =>
-            x.type === 'setFormField' ? { ...x, ...validationPatch } : x
-          );
-          store.patchNodeField(nodeId, 'actions', { ...nodeActions, [formFieldSlot]: { ...action, actions: updated } });
-        }
-      }
-    }
-
-    // 2. Also update the submit button's fieldValidations so submitForm knows about this field's rules
+    // Update the submit button's fieldValidations so submitForm knows about this field's rules
     if (formContainerAncestor && fieldName) {
       const submitBtn = findSubmitButtonInTree((formContainerAncestor.children ?? []) as SDUINode[]);
       if (submitBtn) {
@@ -331,27 +294,9 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
     patchValidation({ rules: validationRules.filter((_, i) => i !== idx) });
   };
 
-  const syncDebounceToAction = (next: NodeDebounce) => {
-    if (!formFieldSlot) return;
-    const action = nodeActions[formFieldSlot] as Record<string, unknown>;
-    if (!action) return;
-    if (action.type === 'setFormField') {
-      store.patchNodeField(nodeId, 'actions', {
-        ...nodeActions,
-        [formFieldSlot]: { ...action, _debounce: next },
-      });
-    } else if (action.type === 'runMultiple' && Array.isArray(action.actions)) {
-      const updated = (action.actions as Array<Record<string, unknown>>).map(x =>
-        x.type === 'setFormField' ? { ...x, _debounce: next } : x
-      );
-      store.patchNodeField(nodeId, 'actions', { ...nodeActions, [formFieldSlot]: { ...action, actions: updated } });
-    }
-  };
-
   const patchDebounce = (patch: Partial<NodeDebounce>) => {
     const next = { ...(debounce ?? {}), ...patch };
     store.patchNodeField(nodeId, '_debounce', next);
-    syncDebounceToAction(next);
   };
 
   const patchProp = (key: string, value: unknown) => {
@@ -373,21 +318,13 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
 
   const commitFieldName = (value: string) => {
     const trimmed = value.trim();
-    if (!trimmed || !formFieldSlot) return;
+    if (!trimmed) return;
     const oldName = fieldName;
 
-    // 1. Update setFormField action's field property
-    const action = nodeActions[formFieldSlot] as Record<string, unknown>;
-    if (action.type === 'setFormField') {
-      store.patchNodeField(nodeId, 'actions', { ...nodeActions, [formFieldSlot]: { ...action, field: trimmed } });
-    } else if (action.type === 'runMultiple' && Array.isArray(action.actions)) {
-      const updated = (action.actions as Array<Record<string, unknown>>).map(x =>
-        x.type === 'setFormField' ? { ...x, field: trimmed } : x
-      );
-      store.patchNodeField(nodeId, 'actions', { ...nodeActions, [formFieldSlot]: { ...action, actions: updated } });
-    }
+    // 1. Write the field name to node.props.name (source of truth)
+    store.patchNodeField(nodeId, 'props', { ...nodeProps, name: trimmed });
 
-    // 2. Update node.name to match the new field name (field name IS the display name)
+    // 2. Update node.name (display name) to match the field name
     store.patchNodeField(nodeId, 'name', trimmed);
 
     // 3. Rename the key in FormContainer's initialFormData so the formula path stays in sync

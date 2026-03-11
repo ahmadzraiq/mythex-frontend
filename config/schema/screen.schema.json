@@ -24,11 +24,7 @@
         }
       ]
     },
-    "ui": { "$ref": "#/definitions/uiNode" },
-    "initActions": {
-      "type": "array",
-      "items": { "$ref": "#/definitions/actionRef" }
-    }
+    "ui": { "$ref": "#/definitions/uiNode" }
   },
   "additionalProperties": true,
   "definitions": {

@@ -18,7 +18,7 @@ const screens = Object.fromEntries(
     name,
     resolveScreenConfig(screen as Parameters<typeof resolveScreenConfig>[0], registry),
   ])
-) as unknown as Record<string, { meta?: object; state?: object; ui: object; initActions?: object[] }>;
+) as unknown as Record<string, { meta?: object; state?: object; ui: object }>;
 
 export default {
   ...root.routes,

@@ -81,7 +81,7 @@ import { Image as UIImage } from '@/components/ui/image';
 import { Icon } from '@/components/ui/icon';
 import { View } from '@/components/ui/view';
 import { NavIcon } from './icons';
-import { NextImage, HtmlContent, InputWithField, ControlledInputField } from './components';
+import { NextImage, HtmlContent, InputWithField } from './components';
 import { FormContainer } from './components/FormContainer';
 import DatePicker from './components/DatePicker';
 import TimePicker from './components/TimePicker';
@@ -201,7 +201,7 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   LinkText,
   FormContainer,
   Input: InputWithField,
-  InputField: ControlledInputField,
+  InputField: InputField,
   InputIcon,
   InputSlot,
   Drawer,

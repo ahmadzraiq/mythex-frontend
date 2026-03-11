@@ -1,10 +1,7 @@
 {
   "8535e148-6aaa-4a53-856a-cb5f2ef2ae4e": {
     "name": "setShippingAddress",
-    "type": "validate",
-    "onSuccess": {
-      "action": "d791c0b3-13d3-4ab0-9c06-0c31de94a4bc"
-    }
+    "type": "validate"
   },
   "d791c0b3-13d3-4ab0-9c06-0c31de94a4bc": {
     "name": "setShippingAddressMutation",
@@ -27,22 +24,30 @@
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
     },
-    "storeIn": "checkout._shippingAddressResult",
-    "responsePath": "data.setOrderShippingAddress",
-    "onSuccess": {
-      "type": "workflowSteps",
-      "steps": [
-        {
-          "id": "step-1",
-          "action": "62c64842-4b76-40b3-87ae-d2f0275cb926"
-        },
-        {
-          "id": "step-2",
-          "action": "82e7ed48-3f76-4130-af0d-8ecb1d2ae52a"
-        }
-      ]
-    },
     "endpoint": "http://localhost:3000/shop-api"
+  },
+  "1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6": {
+    "name": "submitShippingAddress",
+    "type": "workflowSteps",
+    "trigger": "submit",
+    "steps": [
+      {
+        "id": "step-validate",
+        "action": "8535e148-6aaa-4a53-856a-cb5f2ef2ae4e"
+      },
+      {
+        "id": "step-mutation",
+        "action": "d791c0b3-13d3-4ab0-9c06-0c31de94a4bc"
+      },
+      {
+        "id": "step-fetch-order",
+        "action": "62c64842-4b76-40b3-87ae-d2f0275cb926"
+      },
+      {
+        "id": "step-sync-step",
+        "action": "82e7ed48-3f76-4130-af0d-8ecb1d2ae52a"
+      }
+    ]
   },
   "8d925e49-6061-4cf6-a5d8-6ff3e54a52ce": {
     "name": "setShippingMethod",
@@ -53,10 +58,22 @@
         "message": "Please select a shipping method"
       }
     },
-    "storeErrorsIn": "errors",
-    "onSuccess": {
-      "action": "2fbd7cd8-f41d-48c2-b0d2-4ca9ad3ad3af"
-    }
+    "storeErrorsIn": "errors"
+  },
+  "2b3c4d5e-6f7a-8b9c-0d1e-f2a3b4c5d6e7": {
+    "name": "submitShippingMethod",
+    "type": "workflowSteps",
+    "trigger": "submit",
+    "steps": [
+      {
+        "id": "step-validate",
+        "action": "8d925e49-6061-4cf6-a5d8-6ff3e54a52ce"
+      },
+      {
+        "id": "step-mutation",
+        "action": "2fbd7cd8-f41d-48c2-b0d2-4ca9ad3ad3af"
+      }
+    ]
   },
   "1f273bc6-2270-47f2-84ba-8ce62eb8b06c": {
     "name": "addPaymentToOrder",
@@ -76,11 +93,6 @@
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
     },
-    "storeIn": "checkout.completedOrder",
-    "responsePath": "data.addPaymentToOrder",
-    "onSuccess": {
-      "action": "f867ff1e-dc6b-4694-8dca-44d6e1a23756"
-    },
     "endpoint": "http://localhost:3000/shop-api"
   },
   "d9ff335b-ba80-420c-9b0f-45ee893498dd": {
@@ -90,25 +102,6 @@
     "headers": {
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
-    },
-    "storeIn": "checkout._transitionResult",
-    "responsePath": "data.transitionOrderToState",
-    "onSuccess": {
-      "type": "workflowSteps",
-      "steps": [
-        {
-          "id": "step-1",
-          "action": "5b47500d-b49f-45ba-918f-dd51cc221e7b"
-        },
-        {
-          "id": "step-2",
-          "type": "changeVariableValue",
-          "config": {
-            "variableName": "d9e0f1a2-b3c4-5678-defa-789012345678",
-            "value": "payment"
-          }
-        }
-      ]
     },
     "endpoint": "http://localhost:3000/shop-api",
     "variables": {
@@ -163,6 +156,18 @@
       {
         "id": "step-1",
         "action": "d9ff335b-ba80-420c-9b0f-45ee893498dd"
+      },
+      {
+        "id": "step-2",
+        "action": "5b47500d-b49f-45ba-918f-dd51cc221e7b"
+      },
+      {
+        "id": "step-3",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d9e0f1a2-b3c4-5678-defa-789012345678",
+          "value": "payment"
+        }
       }
     ]
   },
@@ -190,10 +195,30 @@
         "message": "Please select a payment method"
       }
     },
-    "storeErrorsIn": "errors",
-    "onSuccess": {
-      "action": "d9ff335b-ba80-420c-9b0f-45ee893498dd"
-    }
+    "storeErrorsIn": "errors"
+  },
+  "3c4d5e6f-7a8b-9c0d-1e2f-a3b4c5d6e7f8": {
+    "name": "submitPlaceOrder",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-validate",
+        "action": "dad64254-6780-4e72-beed-3f3179710a50"
+      },
+      {
+        "id": "step-transition",
+        "action": "d9ff335b-ba80-420c-9b0f-45ee893498dd"
+      },
+      {
+        "id": "step-payment",
+        "action": "1f273bc6-2270-47f2-84ba-8ce62eb8b06c"
+      },
+      {
+        "id": "step-navigate",
+        "action": "f867ff1e-dc6b-4694-8dca-44d6e1a23756"
+      }
+    ]
   },
   "c83ac41c-1192-46f3-a39e-152bb9c14258": {
     "name": "setOrderBillingAddressMutation",
@@ -216,9 +241,7 @@
     "headers": {
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
-    },
-    "storeIn": "checkout._billingAddressResult",
-    "responsePath": "data.setOrderBillingAddress"
+    }
   },
   "e89bedc2-a39c-4c83-861b-7fd20bcc63cd": {
     "name": "goToContact",
@@ -250,12 +273,10 @@
       },
       {
         "id": "step-2",
-        "type": "setState",
+        "type": "changeVariableValue",
         "config": {
-          "payload": {
-            "path": "screens.checkout.errors.checkout.selectedShippingMethodId",
-            "value": ""
-          }
+          "variableName": "b4c5d6e7-f8a9-0123-bcde-234567890123",
+          "value": ""
         }
       }
     ]
@@ -275,12 +296,10 @@
       },
       {
         "id": "step-2",
-        "type": "setState",
+        "type": "changeVariableValue",
         "config": {
-          "payload": {
-            "path": "screens.checkout.errors.checkout.selectedPaymentMethodCode",
-            "value": ""
-          }
+          "variableName": "c5d6e7f8-a9b0-1234-cdef-345678901234",
+          "value": ""
         }
       }
     ]
@@ -292,20 +311,10 @@
     "steps": [
       {
         "id": "step-1",
-        "type": "setFormField",
+        "type": "changeVariableValue",
         "config": {
-          "field": "emailAddress",
-          "value": "$event"
-        }
-      },
-      {
-        "id": "step-2",
-        "type": "setState",
-        "config": {
-          "payload": {
-            "path": "screens.checkout.errors.form.emailAddress",
-            "value": ""
-          }
+          "variableName": "d6e7f8a9-b0c1-2345-defa-456789012345",
+          "value": ""
         }
       }
     ]
@@ -317,20 +326,10 @@
     "steps": [
       {
         "id": "step-1",
-        "type": "setFormField",
+        "type": "changeVariableValue",
         "config": {
-          "field": "firstName",
-          "value": "$event"
-        }
-      },
-      {
-        "id": "step-2",
-        "type": "setState",
-        "config": {
-          "payload": {
-            "path": "screens.checkout.errors.form.firstName",
-            "value": ""
-          }
+          "variableName": "e7f8a9b0-c1d2-3456-efab-567890123456",
+          "value": ""
         }
       }
     ]
@@ -342,50 +341,10 @@
     "steps": [
       {
         "id": "step-1",
-        "type": "setFormField",
+        "type": "changeVariableValue",
         "config": {
-          "field": "lastName",
-          "value": "$event"
-        }
-      },
-      {
-        "id": "step-2",
-        "type": "setState",
-        "config": {
-          "payload": {
-            "path": "screens.checkout.errors.form.lastName",
-            "value": ""
-          }
-        }
-      }
-    ]
-  },
-  "98755959-7011-480b-b68f-68c25ae2c214": {
-    "name": "changeShippingFullName",
-    "type": "workflowSteps",
-    "trigger": "change",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setFormField",
-        "config": {
-          "field": "fullName",
-          "value": "$event"
-        }
-      }
-    ]
-  },
-  "0b4d4140-b2aa-4eff-96ea-674a9cc70d2f": {
-    "name": "changeShippingCompany",
-    "type": "workflowSteps",
-    "trigger": "change",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setFormField",
-        "config": {
-          "field": "company",
-          "value": "$event"
+          "variableName": "f8a9b0c1-d2e3-4567-fabc-678901234567",
+          "value": ""
         }
       }
     ]
@@ -397,80 +356,10 @@
     "steps": [
       {
         "id": "step-1",
-        "type": "setFormField",
+        "type": "changeVariableValue",
         "config": {
-          "field": "streetLine1",
-          "value": "$event"
-        }
-      },
-      {
-        "id": "step-2",
-        "type": "setState",
-        "config": {
-          "payload": {
-            "path": "screens.checkout.errors.form.streetLine1",
-            "value": ""
-          }
-        }
-      }
-    ]
-  },
-  "096d155e-f7ea-4cdf-ba52-850d59c367ab": {
-    "name": "changeShippingStreetLine2",
-    "type": "workflowSteps",
-    "trigger": "change",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setFormField",
-        "config": {
-          "field": "streetLine2",
-          "value": "$event"
-        }
-      }
-    ]
-  },
-  "4c010e1b-149d-414f-aec5-1798a5308689": {
-    "name": "changeShippingCity",
-    "type": "workflowSteps",
-    "trigger": "change",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setFormField",
-        "config": {
-          "field": "city",
-          "value": "$event"
-        }
-      }
-    ]
-  },
-  "353f070d-4d45-4e7e-9af5-5d58a78d0edd": {
-    "name": "changeShippingProvince",
-    "type": "workflowSteps",
-    "trigger": "change",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setFormField",
-        "config": {
-          "field": "province",
-          "value": "$event"
-        }
-      }
-    ]
-  },
-  "5206e496-6159-4911-b7aa-039945f4e8b6": {
-    "name": "changeShippingPostalCode",
-    "type": "workflowSteps",
-    "trigger": "change",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setFormField",
-        "config": {
-          "field": "postalCode",
-          "value": "$event"
+          "variableName": "a9b0c1d2-e3f4-5678-abcd-789012345678",
+          "value": ""
         }
       }
     ]
@@ -482,35 +371,10 @@
     "steps": [
       {
         "id": "step-1",
-        "type": "setFormField",
+        "type": "changeVariableValue",
         "config": {
-          "field": "countryCode",
-          "value": "$event"
-        }
-      },
-      {
-        "id": "step-2",
-        "type": "setState",
-        "config": {
-          "payload": {
-            "path": "screens.checkout.errors.form.countryCode",
-            "value": ""
-          }
-        }
-      }
-    ]
-  },
-  "424fb238-f04f-4f8c-b9c7-c9b94c085798": {
-    "name": "changeShippingPhone",
-    "type": "workflowSteps",
-    "trigger": "change",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setFormField",
-        "config": {
-          "field": "phoneNumber",
-          "value": "$event"
+          "variableName": "b0c1d2e3-f4a5-6789-bcde-890123456789",
+          "value": ""
         }
       }
     ]
@@ -542,8 +406,6 @@
     "headers": {
       "Authorization": "{{auth.token}}",
       "vendure-token": "__default_channel__"
-    },
-    "storeIn": "checkout._shippingMethodResult",
-    "responsePath": "data.setOrderShippingMethod"
+    }
   }
 }
