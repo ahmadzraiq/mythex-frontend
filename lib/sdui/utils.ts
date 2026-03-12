@@ -78,7 +78,7 @@ export function resolveText(
   return String(text);
 }
 
-/** Evaluate condition (formula string or legacy json-logic object) against context state */
+/** Evaluate condition (formula string) against context state */
 export function evaluateCondition(
   condition: unknown,
   context: SDUIContext
@@ -101,6 +101,20 @@ function coerceValue(val: unknown): unknown {
   }
   return val;
 }
+
+/** CSS dimension property keys that get an automatic "px" suffix when a formula
+ *  returns a number (e.g. { formula: "200" } on a width prop becomes "200px"). */
+const DIMENSION_KEYS = new Set([
+  'width', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight',
+  'top', 'right', 'bottom', 'left',
+  'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+  'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
+  'gap', 'rowGap', 'columnGap',
+  'borderRadius', 'borderTopLeftRadius', 'borderTopRightRadius',
+  'borderBottomLeftRadius', 'borderBottomRightRadius',
+  'borderWidth', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
+  'fontSize', 'lineHeight', 'letterSpacing', 'wordSpacing', 'outlineWidth',
+]);
 
 /** Resolve props - interpolate strings, resolve {var} refs, keep primitives */
 export function resolveProps(
@@ -140,7 +154,6 @@ export function resolveProps(
           const evalResult = evaluateFormula(obj.formula, context.state ?? {});
           if (evalResult.value != null && typeof evalResult.value !== 'object') {
             // Auto-append "px" for numeric results on known CSS dimension properties
-            const DIMENSION_KEYS = new Set(['width','height','minWidth','maxWidth','minHeight','maxHeight','top','right','bottom','left','paddingTop','paddingRight','paddingBottom','paddingLeft','marginTop','marginRight','marginBottom','marginLeft','gap','rowGap','columnGap','borderRadius','borderTopLeftRadius','borderTopRightRadius','borderBottomLeftRadius','borderBottomRightRadius','borderWidth','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth','fontSize','lineHeight','letterSpacing','wordSpacing','outlineWidth']);
             const v = evalResult.value;
             resolved[key] = (typeof v === 'number' && DIMENSION_KEYS.has(key)) ? `${v}px` : String(v);
           } else {

@@ -1,8 +1,12 @@
 /**
- * Value resolution for actions - { var }, { expr }, interpolation
+ * Value resolution for actions — { var }, { expr }, {{path}} interpolation.
+ *
+ * {{path}} interpolation in action configs (headers, body params, URLs) is handled here
+ * via direct resolveVar calls — it is a separate concern from the formula evaluator.
  */
 
 import { evaluateFormula } from '../formula-evaluator';
+import { resolveVar } from '../formula-utils';
 
 
 export function interpolateUrl(
@@ -52,11 +56,11 @@ export function resolvePayload(
 }
 
 /**
- * Resolves a value that may be a path reference or JSON Logic expression.
+ * Resolves a value that may be a path reference or formula expression.
  * - { var: "path" } or { var: ["path", fallback] } → get(path, scope) or fallback
- * - { expr: jsonLogic } → jsonLogic.apply(expr, fullState) when fullState provided
- * - Strings with {{path}} → interpolated via get
- * - Recurses into objects and arrays.
+ * - { expr: "formula" } → evaluateFormula(expr, fullState) when fullState provided
+ * - Strings with {{path}} → resolved via direct resolveVar (NOT evaluateFormula)
+ * - Recurses into plain objects and arrays.
  */
 export function resolveValue(
   value: unknown,
@@ -68,11 +72,18 @@ export function resolveValue(
   if (Array.isArray(value)) {
     return value.map((item) => resolveValue(item, get, scope, fullState));
   }
-  // Handle formula strings with {{path}} interpolation
+  // Handle {{path}} interpolation in action config strings (headers, body params, etc.)
+  // Uses direct resolveVar — independent from the formula evaluator.
   if (typeof value === 'string' && value.includes('{{') && fullState) {
     const stateWithScope = scope ? { ...fullState, ...scope } : fullState;
-    const result = evaluateFormula(value, stateWithScope);
-    if (!result.error) return result.value;
+    // Single {{path}} — return the resolved value directly (preserves type)
+    const single = value.match(/^\{\{([^}]+)\}\}$/);
+    if (single) return resolveVar(single[1].trim(), stateWithScope) ?? null;
+    // Embedded {{path}} in a string — interpolate into string
+    return value.replace(/\{\{([^}]+)\}\}/g, (_, p) => {
+      const v = resolveVar(p.trim(), stateWithScope);
+      return v != null ? String(v) : '';
+    });
   }
   if (typeof value === 'object') {
     const obj = value as Record<string, unknown>;
@@ -97,12 +108,11 @@ export function resolveValue(
         return undefined;
       }
     }
-    // Legacy: single-key object that is a json-logic op (e.g. { "var": "path" } already handled above)
     const resolved: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(obj)) {
       resolved[k] = resolveValue(v, get, scope, fullState);
     }
-    // If the resolved object looks like a json-logic / formula object, evaluate it
+    // If the resolved single-key object is evaluable as a formula, try it
     const keys = Object.keys(resolved);
     if (keys.length === 1 && fullState) {
       try {

@@ -114,6 +114,12 @@
       "config": "notFound",
       "auth": false,
       "layout": "centered"
+    },
+    {
+      "path": "/workflow-test",
+      "config": "workflowTest",
+      "auth": false,
+      "layout": "full"
     }
   ]
 }

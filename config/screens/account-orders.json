@@ -21,7 +21,7 @@
         "props": {
           "className": "text-center py-12"
         },
-        "condition": "({{collections.c5d6e7f8-a9b0-1234-cdef-345678901234.data.activeCustomer.orders.items.length}} || 0) === 0",
+        "condition": "(collections['c5d6e7f8-a9b0-1234-cdef-345678901234']?.data?.activeCustomer?.orders?.items?.length || 0) === 0",
         "children": [
           {
             "type": "Text",
@@ -37,7 +37,7 @@
         "props": {
           "className": "border rounded-lg overflow-hidden"
         },
-        "condition": "({{collections.c5d6e7f8-a9b0-1234-cdef-345678901234.data.activeCustomer.orders.items.length}} || 0) > 0",
+        "condition": "(collections['c5d6e7f8-a9b0-1234-cdef-345678901234']?.data?.activeCustomer?.orders?.items?.length || 0) > 0",
         "children": [
           {
             "type": "Table",
@@ -193,7 +193,7 @@
                               "className": "font-medium"
                             },
                             "text": {
-                              "expr": "formatCurrency({{context.item.data.totalWithTax}} / 100, {{context.item.data.currencyCode}})"
+                              "expr": "formatCurrency(context?.item?.data?.totalWithTax / 100, context?.item?.data?.currencyCode)"
                             }
                           }
                         ]

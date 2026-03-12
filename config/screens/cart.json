@@ -21,7 +21,7 @@
         "props": {
           "className": "text-center py-16"
         },
-        "condition": "({{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.totalQuantity}} || 0) === 0",
+        "condition": "(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity || 0) === 0",
         "children": [
           {
             "type": "Heading",
@@ -64,7 +64,7 @@
         "props": {
           "className": "grid lg:grid-cols-3 gap-8"
         },
-        "condition": "{{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.totalQuantity}} > 0",
+        "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity > 0",
         "children": [
           {
             "type": "Box",
@@ -142,7 +142,7 @@
                               "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                             },
                             "text": "{{context.item.data.productVariant.name}}",
-                            "condition": "{{context.item.data.productVariant.name}} !== {{context.item.data.productVariant.product.name}}"
+                            "condition": "context?.item?.data?.productVariant?.name !== context?.item?.data?.productVariant?.product?.name"
                           },
                           {
                             "type": "Text",
@@ -168,7 +168,7 @@
                                     "props": {
                                       "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-[var(--theme-hero-bg)] rounded-none disabled:opacity-50 flex-row"
                                     },
-                                    "condition": "{{context.item.data.quantity}} > 1",
+                                    "condition": "context?.item?.data?.quantity > 1",
                                     "children": [
                                       {
                                         "type": "Text",
@@ -189,7 +189,7 @@
                                     "props": {
                                       "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-[var(--theme-hero-bg)] rounded-none disabled:opacity-50 flex-row"
                                     },
-                                    "condition": "({{context.item.data.quantity}} || 0) === 1",
+                                    "condition": "(context?.item?.data?.quantity || 0) === 1",
                                     "children": [
                                       {
                                         "type": "Text",
@@ -266,7 +266,7 @@
                                       "className": "font-semibold text-lg"
                                     },
                                     "text": {
-                                      "expr": "formatCurrency({{context.item.data.linePriceWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD')"
+                                      "expr": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
                                     }
                                   },
                                   {
@@ -275,7 +275,7 @@
                                       "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                                     },
                                     "text": {
-                                      "expr": "formatCurrency({{context.item.data.unitPriceWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD') + ' each'"
+                                      "expr": "formatCurrency(context?.item?.data?.unitPriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD') + ' each'"
                                     }
                                   }
                                 ]
@@ -296,7 +296,7 @@
                               "className": "font-semibold text-lg"
                             },
                             "text": {
-                              "expr": "formatCurrency({{context.item.data.linePriceWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD')"
+                              "expr": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
                             }
                           },
                           {
@@ -305,7 +305,7 @@
                               "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
                             },
                             "text": {
-                              "expr": "formatCurrency({{context.item.data.unitPriceWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD') + ' each'"
+                              "expr": "formatCurrency(context?.item?.data?.unitPriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD') + ' each'"
                             }
                           }
                         ]
@@ -357,7 +357,7 @@
                           {
                             "type": "Text",
                             "text": {
-                              "expr": "formatCurrency({{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.subTotalWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD')"
+                              "expr": "formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.subTotalWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
                             }
                           }
                         ]
@@ -369,7 +369,7 @@
                         },
                         "map": "collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.discounts",
                         "key": "discount",
-                        "condition": "{{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.discounts.length}} > 0",
+                        "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.discounts?.length > 0",
                         "children": [
                           {
                             "type": "Box",
@@ -384,7 +384,7 @@
                               {
                                 "type": "Text",
                                 "text": {
-                                  "expr": "formatCurrency({{context.item.data.amountWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD')"
+                                  "expr": "formatCurrency(context?.item?.data?.amountWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
                                 }
                               }
                             ]
@@ -407,7 +407,7 @@
                           {
                             "type": "Text",
                             "text": {
-                              "expr": "{{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.shippingWithTax}} > 0 ? formatCurrency({{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.shippingWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD') : 'Calculated at checkout'"
+                              "expr": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.shippingWithTax > 0 ? formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.shippingWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD') : 'Calculated at checkout'"
                             }
                           }
                         ]
@@ -433,7 +433,7 @@
                           {
                             "type": "Text",
                             "text": {
-                              "expr": "formatCurrency({{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.totalWithTax}} / 100, {{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.currencyCode}} || 'USD')"
+                              "expr": "formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
                             }
                           }
                         ]
@@ -523,7 +523,7 @@
                     "props": {
                       "className": "space-y-2"
                     },
-                    "condition": "{{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.couponCodes.length}} > 0",
+                    "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.couponCodes?.length > 0",
                     "children": [
                       {
                         "type": "Box",
@@ -593,7 +593,7 @@
                     "props": {
                       "className": "flex gap-2 flex-row"
                     },
-                    "condition": "({{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.couponCodes.length}} || 0) === 0",
+                    "condition": "(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.couponCodes?.length || 0) === 0",
                     "children": [
                       {
                         "type": "Input",

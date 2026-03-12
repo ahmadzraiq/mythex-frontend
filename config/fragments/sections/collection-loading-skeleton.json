@@ -3,7 +3,7 @@
   "props": {
     "className": "grid grid-cols-1 lg:grid-cols-4 gap-8 animate-pulse"
   },
-  "condition": "{{collections.d4e5f6a7-b8c9-0123-defa-234567890123.loading}}",
+  "condition": "collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.loading",
   "children": [
     {
       "type": "Box",

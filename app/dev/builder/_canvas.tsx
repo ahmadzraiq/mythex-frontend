@@ -135,6 +135,9 @@ export default function BuilderCanvas() {
     setPreviewState,
     activePreviewStates,
     openLogicSection,
+    pageWorkflows,
+    pageWorkflowMeta,
+    globalWorkflows,
   } = useBuilderStore();
 
   // ── Pan / Zoom hook ───────────────────────────────────────────────────────
@@ -498,6 +501,29 @@ export default function BuilderCanvas() {
       } as SDUIConfig['ui'],
     };
   }, [pageNodes, currentPageConfigName]);
+
+  // ── Merged actions config for the preview engine ─────────────────────────
+  // pageWorkflows + globalWorkflows are defined in the builder store but NOT in
+  // app.actions. We compile them into workflowSteps-format action definitions
+  // and merge them into app.actions so the SDUI engine can execute them when
+  // the user interacts with elements in the preview (e.g. typing in an Input
+  // that has an onChange workflow bound to it).
+  const previewActionsConfig = useMemo<Record<string, unknown>>(() => {
+    const base = (app.actions ?? {}) as Record<string, unknown>;
+    const compiled: Record<string, unknown> = {};
+    for (const [uuid, steps] of Object.entries(pageWorkflows ?? {})) {
+      const meta = (pageWorkflowMeta ?? {})[uuid] ?? {};
+      compiled[uuid] = {
+        type: 'workflowSteps',
+        trigger: (meta as Record<string, unknown>).trigger ?? 'click',
+        steps,
+      };
+    }
+    for (const [id, steps] of Object.entries(globalWorkflows ?? {})) {
+      compiled[id] = { type: 'workflowSteps', steps };
+    }
+    return { ...base, ...compiled };
+  }, [pageWorkflows, pageWorkflowMeta, globalWorkflows]);
 
   // Wheel handler (zoom + pan) is registered by useCanvasPanZoom.
 
@@ -1615,6 +1641,7 @@ export default function BuilderCanvas() {
           configName={currentPageConfigName}
           previewStates={activePreviewStates}
           previewData={undefined}
+          actionsConfig={previewActionsConfig}
         />
 
         {/* Viewport fold line — dashed line marking where the viewport ends.

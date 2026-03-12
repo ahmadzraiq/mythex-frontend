@@ -22,7 +22,7 @@
           "props": {
             "className": "flex flex-col items-center gap-4 py-20"
           },
-          "condition": "!{{collections.c3d4e5f6-a7b8-9012-cdef-123456789012.data.search.items.0}}",
+          "condition": "!collections['c3d4e5f6-a7b8-9012-cdef-123456789012']?.data?.search?.items?.0",
           "children": [
             {
               "type": "Text",
@@ -50,7 +50,7 @@
         },
         {
           "type": "Carousel",
-          "condition": "!!{{collections.c3d4e5f6-a7b8-9012-cdef-123456789012.data.search.items.0}}",
+          "condition": "!!collections['c3d4e5f6-a7b8-9012-cdef-123456789012']?.data?.search?.items?.0",
           "props": {
             "loop": true,
             "align": "start",
@@ -89,14 +89,14 @@
                             "fill": true,
                             "className": "object-cover group-hover:scale-105 transition-transform duration-300"
                           },
-                          "condition": "!!{{context.item.data.productAsset.preview}}"
+                          "condition": "!!context?.item?.data?.productAsset?.preview"
                         },
                         {
                           "type": "Box",
                           "props": {
                             "className": "w-full h-full flex items-center justify-center"
                           },
-                          "condition": "!{{context.item.data.productAsset.preview}}",
+                          "condition": "!context?.item?.data?.productAsset?.preview",
                           "children": [
                             {
                               "type": "Text",
@@ -129,7 +129,7 @@
                             "className": "text-lg font-bold text-[var(--theme-content-text)]"
                           },
                           "text": {
-                            "expr": "{{context.item.data.priceWithTax.__typename}} === 'SinglePrice' ? formatCurrency({{context.item.data.priceWithTax.value}}, {{context.item.data.currencyCode}}) : 'from ' + formatCurrency({{context.item.data.priceWithTax.min}}, {{context.item.data.currencyCode}})"
+                            "expr": "context?.item?.data?.priceWithTax?.__typename === 'SinglePrice' ? formatCurrency(context?.item?.data?.priceWithTax?.value, context?.item?.data?.currencyCode) : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min, context?.item?.data?.currencyCode)"
                           }
                         }
                       ]

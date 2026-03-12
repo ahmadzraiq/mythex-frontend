@@ -82,7 +82,7 @@
                           },
                           {
                             "type": "Input",
-                        "id": "f1cc6656-57da-4814-a981-e1530a57942b",
+                            "id": "f1cc6656-57da-4814-a981-e1530a57942b",
                             "children": [
                               {
                                 "type": "InputField",
@@ -110,7 +110,7 @@
                           },
                           {
                             "type": "Input",
-                        "id": "7a425bc1-4ee5-4292-9e43-e3e1664728bd",
+                            "id": "7a425bc1-4ee5-4292-9e43-e3e1664728bd",
                             "children": [
                               {
                                 "type": "InputField",

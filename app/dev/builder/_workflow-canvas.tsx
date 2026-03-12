@@ -970,6 +970,7 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
                   step={selectedStep}
                   onUpdate={patch => updateSelectedStep(patch)}
                   isFormContext={isFormContext}
+                  workflowTrigger={triggerValue}
                 />
               </>
             ) : (target.kind === 'globalWorkflow' || target.kind === 'pageWorkflow') ? (

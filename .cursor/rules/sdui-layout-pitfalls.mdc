@@ -138,7 +138,7 @@ context.item
 
 **`isScopeVariable`** in `path-utils.ts` recognises `context` and all `context.*` sub-paths. Never remove this; it gates scope variable resolution in the renderer.
 
-**Navigate payload still uses `$item`** for dynamic routes (this is a JSON Logic `var` expression, not a template):
+**Navigate payload still uses `$item`** for dynamic routes (this is a `{ "var": "path" }` resolver expression handled by `resolveValue`, not a formula template):
 ```json
 { "action": "navigate", "payload": { "routeConfig": "product", "slug": { "var": "$item.slug" } } }
 ```
@@ -346,12 +346,12 @@ const next = Math.max(minVal, (Number(current) || 0) - amount);
 
 ## Pagination + URL Query Params
 
-**Problem 1 (page=0):** Navigate uses `{{collectionCurrentPage}}` but it can be stale or 0 due to timing; URL shows `?page=0`.
+**Problem 1 (page=0):** Navigate uses a stale or 0 page value; URL shows `?page=0`.
 
-**Fix:** Use explicit values in navigate payload:
-- Page click: `{{$item}}` (the page from map scope)
-- Prev: `{{collectionPrevPage}}` (computed: max(1, current - 1))
-- Next: `{{collectionNextPage}}` (computed: min(totalPages, current + 1))
+**Fix:** Use explicit values in navigate payload (via `{ "var": "path" }` in action variables):
+- Page click: `{ "var": "context.item" }` (the page number from map scope)
+- Prev: `{ "var": "collectionPrevPage" }` (computed: max(1, current - 1))
+- Next: `{ "var": "collectionNextPage" }` (computed: min(totalPages, current + 1))
 
 **Problem 2 (created-workflow overwrites URL):** A `trigger: "created"` workflow step resets `collectionSkip` to 0, overwriting the value synced from `?page=2`.
 
@@ -644,11 +644,12 @@ To pre-populate a field programmatically (e.g. from API data), use `setVar`:
 
 ```json
 // ❌ WRONG — screen-scoped path
+// ❌ WRONG — screen-scoped path or {{path}} in formula expression
 "condition": "{{screens.signIn.errors.apiError}}"
 "variableName": "screens.checkout.errors.form.emailAddress"
 
-// ✅ CORRECT — global variable by UUID
-"condition": "{{variables['f2a3b4c5-d6e7-8901-fabc-012345678901']}}"
+// ✅ CORRECT — global variable by UUID, direct JS access in formula expression
+"condition": "variables['f2a3b4c5-d6e7-8901-fabc-012345678901']"
 "variableName": "f2a3b4c5-d6e7-8901-fabc-012345678901"
 ```
 
@@ -665,7 +666,7 @@ If a screen displays an API error, create a dedicated global variable (e.g. "Sig
 
 ### Rule 4 — Declare all error/UI state variables in `variables.json`
 
-Before using any UUID in `changeVariableValue` or `{{variables['UUID']}}`, the variable must exist in `config/variables.json`:
+Before using any UUID in `changeVariableValue` or a condition like `variables['UUID']`, the variable must exist in `config/variables.json`:
 
 ```json
 // config/variables.json
@@ -677,4 +678,97 @@ Before using any UUID in `changeVariableValue` or `{{variables['UUID']}}`, the v
 }
 ```
 
-**Applies to:** All `changeVariableValue` actions in `config/actions/`, all `{{variables[...]}}` conditions in screens and fragments.
+---
+
+## Multiple Actions on Same Trigger — Handlers Chain, Not Overwrite
+
+**Problem (historical, now fixed):** When a node had multiple workflow actions with the same trigger (e.g. both `waSetMode` and `waRunWorkflow` with `trigger: "click"`), the second `bindEventHandler` call would silently overwrite `onPress`, so only the last action ever fired. The first "setup" action (like setting a variable before running the main workflow) was silently dropped.
+
+**Fix applied in `lib/sdui/action-binding.ts`:** Each action's handlers are now captured into a temporary object and **merged-chained** into `result` — if a prop like `onPress` already exists, a wrapper function calls the old handler then the new one. All actions run in the order they appear in the `actions` array.
+
+**Rule:** You can safely list multiple workflows on the same node and they will execute in order:
+
+```json
+// ✅ CORRECT — both run in order: waSetScoreLow first, then waComplexBranchLoop
+{
+  "type": "Button",
+  "actions": [
+    { "action": "waSetScoreLow" },
+    { "action": "waComplexBranchLoop" }
+  ]
+}
+```
+
+**Applies to:** All `click`, `change`, `enterKey`, `valueChange`, and other triggers. Any trigger where two workflows share the same event will chain correctly.
+
+---
+
+## Input Wrapper Must Have `id` for Form Field Tracking
+
+**Problem:** An `Input` component wrapping an `InputField` inside a `FormContainer` must have an `id` prop set. Without it, `parentInputId` is `null` inside `InputField`, which breaks:
+- `change`/`enterKey` event tracking (no `${id}-value` key in the controlled-component registry)
+- Form reset (field doesn't clear on `resetForm`)
+- Form pre-fill (setting `local.data.form.formData.{name}` doesn't reflect in the input)
+
+**Fix:** Always set a unique `id` on the `Input` wrapper node. The `id` propagates to child `InputField` nodes via `InputParentContext`:
+
+```json
+// ❌ BAD — InputField can't track its value because parentInputId = null
+{
+  "type": "Input",
+  "props": { "variant": "outline" },
+  "children": [
+    { "type": "InputField", "props": { "name": "email" }, "actions": [{ "action": "onEmailChange" }] }
+  ]
+}
+
+// ✅ GOOD — id lets the registry track the value and lets reset/prefill work
+{
+  "type": "Input",
+  "id": "email-input",
+  "props": { "variant": "outline" },
+  "children": [
+    { "type": "InputField", "props": { "name": "email" }, "actions": [{ "action": "onEmailChange" }] }
+  ]
+}
+```
+
+**Rule:** Every `Input` node that wraps an `InputField` inside a `FormContainer` MUST have a unique `id`. If `id` is missing, change/focus/reset events silently do nothing.
+
+---
+
+## forEach `listPath` vs `list` — Use the Right Config Key
+
+**Problem:** The `forEach` step in a `workflowSteps` workflow supports two list sources:
+- `listPath` (or `itemsPath`): a variable UUID or state path to read the array from at runtime
+- `list`: an inline hardcoded array of values
+
+Confusing these (e.g. using `listPath` when you have an inline array, or missing both) causes the loop body to never execute.
+
+**Fix:** Choose the right key based on your data source:
+
+```json
+// ✅ forEach over a runtime variable (UUID = array stored in variables.json)
+{
+  "id": "s-loop",
+  "type": "forEach",
+  "config": { "listPath": "wa000001-0000-0000-0000-000000000042" },
+  "loopBody": [...]
+}
+
+// ✅ forEach over an inline literal array
+{
+  "id": "s-loop",
+  "type": "forEach",
+  "config": { "list": ["A", "B", "C"] },
+  "loopBody": [...]
+}
+```
+
+Inside the loop body, access the current item via:
+- **Text templates:** `{{context.item.data.value}}`
+- **Formula expressions:** `context?.item?.data?.value`
+
+`context.item.data.value` is set to the raw array element; `context.item.data.index` is the 0-based iteration index.
+
+**Applies to:** All `changeVariableValue` actions in `config/actions/`, all `variables['UUID']` conditions in screens and fragments.

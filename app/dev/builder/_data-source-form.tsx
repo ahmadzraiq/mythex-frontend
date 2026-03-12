@@ -27,6 +27,7 @@ import { SP_BTN_PRIMARY, SP_BTN_SECONDARY, SP_INPUT, SP_LABEL } from './_slide-p
 import { BindingIcon, isBoundValue } from './_formula-panel';
 import { FormulaEditor, type FormulaValue, storedValueToFormula, evaluateFormula } from './_formula-editor';
 import { Chevron } from './_layers-panel';
+import { OptionPickerDropdown, BoundField, BoundToggleField, PillToggle } from './_workflow-node-configs';
 import { useSduiStore } from '@/store/sdui-store';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 
@@ -490,10 +491,15 @@ export function RestForm({ initial, onSave, onBack, onWidthChange }: {
   const [url, setUrl] = useState<string | FormulaValue>(initial.url ?? '');
   const [urlBound, setUrlBound] = useState(false);
   const [method, setMethod] = useState<DataSourceConfig['method']>(initial.method ?? 'GET');
+  const [bodyMode, setBodyMode] = useState<'parsed' | 'raw'>((initial as { bodyMode?: 'parsed' | 'raw' }).bodyMode ?? 'parsed');
+  const [fields, setFields] = useState<KvEntry[]>(() => toKvEntries((initial as { fields?: unknown }).fields ?? []));
+  const [body, setBody] = useState<string | FormulaValue>((initial as { body?: string | FormulaValue }).body ?? '');
+  const [contentType, setContentType] = useState<string>((initial as { contentType?: string }).contentType ?? '');
   const [headers, setHeaders] = useState<KvEntry[]>(() => toKvEntries(initial.headers ?? []));
   const [queryParams, setQueryParams] = useState<KvEntry[]>(() => toKvEntries(initial.queryParams ?? []));
   const [proxy, setProxy] = useState<boolean | FormulaValue>(initial.proxy ?? false);
   const [sendCredentials, setSendCredentials] = useState(initial.sendCredentials ?? false);
+  const [streamResponse, setStreamResponse] = useState<boolean>((initial as { streamResponse?: boolean }).streamResponse ?? false);
   const [dsFolderId, setDsFolderId] = useState<string | undefined>(initial.folderId);
   const [formulaState, setFormulaState] = useState<FormulaFieldState>(null);
   const [headersBound, setHeadersBound] = useState(false);
@@ -570,6 +576,8 @@ export function RestForm({ initial, onSave, onBack, onWidthChange }: {
     const restSerializedQs = qsBound && qsFormula
       ? [{ key: '__formula__', value: storedValueToFormula(qsFormula), enabled: true }]
       : queryParams.filter(p => p.key.trim()).map(p => ({ key: p.key, value: p.value, enabled: true }));
+    const isGet = (method ?? 'GET').toUpperCase() === 'GET';
+    const restSerializedFields = fields.filter(f => f.key.trim()).map(f => ({ key: f.key, value: f.value, enabled: true }));
     onSave({
       id,
       name: trimmedName,
@@ -577,13 +585,18 @@ export function RestForm({ initial, onSave, onBack, onWidthChange }: {
       type: 'rest',
       url: urlStr,
       method: method ?? 'GET',
+      ...((!isGet && bodyMode === 'parsed' && restSerializedFields.length) ? { fields: restSerializedFields } : {}),
+      ...((!isGet && bodyMode === 'raw' && body && (typeof body !== 'string' || (body as string).trim())) ? { body: typeof body === 'string' ? (body as string).trim() : body } : {}),
+      ...((!isGet && contentType) ? { contentType } : {}),
+      bodyMode: isGet ? undefined : bodyMode,
       headers: restSerializedHeaders,
       queryParams: restSerializedQs,
       storeIn: initial.storeIn ?? id,
       proxy: typeof proxy === 'boolean' ? proxy : false,
       sendCredentials,
+      streamResponse: streamResponse || undefined,
       folderId: dsFolderId,
-    });
+    } as DataSourceConfig);
   };
 
   const DIVIDER: React.CSSProperties = { borderTop: '1px solid #1f2937', margin: '4px 0 12px' };
@@ -620,10 +633,20 @@ export function RestForm({ initial, onSave, onBack, onWidthChange }: {
         {/* Method */}
         <div style={{ marginBottom: 14 }}>
           <label style={SP_LABEL}>Method *</label>
-          <select data-testid="ds-method" value={method} onChange={e => setMethod(e.target.value as DataSourceConfig['method'])} style={{ ...SP_INPUT, cursor: 'pointer' }}>
-            {['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].map(m => <option key={m}>{m}</option>)}
-          </select>
-              </div>
+          <div data-testid="ds-method">
+            <OptionPickerDropdown
+              value={method ?? 'GET'}
+              onChange={v => setMethod(v as DataSourceConfig['method'])}
+              options={[
+                { value: 'GET',    label: 'GET' },
+                { value: 'POST',   label: 'POST' },
+                { value: 'PUT',    label: 'PUT' },
+                { value: 'DELETE', label: 'DELETE' },
+                { value: 'PATCH',  label: 'PATCH' },
+              ]}
+            />
+          </div>
+        </div>
 
         {/* URL */}
         <div style={{ marginBottom: 14 }}>
@@ -634,8 +657,8 @@ export function RestForm({ initial, onSave, onBack, onWidthChange }: {
               <button onClick={openUrlFE} style={{ flex: 1, ...SP_INPUT, background: '#1e1b4b', border: '1px solid #4338ca', color: '#a5b4fc', cursor: 'pointer', textAlign: 'left', fontFamily: 'monospace', fontSize: 11 }}>ƒ Edit formula</button>
             ) : (
               <input data-testid="ds-url" value={url as string} onChange={e => setUrl(e.target.value)} placeholder="https://api-url.com/endpoint" style={{ ...SP_INPUT, flex: 1 }} />
-                )}
-              </div>
+            )}
+          </div>
           {urlFEOpen && (
             <FormulaEditor label="URL" value={urlBound ? url as FormulaValue : ''} anchorLeft={FORMULA_ANCHOR_LEFT}
               onChange={v => {
@@ -646,9 +669,49 @@ export function RestForm({ initial, onSave, onBack, onWidthChange }: {
               onClose={closeUrlFE}
             />
           )}
-            </div>
+        </div>
 
         <div style={DIVIDER} />
+
+        {/* Body tabs — only for non-GET */}
+        {(method ?? 'GET') !== 'GET' && (
+          <>
+            <div style={{ display: 'flex', background: '#1f2937', borderRadius: 6, padding: 2, gap: 2, marginBottom: 12 }}>
+              <button style={{ flex: 1, padding: '4px 0', fontSize: 11, border: 'none', cursor: 'pointer', borderRadius: 4, fontWeight: 500,
+                background: bodyMode === 'parsed' ? '#374151' : 'transparent', color: bodyMode === 'parsed' ? '#f3f4f6' : '#6b7280' }}
+                onClick={() => setBodyMode('parsed')}>Parsed fields</button>
+              <button style={{ flex: 1, padding: '4px 0', fontSize: 11, border: 'none', cursor: 'pointer', borderRadius: 4, fontWeight: 500,
+                background: bodyMode === 'raw' ? '#374151' : 'transparent', color: bodyMode === 'raw' ? '#f3f4f6' : '#6b7280' }}
+                onClick={() => setBodyMode('raw')}>Raw body</button>
+            </div>
+
+            {bodyMode === 'parsed' ? (
+              <div style={{ marginBottom: 14 }}>
+                <SectionRow label="Fields"
+                  onAdd={() => setFields(f => [...f, { key: '', value: '', keyBound: false, valueBound: false }])}
+                  addTestId="ds-add-field"
+                  bindActive={false}
+                  onBind={undefined}
+                />
+                {fields.map((f, i) => (
+                  <KvRow key={i} index={i} entry={f}
+                    onEntryChange={patch => setFields(ff => ff.map((x, xi) => xi === i ? { ...x, ...patch } : x))}
+                    onRemove={() => setFields(ff => ff.filter((_, xi) => xi !== i))}
+                    testIdPrefix="ds-field" formulaState={formulaState} setFormulaState={setFormulaState} fieldSuffix="rest-field"
+                  />
+                ))}
+              </div>
+            ) : (
+              <BoundField
+                label="Body"
+                value={body as FormulaValue | undefined}
+                onChange={v => setBody(v ?? '')}
+                placeholder={'{"key": "value"}'}
+              />
+            )}
+            <div style={DIVIDER} />
+          </>
+        )}
 
         {/* Headers */}
         <div style={{ marginBottom: 14 }}>
@@ -672,7 +735,7 @@ export function RestForm({ initial, onSave, onBack, onWidthChange }: {
               testIdPrefix="ds-header" formulaState={formulaState} setFormulaState={setFormulaState} fieldSuffix="rest-hdr"
             />
           ))}
-              </div>
+        </div>
 
         <div style={DIVIDER} />
 
@@ -698,16 +761,40 @@ export function RestForm({ initial, onSave, onBack, onWidthChange }: {
               testIdPrefix="ds-param" formulaState={formulaState} setFormulaState={setFormulaState} fieldSuffix="rest-qs"
             />
           ))}
-            </div>
+        </div>
 
         <div style={DIVIDER} />
 
+        {/* Content type — only for non-GET, after Query string */}
+        {(method ?? 'GET') !== 'GET' && (
+          <>
+            <div style={{ marginBottom: 12 }}>
+              <label style={SP_LABEL}>Content type</label>
+              <OptionPickerDropdown
+                value={contentType || ''}
+                onChange={v => setContentType(v)}
+                options={[
+                  { value: '',                                  label: 'Default (application/json)' },
+                  { value: 'application/x-www-form-urlencoded', label: 'Form URL-encoded' },
+                  { value: 'multipart/form-data',               label: 'Multipart/Form-data' },
+                  { value: 'text/plain',                        label: 'Text' },
+                  { value: 'application/xml',                   label: 'XML' },
+                ]}
+              />
+            </div>
+            <div style={DIVIDER} />
+          </>
+        )}
+
         {/* Proxy */}
-        <OnOffRow label="Proxy request server side (bypass CORS)" value={proxy} onChange={setProxy} formulaState={formulaState} setFormulaState={setFormulaState} fieldId="rest-proxy" />
+        <BoundToggleField label="Proxy request server side (bypass CORS)" value={proxy as FormulaValue | undefined} onChange={v => setProxy(v ?? false)} />
 
         {/* Send credentials */}
-        <SimpleToggleRow label="Send credentials" value={sendCredentials} onChange={setSendCredentials} />
-              </div>
+        <PillToggle label="Send credentials" value={sendCredentials} onChange={setSendCredentials} />
+
+        {/* Stream response */}
+        <PillToggle label="Stream response" value={streamResponse} onChange={setStreamResponse} />
+      </div>
 
       {/* Footer — compact: Fetch | Save */}
       <div style={{ padding: '7px 10px', borderTop: '1px solid #1f2937', flexShrink: 0, display: 'flex', gap: 6, alignItems: 'center' }}>

@@ -8,7 +8,7 @@
       "type": "Pressable",
       "props": {
         "className": {
-          "expr": "'flex flex-row items-center justify-between w-full py-4 ' + (({{auth.user}} || {{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.emailAddress}}) ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')"
+          "expr": "'flex flex-row items-center justify-between w-full py-4 ' + ((auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')"
         }
       },
       "actions": [
@@ -27,7 +27,7 @@
               "type": "Box",
               "props": {
                 "className": {
-                  "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + ({{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine1}} ? 'bg-green-500 !text-white' : ({{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'shipping' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]'))"
+                  "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + (collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1 ? 'bg-green-500 !text-white' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]'))"
                 }
               },
               "children": [
@@ -38,7 +38,7 @@
                     "size": 16,
                     "className": "!text-white"
                   },
-                  "condition": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine1}}"
+                  "condition": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1"
                 },
                 {
                   "type": "Text",
@@ -46,7 +46,7 @@
                     "className": "font-semibold text-sm !text-white"
                   },
                   "text": "2",
-                  "condition": "!{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine1}} && {{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'shipping'"
+                  "condition": "!collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1 && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping'"
                 },
                 {
                   "type": "Text",
@@ -54,7 +54,7 @@
                     "className": "font-semibold text-sm !text-[var(--theme-muted-foreground)]"
                   },
                   "text": "2",
-                  "condition": "!{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine1}} && {{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} !== 'shipping'"
+                  "condition": "!collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1 && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'shipping'"
                 }
               ]
             },
@@ -80,7 +80,7 @@
                 "size": 16,
                 "className": "!text-[var(--theme-muted-foreground)]"
               },
-              "condition": "{{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'shipping'"
+              "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping'"
             },
             {
               "type": "NavIcon",
@@ -89,7 +89,7 @@
                 "size": 16,
                 "className": "!text-[var(--theme-muted-foreground)]"
               },
-              "condition": "{{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} !== 'shipping'"
+              "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'shipping'"
             }
           ]
         }
@@ -100,7 +100,7 @@
       "props": {
         "className": "pb-6"
       },
-      "condition": "{{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'shipping'",
+      "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping'",
       "children": [
         {
           "type": "Box",
@@ -123,7 +123,7 @@
                 },
                 {
                   "type": "Input",
-                        "id": "379f02f5-a9a2-42a5-a780-2fdca8210bc1",
+                  "id": "379f02f5-a9a2-42a5-a780-2fdca8210bc1",
                   "children": [
                     {
                       "type": "InputField",
@@ -151,7 +151,7 @@
                 },
                 {
                   "type": "Input",
-                        "id": "31551507-b134-461a-846c-079bace012b0",
+                  "id": "31551507-b134-461a-846c-079bace012b0",
                   "children": [
                     {
                       "type": "InputField",
@@ -179,7 +179,7 @@
                 },
                 {
                   "type": "Input",
-                        "id": "5f7d8425-4db0-4694-93e7-307c4bf93c2d",
+                  "id": "5f7d8425-4db0-4694-93e7-307c4bf93c2d",
                   "children": [
                     {
                       "type": "InputField",
@@ -200,7 +200,7 @@
                   "props": {
                     "className": "min-h-[20px]"
                   },
-                  "condition": "{{local.data.form.fields.streetLine1.isValid}}",
+                  "condition": "local?.data?.form?.fields?.streetLine1?.isValid",
                   "children": [
                     {
                       "type": "Text",
@@ -228,7 +228,7 @@
                 },
                 {
                   "type": "Input",
-                        "id": "8c526473-7985-459b-8ba3-b5ff1c99fed3",
+                  "id": "8c526473-7985-459b-8ba3-b5ff1c99fed3",
                   "children": [
                     {
                       "type": "InputField",
@@ -262,7 +262,7 @@
                     },
                     {
                       "type": "Input",
-                        "id": "932e9e98-56ad-4c53-bb33-0d715bdd159e",
+                      "id": "932e9e98-56ad-4c53-bb33-0d715bdd159e",
                       "children": [
                         {
                           "type": "InputField",
@@ -290,7 +290,7 @@
                     },
                     {
                       "type": "Input",
-                        "id": "15dcd140-b650-4076-9571-fab69accc117",
+                      "id": "15dcd140-b650-4076-9571-fab69accc117",
                       "children": [
                         {
                           "type": "InputField",
@@ -318,7 +318,7 @@
                     },
                     {
                       "type": "Input",
-                        "id": "6cf558a1-49b0-4ab7-a798-957d50884588",
+                      "id": "6cf558a1-49b0-4ab7-a798-957d50884588",
                       "children": [
                         {
                           "type": "InputField",
@@ -432,7 +432,7 @@
                       "props": {
                         "className": "min-h-[20px]"
                       },
-                      "condition": "{{local.data.form.fields.countryCode.isValid}}",
+                      "condition": "local?.data?.form?.fields?.countryCode?.isValid",
                       "children": [
                         {
                           "type": "Text",
@@ -462,7 +462,7 @@
                 },
                 {
                   "type": "Input",
-                        "id": "4513c0cd-5d4a-43c3-b804-ef8278843021",
+                  "id": "4513c0cd-5d4a-43c3-b804-ef8278843021",
                   "children": [
                     {
                       "type": "InputField",
@@ -498,7 +498,7 @@
                       "props": {
                         "className": "text-white text-xs font-bold"
                       },
-                      "condition": "{{variables['f1a2b3c4-d5e6-7890-fabc-901234567890']}}",
+                      "condition": "variables['f1a2b3c4-d5e6-7890-fabc-901234567890']",
                       "text": "✓"
                     }
                   ]

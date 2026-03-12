@@ -7,26 +7,6 @@
 
 import { evaluateFormula } from './formula-evaluator';
 
-/** Custom ops available in formulas. Used by AI generators. Add new ops here when extending. */
-export const JSON_LOGIC_CUSTOM_OPS = [
-  'ceil',
-  'floor',
-  'formatCurrency',
-  'lookupMap',
-  'at',
-  'findFirstByPreference',
-  'filterExcludeByFieldAndSlice',
-  'getFromMap',
-  'findItemById',
-  'findItemByOptionsMatch',
-  'lookupInArray',
-  'paginationPages',
-  'groupBy',
-  'toggleInArray',
-  'arrayIncludes',
-  'arrayLength',
-  'reverseArray',
-] as const;
 import { getNestedValue, setNestedValue } from './nested-utils';
 
 /** Memo cache: output -> { depsValues, outputValue }. Skip re-evaluation when deps unchanged. */
@@ -36,26 +16,14 @@ function arraysEqual(a: unknown[], b: unknown[]): boolean {
   return a.length === b.length && a.every((v, i) => v === b[i]);
 }
 
-/** Extract data paths from an expr (json-logic object OR formula string).
- *  Used for dependency tracking / memoization. */
+/** Extract {{path}} dependencies from a formula string for memoization. */
 function extractPathsFromExpr(expr: unknown): string[] {
   if (expr == null) return [];
-  // Formula string: extract {{path}} references
   if (typeof expr === 'string') {
     const matches = [...expr.matchAll(/\{\{([^}]+)\}\}/g)];
     return matches
       .map(m => m[1].trim())
       .filter(p => p && p !== 'current' && p !== 'accumulator' && !p.startsWith('current.'));
-  }
-  // Legacy json-logic object: walk { "var": "path" } nodes
-  if (typeof expr === 'object') {
-    if (!Array.isArray(expr) && 'var' in (expr as Record<string, unknown>)) {
-      const v = (expr as { var: string | [string, unknown] }).var;
-      const path = Array.isArray(v) ? String(v[0]) : String(v);
-      if (path === 'current' || path === 'accumulator' || path.startsWith('current.')) return [];
-      return [path];
-    }
-    return (Array.isArray(expr) ? expr : Object.values(expr as object)).flatMap(extractPathsFromExpr);
   }
   return [];
 }
@@ -69,7 +37,7 @@ export function getComputedDeps(computed: ComputedDef[]): string[] {
 
 export type ComputedDef = {
   output: string;
-  /** Formula string or legacy json-logic object; data = merged state */
+  /** Formula string; data = merged state */
   expr: string | object;
 };
 

@@ -6,7 +6,7 @@ A Server-Driven UI (SDUI) framework built on Next.js. All screens, layouts, frag
 
 - **Next.js 15** + React 19
 - **Zustand** – global state
-- **json-logic-js** – computed values and conditions
+- **Formula evaluator** – plain JS expressions with `{{path}}` interpolation for computed values and conditions
 - **Gluestack UI** + NativeWind – components
 - Config-driven `validate` action – form validation (no react-hook-form/Yup)
 
@@ -26,7 +26,7 @@ config/
 lib/sdui/
 ├── sdui-engine.tsx     # Engine: actions, state, workflow
 ├── renderer.tsx        # Fine-grained reactive renderer
-├── computed-runner.ts  # JSON Logic computed values
+├── computed-runner.ts  # Formula-driven computed values
 ├── config-resolver.ts  # $ref/$slot resolution
 ├── variable-store.ts   # Reactive path-based state
 └── component-registry.tsx  # JSON type → React component

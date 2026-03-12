@@ -1,11 +1,24 @@
 /**
- * Input wrapper: with children renders real Input; without children auto-injects InputField.
- * Uses forwardRef so the builder can attach data-builder-id via a ref callback.
+ * Input wrapper: with children renders real Gluestack Input; without children auto-injects
+ * an InputField child so standalone `<Input>` nodes work without explicit children in JSON.
+ *
+ * Controlled value for explicit-children case:
+ *   When JSON declares `Input > InputField` (the standard builder structure), the `value` prop
+ *   injected by the renderer onto the `Input` wrapper node is NOT forwarded to the InputField
+ *   child — Gluestack's Input component passes its own props (variant, size, className) to
+ *   children via context, not arbitrary user props. The InputField child subscribes to
+ *   `{parentInputId}-value` in the global variable store directly via useExternalNodeValueSync
+ *   (see form-field-tracker.ts), so the controlled value reaches it without any prop threading.
+ *
+ * Controlled value for no-children case:
+ *   When no children are present, InputWithField renders its own InputField and passes
+ *   `value` directly — standard controlled component pattern.
  *
  * readOnly handling: React Native TextInput uses `editable={false}` for read-only.
- * On web, NativeWind maps editable={false} → readonly DOM attribute. We accept `readOnly`
- * from SDUI props and convert it to `editable={false}` for the InputField.
+ * On web, NativeWind maps editable={false} → readonly DOM attribute.
  */
+
+'use client';
 
 import React from 'react';
 import { Input, InputField } from '@/components/ui/input';
@@ -33,9 +46,6 @@ export const InputWithField = React.forwardRef<
   }
 
   if (children) {
-    // Children path: pass readOnly-derived editable to children via context is complex;
-    // instead pass it on the Input wrapper — Gluestack Input forwards unknown props to
-    // the fieldContext so slotted InputField inherits editable state.
     return (
       <Input
         ref={ref}
@@ -54,8 +64,6 @@ export const InputWithField = React.forwardRef<
         placeholder={placeholder as string}
         // Do NOT default to '' — an explicit undefined keeps the input uncontrolled
         // so the user can type freely when no value binding is provided.
-        // When a live value IS supplied (e.g. "{{local.data.form.formData.email}}"),
-        // the SDUI engine passes the live string here and the input stays controlled.
         value={value as string | undefined}
         editable={readOnly ? false : undefined}
         onChange={handleChange as React.ComponentProps<typeof InputField>['onChange']}

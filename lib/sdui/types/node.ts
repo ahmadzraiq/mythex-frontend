@@ -4,7 +4,7 @@
 
 import type { SetStatePayload, FetchPayload, NavigatePayload } from './payloads';
 
-/** Condition: formula string ("cart.count > 0") or legacy json-logic object */
+/** Condition: formula string, e.g. "cart.count > 0" or "{{demo.number}} >= 60" */
 type ConditionValue = string | Record<string, unknown>;
 
 /** All gluestack-ui component types - AI can generate any of these */
@@ -155,7 +155,7 @@ export interface SDUIDataSource {
   key: string; // state key to store response
   /** Refetch when this state path changes */
   dependsOn?: string;
-  /** Condition - only fetch when truthy (formula string or legacy json-logic object) */
+  /** Condition - only fetch when truthy (formula string) */
   when?: ConditionValue;
 }
 

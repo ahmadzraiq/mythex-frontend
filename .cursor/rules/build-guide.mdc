@@ -19,14 +19,14 @@ When migrating an existing app (React, Next.js, etc.) to this JSON-driven SDUI s
 8. **`config/app.ts`** — Import all screens and merge into the app config.
 
 **Mapping guide:**
-- React component state → `state` in screen JSON + `{{form.field}}` interpolation
+- React component state → declare in `config/variables.json` with a UUID; access as `variables['UUID']` in formula expressions, `{{variables['UUID']}}` in text templates
 - `useEffect` data fetching → a `workflowSteps` workflow with `trigger: "created"` bound to the page or component
 - `onClick` / form submit → `"actions": [{ "action": "namedWorkflow" }]` — trigger comes from the workflow definition
 - React Router / Next.js `<Link>` → a named navigate workflow (e.g. `navigateToHome`, `navigateToProduct`)
-- Dynamic routes (e.g. `/product/:slug`) → a named navigate workflow with `{{context.item.data.slug}}` in its step config
+- Dynamic routes (e.g. `/product/:slug`) → a named navigate workflow with `context?.item?.data?.slug` in its step config (or `{ "var": "context.item.data.slug" }` in payload)
 - Shared UI (header, cards) → fragments with `$ref`
-- Conditional rendering → `condition` (JSON Logic) on nodes
-- Lists / `.map()` → `map` on the node with `{{context.item.data.field}}` (canonical) or `{{$item.field}}` (legacy, still works)
+- Conditional rendering → `condition` (plain JS formula string using named scopes, e.g. `"variables['UUID'] > 0"`) on nodes
+- Lists / `.map()` → `map` on the node with `{{context.item.data.field}}` in text templates, `context?.item?.data?.field` in formula expressions
 
 ---
 
@@ -134,32 +134,132 @@ Never use `{ "action": "navigate", "payload": { "path": "/..." } }` inline on a 
 ```json
 // config/actions/layout.json
 "navigateToHome": { "type": "workflowSteps", "trigger": "click", "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/" } }] },
-"navigateToProduct": { "type": "workflowSteps", "trigger": "click", "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "routeConfig": "product", "slug": "{{context.item.data.slug}}" } }] }
+"navigateToProduct": { "type": "workflowSteps", "trigger": "click", "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "routeConfig": "product", "slug": { "var": "context.item.data.slug" } } }] }
 ```
 
-Dynamic route slugs from map scope (`{{context.item.data.slug}}`) work correctly because `runOne` is a closure capturing the scope.
+Dynamic route slugs from map scope use `{ "var": "context.item.data.slug" }` — the `var` resolver uses `get()` with the full state including repeat scope.
 
 **Existing named navigate workflows in `config/actions/layout.json`:** `navigateToHome`, `navigateToCart`, `navigateToCheckout`, `navigateToSignIn`, `navigateToForgotPassword`, `navigateToRegister`, `navigateToOrders`, `navigateToAccountAddresses`, `navigateToAccountProfile`, `navigateToSearchPage`, `navigateToSearch`, `navigateToProduct`, `navigateToProductFromCart`, `navigateToOrderDetail`, `navigateToCollection`, `navigateToVerifyPending`, `navigateToCheckoutConfirmation`, `navigateToOrderConfirmation`.
 
-**Action schema:** `workflowSteps` type and `ActionRef` (`{ "action": "..." }`) are defined in `config/schema/action.schema.json`.
 
 ### Workflow step types — supported list
 
-Use only the following step types inside `workflowSteps.steps`:
+**Single source of truth:** The visual builder's Type dropdown (`_workflow-types.tsx` → `ACTION_CATEGORIES`). Only these types are supported and listed in the dropdown:
 
-| Type | Purpose |
-|---|---|
-| `navigateTo` | Navigate to a path or route config |
-| `changeVariableValue` | Write a value to a global variable by UUID |
-| `setVar` | Write a value to any variable store path (use for programmatic form pre-population: `local.data.form.formData.fieldName`) |
-| `graphql` | Execute a GraphQL query or mutation |
-| `fetch` | Execute a REST API call |
-| `branch` | Conditional: `condition`, `trueBranch` steps, `falseBranch` steps |
-| `runMultiple` | Run multiple steps in parallel or sequence |
+| Category | Type | Label |
+|---|---|---|
+| **Branching** | `branch` | True/False split |
+| | `multiOptionBranch` | Multi-option split |
+| | `forEach` | Iterator (for loop) |
+| | `whileLoop` | While loop |
+| **Loop** | `breakLoop` | Break loop |
+| | `continueLoop` | Continue loop |
+| | `passThroughCondition` | Pass through condition |
+| **Navigation** | `navigateTo` | Navigate to |
+| | `navigatePrev` | Navigate to previous page |
+| | `pageLoader` | Page loader |
+| **Actions** | `changeLanguage` | Change language |
+| | `changeVariableValue` | Change variable value |
+| | `fetchCollection` | Fetch collection |
+| | `fetchCollectionsParallel` | Fetch collections in parallel |
+| | `updateCollection` | Update collection |
+| | `resetVariableValue` | Reset variable value |
+| | `executeComponentAction` | Execute component action |
+| | `returnValue` | Return a value |
+| | `timeDelay` | Time delay |
+| | `uploadFile` | Upload file |
+| **GraphQL** | `graphql` | GraphQL Request |
+| **REST API** | `fetchData` | REST API Request |
+| **Advanced** | `stopPropagation` | Stop click propagation |
+| | `printPdf` | Print PDF |
+| | `copyToClipboard` | Copy to clipboard |
+| | `downloadFileFromUrl` | Download file from URL |
+| | `createUrlFromBase64` | Create URL from Base64 |
+| | `encodeFileAsBase64` | Encode file as Base64 |
+| | `customJavaScript` | Custom JavaScript |
+| **Popup** | `openPopup` | Open popup |
+| | `closeAllPopups` | Close all popups |
+| **Form (when in FormContainer)** | `setFormState` | Set form state |
+| | `resetForm` | Reset form |
 
-**Only use the step types listed in the table above.** Any other type is not rendered in the workflow canvas and silently does nothing.
+**Project workflows** (`runProjectWorkflow`) is injected dynamically when workflows exist — it calls another named workflow by ID.
 
-**Form field tracking:** Input fields inside a `FormContainer` auto-track their value via the `name` prop — no workflow step needed. To programmatically pre-populate a field, use `setVar` with `path: "local.data.form.formData.fieldName"`.
+**Only use step types listed above.** Any other type is not in the dropdown and will not work correctly.
+
+**`createUrlFromBase64` config:** `{ "base64": "<base64string>", "mimeType": "image/png", "storeIn": "myVar" }` — result URL is written to the variable store at `storeIn` and also to `context.workflow[stepId].result`.
+
+**`encodeFileAsBase64` config:** `{ "dataUrl": "<data:...;base64,...>", "storeIn": "myVar" }` — strips the data URL prefix and writes the raw base64 string to `storeIn`.
+
+**`forEach` config keys:**
+- `listPath` (or `itemsPath`): variable UUID or state path; reads the array at runtime from the variable store
+- `list`: inline literal array — e.g. `["A", "B", "C"]`
+
+Inside the loop body, `context.item.data.value` is the current element and `context.item.data.index` is the 0-based index.
+
+**`whileLoop` config keys:**
+- `conditionPath`: variable UUID to read as a boolean; loop runs while `true`
+- `condition`: formula string (e.g. `"variables['UUID'] < 10"`) evaluated each iteration
+
+**`multiOptionBranch` config keys:**
+- `conditionPath`: variable UUID to read the current value from
+- `condition`: formula string that returns the branch label value
+- `branches`: array of `{ "label": "...", "steps": [...] }` — matched by string equality against the condition value
+- `defaultBranch`: steps to run when no branch label matches
+
+**Form field tracking:** Input fields inside a `FormContainer` auto-track their value via the `name` prop — no workflow step needed. The `Input` wrapper **must have a unique `id`** so the child `InputField` can register itself correctly (see `sdui-layout-pitfalls.mdc` — Input Wrapper Must Have `id`). To pre-populate a field, use `setFormState` with `path: "local.data.form.formData.{fieldName}"` and `value`.
+
+---
+
+## Formula Variable Syntax — The Standard
+
+**Rule: Formula expressions and conditions MUST use direct JavaScript variable access. `{{path}}` is NOT supported in formula expressions.**
+
+### Named scopes available in every formula expression
+| Scope | Example | Source |
+|---|---|---|
+| `variables['UUID']` | `variables['d9e0f1a2-...'] === 'shipping'` | `config/variables.json` |
+| `collections['UUID']?.data.*` | `collections['a1b2...']?.data?.activeOrder?.totalQuantity > 0` | `config/datasources.json` |
+| `context?.item?.data.*` | `context?.item?.data?.productAsset?.preview` | repeat-item scope |
+| `route?.sort`, `route?.facets`, `route?.slug` | `route?.sort === 'name-asc'` | URL/route state |
+| `auth?.user`, `auth?.token` | `auth?.user === null` | auth state |
+| `_workflow?.lastAction`, `_workflow?.lastError` | `_workflow?.lastError` | workflow state |
+| `local?.data?.form?.fields?.field?.isValid` | `local?.data?.form?.fields?.email?.isValid` | form validation state |
+| `_conventions?.sortInputMap` | `lookupMap(_conventions?.sortInputMap, route?.sort, ...)` | engine computed |
+| `get('flatKey')` | `get('collectionPageSize')` | arbitrary state path escape hatch |
+
+### In formula/condition expressions
+```json
+// ✅ CORRECT — direct variable access
+"condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping'"
+"condition": "variables['UUID'] >= 60"
+"value": { "formula": "variables['UUID'] + 1" }
+"condition": "collections['UUID']?.data?.activeOrder?.totalQuantity > 0"
+"condition": "context?.item?.data?.productAsset?.preview"
+"condition": "route?.sort === 'name-asc'"
+"condition": "auth?.user === null"
+```
+
+### In text template values
+Text nodes (`"text": "..."`) use `{{variables['UUID']}}` interpolation (handled by the text template engine — separate from formula expressions):
+```json
+// ✅ CORRECT — text template
+"text": "{{variables['UUID']}}"
+"text": "{{collections['UUID'].data.product.name}}"
+"text": "{{context.item.data.productName}}"
+```
+
+### For new page-scoped variables
+Declare all variables in `config/variables.json` with a UUID. Never use screen `state` for mutable values.
+```json
+// ✅ Declare in config/variables.json
+"UUID": { "label": "Show Address Form", "type": "boolean", "initialValue": false, "folder": "Account" }
+// Use in formula expression:
+"condition": "variables['UUID']"
+// Use in text template:
+"text": "{{variables['UUID']}}"
+```
+
+**Folder convention:** Group by page/feature name — `"folder": "Account"`, `"folder": "Checkout"`, `"folder": "Product"`, etc.
 
 ---
 
@@ -175,13 +275,13 @@ When asked to build or add screens, layouts, modals, or features to this website
    - Reusable UI: create fragments in `config/fragments/`, register in `fragments/index.ts`, use `$ref`
    - Modals: Form must wrap ModalBody + ModalFooter; FormSubmitButton must be inside Form
    - **Button custom colors:** Use `className="!bg-blue-500 !text-white"` (or theme vars). Gluestack v3: Button auto-uses `action="default"` when className has bg-*/text-* so custom colors apply. See sdui-layout-pitfalls.mdc "Button — Custom Colors (Gluestack v3)".
-   - Derived values: use `text: { expr: <JSON Logic>, suffix?, prefix? }` for cart count, subtotal, totals; use `formatCurrency` for money
+   - Derived values: use `text: { expr: <formula string>, suffix?, prefix? }` for cart count, subtotal, totals; use `formatCurrency` for money
 
 3. **Add routes** in `config/routes.json` and **import** new screens in `config/app.ts`.
 
 4. **Actions** go in `config/actions/` (auth, products, layout, other). Use `type: "workflowSteps"` for all user-facing flows. Direct action types (`fetch`, `graphql`, `validate`, etc.) are used as `workflowSteps` step targets, not standalone top-level actions.
    - **fetch**: REST calls; supports `url`, `method`, `body`, `storeFullResponseIn`
-   - **graphql**: GraphQL queries/mutations; supports `query`, `variables` (JSON Logic-resolvable), `endpoint` (falls back to `engineConventions.graphqlEndpoint`), `headers` (merged on top of `engineConventions.graphqlHeaders`). Handles both HTTP errors and `response.errors`. No API routes needed—calls external GraphQL endpoint directly.
+   - **graphql**: GraphQL queries/mutations; supports `query`, `variables` (formula-resolvable), `endpoint` (falls back to `engineConventions.graphqlEndpoint`), `headers` (merged on top of `engineConventions.graphqlHeaders`). Handles both HTTP errors and `response.errors`. No API routes needed—calls external GraphQL endpoint directly.
    - **validate**: Form validation. Use `rules` (required, minLength, pattern, equalsField).
 
 5. **Never hardcode** layout or shared UI in React—define everything in JSON config.

@@ -155,6 +155,25 @@ const _fragmentRegistry: ConfigRegistry = {
   fragments: root.fragments as ConfigRegistry['fragments'],
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** localStorage key: maps legacy positional IDs → stable UUIDs */
+const NODE_ID_MAP_KEY = 'builder:nodeIdMap';
+
+/**
+ * For a given legacy positional key (e.g. "signIn-formcontainer-54"), return
+ * a stable UUID. Creates and persists a new UUID on first call; returns the
+ * same UUID on every subsequent call — even across page reloads.
+ */
+function _stableUUID(legacyKey: string): string {
+  if (typeof window === 'undefined') return legacyKey;
+  const map = _loadJson<Record<string, string>>(NODE_ID_MAP_KEY, {});
+  if (map[legacyKey]) return map[legacyKey];
+  const uuid = crypto.randomUUID();
+  map[legacyKey] = uuid;
+  _saveJson(NODE_ID_MAP_KEY, map);
+  return uuid;
+}
+
 /**
  * Recursively ensure every node in the tree has a unique `id`.
  * SDUI screen configs are render-only trees — they have no `id` fields.
@@ -163,13 +182,22 @@ const _fragmentRegistry: ConfigRegistry = {
  *   • the overlay can hit-test and select nodes
  *   • findNode / moveNode / patchProp can locate nodes in the tree
  *
- * IDs are generated as `<prefix>-<type>-<counter>` so they are
- * readable in the Layers panel and stable within a single page load.
+ * If a node already has a UUID-shaped id, it is kept as-is (drag-dropped
+ * nodes already have `crypto.randomUUID()` IDs). Otherwise a stable UUID
+ * is derived from the positional key via _stableUUID so the same node
+ * always gets the same UUID across page reloads.
  */
 function _assignIds(nodes: SDUINode[], prefix: string, ctr: { n: number }): SDUINode[] {
   return nodes.map(node => {
     ctr.n += 1;
-    const id = (node.id as string | undefined) ?? `${prefix}-${String(node.type ?? 'node').toLowerCase()}-${ctr.n}`;
+    const existing = node.id as string | undefined;
+    let id: string;
+    if (existing && UUID_RE.test(existing)) {
+      id = existing;
+    } else {
+      const legacyKey = existing ?? `${prefix}-${String(node.type ?? 'node').toLowerCase()}-${ctr.n}`;
+      id = _stableUUID(legacyKey);
+    }
     const children = Array.isArray(node.children)
       ? _assignIds(node.children as SDUINode[], prefix, ctr)
       : node.children;

@@ -12,7 +12,7 @@ When working on layout parts (navbar, hero, footer, product-grid, etc.) that sup
 
 | Override | Schema | Behavior |
 |----------|--------|----------|
-| `conditionOverrides` | `Record<nodeId, boolean \| JSON Logic>` | Set node visibility: `false` = hide, `true` = show, or custom JSON Logic |
+| `conditionOverrides` | `Record<nodeId, boolean \| string>` | Set node visibility: `false` = hide, `true` = show, or a formula string |
 | `mapSourceOverrides` | `Record<nodeId, string \| { expr }>` | Change data source for mapped nodes; `{ expr }` for runtime transforms (e.g. `reverseArray`) |
 | `propsOverrides` | `Record<nodeId, Record<string, unknown>>` | Shallow merge props (src, icon, placeholder, etc.) |
 | `classNameOverrides` | `Record<nodeId, string>` | Merge Tailwind classes via `twMerge` (override wins on conflicts) |

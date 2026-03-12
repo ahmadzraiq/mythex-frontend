@@ -16,148 +16,26 @@ import { SDURenderer } from './renderer';
 import { getGlobalVariableStore } from './global-variable-store';
 import { RunActionProvider } from './run-action-context';
 import type { SDUIConfig, SDUIContext, SDUIAction, SDUIDataSource } from './types';
-import { getNestedValue, setNestedValue, extractReferencedDataSources } from './nested-utils';
-import { dsCacheGet, dsCacheSet, dsCacheClear } from './ds-cache';
-import { runComputed, getComputedDeps } from './computed-runner';
-import { evaluateFormula } from './formula-evaluator';
+import { getNestedValue, setNestedValue } from './nested-utils';
+import { dsCacheClear } from './ds-cache';
 import storeConfig from '@/config/store-config';
-import routesConfig from '@/config/routes.json';
-import themeConfig from '@/config/theme.json';
 import { CONVENTIONS } from './conventions';
-import { isScreenScopedPath, isScopeVariable } from './path-utils';
+import { PAGES_MAP, THEME_OBJ } from './engine-static-data';
+import { isScopeVariable } from './path-utils';
 import { computeMergedState as computeMergedStateFn, finalizeMergedWithVariableStore, mergeDataPaths } from './merge-state';
 import { dispatchToHandler } from './actions/handlers';
 import type { ValidationRule, ActionsConfig, EngineConfig, RouteConfig, SDUIEngineProps, NamedDataSourceDef } from './engine-types';
+import { applyPreviewStatePatch, applyPreviewDataPatch } from './builder-preview';
+import { useNamedDataSourceFetcher } from './named-datasource-fetcher';
 
 export type { ValidationRule, ActionsConfig, EngineConfig, RouteConfig, SDUIEngineProps, NamedDataSourceDef } from './engine-types';
 
 
 const computedDefs = (storeConfig as { computed?: unknown[] }).computed ?? [];
 
-/** Static pages map built from config/routes.json — keyed by route config name (or UUID if present) */
-const PAGES_MAP: Record<string, {
-  id: string; name: string; path: string; dynamic: boolean; auth: boolean;
-}> = {};
-{
-  type RouteEntry = { path: string; config: string; id?: string; auth?: boolean; dynamic?: boolean };
-  const routes = (routesConfig as { routes?: RouteEntry[] }).routes ?? [];
-  for (const r of routes) {
-    const key = r.id ?? r.config;
-    PAGES_MAP[key] = {
-      id: r.id ?? r.config,
-      name: r.config,
-      path: r.path,
-      dynamic: r.dynamic ?? false,
-      auth: r.auth ?? false,
-    };
-  }
-}
-
-/** Static theme object built from config/theme.json */
-const THEME_OBJ: Record<string, unknown> = {
-  colors: (themeConfig as Record<string, unknown>).colors ?? {},
-  colorsDark: (themeConfig as Record<string, unknown>).colorsDark ?? {},
-  sections: (themeConfig as Record<string, unknown>).sections ?? {},
-  sectionsDark: (themeConfig as Record<string, unknown>).sectionsDark ?? {},
-  fonts: (themeConfig as Record<string, unknown>).fonts ?? {},
-  cssVariables: (themeConfig as Record<string, unknown>).cssVariables ?? {},
-  /** Border-radius token → Tailwind class, e.g. theme?.['radius']?.['sm'] → 'rounded-sm' */
-  radius: {
-    none: 'rounded-none', sm: 'rounded-sm', base: 'rounded',
-    md: 'rounded-md', lg: 'rounded-lg', xl: 'rounded-xl',
-    '2xl': 'rounded-2xl', '3xl': 'rounded-3xl', full: 'rounded-full',
-  },
-};
-const computedDepPaths = getComputedDeps(computedDefs as Parameters<typeof getComputedDeps>[0]);
-
 /** Ref for page to trigger fetch when searchParams change (avoids engine remount) */
 export const paramChangeRunActionRef: { current: ((action: string) => void) | null } = { current: null };
 
-/** Recursively replace all arrays in a value with empty arrays. */
-function deepClearArrays(val: unknown): unknown {
-  if (Array.isArray(val)) return [];
-  if (val && typeof val === 'object') {
-    return Object.fromEntries(
-      Object.entries(val as Record<string, unknown>).map(([k, v]) => [k, deepClearArrays(v)])
-    );
-  }
-  return val;
-}
-
-/** Apply a preview-state patch on top of the merged state for builder simulation. */
-function applyPreviewStatePatch(
-  merged: Record<string, unknown>,
-  previewState: string,
-  configName: string,
-  loadingSuffix: string | undefined
-): Record<string, unknown> {
-  if (previewState === 'normal' || !previewState) return merged;
-  if (previewState === 'loading') {
-    let next = { ...merged };
-    // Set _workflow.loading = true
-    next = setNestedValue(next, '_workflow.loading', true);
-    // Set every top-level <key>.{loadingSuffix} to true
-    if (loadingSuffix) {
-      for (const key of Object.keys(merged)) {
-        if (key.startsWith('_') || typeof merged[key] !== 'object') continue;
-        next = setNestedValue(next, `${key}.${loadingSuffix}`, true);
-      }
-    }
-    return next;
-  }
-  if (previewState === 'error') {
-    let next = setNestedValue(
-      setNestedValue({ ...merged }, '_workflow.lastError', 'Preview error'),
-      '_workflow.lastAction', 'preview'
-    );
-    if (configName) {
-      // Form fields live at top-level `form.*` (from config state) — fall back if screen-scoped is empty
-      const screenForm = (getNestedValue(merged, `screens.${configName}.form`) ??
-        getNestedValue(merged, 'form')) as Record<string, unknown> | undefined;
-      if (screenForm && typeof screenForm === 'object') {
-        for (const field of Object.keys(screenForm)) {
-          if (typeof (screenForm as Record<string, unknown>)[field] !== 'object') {
-            next = setNestedValue(next, `screens.${configName}.errors.form.${field}`, 'Preview error');
-          }
-        }
-      }
-      // Also patch any already-existing error fields
-      const screenErrors = (getNestedValue(merged, `screens.${configName}.errors`) ??
-        getNestedValue(merged, 'errors')) as Record<string, unknown> | undefined;
-      if (screenErrors && typeof screenErrors === 'object') {
-        for (const field of Object.keys(screenErrors)) {
-          next = setNestedValue(next, `screens.${configName}.errors.${field}`, 'Preview error');
-        }
-      }
-    }
-    return next;
-  }
-  if (previewState === 'validation') {
-    let next = { ...merged };
-    if (configName) {
-      // Form fields live at top-level `form.*` (from config state) — fall back if screen-scoped is empty.
-      // Does NOT set _workflow.lastError — no API error banner, only per-field errors.
-      const screenForm = (getNestedValue(merged, `screens.${configName}.form`) ??
-        getNestedValue(merged, 'form')) as Record<string, unknown> | undefined;
-      if (screenForm && typeof screenForm === 'object') {
-        for (const field of Object.keys(screenForm)) {
-          if (typeof (screenForm as Record<string, unknown>)[field] !== 'object') {
-            next = setNestedValue(next, `screens.${configName}.errors.form.${field}`, 'This field is required');
-          }
-        }
-      }
-    }
-    return next;
-  }
-  if (previewState === 'empty') {
-    return deepClearArrays(merged) as Record<string, unknown>;
-  }
-  if (previewState === 'disabled') {
-    return setNestedValue({ ...merged }, '_preview_disabled', true);
-  }
-  // custom states — no global patch; _stateOverrides handled per-node in renderer
-  return merged;
-}
 
 export function SDUIEngine({
   config,
@@ -183,7 +61,6 @@ export function SDUIEngine({
 
   // Tracks per-datasource refetch triggers incremented by the refetchDataSource action.
   const [dsRefetchKeys, setDsRefetchKeys] = useState<Record<string, number>>({});
-  const prevDsRefetchKeysRef = useRef<Record<string, number>>({});
   // Stable ref so the handler always calls the latest setter without stale closure issues.
   const triggerDataSourceRefetchRef = useRef<(name: string) => void>(() => {});
   triggerDataSourceRefetchRef.current = (name: string) => {
@@ -227,9 +104,6 @@ export function SDUIEngine({
   }, []);
 
 
-  const prevDepsRef = useRef<unknown[] | null>(null);
-  const prevComputedRef = useRef<Record<string, unknown>>({});
-
   const meta = (config as { meta?: Record<string, unknown> }).meta;
   const store = getGlobalVariableStore();
 
@@ -272,7 +146,7 @@ export function SDUIEngine({
       }
     }
     if (pd && Object.keys(pd).length > 0) {
-      next = mergeDataPaths(next, pd);
+      next = applyPreviewDataPatch(next, pd);
     }
     return next;
   }, []);
@@ -333,16 +207,39 @@ export function SDUIEngine({
     const base = computeMergedState(useSduiStore.getState());
     const vs = store.getState().getFullState();
     const withVs = finalizeMergedWithVariableStore(base, vs);
-    mergedStore.getState().setMerged(applyBuilderPatches(withVs));
+    mergedStore.getState().setMerged(builderMode ? applyBuilderPatches(withVs) : withVs);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    return store.subscribe(() => {
-      const vs = store.getState().getFullState();
-      mergedStore.getState().setMerged((prev) =>
-        applyBuilderPatches(finalizeMergedWithVariableStore(prev, vs))
-      );
+    // Batch variable-store writes into a single mergedStore update per animation frame.
+    // Without batching, every single keystroke (or rapid setVar call) fires synchronously:
+    //   store.subscribe → mergedStore.setMerged → ALL SDURendererInner snapshot fns run
+    //   → O(N × D) JSON.stringify calls → 200ms+ "input" handler violations.
+    // With rAF batching, rapid writes are coalesced: the React update runs at most once
+    // per 16 ms frame, keeping the input event handler <1 ms.
+    let frameId: ReturnType<typeof requestAnimationFrame> | null = null;
+    const unsubscribe = store.subscribe(() => {
+      if (typeof requestAnimationFrame === 'undefined') {
+        // SSR / test env: update synchronously
+        const vs = store.getState().getFullState();
+        const next = finalizeMergedWithVariableStore(store.getState().getFullState(), vs);
+        mergedStore.getState().setMerged(builderMode ? applyBuilderPatches(next) : next);
+        return;
+      }
+      if (frameId != null) return; // already scheduled for this frame
+      frameId = requestAnimationFrame(() => {
+        frameId = null;
+        const vs = store.getState().getFullState();
+        mergedStore.getState().setMerged((prev) => {
+          const next = finalizeMergedWithVariableStore(prev, vs);
+          return builderMode ? applyBuilderPatches(next) : next;
+        });
+      });
     });
+    return () => {
+      if (frameId != null) cancelAnimationFrame(frameId);
+      unsubscribe();
+    };
   }, [store, mergedStore, applyBuilderPatches]);
 
   useEffect(() => {
@@ -351,17 +248,10 @@ export function SDUIEngine({
       const merged = computeMergedState(state);
       const vs = store.getState().getFullState();
       const withVs = finalizeMergedWithVariableStore(merged, vs);
-      const next = applyBuilderPatches(withVs);
-      prevDepsRef.current =
-        computedDepPaths.length > 0
-          ? computedDepPaths.map((p) => getNestedValue(next, p))
-          : prevDepsRef.current;
-      prevComputedRef.current = Object.fromEntries(
-        (computedDefs as { output: string }[]).map((d) => [d.output, getNestedValue(next, d.output)])
-      );
+      const next = builderMode ? applyBuilderPatches(withVs) : withVs;
       mergedStore.getState().setMerged(next);
     });
-  }, [computeMergedState, config, mergedStore, store, applyBuilderPatches]);
+  }, [computeMergedState, config, mergedStore, store, applyBuilderPatches, builderMode]);
 
   // Re-apply patches whenever previewState/previewStates/previewData/configName changes in builder mode.
   // Uses serialization guards so only actual content changes trigger a re-computation — prevents
@@ -422,15 +312,10 @@ export function SDUIEngine({
         }
         if (path === '_timestamp') return Date.now();
         if (path === '_date') return new Date().toISOString().slice(0, 10);
-        // Resolve screen-scoped aliases from engineConventions.screenScopedAliases
-        const resolvedPath =
-          configName && isScreenScopedPath(path, CONVENTIONS.screenScopedAliases)
-            ? `screens.${configName}.${path}`
-            : path;
-        const fromVarStore = store.getState().get(resolvedPath, sc);
+        const fromVarStore = store.getState().get(path, sc);
         if (fromVarStore !== undefined) return fromVarStore;
         const merged = mergedStore.getState().merged;
-        const fromMerged = getNestedValue(merged, resolvedPath);
+        const fromMerged = getNestedValue(merged, path);
         if (fromMerged !== undefined) return fromMerged;
         return undefined;
       };
@@ -496,24 +381,17 @@ export function SDUIEngine({
           // Handler was found and ran — return the result it produced.
           return resultRef.current !== undefined ? resultRef.current : handlerResult;
         }
-        if (!actionDef && payload && typeof payload === 'object') {
-          const synthetic: Record<string, unknown> = { type: actionName, ...payload };
-          if (['navigate', 'setState', 'showToast', 'log'].includes(actionName)) {
-            const r = await dispatchToHandler(synthetic as import('./actions/handlers/types').ActionDef, handlerCtx);
-            if (r !== false) return resultRef.current;
-          }
-        }
-        if (actionName === 'fetch' && payload && typeof payload === 'object' && 'url' in payload) {
-          await fetchDataStable(payload as SDUIDataSource);
-          return undefined;
-        }
         // Canvas step type fallback: if actionDef.type has no registered handler, treat it
         // as a single-step workflow so workflowStepsHandler can convert canvas types like
         // navigateTo, changeVariableValue, etc. (backward compat with flat element workflows).
-        if (actionDef?.type && typeof actionDef.type === 'string') {
+        // Guard: skip if this is already a fallback-wrapped step (prevents infinite loop when
+        // stepToSdui returns the same type and no handler exists, e.g. openPopup, closeAllPopups).
+        const fbType = actionDef?.type;
+        const alreadyWrapped = actionDef != null && !!(actionDef as Record<string, unknown>).__fallbackWrapped;
+        if (fbType && typeof fbType === 'string' && !alreadyWrapped) {
           const singleStep: import('./actions/handlers/types').ActionDef = {
             type: 'workflowSteps',
-            steps: [{ id: '__auto', ...actionDef }],
+            steps: [{ id: '__auto', __fallbackWrapped: true, ...actionDef }],
           };
           await dispatchToHandler(singleStep, handlerCtx);
         }
@@ -596,214 +474,8 @@ export function SDUIEngine({
     [store, mergedStore, variableStoreConfig, runActionStable, fetchDataStable, actionsConfig, configName, activePreviewStateForOverrides]
   );
 
-  useEffect(() => {
-    config.dataSources?.forEach((ds) => fetchDataStable(ds));
-  }, [config.dataSources]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Fetch named data sources from config/datasources.json on mount.
-  // Results are stored at the source's name path via setData(name, result).
-  useEffect(() => {
-    if (!dataSources || Object.keys(dataSources).length === 0) return;
-    const conventions = CONVENTIONS as { loadingSuffix?: string; errorSuffix?: string };
-    const loadingSuffix = conventions.loadingSuffix ?? '_loading';
-    const errorSuffix = conventions.errorSuffix ?? '_error';
-
-    // Use the fully-merged state: Zustand + variable store + _conventions + computed.
-    // _conventions (sortInputMap, defaultSortInput, etc.) is only injected by
-    // finalizeMergedWithVariableStore, so skipping it would cause sort formulas to fail.
-    const mergedBase = computeMergedStateFn(
-      useSduiStore.getState(),
-      config as { state?: Record<string, unknown>; meta?: Record<string, unknown> },
-      computedDefs as { output: string; expr: object }[]
-    );
-    const vs = getGlobalVariableStore().getState().getFullState();
-    const currentState = finalizeMergedWithVariableStore(mergedBase, vs);
-    const interpolate = (str: string): string =>
-      str.replace(/\{\{([^}]+)\}\}/g, (_, path: string) => {
-        const v = getNestedValue(currentState, path.trim());
-        return v != null ? String(v) : '';
-      });
-
-    const extractPath = (json: unknown, responsePath?: string): unknown => {
-      if (!responsePath) return json;
-      let result: unknown = json;
-      for (const part of responsePath.split('.')) {
-        result = (result as Record<string, unknown>)?.[part];
-      }
-      return result;
-    };
-
-    // Deep-walk a variables object and resolve values using the current merged state.
-    // Handles four patterns:
-    //   1. {"expr": "..."} or {"expr": <json-logic>}  → evaluated via evaluateFormula
-    //   2. {"var": "path"} or {"var": ["path", default]} → direct state lookup (type-preserving)
-    //   3. "{{path}} || fallback"  → path lookup with JSON-parsed fallback (type-preserving)
-    //   4. "{{path}}" (pure)       → type-preserving state lookup
-    //   5. "mixed {{path}} text"   → string interpolation
-    const resolveVariables = (vars: Record<string, unknown>): Record<string, unknown> => {
-      const result: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(vars)) {
-        if (typeof v === 'object' && v !== null && 'expr' in (v as object)) {
-          // Pattern 1: {"expr": "..."} — evaluate formula
-          const expr = (v as { expr: unknown }).expr;
-          try {
-            result[k] = evaluateFormula(expr as string | object, currentState).value;
-          } catch {
-            result[k] = null;
-          }
-        } else if (typeof v === 'object' && v !== null && 'var' in (v as object)) {
-          // Pattern 2: {"var": "path"} JSON Logic
-          const varRef = (v as { var: string | [string, unknown] }).var;
-          const pathStr = Array.isArray(varRef) ? varRef[0] : varRef;
-          const defaultVal = Array.isArray(varRef) ? varRef[1] : null;
-          const resolved = getNestedValue(currentState, pathStr as string);
-          result[k] = resolved !== undefined && resolved !== null ? resolved : defaultVal;
-        } else if (typeof v === 'object' && v !== null && !Array.isArray(v)) {
-          // Nested object — recurse
-          result[k] = resolveVariables(v as Record<string, unknown>);
-        } else if (typeof v === 'string') {
-          // Pattern 3: "{{path}} || fallback" — OR fallback with type preservation
-          const orMatch = v.match(/^\{\{([^}]+)\}\}\s*\|\|\s*(.+)$/);
-          if (orMatch) {
-            const pathVal = getNestedValue(currentState, orMatch[1].trim());
-            if (pathVal !== null && pathVal !== undefined && pathVal !== '') {
-              result[k] = pathVal;
-            } else {
-              const fallback = orMatch[2].trim();
-              try { result[k] = JSON.parse(fallback); } catch { result[k] = fallback; }
-            }
-          // Pattern 4: "{{path}}" pure — preserve type
-          } else if (/^\{\{([^}]+)\}\}$/.test(v)) {
-            const m = v.match(/^\{\{([^}]+)\}\}$/)!;
-            result[k] = getNestedValue(currentState, m[1].trim()) ?? null;
-          // Pattern 5: mixed string
-          } else {
-            result[k] = interpolate(v);
-          }
-        } else {
-          result[k] = v;
-        }
-      }
-      return result;
-    };
-
-    const sduiStore = useSduiStore.getState();
-
-    // Determine which sources were explicitly triggered by a refetchDataSource action.
-    const triggeredNames = new Set(
-      Object.keys(dsRefetchKeys).filter(n => dsRefetchKeys[n] !== (prevDsRefetchKeysRef.current[n] ?? 0))
-    );
-    prevDsRefetchKeysRef.current = { ...dsRefetchKeys };
-
-    // Only fetch data sources actually referenced by this page's config.
-    const allNames = Object.keys(dataSources);
-    const referencedNames = new Set(extractReferencedDataSources(config, allNames));
-
-    // If specific sources were triggered, only re-fetch those; otherwise fetch all referenced.
-    const neededNames = triggeredNames.size > 0
-      ? new Set([...triggeredNames].filter(n => referencedNames.has(n)))
-      : referencedNames;
-
-    Object.entries(dataSources)
-      .filter(([name]) => neededNames.has(name))
-      .forEach(([name, ds]: [string, NamedDataSourceDef]) => {
-        // Data is stored under collections.UUID so JSON can access it as
-        // {{collections.UUID.data.field}} — matches the path convention used
-        // throughout all screen/fragment configs.
-        const storeKey = `collections.${name}`;
-        sduiStore.setData(`${storeKey}.${loadingSuffix}`, true);
-        sduiStore.setData(`${storeKey}.${errorSuffix}`, null);
-
-      if (ds.type === 'graphql') {
-        // ── GraphQL data source ──────────────────────────────────────────────
-        const cacheTag = ds.cacheTag ?? '';
-        const cacheTTL = Number(ds.cacheTTL ?? 0);
-        const cacheKeyVars = (ds.cacheKeyVars ?? []) as string[];
-
-        // Build cache key and check before fetching
-        let cacheKey = '';
-        if (cacheTag && cacheTTL > 0) {
-          const keyParts = cacheKeyVars.map(p => String(getNestedValue(currentState, p) ?? ''));
-          cacheKey = `ds:${cacheTag}:${keyParts.join(':')}`;
-          const cached = dsCacheGet(cacheKey);
-          if (cached !== undefined) {
-            sduiStore.setData(storeKey, cached);
-            sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
-            return;
-          }
-        }
-
-        const endpoint = interpolate(ds.endpoint);
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (ds.headers) {
-          for (const [k, v] of Object.entries(ds.headers)) {
-            const resolved = interpolate(String(v));
-            if (resolved) headers[k] = resolved;
-          }
-        }
-        const resolvedVariables = resolveVariables((ds.variables ?? {}) as Record<string, unknown>);
-        const gqlCredentials = (CONVENTIONS as { graphqlCredentials?: RequestCredentials }).graphqlCredentials;
-        fetch(endpoint, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ query: ds.query, variables: resolvedVariables }),
-          ...(gqlCredentials ? { credentials: gqlCredentials } : {}),
-        })
-          .then(res => res.json())
-          .then((json: unknown) => {
-            const data = json as { data?: unknown; errors?: Array<{ message: string }> };
-            if (data.errors?.length) {
-              sduiStore.setData(`${storeKey}.${errorSuffix}`, data.errors[0]?.message ?? 'GraphQL error');
-              sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
-              return;
-            }
-            const result = extractPath(json, ds.responsePath);
-            if (result === null && ds.skipStoreWhenNull) return;
-            if (cacheKey && cacheTTL > 0) dsCacheSet(cacheKey, result, cacheTTL);
-            sduiStore.setData(storeKey, result);
-            sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
-          })
-          .catch((err: unknown) => {
-            sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
-            sduiStore.setData(`${storeKey}.${errorSuffix}`, String(err));
-          });
-      } else {
-        // ── REST data source ─────────────────────────────────────────────────
-        const rawHeaders = ds.headers;
-        const headers: Record<string, string> = {};
-        if (Array.isArray(rawHeaders)) {
-          rawHeaders.filter(h => h.enabled !== false && h.key.trim()).forEach(h => {
-            headers[h.key] = h.value;
-          });
-        } else if (rawHeaders && typeof rawHeaders === 'object') {
-          for (const [k, v] of Object.entries(rawHeaders as Record<string, string>)) {
-            headers[k] = interpolate(v);
-          }
-        }
-        const enabled = (ds.queryParams ?? []).filter(p => p.enabled !== false && p.key.trim());
-        let url = ds.url;
-        if (enabled.length) {
-          const qs = enabled.map(p => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`).join('&');
-          url = `${url}${url.includes('?') ? '&' : '?'}${qs}`;
-        }
-        const fetchOpts: RequestInit = { method: ds.method ?? 'GET', headers };
-        if (ds.sendCredentials) fetchOpts.credentials = 'include';
-
-        fetch(url, fetchOpts)
-          .then(res => res.json())
-          .then((json: unknown) => {
-            const result = extractPath(json, ds.responsePath);
-            sduiStore.setData(storeKey, result);
-            sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
-          })
-          .catch((err: unknown) => {
-            sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
-            sduiStore.setData(`${storeKey}.${errorSuffix}`, String(err));
-          });
-      }
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dataSources, dsRefetchKeys]);
+  // Fetch named data sources (REST + GraphQL) on mount and on explicit refetch triggers.
+  useNamedDataSourceFetcher(dataSources, dsRefetchKeys, config, useSduiStore);
 
   const builderContextValue = useMemo(() => ({ builderMode }), [builderMode]);
 

@@ -8,7 +8,7 @@
       "type": "Pressable",
       "props": {
         "className": {
-          "expr": "'flex flex-row items-center justify-between w-full py-4 ' + (({{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingLines.length}} || 0) > 0 || {{variables['b3c4d5e6-f7a8-9012-bcde-123456789012']}} ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')"
+          "expr": "'flex flex-row items-center justify-between w-full py-4 ' + ((collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingLines?.length || 0) > 0 || variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')"
         }
       },
       "children": [
@@ -22,7 +22,7 @@
               "type": "Box",
               "props": {
                 "className": {
-                  "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + ({{variables['b3c4d5e6-f7a8-9012-bcde-123456789012']}} ? 'bg-green-500 !text-white' : ({{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'payment' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]'))"
+                  "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + (variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] ? 'bg-green-500 !text-white' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'payment' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]'))"
                 }
               },
               "children": [
@@ -33,14 +33,14 @@
                     "size": 16,
                     "className": "!text-white"
                   },
-                  "condition": "{{variables['b3c4d5e6-f7a8-9012-bcde-123456789012']}}"
+                  "condition": "variables['b3c4d5e6-f7a8-9012-bcde-123456789012']"
                 },
                 {
                   "type": "Text",
                   "props": {
                     "className": "font-semibold text-sm !text-white"
                   },
-                  "condition": "!{{variables['b3c4d5e6-f7a8-9012-bcde-123456789012']}} && {{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'payment'",
+                  "condition": "!variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'payment'",
                   "text": "4"
                 },
                 {
@@ -48,7 +48,7 @@
                   "props": {
                     "className": "font-semibold text-sm !text-[var(--theme-muted-foreground)]"
                   },
-                  "condition": "!{{variables['b3c4d5e6-f7a8-9012-bcde-123456789012']}} && {{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} !== 'payment'",
+                  "condition": "!variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'payment'",
                   "text": "4"
                 }
               ]
@@ -75,7 +75,7 @@
                 "size": 16,
                 "className": "!text-[var(--theme-muted-foreground)]"
               },
-              "condition": "{{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'payment'"
+              "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'payment'"
             },
             {
               "type": "NavIcon",
@@ -84,7 +84,7 @@
                 "size": 16,
                 "className": "!text-[var(--theme-muted-foreground)]"
               },
-              "condition": "{{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} !== 'payment'"
+              "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'payment'"
             }
           ]
         }
@@ -100,7 +100,7 @@
       "props": {
         "className": "pb-6 space-y-3"
       },
-      "condition": "{{variables['d9e0f1a2-b3c4-5678-defa-789012345678']}} === 'payment'",
+      "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'payment'",
       "children": [
         {
           "type": "Text",
@@ -134,7 +134,7 @@
                       "props": {
                         "className": "w-2 h-2 rounded-full bg-white pointer-events-none"
                       },
-                      "condition": "{{variables['b3c4d5e6-f7a8-9012-bcde-123456789012']}} === {{context.item.data.code}}"
+                      "condition": "variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] === context?.item?.data?.code"
                     }
                   ]
                 },

@@ -115,7 +115,7 @@
                         "props": {
                           "className": "min-h-[18px]"
                         },
-                        "condition": "{{local.data.form.fields.username.isValid}}",
+                        "condition": "local?.data?.form?.fields?.username?.isValid",
                         "children": [
                           {
                             "type": "Text",
@@ -203,7 +203,7 @@
                         "props": {
                           "className": "min-h-[18px]"
                         },
-                        "condition": "{{local.data.form.fields.password.isValid}}",
+                        "condition": "local?.data?.form?.fields?.password?.isValid",
                         "children": [
                           {
                             "type": "Text",
@@ -221,7 +221,7 @@
                     "props": {
                       "className": "min-h-[20px]"
                     },
-                    "condition": "{{variables['f2a3b4c5-d6e7-8901-fabc-012345678901']}}",
+                    "condition": "variables['f2a3b4c5-d6e7-8901-fabc-012345678901']",
                     "children": [
                       {
                         "type": "Text",

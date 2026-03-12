@@ -12,7 +12,7 @@
       "children": [
         {
           "type": "Box",
-          "condition": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.assets}}",
+          "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets",
           "props": {
             "className": "w-full h-full relative"
           },
@@ -20,11 +20,11 @@
             {
               "type": "NextImage",
               "condition": {
-                "expr": "at({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.assets}}, {{variables['d5e6f7a8-b9c0-1234-defa-345678901234']}} || 0)"
+                "expr": "at(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets, variables['d5e6f7a8-b9c0-1234-defa-345678901234'] || 0)"
               },
               "props": {
                 "src": {
-                  "expr": "getKeyValue(at({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.assets}}, {{variables['d5e6f7a8-b9c0-1234-defa-345678901234']}} || 0), 'source')"
+                  "expr": "getKeyValue(at(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets, variables['d5e6f7a8-b9c0-1234-defa-345678901234'] || 0), 'source')"
                 },
                 "alt": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.name}}",
                 "fill": true,
@@ -35,7 +35,7 @@
             },
             {
               "type": "Box",
-              "condition": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.assets.length}} > 1",
+              "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets?.length > 1",
               "props": {
                 "className": "absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
               },
@@ -64,7 +64,7 @@
             },
             {
               "type": "Box",
-              "condition": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.assets.length}} > 1",
+              "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets?.length > 1",
               "props": {
                 "className": "absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
               },
@@ -93,7 +93,7 @@
             },
             {
               "type": "Box",
-              "condition": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.assets.length}} > 1",
+              "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets?.length > 1",
               "props": {
                 "className": "absolute bottom-4 left-1/2 -translate-x-1/2 bg-[var(--theme-content-bg)]/80 px-3 py-1 rounded-full text-sm"
               },
@@ -101,7 +101,7 @@
                 {
                   "type": "Text",
                   "text": {
-                    "expr": "({{variables['d5e6f7a8-b9c0-1234-defa-345678901234']}} || 0) + 1 + ' / ' + ({{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.assets.length}} || 0)"
+                    "expr": "(variables['d5e6f7a8-b9c0-1234-defa-345678901234'] || 0) + 1 + ' / ' + (collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets?.length || 0)"
                   }
                 }
               ]
@@ -110,7 +110,7 @@
         },
         {
           "type": "Box",
-          "condition": "!{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.assets}}",
+          "condition": "!collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets",
           "props": {
             "className": "w-full h-full flex items-center justify-center"
           },
@@ -128,7 +128,7 @@
     },
     {
       "type": "Box",
-      "condition": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.assets.length}} > 1",
+      "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets?.length > 1",
       "props": {
         "className": "grid grid-cols-4 gap-2"
       },

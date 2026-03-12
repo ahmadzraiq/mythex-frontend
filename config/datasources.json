@@ -12,9 +12,10 @@
     "skipStoreWhenNull": true,
     "cacheTag": "cart",
     "cacheTTL": 60,
-    "cacheKeyVars": ["auth.token"]
+    "cacheKeyVars": [
+      "auth.token"
+    ]
   },
-
   "b2c3d4e5-f6a7-8901-bcde-f12345678901": {
     "folder": "Products",
     "label": "Product Detail",
@@ -29,9 +30,10 @@
     },
     "cacheTag": "product",
     "cacheTTL": 300,
-    "cacheKeyVars": ["route.slug"]
+    "cacheKeyVars": [
+      "route.slug"
+    ]
   },
-
   "c3d4e5f6-a7b8-9012-cdef-123456789012": {
     "folder": "Products",
     "label": "Featured Products",
@@ -52,7 +54,6 @@
     "cacheTag": "featured",
     "cacheTTL": 600
   },
-
   "d4e5f6a7-b8c9-0123-defa-234567890123": {
     "folder": "Catalog",
     "label": "Collection",
@@ -60,14 +61,16 @@
     "endpoint": "http://localhost:3000/shop-api",
     "query": "query GetCollectionProducts($slug: String!, $input: SearchInput!) { collection(slug: $slug) { id name slug description featuredAsset { id preview } } search(input: $input) { totalItems items { productId productName slug productAsset { id preview } priceWithTax { __typename ... on PriceRange { min max } ... on SinglePrice { value } } currencyCode } facetValues { count facetValue { id name facet { id name } } } } }",
     "variables": {
-      "slug": "{{route.slug}}",
+      "slug": { "var": "route.slug" },
       "input": {
-        "collectionSlug": "{{route.slug}}",
-        "take": "{{collectionPageSize}} || 12",
-        "skip": "{{a6b7c8d9-e0f1-2345-abcd-456789012345}} || 0",
+        "collectionSlug": { "var": "route.slug" },
+        "take": { "var": ["collectionPageSize", 12] },
+        "skip": { "var": ["a6b7c8d9-e0f1-2345-abcd-456789012345", 0] },
         "groupByProduct": true,
-        "sort": { "expr": "lookupMap({{_conventions.sortInputMap}}, {{route.sort}}, {{_conventions.defaultSortInput}})" },
-        "facetValueIds": "{{route.facets}} || []"
+        "sort": {
+          "expr": "lookupMap(_conventions?.sortInputMap, route?.sort, _conventions?.defaultSortInput)"
+        },
+        "facetValueIds": { "var": ["route.facets", []] }
       }
     },
     "headers": {
@@ -75,9 +78,13 @@
     },
     "cacheTag": "collection",
     "cacheTTL": 120,
-    "cacheKeyVars": ["route.slug", "a6b7c8d9-e0f1-2345-abcd-456789012345", "route.sort", "route.facets"]
+    "cacheKeyVars": [
+      "route.slug",
+      "a6b7c8d9-e0f1-2345-abcd-456789012345",
+      "route.sort",
+      "route.facets"
+    ]
   },
-
   "e5f6a7b8-c9d0-1234-efab-345678901234": {
     "folder": "Catalog",
     "label": "Search Results",
@@ -86,12 +93,14 @@
     "query": "query SearchProducts($input: SearchInput!) { search(input: $input) { totalItems items { productId productName slug productAsset { id preview } priceWithTax { __typename ... on PriceRange { min max } ... on SinglePrice { value } } currencyCode } facetValues { count facetValue { id name facet { id name } } } } }",
     "variables": {
       "input": {
-        "term": "{{route.q}}",
-        "take": "{{collectionPageSize}} || 12",
-        "skip": "{{b7c8d9e0-f1a2-3456-bcde-567890123456}} || 0",
+        "term": { "var": "route.q" },
+        "take": { "var": ["collectionPageSize", 12] },
+        "skip": { "var": ["b7c8d9e0-f1a2-3456-bcde-567890123456", 0] },
         "groupByProduct": true,
-        "sort": { "expr": "lookupMap({{_conventions.sortInputMap}}, {{route.sort}}, {{_conventions.defaultSortInput}})" },
-        "facetValueIds": "{{route.facets}} || []"
+        "sort": {
+          "expr": "lookupMap(_conventions?.sortInputMap, route?.sort, _conventions?.defaultSortInput)"
+        },
+        "facetValueIds": { "var": ["route.facets", []] }
       }
     },
     "headers": {
@@ -99,9 +108,12 @@
     },
     "cacheTag": "search",
     "cacheTTL": 120,
-    "cacheKeyVars": ["route.q", "b7c8d9e0-f1a2-3456-bcde-567890123456", "route.facets"]
+    "cacheKeyVars": [
+      "route.q",
+      "b7c8d9e0-f1a2-3456-bcde-567890123456",
+      "route.facets"
+    ]
   },
-
   "f6a7b8c9-d0e1-2345-fabc-456789012345": {
     "folder": "Products",
     "label": "Related Products",
@@ -121,9 +133,11 @@
     },
     "cacheTag": "related",
     "cacheTTL": 300,
-    "cacheKeyVars": ["product.id", "product.collections"]
+    "cacheKeyVars": [
+      "product.id",
+      "product.collections"
+    ]
   },
-
   "a7b8c9d0-e1f2-3456-abcd-567890123456": {
     "folder": "Catalog",
     "label": "Nav Collections",
@@ -136,7 +150,6 @@
     "cacheTag": "collections",
     "cacheTTL": 600
   },
-
   "b8c9d0e1-f2a3-4567-bcde-678901234567": {
     "folder": "Checkout",
     "label": "Active Order",
@@ -149,7 +162,6 @@
     },
     "skipStoreWhenNull": true
   },
-
   "c9d0e1f2-a3b4-5678-cdef-789012345678": {
     "folder": "Checkout",
     "label": "Shipping Methods",
@@ -161,7 +173,6 @@
       "vendure-token": "__default_channel__"
     }
   },
-
   "d0e1f2a3-b4c5-6789-defa-890123456789": {
     "folder": "Checkout",
     "label": "Payment Methods",
@@ -173,7 +184,6 @@
       "vendure-token": "__default_channel__"
     }
   },
-
   "e1f2a3b4-c5d6-7890-efab-901234567890": {
     "folder": "Checkout",
     "label": "Available Countries",
@@ -184,7 +194,6 @@
       "vendure-token": "__default_channel__"
     }
   },
-
   "f2a3b4c5-d6e7-8901-fabc-012345678901": {
     "folder": "Checkout",
     "label": "Confirmed Order",
@@ -198,7 +207,6 @@
       "vendure-token": "__default_channel__"
     }
   },
-
   "a3b4c5d6-e7f8-9012-abcd-123456789012": {
     "folder": "Account",
     "label": "Order by Code",
@@ -213,7 +221,6 @@
       "vendure-token": "__default_channel__"
     }
   },
-
   "b4c5d6e7-f8a9-0123-bcde-234567890123": {
     "folder": "Account",
     "label": "Active Customer",
@@ -225,7 +232,6 @@
       "vendure-token": "__default_channel__"
     }
   },
-
   "c5d6e7f8-a9b0-1234-cdef-345678901234": {
     "folder": "Account",
     "label": "Customer Orders",
@@ -237,7 +243,6 @@
       "vendure-token": "__default_channel__"
     }
   },
-
   "d6e7f8a9-b0c1-2345-defa-456789012345": {
     "folder": "Account",
     "label": "Order Detail",
@@ -252,7 +257,6 @@
       "vendure-token": "__default_channel__"
     }
   },
-
   "e7f8a9b0-c1d2-3456-efab-567890123456": {
     "folder": "Account",
     "label": "Profile",
@@ -264,7 +268,6 @@
       "vendure-token": "__default_channel__"
     }
   },
-
   "f8a9b0c1-d2e3-4567-fabc-678901234567": {
     "folder": "Account",
     "label": "Orders List",
@@ -282,7 +285,6 @@
       "vendure-token": "__default_channel__"
     }
   },
-
   "a9b0c1d2-e3f4-5678-abcd-789012345678": {
     "folder": "Account",
     "label": "Addresses",
@@ -294,7 +296,6 @@
       "vendure-token": "__default_channel__"
     }
   },
-
   "b0c1d2e3-f4a5-6789-bcde-890123456789": {
     "label": "Persist API",
     "type": "rest",

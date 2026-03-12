@@ -1,0 +1,1736 @@
+{
+  "wfMsgHello": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111101",
+          "value": "Hello, World!"
+        }
+      }
+    ]
+  },
+  "wfMsgBye": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111101",
+          "value": "Goodbye, World!"
+        }
+      }
+    ]
+  },
+  "wfMsgTest": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111101",
+          "value": "Testing 123!"
+        }
+      }
+    ]
+  },
+  "wfSetNumLow": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111102",
+          "value": 3
+        }
+      }
+    ]
+  },
+  "wfSetNumHigh": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111102",
+          "value": 15
+        }
+      }
+    ]
+  },
+  "wfEvalBranch": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "branch",
+        "config": {
+          "condition": "variables['d1e2f3a4-b5c6-7890-defa-111111111102'] >= 10"
+        },
+        "trueBranch": [
+          {
+            "id": "t1",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "d1e2f3a4-b5c6-7890-defa-111111111104",
+              "value": "TRUE branch: number is 10 or more"
+            }
+          }
+        ],
+        "falseBranch": [
+          {
+            "id": "f1",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "d1e2f3a4-b5c6-7890-defa-111111111104",
+              "value": "FALSE branch: number is less than 10"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "wfRunMultiple": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111111",
+          "value": "Step 1 complete"
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111112",
+          "value": "Step 2 complete"
+        }
+      },
+      {
+        "id": "s3",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111113",
+          "value": "Step 3 complete"
+        }
+      }
+    ]
+  },
+  "wfIncrCount": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111103",
+          "value": {
+            "formula": "variables['d1e2f3a4-b5c6-7890-defa-111111111103'] + 1"
+          }
+        }
+      }
+    ]
+  },
+  "wfDecrCount": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111103",
+          "value": {
+            "formula": "variables['d1e2f3a4-b5c6-7890-defa-111111111103'] > 0 ? variables['d1e2f3a4-b5c6-7890-defa-111111111103'] - 1 : 0"
+          }
+        }
+      }
+    ]
+  },
+  "wfResetCount": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111103",
+          "value": 0
+        }
+      }
+    ]
+  },
+  "wfSetScore20": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111102",
+          "value": 20
+        }
+      }
+    ]
+  },
+  "wfSetScore45": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111102",
+          "value": 45
+        }
+      }
+    ]
+  },
+  "wfSetScore75": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111102",
+          "value": 75
+        }
+      }
+    ]
+  },
+  "wfSetScore95": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111102",
+          "value": 95
+        }
+      }
+    ]
+  },
+  "wfComplexAll": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "reset-grade",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111105",
+          "value": "(evaluating…)"
+        }
+      },
+      {
+        "id": "reset-loopCount",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111106",
+          "value": 0
+        }
+      },
+      {
+        "id": "reset-retryCount",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111107",
+          "value": 0
+        }
+      },
+      {
+        "id": "reset-whileActive",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111108",
+          "value": true
+        }
+      },
+      {
+        "id": "reset-items",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111109",
+          "value": [
+            "item-A",
+            "item-B",
+            "item-C"
+          ]
+        }
+      },
+      {
+        "id": "reset-done",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111110",
+          "value": "(running pipeline…)"
+        }
+      },
+      {
+        "id": "delay-300",
+        "type": "timeDelay",
+        "config": {
+          "time": 300
+        }
+      },
+      {
+        "id": "branch-outer",
+        "type": "branch",
+        "config": {
+          "condition": "variables['d1e2f3a4-b5c6-7890-defa-111111111102'] >= 60"
+        },
+        "trueBranch": [
+          {
+            "id": "grade-pass-base",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "d1e2f3a4-b5c6-7890-defa-111111111105",
+              "value": "PASS"
+            }
+          },
+          {
+            "id": "branch-inner-high",
+            "type": "branch",
+            "config": {
+              "condition": "variables['d1e2f3a4-b5c6-7890-defa-111111111102'] >= 90"
+            },
+            "trueBranch": [
+              {
+                "id": "grade-excellent",
+                "type": "changeVariableValue",
+                "config": {
+                  "variableName": "d1e2f3a4-b5c6-7890-defa-111111111105",
+                  "value": "EXCELLENT (≥ 90)"
+                }
+              }
+            ],
+            "falseBranch": [
+              {
+                "id": "grade-good",
+                "type": "changeVariableValue",
+                "config": {
+                  "variableName": "d1e2f3a4-b5c6-7890-defa-111111111105",
+                  "value": "GOOD (60 – 89)"
+                }
+              }
+            ]
+          }
+        ],
+        "falseBranch": [
+          {
+            "id": "branch-inner-low",
+            "type": "branch",
+            "config": {
+              "condition": "variables['d1e2f3a4-b5c6-7890-defa-111111111102'] >= 30"
+            },
+            "trueBranch": [
+              {
+                "id": "grade-poor",
+                "type": "changeVariableValue",
+                "config": {
+                  "variableName": "d1e2f3a4-b5c6-7890-defa-111111111105",
+                  "value": "POOR (30 – 59)"
+                }
+              }
+            ],
+            "falseBranch": [
+              {
+                "id": "grade-fail",
+                "type": "changeVariableValue",
+                "config": {
+                  "variableName": "d1e2f3a4-b5c6-7890-defa-111111111105",
+                  "value": "FAIL (< 30)"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "foreach-items",
+        "type": "forEach",
+        "config": {
+          "itemsPath": "d1e2f3a4-b5c6-7890-defa-111111111109"
+        },
+        "loopBody": [
+          {
+            "id": "foreach-incr",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "d1e2f3a4-b5c6-7890-defa-111111111106",
+              "value": {
+                "formula": "variables['d1e2f3a4-b5c6-7890-defa-111111111106'] + 1"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "while-retry",
+        "type": "whileLoop",
+        "config": {
+          "conditionPath": "d1e2f3a4-b5c6-7890-defa-111111111108"
+        },
+        "loopBody": [
+          {
+            "id": "while-incr",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "d1e2f3a4-b5c6-7890-defa-111111111107",
+              "value": {
+                "formula": "variables['d1e2f3a4-b5c6-7890-defa-111111111107'] + 1"
+              }
+            }
+          },
+          {
+            "id": "while-stop-check",
+            "type": "branch",
+            "config": {
+              "condition": "variables['d1e2f3a4-b5c6-7890-defa-111111111107'] >= 3"
+            },
+            "trueBranch": [
+              {
+                "id": "while-stop",
+                "type": "changeVariableValue",
+                "config": {
+                  "variableName": "d1e2f3a4-b5c6-7890-defa-111111111108",
+                  "value": false
+                }
+              }
+            ],
+            "falseBranch": []
+          }
+        ]
+      },
+      {
+        "id": "final-done",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "d1e2f3a4-b5c6-7890-defa-111111111110",
+          "value": "✓ Pipeline complete!"
+        }
+      }
+    ]
+  },
+
+  "waOnCreated": {
+    "type": "workflowSteps",
+    "trigger": "created",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000001",
+          "value": "auto-loaded"
+        }
+      }
+    ]
+  },
+  "waOnMounted": {
+    "type": "workflowSteps",
+    "trigger": "mounted",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000002",
+          "value": "mounted"
+        }
+      }
+    ]
+  },
+  "waOnClick": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000003",
+          "value": "clicked!"
+        }
+      }
+    ]
+  },
+  "waOnDblClick": {
+    "type": "workflowSteps",
+    "trigger": "doubleClick",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000004",
+          "value": {
+            "formula": "variables['wa000001-0000-0000-0000-000000000004'] + 1"
+          }
+        }
+      }
+    ]
+  },
+  "waOnMouseEnter": {
+    "type": "workflowSteps",
+    "trigger": "mouseEnter",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000005",
+          "value": "over"
+        }
+      }
+    ]
+  },
+  "waOnMouseLeave": {
+    "type": "workflowSteps",
+    "trigger": "mouseLeave",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000005",
+          "value": "out"
+        }
+      }
+    ]
+  },
+  "waOnChange": {
+    "type": "workflowSteps",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000006",
+          "value": {
+            "formula": "event?.['value']"
+          }
+        }
+      }
+    ]
+  },
+  "waOnEnterKey": {
+    "type": "workflowSteps",
+    "trigger": "enterKey",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000007",
+          "value": "entered!"
+        }
+      }
+    ]
+  },
+  "waOnFocus": {
+    "type": "workflowSteps",
+    "trigger": "focus",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000008",
+          "value": "focused"
+        }
+      }
+    ]
+  },
+  "waOnBlur": {
+    "type": "workflowSteps",
+    "trigger": "blur",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000008",
+          "value": "blurred"
+        }
+      }
+    ]
+  },
+
+  "waFormSubmit": {
+    "type": "workflowSteps",
+    "trigger": "submit",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000009",
+          "value": {
+            "formula": "'submitted: ' + (variables['wa000001-0000-0000-0000-000000000006'] || '(empty)')"
+          }
+        }
+      }
+    ]
+  },
+  "waFormValidationError": {
+    "type": "workflowSteps",
+    "trigger": "submitValidationError",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000010",
+          "value": "validation failed"
+        }
+      }
+    ]
+  },
+  "waPreFillForm": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "setFormState",
+        "config": {
+          "path": "local.data.form.formData.wa-email",
+          "value": "prefilled@example.com"
+        }
+      }
+    ]
+  },
+  "waResetForm": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "resetForm",
+        "config": {}
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000009",
+          "value": "(not submitted)"
+        }
+      },
+      {
+        "id": "s3",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000010",
+          "value": ""
+        }
+      }
+    ]
+  },
+
+  "waNavigateHome": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/"
+        }
+      }
+    ]
+  },
+  "waNavigatePrev": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "navigatePrev",
+        "config": {
+          "defaultRedirect": "/"
+        }
+      }
+    ]
+  },
+
+  "waFetchRest": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s-before",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000013",
+          "value": "fetching"
+        }
+      },
+      {
+        "id": "s-fetch",
+        "type": "fetchData",
+        "config": {
+          "url": "https://httpbin.org/get",
+          "method": "GET",
+          "storeFullResponseIn": "waRestResponse"
+        }
+      },
+      {
+        "id": "s-after",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000011",
+          "value": "ok"
+        }
+      },
+      {
+        "id": "s-status",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000013",
+          "value": "done"
+        }
+      }
+    ]
+  },
+  "waFetchRestPost": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s-before",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000013",
+          "value": "fetching-post"
+        }
+      },
+      {
+        "id": "s-fetch",
+        "type": "fetchData",
+        "config": {
+          "url": "https://httpbin.org/post",
+          "method": "POST",
+          "body": "{\"test\": true}",
+          "storeFullResponseIn": "waRestPostResponse"
+        }
+      },
+      {
+        "id": "s-after",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000011",
+          "value": "post-ok"
+        }
+      },
+      {
+        "id": "s-status",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000013",
+          "value": "post-done"
+        }
+      }
+    ]
+  },
+  "waFetchGraphql": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s-before",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000012",
+          "value": "fetching"
+        }
+      },
+      {
+        "id": "s-gql",
+        "type": "graphql",
+        "config": {
+          "endpoint": "https://countries.trevorblades.com/",
+          "query": "{ country(code: \"US\") { name capital } }",
+          "storeFullResponseIn": "waGqlResponse"
+        }
+      },
+      {
+        "id": "s-after",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000012",
+          "value": "ok"
+        }
+      }
+    ]
+  },
+
+  "waFetchCollection": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s-before",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000014",
+          "value": "fetching"
+        }
+      },
+      {
+        "id": "s-fetch",
+        "type": "fetchCollection",
+        "config": {
+          "collectionName": "2581ca97-d8e7-4d7b-a0eb-483c4f919cc2"
+        }
+      },
+      {
+        "id": "s-after",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000014",
+          "value": "fetched"
+        }
+      }
+    ]
+  },
+  "waFetchParallel": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s-before1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000015",
+          "value": "fetching"
+        }
+      },
+      {
+        "id": "s-before2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000016",
+          "value": "fetching"
+        }
+      },
+      {
+        "id": "s-parallel",
+        "type": "fetchCollectionsParallel",
+        "config": {
+          "collectionNames": [
+            "2581ca97-d8e7-4d7b-a0eb-483c4f919cc2",
+            "bba88789-91bf-46f8-97bc-6c5ace12db58"
+          ]
+        }
+      },
+      {
+        "id": "s-after1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000015",
+          "value": "fetched-1"
+        }
+      },
+      {
+        "id": "s-after2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000016",
+          "value": "fetched-2"
+        }
+      }
+    ]
+  },
+  "waUpdateCollection": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s-update",
+        "type": "updateCollection",
+        "config": {
+          "name": "2581ca97-d8e7-4d7b-a0eb-483c4f919cc2",
+          "updateType": "replace"
+        }
+      },
+      {
+        "id": "s-after",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000014",
+          "value": "updated"
+        }
+      }
+    ]
+  },
+  "waResetVars": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "resetVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000017",
+          "defaultValue": "(active)"
+        }
+      }
+    ]
+  },
+  "waSetResetCheck": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000017",
+          "value": "modified"
+        }
+      }
+    ]
+  },
+
+  "waSubWorkflow": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000019",
+          "value": "sub-workflow ran!"
+        }
+      }
+    ]
+  },
+  "waRunSubWorkflow": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "waSubWorkflow"
+        }
+      }
+    ]
+  },
+  "waComponentWorkflow": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000020",
+          "value": "component action executed!"
+        }
+      }
+    ]
+  },
+  "waExecuteComponent": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "executeComponentAction",
+        "config": {
+          "action": "waComponentWorkflow"
+        }
+      }
+    ]
+  },
+
+  "waReturnHigh": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s-set-score",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000033",
+          "value": 80
+        }
+      },
+      {
+        "id": "s-branch",
+        "type": "branch",
+        "config": {
+          "condition": "variables['wa000001-0000-0000-0000-000000000033'] >= 60"
+        },
+        "trueBranch": [
+          {
+            "id": "s-ret-pass",
+            "type": "returnValue",
+            "config": {
+              "path": "wa000001-0000-0000-0000-000000000018",
+              "value": "PASS"
+            }
+          }
+        ],
+        "falseBranch": [
+          {
+            "id": "s-ret-fail",
+            "type": "returnValue",
+            "config": {
+              "path": "wa000001-0000-0000-0000-000000000018",
+              "value": "FAIL"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "waReturnLow": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s-set-score",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000033",
+          "value": 30
+        }
+      },
+      {
+        "id": "s-branch",
+        "type": "branch",
+        "config": {
+          "condition": "variables['wa000001-0000-0000-0000-000000000033'] >= 60"
+        },
+        "trueBranch": [
+          {
+            "id": "s-ret-pass",
+            "type": "returnValue",
+            "config": {
+              "path": "wa000001-0000-0000-0000-000000000018",
+              "value": "PASS"
+            }
+          }
+        ],
+        "falseBranch": [
+          {
+            "id": "s-ret-fail",
+            "type": "returnValue",
+            "config": {
+              "path": "wa000001-0000-0000-0000-000000000018",
+              "value": "FAIL"
+            }
+          }
+        ]
+      }
+    ]
+  },
+
+  "waLoopControl": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s-reset-sum",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000021",
+          "value": 0
+        }
+      },
+      {
+        "id": "s-foreach",
+        "type": "forEach",
+        "config": {
+          "listPath": "wa000001-0000-0000-0000-000000000042"
+        },
+        "loopBody": [
+          {
+            "id": "s-continue-check",
+            "type": "branch",
+            "config": {
+              "condition": "context.item.data.value % 2 === 0"
+            },
+            "trueBranch": [
+              {
+                "id": "s-continue",
+                "type": "continueLoop",
+                "config": {}
+              }
+            ],
+            "falseBranch": []
+          },
+          {
+            "id": "s-break-check",
+            "type": "branch",
+            "config": {
+              "condition": "variables['wa000001-0000-0000-0000-000000000021'] >= 4"
+            },
+            "trueBranch": [
+              {
+                "id": "s-break",
+                "type": "breakLoop",
+                "config": {}
+              }
+            ],
+            "falseBranch": []
+          },
+          {
+            "id": "s-add",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "wa000001-0000-0000-0000-000000000021",
+              "value": {
+                "formula": "variables['wa000001-0000-0000-0000-000000000021'] + context.item.data.value"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+
+  "waPassFlagOn": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000022",
+          "value": true
+        }
+      }
+    ]
+  },
+  "waPassFlagOff": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000022",
+          "value": false
+        }
+      }
+    ]
+  },
+  "waPassThrough": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "passThroughCondition",
+        "config": {
+          "condition": "variables['wa000001-0000-0000-0000-000000000022'] === true"
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000023",
+          "value": "passed through!"
+        }
+      }
+    ]
+  },
+
+  "waSetModeA": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000024",
+          "value": "A"
+        }
+      }
+    ]
+  },
+  "waSetModeB": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000024",
+          "value": "B"
+        }
+      }
+    ]
+  },
+  "waSetModeC": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000024",
+          "value": "C"
+        }
+      }
+    ]
+  },
+  "waEvalMultiOption": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "multiOptionBranch",
+        "config": {
+          "conditionPath": "wa000001-0000-0000-0000-000000000024"
+        },
+        "branches": [
+          {
+            "label": "A",
+            "steps": [
+              {
+                "id": "s-a",
+                "type": "changeVariableValue",
+                "config": {
+                  "variableName": "wa000001-0000-0000-0000-000000000025",
+                  "value": "Option A selected"
+                }
+              }
+            ]
+          },
+          {
+            "label": "B",
+            "steps": [
+              {
+                "id": "s-b",
+                "type": "changeVariableValue",
+                "config": {
+                  "variableName": "wa000001-0000-0000-0000-000000000025",
+                  "value": "Option B selected"
+                }
+              }
+            ]
+          },
+          {
+            "label": "C",
+            "steps": [
+              {
+                "id": "s-c",
+                "type": "changeVariableValue",
+                "config": {
+                  "variableName": "wa000001-0000-0000-0000-000000000025",
+                  "value": "Option C selected"
+                }
+              }
+            ]
+          }
+        ],
+        "defaultBranch": [
+          {
+            "id": "s-default",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "wa000001-0000-0000-0000-000000000025",
+              "value": "No option matched"
+            }
+          }
+        ]
+      }
+    ]
+  },
+
+  "waCopyClipboard": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "copyToClipboard",
+        "config": {
+          "value": "clipboard-test-value"
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000026",
+          "value": "copied"
+        }
+      }
+    ]
+  },
+  "waOuterClick": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000027",
+          "value": "outer clicked"
+        }
+      }
+    ]
+  },
+  "waInnerClick": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "stopPropagation",
+        "config": {}
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000028",
+          "value": "inner clicked"
+        }
+      }
+    ]
+  },
+  "waPrintPdf": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000029",
+          "value": "fired"
+        }
+      },
+      {
+        "id": "s2",
+        "type": "printPdf",
+        "config": {}
+      }
+    ]
+  },
+  "waDownloadFile": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000030",
+          "value": "fired"
+        }
+      },
+      {
+        "id": "s2",
+        "type": "downloadFileFromUrl",
+        "config": {
+          "url": "https://httpbin.org/robots.txt",
+          "fileName": "test.txt"
+        }
+      }
+    ]
+  },
+  "waCreateB64Url": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "createUrlFromBase64",
+        "config": {
+          "base64": "SGVsbG8gV29ybGQ=",
+          "mimeType": "text/plain",
+          "storeIn": "wa000001-0000-0000-0000-000000000031"
+        }
+      }
+    ]
+  },
+  "waEncodeBase64": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "encodeFileAsBase64",
+        "config": {
+          "dataUrl": "data:text/plain;base64,SGVsbG8gV29ybGQ=",
+          "storeIn": "wa000001-0000-0000-0000-000000000032"
+        }
+      }
+    ]
+  },
+
+  "waSetScoreHigh": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000033",
+          "value": 75
+        }
+      }
+    ]
+  },
+  "waSetScoreLow": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000033",
+          "value": 30
+        }
+      }
+    ]
+  },
+  "waComplexBranchLoop": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s-reset-loop",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000034",
+          "value": 0
+        }
+      },
+      {
+        "id": "s-reset-status",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000035",
+          "value": "(running)"
+        }
+      },
+      {
+        "id": "s-outer-branch",
+        "type": "branch",
+        "config": {
+          "condition": "variables['wa000001-0000-0000-0000-000000000033'] >= 50"
+        },
+        "trueBranch": [
+          {
+            "id": "s-foreach",
+            "type": "forEach",
+            "config": {
+              "list": ["A", "B", "C"]
+            },
+            "loopBody": [
+              {
+                "id": "s-inner-branch",
+                "type": "branch",
+                "config": {
+                  "condition": "context.item.data.value === 'B'"
+                },
+                "trueBranch": [
+                  {
+                    "id": "s-break",
+                    "type": "breakLoop",
+                    "config": {}
+                  }
+                ],
+                "falseBranch": [
+                  {
+                    "id": "s-incr",
+                    "type": "changeVariableValue",
+                    "config": {
+                      "variableName": "wa000001-0000-0000-0000-000000000034",
+                      "value": {
+                        "formula": "variables['wa000001-0000-0000-0000-000000000034'] + 1"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "s-status-true",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "wa000001-0000-0000-0000-000000000035",
+              "value": "done-true"
+            }
+          }
+        ],
+        "falseBranch": [
+          {
+            "id": "s-status-false",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "wa000001-0000-0000-0000-000000000035",
+              "value": "done-false"
+            }
+          }
+        ]
+      }
+    ]
+  },
+
+  "waSetComplexModeFast": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000036",
+          "value": "fast"
+        }
+      }
+    ]
+  },
+  "waSetComplexModeSlow": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000036",
+          "value": "slow"
+        }
+      }
+    ]
+  },
+  "waSetComplexModeSkip": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000036",
+          "value": "skip"
+        }
+      }
+    ]
+  },
+  "waComplexCombined": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s-reset-fast",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000037",
+          "value": 0
+        }
+      },
+      {
+        "id": "s-reset-slow",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000038",
+          "value": 0
+        }
+      },
+      {
+        "id": "s-reset-result",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000039",
+          "value": "(running)"
+        }
+      },
+      {
+        "id": "s-reset-while-flag",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000041",
+          "value": true
+        }
+      },
+      {
+        "id": "s-multi-branch",
+        "type": "multiOptionBranch",
+        "config": {
+          "conditionPath": "wa000001-0000-0000-0000-000000000036"
+        },
+        "branches": [
+          {
+            "label": "fast",
+            "steps": [
+              {
+                "id": "s-while",
+                "type": "whileLoop",
+                "config": {
+                  "conditionPath": "wa000001-0000-0000-0000-000000000041"
+                },
+                "loopBody": [
+                  {
+                    "id": "s-incr-fast",
+                    "type": "changeVariableValue",
+                    "config": {
+                      "variableName": "wa000001-0000-0000-0000-000000000037",
+                      "value": {
+                        "formula": "variables['wa000001-0000-0000-0000-000000000037'] + 1"
+                      }
+                    }
+                  },
+                  {
+                    "id": "s-stop-check",
+                    "type": "branch",
+                    "config": {
+                      "condition": "variables['wa000001-0000-0000-0000-000000000037'] >= 3"
+                    },
+                    "trueBranch": [
+                      {
+                        "id": "s-stop",
+                        "type": "changeVariableValue",
+                        "config": {
+                          "variableName": "wa000001-0000-0000-0000-000000000041",
+                          "value": false
+                        }
+                      }
+                    ],
+                    "falseBranch": []
+                  }
+                ]
+              },
+              {
+                "id": "s-fast-done",
+                "type": "changeVariableValue",
+                "config": {
+                  "variableName": "wa000001-0000-0000-0000-000000000039",
+                  "value": "fast-done"
+                }
+              }
+            ]
+          },
+          {
+            "label": "slow",
+            "steps": [
+              {
+                "id": "s-foreach-slow",
+                "type": "forEach",
+                "config": {
+                  "listPath": "wa000001-0000-0000-0000-000000000042"
+                },
+                "loopBody": [
+                  {
+                    "id": "s-continue-even",
+                    "type": "branch",
+                    "config": {
+                      "condition": "context.item.data.value % 2 === 0"
+                    },
+                    "trueBranch": [
+                      {
+                        "id": "s-continue",
+                        "type": "continueLoop",
+                        "config": {}
+                      }
+                    ],
+                    "falseBranch": []
+                  },
+                  {
+                    "id": "s-add-slow",
+                    "type": "changeVariableValue",
+                    "config": {
+                      "variableName": "wa000001-0000-0000-0000-000000000038",
+                      "value": {
+                        "formula": "variables['wa000001-0000-0000-0000-000000000038'] + context.item.data.value"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "s-slow-done",
+                "type": "changeVariableValue",
+                "config": {
+                  "variableName": "wa000001-0000-0000-0000-000000000039",
+                  "value": "slow-done"
+                }
+              }
+            ]
+          },
+          {
+            "label": "skip",
+            "steps": [
+              {
+                "id": "s-pass",
+                "type": "passThroughCondition",
+                "config": {
+                  "condition": "variables['wa000001-0000-0000-0000-000000000040'] === true"
+                }
+              },
+              {
+                "id": "s-skip-done",
+                "type": "changeVariableValue",
+                "config": {
+                  "variableName": "wa000001-0000-0000-0000-000000000039",
+                  "value": "skipped"
+                }
+              }
+            ]
+          }
+        ],
+        "defaultBranch": [
+          {
+            "id": "s-no-match",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "wa000001-0000-0000-0000-000000000039",
+              "value": "no-mode-matched"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

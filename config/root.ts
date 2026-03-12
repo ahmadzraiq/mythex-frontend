@@ -27,6 +27,7 @@ import accountAddresses from './screens/account-addresses.json';
 import accountProfile from './screens/account-profile.json';
 import orderConfirmation from './screens/order-confirmation.json';
 import notFound from './screens/not-found.json';
+import workflowTest from './screens/workflow-test.json';
 
 // Layouts
 import storeLayout from './layouts/store.json';
@@ -61,6 +62,7 @@ import accountActions from './actions/account.json';
 import productsActions from './actions/products.json';
 import layoutActions from './actions/layout.json';
 import dataSourceActions from './actions/datasource-actions.json';
+import workflowTestActions from './actions/workflow-test.json';
 
 const screens = {
   home,
@@ -81,6 +83,7 @@ const screens = {
   accountProfile,
   orderConfirmation,
   notFound,
+  workflowTest,
 };
 
 const layouts = {
@@ -118,6 +121,7 @@ const actions = {
   ...productsActions,
   ...layoutActions,
   ...dataSourceActions,
+  ...workflowTestActions,
 };
 
 const actionsByFile = {
@@ -128,6 +132,7 @@ const actionsByFile = {
   products: productsActions,
   layout: layoutActions,
   dataSources: dataSourceActions,
+  workflowTest: workflowTestActions,
 };
 
 export const root = {

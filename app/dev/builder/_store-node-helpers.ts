@@ -18,6 +18,7 @@
  */
 
 import type { SDUINode } from '@/lib/sdui/types/node';
+import { FORM_REGISTERABLE_TYPES } from '@/lib/sdui/controlled-component-registry';
 
 /**
  * Nodes that must always remain inside a specific parent type.
@@ -284,7 +285,7 @@ export function slugifyFieldName(s: string): string {
     .join('');
 }
 
-export const FORM_CONTROLLED_TYPES = new Set(['InputField', 'TextareaInput', 'Checkbox']);
+export const FORM_CONTROLLED_TYPES = FORM_REGISTERABLE_TYPES;
 export const FORM_CONTAINER_TYPE = 'FormContainer';
 
 /**

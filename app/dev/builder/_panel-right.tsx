@@ -598,6 +598,7 @@ function DesignTab({ node }: { node: SDUINode }) {
               displayLabel="Text"
               hint='any text or {{variable}} template'
               topAlign
+              expectedType="string"
               value={(buttonTextChild
                 ? ((buttonTextChild as { text?: string }).text ?? '')
                 : ((node as { text?: string }).text ?? '')

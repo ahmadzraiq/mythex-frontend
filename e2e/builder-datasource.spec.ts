@@ -29,6 +29,21 @@
  * DS-26  ⋮ menu Copy button is present and clickable
  * DS-27  ⋮ menu View result appears only after a fetch and opens the form
  *
+ * REST Form field coverage (DS-28 – DS-40):
+ * DS-28  New REST form defaults to GET in the method dropdown
+ * DS-29  Method dropdown opens and selecting POST changes the displayed value
+ * DS-30  Body tabs hidden for GET, visible after switching to POST
+ * DS-31  Content type hidden for GET, visible for POST and positioned after Query string
+ * DS-32  Raw body tab reveals BoundField rendered as <input> (not <textarea>)
+ * DS-33  Raw body input accepts text and value is saved with the source
+ * DS-34  Raw body BoundField bind icon opens the formula editor
+ * DS-35  Content type OptionPickerDropdown opens and allows option selection
+ * DS-36  Proxy BoundToggleField On/Off buttons switch active state
+ * DS-37  Proxy BoundToggleField bind icon opens the formula editor
+ * DS-38  Send credentials PillToggle clicking the pill toggles its background
+ * DS-39  Stream response PillToggle clicking the pill toggles its background
+ * DS-40  All REST form values persist after save and reopen
+ *
  * Run: npx playwright test e2e/builder-datasource.spec.ts
  */
 
@@ -783,4 +798,357 @@ test.describe('DS — Data Source System', () => {
     await page.locator(`[data-testid^="delete-datasource-"]`).last().click();
   });
 
+}); // end outer test.describe
+
+// ─── DS-28 to DS-40: REST Form field coverage (each test independent) ────────
+// Every test spins up its own page so they can run one by one without the
+// shared-page timeout problems caused by the ~40s initial builder compilation
+// being counted against the first test's budget.
+
+/** Open a new REST form, fill name + URL, return the name */
+async function newRF(page: Page, suffix = ''): Promise<string> {
+  const name = `restForm${suffix}${Date.now()}`;
+  await page.click('[data-testid="add-datasource-btn"]');
+  await page.waitForSelector('[data-testid="ds-pick-rest"]', { timeout: 5_000 });
+  await page.click('[data-testid="ds-pick-rest"]');
+  await page.waitForSelector('[data-testid="ds-name"]', { timeout: 5_000 });
+  await page.fill('[data-testid="ds-name"]', name);
+  await page.fill('[data-testid="ds-url"]', 'https://httpbin.org/post');
+  return name;
+}
+
+/** Switch method dropdown — scopes to inner div buttons to avoid strict-mode. */
+async function setRFMethod(page: Page, method: string) {
+  await page.click('[data-testid="ds-method"] button');
+  await page.waitForSelector('[data-popover="option-picker"] div button', { timeout: 3_000 });
+  await page.locator('[data-popover="option-picker"] div button').filter({ hasText: method }).first().click();
+  await page.waitForTimeout(200);
+}
+
+/** Delete a datasource by name */
+async function deleteRF(page: Page, name: string) {
+  // Dismiss slide panel if still open — explicit 1.5s timeout prevents indefinite hang
+  // when the panel was already closed by ds-save.
+  await page.click('[data-testid="slide-panel-close"]', { timeout: 1_500 }).catch(() => {});
+  await page.waitForTimeout(200);
+  await openDsMenu(page, name);
+  await page.locator(`[data-testid^="delete-datasource-"]`).last().click();
+  await page.waitForTimeout(300);
+}
+
+/** Navigate to builder and open the Data tab — used by each independent test. */
+async function setupRFPage(page: Page) {
+  await gotoBuilder(page);
+  await openDataTab(page);
+}
+
+test('DS-28 — new REST form defaults to GET in the method dropdown', async ({ page }) => {
+  test.setTimeout(150_000);
+  await setupRFPage(page);
+  const name = await newRF(page, 'A');
+  await expect(page.locator('[data-testid="ds-method"] button')).toContainText('GET', { timeout: 3_000 });
+  await page.click('[data-testid="ds-save"]');
+  await page.waitForTimeout(300);
+  await deleteRF(page, name);
+});
+
+test('DS-29 — method dropdown opens and selecting POST changes the displayed value', async ({ page }) => {
+  test.setTimeout(150_000);
+  await setupRFPage(page);
+  const name = await newRF(page, 'B');
+
+  await page.click('[data-testid="ds-method"] button');
+  await expect(page.locator('[data-popover="option-picker"]')).toBeVisible({ timeout: 3_000 });
+
+  const opts = page.locator('[data-popover="option-picker"] div button');
+  await expect(opts.filter({ hasText: 'GET' }).first()).toBeVisible({ timeout: 3_000 });
+  await expect(opts.filter({ hasText: 'POST' }).first()).toBeVisible();
+  await expect(opts.filter({ hasText: 'PUT' }).first()).toBeVisible();
+  await expect(opts.filter({ hasText: 'DELETE' }).first()).toBeVisible();
+  await expect(opts.filter({ hasText: 'PATCH' }).first()).toBeVisible();
+
+  await opts.filter({ hasText: 'POST' }).first().click();
+  await page.waitForTimeout(150);
+  await expect(page.locator('[data-popover="option-picker"] button').first()).toContainText('POST');
+
+  await page.click('[data-testid="ds-save"]');
+  await page.waitForTimeout(300);
+  await deleteRF(page, name);
+});
+
+test('DS-30 — body tabs hidden for GET, visible after switching to POST', async ({ page }) => {
+  test.setTimeout(150_000);
+  await setupRFPage(page);
+  const name = await newRF(page, 'C');
+
+  await expect(page.locator('button:has-text("Parsed fields")')).toHaveCount(0);
+  await expect(page.locator('button:has-text("Raw body")')).toHaveCount(0);
+
+  await setRFMethod(page, 'POST');
+  await expect(page.locator('button:has-text("Parsed fields")')).toBeVisible({ timeout: 3_000 });
+  await expect(page.locator('button:has-text("Raw body")')).toBeVisible();
+
+  await setRFMethod(page, 'GET');
+  await expect(page.locator('button:has-text("Parsed fields")')).toHaveCount(0);
+
+  await page.click('[data-testid="ds-save"]');
+  await page.waitForTimeout(300);
+  await deleteRF(page, name);
+});
+
+test('DS-31 — content type hidden for GET, visible for POST and positioned after Query string', async ({ page }) => {
+  test.setTimeout(150_000);
+  await setupRFPage(page);
+  const name = await newRF(page, 'D');
+
+  const ctLabel = page.locator('label', { hasText: 'Content type' });
+  await expect(ctLabel).toHaveCount(0);
+  await expect(page.locator('text=Query string')).toBeVisible({ timeout: 3_000 });
+
+  await setRFMethod(page, 'POST');
+  await expect(ctLabel).toBeVisible({ timeout: 3_000 });
+
+  const panel = page.locator('[data-testid="left-slide-panel"]');
+  const qsPos = await panel.locator('text=Query string').first().boundingBox();
+  const ctPos = await ctLabel.first().boundingBox();
+  expect(qsPos!.y).toBeLessThan(ctPos!.y);
+
+  await page.click('[data-testid="ds-save"]');
+  await page.waitForTimeout(300);
+  await deleteRF(page, name);
+});
+
+test('DS-32 — raw body tab reveals BoundField rendered as <input>, not <textarea>', async ({ page }) => {
+  test.setTimeout(150_000);
+  await setupRFPage(page);
+  const name = await newRF(page, 'E');
+  await setRFMethod(page, 'POST');
+
+  await page.locator('button:has-text("Raw body")').click();
+  await page.waitForTimeout(200);
+
+  await expect(page.locator('label', { hasText: 'Body' })).toBeVisible({ timeout: 3_000 });
+  await expect(page.locator('label:has-text("Body") ~ div input')).toBeVisible({ timeout: 3_000 });
+  await expect(page.locator('label:has-text("Body") ~ div textarea')).toHaveCount(0);
+
+  await page.click('[data-testid="ds-save"]');
+  await page.waitForTimeout(300);
+  await deleteRF(page, name);
+});
+
+test('DS-33 — raw body input accepts text and value is saved with the source', async ({ page }) => {
+  test.setTimeout(150_000);
+  await setupRFPage(page);
+  const name = await newRF(page, 'F');
+  await setRFMethod(page, 'POST');
+  await page.locator('button:has-text("Raw body")').click();
+  await page.waitForTimeout(200);
+
+  const bodyInput = page.locator('label:has-text("Body") ~ div input');
+  await bodyInput.fill('{"hello":"world"}');
+  await expect(bodyInput).toHaveValue('{"hello":"world"}');
+
+  await page.click('[data-testid="ds-save"]');
+  await page.waitForTimeout(400);
+  await page.locator(`[data-testid="ds-card-${name}"]`).click();
+  await page.waitForSelector('[data-testid="ds-url"]', { timeout: 5_000 });
+
+  await page.locator('button:has-text("Raw body")').click();
+  await page.waitForTimeout(200);
+  await expect(page.locator('label:has-text("Body") ~ div input')).toHaveValue('{"hello":"world"}', { timeout: 3_000 });
+
+  await deleteRF(page, name);
+});
+
+test('DS-34 — raw body BoundField bind icon opens the formula editor', async ({ page }) => {
+  test.setTimeout(150_000);
+  await setupRFPage(page);
+  const name = await newRF(page, 'G');
+  await setRFMethod(page, 'POST');
+  await page.locator('button:has-text("Raw body")').click();
+  await page.waitForTimeout(200);
+
+  await page.locator('label:has-text("Body") ~ div [data-testid="binding-icon"]').first().click();
+  await expect(page.locator('[data-testid="formula-editor"]')).toBeVisible({ timeout: 5_000 });
+  await page.locator('[data-testid="formula-close"]').click();
+
+  await page.click('[data-testid="ds-save"]');
+  await page.waitForTimeout(300);
+  await deleteRF(page, name);
+});
+
+test('DS-35 — content type dropdown opens and allows option selection', async ({ page }) => {
+  test.setTimeout(150_000);
+  await setupRFPage(page);
+  const name = await newRF(page, 'H');
+  await setRFMethod(page, 'POST');
+
+  await expect(page.locator('label', { hasText: 'Content type' })).toBeVisible({ timeout: 3_000 });
+
+  // Second trigger = content type picker (first = method)
+  const allTriggers = page.locator('[data-popover="option-picker"] > button');
+  await allTriggers.nth(1).click();
+  await page.waitForSelector('[data-popover="option-picker"] div button', { timeout: 3_000 });
+
+  const dropdownOpts = page.locator('[data-popover="option-picker"] div button');
+  await expect(dropdownOpts.filter({ hasText: 'Form URL-encoded' }).first()).toBeVisible({ timeout: 3_000 });
+  await dropdownOpts.filter({ hasText: 'Form URL-encoded' }).first().click();
+  await page.waitForTimeout(200);
+
+  await expect(allTriggers.nth(1)).toContainText('Form URL-encoded');
+
+  await page.click('[data-testid="ds-save"]');
+  await page.waitForTimeout(300);
+  await deleteRF(page, name);
+});
+
+test('DS-36 — proxy BoundToggleField: On/Off buttons switch active state', async ({ page }) => {
+  test.setTimeout(150_000);
+  await setupRFPage(page);
+  const name = await newRF(page, 'I');
+
+  const toggleRow = page.locator('label:has-text("Proxy request") ~ div').first();
+  await expect(toggleRow).toBeVisible({ timeout: 5_000 });
+  const onBtn  = toggleRow.locator('button:has-text("On")');
+  const offBtn = toggleRow.locator('button:has-text("Off")');
+
+  await expect(onBtn).toBeVisible({ timeout: 3_000 });
+  await expect(offBtn).toBeVisible();
+
+  await onBtn.click();
+  await page.waitForTimeout(150);
+  const onBg = await onBtn.evaluate(el => getComputedStyle(el).background);
+  expect(onBg).toMatch(/55, 65, 81|374151/i);
+
+  await offBtn.click();
+  await page.waitForTimeout(150);
+  const offBg = await offBtn.evaluate(el => getComputedStyle(el).background);
+  expect(offBg).toMatch(/55, 65, 81|374151/i);
+
+  await page.click('[data-testid="ds-save"]');
+  await page.waitForTimeout(300);
+  await deleteRF(page, name);
+});
+
+test('DS-37 — proxy BoundToggleField: bind icon opens formula editor', async ({ page }) => {
+  test.setTimeout(150_000);
+  await setupRFPage(page);
+  const name = await newRF(page, 'J');
+
+  const toggleRow = page.locator('label:has-text("Proxy request") ~ div').first();
+  await expect(toggleRow).toBeVisible({ timeout: 5_000 });
+  await toggleRow.locator('[data-testid="binding-icon"]').first().click();
+  await expect(page.locator('[data-testid="formula-editor"]')).toBeVisible({ timeout: 5_000 });
+  await page.locator('[data-testid="formula-close"]').click();
+
+  await page.click('[data-testid="ds-save"]');
+  await page.waitForTimeout(300);
+  await deleteRF(page, name);
+});
+
+test('DS-38 — send credentials PillToggle: clicking the pill toggles its background', async ({ page }) => {
+  test.setTimeout(150_000);
+  await setupRFPage(page);
+  const name = await newRF(page, 'K');
+
+  const pillRow = page.locator('div').filter({ hasText: /^Send credentials$/ }).first();
+  await expect(pillRow).toBeVisible({ timeout: 5_000 });
+  const pill = pillRow.locator('button').first();
+
+  const bgBefore = await pill.evaluate(el => getComputedStyle(el).backgroundColor);
+  await pill.click();
+  await page.waitForTimeout(200);
+  const bgAfter = await pill.evaluate(el => getComputedStyle(el).backgroundColor);
+  expect(bgBefore).not.toEqual(bgAfter);
+
+  await pill.click();
+  await page.waitForTimeout(200);
+  expect(await pill.evaluate(el => getComputedStyle(el).backgroundColor)).toEqual(bgBefore);
+
+  await page.click('[data-testid="ds-save"]');
+  await page.waitForTimeout(300);
+  await deleteRF(page, name);
+});
+
+test('DS-39 — stream response PillToggle: clicking the pill toggles its background', async ({ page }) => {
+  test.setTimeout(150_000);
+  await setupRFPage(page);
+  const name = await newRF(page, 'L');
+
+  const pillRow = page.locator('div').filter({ hasText: /^Stream response$/ }).first();
+  await expect(pillRow).toBeVisible({ timeout: 5_000 });
+  const pill = pillRow.locator('button').first();
+
+  const bgBefore = await pill.evaluate(el => getComputedStyle(el).backgroundColor);
+  await pill.click();
+  await page.waitForTimeout(200);
+  expect(await pill.evaluate(el => getComputedStyle(el).backgroundColor)).not.toEqual(bgBefore);
+
+  await pill.click();
+  await page.waitForTimeout(200);
+  expect(await pill.evaluate(el => getComputedStyle(el).backgroundColor)).toEqual(bgBefore);
+
+  await page.click('[data-testid="ds-save"]');
+  await page.waitForTimeout(300);
+  await deleteRF(page, name);
+});
+
+test('DS-40 — all REST form values persist after save and reopen', async ({ page }) => {
+  test.setTimeout(180_000);
+  await setupRFPage(page);
+  const name = `restPersist${Date.now()}`;
+  await page.click('[data-testid="add-datasource-btn"]');
+  await page.waitForSelector('[data-testid="ds-pick-rest"]', { timeout: 5_000 });
+  await page.click('[data-testid="ds-pick-rest"]');
+  await page.waitForSelector('[data-testid="ds-name"]', { timeout: 5_000 });
+  await page.fill('[data-testid="ds-name"]', name);
+  await page.fill('[data-testid="ds-url"]', 'https://httpbin.org/post');
+
+  await setRFMethod(page, 'POST');
+
+  await page.locator('button:has-text("Raw body")').click();
+  await page.waitForTimeout(150);
+  await page.locator('label:has-text("Body") ~ div input').fill('{"persist":"yes"}');
+
+  // Content type: second trigger
+  const allTriggers = page.locator('[data-popover="option-picker"] > button');
+  await allTriggers.nth(1).click();
+  await page.waitForSelector('[data-popover="option-picker"] div button', { timeout: 3_000 });
+  await page.locator('[data-popover="option-picker"] div button').filter({ hasText: 'Form URL-encoded' }).first().click();
+  await page.waitForTimeout(200);
+
+  await page.locator('label:has-text("Proxy request") ~ div').first().locator('button:has-text("On")').click();
+  await page.waitForTimeout(150);
+
+  await page.locator('div').filter({ hasText: /^Send credentials$/ }).first().locator('button').first().click();
+  await page.waitForTimeout(150);
+
+  await page.locator('div').filter({ hasText: /^Stream response$/ }).first().locator('button').first().click();
+  await page.waitForTimeout(150);
+
+  await page.click('[data-testid="ds-save"]');
+  await page.waitForTimeout(500);
+
+  // Reopen
+  await page.locator(`[data-testid="ds-card-${name}"]`).click();
+  await page.waitForSelector('[data-testid="ds-url"]', { timeout: 5_000 });
+
+  await expect(page.locator('[data-testid="ds-method"] button')).toContainText('POST', { timeout: 3_000 });
+
+  await page.locator('button:has-text("Raw body")').click();
+  await page.waitForTimeout(200);
+  await expect(page.locator('label:has-text("Body") ~ div input')).toHaveValue('{"persist":"yes"}', { timeout: 3_000 });
+
+  await expect(page.locator('[data-popover="option-picker"] > button').nth(1)).toContainText('Form URL-encoded', { timeout: 5_000 });
+
+  const proxyOnBg = await page.locator('label:has-text("Proxy request") ~ div').first().locator('button:has-text("On")').evaluate(el => getComputedStyle(el).backgroundColor);
+  expect(proxyOnBg).toMatch(/55, 65, 81|374151/i);
+
+  const credPillBg = await page.locator('div').filter({ hasText: /^Send credentials$/ }).first().locator('button').first().evaluate(el => getComputedStyle(el).backgroundColor);
+  expect(credPillBg).toMatch(/59, 130, 246|3b82f6/i);
+
+  const streamPillBg = await page.locator('div').filter({ hasText: /^Stream response$/ }).first().locator('button').first().evaluate(el => getComputedStyle(el).backgroundColor);
+  expect(streamPillBg).toMatch(/59, 130, 246|3b82f6/i);
+
+  await deleteRF(page, name);
 });

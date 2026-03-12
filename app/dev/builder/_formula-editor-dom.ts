@@ -156,8 +156,9 @@ export function serializeRangeFromEditor(editorEl: HTMLElement, sel: Selection):
  *   pages['UUID'](?.['key'])*
  *   theme.(colors|sections|fonts)(?.['key'])*
  *   local.data(?.['key'])*   — weWeb-style FormContainer local state
+ *   event(?.['key'])*        — workflow trigger event context
  */
-export const CHIP_RE = /collections\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|variables\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|local\.data(?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|context\.workflow\['[^']+'\](?:(?:\?)?\.[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|context\.(?:item|index|parent)(?:(?:\?\.\['[^']*'\]|\?\.\[\d+\])|(?:\.\w+))*|globalContext\.(?:browser|screen)(?:\?\.\['[^']*'\])*|pages\['[^']+'\](?:\?\.\['[^']*'\])*|theme(?:\.(?:colors|sections|fonts|radius)|\?\.\['(?:colors|sections|fonts|radius)'\])(?:\?\.\['[^']*'\]|\.\w+)*|components\?\.\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*/g;
+export const CHIP_RE = /collections\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|variables\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|local\.data(?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|context\.workflow\['[^']+'\](?:(?:\?)?\.[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|context\.(?:item|index|parent)(?:(?:\?\.\['[^']*'\]|\?\.\[\d+\])|(?:\.\w+))*|globalContext\.(?:browser|screen)(?:\?\.\['[^']*'\])*|pages\['[^']+'\](?:\?\.\['[^']*'\])*|theme(?:\.(?:colors|sections|fonts|radius)|\?\.\['(?:colors|sections|fonts|radius)'\])(?:\?\.\['[^']*'\]|\.\w+)*|components\?\.\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|event(?:\?\.\['[^']*'\]|\?\.\[\d+\])*/g;
 
 export const CHIP_INNER_CSS = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;display:block';
 
@@ -169,6 +170,7 @@ export const CHIP_STYLE: Record<string, string> = {
   theme:      'background:#b45309;color:#fef3c7;border:1px solid #d97706',
   form:       'background:#c2410c;color:#ffedd5;border:1px solid #ea580c',
   error:      'background:#991b1b;color:#fecaca;border:1px solid #b91c1c',
+  event:      'background:#92400e;color:#fed7aa;border:1px solid #fb923c',
 };
 
 // ─── Chip builders ────────────────────────────────────────────────────────────
@@ -176,7 +178,7 @@ export const CHIP_STYLE: Record<string, string> = {
 export function buildChipSpan(
   formulaPath: string,
   displayLabel: string,
-  type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error',
+  type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event',
 ): HTMLSpanElement {
   const span = document.createElement('span');
   span.contentEditable = 'false';
@@ -210,7 +212,7 @@ export function insertChipAtCaret(
   editorEl: HTMLElement,
   formulaPath: string,
   displayLabel: string,
-  type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error',
+  type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event',
 ): void {
   editorEl.focus();
   const sel = window.getSelection();
@@ -694,11 +696,7 @@ export function populateEditor(
   el.innerHTML = '';
   if (!formula) return;
 
-  let processed = formula
-    .replace(/\{\{(context\.[^}]+)\}\}/g, (_, path) => contextPathToChipFormula(path))
-    .replace(/\{\{(\$item[^}]+)\}\}/g, (_, path) => contextPathToChipFormula(path))
-    .replace(/\{\{(\$index)\}\}/g, () => "context?.['index']")
-    .replace(/\{\{(\$parent\.[^}]+)\}\}/g, (_, path) => contextPathToChipFormula(path));
+  const processed = formula;
 
   CHIP_RE.lastIndex = 0;
   let lastEnd = 0;
@@ -796,6 +794,12 @@ export function populateEditor(
       const leaf = lastKeyMatch?.[1] ?? formulaPath;
       const friendly = prefix ? `${prefix} - ${leaf}` : leaf;
       el.appendChild(buildChipSpan(formulaPath, friendly, 'theme'));
+    } else if (formulaPath.startsWith('event')) {
+      // Workflow trigger event: event, event?.['value'], event?.['x'], etc.
+      const friendly = formulaPath
+        .replace(/\?\.\['([^']+)'\]/g, '.$1')
+        .replace(/\?\.\[(\d+)\]/g, '[$1]');
+      el.appendChild(buildChipSpan(formulaPath, friendly, 'event'));
     }
     lastEnd = match.index + formulaPath.length;
   }

@@ -14,8 +14,8 @@ export type FormFieldState = {
   isValid: boolean | string;
 };
 
-export type ValidationRule = { type: string; message?: string; value?: string; formula?: unknown };
-export type FieldValidationConfig = { trigger: string; rules: ValidationRule[] };
+export type FieldValidationRule = { type: string; message?: string; value?: string; formula?: unknown };
+export type FieldValidationConfig = { trigger: string; rules: FieldValidationRule[] };
 
 export type FormState = {
   formData: Record<string, unknown>;
@@ -36,6 +36,20 @@ export const EMPTY_FORM_STATE: FormState = {
 export type FormContextValue = {
   state: FormState;
   setField: (name: string, value: unknown, isValid?: boolean) => void;
+  /**
+   * Update a field's value without touching its isValid / error state.
+   * Use from onChange handlers that should not clear or set validation state
+   * (e.g. live typing tracking). Preserves whatever isValid is currently set,
+   * so error messages shown after a submit attempt are not cleared mid-edit.
+   */
+  setFieldValue: (name: string, value: unknown) => void;
+  /**
+   * Zero-React-render fast path for live typing.
+   * Writes both `local.data.form.formData.{name}` and `variables[formStoreKey].formData.{name}`
+   * in a single atomic global-store update — no FormContainer re-render, no useEffect round-trip,
+   * one subscription trigger. Use this in onChange trackers for maximum responsiveness.
+   */
+  directWriteField: (name: string, value: unknown) => void;
   setFormState: (patch: Partial<Pick<FormState, 'isSubmitting' | 'isSubmitted'>>) => void;
   reset: () => void;
   /** Declare a field so it appears in formData/fields before the user types */

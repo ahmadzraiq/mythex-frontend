@@ -500,7 +500,7 @@
         "config": {
           "variableName": "d9e0f1a2-b3c4-5678-defa-789012345678",
           "value": {
-            "expr": "!({{auth.user}} || {{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.emailAddress}} || '') ? 'contact' : !({{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine1}} || '') ? 'shipping' : ({{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingLines.length}} || 0 || 0) <= 0 ? 'delivery' : !({{variables['b3c4d5e6-f7a8-9012-bcde-123456789012']}} || '') ? 'payment' : 'review'"
+            "expr": "!(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress || '') ? 'contact' : !(collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1 || '') ? 'shipping' : (collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingLines?.length || 0 || 0) <= 0 ? 'delivery' : !(variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] || '') ? 'payment' : 'review'"
           }
         }
       }

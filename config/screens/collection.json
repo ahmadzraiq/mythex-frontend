@@ -22,7 +22,7 @@
         "props": {
           "className": "grid grid-cols-1 lg:grid-cols-4 gap-8"
         },
-        "condition": "!{{collections.d4e5f6a7-b8c9-0123-defa-234567890123.loading}}",
+        "condition": "!collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.loading",
         "children": [
           {
             "type": "Box",
@@ -51,7 +51,7 @@
                       },
                       {
                         "type": "Pressable",
-                        "condition": "arrayLength({{route.facets}} || []) > 0",
+                        "condition": "arrayLength(route?.facets || []) > 0",
                         "props": {
                           "className": "text-sm text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] transition-colors"
                         },
@@ -75,7 +75,7 @@
                   {
                     "type": "Box",
                     "map": {
-                      "expr": "groupBy({{collections.d4e5f6a7-b8c9-0123-defa-234567890123.data.search.facetValues}} || [], 'facetValue.facet.name', 'facetValue.facet.id')"
+                      "expr": "groupBy(collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.data?.search?.facetValues || [], 'facetValue.facet.name', 'facetValue.facet.id')"
                     },
                     "key": "context.item.data.id",
                     "props": {
@@ -125,7 +125,7 @@
                                         "props": {
                                           "className": "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors border-[var(--theme-border)]"
                                         },
-                                        "condition": "!arrayIncludes({{route.facets}} || [], {{context.item.data.facetValue.id}})",
+                                        "condition": "!arrayIncludes(route?.facets || [], context?.item?.data?.facetValue?.id)",
                                         "children": []
                                       },
                                       {
@@ -133,7 +133,7 @@
                                         "props": {
                                           "className": "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors bg-[var(--theme-shop-button)] border-[var(--theme-shop-button)]"
                                         },
-                                        "condition": "arrayIncludes({{route.facets}} || [], {{context.item.data.facetValue.id}})",
+                                        "condition": "arrayIncludes(route?.facets || [], context?.item?.data?.facetValue?.id)",
                                         "children": [
                                           {
                                             "type": "NavIcon",
@@ -191,7 +191,7 @@
                       "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
                     "text": {
-                      "expr": "({{collections.d4e5f6a7-b8c9-0123-defa-234567890123.data.search.totalItems}} || 0) === 1 ? '1 product' : ({{collections.d4e5f6a7-b8c9-0123-defa-234567890123.data.search.totalItems}} || 0) + ' products'"
+                      "expr": "(collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.data?.search?.totalItems || 0) === 1 ? '1 product' : (collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.data?.search?.totalItems || 0) + ' products'"
                     }
                   },
                   {
@@ -205,7 +205,7 @@
                         "props": {
                           "className": "fixed inset-0 z-[9998]"
                         },
-                        "condition": "{{variables['c8d9e0f1-a2b3-4567-cdef-678901234567']}}",
+                        "condition": "variables['c8d9e0f1-a2b3-4567-cdef-678901234567']",
                         "actions": [
                           {
                             "action": "25891c7a-a8fa-42ea-a028-d7405419f9d3"
@@ -229,7 +229,7 @@
                               "className": "text-sm text-[var(--theme-foreground)]"
                             },
                             "text": {
-                              "expr": "{{route.sort}} === 'name-asc' ? 'Name: A to Z' : {{route.sort}} === 'name-desc' ? 'Name: Z to A' : {{route.sort}} === 'price-asc' ? 'Price: Low to High' : 'Price: High to Low'"
+                              "expr": "route?.sort === 'name-asc' ? 'Name: A to Z' : route?.sort === 'name-desc' ? 'Name: Z to A' : route?.sort === 'price-asc' ? 'Price: Low to High' : 'Price: High to Low'"
                             }
                           },
                           {
@@ -244,7 +244,7 @@
                       },
                       {
                         "type": "Box",
-                        "condition": "{{variables['c8d9e0f1-a2b3-4567-cdef-678901234567']}}",
+                        "condition": "variables['c8d9e0f1-a2b3-4567-cdef-678901234567']",
                         "props": {
                           "className": "absolute right-0 top-full mt-1 min-w-[180px] rounded-md border border-[var(--theme-border)] bg-[var(--theme-content-bg)] shadow-md z-[9999] py-1"
                         },
@@ -274,7 +274,7 @@
                                   "size": 14,
                                   "color": "#7c3aed"
                                 },
-                                "condition": "{{route.sort}} === 'name-asc'"
+                                "condition": "route?.sort === 'name-asc'"
                               }
                             ]
                           },
@@ -303,7 +303,7 @@
                                   "size": 14,
                                   "color": "#7c3aed"
                                 },
-                                "condition": "{{route.sort}} === 'name-desc'"
+                                "condition": "route?.sort === 'name-desc'"
                               }
                             ]
                           },
@@ -332,7 +332,7 @@
                                   "size": 14,
                                   "color": "#7c3aed"
                                 },
-                                "condition": "{{route.sort}} === 'price-asc'"
+                                "condition": "route?.sort === 'price-asc'"
                               }
                             ]
                           },
@@ -361,7 +361,7 @@
                                   "size": 14,
                                   "color": "#7c3aed"
                                 },
-                                "condition": "{{route.sort}} === 'price-desc'"
+                                "condition": "route?.sort === 'price-desc'"
                               }
                             ]
                           }
@@ -373,7 +373,7 @@
               },
               {
                 "type": "Box",
-                "condition": "({{collections.d4e5f6a7-b8c9-0123-defa-234567890123.data.search.totalItems}} || 0) === 0",
+                "condition": "(collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.data?.search?.totalItems || 0) === 0",
                 "props": {
                   "className": "text-center py-12"
                 },
@@ -389,7 +389,7 @@
               },
               {
                 "type": "Box",
-                "condition": "{{collections.d4e5f6a7-b8c9-0123-defa-234567890123.data.search.totalItems}} > 0",
+                "condition": "collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.data?.search?.totalItems > 0",
                 "props": {
                   "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
                 },

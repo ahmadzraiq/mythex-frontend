@@ -155,14 +155,14 @@
                                   "fill": true,
                                   "className": "object-cover group-hover:scale-105 transition-transform duration-300"
                                 },
-                                "condition": "{{context.item.data.productAsset.preview}}"
+                                "condition": "context?.item?.data?.productAsset?.preview"
                               },
                               {
                                 "type": "Box",
                                 "props": {
                                   "className": "w-full h-full flex items-center justify-center"
                                 },
-                                "condition": "!{{context.item.data.productAsset.preview}}",
+                                "condition": "!context?.item?.data?.productAsset?.preview",
                                 "children": [
                                   {
                                     "type": "Text",
@@ -195,7 +195,7 @@
                                   "className": "text-lg font-bold text-[var(--theme-foreground)]"
                                 },
                                 "text": {
-                                  "expr": "{{context.item.data.priceWithTax.__typename}} === 'SinglePrice' ? formatCurrency({{context.item.data.priceWithTax.value}}, {{context.item.data.currencyCode}}) : 'from ' + formatCurrency({{context.item.data.priceWithTax.min}}, {{context.item.data.currencyCode}})"
+                                  "expr": "context?.item?.data?.priceWithTax?.__typename === 'SinglePrice' ? formatCurrency(context?.item?.data?.priceWithTax?.value, context?.item?.data?.currencyCode) : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min, context?.item?.data?.currencyCode)"
                                 }
                               }
                             ]

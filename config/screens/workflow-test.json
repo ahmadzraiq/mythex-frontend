@@ -1,0 +1,1807 @@
+{
+  "meta": {
+    "title": "Workflow Showcase"
+  },
+  "layout": "store",
+  "content": {
+    "type": "Box",
+    "props": {
+      "className": "w-full max-w-3xl mx-auto px-4 py-10 flex flex-col gap-8"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "flex flex-col gap-2"
+        },
+        "children": [
+          {
+            "type": "Heading",
+            "props": {
+              "size": "2xl",
+              "className": "font-bold text-gray-900 dark:text-gray-100"
+            },
+            "text": "Workflow Engine Showcase"
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-gray-500 dark:text-gray-400"
+            },
+            "text": "Each card tests a different workflow engine feature. Open DevTools to observe state changes."
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Card 1 — setVar + Variable Binding"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Click a button to write a value to demo.message via setVar. The output text is bound to that variable."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row gap-3 flex-wrap"
+            },
+            "children": [
+              {
+                "type": "Button",
+                "props": {
+                  "action": "primary",
+                  "size": "sm",
+                  "data-testid": "btn-hello"
+                },
+                "actions": [
+                  {
+                    "action": "wfMsgHello"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "ButtonText",
+                    "text": "Hello"
+                  }
+                ]
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "action": "secondary",
+                  "size": "sm",
+                  "data-testid": "btn-goodbye"
+                },
+                "actions": [
+                  {
+                    "action": "wfMsgBye"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "ButtonText",
+                    "text": "Goodbye"
+                  }
+                ]
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "action": "default",
+                  "size": "sm",
+                  "data-testid": "btn-testing"
+                },
+                "actions": [
+                  {
+                    "action": "wfMsgTest"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "ButtonText",
+                    "text": "Testing"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-3 flex flex-row items-center gap-2"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-xs font-mono text-gray-400 uppercase tracking-wider"
+                },
+                "text": "demo.message →"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "font-medium text-gray-900 dark:text-gray-100",
+                  "data-testid": "out-message"
+                },
+                "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111101']}}"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Card 2 — Branch (if/else)"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Set demo.number to 3 (< 10) or 15 (>= 10), then click Evaluate Branch to see which path executes."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row gap-3 flex-wrap"
+            },
+            "children": [
+              {
+                "type": "Button",
+                "props": {
+                  "action": "secondary",
+                  "size": "sm",
+                  "data-testid": "btn-num-low"
+                },
+                "actions": [
+                  {
+                    "action": "wfSetNumLow"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "ButtonText",
+                    "text": "Set number = 3"
+                  }
+                ]
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "action": "secondary",
+                  "size": "sm",
+                  "data-testid": "btn-num-high"
+                },
+                "actions": [
+                  {
+                    "action": "wfSetNumHigh"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "ButtonText",
+                    "text": "Set number = 15"
+                  }
+                ]
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "action": "primary",
+                  "size": "sm",
+                  "data-testid": "btn-eval-branch"
+                },
+                "actions": [
+                  {
+                    "action": "wfEvalBranch"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "ButtonText",
+                    "text": "Evaluate Branch"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-3 flex flex-col gap-2"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center gap-2"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs font-mono text-gray-400 uppercase tracking-wider"
+                    },
+                    "text": "demo.number →"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "data-testid": "out-number"
+                    },
+                    "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111102']}}"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center gap-2"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs font-mono text-gray-400 uppercase tracking-wider"
+                    },
+                    "text": "result →"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "data-testid": "out-branch"
+                    },
+                    "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111104']}}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Card 3 — runMultiple"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "One button triggers three sequential setVar actions via runMultiple. All three outputs should update at once."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row gap-3"
+            },
+            "children": [
+              {
+                "type": "Button",
+                "props": {
+                  "action": "primary",
+                  "size": "sm",
+                  "data-testid": "btn-run-multiple"
+                },
+                "actions": [
+                  {
+                    "action": "wfRunMultiple"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "ButtonText",
+                    "text": "Run All 3 Steps"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-3 flex flex-col gap-2"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center gap-2"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs font-mono text-gray-400 uppercase tracking-wider w-16"
+                    },
+                    "text": "step 1 →"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "data-testid": "out-step1"
+                    },
+                    "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111111']}}"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center gap-2"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs font-mono text-gray-400 uppercase tracking-wider w-16"
+                    },
+                    "text": "step 2 →"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "data-testid": "out-step2"
+                    },
+                    "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111112']}}"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center gap-2"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs font-mono text-gray-400 uppercase tracking-wider w-16"
+                    },
+                    "text": "step 3 →"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "data-testid": "out-step3"
+                    },
+                    "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111113']}}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-5"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-indigo-700 dark:text-indigo-300"
+                },
+                "text": "Card 5 — The Complete Pipeline"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "All structural types in one workflow: nested branch → forEach → whileLoop + timeDelay. Set a score, then click Run."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-2"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                },
+                "text": "① Set score (demo.number)"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row gap-2 flex-wrap"
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "action": "default",
+                      "size": "sm",
+                      "data-testid": "btn-score-20"
+                    },
+                    "actions": [
+                      {
+                        "action": "wfSetScore20"
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "ButtonText",
+                        "text": "Score = 20"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "action": "default",
+                      "size": "sm",
+                      "data-testid": "btn-score-45"
+                    },
+                    "actions": [
+                      {
+                        "action": "wfSetScore45"
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "ButtonText",
+                        "text": "Score = 45"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "action": "default",
+                      "size": "sm",
+                      "data-testid": "btn-score-75"
+                    },
+                    "actions": [
+                      {
+                        "action": "wfSetScore75"
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "ButtonText",
+                        "text": "Score = 75"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "action": "default",
+                      "size": "sm",
+                      "data-testid": "btn-score-95"
+                    },
+                    "actions": [
+                      {
+                        "action": "wfSetScore95"
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "ButtonText",
+                        "text": "Score = 95"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-2"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                },
+                "text": "② Run the workflow"
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "action": "primary",
+                  "size": "md",
+                  "data-testid": "btn-run-pipeline"
+                },
+                "actions": [
+                  {
+                    "action": "wfComplexAll"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "ButtonText",
+                    "text": "Run Full Pipeline"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-4 flex flex-col gap-3"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1"
+                },
+                "text": "Output"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-start gap-2"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs font-mono text-gray-400 w-36 pt-0.5 shrink-0"
+                    },
+                    "text": "score (number) →"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-bold text-indigo-600 dark:text-indigo-300",
+                      "data-testid": "out-pipeline-number"
+                    },
+                    "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111102']}}"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-start gap-2"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs font-mono text-gray-400 w-36 pt-0.5 shrink-0"
+                    },
+                    "text": "branch → grade →"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "data-testid": "out-grade"
+                    },
+                    "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111105']}}"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-start gap-2"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs font-mono text-gray-400 w-36 pt-0.5 shrink-0"
+                    },
+                    "text": "forEach iters →"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "data-testid": "out-loop-count"
+                    },
+                    "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111106']}}"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs text-gray-400 italic"
+                    },
+                    "text": "(expect 3 — items: A, B, C)"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-start gap-2"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs font-mono text-gray-400 w-36 pt-0.5 shrink-0"
+                    },
+                    "text": "whileLoop iters →"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "data-testid": "out-retry-count"
+                    },
+                    "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111107']}}"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs text-gray-400 italic"
+                    },
+                    "text": "(expect 3 — stops at ≥ 3)"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-start gap-2 border-t border-gray-200 dark:border-gray-700 pt-3 mt-1"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs font-mono text-gray-400 w-36 pt-0.5 shrink-0"
+                    },
+                    "text": "status →"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-green-600 dark:text-green-400",
+                      "data-testid": "out-complex-done"
+                    },
+                    "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111110']}}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "rounded-lg bg-indigo-50 dark:bg-indigo-950 border border-indigo-200 dark:border-indigo-800 px-4 py-3 flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-xs font-semibold text-indigo-600 dark:text-indigo-300 uppercase tracking-wider"
+                },
+                "text": "What this workflow exercises"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-xs text-indigo-700 dark:text-indigo-400 leading-relaxed"
+                },
+                "text": "① Reset (6× changeVariableValue)  →  ② timeDelay 300ms  →  ③ branch: score ≥ 60?  →  ④ nested branch: ≥ 90 / ≥ 30  →  ⑤ forEach over 3 items (loopBody: increment)  →  ⑥ whileLoop (stop when retryCount ≥ 3)  →  ⑦ final changeVariableValue"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4"
+        },
+        "actions": [{ "action": "waOnCreated" }, { "action": "waOnMounted" }],
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-1" },
+            "children": [
+              {
+                "type": "Heading",
+                "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-100" },
+                "text": "Card 6 — Trigger Sampler"
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+                "text": "Tests created, mounted, click, doubleClick, mouseEnter/Leave, change, enterKey, focus, blur triggers."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "grid grid-cols-2 gap-3" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "created →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-created" }, "text": "{{variables['wa000001-0000-0000-0000-000000000001']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "mounted →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-mounted" }, "text": "{{variables['wa000001-0000-0000-0000-000000000002']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "click →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-click" }, "text": "{{variables['wa000001-0000-0000-0000-000000000003']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "dblclick count →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-dblclick" }, "text": "{{variables['wa000001-0000-0000-0000-000000000004']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "hover →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-hover" }, "text": "{{variables['wa000001-0000-0000-0000-000000000005']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "focus →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-focus-state" }, "text": "{{variables['wa000001-0000-0000-0000-000000000008']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "change →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-change" }, "text": "{{variables['wa000001-0000-0000-0000-000000000006']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "enterKey →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-enter" }, "text": "{{variables['wa000001-0000-0000-0000-000000000007']}}" }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row flex-wrap gap-3 items-center" },
+            "children": [
+              {
+                "type": "Button",
+                "props": { "action": "primary", "size": "sm", "data-testid": "btn-wa-click" },
+                "actions": [{ "action": "waOnClick" }],
+                "children": [{ "type": "ButtonText", "text": "Click me" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "secondary", "size": "sm", "data-testid": "btn-wa-dblclick" },
+                "actions": [{ "action": "waOnDblClick" }],
+                "children": [{ "type": "ButtonText", "text": "Double-click me" }]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "rounded-lg border border-dashed border-indigo-400 px-4 py-2 cursor-default",
+                  "data-testid": "hover-zone"
+                },
+                "actions": [{ "action": "waOnMouseEnter" }, { "action": "waOnMouseLeave" }],
+                "children": [{ "type": "Text", "props": { "className": "text-xs text-indigo-600 dark:text-indigo-300" }, "text": "Hover zone" }]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-2" },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-xs text-gray-500" },
+                "text": "Type in the input (triggers onChange, onFocus, onBlur, onEnterKey):"
+              },
+              {
+                "type": "Input",
+                "id": "wa-trigger-input",
+                "props": { "variant": "outline", "size": "md", "data-testid": "wa-trigger-input" },
+                "children": [
+                  {
+                    "type": "InputField",
+                    "props": { "placeholder": "Type here…", "placeholderTextColor": "#9ca3af", "className": "!text-gray-900 dark:!text-gray-100" },
+                    "actions": [{ "action": "waOnChange" }, { "action": "waOnEnterKey" }, { "action": "waOnFocus" }, { "action": "waOnBlur" }]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-1" },
+            "children": [
+              {
+                "type": "Heading",
+                "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-100" },
+                "text": "Card 7 — Form Triggers + setFormState + resetForm"
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+                "text": "Tests submit, submitValidationError triggers, plus setFormState and resetForm actions."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "grid grid-cols-2 gap-3" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "submit result →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-form-result" }, "text": "{{variables['wa000001-0000-0000-0000-000000000009']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "validation error →" },
+                  { "type": "Text", "props": { "className": "font-medium text-red-600 dark:text-red-400", "data-testid": "out-form-validation-error" }, "text": "{{variables['wa000001-0000-0000-0000-000000000010']}}" }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "FormContainer",
+            "props": { "data-testid": "wa-form-container" },
+            "actions": [{ "action": "waFormSubmit" }, { "action": "waFormValidationError" }],
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-3" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-col gap-1" },
+                    "children": [
+                      {
+                        "type": "Input",
+                        "props": { "variant": "outline", "size": "md" },
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": {
+                              "name": "wa-email",
+                              "placeholder": "Email (required)",
+                              "placeholderTextColor": "#9ca3af",
+                              "className": "!text-gray-900 dark:!text-gray-100",
+                              "data-testid": "wa-form-email"
+                            },
+                            "_validation": {
+                              "trigger": "submit",
+                              "rules": [{ "type": "required", "message": "Email is required" }]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "condition": "local?.data?.form?.fields?.['wa-email']?.isValid",
+                        "props": { "className": "text-sm text-red-500 dark:text-red-400", "data-testid": "wa-email-error" },
+                        "text": "{{local.data.form.fields['wa-email'].isValid}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Input",
+                    "props": { "variant": "outline", "size": "md" },
+                    "children": [
+                      {
+                        "type": "InputField",
+                        "props": {
+                          "name": "wa-name",
+                          "placeholder": "Name",
+                          "placeholderTextColor": "#9ca3af",
+                          "className": "!text-gray-900 dark:!text-gray-100",
+                          "data-testid": "wa-form-name"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-row gap-2" },
+                    "children": [
+                      {
+                        "type": "Button",
+                        "props": { "action": "primary", "size": "sm", "type": "submit", "data-testid": "btn-wa-submit" },
+                        "children": [{ "type": "ButtonText", "text": "Submit" }]
+                      },
+                      {
+                        "type": "Button",
+                        "props": { "action": "secondary", "size": "sm", "data-testid": "btn-wa-prefill" },
+                        "actions": [{ "action": "waPreFillForm" }],
+                        "children": [{ "type": "ButtonText", "text": "Pre-fill" }]
+                      },
+                      {
+                        "type": "Button",
+                        "props": { "action": "default", "size": "sm", "data-testid": "btn-wa-reset-form" },
+                        "actions": [{ "action": "waResetForm" }],
+                        "children": [{ "type": "ButtonText", "text": "Reset" }]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-1" },
+            "children": [
+              {
+                "type": "Heading",
+                "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-100" },
+                "text": "Card 8 — navigateTo + navigatePrev"
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+                "text": "Tests navigateTo (go to /) and navigatePrev (go back with default redirect). Note: clicking these will leave the page."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-3 flex-wrap" },
+            "children": [
+              {
+                "type": "Button",
+                "props": { "action": "secondary", "size": "md", "data-testid": "btn-wa-nav-home" },
+                "actions": [{ "action": "waNavigateHome" }],
+                "children": [{ "type": "ButtonText", "text": "Go to Home (/)" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "default", "size": "md", "data-testid": "btn-wa-nav-prev" },
+                "actions": [{ "action": "waNavigatePrev" }],
+                "children": [{ "type": "ButtonText", "text": "Navigate Prev (back or /)" }]
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-1" },
+            "children": [
+              { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-100" }, "text": "Card 9 — REST API + GraphQL" },
+              { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "Tests fetchData (GET and POST) and graphql action types using public endpoints." }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "grid grid-cols-3 gap-3" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "REST result →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-rest-result" }, "text": "{{variables['wa000001-0000-0000-0000-000000000011']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "REST status →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-rest-status" }, "text": "{{variables['wa000001-0000-0000-0000-000000000013']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "GraphQL result →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-gql-result" }, "text": "{{variables['wa000001-0000-0000-0000-000000000012']}}" }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-3 flex-wrap" },
+            "children": [
+              {
+                "type": "Button",
+                "props": { "action": "primary", "size": "sm", "data-testid": "btn-wa-rest-get" },
+                "actions": [{ "action": "waFetchRest" }],
+                "children": [{ "type": "ButtonText", "text": "REST GET" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "secondary", "size": "sm", "data-testid": "btn-wa-rest-post" },
+                "actions": [{ "action": "waFetchRestPost" }],
+                "children": [{ "type": "ButtonText", "text": "REST POST" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "default", "size": "sm", "data-testid": "btn-wa-graphql" },
+                "actions": [{ "action": "waFetchGraphql" }],
+                "children": [{ "type": "ButtonText", "text": "GraphQL Query" }]
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-1" },
+            "children": [
+              { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-100" }, "text": "Card 10 — fetchCollection + parallel + updateCollection + resetVariableValue" },
+              { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "Tests collection fetch actions and variable reset." }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "grid grid-cols-3 gap-3" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "fetch-1 →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-fetch-count" }, "text": "{{variables['wa000001-0000-0000-0000-000000000014']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "parallel-1 →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-parallel-1" }, "text": "{{variables['wa000001-0000-0000-0000-000000000015']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "parallel-2 →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-parallel-2" }, "text": "{{variables['wa000001-0000-0000-0000-000000000016']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "reset-check →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-reset-check" }, "text": "{{variables['wa000001-0000-0000-0000-000000000017']}}" }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-3 flex-wrap" },
+            "children": [
+              {
+                "type": "Button",
+                "props": { "action": "primary", "size": "sm", "data-testid": "btn-wa-fetch-coll" },
+                "actions": [{ "action": "waFetchCollection" }],
+                "children": [{ "type": "ButtonText", "text": "Fetch Collection" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "secondary", "size": "sm", "data-testid": "btn-wa-fetch-parallel" },
+                "actions": [{ "action": "waFetchParallel" }],
+                "children": [{ "type": "ButtonText", "text": "Fetch Parallel" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "default", "size": "sm", "data-testid": "btn-wa-update-coll" },
+                "actions": [{ "action": "waUpdateCollection" }],
+                "children": [{ "type": "ButtonText", "text": "Update Collection" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "default", "size": "sm", "data-testid": "btn-wa-set-reset-check" },
+                "actions": [{ "action": "waSetResetCheck" }],
+                "children": [{ "type": "ButtonText", "text": "Modify var" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "primary", "size": "sm", "data-testid": "btn-wa-reset-vars" },
+                "actions": [{ "action": "waResetVars" }],
+                "children": [{ "type": "ButtonText", "text": "Reset Var" }]
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-1" },
+            "children": [
+              { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-100" }, "text": "Card 11 — returnValue (via branch)" },
+              { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "Score ≥ 60 → PASS via returnValue in trueBranch. Score < 60 → FAIL." }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-3 items-center" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "return result →" },
+              { "type": "Text", "props": { "className": "font-bold text-lg text-gray-900 dark:text-gray-100", "data-testid": "out-return-result" }, "text": "{{variables['wa000001-0000-0000-0000-000000000018']}}" }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-3 flex-wrap" },
+            "children": [
+              {
+                "type": "Button",
+                "props": { "action": "primary", "size": "sm", "data-testid": "btn-wa-return-high" },
+                "actions": [{ "action": "waReturnHigh" }],
+                "children": [{ "type": "ButtonText", "text": "Score 80 → PASS" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "secondary", "size": "sm", "data-testid": "btn-wa-return-low" },
+                "actions": [{ "action": "waReturnLow" }],
+                "children": [{ "type": "ButtonText", "text": "Score 30 → FAIL" }]
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-1" },
+            "children": [
+              { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-100" }, "text": "Card 12 — executeComponentAction + runProjectWorkflow" },
+              { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "executeComponentAction calls a named action directly; runProjectWorkflow calls a sub-workflow." }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "grid grid-cols-2 gap-3" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "exec result →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-exec-result" }, "text": "{{variables['wa000001-0000-0000-0000-000000000020']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "sub-workflow result →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-sub-wf-result" }, "text": "{{variables['wa000001-0000-0000-0000-000000000019']}}" }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-3 flex-wrap" },
+            "children": [
+              {
+                "type": "Button",
+                "props": { "action": "primary", "size": "sm", "data-testid": "btn-wa-exec-component" },
+                "actions": [{ "action": "waExecuteComponent" }],
+                "children": [{ "type": "ButtonText", "text": "Execute Component Action" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "secondary", "size": "sm", "data-testid": "btn-wa-run-subwf" },
+                "actions": [{ "action": "waRunSubWorkflow" }],
+                "children": [{ "type": "ButtonText", "text": "Run Sub-Workflow" }]
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-1" },
+            "children": [
+              { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-100" }, "text": "Card 13 — breakLoop + continueLoop + passThroughCondition" },
+              { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "forEach [1..5]: continueLoop on even, breakLoop when sum ≥ 4. Result: 1+3 = 4. passThroughCondition blocks workflow unless flag is true." }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "grid grid-cols-2 gap-3" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "loop sum →" },
+                  { "type": "Text", "props": { "className": "font-bold text-lg text-gray-900 dark:text-gray-100", "data-testid": "out-loop-sum" }, "text": "{{variables['wa000001-0000-0000-0000-000000000021']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "pass result →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-pass-result" }, "text": "{{variables['wa000001-0000-0000-0000-000000000023']}}" }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-3 flex-wrap" },
+            "children": [
+              {
+                "type": "Button",
+                "props": { "action": "primary", "size": "sm", "data-testid": "btn-wa-loop-control" },
+                "actions": [{ "action": "waLoopControl" }],
+                "children": [{ "type": "ButtonText", "text": "Run Loop (continue+break)" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "secondary", "size": "sm", "data-testid": "btn-wa-flag-on" },
+                "actions": [{ "action": "waPassFlagOn" }],
+                "children": [{ "type": "ButtonText", "text": "Flag ON" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "default", "size": "sm", "data-testid": "btn-wa-flag-off" },
+                "actions": [{ "action": "waPassFlagOff" }],
+                "children": [{ "type": "ButtonText", "text": "Flag OFF" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "primary", "size": "sm", "data-testid": "btn-wa-pass-through" },
+                "actions": [{ "action": "waPassThrough" }],
+                "children": [{ "type": "ButtonText", "text": "Run passThroughCondition" }]
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-1" },
+            "children": [
+              { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-100" }, "text": "Card 14 — multiOptionBranch" },
+              { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "Set mode to A, B, or C — Evaluate routes to matching branch and sets a distinct output string." }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-2 items-center" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "multi result →" },
+              { "type": "Text", "props": { "className": "font-bold text-gray-900 dark:text-gray-100", "data-testid": "out-multi-result" }, "text": "{{variables['wa000001-0000-0000-0000-000000000025']}}" }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-3 flex-wrap" },
+            "children": [
+              {
+                "type": "Button",
+                "props": { "action": "default", "size": "sm", "data-testid": "btn-wa-mode-a" },
+                "actions": [{ "action": "waSetModeA" }],
+                "children": [{ "type": "ButtonText", "text": "Set Mode A" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "default", "size": "sm", "data-testid": "btn-wa-mode-b" },
+                "actions": [{ "action": "waSetModeB" }],
+                "children": [{ "type": "ButtonText", "text": "Set Mode B" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "default", "size": "sm", "data-testid": "btn-wa-mode-c" },
+                "actions": [{ "action": "waSetModeC" }],
+                "children": [{ "type": "ButtonText", "text": "Set Mode C" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "primary", "size": "sm", "data-testid": "btn-wa-eval-multi" },
+                "actions": [{ "action": "waEvalMultiOption" }],
+                "children": [{ "type": "ButtonText", "text": "Evaluate" }]
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-1" },
+            "children": [
+              { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-100" }, "text": "Card 15 — Advanced Actions" },
+              { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "copyToClipboard, stopPropagation, printPdf, downloadFileFromUrl, createUrlFromBase64, encodeFileAsBase64." }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "grid grid-cols-2 gap-3" },
+            "children": [
+              {
+                "type": "Box", "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "clipboard →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-clipboard" }, "text": "{{variables['wa000001-0000-0000-0000-000000000026']}}" }
+                ]
+              },
+              {
+                "type": "Box", "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "outer click →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-outer-click" }, "text": "{{variables['wa000001-0000-0000-0000-000000000027']}}" }
+                ]
+              },
+              {
+                "type": "Box", "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "inner click →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-inner-click" }, "text": "{{variables['wa000001-0000-0000-0000-000000000028']}}" }
+                ]
+              },
+              {
+                "type": "Box", "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "pdf fired →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-pdf-fired" }, "text": "{{variables['wa000001-0000-0000-0000-000000000029']}}" }
+                ]
+              },
+              {
+                "type": "Box", "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "download fired →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-download-fired" }, "text": "{{variables['wa000001-0000-0000-0000-000000000030']}}" }
+                ]
+              },
+              {
+                "type": "Box", "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "b64 url →" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-b64-url" }, "text": "{{variables['wa000001-0000-0000-0000-000000000031']}}" }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-3 flex-wrap" },
+            "children": [
+              {
+                "type": "Button",
+                "props": { "action": "primary", "size": "sm", "data-testid": "btn-wa-copy" },
+                "actions": [{ "action": "waCopyClipboard" }],
+                "children": [{ "type": "ButtonText", "text": "Copy to Clipboard" }]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "relative border border-dashed border-orange-400 rounded-lg p-2 cursor-default",
+                  "data-testid": "outer-click-zone"
+                },
+                "actions": [{ "action": "waOuterClick" }],
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs text-orange-500 mb-1" }, "text": "Outer (click me)" },
+                  {
+                    "type": "Button",
+                    "props": { "action": "secondary", "size": "xs", "data-testid": "btn-wa-inner-stop" },
+                    "actions": [{ "action": "waInnerClick" }],
+                    "children": [{ "type": "ButtonText", "text": "Inner (stops propagation)" }]
+                  }
+                ]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "default", "size": "sm", "data-testid": "btn-wa-print-pdf" },
+                "actions": [{ "action": "waPrintPdf" }],
+                "children": [{ "type": "ButtonText", "text": "Print PDF" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "default", "size": "sm", "data-testid": "btn-wa-download" },
+                "actions": [{ "action": "waDownloadFile" }],
+                "children": [{ "type": "ButtonText", "text": "Download File" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "secondary", "size": "sm", "data-testid": "btn-wa-b64-url" },
+                "actions": [{ "action": "waCreateB64Url" }],
+                "children": [{ "type": "ButtonText", "text": "Create URL from B64" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "secondary", "size": "sm", "data-testid": "btn-wa-encode-b64" },
+                "actions": [{ "action": "waEncodeBase64" }],
+                "children": [{ "type": "ButtonText", "text": "Encode Base64" }]
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-1" },
+            "children": [
+              { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-100" }, "text": "Card 16 — Branch inside Loop inside Branch" },
+              { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "score ≥ 50 → forEach [A,B,C]: branch(item=B) → breakLoop else increment. Status = done-true. score < 50 → done-false." }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "grid grid-cols-2 gap-3" },
+            "children": [
+              {
+                "type": "Box", "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "loop count →" },
+                  { "type": "Text", "props": { "className": "font-bold text-lg text-gray-900 dark:text-gray-100", "data-testid": "out-complex-loop-count" }, "text": "{{variables['wa000001-0000-0000-0000-000000000034']}}" }
+                ]
+              },
+              {
+                "type": "Box", "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "status →" },
+                  { "type": "Text", "props": { "className": "font-semibold text-green-600 dark:text-green-400", "data-testid": "out-complex-status" }, "text": "{{variables['wa000001-0000-0000-0000-000000000035']}}" }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-3 flex-wrap" },
+            "children": [
+              {
+                "type": "Button",
+                "props": { "action": "primary", "size": "sm", "data-testid": "btn-wa-complex-high" },
+                "actions": [{ "action": "waSetScoreHigh" }, { "action": "waComplexBranchLoop" }],
+                "children": [{ "type": "ButtonText", "text": "Score 75 (true branch)" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "secondary", "size": "sm", "data-testid": "btn-wa-complex-low" },
+                "actions": [{ "action": "waSetScoreLow" }, { "action": "waComplexBranchLoop" }],
+                "children": [{ "type": "ButtonText", "text": "Score 30 (false branch)" }]
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-1" },
+            "children": [
+              { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-100" }, "text": "Card 17 — multiOptionBranch + whileLoop + forEach + continueLoop + passThroughCondition" },
+              { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "fast: whileLoop until count ≥ 3. slow: forEach [1..5] skip evens → odd sum = 9. skip: passThroughCondition if flag=true → skipped." }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "grid grid-cols-3 gap-3" },
+            "children": [
+              {
+                "type": "Box", "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "fast count →" },
+                  { "type": "Text", "props": { "className": "font-bold text-lg text-gray-900 dark:text-gray-100", "data-testid": "out-fast-count" }, "text": "{{variables['wa000001-0000-0000-0000-000000000037']}}" }
+                ]
+              },
+              {
+                "type": "Box", "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "slow sum →" },
+                  { "type": "Text", "props": { "className": "font-bold text-lg text-gray-900 dark:text-gray-100", "data-testid": "out-slow-sum" }, "text": "{{variables['wa000001-0000-0000-0000-000000000038']}}" }
+                ]
+              },
+              {
+                "type": "Box", "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "complex result →" },
+                  { "type": "Text", "props": { "className": "font-semibold text-green-600 dark:text-green-400", "data-testid": "out-complex-result" }, "text": "{{variables['wa000001-0000-0000-0000-000000000039']}}" }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-3 flex-wrap" },
+            "children": [
+              {
+                "type": "Button",
+                "props": { "action": "primary", "size": "sm", "data-testid": "btn-wa-mode-fast" },
+                "actions": [{ "action": "waSetComplexModeFast" }, { "action": "waComplexCombined" }],
+                "children": [{ "type": "ButtonText", "text": "Mode: fast (whileLoop → 3)" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "secondary", "size": "sm", "data-testid": "btn-wa-mode-slow" },
+                "actions": [{ "action": "waSetComplexModeSlow" }, { "action": "waComplexCombined" }],
+                "children": [{ "type": "ButtonText", "text": "Mode: slow (odd sum = 9)" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "default", "size": "sm", "data-testid": "btn-wa-mode-skip" },
+                "actions": [{ "action": "waSetComplexModeSkip" }, { "action": "waComplexCombined" }],
+                "children": [{ "type": "ButtonText", "text": "Mode: skip (passThroughCondition)" }]
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-1" },
+            "children": [
+              {
+                "type": "Heading",
+                "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-100" },
+                "text": "Card 4 — increment / decrement"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Counter starts at 0. Decrement is clamped at 0 (min: 0). Reset sets it back to 0 via setVar."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row items-center gap-4 flex-wrap"
+            },
+            "children": [
+              {
+                "type": "Button",
+                "props": {
+                  "action": "secondary",
+                  "size": "md",
+                  "data-testid": "btn-decr"
+                },
+                "actions": [
+                  {
+                    "action": "wfDecrCount"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "ButtonText",
+                    "text": "- 1"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-6 py-2 items-center justify-center flex"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-2xl font-bold text-gray-900 dark:text-gray-100 text-center",
+                      "data-testid": "out-count"
+                    },
+                    "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111103']}}"
+                  }
+                ]
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "action": "primary",
+                  "size": "md",
+                  "data-testid": "btn-incr"
+                },
+                "actions": [
+                  {
+                    "action": "wfIncrCount"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "ButtonText",
+                    "text": "+ 1"
+                  }
+                ]
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "action": "default",
+                  "size": "sm",
+                  "data-testid": "btn-reset"
+                },
+                "actions": [
+                  {
+                    "action": "wfResetCount"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "ButtonText",
+                    "text": "Reset"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

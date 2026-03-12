@@ -23,11 +23,12 @@ import type { SDUINode } from '@/lib/sdui/types/node';
 import { BindingIcon, isBoundValue, type FormulaValue } from './_formula-panel';
 import { FormulaEditor } from './_formula-editor';
 import { PANEL_STYLE, SECTION_STYLE, LABEL_STYLE, SectionHeader, NumberInput, SelectInput, ToggleBtn } from './_panel-primitives';
+import { BUILDER_FORM_INPUT_TYPES } from '@/lib/sdui/controlled-component-registry';
 
 // ─── Design-tab inline sections (moved from Logic) ────────────────────────────
 
-export const INTERACTIVE_TYPES = new Set(['Button', 'Input', 'InputField', 'Select', 'SelectTrigger', 'Pressable', 'Checkbox', 'Switch', 'Radio', 'TextArea']);
-export const FORM_INPUT_TYPES = new Set(['Input', 'InputField', 'Select', 'TextArea', 'Checkbox', 'Radio', 'Switch']);
+export const INTERACTIVE_TYPES = new Set(['Button', 'Input', 'InputField', 'Select', 'SelectTrigger', 'Pressable', 'Checkbox', 'Switch', 'RadioGroup', 'TextareaInput']);
+export const FORM_INPUT_TYPES = BUILDER_FORM_INPUT_TYPES;
 
 export const DESIGN_INLINE_STYLE: React.CSSProperties = {
   borderTop: '1px solid #1f2937',

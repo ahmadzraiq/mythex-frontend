@@ -139,6 +139,9 @@ export const S = {
     fontSize: 11,
     color: incomplete ? '#f59e0b' : '#6b7280',
     marginTop: 2,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
   }),
   testBtn: (disabled: boolean) => ({
     display: 'flex',

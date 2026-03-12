@@ -142,15 +142,30 @@
   "presets": {
     "modern": {
       "sections": {
-        "hero": { "bg": "#e2e8f0" },
-        "shop": { "button": "#0f172a", "buttonHover": "#1e293b" }
+        "hero": {
+          "bg": "#e2e8f0"
+        },
+        "shop": {
+          "button": "#0f172a",
+          "buttonHover": "#1e293b"
+        }
       }
     },
     "luxury": {
       "sections": {
-        "hero": { "bg": "#0f172a" },
-        "header": { "bg": "#0f172a", "text": "#f8fafc", "border": "#334155" },
-        "shop": { "button": "#c9a227", "buttonHover": "#d4af37", "buttonText": "#0f172a" }
+        "hero": {
+          "bg": "#0f172a"
+        },
+        "header": {
+          "bg": "#0f172a",
+          "text": "#f8fafc",
+          "border": "#334155"
+        },
+        "shop": {
+          "button": "#c9a227",
+          "buttonHover": "#d4af37",
+          "buttonText": "#0f172a"
+        }
       }
     }
   }

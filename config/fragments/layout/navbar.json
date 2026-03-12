@@ -123,7 +123,7 @@
                           "props": {
                             "className": "fixed inset-0 z-40"
                           },
-                          "condition": "{{variables['e4f5a6b7-c8d9-0123-efab-234567890123']}}",
+                          "condition": "variables['e4f5a6b7-c8d9-0123-efab-234567890123']",
                           "actions": [
                             {
                               "action": "8a42349d-44fb-46f8-8489-4c0f52b1f380"
@@ -149,7 +149,7 @@
                                 "size": 18,
                                 "className": "text-[var(--theme-header-text)]"
                               },
-                              "condition": "{{variables['d3e4f5a6-b7c8-9012-defa-123456789012']}} === 'dark'"
+                              "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] === 'dark'"
                             },
                             {
                               "type": "NavIcon",
@@ -158,7 +158,7 @@
                                 "size": 18,
                                 "className": "text-[var(--theme-header-text)]"
                               },
-                              "condition": "{{variables['d3e4f5a6-b7c8-9012-defa-123456789012']}} !== 'dark'"
+                              "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] !== 'dark'"
                             }
                           ]
                         },
@@ -167,7 +167,7 @@
                           "props": {
                             "className": "absolute right-0 top-full mt-1 w-36 rounded-md border border-[var(--border)] bg-[var(--theme-content-bg)] shadow-md z-50 py-1"
                           },
-                          "condition": "{{variables['e4f5a6b7-c8d9-0123-efab-234567890123']}}",
+                          "condition": "variables['e4f5a6b7-c8d9-0123-efab-234567890123']",
                           "children": [
                             {
                               "type": "Pressable",
@@ -200,7 +200,7 @@
                                   "props": {
                                     "className": "text-xs text-[var(--theme-content-textMuted)]"
                                   },
-                                  "condition": "{{variables['d3e4f5a6-b7c8-9012-defa-123456789012']}} === 'light'",
+                                  "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] === 'light'",
                                   "text": "✓"
                                 }
                               ]
@@ -236,7 +236,7 @@
                                   "props": {
                                     "className": "text-xs text-[var(--theme-content-textMuted)]"
                                   },
-                                  "condition": "{{variables['d3e4f5a6-b7c8-9012-defa-123456789012']}} === 'dark'",
+                                  "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] === 'dark'",
                                   "text": "✓"
                                 }
                               ]
@@ -272,7 +272,7 @@
                                   "props": {
                                     "className": "text-xs text-[var(--theme-content-textMuted)]"
                                   },
-                                  "condition": "{{variables['d3e4f5a6-b7c8-9012-defa-123456789012']}} === 'system'",
+                                  "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] === 'system'",
                                   "text": "✓"
                                 }
                               ]
@@ -312,7 +312,7 @@
                               "props": {
                                 "className": "absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-[var(--theme-shop-button)] flex items-center justify-center pointer-events-none"
                               },
-                              "condition": "{{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.totalQuantity}} > 0",
+                              "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity > 0",
                               "children": [
                                 {
                                   "type": "Text",
@@ -338,7 +338,7 @@
                           "props": {
                             "className": "inline-flex flex-row items-center h-8 px-2 rounded hover:bg-[var(--theme-content-text)]/10"
                           },
-                          "condition": "!{{auth.user}}",
+                          "condition": "!auth?.user",
                           "actions": [
                             {
                               "action": "3517ed88-9e35-42fd-8d44-650cb590d210"
@@ -359,7 +359,7 @@
                           "props": {
                             "className": "flex flex-row items-center gap-1"
                           },
-                          "condition": "{{auth.user}}",
+                          "condition": "auth?.user",
                           "children": [
                             {
                               "type": "Pressable",

@@ -33,6 +33,7 @@ import {
   CHIP_RE,
   pathToFormulaAndDisplay,
 } from './_formula-editor-dom';
+import { STANDALONE_VARIABLE_TYPES } from '@/lib/sdui/controlled-component-registry';
 
 // ─── Tooltip ──────────────────────────────────────────────────────────────────
 
@@ -98,7 +99,7 @@ const TYPE_BADGE_COLOR: Record<string, string> = {
 export interface VarRowItem {
   formulaPath: string;
   displayLabel: string;
-  type: 'variable' | 'context' | 'pages' | 'theme' | 'form';
+  type: 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'event';
   typeName: string;
   /** Sub-items for expandable types (form fields, object keys, etc.) */
   children?: VarRowItem[];
@@ -364,10 +365,6 @@ export function VariableEntry({
 // ─── Variables tab ────────────────────────────────────────────────────────────
 
 const FORM_CC = { bg: '#c2410c', border: '#ea580c', text: '#ffedd5' };
-/** Top-level controlled components tracked for variables['{id}'] entries */
-const STANDALONE_CONTROLLED_TYPES = new Set([
-  'Input', 'Textarea', 'TextareaInput', 'Checkbox', 'Switch', 'RadioGroup', 'Select', 'Slider',
-]);
 
 /** Extract field names from a FormContainer's subtree.
  * Sources: initialFormData keys, then props.name on input-type children. */
@@ -391,7 +388,7 @@ function extractFormFieldNames(formNode: { props?: { initialFormData?: Record<st
 
 /** Check if node type is a top-level controlled component (for standalone listing) */
 function isStandaloneControlled(type: string): boolean {
-  return STANDALONE_CONTROLLED_TYPES.has(type);
+  return STANDALONE_VARIABLE_TYPES.has(type);
 }
 
 export type StandaloneEntry = { node: SDUINode; insideForm: boolean };
@@ -630,19 +627,19 @@ export function PageComponentsSection({
             );
           })}
 
-          {/* Standalone controlled inputs — insert variables['{id}'] */}
+          {/* Standalone controlled inputs — insert variables['{id}-value'] */}
           {standalones.map(({ node, insideForm }) => {
             const nodeId = (node as { id?: string }).id;
             if (!nodeId) return null;
             const name = ((node as { name?: string }).name || node.type).trim() || 'Input';
             const chipLabel = insideForm ? `Form - ${name}` : name;
             if (!matchesSearch(chipLabel)) return null;
-            const val = vsData[nodeId];
+            const val = vsData[`${nodeId}-value`];
             const displayVal = val === undefined ? '""' : JSON.stringify(val);
             return (
               <div
                 key={nodeId}
-                onClick={() => onInsert(`variables['${nodeId}']`, chipLabel, 'variable')}
+                onClick={() => onInsert(`variables['${nodeId}-value']`, chipLabel, 'variable')}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px', cursor: 'pointer' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
@@ -919,7 +916,7 @@ export function DataTreeNode({
 
 export function CollectionEntry({ src, onInsert, search }: {
   src: DataSourceConfig;
-  onInsert: (formulaPath: string, displayLabel: string, type: 'collection' | 'variable' | 'context' | 'pages' | 'theme') => void;
+  onInsert: (formulaPath: string, displayLabel: string, type: VarRowItem['type'] | 'collection') => void;
   search: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -1884,7 +1881,7 @@ export function BorderRadiusDataSection({
 // ─── Collections data tab (replaces DataSourceList) ──────────────────────────
 
 export function CollectionsDataTab({ onInsert, search }: {
-  onInsert: (formulaPath: string, displayLabel: string, type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form') => void;
+  onInsert: (formulaPath: string, displayLabel: string, type: VarRowItem['type'] | 'collection') => void;
   search: string;
 }) {
   const pageDataSources = useBuilderStore(s => s.pageDataSources);
@@ -2029,6 +2026,212 @@ export function FnRow({ fn, onInsertFn }: { fn: FnDef; onInsertFn: (fnInsert: st
         <span style={{ fontSize: 11, color: '#e2e8f0' }}>{fn.name}</span>
       </button>
     </Tooltip>
+  );
+}
+
+// ─── EVENT_SHAPES — trigger → event preview object ───────────────────────────
+
+/**
+ * Preview shapes for each trigger type used in the formula editor Quick tab.
+ * These match the runtime shapes produced by normalizeEvent in action-binding.ts.
+ */
+export const EVENT_SHAPES: Record<string, Record<string, unknown>> = {
+  // Input/value triggers — event.value is the new value
+  change:                { value: '' },
+  initValueChange:       { value: '' },
+  enterKey:              { value: '', key: 'Enter' },
+  valueChange:           { value: false },
+  focus:                 { value: '' },
+  blur:                  { value: '' },
+  submit:                { formData: {} },
+  submitValidationError: { errors: {} },
+  // Mouse triggers
+  click:                 { x: 0, y: 0, button: 0 },
+  doubleClick:           { x: 0, y: 0, button: 0 },
+  rightClick:            { x: 0, y: 0, button: 2 },
+  mouseDown:             { x: 0, y: 0, button: 0 },
+  mouseUp:               { x: 0, y: 0, button: 0 },
+  mouseMove:             { x: 0, y: 0 },
+  mouseEnter:            { x: 0, y: 0 },
+  mouseLeave:            { x: 0, y: 0 },
+  // Touch triggers
+  touchStart:            { touches: [{ x: 0, y: 0 }] },
+  touchMove:             { touches: [{ x: 0, y: 0 }] },
+  touchEnd:              { changedTouches: [{ x: 0, y: 0 }] },
+  touchCancel:           { changedTouches: [{ x: 0, y: 0 }] },
+  // Scroll
+  scroll:                { scrollTop: 0, scrollLeft: 0 },
+  // Lifecycle — no event payload
+  created:               {},
+  mounted:               {},
+  beforeUnmount:         {},
+};
+
+// ─── EventContextSection ─────────────────────────────────────────────────────
+
+/**
+ * Renders an "Event" section in the Quick tab of the formula editor.
+ * Shows the event shape for the active workflow trigger with clickable fields
+ * that insert `event?.['fieldName']` formula chips (orange colour).
+ */
+export function EventContextSection({
+  trigger,
+  onInsert,
+}: {
+  trigger: string;
+  onInsert: (formula: string, label: string, type?: VarRowItem['type']) => void;
+}) {
+  const shape = EVENT_SHAPES[trigger];
+  if (!shape || Object.keys(shape).length === 0) return null;
+
+  const [open, setOpen] = useState(true);
+
+  return (
+    <div style={{ borderBottom: '1px solid #1f2937' }}>
+      {/* Section header */}
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6, width: '100%',
+          padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer',
+          borderBottom: open ? '1px solid #1f2937' : 'none',
+        }}
+        onMouseEnter={ev => (ev.currentTarget.style.background = '#0f172a')}
+        onMouseLeave={ev => (ev.currentTarget.style.background = 'none')}
+      >
+        <span style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center' }}>
+          <FEChevron open={open} size={8} />
+        </span>
+        <span style={{ fontSize: 10, fontWeight: 600, color: '#fb923c', letterSpacing: '0.04em' }}>
+          Event
+        </span>
+        <span style={{ marginLeft: 4, fontSize: 9, color: '#6b7280', fontFamily: 'monospace' }}>
+          ({trigger})
+        </span>
+      </button>
+
+      {open && (
+        <div style={{ paddingBottom: 4 }}>
+          {renderEventFields(shape, 'event', trigger, onInsert)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Recursively render event shape fields as clickable chips. */
+function renderEventFields(
+  obj: Record<string, unknown>,
+  pathPrefix: string,
+  labelPrefix: string,
+  onInsert: (formula: string, label: string, type?: VarRowItem['type']) => void,
+  depth = 0,
+) {
+  return Object.entries(obj).map(([key, val]) => {
+    const formula = buildEventFormula(pathPrefix, key);
+    const label = `${labelPrefix}.${key}`;
+    const isObject = val !== null && typeof val === 'object' && !Array.isArray(val);
+    const isArray  = Array.isArray(val) && val.length > 0 && typeof val[0] === 'object';
+
+    return (
+      <div key={key} style={{ paddingLeft: 12 + depth * 12 }}>
+        {isObject ? (
+          <EventFieldGroup
+            fieldKey={key}
+            obj={val as Record<string, unknown>}
+            pathPrefix={formula}
+            labelPrefix={label}
+            onInsert={onInsert}
+            depth={depth}
+          />
+        ) : isArray ? (
+          <EventFieldGroup
+            fieldKey={key}
+            obj={(val as Record<string, unknown>[])[0]}
+            pathPrefix={`${formula}?.[0]`}
+            labelPrefix={`${label}[0]`}
+            onInsert={onInsert}
+            depth={depth}
+            arrayHint={`[${(val as unknown[]).length}]`}
+          />
+        ) : (
+          <button
+            onClick={() => onInsert(formula, label, 'event')}
+            title={formula}
+            data-testid={`event-field-${key}`}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4, width: '100%',
+              padding: '2px 4px 2px 0', background: 'none', border: 'none',
+              cursor: 'pointer', textAlign: 'left',
+            }}
+            onMouseEnter={ev => (ev.currentTarget.style.background = '#1f2937')}
+            onMouseLeave={ev => (ev.currentTarget.style.background = 'none')}
+          >
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              background: 'rgba(251,146,60,0.15)', border: '1px solid rgba(251,146,60,0.4)',
+              borderRadius: 4, padding: '1px 6px', fontSize: 10, fontFamily: 'monospace',
+              color: '#fb923c', cursor: 'pointer', whiteSpace: 'nowrap',
+            }}>
+              {key}
+              <span style={{ color: '#6b7280', fontSize: 9 }}>
+                {typeof val === 'string' ? 'str' : typeof val === 'number' ? 'num' : typeof val === 'boolean' ? 'bool' : ''}
+              </span>
+            </span>
+          </button>
+        )}
+      </div>
+    );
+  });
+}
+
+function buildEventFormula(pathPrefix: string, key: string): string {
+  return `${pathPrefix}?.['${key}']`;
+}
+
+function EventFieldGroup({
+  fieldKey,
+  obj,
+  pathPrefix,
+  labelPrefix,
+  onInsert,
+  depth,
+  arrayHint,
+}: {
+  fieldKey: string;
+  obj: Record<string, unknown>;
+  pathPrefix: string;
+  labelPrefix: string;
+  onInsert: (formula: string, label: string, type?: VarRowItem['type']) => void;
+  depth: number;
+  arrayHint?: string;
+}) {
+  const [open, setOpen] = useState(true);
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 4, width: '100%',
+          padding: '2px 4px 2px 0', background: 'none', border: 'none',
+          cursor: 'pointer', textAlign: 'left',
+        }}
+        onMouseEnter={ev => (ev.currentTarget.style.background = '#1f2937')}
+        onMouseLeave={ev => (ev.currentTarget.style.background = 'none')}
+      >
+        <span style={{ color: '#6b7280', display: 'flex', alignItems: 'center' }}>
+          <FEChevron open={open} size={7} />
+        </span>
+        <span style={{ fontSize: 10, color: '#fb923c', fontFamily: 'monospace' }}>
+          {fieldKey}{arrayHint ? arrayHint : ''}
+        </span>
+      </button>
+      {open && (
+        <div style={{ paddingLeft: 8 }}>
+          {renderEventFields(obj, pathPrefix, labelPrefix, onInsert, depth + 1)}
+        </div>
+      )}
+    </div>
   );
 }
 

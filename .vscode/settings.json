@@ -1,12 +1,2 @@
 {
-  "json.schemas": [
-    {
-      "fileMatch": ["config/screens/*.json"],
-      "url": "./config/schema/screen.schema.json"
-    },
-    {
-      "fileMatch": ["config/actions/*.json"],
-      "url": "./config/schema/action.schema.json"
-    }
-  ]
 }

@@ -64,7 +64,7 @@ export function extractNodeDependencies(node: Pick<SDUINode, 'text' | 'props' | 
 }
 
 /** Expand computed paths to their source dependencies for subscription */
-export function expandComputedDeps(paths: string[], computed?: Record<string, ComputedDefLike>): string[] {
+export function expandComputedDeps(paths: string[], computed?: Record<string, ComputedDef>): string[] {
   if (!computed) return paths;
   const expanded = new Set(paths);
   for (const p of paths) {

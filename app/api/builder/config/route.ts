@@ -9,6 +9,7 @@ import checkoutActions from '@/config/actions/checkout.json';
 import accountActions from '@/config/actions/account.json';
 import productsActions from '@/config/actions/products.json';
 import layoutActions from '@/config/actions/layout.json';
+import workflowTestActions from '@/config/actions/workflow-test.json';
 import type { NamedDataSourceDef } from '@/config/datasource-types';
 
 /**
@@ -117,6 +118,7 @@ export async function GET() {
     ...accountActions as Record<string, Record<string, unknown>>,
     ...productsActions as Record<string, Record<string, unknown>>,
     ...layoutActions as Record<string, Record<string, unknown>>,
+    ...workflowTestActions as Record<string, Record<string, unknown>>,
   };
 
   const workflows = Object.entries(allActions)

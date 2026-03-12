@@ -116,7 +116,7 @@
                         "props": {
                           "className": "min-h-[18px]"
                         },
-                        "condition": "{{local.data.form.fields.emailAddress.isValid}}",
+                        "condition": "local?.data?.form?.fields?.emailAddress?.isValid",
                         "children": [
                           {
                             "type": "Text",
@@ -150,7 +150,7 @@
                           },
                           {
                             "type": "Input",
-                        "id": "b7c54d06-8b24-443d-81da-ced51881ae34",
+                            "id": "b7c54d06-8b24-443d-81da-ced51881ae34",
                             "props": {
                               "variant": "outline",
                               "size": "sm",
@@ -189,7 +189,7 @@
                             "props": {
                               "className": "min-h-[18px]"
                             },
-                            "condition": "{{local.data.form.fields.firstName.isValid}}",
+                            "condition": "local?.data?.form?.fields?.firstName?.isValid",
                             "children": [
                               {
                                 "type": "Text",
@@ -217,7 +217,7 @@
                           },
                           {
                             "type": "Input",
-                        "id": "09e3ef50-d78b-44d2-9635-c823f9c87964",
+                            "id": "09e3ef50-d78b-44d2-9635-c823f9c87964",
                             "props": {
                               "variant": "outline",
                               "size": "sm",
@@ -256,7 +256,7 @@
                             "props": {
                               "className": "min-h-[18px]"
                             },
-                            "condition": "{{local.data.form.fields.lastName.isValid}}",
+                            "condition": "local?.data?.form?.fields?.lastName?.isValid",
                             "children": [
                               {
                                 "type": "Text",
@@ -325,7 +325,7 @@
                         "props": {
                           "className": "min-h-[18px]"
                         },
-                        "condition": "{{local.data.form.fields.phoneNumber.isValid}}",
+                        "condition": "local?.data?.form?.fields?.phoneNumber?.isValid",
                         "children": [
                           {
                             "type": "Text",
@@ -393,7 +393,7 @@
                         "props": {
                           "className": "min-h-[18px]"
                         },
-                        "condition": "{{local.data.form.fields.password.isValid}}",
+                        "condition": "local?.data?.form?.fields?.password?.isValid",
                         "children": [
                           {
                             "type": "Text",
@@ -463,7 +463,7 @@
                         "props": {
                           "className": "min-h-[18px]"
                         },
-                        "condition": "{{local.data.form.fields.confirmPassword.isValid}}",
+                        "condition": "local?.data?.form?.fields?.confirmPassword?.isValid",
                         "children": [
                           {
                             "type": "Text",
@@ -481,7 +481,7 @@
                     "props": {
                       "className": "text-sm text-red-500"
                     },
-                    "condition": "{{_workflow.lastAction}} === 'registerMutation' && {{_workflow.lastError}}",
+                    "condition": "_workflow?.lastAction === 'registerMutation' && _workflow?.lastError",
                     "children": [
                       {
                         "type": "Text",

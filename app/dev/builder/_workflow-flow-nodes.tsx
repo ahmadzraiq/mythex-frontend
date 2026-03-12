@@ -16,9 +16,11 @@
  *  - FlowRendererProps (interface)
  */
 
-import React, { useState, useRef, useEffect, useContext, createContext } from 'react';
+import React, { useState, useRef, useEffect, useContext, createContext, useMemo } from 'react';
 import { S } from './_workflow-styles';
-import { type ActionStep, getActionLabel, getActionIcon, isConfigured, canTest } from './_workflow-types';
+import { type ActionStep, getActionLabel, getActionIcon, isConfigured, canTest, isStepComplete, getStepSummary } from './_workflow-types';
+import { useBuilderStore } from './_store';
+import { collectPageComponents } from './_formula-editor-tabs';
 import type { WorkflowTestEntry } from './_store-types';
 
 // ─── Workflow canvas context — avoids prop-drilling onTestStep / testResults ──
@@ -246,14 +248,57 @@ export function ActionNode({
   const testResult = testResults?.[step.id];
   const [testing, setTesting] = useState(false);
 
-  const incomplete = !isConfigured(step);
+  // Build lookup maps for variable and collection name resolution in summaries
+  const customVars = useBuilderStore(s => s.customVars);
+  const pageDataSources = useBuilderStore(s => s.pageDataSources);
+  const pageNodes = useBuilderStore(s => s.pageNodes);
+  const pageWorkflowMeta = useBuilderStore(s => s.pageWorkflowMeta);
+  const varLabels = useMemo(() => {
+    const map: Record<string, string> = {};
+    // Global/custom variables
+    for (const v of customVars) {
+      const key = v.id ?? (v as { name?: string }).name ?? '';
+      const label = (v as { label?: string }).label ?? (v as { name?: string }).name ?? key;
+      if (key) map[key] = label;
+    }
+    // Page-component variables (inputs, form containers)
+    const { standalones, formContainers } = collectPageComponents(pageNodes, false);
+    for (const { node, insideForm } of standalones) {
+      const nodeId = (node as { id?: string }).id;
+      if (!nodeId) continue;
+      const name = ((node as { name?: string }).name || node.type).trim() || 'Input';
+      map[`${nodeId}-value`] = insideForm ? `Form - ${name}` : name;
+    }
+    for (const { node } of formContainers) {
+      const nodeId = (node as { id?: string }).id;
+      if (!nodeId) continue;
+      const name = ((node as { name?: string }).name || 'Form').trim();
+      map[`${nodeId}-form`] = `Form Container - ${name}`;
+    }
+    // Workflow UUIDs → name (for executeComponentAction summary)
+    for (const [id, meta] of Object.entries(pageWorkflowMeta)) {
+      if (meta.name) map[id] = meta.name;
+    }
+    return map;
+  }, [customVars, pageNodes, pageWorkflowMeta]);
+  const collectionNames = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const ds of pageDataSources) {
+      const rich = ds as typeof ds & { _label?: string; _operationName?: string };
+      map[ds.id] = rich._label || rich._operationName || ds.name || ds.id;
+    }
+    return map;
+  }, [pageDataSources]);
+
+  const unconfigured = !isConfigured(step);
+  const complete = !unconfigured && isStepComplete(step);
+  const actionIncomplete = !unconfigured && !complete;
   const testable = canTest(step);
-  const label = incomplete ? 'Action' : getActionLabel(step.type);
-  const icon = incomplete ? '⚡' : getActionIcon(step.type);
-  const subtextLabel = incomplete ? 'Click to configure' : (
-    step.type === 'runProjectWorkflow' && (step.config?.workflowId || step.action) ? String(step.config?.workflowId ?? step.action) :
-    step.type === 'timeDelay' && step.config?.time ? `${step.config.time}ms` : undefined
-  );
+  const label = unconfigured ? 'Action' : getActionLabel(step.type);
+  const icon = unconfigured ? '⚡' : getActionIcon(step.type);
+  const summary = unconfigured ? null : getStepSummary(step, varLabels, collectionNames);
+  // subtext: summary when complete, nothing when actionIncomplete (badge handles it), "Click to configure" when unconfigured
+  const subtextLabel = unconfigured ? 'Click to configure' : (complete ? summary : null);
 
   const handleTest = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -276,7 +321,7 @@ export function ActionNode({
   return (
     <div
       data-testid={`action-node-${step.id}`}
-      style={S.card(isSelected, incomplete)}
+      style={S.card(isSelected, unconfigured)}
       onClick={() => onSelect(stepPath)}
     >
       <div style={S.cardTopRow}>
@@ -312,10 +357,21 @@ export function ActionNode({
           ⋮
         </button>
       </div>
-      {(subtextLabel || incomplete) && (
-        <div style={S.cardSubtext(incomplete)}>
-          {subtextLabel ?? (incomplete ? 'Click to configure' : '')}
+      {unconfigured && (
+        <div style={S.cardSubtext(true)}>Click to configure</div>
+      )}
+      {actionIncomplete && (
+        <div style={{
+          display: 'inline-block', marginTop: 6,
+          background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)',
+          borderRadius: 6, padding: '2px 8px',
+          fontSize: 11, fontWeight: 500, color: '#f59e0b',
+        }}>
+          Action incomplete
         </div>
+      )}
+      {!unconfigured && !actionIncomplete && subtextLabel && (
+        <div style={S.cardSubtext(false)}>{subtextLabel}</div>
       )}
       {testResult && (
         <div style={{ fontSize: 10, color: testResult.error ? '#f87171' : '#34d399', marginTop: 4, fontFamily: 'monospace', maxHeight: 48, overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-all' }}>

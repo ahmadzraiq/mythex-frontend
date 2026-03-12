@@ -16,45 +16,11 @@
 
 import type { ActionDef, ActionHandlerContext } from './types';
 import { getGlobalVariableStore } from '../../global-variable-store';
-import { evaluateFormula, storedValueToFormula, FORMULA_FNS, type FormulaValue } from '../../formula-evaluator';
+import { evaluateFormula, storedValueToFormula, type FormulaValue } from '../../formula-evaluator';
+import { applyFieldRules } from '../../validation-utils';
+import type { FieldValidationRule } from '../../form-context';
 
 const LOCAL_PATH = 'local';
-
-type ValidationRule = { type: string; message?: string; value?: string; formula?: unknown };
-
-/** Apply an array of validation rules to a single field value. Returns '' if valid, or an error message string. */
-function applyValidationRules(
-  rules: ValidationRule[],
-  value: unknown,
-  formulaCtx: Record<string, unknown>,
-): string {
-  const str = String(value ?? '').trim();
-  for (const rule of rules) {
-    const msg = rule.message || 'Invalid value';
-    let isValid = true;
-    switch (rule.type) {
-      case 'required':   isValid = !!str; break;
-      case 'email':      isValid = !str || !!(FORMULA_FNS.isEmail as (v: unknown) => boolean)(value); break;
-      case 'phone':      isValid = !str || !!(FORMULA_FNS.isPhone as (v: unknown) => boolean)(value); break;
-      case 'url':        isValid = !str || !!(FORMULA_FNS.isUrl as (v: unknown) => boolean)(value); break;
-      case 'minLength':  isValid = !str || !!(FORMULA_FNS.hasMinLength as (v: unknown, n: number) => boolean)(value, Number(rule.value ?? 0)); break;
-      case 'maxLength':  isValid = !str || !!(FORMULA_FNS.hasMaxLength as (v: unknown, n: number) => boolean)(value, Number(rule.value ?? Infinity)); break;
-      case 'pattern':    isValid = !str || !rule.value || !!(FORMULA_FNS.matchesPattern as (v: unknown, p: string) => boolean)(value, rule.value); break;
-      case 'formula': {
-        if (rule.formula) {
-          const formulaStr = storedValueToFormula(rule.formula as FormulaValue);
-          const result = evaluateFormula(formulaStr, formulaCtx);
-          if (result.value === true || result.value === '') { isValid = true; }
-          else if (typeof result.value === 'string' && result.value) { return result.value; }
-          else { isValid = false; }
-        }
-        break;
-      }
-    }
-    if (!isValid) return msg;
-  }
-  return '';
-}
 
 function getFormState(vs: Record<string, unknown>) {
   const local = (vs[LOCAL_PATH] ?? {}) as Record<string, unknown>;
@@ -92,7 +58,7 @@ function writeFormState(
   };
 }
 
-/** setFormState — sets isSubmitting / isSubmitted */
+/** setFormState — sets isSubmitting / isSubmitted on the current form */
 export const setFormStateHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
   (ctx) => async (actionDef) => {
     const vs = getGlobalVariableStore().getState().getFullState();
@@ -121,7 +87,8 @@ export const resetFormHandler: (ctx: ActionHandlerContext) => (actionDef: Action
     _ctx.store.getState().setState((prev) => writeFormState(prev, emptyForm));
   };
 
-/** submitForm — validates via fieldValidations map, then fires onSuccess */
+/** submitForm — superseded by FormContainer.doSubmit; kept as no-op for backward compat with
+ * any JSON that still references "type": "submitForm" directly in a workflowSteps step. */
 export const submitFormHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
   (ctx) => async (actionDef) => {
     await setFormStateHandler(ctx)({ type: 'setFormState', isSubmitting: true });
@@ -132,7 +99,7 @@ export const submitFormHandler: (ctx: ActionHandlerContext) => (actionDef: Actio
         requiredMessage?: string;
         formula?: unknown;
         message?: string;
-        validationRules?: ValidationRule[];
+        validationRules?: FieldValidationRule[];
       };
       const fieldValidations = actionDef.fieldValidations as Record<string, FieldDef> | undefined;
 
@@ -157,7 +124,7 @@ export const submitFormHandler: (ctx: ActionHandlerContext) => (actionDef: Actio
 
           if (def.validationRules && def.validationRules.length > 0) {
             // New rules-array path
-            fieldIsValid = applyValidationRules(def.validationRules, value, formulaCtx);
+            fieldIsValid = applyFieldRules(def.validationRules, value, formulaCtx);
           } else {
             // Legacy path: required + formula
             const str = String(value).trim();

@@ -20,6 +20,7 @@ import type { ActionHandlerContext, ActionDef } from './types';
 import { evaluateFormula } from '../../formula-evaluator';
 import { getGlobalVariableStore } from '../../global-variable-store';
 import { setNestedValue } from '../../nested-utils';
+import { SUPPORTED_WORKFLOW_STEP_TYPES } from '@/app/dev/builder/_workflow-types';
 
 interface WorkflowStep {
   id: string;
@@ -30,30 +31,45 @@ interface WorkflowStep {
   trueBranch?: WorkflowStep[];
   falseBranch?: WorkflowStep[];
   loopBody?: WorkflowStep[];
+  branches?: Array<{ label?: string; value?: string; steps?: WorkflowStep[] }>;
+  defaultBranch?: WorkflowStep[];
+}
+
+/** Thrown by breakLoop steps to exit the nearest enclosing loop. */
+class BreakLoopSignal extends Error {
+  constructor() { super('__break__'); }
+}
+
+/** Thrown by continueLoop steps to skip to the next iteration of the nearest enclosing loop. */
+class ContinueLoopSignal extends Error {
+  constructor() { super('__continue__'); }
 }
 
 export type WorkflowCtx = Record<string, { result: unknown; error: unknown }>;
 
-/** Convert a canvas ActionStep into an inline SDUI action definition. */
+/** Convert a canvas ActionStep into an inline SDUI action definition.
+ *  Only step types in the builder's Type dropdown (SUPPORTED_WORKFLOW_STEP_TYPES) execute.
+ *  Hardcoded unsupported types (runMultiple, setVar, increment, etc.) are ignored. */
 function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
+  if (!SUPPORTED_WORKFLOW_STEP_TYPES.has(step.type as Parameters<typeof SUPPORTED_WORKFLOW_STEP_TYPES.has>[0])) {
+    return null;
+  }
   const cfg = step.config ?? {};
 
   switch (step.type) {
     // ── Navigation ──────────────────────────────────────────────────────────
-    case 'navigate':
-      return { type: 'navigate', ...cfg };
     case 'navigateTo':
       // Visual builder's navigation step: supports both plain paths and queryParams
       if (cfg.queryParams) {
         return { type: 'navigateWithQuery', path: cfg.path, queryParams: cfg.queryParams, replace: cfg.replace };
       }
-      return { action: 'navigate', payload: { path: cfg.path, routeConfig: cfg.routeConfig } };
+      // Use type:'navigate' so the inline fallback in runOne resolves the navigate handler directly.
+      // Using { action:'navigate' } would look up actionsConfig['navigate'] (undefined) and throw.
+      return { type: 'navigate', path: cfg.path, routeConfig: cfg.routeConfig, linkType: cfg.linkType, externalUrl: cfg.externalUrl, newTab: cfg.newTab };
     case 'navigatePrev':
     case 'navigatePreviousPage':
-      return null; // handled by navigatePreviousPage case below (window.history.back)
-    case 'pageLoader':
-      return { type: 'navigate', ...cfg };
-
+      // Go back in browser history; fall back to defaultPath if no history
+      return { type: 'navigatePrev', defaultPath: (cfg.defaultPath as string) || '/' };
     // ── Data / API ───────────────────────────────────────────────────────────
     case 'graphql':
       return { type: 'graphql', ...cfg };
@@ -62,6 +78,13 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
     case 'fetchCollection':
       // Visual builder's fetchCollection step: calls a named action
       return { action: (cfg.collectionName ?? cfg.name ?? '') as string };
+    case 'fetchCollectionsParallel': {
+      const names = (cfg.collectionNames ?? cfg.collections ?? []) as string[];
+      const actions = names.filter(Boolean).map((name) => ({ action: name }));
+      return actions.length > 0 ? { type: 'runMultiple', actions } : null;
+    }
+    case 'executeComponentAction':
+      return typeof cfg.action === 'string' ? { action: cfg.action as string } : null;
     case 'updateCollection':
       return { type: 'refetchDataSource', ...cfg };
 
@@ -69,12 +92,6 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
     case 'changeVariableValue':
       // Visual builder's primary variable-change step
       return { type: 'setVar', path: (cfg.variableName ?? cfg.variable) as string, value: cfg.value };
-    case 'changeVariable':
-      // Legacy alias
-      if (cfg.path !== undefined) {
-        return { type: 'setState', payload: { path: cfg.path, value: cfg.value } };
-      }
-      return { type: 'set', path: cfg.path, value: cfg.value };
     case 'resetVariableValue':
     case 'resetVariable':
       return { type: 'setVar', path: (cfg.variableName ?? cfg.path) as string, value: cfg.defaultValue ?? null };
@@ -83,11 +100,16 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
     case 'runProjectWorkflow':
       return { action: (cfg.workflowId ?? cfg.workflowName ?? (step as unknown as Record<string, unknown>).action ?? '') as string };
 
-    // ── Forms ────────────────────────────────────────────────────────────────
-    case 'validateForm':
-      return { type: 'validate', ...cfg };
-    case 'submitForm':
-      return { type: 'submitForm', ...cfg };
+    // ── Forms (when in FormContainer) ────────────────────────────────────────
+    case 'setFormState':
+      // When path+value are specified, the step is pre-populating a variable/field.
+      // Map to setVar so the variable store is updated (prevents no-op + infinite fallback loop).
+      if (cfg.path != null && cfg.value !== undefined) {
+        return { type: 'setVar', path: cfg.path as string, value: cfg.value };
+      }
+      return { type: 'setFormState', ...cfg };
+    case 'resetForm':
+      return { type: 'resetForm', ...cfg };
 
     // ── Workflow control ─────────────────────────────────────────────────────
     case 'executeWorkflow':
@@ -97,8 +119,6 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
       return cfg.path ? { type: 'set', path: cfg.path, value: cfg.value } : null;
 
     // ── UI ───────────────────────────────────────────────────────────────────
-    case 'showToast':
-      return { type: 'showToast', ...cfg };
     case 'openPopup':
       return { type: 'openPopup', ...cfg };
     case 'closeAllPopups':
@@ -112,7 +132,7 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
       return { type: '__printPdf' };
     case 'copyToClipboard':
       return { type: '__copyToClipboard', value: cfg.value };
-    case 'downloadCsv':
+    case 'downloadFileFromUrl':
       return { type: '__downloadCsv', ...cfg };
     case 'encodeFileAsBase64':
       return { type: '__encodeBase64', ...cfg };
@@ -121,34 +141,7 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
     case 'uploadFile':
       return { type: '__uploadFile', ...cfg };
 
-    // ── Already valid SDUI types (pass config directly as action properties) ────
-    case 'set':
-    case 'setState':
-    case 'setVar':
-    case 'increment':
-    case 'decrement':
-    case 'toggle':
-    case 'runMultiple':
-    case 'fetch':
-    case 'append':
-    case 'appendToPath':
-    case 'removeAt':
-    case 'log':
-    case 'cycleIndex':
-    case 'mergeAtPath':
-    case 'goToPage':
-    case 'navigateWithQuery':
-    case 'share':
-    case 'restore':
-    case 'setTheme':
-    case 'clearPersistedPaths':
-    case 'validate':
-    case 'submitForm' as string:
-    case 'graphql' as string:
-    case 'refetchDataSource':
-      return { type: step.type, ...cfg };
-
-    // ── Skip structural / utility placeholders ───────────────────────────────
+    // ── Structural / utility (handled in runSteps, not via stepToSdui) ────────
     case 'branch':
     case 'forEach':
     case 'whileLoop':
@@ -156,11 +149,10 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
     case 'continueLoop':
     case 'passThroughCondition':
     case 'unconfigured':
-      return null; // handled structurally in the runner below
+      return null;
 
     default:
-      // Unknown type — forward as inline action; engine will ignore if no handler
-      return { type: step.type, ...cfg };
+      return null;
   }
 }
 
@@ -192,7 +184,9 @@ async function runSteps(
       let condResult: unknown;
       if (condFormula) {
         const vsState = getGlobalVariableStore().getState().getFullState();
-        condResult = evaluateFormula(condFormula, vsState).value;
+        // Formula evaluator expects context.variables for variables['UUID'] access
+        const formulaCtx = { ...vsState, variables: vsState };
+        condResult = evaluateFormula(condFormula, formulaCtx).value;
       } else {
         condResult = condPath ? ctx.get(condPath) : false;
       }
@@ -203,12 +197,30 @@ async function runSteps(
 
     // ── Structural: For-each loop ─────────────────────────────────────────────
     if (step.type === 'forEach') {
-      const itemsPath = (step.config?.itemsPath as string) ?? '';
-      const items = itemsPath ? (ctx.get(itemsPath) as unknown[]) : [];
+      // Support three list sources: inline array (`list`), path via `itemsPath`, path via `listPath`
+      const inlineList = step.config?.list;
+      const itemsPath = ((step.config?.itemsPath ?? step.config?.listPath) as string) ?? '';
+      const items = Array.isArray(inlineList) ? inlineList
+                  : itemsPath ? (ctx.get(itemsPath) as unknown[]) : [];
       if (Array.isArray(items)) {
-        for (const _item of items) {
-          await runSteps(step.loopBody ?? [], ctx, workflowCtx);
+        for (let i = 0; i < items.length; i++) {
+          // Expose current item via context.item.data so formulas like
+          // context.item.data.value work inside the loop body
+          getGlobalVariableStore().getState().setState(prev =>
+            setNestedValue(prev, 'context.item', { data: { value: items[i], index: i }, index: i, repeatIndex: i })
+          );
+          try {
+            await runSteps(step.loopBody ?? [], ctx, workflowCtx);
+          } catch (e) {
+            if (e instanceof ContinueLoopSignal) continue;
+            if (e instanceof BreakLoopSignal) break;
+            throw e;
+          }
         }
+        // Clear context.item after loop so stale data doesn't linger
+        getGlobalVariableStore().getState().setState(prev =>
+          setNestedValue(prev, 'context.item', null)
+        );
       }
       continue;
     }
@@ -216,11 +228,73 @@ async function runSteps(
     // ── Structural: While loop ────────────────────────────────────────────────
     if (step.type === 'whileLoop') {
       const condPath = (step.config?.conditionPath as string) ?? '';
+      const condFormula = step.config?.condition as string | undefined;
       let guard = 0; // safety limit
-      while (condPath && ctx.get(condPath) && guard < 100) {
-        await runSteps(step.loopBody ?? [], ctx, workflowCtx);
+      const checkCond = () => {
+        if (condFormula) {
+          const vsState = getGlobalVariableStore().getState().getFullState();
+          const formulaCtx = { ...vsState, variables: vsState };
+          return Boolean(evaluateFormula(condFormula, formulaCtx).value);
+        }
+        return condPath ? Boolean(ctx.get(condPath)) : false;
+      };
+      while (checkCond() && guard < 100) {
+        try {
+          await runSteps(step.loopBody ?? [], ctx, workflowCtx);
+        } catch (e) {
+          if (e instanceof ContinueLoopSignal) { guard++; continue; }
+          if (e instanceof BreakLoopSignal) break;
+          throw e;
+        }
         guard++;
       }
+      continue;
+    }
+
+    // ── Structural: Loop control ─────────────────────────────────────────────
+    if (step.type === 'breakLoop') {
+      throw new BreakLoopSignal();
+    }
+
+    if (step.type === 'continueLoop') {
+      throw new ContinueLoopSignal();
+    }
+
+    // ── Structural: Pass-through condition ───────────────────────────────────
+    // If the condition is false, stop executing further steps in the current
+    // sequence (return from runSteps). If true, continue to next step.
+    if (step.type === 'passThroughCondition') {
+      const condFormula = step.config?.condition as string | undefined;
+      const condPath = step.config?.conditionPath as string | undefined;
+      let condResult: unknown;
+      if (condFormula) {
+        const vsState = getGlobalVariableStore().getState().getFullState();
+        const formulaCtx = { ...vsState, variables: vsState };
+        condResult = evaluateFormula(condFormula, formulaCtx).value;
+      } else {
+        condResult = condPath ? ctx.get(condPath) : false;
+      }
+      if (!condResult) return; // stop current steps sequence
+      continue;
+    }
+
+    // ── Structural: Multi-option branch ─────────────────────────────────────
+    // Evaluates conditionPath (a variable UUID), matches its value against
+    // each branch's label, runs the matched branch or defaultBranch.
+    if (step.type === 'multiOptionBranch') {
+      const conditionPath = step.config?.conditionPath as string | undefined;
+      const conditionFormula = step.config?.condition as string | undefined;
+      let value: unknown;
+      if (conditionFormula) {
+        const vsState = getGlobalVariableStore().getState().getFullState();
+        const formulaCtx = { ...vsState, variables: vsState };
+        value = evaluateFormula(conditionFormula, formulaCtx).value;
+      } else if (conditionPath) {
+        value = ctx.get(conditionPath);
+      }
+      const branches = step.branches ?? [];
+      const matched = branches.find(b => String(b.label ?? b.value ?? '') === String(value ?? ''));
+      await runSteps(matched ? (matched.steps ?? []) : (step.defaultBranch ?? []), ctx, workflowCtx);
       continue;
     }
 
@@ -240,7 +314,14 @@ async function runSteps(
     }
 
     if (step.type === 'navigatePreviousPage' || step.type === 'navigatePrev') {
-      if (typeof window !== 'undefined') window.history.back();
+      if (typeof window !== 'undefined') {
+        const defaultPath = (step.config?.defaultPath as string) || '/';
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          window.location.href = defaultPath;
+        }
+      }
       continue;
     }
 
@@ -256,6 +337,35 @@ async function runSteps(
 
     if (step.type === 'printPdf') {
       if (typeof window !== 'undefined') window.print();
+      continue;
+    }
+
+    if (step.type === 'createUrlFromBase64') {
+      const base64 = String(step.config?.base64 ?? step.config?.value ?? '');
+      const mimeType = String(step.config?.mimeType ?? step.config?.mime ?? 'application/octet-stream');
+      const storeIn = step.config?.storeIn as string | undefined;
+      if (base64 && storeIn) {
+        const dataUrl = `data:${mimeType};base64,${base64}`;
+        getGlobalVariableStore().getState().setState(prev => ({ ...prev, [storeIn]: dataUrl }));
+        if (step.id) {
+          workflowCtx[step.id] = { result: dataUrl, error: null };
+          flushWorkflowCtx(workflowCtx);
+        }
+      }
+      continue;
+    }
+
+    if (step.type === 'encodeFileAsBase64') {
+      const dataUrl = String(step.config?.dataUrl ?? step.config?.value ?? '');
+      const storeIn = step.config?.storeIn as string | undefined;
+      if (dataUrl && storeIn) {
+        const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+        getGlobalVariableStore().getState().setState(prev => ({ ...prev, [storeIn]: base64 ?? '' }));
+        if (step.id) {
+          workflowCtx[step.id] = { result: base64 ?? '', error: null };
+          flushWorkflowCtx(workflowCtx);
+        }
+      }
       continue;
     }
 

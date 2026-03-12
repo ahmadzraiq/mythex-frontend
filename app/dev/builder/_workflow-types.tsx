@@ -34,12 +34,10 @@ export type ActionStepType =
   // Navigation
   | 'navigateTo'
   | 'navigatePrev'
-  | 'pageLoader'
   // Form (shown only when inside a FormContainer)
   | 'setFormState'
   | 'resetForm'
   // Actions category
-  | 'changeLanguage'
   | 'changeVariableValue'
   | 'fetchCollection'
   | 'fetchCollectionsParallel'
@@ -56,14 +54,15 @@ export type ActionStepType =
   | 'downloadFileFromUrl'
   | 'createUrlFromBase64'
   | 'encodeFileAsBase64'
-  | 'customJavaScript'
   | 'openPopup'
   | 'closeAllPopups'
   // Data / API
   | 'graphql'
   | 'fetchData'
   // Project workflows
-  | 'runProjectWorkflow';
+  | 'runProjectWorkflow'
+  // Placeholder — new step not yet configured
+  | 'unconfigured';
 
 export interface BranchDef {
   label: string;
@@ -326,14 +325,12 @@ export const ACTION_CATEGORIES: { category: string; items: ActionTypeDef[] }[] =
     items: [
       { type: 'navigateTo', label: 'Navigate to', icon: '🔗' },
       { type: 'navigatePrev', label: 'Navigate to previous page', icon: '↩' },
-      { type: 'pageLoader', label: 'Page loader', icon: '⚙' },
     ],
   },
   {
     category: 'Actions',
     items: [
       // runProjectWorkflow is NOT listed here — it appears dynamically as "Project workflows"
-      { type: 'changeLanguage', label: 'Change language', icon: '↗' },
       { type: 'changeVariableValue', label: 'Change variable value', icon: '⇄' },
       { type: 'fetchCollection', label: 'Fetch collection', icon: '🗄' },
       { type: 'fetchCollectionsParallel', label: 'Fetch collections in parallel', icon: '🗄' },
@@ -367,7 +364,6 @@ export const ACTION_CATEGORIES: { category: string; items: ActionTypeDef[] }[] =
       { type: 'downloadFileFromUrl', label: 'Download file from URL', icon: '</>' },
       { type: 'createUrlFromBase64', label: 'Create URL from Base64', icon: '</>' },
       { type: 'encodeFileAsBase64', label: 'Encode file as Base64', icon: '</>' },
-      { type: 'customJavaScript', label: 'Custom JavaScript', icon: 'Js' },
     ],
   },
   {
@@ -388,6 +384,13 @@ export const FORM_ACTION_CATEGORY: { category: string; items: ActionTypeDef[] } 
   ],
 };
 
+/** Step types that appear in the builder Type dropdown. Only these execute at runtime. */
+export const SUPPORTED_WORKFLOW_STEP_TYPES = new Set<ActionStepType>([
+  ...ACTION_CATEGORIES.flatMap((c) => c.items.map((i) => i.type)),
+  ...FORM_ACTION_CATEGORY.items.map((i) => i.type),
+  'runProjectWorkflow',
+]);
+
 // ─── Step serialization ───────────────────────────────────────────────────────
 
 /** Deserialize an array of raw steps, preserving existing ids when present. */
@@ -402,7 +405,7 @@ export function deserializeStepArray(arr: unknown[], dam?: Record<string, Record
 /** Convert a raw JSON action value (from node.actions array) to a canvas ActionStep. */
 export function deserializeStep(raw: unknown, id: string, directActionsMap?: Record<string, Record<string, unknown>>): ActionStep {
   const obj = raw as Record<string, unknown>;
-  if (!obj || typeof obj !== 'object') return { id, type: 'graphql' };
+  if (!obj || typeof obj !== 'object') return { id, type: 'unconfigured' };
   // ActionRef: { "action": "uuid" } — a step that calls another action by ID.
   // Look up the referenced action in directActionsMap first so a graphql/fetch/navigate
   // action shows as its real type instead of always appearing as "Call workflow".
@@ -510,7 +513,7 @@ export function isStructural(type: ActionStepType): boolean {
 }
 
 export function isConfigured(step: ActionStep): boolean {
-  return Boolean(step.type);
+  return Boolean(step.type) && step.type !== 'unconfigured';
 }
 
 export function canTest(step: ActionStep): boolean {
@@ -519,10 +522,141 @@ export function canTest(step: ActionStep): boolean {
   return true;
 }
 
+/**
+ * Returns true when a step has all required fields filled in.
+ * Used to show the "Action incomplete" badge on canvas nodes.
+ */
+export function isStepComplete(step: ActionStep): boolean {
+  if (!isConfigured(step)) return false;
+  const cfg = step.config ?? {};
+  switch (step.type) {
+    case 'changeVariableValue':
+      // complete once a variable is chosen — value can be filled after
+      return Boolean(cfg.variableName);
+    case 'navigateTo':
+      return Boolean(cfg.path || cfg.routeConfig || cfg.externalUrl);
+    case 'graphql':
+      return Boolean(cfg.query);
+    case 'fetchData':
+      return Boolean(cfg.url);
+    case 'fetchCollection':
+      return Boolean(cfg.collectionId);
+    case 'updateCollection':
+      return Boolean(cfg.collectionId) && (cfg.data !== undefined && cfg.data !== null && cfg.data !== '');
+    case 'fetchCollectionsParallel':
+      return Array.isArray(cfg.collections) && (cfg.collections as string[]).some(Boolean);
+    case 'branch':
+      return Boolean(cfg.condition);
+    case 'forEach':
+      return Boolean(cfg.items);
+    case 'whileLoop':
+      return Boolean(cfg.condition);
+    case 'runProjectWorkflow':
+      return Boolean(cfg.workflowId || step.action);
+    case 'timeDelay':
+      return Boolean(cfg.time);
+    case 'copyToClipboard':
+      return Boolean(cfg.value);
+    case 'downloadFileFromUrl':
+      return Boolean(cfg.url);
+    case 'openPopup':
+      return Boolean(cfg.popupId);
+    case 'resetVariableValue': {
+      const names = cfg.variableNames as string[] | undefined;
+      return (Array.isArray(names) && names.some(Boolean)) || Boolean(cfg.variableName);
+    }
+    case 'executeComponentAction':
+      return Boolean(cfg.action);
+    case 'returnValue':
+      return cfg.value !== undefined && cfg.value !== null && cfg.value !== '';
+    case 'setFormState':
+      return Boolean(cfg.formId);
+    // These are self-contained — no config needed
+    case 'navigatePrev':
+    case 'breakLoop':
+    case 'continueLoop':
+    case 'passThroughCondition':
+    case 'stopPropagation':
+    case 'printPdf':
+    case 'closeAllPopups':
+    case 'resetForm':
+    case 'uploadFile':
+    case 'encodeFileAsBase64':
+    case 'createUrlFromBase64':
+      return true;
+    default:
+      return true;
+  }
+}
+
+/**
+ * Returns a short human-readable summary of a step's key config for display
+ * in the canvas card subtext. Returns null if nothing meaningful to show.
+ * Pass `varLabels` (id→label map) to resolve variable names for changeVariableValue.
+ */
+export function getStepSummary(
+  step: ActionStep,
+  varLabels?: Record<string, string>,
+  collectionNames?: Record<string, string>,
+): string | null {
+  const cfg = step.config ?? {};
+  switch (step.type) {
+    case 'changeVariableValue': {
+      const vId = cfg.variableName as string | undefined;
+      if (!vId) return null;
+      return varLabels?.[vId] ?? vId.split('.').pop() ?? vId;
+    }
+    case 'resetVariableValue': {
+      const names = (cfg.variableNames as string[] | undefined) ?? (cfg.variableName ? [cfg.variableName as string] : []);
+      const resolved = names.filter(Boolean).map(id => varLabels?.[id] ?? id.split('.').pop() ?? id);
+      return resolved.length > 0 ? resolved.join(', ') : null;
+    }
+    case 'executeComponentAction': {
+      const wfId = cfg.action as string | undefined;
+      if (!wfId) return null;
+      // varLabels also carries workflow names keyed by UUID (built from pageWorkflowMeta in ActionNode)
+      return varLabels?.[wfId] ?? null;
+    }
+    case 'navigateTo':
+      return (cfg.externalUrl as string) || (cfg.path as string) || (cfg.routeConfig as string) || null;
+    case 'graphql':
+      return (cfg.operationName as string) || 'GraphQL request';
+    case 'fetchData':
+      return (cfg.url as string) || null;
+    case 'fetchCollection':
+    case 'updateCollection': {
+      const cId = cfg.collectionId as string | undefined;
+      if (!cId) return null;
+      return collectionNames?.[cId] ?? cId;
+    }
+    case 'fetchCollectionsParallel': {
+      const cols = (cfg.collections as string[] | undefined) ?? [];
+      const names = cols.filter(Boolean).map(id => collectionNames?.[id] ?? id);
+      return names.length > 0 ? names.join(', ') : null;
+    }
+    case 'runProjectWorkflow':
+      return (cfg.workflowId as string) || (step.action as string) || null;
+    case 'timeDelay':
+      return cfg.time ? `${cfg.time}ms` : null;
+    case 'forEach':
+      return cfg.items ? String(cfg.items) : null;
+    case 'branch':
+      return cfg.condition ? String(cfg.condition).slice(0, 40) : null;
+    case 'whileLoop':
+      return cfg.condition ? String(cfg.condition).slice(0, 40) : null;
+    case 'copyToClipboard':
+      return cfg.value ? String(cfg.value).slice(0, 30) : null;
+    case 'returnValue':
+      return cfg.value !== undefined ? String(cfg.value).slice(0, 30) : null;
+    default:
+      return null;
+  }
+}
+
 export function generateId(): string {
   return `step-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
 export function createPlaceholderStep(): ActionStep {
-  return { id: generateId(), type: 'graphql' };
+  return { id: generateId(), type: 'unconfigured' };
 }

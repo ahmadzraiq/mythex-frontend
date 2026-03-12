@@ -152,6 +152,340 @@
       "type": "string",
       "initialValue": "",
       "folder": "Checkout"
+    },
+    "d1e2f3a4-b5c6-7890-defa-111111111101": {
+      "label": "Demo Message",
+      "type": "string",
+      "initialValue": "(click a button)",
+      "folder": "Workflow Demo"
+    },
+    "d1e2f3a4-b5c6-7890-defa-111111111102": {
+      "label": "Demo Number",
+      "type": "number",
+      "initialValue": 5,
+      "folder": "Workflow Demo"
+    },
+    "d1e2f3a4-b5c6-7890-defa-111111111103": {
+      "label": "Demo Count",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Workflow Demo"
+    },
+    "d1e2f3a4-b5c6-7890-defa-111111111104": {
+      "label": "Demo Branch Result",
+      "type": "string",
+      "initialValue": "(set a number, then evaluate)",
+      "folder": "Workflow Demo"
+    },
+    "d1e2f3a4-b5c6-7890-defa-111111111105": {
+      "label": "Demo Grade",
+      "type": "string",
+      "initialValue": "(not graded)",
+      "folder": "Workflow Demo"
+    },
+    "d1e2f3a4-b5c6-7890-defa-111111111106": {
+      "label": "Demo Loop Count",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Workflow Demo"
+    },
+    "d1e2f3a4-b5c6-7890-defa-111111111107": {
+      "label": "Demo Retry Count",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Workflow Demo"
+    },
+    "d1e2f3a4-b5c6-7890-defa-111111111108": {
+      "label": "Demo While Active",
+      "type": "boolean",
+      "initialValue": true,
+      "folder": "Workflow Demo"
+    },
+    "d1e2f3a4-b5c6-7890-defa-111111111109": {
+      "label": "Demo Items",
+      "type": "array",
+      "initialValue": [
+        "item-A",
+        "item-B",
+        "item-C"
+      ],
+      "folder": "Workflow Demo"
+    },
+    "d1e2f3a4-b5c6-7890-defa-111111111110": {
+      "label": "Demo Complex Done",
+      "type": "string",
+      "initialValue": "(not run yet)",
+      "folder": "Workflow Demo"
+    },
+    "d1e2f3a4-b5c6-7890-defa-111111111111": {
+      "label": "Demo Step 1",
+      "type": "string",
+      "initialValue": "(not run yet)",
+      "folder": "Workflow Demo"
+    },
+    "d1e2f3a4-b5c6-7890-defa-111111111112": {
+      "label": "Demo Step 2",
+      "type": "string",
+      "initialValue": "(not run yet)",
+      "folder": "Workflow Demo"
+    },
+    "d1e2f3a4-b5c6-7890-defa-111111111113": {
+      "label": "Demo Step 3",
+      "type": "string",
+      "initialValue": "(not run yet)",
+      "folder": "Workflow Demo"
+    },
+    "wa000001-0000-0000-0000-000000000001": {
+      "label": "WA Created",
+      "type": "string",
+      "initialValue": "(not loaded)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000002": {
+      "label": "WA Mounted",
+      "type": "string",
+      "initialValue": "(not mounted)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000003": {
+      "label": "WA Click",
+      "type": "string",
+      "initialValue": "(not clicked)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000004": {
+      "label": "WA DblClick Count",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000005": {
+      "label": "WA Hover",
+      "type": "string",
+      "initialValue": "(not hovered)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000006": {
+      "label": "WA Change",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000007": {
+      "label": "WA Enter",
+      "type": "string",
+      "initialValue": "(no enter)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000008": {
+      "label": "WA Focus",
+      "type": "string",
+      "initialValue": "(not focused)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000009": {
+      "label": "WA Form Result",
+      "type": "string",
+      "initialValue": "(not submitted)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000010": {
+      "label": "WA Form Validation Error",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000011": {
+      "label": "WA REST Result",
+      "type": "string",
+      "initialValue": "(not fetched)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000012": {
+      "label": "WA GraphQL Result",
+      "type": "string",
+      "initialValue": "(not fetched)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000013": {
+      "label": "WA REST Status",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000014": {
+      "label": "WA Fetch Count",
+      "type": "string",
+      "initialValue": "(not fetched)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000015": {
+      "label": "WA Fetch Parallel 1",
+      "type": "string",
+      "initialValue": "(not fetched)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000016": {
+      "label": "WA Fetch Parallel 2",
+      "type": "string",
+      "initialValue": "(not fetched)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000017": {
+      "label": "WA Reset Check",
+      "type": "string",
+      "initialValue": "(active)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000018": {
+      "label": "WA Return Result",
+      "type": "string",
+      "initialValue": "(not run)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000019": {
+      "label": "WA Sub Workflow Result",
+      "type": "string",
+      "initialValue": "(not run)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000020": {
+      "label": "WA Exec Result",
+      "type": "string",
+      "initialValue": "(not run)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000021": {
+      "label": "WA Loop Sum",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000022": {
+      "label": "WA Pass Flag",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000023": {
+      "label": "WA Pass Result",
+      "type": "string",
+      "initialValue": "(blocked)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000024": {
+      "label": "WA Mode",
+      "type": "string",
+      "initialValue": "A",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000025": {
+      "label": "WA Multi Result",
+      "type": "string",
+      "initialValue": "(not evaluated)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000026": {
+      "label": "WA Clipboard",
+      "type": "string",
+      "initialValue": "(not copied)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000027": {
+      "label": "WA Outer Click",
+      "type": "string",
+      "initialValue": "(not clicked)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000028": {
+      "label": "WA Inner Click",
+      "type": "string",
+      "initialValue": "(not clicked)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000029": {
+      "label": "WA PDF Fired",
+      "type": "string",
+      "initialValue": "(not fired)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000030": {
+      "label": "WA Download Fired",
+      "type": "string",
+      "initialValue": "(not fired)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000031": {
+      "label": "WA B64 URL",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000032": {
+      "label": "WA Encode Result",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000033": {
+      "label": "WA Complex Score",
+      "type": "number",
+      "initialValue": 60,
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000034": {
+      "label": "WA Complex Loop Count",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000035": {
+      "label": "WA Complex Status",
+      "type": "string",
+      "initialValue": "(not run)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000036": {
+      "label": "WA Complex Mode",
+      "type": "string",
+      "initialValue": "fast",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000037": {
+      "label": "WA Fast Count",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000038": {
+      "label": "WA Slow Sum",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000039": {
+      "label": "WA Complex Result",
+      "type": "string",
+      "initialValue": "(not run)",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000040": {
+      "label": "WA Pass Through Flag",
+      "type": "boolean",
+      "initialValue": true,
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000041": {
+      "label": "WA Fast Loop Active",
+      "type": "boolean",
+      "initialValue": true,
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000042": {
+      "label": "WA Items 1to5",
+      "type": "array",
+      "initialValue": [1, 2, 3, 4, 5],
+      "folder": "WA Tests"
     }
   },
   "varFolders": [
@@ -198,6 +532,14 @@
     {
       "id": "Account",
       "label": "Account"
+    },
+    {
+      "id": "Workflow Demo",
+      "label": "Workflow Demo"
+    },
+    {
+      "id": "WA Tests",
+      "label": "WA Tests"
     }
   ]
 }

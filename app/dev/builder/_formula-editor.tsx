@@ -29,7 +29,7 @@ export { Tooltip, VariableTree, CollectionEntry, DataTreeNode, FunctionLibrary, 
 import {
   Tooltip, VariableTree, CollectionEntry, FunctionLibrary,
   CollectionsDataTab, PageComponentsSection, FormLocalSection, ItemContextGroup,
-  DataTreeNode, FEChevron, collectPageComponents,
+  DataTreeNode, FEChevron, collectPageComponents, EVENT_SHAPES, EventContextSection,
   type VarRowItem,
 } from './_formula-editor-tabs';
 import { useSduiStore } from '@/store/sdui-store';
@@ -117,6 +117,12 @@ export interface FormulaEditorProps {
   anchorRight?: number;
   /** When true, the Unbind button in the header is hidden */
   hideUnbind?: boolean;
+  /**
+   * The trigger type of the enclosing workflow (e.g. 'change', 'click', 'submit').
+   * When set, an "Event" section is shown in the Quick tab with the event shape for that trigger,
+   * and `event` is injected into the formula preview evaluation context.
+   */
+  workflowTrigger?: string;
 }
 
 // ─── WorkflowResultsTab ───────────────────────────────────────────────────────
@@ -256,7 +262,7 @@ function WorkflowResultGroup({
 
 // ─── FormulaEditor ────────────────────────────────────────────────────────────
 
-export function FormulaEditor({ label, value, onChange, onClose, expectedType = 'any', hint, anchor = 'left', anchorLeft, anchorRight, hideUnbind }: FormulaEditorProps) {
+export function FormulaEditor({ label, value, onChange, onClose, expectedType = 'any', hint, anchor = 'left', anchorLeft, anchorRight, hideUnbind, workflowTrigger }: FormulaEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const savedRangeRef = useRef<Range | null>(null);
@@ -324,14 +330,22 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
 
   // formula state: serialized string from the contenteditable div
   const [formula, setFormula] = useState(initialFormula);
-  const [tab, setTab] = useState<Tab>('variables');
+
+  const showQuickTab = isInsideRepeat || isInsideForm;
+  // Show Workflow tab when there are test results OR when a trigger with event data is active
+  const hasEventContext = !!(workflowTrigger && Object.keys(EVENT_SHAPES[workflowTrigger] ?? {}).length > 0);
+  const showWorkflowTab = hasEventContext || Object.keys(workflowTestResults ?? {}).length > 0;
+
+  const [tab, setTab] = useState<Tab>(hasEventContext ? 'workflow' : 'variables');
   const [search, setSearch] = useState('');
 
-  // Switch to Quick when entering a repeat or form; fall back to Variables when leaving
+  // Switch to Quick when entering a repeat/form; fall back to Variables when leaving
+  // When a workflow trigger with event data is active, open the Workflow tab
   useEffect(() => {
-    if (isInsideRepeat || isInsideForm) setTab('quick');
+    if (hasEventContext) setTab('workflow');
+    else if (isInsideRepeat || isInsideForm) setTab('quick');
     else if (tab === 'quick') setTab('variables');
-  }, [isInsideRepeat, isInsideForm]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isInsideRepeat, isInsideForm, hasEventContext]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Map UUID → label for collection chip display
   const dsMap = useMemo(
@@ -351,7 +365,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       controlledInputVarEntries: standalones.map(({ node, insideForm }) => {
         const name = (node as { name?: string }).name || node.type;
         return {
-          id: node.id!,
+          id: `${node.id!}-value`,
           label: insideForm ? `Form - ${name}` : name,
         };
       }),
@@ -563,7 +577,14 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     };
   }, [zustandData, selectedIds, pageNodes, workflowTestResults]);
 
-  const evalResult = useMemo(() => evaluateFormula(formula, context), [formula, context]);
+  // When a workflowTrigger is set, inject the trigger's event shape as preview context
+  const contextWithEvent = useMemo(() => {
+    if (!workflowTrigger) return context;
+    const eventShape = EVENT_SHAPES[workflowTrigger] ?? {};
+    return { ...context, event: eventShape };
+  }, [context, workflowTrigger]);
+
+  const evalResult = useMemo(() => evaluateFormula(formula, contextWithEvent), [formula, contextWithEvent]);
 
   const apply = useCallback(() => {
     const el = editorRef.current;
@@ -629,7 +650,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   }, []);
 
   // Insert a chip at the current caret position
-  const insertChip = useCallback((formulaPath: string, displayLabel: string, type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error') => {
+  const insertChip = useCallback((formulaPath: string, displayLabel: string, type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event') => {
     const el = editorRef.current;
     if (!el) return;
     restoreCaret();
@@ -717,7 +738,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     const f = serializeEditor(el); setFormula(f); pushHistory(f);
   }, [dsMap, restoreCaret, pushHistory]);
 
-  const insertVar = useCallback((formulaPath: string, displayLabel: string, type: 'variable' | 'context' | 'pages' | 'theme' | 'form' = 'variable') => {
+  const insertVar = useCallback((formulaPath: string, displayLabel: string, type: 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'event' = 'variable') => {
     insertChip(formulaPath, displayLabel, type);
   }, [insertChip]);
 
@@ -917,7 +938,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
                 pointerEvents: 'none', lineHeight: 1.5,
               }}
             >
-              Type a formula or click below…
+              variables['UUID'] &gt;= 60  ·  if(x, a, b)  ·  length(arr)
             </div>
           )}
           <div
@@ -1024,11 +1045,11 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       {/* ── Tabs ── */}
       <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
         {([
-          ...((isInsideRepeat || isInsideForm) ? [{ id: 'quick' as Tab, icon: '⚡', label: 'Quick' }] : []),
+          ...(showQuickTab ? [{ id: 'quick' as Tab, icon: '⚡', label: 'Quick' }] : []),
           { id: 'variables' as Tab, icon: '{x}', label: 'Variables' },
           { id: 'data' as Tab, icon: '≡', label: 'Data' },
           { id: 'formulas' as Tab, icon: 'ƒ', label: 'Formulas' },
-          ...(Object.keys(workflowTestResults ?? {}).length > 0 ? [{ id: 'workflow' as Tab, icon: '▶', label: 'Workflow' }] : []),
+          ...(showWorkflowTab ? [{ id: 'workflow' as Tab, icon: '▶', label: 'Workflow' }] : []),
         ]).map(t => (
           <button key={t.id} data-testid={`formula-tab-${t.id}`} onClick={() => setTab(t.id)}
             style={{
@@ -1106,19 +1127,30 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
           </div>
         )}
         {tab === 'workflow' && (
-          <WorkflowResultsTab
-            testResults={workflowTestResults ?? {}}
-            onSelect={(stepId, path, _actionIndex, source) => {
-              const base = source === 'error' ? 'error' : 'result';
-              const formulaPath = `context.workflow['${stepId}']${path ? `.${base}?.${path}` : `.${base}`}`;
-              // Use the stored action name (e.g. "Login") instead of a numeric index
-              const actionLabel = (workflowTestResults ?? {})[stepId]?.actionName || 'Action';
-              const displayLabel = path
-                ? `${actionLabel}.${base}.${path}`
-                : `${actionLabel}.${base}`;
-              insertChip(formulaPath, displayLabel, source === 'error' ? 'error' : 'collection');
-            }}
-          />
+          <div style={{ overflowY: 'auto', flex: 1 }}>
+            {/* Event context section — shown when trigger has an event shape */}
+            {hasEventContext && workflowTrigger && (
+              <EventContextSection
+                trigger={workflowTrigger}
+                onInsert={insertChip}
+              />
+            )}
+            {/* Previous action test results */}
+            {Object.keys(workflowTestResults ?? {}).length > 0 && (
+              <WorkflowResultsTab
+                testResults={workflowTestResults ?? {}}
+                onSelect={(stepId, path, _actionIndex, source) => {
+                  const base = source === 'error' ? 'error' : 'result';
+                  const formulaPath = `context.workflow['${stepId}']${path ? `.${base}?.${path}` : `.${base}`}`;
+                  const actionLabel = (workflowTestResults ?? {})[stepId]?.actionName || 'Action';
+                  const displayLabel = path
+                    ? `${actionLabel}.${base}.${path}`
+                    : `${actionLabel}.${base}`;
+                  insertChip(formulaPath, displayLabel, source === 'error' ? 'error' : 'collection');
+                }}
+              />
+            )}
+          </div>
         )}
       </div>
 

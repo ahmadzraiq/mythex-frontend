@@ -3,111 +3,44 @@
 /**
  * SDUI Renderer - Fine-grained reactivity
  * Each node subscribes only to the variables it uses - no unnecessary re-renders
- */
-
-import React, { useEffect, memo, useSyncExternalStore, useContext } from 'react';
-import { FormContext, type FormContextValue } from './form-context';
-import { getGlobalVariableStore } from './global-variable-store';
-import { trackFormFieldProps, useFormFieldRegistration } from './form-field-tracker';
-
-/** Stable empty object for useSyncExternalStore fallback — avoids infinite loop from new {} each call */
-const STABLE_EMPTY_OBJECT: Record<string, unknown> = {};
-
-// ── Form-context binding helpers ──────────────────────────────────────────────
-
-/** Components that use onPress (not onClick) for their primary interaction */
-const PRESS_ONLY_TYPES = new Set(['Button', 'Pressable', 'Link', 'MenuItem', 'MenuItemLabel']);
-
-/** Components that natively handle their own press/click (no transparent wrapper needed) */
-const SUBMIT_BUTTON_TYPES = new Set(['Button', 'Pressable']);
-
-/**
- * Returns true if any workflow in `actions` contains a step of `stepType`.
- * Checks both inline workflowSteps wrappers (element workflows) and named
- * action references resolved via actionsConfig (page/global workflows).
- */
-function detectWorkflowStepType(
-  stepType: string,
-  actions: unknown,
-  actionsConfig: Record<string, unknown> | undefined,
-): boolean {
-  if (!Array.isArray(actions)) return false;
-  const has = (steps: unknown[]) =>
-    (steps as Array<{ type?: string }>).some(s => s.type === stepType);
-  for (const item of actions as Array<Record<string, unknown>>) {
-    if (item.type === 'workflowSteps' && Array.isArray(item.steps) && has(item.steps)) return true;
-    if (typeof item.action === 'string' && item.action) {
-      const def = actionsConfig?.[item.action] as Record<string, unknown> | undefined;
-      if (def?.type === 'workflowSteps' && Array.isArray(def.steps) && has(def.steps as unknown[])) return true;
-    }
-  }
-  return false;
-}
-
-/**
- * Rewires click/press handlers on non-FormContainer nodes that are inside a FormContainer
- * so that form-related workflow steps correctly call into the FormContext API.
  *
- * Precedence (first match wins):
- *  1. submitForm step    → formCtx.submit()           — FormContainer's chain runs (validate → mutation)
- *  2. resetForm step     → formCtx.reset()            — clears FormContainer's local state
- *  3. onSubmit trigger   → formCtx.submit(handler)    — trigger:"submit" workflow redirected from onSubmit
- *  4. type="submit" btn  → chains formCtx.submit() after existing handler (legacy JSON approach)
+ * Prop-mutation helpers and element-wrapping utilities live in renderer-node-props.tsx.
+ * This file is responsible only for the rendering lifecycle: state setup, map expansion,
+ * hook orchestration, and JSX composition.
  */
-function applyFormContextBindings(
-  node: SDUINode,
-  cleanProps: Record<string, unknown>,
-  formCtx: FormContextValue | null,
-  actionsConfig: Record<string, unknown> | undefined,
-): void {
-  if (!formCtx || (node.type as string) === 'FormContainer') return;
 
-  const isPressType = PRESS_ONLY_TYPES.has(node.type as string);
-
-  /** Set the primary handler for the node's component type.
-   * Press-type components (Button, Pressable, etc.) use onPress.
-   * All other elements use onClick only — never set onPress on DOM elements,
-   * as React logs "Unknown event handler property `onPress`" for them. */
-  const setHandlers = (fn: () => void) => {
-    if (isPressType) {
-      cleanProps.onPress = fn;
-      cleanProps.onClick ??= fn;
-    } else {
-      cleanProps.onClick = fn;
-    }
-  };
-
-  if (detectWorkflowStepType('submitForm', node.actions, actionsConfig)) {
-    setHandlers(() => formCtx.submit());
-  } else if (detectWorkflowStepType('resetForm', node.actions, actionsConfig)) {
-    setHandlers(() => formCtx.reset());
-  } else if (cleanProps.onSubmit) {
-    const submitHandler = cleanProps.onSubmit as () => void;
-    delete cleanProps.onSubmit;
-    setHandlers(() => formCtx.submit(submitHandler));
-  } else if (SUBMIT_BUTTON_TYPES.has(node.type as string) && cleanProps.type === 'submit') {
-    const existingFn = (cleanProps.onPress ?? cleanProps.onClick) as ((...a: unknown[]) => void) | undefined;
-    setHandlers(existingFn ? () => { existingFn(); formCtx.submit(); } : () => formCtx.submit());
-  }
-}
-
+import React, { memo, useSyncExternalStore, useContext, useEffect, useRef, useMemo } from 'react';
+import { FormContext } from './form-context';
+import { trackFormFieldProps, useFormFieldRegistration, useExternalNodeValueSync, useExternalFormSync } from './form-field-tracker';
 import { evaluateFormula } from './formula-evaluator';
 import { getComponent } from './component-registry';
-import { evaluateCondition, interpolate, resolveProps, resolveText } from './utils';
-import { createVariableStore, useVariablePaths, type VariableStoreConfig } from './variable-store';
+import { evaluateCondition, resolveProps, resolveText } from './utils';
+import { createVariableStore, useVariablePaths } from './variable-store';
 import { extractNodeDependencies } from './dependency-extractor';
 import type { SDUINode, SDUIContext } from './types';
 import { isScreenScopedPath } from './path-utils';
 import { createGet } from './create-get';
 import { bindActionsToProps } from './action-binding';
 import { useBuilderMode } from './builder-context';
-import { mergeTailwindClasses } from './tailwind-merge';
 import { InputParentContext, useParentInputId } from './input-parent-context';
+import { PARENT_CONTEXT_PROVIDER_TYPES } from './controlled-component-registry';
+import {
+  PRESS_ONLY_TYPES,
+  applyFormContextBindings, applyStateOverrides, applyClassFormulas, applyAutofill,
+  applyDisabledPreview, injectControlledProps, applyBuilderAnnotation,
+  wrapWithClickHandler, renderWithDisabledOverlay,
+  DataSourceWrapper,
+} from './renderer-node-props';
+
+/** Stable empty object for useSyncExternalStore fallback — avoids infinite loop from new {} each call */
+const STABLE_EMPTY_OBJECT: Record<string, unknown> = {};
+
+/** No-op subscribe — used by useSyncExternalStore when we don't need a subscription */
+const NOOP_SUBSCRIBE_FN = (_cb: () => void) => () => {};
 
 interface RendererContext {
   store: ReturnType<typeof createVariableStore>;
   mergedStore?: { getState: () => { merged: Record<string, unknown> }; subscribe: (cb: () => void) => () => void };
-  storeConfig: VariableStoreConfig;
   mergedState?: Record<string, unknown>;
   runAction: SDUIContext['runAction'];
   fetchData: SDUIContext['fetchData'];
@@ -126,34 +59,26 @@ interface RendererProps {
   builderPath?: string;
 }
 
-/** Wrapper that fetches data when mounted */
-function DataSourceWrapper({
-  dataSource,
-  fetchData,
-  children,
-}: {
-  dataSource: NonNullable<SDUINode['dataSource']>;
-  fetchData: SDUIContext['fetchData'];
-  children: React.ReactNode;
-}) {
-  useEffect(() => {
-    fetchData(dataSource);
-  }, [dataSource.url, dataSource.key, fetchData]);
-  return <>{children}</>;
-}
-
 const SDURendererInner = memo(function SDURendererInner({ node, context, scope, builderPath = '0' }: RendererProps) {
   const { builderMode } = useBuilderMode();
-  const { store, mergedStore, storeConfig, mergedState, runAction, fetchData, actionsConfig, screenName, screenScopedAliases = [], previewState } = context;
+  const { store, mergedStore, mergedState, runAction, fetchData, actionsConfig, screenName, screenScopedAliases = [], previewState } = context;
 
-  // Subscribe to mergedStore so preview state patches (applied in useEffect after render)
-  // immediately trigger a re-render without needing a manual canvas click.
+  // Builder needs full subscription so preview-state patches (loading/error/disabled overlays
+  // applied in applyBuilderPatches) immediately trigger a re-render on every setMerged call.
+  //
+  // Production: skip the blanket subscription — it causes O(N) re-renders per rAF tick because
+  // Zustand always creates a new { merged: newObj } reference, making Object.is always fail for
+  // every mounted SDURendererInner regardless of whether its deps changed. Instead, read merged
+  // directly at render time; useVariablePaths (below) is the sole re-render scheduler and only
+  // fires for components whose specific dep values actually changed.
   const mergedFromStore = useSyncExternalStore(
-    mergedStore ? mergedStore.subscribe : (_cb: () => void) => () => {},
-    () => mergedStore?.getState().merged ?? mergedState ?? STABLE_EMPTY_OBJECT,
-    () => mergedStore?.getState().merged ?? mergedState ?? STABLE_EMPTY_OBJECT,
+    builderMode && mergedStore ? mergedStore.subscribe : NOOP_SUBSCRIBE_FN,
+    () => builderMode && mergedStore ? mergedStore.getState().merged : STABLE_EMPTY_OBJECT,
+    () => STABLE_EMPTY_OBJECT,
   );
-  const merged = mergedStore ? mergedFromStore : mergedState;
+  const merged = mergedStore
+    ? (builderMode ? mergedFromStore : mergedStore.getState().merged)
+    : (mergedState ?? STABLE_EMPTY_OBJECT);
   const rawDeps = extractNodeDependencies(node);
   const deps =
     screenName && rawDeps.some((p) => isScreenScopedPath(p, screenScopedAliases))
@@ -186,6 +111,41 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
   const formCtx = useContext(FormContext);
   const parentInputId = useParentInputId();
   useFormFieldRegistration(node, formCtx);
+
+  // External value sync: subscribes to the node's variable-store slot and returns
+  // controlled React props. Active for all controlled types including those inside
+  // FormContainer so that workflow writes (changeVariableValue) update every type.
+  const { value: externalValue, isChecked: externalIsChecked } = useExternalNodeValueSync(node, formCtx, parentInputId);
+  // Sync external writes back into FormContainer state (local.data.form.formData.*)
+  // so form submission and formulas always read the latest value.
+  useExternalFormSync(node, formCtx, parentInputId, externalValue, externalIsChecked);
+
+  // Lifecycle triggers: collect actions with trigger "created" or "mounted" and run
+  // them once on mount via useEffect. Skipped in builder mode to avoid side-effects.
+  const lifecycleRefs = useMemo(() => {
+    if (!node?.actions || !Array.isArray(node.actions)) return null;
+    const out: unknown[] = [];
+    for (const item of node.actions as Array<unknown>) {
+      if (!item || typeof item !== 'object') continue;
+      const actionRef = item as Record<string, unknown>;
+      const wfName = typeof actionRef.action === 'string' ? actionRef.action : '';
+      const wfDef = wfName ? actionsConfig?.[wfName] as Record<string, unknown> | undefined : undefined;
+      const trigger = typeof wfDef?.trigger === 'string' ? wfDef.trigger : null;
+      if (trigger === 'created' || trigger === 'mounted') out.push(item);
+    }
+    return out.length ? out : null;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [node?.actions, actionsConfig]);
+
+  const lifecycleRanRef = useRef(false);
+  useEffect(() => {
+    if (!lifecycleRefs || builderMode || lifecycleRanRef.current) return;
+    lifecycleRanRef.current = true;
+    for (const a of lifecycleRefs) {
+      Promise.resolve(runAction(a as Parameters<typeof runAction>[0], undefined, scope)).catch(() => {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // mount-once: lifecycle triggers fire exactly once when the node mounts
 
   if (!node) return null;
 
@@ -281,51 +241,23 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
     Object.entries(resolvedProps).filter(([k]) => !k.startsWith('$') && k !== '_meta')
   ) as Record<string, unknown>;
 
-  // Apply _stateOverrides className for the active preview state in builder mode
-  if (builderMode && previewState && previewState !== 'normal') {
-    const overrides = (node as { _stateOverrides?: Record<string, { className?: string }> })._stateOverrides;
-    const overrideClass = overrides?.[previewState]?.className;
-    if (overrideClass) {
-      const base = (cleanProps.className as string | undefined) ?? '';
-      cleanProps.className = mergeTailwindClasses(base, overrideClass);
-    }
+  // Map data-testid → testID so Gluestack Button/Pressable surfaces it in the DOM.
+  // React Native uses testID (rendered as data-testid by RN-Web); plain HTML elements
+  // (e.g. Text → span) forward data-* directly, but Pressable-based components do not.
+  if ('data-testid' in cleanProps && !('testID' in cleanProps)) {
+    cleanProps.testID = cleanProps['data-testid'];
   }
 
-  // Merge classFormulas into className so formula-bound class fields survive React re-renders.
-  // classFormulas is a builder-side sidecar (node.props.classFormulas) that stores { formula } objects
-  // for class-based FieldWithBinding fields (selfAlignment, textAlign, shadow, etc.).
-  {
-    const classFormulas = node.props?.classFormulas as Record<string, { formula?: string }> | undefined;
-    if (classFormulas) {
-      let extraCls = '';
-      for (const [, fv] of Object.entries(classFormulas)) {
-        if (fv && typeof fv === 'object' && typeof fv.formula === 'string') {
-          const { value } = evaluateFormula(fv.formula, (sduiContext as { state?: Record<string, unknown> }).state ?? {});
-          if (typeof value === 'string' && value) extraCls += ' ' + value;
-        }
-      }
-      if (extraCls) {
-        cleanProps.className = mergeTailwindClasses(
-          (cleanProps.className as string) ?? '',
-          extraCls.trim()
-        );
-      }
-    }
-  }
-
-  // Disabled preview state: apply visual disabled styling to interactive nodes
-  const INTERACTIVE_TYPES = new Set(['Button', 'Input', 'Select', 'Pressable', 'InputField', 'ButtonText']);
-  if (builderMode && (merged as Record<string, unknown> | null | undefined)?._preview_disabled && INTERACTIVE_TYPES.has(node.type)) {
-    cleanProps.disabled = true;
-    cleanProps.className = mergeTailwindClasses(
-      (cleanProps.className as string) ?? '',
-      'opacity-50 pointer-events-none'
-    );
-  }
+  // Apply each concern via named helpers — one function per responsibility.
+  applyStateOverrides(node, cleanProps, previewState, builderMode);
+  applyClassFormulas(node, cleanProps, sduiContext);
+  applyAutofill(node, cleanProps, builderMode);
+  applyDisabledPreview(node, cleanProps, merged, builderMode);
 
   Object.assign(cleanProps, bindActionsToProps(node.actions, runAction, actionsConfig, scope, node.type));
   applyFormContextBindings(node, cleanProps, formCtx, actionsConfig);
   trackFormFieldProps(node, cleanProps, formCtx, parentInputId);
+  injectControlledProps(cleanProps, externalValue, externalIsChecked);
 
   // Pass the SDUI node ID to FormContainer so it can sync to variables['{id}-form'].
   // When the node has no explicit id (e.g. screen JSON loaded from config), pass an empty
@@ -334,31 +266,7 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
     cleanProps._formNodeId = node.id ?? '';
   }
 
-  // Builder mode: annotate nodes via a ref callback that writes directly onto
-  // the real DOM element. We cannot use cleanProps['data-builder-id'] because
-  // Gluestack/NativeWind's cssInterop chain strips unknown data-* props before
-  // they reach the DOM. A ref callback bypasses all that and is guaranteed to
-  // land on the actual rendered element.
-  //
-  // Nodes without an explicit id (e.g. the synthetic root Box from pageConfig.ui)
-  // get NO data-builder-id so clicking the page background correctly deselects.
-  if (builderMode && node.id) {
-    const _bId   = node.id;
-    const _bType = node.type;
-    const _prevRef = cleanProps.ref as React.Ref<unknown> | undefined;
-    cleanProps.ref = (el: unknown) => {
-      if (el && typeof (el as Element).setAttribute === 'function') {
-        (el as Element).setAttribute('data-builder-id',   _bId);
-        (el as Element).setAttribute('data-builder-type', _bType);
-      }
-      // Compose with any existing ref on the node
-      if (typeof _prevRef === 'function') {
-        _prevRef(el);
-      } else if (_prevRef && typeof _prevRef === 'object' && 'current' in _prevRef) {
-        (_prevRef as React.MutableRefObject<unknown>).current = el;
-      }
-    };
-  }
+  applyBuilderAnnotation(node, cleanProps, builderMode);
 
   const textContent = node.text != null ? resolveText(node.text, sduiContext, scope) : undefined;
 
@@ -373,7 +281,8 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
     });
     // Provide parent Input ID to descendant InputField nodes so they can write to
     // variables['{inputId}-value'] on change (formula live-binding).
-    children = (node.type as string) === 'Input' && node.id
+    // Uses PARENT_CONTEXT_PROVIDER_TYPES from registry — no hardcoded 'Input' string.
+    children = PARENT_CONTEXT_PROVIDER_TYPES.has(node.type as string) && node.id
       ? <InputParentContext.Provider value={node.id}>{childElements}</InputParentContext.Provider>
       : childElements;
   } else if (textContent !== undefined) {
@@ -389,26 +298,9 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
 
   const element = React.createElement(Component, { ...cleanProps, key: node.key }, children);
 
-  // Wrap any non-interactive element that has a click handler in a transparent div.
-  // display:contents makes the wrapper invisible to layout (no size, padding, margin, background)
-  // so the inner element's styles are completely unaffected.
-  // Skipped in builder mode — the capture overlay handles all pointer events there.
-  const ALREADY_CLICKABLE = new Set([
-    'Pressable', 'Button', 'Link', 'MenuItem', 'MenuItemLabel', 'FormContainer',
-  ]);
-  const hasClickHandler = !!(cleanProps.onClick || cleanProps.onPress);
-  const needsClickWrapper = hasClickHandler
-    && !ALREADY_CLICKABLE.has(node.type as string)
-    && !builderMode;
-
-  if (needsClickWrapper) {
-    const clickHandler = (cleanProps.onClick ?? cleanProps.onPress) as React.MouseEventHandler;
-    return React.createElement(
-      'div',
-      { onClick: clickHandler, style: { display: 'contents', cursor: 'pointer' }, 'data-clickable': 'true' },
-      element
-    );
-  }
+  // Wrap non-interactive elements that have click handlers in a transparent div.
+  const wrapped = wrapWithClickHandler(element, cleanProps, node.type as string, builderMode);
+  if (wrapped !== element) return wrapped;
 
   if (node.dataSource) {
     return (
@@ -418,44 +310,10 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
     );
   }
 
-  // Disabled overlay: when props.disabled is truthy, wrap the element with a
-  // relative container and place a configurable overlay div on top.
-  // In builder mode we show it when disabled is literally true or when the user
-  // has toggled "Force show in editor" (_forceDisabledInEditor) for formula bindings.
-  const showDisabledOverlay =
-    resolvedProps.disabled === true ||
-    (node as { _forceDisabledInEditor?: boolean })._forceDisabledInEditor === true;
-  if (showDisabledOverlay) {
-    const ov = node._disabledOverlay;
-    // Use rgba() so backdrop-filter isn't composited at the same opacity level.
-    // The `opacity` CSS property would make the blur effect itself semi-transparent,
-    // which can prevent it from being visually noticeable. rgba() keeps them independent.
-    const hex = ov?.color ?? '#000000';
-    const alpha = ov?.opacity ?? 0.3;
-    const r = parseInt(hex.slice(1, 3) || '00', 16) || 0;
-    const g = parseInt(hex.slice(3, 5) || '00', 16) || 0;
-    const b = parseInt(hex.slice(5, 7) || '00', 16) || 0;
-    const blurVal = ov?.blur ? `blur(${ov.blur}px)` : undefined;
-    const overlayStyle: React.CSSProperties = {
-      position: 'absolute',
-      inset: 0,
-      zIndex: 10,
-      // In builder mode the transparent capture overlay handles all pointer events;
-      // setting 'none' here lets clicks pass through to the underlying element so
-      // the user can still select it in the canvas.
-      pointerEvents: builderMode ? 'none' : 'all',
-      backgroundColor: `rgba(${r}, ${g}, ${b}, ${alpha})`,
-      backdropFilter: blurVal,
-      WebkitBackdropFilter: blurVal,
-      borderRadius: 'inherit',
-    };
-    return React.createElement(
-      'div',
-      { style: { position: 'relative' }, 'data-disabled': 'true' },
-      element,
-      React.createElement('div', { style: overlayStyle })
-    );
-  }
+  // Disabled overlay — when props.disabled is truthy wrap with a relative container
+  // and an absolutely positioned tinted/blurred overlay div.
+  const disabledElement = renderWithDisabledOverlay(element, node, resolvedProps, builderMode);
+  if (disabledElement) return disabledElement;
 
   return element;
 });

@@ -110,11 +110,13 @@ export const PageEngine = memo(function PageEngine({
   configName,
   previewStates,
   previewData,
+  actionsConfig: actionsConfigProp,
 }: {
   pageConfig: SDUIConfig;
   configName: string;
   previewStates?: string[];
   previewData?: Record<string, unknown>;
+  actionsConfig?: Record<string, unknown>;
 }) {
   if (!pageConfig.ui) return <EmptyCanvas />;
   return (
@@ -122,7 +124,7 @@ export const PageEngine = memo(function PageEngine({
       key="builder-engine"
       config={pageConfig}
       configName={configName}
-      actionsConfig={app.actions}
+      actionsConfig={actionsConfigProp ?? app.actions}
       routes={app.routes}
       builderMode
       previewStates={previewStates}

@@ -7,7 +7,7 @@
   "content": [
     {
       "type": "Box",
-      "condition": "!{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.loading}} && !{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product}}",
+      "condition": "!collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.loading && !collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product",
       "props": {
         "className": "container mx-auto px-4 py-16 text-center"
       },
@@ -50,7 +50,7 @@
     },
     {
       "type": "Box",
-      "condition": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.loading}}",
+      "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.loading",
       "props": {
         "className": "container mx-auto px-4 py-8 mt-16"
       },
@@ -99,7 +99,7 @@
     },
     {
       "type": "Box",
-      "condition": "!{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.loading}} && {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product}}",
+      "condition": "!collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.loading && collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product",
       "children": [
         {
           "type": "Box",
@@ -514,7 +514,7 @@
         {
           "type": "Box",
           "condition": {
-            "expr": "length(filterExcludeByFieldAndSlice({{collections.f6a7b8c9-d0e1-2345-fabc-456789012345.data.search.items}}, 'productId', {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.id}}, 12)) > 0"
+            "expr": "length(filterExcludeByFieldAndSlice(collections['f6a7b8c9-d0e1-2345-fabc-456789012345']?.data?.search?.items, 'productId', collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.id, 12)) > 0"
           },
           "props": {
             "className": "py-12 md:py-16"
@@ -545,7 +545,7 @@
                     {
                       "type": "CarouselSlide",
                       "map": {
-                        "expr": "filterExcludeByFieldAndSlice({{collections.f6a7b8c9-d0e1-2345-fabc-456789012345.data.search.items}}, 'productId', {{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.id}}, 12)"
+                        "expr": "filterExcludeByFieldAndSlice(collections['f6a7b8c9-d0e1-2345-fabc-456789012345']?.data?.search?.items, 'productId', collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.id, 12)"
                       },
                       "key": "relatedProduct",
                       "props": {

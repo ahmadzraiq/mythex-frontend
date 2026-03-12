@@ -19,7 +19,11 @@
             "children": [
               {
                 "type": "Pressable",
-                "actions": [{ "action": "navigateToHome" }],
+                "actions": [
+                  {
+                    "action": "navigateToHome"
+                  }
+                ],
                 "children": [
                   {
                     "type": "Text",
@@ -32,7 +36,11 @@
               },
               {
                 "type": "Pressable",
-                "actions": [{ "action": "navigateToCart" }],
+                "actions": [
+                  {
+                    "action": "navigateToCart"
+                  }
+                ],
                 "children": [
                   {
                     "type": "Text",

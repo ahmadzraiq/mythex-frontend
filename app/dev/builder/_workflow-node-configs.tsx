@@ -18,10 +18,14 @@
  *  - NodePropsPanel      — main per-step config panel
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import CodeMirror from '@uiw/react-codemirror';
+import { json } from '@codemirror/lang-json';
+import { oneDark } from '@codemirror/theme-one-dark';
 import { useBuilderStore } from './_store';
 import { BindingIcon, isBoundValue, type FormulaValue } from './_formula-panel';
 import { FormulaEditor, storedValueToFormula } from './_formula-editor';
+import { collectPageComponents } from './_formula-editor-tabs';
 import { GqlEditor } from './_data-source-form';
 import { S } from './_workflow-styles';
 import {
@@ -356,6 +360,311 @@ export function CanvasOnOffToggle({ value, onChange }: { value: boolean; onChang
         onClick={() => onChange(true)}>On</button>
       <button style={{ ...base, background: !value ? '#374151' : 'transparent', color: !value ? '#f3f4f6' : '#6b7280' }}
         onClick={() => onChange(false)}>Off</button>
+    </div>
+  );
+}
+
+// ─── PagePickerDropdown ───────────────────────────────────────────────────────
+// Searchable dropdown that lists all builder pages (from routes config).
+// Matches the exact style of TypeSearchDropdown.
+
+export function PagePickerDropdown({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (path: string) => void;
+}) {
+  const pages = useBuilderStore(s => s.pages);
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const options = pages
+    .filter(p => p.route)
+    .map(p => ({ name: p.name, path: p.route }));
+
+  // Default to first page when no value is set
+  const effectiveValue = value || options[0]?.path || '';
+
+  const q = search.toLowerCase();
+  const filtered = options.filter(p =>
+    !q || p.name.toLowerCase().includes(q) || p.path.toLowerCase().includes(q)
+  );
+
+  const selected = options.find(p => p.path === effectiveValue);
+  const currentLabel = selected ? selected.name : 'Select a page…';
+
+  useEffect(() => {
+    if (!open) return;
+    searchRef.current?.focus();
+    const handler = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('[data-popover="page-picker"]')) {
+        setOpen(false);
+        setSearch('');
+      }
+    };
+    window.addEventListener('mousedown', handler, true);
+    return () => window.removeEventListener('mousedown', handler, true);
+  }, [open]);
+
+  // Emit the default value on first render so cfg.defaultPath is always set
+  useEffect(() => {
+    if (!value && options[0]?.path) onChange(options[0].path);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div ref={wrapperRef} data-popover="page-picker" style={{ position: 'relative', width: '100%' }}>
+      <button
+        style={{
+          ...S.fieldSelect,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          cursor: 'pointer',
+          textAlign: 'left',
+          paddingRight: 28,
+        }}
+        onClick={() => { setOpen(v => !v); setSearch(''); }}
+      >
+        <span style={{ fontSize: 12, flexShrink: 0 }}>🔗</span>
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: effectiveValue ? '#f3f4f6' : '#6b7280' }}>
+          {currentLabel}
+        </span>
+        <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: '#6b7280', pointerEvents: 'none' }}>
+          {open ? '▴' : '▾'}
+        </span>
+      </button>
+
+      {open && (
+        <div
+          style={{
+            ...S.dropdown,
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            zIndex: 300,
+            minWidth: 'unset',
+            width: '100%',
+            maxHeight: 320,
+          }}
+        >
+          <input
+            ref={searchRef}
+            style={S.dropdownSearch}
+            placeholder="Search pages…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {filtered.length === 0 && (
+            <div style={{ padding: '8px 12px', fontSize: 12, color: '#6b7280' }}>No pages found</div>
+          )}
+          {filtered.map(p => (
+            <button
+              key={p.path}
+              style={S.dropdownItem(p.path === effectiveValue)}
+              onMouseEnter={e => { if (p.path !== effectiveValue) (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
+              onMouseLeave={e => { if (p.path !== effectiveValue) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+              onClick={() => { onChange(p.path); setOpen(false); setSearch(''); }}
+            >
+              <span style={{ flex: 1 }}>{p.name}</span>
+              <span style={{ fontSize: 10, color: '#6b7280' }}>{p.path}</span>
+              {p.path === effectiveValue && <span style={{ color: '#3b82f6', fontSize: 10 }}>✓</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── OptionPickerDropdown ─────────────────────────────────────────────────────
+// Generic custom dropdown for a fixed list of options.
+// Matches the exact style of TypeSearchDropdown / PagePickerDropdown.
+
+export function OptionPickerDropdown({
+  value,
+  onChange,
+  options,
+  placeholder = 'Select…',
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const selected = options.find(o => o.value === value);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('[data-popover="option-picker"]')) {
+        setOpen(false);
+      }
+    };
+    window.addEventListener('mousedown', handler, true);
+    return () => window.removeEventListener('mousedown', handler, true);
+  }, [open]);
+
+  return (
+    <div ref={wrapperRef} data-popover="option-picker" style={{ position: 'relative', width: '100%' }}>
+      <button
+        style={{
+          ...S.fieldSelect,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          cursor: 'pointer',
+          textAlign: 'left',
+          paddingRight: 28,
+        }}
+        onClick={() => setOpen(v => !v)}
+      >
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          color: value ? '#f3f4f6' : '#6b7280' }}>
+          {selected?.label ?? placeholder}
+        </span>
+        <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+          fontSize: 10, color: '#6b7280', pointerEvents: 'none' }}>
+          {open ? '▴' : '▾'}
+        </span>
+      </button>
+
+      {open && (
+        <div style={{
+          ...S.dropdown,
+          position: 'absolute', top: '100%', left: 0, right: 0,
+          zIndex: 300, minWidth: 'unset', width: '100%',
+        }}>
+          {options.map(o => (
+            <button
+              key={o.value}
+              style={S.dropdownItem(o.value === value)}
+              onMouseEnter={e => { if (o.value !== value) (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
+              onMouseLeave={e => { if (o.value !== value) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+              onClick={() => { onChange(o.value); setOpen(false); }}
+            >
+              <span style={{ flex: 1 }}>{o.label}</span>
+              {o.value === value && <span style={{ color: '#3b82f6', fontSize: 10 }}>✓</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── CollectionPickerDropdown ─────────────────────────────────────────────────
+// Searchable dropdown listing all datasources (collections) from the builder store.
+// Matches the exact style of TypeSearchDropdown / PagePickerDropdown.
+
+export function CollectionPickerDropdown({
+  value,
+  onChange,
+  placeholder = 'Select a collection…',
+}: {
+  value: string;
+  onChange: (id: string) => void;
+  placeholder?: string;
+}) {
+  const collections = useBuilderStore(s => s.pageDataSources);
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // datasources store label in _label, operationName in _operationName; name may be empty
+  type RichDs = typeof collections[number] & { _label?: string; _operationName?: string };
+  const getLabel = (c: RichDs) =>
+    (c as RichDs)._label || (c as RichDs)._operationName || c.name || c.id;
+
+  const q = search.toLowerCase();
+  const filtered = (collections as RichDs[]).filter(c => {
+    const lbl = getLabel(c).toLowerCase();
+    return !q || lbl.includes(q) || c.id.toLowerCase().includes(q);
+  });
+  const selected = (collections as RichDs[]).find(c => c.id === value);
+
+  useEffect(() => {
+    if (!open) return;
+    searchRef.current?.focus();
+    const handler = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('[data-popover="collection-picker"]')) {
+        setOpen(false);
+        setSearch('');
+      }
+    };
+    window.addEventListener('mousedown', handler, true);
+    return () => window.removeEventListener('mousedown', handler, true);
+  }, [open]);
+
+  return (
+    <div ref={wrapperRef} data-popover="collection-picker" style={{ position: 'relative', width: '100%' }}>
+      <button
+        style={{
+          ...S.fieldSelect,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          cursor: 'pointer',
+          textAlign: 'left',
+          paddingRight: 28,
+        }}
+        onClick={() => { setOpen(v => !v); setSearch(''); }}
+      >
+        <span style={{ fontSize: 12, flexShrink: 0 }}>🗄</span>
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: value ? '#f3f4f6' : '#6b7280' }}>
+          {selected ? getLabel(selected) : placeholder}
+        </span>
+        <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: '#6b7280', pointerEvents: 'none' }}>
+          {open ? '▴' : '▾'}
+        </span>
+      </button>
+
+      {open && (
+        <div
+          style={{
+            ...S.dropdown,
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            zIndex: 300,
+            minWidth: 'unset',
+            width: '100%',
+            maxHeight: 320,
+          }}
+        >
+          <input
+            ref={searchRef}
+            style={S.dropdownSearch}
+            placeholder="Search collections…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {filtered.length === 0 && (
+            <div style={{ padding: '8px 12px', fontSize: 12, color: '#6b7280' }}>No collections found</div>
+          )}
+          {filtered.map(c => (
+            <button
+              key={c.id}
+              style={S.dropdownItem(c.id === value)}
+              onMouseEnter={e => { if (c.id !== value) (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
+              onMouseLeave={e => { if (c.id !== value) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+              onClick={() => { onChange(c.id); setOpen(false); setSearch(''); }}
+            >
+              <span style={{ flex: 1 }}>{getLabel(c)}</span>
+              <span style={{ fontSize: 10, color: '#6b7280' }}>{c.type}</span>
+              {c.id === value && <span style={{ color: '#3b82f6', fontSize: 10 }}>✓</span>}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1065,99 +1374,354 @@ function GraphQLStepConfig({
 
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
+export function PillToggle({ value, onChange, label }: { value: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+      <span style={{ fontSize: 11, color: '#d1d5db' }}>{label}</span>
+      <button
+        style={{
+          width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', position: 'relative',
+          background: value ? '#3b82f6' : '#374151', transition: 'background 0.2s', flexShrink: 0,
+        }}
+        onClick={() => onChange(!value)}
+      >
+        <span style={{
+          position: 'absolute', top: 2, left: value ? 18 : 2, width: 16, height: 16,
+          borderRadius: '50%', background: '#fff', transition: 'left 0.2s',
+        }} />
+      </button>
+    </div>
+  );
+}
+
+const CONTENT_TYPES = [
+  { value: '', label: 'Default (application/json)' },
+  { value: 'application/x-www-form-urlencoded', label: 'Form URL-encoded' },
+  { value: 'multipart/form-data', label: 'Multipart/Form-data' },
+  { value: 'text/plain', label: 'Text' },
+  { value: 'application/xml', label: 'XML' },
+];
+
 function FetchDataStepConfig({
   cfg,
   setCfg,
+  workflowTrigger,
 }: {
   cfg: Record<string, unknown>;
   setCfg: (key: string, value: unknown) => void;
+  workflowTrigger?: string;
 }) {
-  const [urlOpen, setUrlOpen] = React.useState(false);
-  const urlBound = isBoundValue(cfg.url as FormulaValue | undefined);
+  const [bodyTab, setBodyTab] = React.useState<'parsed' | 'raw'>((cfg.bodyMode as 'parsed' | 'raw') ?? 'parsed');
+  const isGet = ((cfg.method as string) ?? 'POST').toUpperCase() === 'GET';
+
+  const switchTab = (tab: 'parsed' | 'raw') => {
+    setBodyTab(tab);
+    setCfg('bodyMode', tab);
+  };
 
   return (
     <>
+      {/* Method */}
+      <label style={{ ...S.fieldLabel, marginTop: 10 }}>Method *</label>
+      <OptionPickerDropdown
+        value={(cfg.method as string) ?? 'POST'}
+        onChange={v => setCfg('method', v)}
+        options={HTTP_METHODS.map(m => ({ value: m, label: m }))}
+      />
+
       {/* URL */}
-      <label style={{ ...S.fieldLabel, marginTop: 10 }}>Url *</label>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        {urlBound ? (
-          <button
-            style={{ flex: 1, ...S.fieldInput, background: '#1e1b4b', border: '1px solid #4338ca', color: '#a5b4fc', cursor: 'pointer', textAlign: 'left', fontFamily: 'monospace', fontSize: 10, padding: '4px 7px' }}
-            onClick={() => setUrlOpen(true)}
-            title={String(cfg.url ?? '')}
-          >ƒ formula</button>
-        ) : (
-          <input
-            style={{ ...S.fieldInput, flex: 1 }}
-            placeholder="https://api.example.com/endpoint"
-            value={(cfg.url as string) ?? ''}
-            onChange={e => setCfg('url', e.target.value || undefined)}
-          />
-        )}
-        <BindingIcon isBound={urlBound} onClick={() => setUrlOpen(true)} />
-      </div>
-      {urlOpen && (
-        <FormulaEditor
-          label="url"
-          value={(cfg.url as FormulaValue) ?? null}
-          onChange={v => { setCfg('url', v); setUrlOpen(false); }}
-          onClose={() => setUrlOpen(false)}
-          anchorRight={292}
-        />
+      <BoundField
+        label="URL"
+        required
+        value={cfg.url as FormulaValue | undefined}
+        onChange={v => setCfg('url', v)}
+        placeholder="https://api-url.com/endpoint"
+        workflowTrigger={workflowTrigger}
+      />
+
+      {/* Parsed fields / Raw body tabs — only for non-GET methods */}
+      {!isGet && (
+        <>
+          <div style={{ ...S.toggleGroup, marginTop: 14 }}>
+            <button style={S.toggleBtn(bodyTab === 'parsed')} onClick={() => switchTab('parsed')}>Parsed fields</button>
+            <button style={S.toggleBtn(bodyTab === 'raw')} onClick={() => switchTab('raw')}>Raw body</button>
+          </div>
+
+          {bodyTab === 'parsed' ? (
+            <>
+              <WorkflowKvEditor
+                label="Fields"
+                value={cfg.fields as Record<string, unknown> | undefined}
+                onChange={v => setCfg('fields', Object.keys(v).length ? v : undefined)}
+                testIdPrefix="rest-fields"
+              />
+              <WorkflowKvEditor
+                label="Headers"
+                value={cfg.headers as Record<string, unknown> | undefined}
+                onChange={v => setCfg('headers', Object.keys(v).length ? v : undefined)}
+                testIdPrefix="rest-headers"
+              />
+              <WorkflowKvEditor
+                label="Query string"
+                value={cfg.query as Record<string, unknown> | undefined}
+                onChange={v => setCfg('query', Object.keys(v).length ? v : undefined)}
+                testIdPrefix="rest-query"
+              />
+              <label style={{ ...S.fieldLabel, marginTop: 10 }}>Content type</label>
+              <OptionPickerDropdown
+                value={(cfg.contentType as string) ?? ''}
+                onChange={v => setCfg('contentType', v)}
+                options={CONTENT_TYPES}
+                placeholder="Default (application/json)"
+              />
+            </>
+          ) : (
+            <>
+              <BoundField
+                label="Body"
+                value={cfg.body as FormulaValue | undefined}
+                onChange={v => setCfg('body', v)}
+                placeholder=""
+                workflowTrigger={workflowTrigger}
+              />
+              <WorkflowKvEditor
+                label="Headers"
+                value={cfg.headers as Record<string, unknown> | undefined}
+                onChange={v => setCfg('headers', Object.keys(v).length ? v : undefined)}
+                testIdPrefix="rest-headers"
+              />
+              <WorkflowKvEditor
+                label="Query string"
+                value={cfg.query as Record<string, unknown> | undefined}
+                onChange={v => setCfg('query', Object.keys(v).length ? v : undefined)}
+                testIdPrefix="rest-query"
+              />
+              <label style={{ ...S.fieldLabel, marginTop: 10 }}>Content type</label>
+              <OptionPickerDropdown
+                value={(cfg.contentType as string) ?? ''}
+                onChange={v => setCfg('contentType', v)}
+                options={CONTENT_TYPES}
+                placeholder="Default (application/json)"
+              />
+            </>
+          )}
+        </>
       )}
 
-      {/* Method */}
-      <label style={{ ...S.fieldLabel, marginTop: 10 }}>Method</label>
-      <select
-        style={S.fieldSelect}
-        value={(cfg.method as string) ?? 'GET'}
-        onChange={e => setCfg('method', e.target.value)}
-      >
-        {HTTP_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
-      </select>
-
-      {/* Body (for non-GET methods) */}
-      {(cfg.method as string | undefined) && (cfg.method as string) !== 'GET' && (
+      {/* For GET: still show Headers and Query string */}
+      {isGet && (
         <>
-          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Body</label>
-          <textarea
-            style={{ ...S.fieldInput, minHeight: 72, fontFamily: 'monospace', fontSize: 10, resize: 'vertical' }}
-            placeholder={'{\n  "key": "value"\n}'}
-            value={(cfg.body as string) ?? ''}
-            onChange={e => setCfg('body', e.target.value || undefined)}
+          <WorkflowKvEditor
+            label="Headers"
+            value={cfg.headers as Record<string, unknown> | undefined}
+            onChange={v => setCfg('headers', Object.keys(v).length ? v : undefined)}
+            testIdPrefix="rest-headers"
+          />
+          <WorkflowKvEditor
+            label="Query string"
+            value={cfg.query as Record<string, unknown> | undefined}
+            onChange={v => setCfg('query', Object.keys(v).length ? v : undefined)}
+            testIdPrefix="rest-query"
           />
         </>
       )}
 
-      {/* Headers */}
-      <WorkflowKvEditor
-        label="Headers"
-        value={cfg.headers as Record<string, unknown> | undefined}
-        onChange={v => setCfg('headers', Object.keys(v).length ? v : undefined)}
-        testIdPrefix="rest-headers"
+      {/* Proxy server side */}
+      <BoundToggleField
+        label="Proxy request server side (bypass CORS)"
+        value={cfg.proxy as FormulaValue | undefined}
+        onChange={v => setCfg('proxy', v)}
+        workflowTrigger={workflowTrigger}
       />
 
-      {/* Send credentials toggle */}
-      <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 11, color: '#d1d5db' }}>Send credentials</span>
-        <button
-          style={{
-            width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', position: 'relative',
-            background: cfg.credentials ? '#3b82f6' : '#374151', transition: 'background 0.2s',
-          }}
-          onClick={() => setCfg('credentials', !cfg.credentials)}
-        >
-          <span style={{
-            position: 'absolute', top: 2, left: cfg.credentials ? 18 : 2, width: 16, height: 16,
-            borderRadius: '50%', background: '#fff', transition: 'left 0.2s',
-          }} />
-        </button>
-      </div>
+      {/* Send credentials */}
+      <PillToggle
+        label="Send credentials"
+        value={!!(cfg.credentials)}
+        onChange={v => setCfg('credentials', v)}
+      />
+
+      {/* Stream response */}
+      <PillToggle
+        label="Stream response"
+        value={!!(cfg.stream)}
+        onChange={v => setCfg('stream', v)}
+      />
     </>
   );
 }
 
-// ─── ChangeVariableValueConfig ───────────────────────────────────────────────
+// ─── ExecuteComponentActionConfig ────────────────────────────────────────────
+// Dropdown that lists every node × workflow combination on the page.
+
+/** Walk the node tree and collect {id, name, type} for every node that has workflows */
+function collectNodesWithWorkflows(
+  nodes: import('@/lib/sdui/types/node').SDUINode[],
+  meta: Record<string, import('./_store-types').WorkflowMeta>,
+): Array<{ nodeId: string; nodeName: string; workflowId: string; workflowName: string; trigger: string }> {
+  const results: Array<{ nodeId: string; nodeName: string; workflowId: string; workflowName: string; trigger: string }> = [];
+
+  function walk(node: import('@/lib/sdui/types/node').SDUINode) {
+    const nodeId = (node as { id?: string }).id;
+    if (nodeId && node.actions) {
+      const rawArr = Array.isArray(node.actions) ? node.actions : null;
+      const rawObj = (!Array.isArray(node.actions) && node.actions) ? node.actions as Record<string, unknown> : null;
+      const entries: string[] = [];
+      if (rawArr) {
+        for (const a of rawArr) {
+          const id = (a as { action?: string }).action;
+          if (id && !meta[id]?.isSystem) entries.push(id);
+        }
+      } else if (rawObj) {
+        for (const [, v] of Object.entries(rawObj)) {
+          const id = (v as { action?: string }).action;
+          if (id && !meta[id]?.isSystem) entries.push(id);
+        }
+      }
+      for (const wfId of entries) {
+        const wfMeta = meta[wfId];
+        results.push({
+          nodeId,
+          nodeName: (node as { name?: string }).name || node.type,
+          workflowId: wfId,
+          workflowName: wfMeta?.name || 'Workflow',
+          trigger: wfMeta?.trigger || 'click',
+        });
+      }
+    }
+    if (node.children) for (const child of node.children) walk(child);
+  }
+
+  for (const n of nodes) walk(n);
+  return results;
+}
+
+function ExecuteComponentActionConfig({
+  cfg,
+  onUpdate,
+}: {
+  cfg: Record<string, unknown>;
+  onUpdate: (patch: Record<string, unknown>) => void;
+}) {
+  const pageNodes = useBuilderStore(s => s.pageNodes);
+  const pageWorkflowMeta = useBuilderStore(s => s.pageWorkflowMeta);
+  const [search, setSearch] = React.useState('');
+  const [open, setOpen] = React.useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const entries = React.useMemo(
+    () => collectNodesWithWorkflows(pageNodes, pageWorkflowMeta),
+    [pageNodes, pageWorkflowMeta],
+  );
+
+  const selected = entries.find(e => e.workflowId === (cfg.action as string));
+
+  const q = search.toLowerCase();
+  const filtered = q
+    ? entries.filter(e =>
+        `${e.nodeName} ${e.workflowName} ${e.trigger}`.toLowerCase().includes(q),
+      )
+    : entries;
+
+  useEffect(() => {
+    if (!open) return;
+    searchRef.current?.focus();
+    const handler = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('[data-popover="component-picker"]')) {
+        setOpen(false);
+        setSearch('');
+      }
+    };
+    window.addEventListener('mousedown', handler, true);
+    return () => window.removeEventListener('mousedown', handler, true);
+  }, [open]);
+
+  return (
+    <>
+      <label style={{ ...S.fieldLabel, marginTop: 10 }}>Component *</label>
+      <div ref={wrapperRef} data-popover="component-picker" style={{ position: 'relative', width: '100%' }}>
+        <button
+          style={{
+            ...S.fieldSelect,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            cursor: 'pointer',
+            textAlign: 'left',
+            paddingRight: 28,
+          }}
+          onClick={() => { setOpen(v => !v); setSearch(''); }}
+        >
+          <span style={{ fontSize: 12, flexShrink: 0 }}>⚡</span>
+          {selected ? (
+            <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, color: '#f3f4f6' }}>
+                {selected.nodeName}
+              </span>
+              <span style={{ fontSize: 10, color: '#6b7280', flexShrink: 0 }}>
+                {selected.workflowName} · {selected.trigger}
+              </span>
+            </span>
+          ) : (
+            <span style={{ flex: 1, color: '#6b7280' }}>Choose a component…</span>
+          )}
+          <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: '#6b7280', pointerEvents: 'none' }}>
+            {open ? '▴' : '▾'}
+          </span>
+        </button>
+
+        {open && (
+          <div
+            style={{
+              ...S.dropdown,
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              right: 0,
+              zIndex: 300,
+              minWidth: 'unset',
+              width: '100%',
+              maxHeight: 320,
+            }}
+          >
+            <input
+              ref={searchRef}
+              style={S.dropdownSearch}
+              placeholder="Search components…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            {filtered.length === 0 && (
+              <div style={{ padding: '8px 12px', fontSize: 12, color: '#6b7280' }}>
+                {entries.length === 0 ? 'No components with workflows on this page' : 'No results'}
+              </div>
+            )}
+            {filtered.map(e => {
+              const isActive = e.workflowId === (cfg.action as string);
+              return (
+                <button
+                  key={`${e.nodeId}-${e.workflowId}`}
+                  style={{ ...S.dropdownItem(isActive), flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}
+                  onMouseEnter={ev => { if (!isActive) (ev.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
+                  onMouseLeave={ev => { if (!isActive) (ev.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+                  onClick={() => { onUpdate({ ...cfg, action: e.workflowId, componentId: e.nodeId }); setOpen(false); setSearch(''); }}
+                >
+                  <span style={{ fontSize: 12, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
+                    {e.nodeName}
+                  </span>
+                  <span style={{ fontSize: 10, color: '#6b7280' }}>
+                    {e.workflowName} · {e.trigger}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
 
 const TYPE_COLOR: Record<string, string> = {
   string: '#fbbf24',
@@ -1168,34 +1732,443 @@ const TYPE_COLOR: Record<string, string> = {
   form: '#f472b6',
 };
 
-function ChangeVariableValueConfig({
+// ─── ResetVariableValueConfig ────────────────────────────────────────────────
+// List of variable pickers — user can add / remove rows.
+// Each row has a searchable variable dropdown. Starts with one empty row.
+
+type ResetRow = { varId: string; search: string; open: boolean };
+
+function initRows(cfg: Record<string, unknown>): ResetRow[] {
+  const ids: string[] = Array.isArray(cfg.variableNames)
+    ? (cfg.variableNames as string[])
+    : cfg.variableName ? [(cfg.variableName as string)] : [];
+  // Always at least one empty row
+  const source = ids.length > 0 ? ids : [''];
+  return source.map(varId => ({ varId, search: '', open: false }));
+}
+
+function ResetVariableValueConfig({
   cfg,
   setCfg,
 }: {
   cfg: Record<string, unknown>;
   setCfg: (key: string, value: unknown) => void;
 }) {
-  const { customVars } = useBuilderStore();
+  const { customVars, pageNodes } = useBuilderStore();
+  const [rows, setRows] = React.useState<ResetRow[]>(() => initRows(cfg));
+
+  const { standalones, formContainers } = React.useMemo(
+    () => collectPageComponents(pageNodes, false),
+    [pageNodes],
+  );
+  const pageVars = React.useMemo(() => {
+    const entries: Array<{ id: string; label: string; type: string }> = [];
+    for (const { node, insideForm } of standalones) {
+      const nodeId = (node as { id?: string }).id;
+      if (!nodeId) continue;
+      const name = ((node as { name?: string }).name || node.type).trim() || 'Input';
+      entries.push({ id: `${nodeId}-value`, label: insideForm ? `Form - ${name}` : name, type: 'string' });
+    }
+    for (const { node } of formContainers) {
+      const nodeId = (node as { id?: string }).id;
+      if (!nodeId) continue;
+      const name = ((node as { name?: string }).name || 'Form').trim();
+      entries.push({ id: `${nodeId}-form`, label: `Form Container - ${name}`, type: 'object' });
+    }
+    return entries;
+  }, [standalones, formContainers]);
+
+  const allVars = React.useMemo(() => {
+    const pageVarIds = new Set(pageVars.map(v => v.id));
+    return [...pageVars, ...customVars.filter(v => !pageVarIds.has(v.id ?? (v as { name?: string }).name ?? ''))];
+  }, [pageVars, customVars]);
+
+  // Commit rows → cfg whenever rows change
+  const commitRows = React.useCallback((next: ResetRow[]) => {
+    const ids = next.map(r => r.varId);
+    setCfg('variableNames', ids);
+    setCfg('variableName', ids[0] ?? undefined);
+  }, [setCfg]);
+
+  function addRow() {
+    const next = [...rows, { varId: '', search: '', open: false }];
+    setRows(next);
+    commitRows(next);
+  }
+
+  function removeRow(idx: number) {
+    const next = rows.filter((_, i) => i !== idx);
+    setRows(next);
+    commitRows(next);
+  }
+
+  function setRowOpen(idx: number, val: boolean) {
+    setRows(prev => prev.map((r, i) => i === idx ? { ...r, open: val, search: val ? r.search : '' } : r));
+  }
+
+  function setRowSearch(idx: number, val: string) {
+    setRows(prev => prev.map((r, i) => i === idx ? { ...r, search: val } : r));
+  }
+
+  function setRowVar(idx: number, varId: string) {
+    const next = rows.map((r, i) => i === idx ? { ...r, varId, open: false, search: '' } : r);
+    setRows(next);
+    commitRows(next);
+  }
+
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+        <span style={{ ...S.fieldLabel, marginTop: 0 }}>Variables</span>
+        <button
+          style={{ fontSize: 11, color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer' }}
+          onClick={e => { e.stopPropagation(); addRow(); }}
+        >+ Add</button>
+      </div>
+
+      {rows.map((row, idx) => {
+        const selected = allVars.find(v => (v.id ?? (v as { name?: string }).name) === row.varId);
+        const filtered = allVars.filter(v => {
+          if (!row.search) return true;
+          const lbl = (('label' in v ? v.label : undefined) ?? ('name' in v ? (v as { name?: string }).name : undefined) ?? '').toLowerCase();
+          return lbl.includes(row.search.toLowerCase());
+        });
+
+        return (
+          <div key={idx} style={{ display: 'flex', gap: 6, marginTop: 6, alignItems: 'center' }}>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <button
+                onClick={e => { e.stopPropagation(); setRowOpen(idx, !row.open); }}
+                style={{ ...S.fieldInput, width: '100%', textAlign: 'left', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}
+              >
+                {selected ? (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
+                    <span style={{ fontSize: 9, color: TYPE_COLOR[selected.type] ?? '#9ca3af', fontFamily: 'monospace',
+                      background: 'rgba(255,255,255,0.07)', border: `1px solid ${TYPE_COLOR[selected.type] ?? '#374151'}`,
+                      borderRadius: 3, padding: '0 4px', flexShrink: 0 }}>{selected.type}</span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {('label' in selected ? selected.label : undefined) ?? ('name' in selected ? (selected as { name?: string }).name : undefined)}
+                    </span>
+                  </span>
+                ) : (
+                  <span style={{ color: '#4b5563' }}>Choose a variable</span>
+                )}
+                <span style={{ color: '#6b7280', fontSize: 10, flexShrink: 0 }}>{row.open ? '▴' : '▾'}</span>
+              </button>
+
+              {row.open && (
+                <div
+                  data-popover
+                  onClick={e => e.stopPropagation()}
+                  style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                    background: '#111827', border: '1px solid #374151', borderRadius: 6,
+                    marginTop: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                    maxHeight: 200, display: 'flex', flexDirection: 'column' }}
+                >
+                  <div style={{ padding: '6px 8px', borderBottom: '1px solid #1f2937' }}>
+                    <input
+                      autoFocus
+                      value={row.search}
+                      onChange={e => setRowSearch(idx, e.target.value)}
+                      placeholder="Search variables…"
+                      style={{ width: '100%', boxSizing: 'border-box', background: '#1f2937',
+                        border: '1px solid #374151', borderRadius: 4, color: '#d1d5db',
+                        fontSize: 11, padding: '3px 7px', outline: 'none' }}
+                    />
+                  </div>
+                  <div style={{ overflowY: 'auto', flex: 1 }}>
+                    {filtered.length === 0 && (
+                      <div style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>No variables found</div>
+                    )}
+                    {filtered.map(v => {
+                      const key = v.id ?? (v as { name?: string }).name;
+                      const isActive = key === row.varId;
+                      return (
+                        <button
+                          key={key}
+                          onClick={e => { e.stopPropagation(); setRowVar(idx, key ?? ''); }}
+                          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px',
+                            background: isActive ? '#1e3a5f' : 'none', border: 'none', cursor: 'pointer',
+                            color: isActive ? '#93c5fd' : '#d1d5db', fontSize: 11, textAlign: 'left' }}
+                        >
+                          <span style={{ fontSize: 9, color: TYPE_COLOR[v.type] ?? '#9ca3af', fontFamily: 'monospace',
+                            background: 'rgba(255,255,255,0.07)', border: `1px solid ${TYPE_COLOR[v.type] ?? '#374151'}`,
+                            borderRadius: 3, padding: '0 4px', flexShrink: 0 }}>{v.type}</span>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {('label' in v ? v.label : undefined) ?? ('name' in v ? (v as { name?: string }).name : undefined)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+            <button
+              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 18, flexShrink: 0, lineHeight: 1 }}
+              onClick={e => { e.stopPropagation(); removeRow(idx); }}
+            >−</button>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+// ─── ChangeVariableValueConfig ───────────────────────────────────────────────
+
+const ARRAY_OPS = [
+  { value: 'replace', label: 'Replace all items' },
+  { value: 'updateOne', label: 'Update one item' },
+  { value: 'insertEnd', label: 'Insert at end' },
+  { value: 'insertStart', label: 'Insert at start' },
+  { value: 'insertAt', label: 'Insert at index' },
+  { value: 'removeAt', label: 'Remove at index' },
+  { value: 'removeFirst', label: 'Remove first' },
+  { value: 'removeLast', label: 'Remove last' },
+];
+
+/**
+ * Bind button (LEFT) + On/Off toggle — for boolean fields that can also be formula-bound.
+ * When formula-bound shows the "ƒ Edit formula" chip instead of the toggle.
+ */
+export function BoundToggleField({
+  label,
+  value,
+  onChange,
+  workflowTrigger,
+}: {
+  label: string;
+  value: FormulaValue | undefined;
+  onChange: (v: FormulaValue | undefined) => void;
+  workflowTrigger?: string;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const isBound = isBoundValue(value);
+  const boolVal = !isBound && (value === true || value === 'true');
+
+  return (
+    <>
+      <label style={{ ...S.fieldLabel, marginTop: 10 }}>{label}</label>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <BindingIcon isBound={isBound} onClick={() => setOpen(v => !v)} />
+        {isBound ? (
+          <button
+            onClick={() => setOpen(v => !v)}
+            style={{ flex: 1, padding: '5px 8px', background: '#2e1065', border: '1px solid #7c3aed',
+              borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+              textAlign: 'left' }}
+          >ƒ Edit formula</button>
+        ) : (
+          <div style={{ flex: 1, display: 'flex', background: '#1f2937', borderRadius: 4, padding: 2, gap: 2 }}>
+            <button
+              style={{ flex: 1, padding: '4px 0', fontSize: 11, border: 'none', cursor: 'pointer', borderRadius: 3, fontWeight: 500,
+                background: boolVal ? '#374151' : 'transparent', color: boolVal ? '#f3f4f6' : '#6b7280' }}
+              onClick={() => onChange(true)}
+            >On</button>
+            <button
+              style={{ flex: 1, padding: '4px 0', fontSize: 11, border: 'none', cursor: 'pointer', borderRadius: 3, fontWeight: 500,
+                background: !boolVal ? '#374151' : 'transparent', color: !boolVal ? '#f3f4f6' : '#6b7280' }}
+              onClick={() => onChange(false)}
+            >Off</button>
+          </div>
+        )}
+      </div>
+      {open && (
+        <FormulaEditor
+          label={label}
+          value={value ?? null}
+          onChange={v => { onChange(v ?? undefined); setOpen(false); }}
+          onClose={() => setOpen(false)}
+          anchorRight={292}
+          expectedType="boolean"
+          workflowTrigger={workflowTrigger}
+        />
+      )}
+    </>
+  );
+}
+
+/** Segmented On/Off toggle — matches the Debounce/Autocomplete style in the design panel. */
+function OnOffToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  const btn = (active: boolean): React.CSSProperties => ({
+    padding: '2px 10px', fontSize: 10, border: 'none', cursor: 'pointer', borderRadius: 3, fontWeight: 500,
+    background: active ? '#374151' : 'transparent',
+    color: active ? '#f3f4f6' : '#6b7280',
+  });
+  return (
+    <div style={{ display: 'flex', background: '#1f2937', borderRadius: 4, padding: 2, gap: 2 }}>
+      <button style={btn(value)} onClick={() => onChange(true)}>On</button>
+      <button style={btn(!value)} onClick={() => onChange(false)}>Off</button>
+    </div>
+  );
+}
+
+/** Bind button on the LEFT of a field, then the input on the right. */
+export function BoundField({
+  label,
+  required,
+  value,
+  onChange,
+  placeholder,
+  multiline,
+  code,
+  numeric,
+  workflowTrigger,
+  expectedType,
+}: {
+  label: string;
+  required?: boolean;
+  value: FormulaValue | undefined;
+  onChange: (v: FormulaValue | undefined) => void;
+  placeholder?: string;
+  multiline?: boolean;
+  /** Show a monospace code editor textarea (for JSON objects / arrays) */
+  code?: boolean;
+  numeric?: boolean;
+  workflowTrigger?: string;
+  expectedType?: 'string' | 'number' | 'boolean' | 'any';
+}) {
+  const [open, setOpen] = React.useState(false);
+  // Must be called unconditionally — used by CodeMirror when code=true
+  const handleCodeChange = useCallback((val: string) => onChange(val || undefined), [onChange]);
+  // For code editor mode, only treat formula objects as "bound" — plain JSON strings are not formulas
+  const isBound = isBoundValue(value) || (!code && typeof value === 'string' && (value as string).trim().length > 0);
+  const strVal = isBound && !isBoundValue(value) ? (value as string) : '';
+  const isMultiline = multiline || code;
+
+  return (
+    <>
+      <label style={{ ...S.fieldLabel, marginTop: 10 }}>{label}{required ? ' *' : ''}</label>
+      <div style={{ display: 'flex', alignItems: isMultiline ? 'flex-start' : 'center', gap: 6 }}>
+        <BindingIcon isBound={isBound} onClick={() => setOpen(v => !v)} />
+        {isBoundValue(value) ? (
+          <button
+            onClick={() => setOpen(v => !v)}
+            style={{ flex: 1, padding: '5px 8px', background: '#2e1065', border: '1px solid #7c3aed',
+              borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+              textAlign: 'left' }}
+          >ƒ Edit formula</button>
+        ) : code ? (
+          <div style={{ flex: 1, borderRadius: 6, overflow: 'hidden', border: '1px solid #374151', minHeight: 80 }}>
+            <CodeMirror
+              value={strVal}
+              height="auto"
+              minHeight="80px"
+              extensions={[json()]}
+              theme={oneDark}
+              basicSetup={{ lineNumbers: false, foldGutter: false, highlightActiveLine: false }}
+              style={{ fontSize: 11 }}
+              onChange={handleCodeChange}
+            />
+          </div>
+        ) : multiline ? (
+          <textarea
+            style={{ ...S.fieldInput, flex: 1, resize: 'vertical', minHeight: 60 }}
+            value={strVal}
+            placeholder={placeholder ?? 'Enter a value'}
+            onChange={e => onChange(e.target.value || undefined)}
+          />
+        ) : numeric ? (
+          <input
+            type="number"
+            style={{ ...S.fieldInput, flex: 1 }}
+            value={strVal}
+            placeholder={placeholder ?? '0'}
+            onChange={e => onChange(e.target.value || undefined)}
+          />
+        ) : (
+          <input
+            style={{ ...S.fieldInput, flex: 1 }}
+            value={strVal}
+            placeholder={placeholder ?? 'Enter a value'}
+            onChange={e => onChange(e.target.value || undefined)}
+          />
+        )}
+      </div>
+      {open && (
+        <FormulaEditor
+          label={label}
+          value={value ?? null}
+          onChange={v => { onChange(v ?? undefined); setOpen(false); }}
+          onClose={() => setOpen(false)}
+          anchorRight={292}
+          expectedType={expectedType}
+          workflowTrigger={workflowTrigger}
+        />
+      )}
+    </>
+  );
+}
+
+function ChangeVariableValueConfig({
+  cfg,
+  setCfg,
+  workflowTrigger,
+}: {
+  cfg: Record<string, unknown>;
+  setCfg: (key: string, value: unknown) => void;
+  workflowTrigger?: string;
+}) {
+  const { customVars, pageNodes } = useBuilderStore();
   const [search, setSearch] = React.useState('');
   const [open, setOpen] = React.useState(false);
-  const [valueEditorOpen, setValueEditorOpen] = React.useState(false);
+
+  // Build page-component variable entries (standalone inputs + form containers)
+  const { standalones, formContainers } = React.useMemo(
+    () => collectPageComponents(pageNodes, false),
+    [pageNodes],
+  );
+  const pageVars = React.useMemo(() => {
+    const entries: Array<{ id: string; label: string; type: string }> = [];
+    for (const { node, insideForm } of standalones) {
+      const nodeId = (node as { id?: string }).id;
+      if (!nodeId) continue;
+      const name = ((node as { name?: string }).name || node.type).trim() || 'Input';
+      entries.push({ id: `${nodeId}-value`, label: insideForm ? `Form - ${name}` : name, type: 'string' });
+    }
+    for (const { node } of formContainers) {
+      const nodeId = (node as { id?: string }).id;
+      if (!nodeId) continue;
+      const name = ((node as { name?: string }).name || 'Form').trim();
+      entries.push({ id: `${nodeId}-form`, label: `Form Container - ${name}`, type: 'object' });
+    }
+    return entries;
+  }, [standalones, formContainers]);
+
+  const allVars = React.useMemo(() => {
+    const pageVarIds = new Set(pageVars.map(v => v.id));
+    return [
+      ...pageVars,
+      ...customVars.filter(v => !pageVarIds.has(v.id ?? v.name ?? '')),
+    ];
+  }, [pageVars, customVars]);
 
   const varId = cfg.variableName as string | undefined;
-  const selected = customVars.find(v => (v.id ?? v.name) === varId);
-  // When varId is a raw path that doesn't match any customVars entry,
-  // treat it as a path-typed variable (legacy fallback — prefer declaring in config/variables.json)
+  const selectedPageVar = pageVars.find(v => v.id === varId);
+  const selected = selectedPageVar ?? customVars.find(v => (v.id ?? v.name) === varId);
   const rawPathSelected = varId && !selected ? varId : null;
-  const filtered = customVars.filter(v => {
-    const label = (v.label ?? v.name ?? '').toLowerCase();
+  const varType = selected?.type ?? 'string';
+
+  const filtered = allVars.filter(v => {
+    const label = (('label' in v ? v.label : undefined) ?? ('name' in v ? (v as { name?: string }).name : undefined) ?? '').toLowerCase();
     return !search || label.includes(search.toLowerCase());
   });
 
   const val = cfg.value as FormulaValue | undefined;
-  const valueBound = isBoundValue(val as FormulaValue) || (typeof val === 'string' && val.trim().length > 0);
+
+  // Array operation (default: replace)
+  const arrayOp = (cfg.arrayOperation as string) || 'replace';
+  const needsIndex = arrayOp === 'insertAt' || arrayOp === 'removeAt' || arrayOp === 'updateOne';
+  const needsValue = !['removeAt', 'removeFirst', 'removeLast'].includes(arrayOp);
+
+  // Object partial update
+  const partialUpdate = cfg.partialUpdate !== false && varType === 'object';
 
   return (
     <>
-      {/* Variable picker */}
+      {/* ── Variable picker ── */}
       <label style={{ ...S.fieldLabel, marginTop: 10 }}>Variable *</label>
       <div style={{ position: 'relative' }}>
         <button
@@ -1211,7 +2184,7 @@ function ChangeVariableValueConfig({
                 background: 'rgba(255,255,255,0.07)', border: `1px solid ${TYPE_COLOR[selected.type] ?? '#374151'}`,
                 borderRadius: 3, padding: '0 4px', flexShrink: 0 }}>{selected.type}</span>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {selected.label ?? selected.name}
+                {selected.label ?? (selected as { name?: string }).name}
               </span>
             </span>
           ) : rawPathSelected ? (
@@ -1257,7 +2230,6 @@ function ChangeVariableValueConfig({
               />
             </div>
             <div style={{ overflowY: 'auto', flex: 1 }}>
-              {/* Use typed path directly if it looks like a dot-path */}
               {search.includes('.') && (
                 <button
                   onClick={() => { setCfg('variableName', search.trim()); setOpen(false); setSearch(''); }}
@@ -1266,11 +2238,9 @@ function ChangeVariableValueConfig({
                     background: 'none', border: 'none', cursor: 'pointer', color: '#a5b4fc', fontSize: 11, textAlign: 'left',
                   }}
                 >
-                  <span style={{
-                    fontSize: 9, color: '#9ca3af', fontFamily: 'monospace',
+                  <span style={{ fontSize: 9, color: '#9ca3af', fontFamily: 'monospace',
                     background: 'rgba(255,255,255,0.07)', border: '1px solid #374151',
-                    borderRadius: 3, padding: '0 4px', flexShrink: 0,
-                  }}>path</span>
+                    borderRadius: 3, padding: '0 4px', flexShrink: 0 }}>path</span>
                   <span style={{ fontFamily: 'monospace', fontSize: 10 }}>Use &ldquo;{search.trim()}&rdquo;</span>
                 </button>
               )}
@@ -1278,7 +2248,7 @@ function ChangeVariableValueConfig({
                 <div style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>No variables found</div>
               )}
               {filtered.map(v => {
-                const key = v.id ?? v.name;
+                const key = v.id ?? (v as { name?: string }).name;
                 const isActive = key === varId;
                 return (
                   <button
@@ -1290,13 +2260,11 @@ function ChangeVariableValueConfig({
                       color: isActive ? '#93c5fd' : '#d1d5db', fontSize: 11, textAlign: 'left',
                     }}
                   >
-                    <span style={{
-                      fontSize: 9, color: TYPE_COLOR[v.type] ?? '#9ca3af', fontFamily: 'monospace',
+                    <span style={{ fontSize: 9, color: TYPE_COLOR[v.type] ?? '#9ca3af', fontFamily: 'monospace',
                       background: 'rgba(255,255,255,0.07)', border: `1px solid ${TYPE_COLOR[v.type] ?? '#374151'}`,
-                      borderRadius: 3, padding: '0 4px', flexShrink: 0,
-                    }}>{v.type}</span>
+                      borderRadius: 3, padding: '0 4px', flexShrink: 0 }}>{v.type}</span>
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {v.label ?? v.name}
+                      {v.label ?? (v as { name?: string }).name}
                     </span>
                   </button>
                 );
@@ -1306,34 +2274,86 @@ function ChangeVariableValueConfig({
         )}
       </div>
 
-      {/* Value field */}
-      <label style={{ ...S.fieldLabel, marginTop: 10 }}>Value</label>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        {valueBound ? (
-          <button
-            onClick={() => setValueEditorOpen(v => !v)}
-            style={{ flex: 1, padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed',
-              borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
-              textAlign: 'left' }}
-          >ƒ Edit formula</button>
-        ) : (
-          <input
-            style={{ ...S.fieldInput, flex: 1 }}
-            value={typeof val === 'string' ? val : (val == null ? '' : String(val))}
-            placeholder="New value or formula"
-            onChange={e => setCfg('value', e.target.value || undefined)}
-          />
-        )}
-        <BindingIcon isBound={valueBound} onClick={() => setValueEditorOpen(v => !v)} />
-      </div>
-      {valueEditorOpen && (
-        <FormulaEditor
-          label="Value"
-          value={(val as FormulaValue) ?? null}
-          onChange={v => { setCfg('value', v); setValueEditorOpen(false); }}
-          onClose={() => setValueEditorOpen(false)}
-          anchorRight={292}
-        />
+      {/* ── Only show type-specific fields once a variable is selected ── */}
+      {varId && (
+        <>
+          {/* Object type: Partial Update */}
+          {varType === 'object' && (
+            <div style={{ marginTop: 10, padding: '10px 12px', background: '#111827', border: '1px solid #1f2937', borderRadius: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 11, color: '#d1d5db' }}>Partial Update</span>
+                <OnOffToggle value={partialUpdate} onChange={v => setCfg('partialUpdate', v)} />
+              </div>
+              {partialUpdate && (
+                <BoundField
+                  label="Path"
+                  value={cfg.path as FormulaValue | undefined}
+                  onChange={v => setCfg('path', v)}
+                  placeholder="property"
+                  workflowTrigger={workflowTrigger}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Array type: Update array operation */}
+          {varType === 'array' && (
+            <div style={{ marginTop: 10, padding: '10px 12px', background: '#111827', border: '1px solid #1f2937', borderRadius: 8 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#d1d5db' }}>Update array</span>
+              <div style={{ marginTop: 8 }}>
+                <OptionPickerDropdown
+                  value={arrayOp}
+                  onChange={v => setCfg('arrayOperation', v)}
+                  options={ARRAY_OPS}
+                />
+              </div>
+              {needsIndex && (
+                <BoundField
+                  label="Index"
+                  required
+                  numeric
+                  value={cfg.index as FormulaValue | undefined}
+                  onChange={v => setCfg('index', v)}
+                  placeholder="0"
+                  workflowTrigger={workflowTrigger}
+                  expectedType={'number' as const}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Boolean type: True / False dropdown */}
+          {varType === 'boolean' && (
+            <>
+              <label style={{ ...S.fieldLabel, marginTop: 10 }}>Value *</label>
+              <OptionPickerDropdown
+                value={val === true || val === 'true' ? 'true' : val === false || val === 'false' ? 'false' : ''}
+                onChange={v => setCfg('value', v === 'true' ? true : v === 'false' ? false : undefined)}
+                options={[
+                  { value: '', label: 'Select a value' },
+                  { value: 'true', label: 'True' },
+                  { value: 'false', label: 'False' },
+                ]}
+                placeholder="Select a value"
+              />
+            </>
+          )}
+
+          {/* String / number / object / array value field */}
+          {varType !== 'boolean' && (varType !== 'array' || needsValue) && (
+            <BoundField
+              label="Value"
+              required
+              value={val}
+              onChange={v => setCfg('value', v)}
+              placeholder={varType === 'number' ? '0' : 'Enter a value'}
+              multiline={varType !== 'number'}
+              numeric={varType === 'number'}
+              workflowTrigger={workflowTrigger}
+              expectedType={varType === 'number' ? 'number' : 'string' as const}
+            />
+          )}
+        </>
       )}
     </>
   );
@@ -1344,9 +2364,11 @@ function ChangeVariableValueConfig({
 function BranchConditionField({
   cfg,
   setCfg,
+  workflowTrigger,
 }: {
   cfg: Record<string, unknown>;
   setCfg: (key: string, value: unknown) => void;
+  workflowTrigger?: string;
 }) {
   const [open, setOpen] = React.useState(false);
   const condition = cfg.condition as FormulaValue | undefined;
@@ -1393,6 +2415,7 @@ function BranchConditionField({
           onChange={v => { setCfg('condition', v); setOpen(false); }}
           onClose={() => setOpen(false)}
           anchorRight={292}
+          workflowTrigger={workflowTrigger}
         />
       )}
     </>
@@ -1405,10 +2428,12 @@ export function NodePropsPanel({
   step,
   onUpdate,
   isFormContext = false,
+  workflowTrigger,
 }: {
   step: ActionStep;
   onUpdate: (patch: Partial<ActionStep>) => void;
   isFormContext?: boolean;
+  workflowTrigger?: string;
 }) {
   const cfg = step.config ?? {};
 
@@ -1453,7 +2478,7 @@ export function NodePropsPanel({
 
       {/* Type-specific fields */}
       {step.type === 'branch' && (
-        <BranchConditionField cfg={cfg} setCfg={setCfg} />
+        <BranchConditionField cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
       )}
 
       {step.type === 'multiOptionBranch' && (
@@ -1580,132 +2605,253 @@ export function NodePropsPanel({
       {step.type === 'navigatePrev' && (
         <>
           <label style={{ ...S.fieldLabel, marginTop: 10 }}>Default Redirect Page</label>
-          <select style={S.fieldSelect}>
-            <option value="home">🏠 Home</option>
-          </select>
-        </>
-      )}
-
-      {step.type === 'pageLoader' && (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
-            <span style={{ fontSize: 12, color: '#9ca3af' }}>Loader on page change</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-            <span style={{ fontSize: 12, color: '#9ca3af' }}>Show page loader</span>
-            <div style={S.toggleGroup}>
-              <button style={S.toggleBtn(!!(cfg.showLoader))} onClick={() => setCfg('showLoader', true)}>On</button>
-              <button style={S.toggleBtn(!(cfg.showLoader))} onClick={() => setCfg('showLoader', false)}>Off</button>
-            </div>
-          </div>
-          {cfg.showLoader && (
-            <>
-              <label style={{ ...S.fieldLabel, marginTop: 10 }}>Loader color</label>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                <input type="color" value={(cfg.loaderColor as string) ?? '#000000'} onChange={e => setCfg('loaderColor', e.target.value)} style={{ width: 28, height: 28, border: '1px solid #e5e7eb', borderRadius: 4, cursor: 'pointer' }} />
-                <input style={{ ...S.fieldInput, flex: 1 }} value={(cfg.loaderColor as string) ?? '#000000'} onChange={e => setCfg('loaderColor', e.target.value)} />
-              </div>
-            </>
-          )}
-        </>
-      )}
-
-      {step.type === 'changeLanguage' && (
-        <>
-          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Language *</label>
-          <select style={S.fieldSelect}><option value="">Select a value</option></select>
+          <PagePickerDropdown
+            value={(cfg.defaultPath as string) ?? ''}
+            onChange={v => setCfg('defaultPath', v)}
+          />
         </>
       )}
 
       {step.type === 'changeVariableValue' && (
-        <ChangeVariableValueConfig cfg={cfg} setCfg={setCfg} />
+        <ChangeVariableValueConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
       )}
 
       {step.type === 'resetVariableValue' && (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
-            <span style={{ fontSize: 12, color: '#9ca3af' }}>Variables</span>
-            <button style={{ fontSize: 11, color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer' }}>+ Add</button>
-          </div>
-          <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-            <select style={{ ...S.fieldSelect, flex: 1 }}><option value="">Choose a variable</option></select>
-            <button style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 16 }}>−</button>
-          </div>
-        </>
+        <ResetVariableValueConfig cfg={cfg} setCfg={setCfg} />
       )}
 
       {step.type === 'fetchCollection' && (
         <>
           <label style={{ ...S.fieldLabel, marginTop: 10 }}>Collection *</label>
-          <select style={S.fieldSelect}><option value="">Choose a collection</option></select>
+          <CollectionPickerDropdown
+            value={(cfg.collectionId as string) ?? ''}
+            onChange={v => setCfg('collectionId', v)}
+          />
         </>
       )}
 
       {step.type === 'fetchCollectionsParallel' && (
         <>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
-            <span style={{ fontSize: 12, color: '#9ca3af' }}>Collections</span>
-            <button style={{ fontSize: 11, color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer' }}>+ Add</button>
+            <span style={{ ...S.fieldLabel, marginTop: 0 }}>Collections</span>
+            <button
+              style={{ fontSize: 11, color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer' }}
+              onClick={() => {
+                const prev = Array.isArray(cfg.collections) ? (cfg.collections as string[]) : [];
+                setCfg('collections', [...prev, '']);
+              }}
+            >+ Add</button>
           </div>
-          <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-            <select style={{ ...S.fieldSelect, flex: 1 }}><option value="">Choose a collection</option></select>
-            <button style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 16 }}>−</button>
-          </div>
+          {(Array.isArray(cfg.collections) ? (cfg.collections as string[]) : []).map((colId, idx) => (
+            <div key={idx} style={{ display: 'flex', gap: 6, marginTop: 6, alignItems: 'center' }}>
+              <div style={{ flex: 1 }}>
+                <CollectionPickerDropdown
+                  value={colId}
+                  onChange={v => {
+                    const next = [...(cfg.collections as string[])];
+                    next[idx] = v;
+                    setCfg('collections', next);
+                  }}
+                />
+              </div>
+              <button
+                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 16, flexShrink: 0 }}
+                onClick={() => {
+                  const next = (cfg.collections as string[]).filter((_, i) => i !== idx);
+                  setCfg('collections', next);
+                }}
+              >−</button>
+            </div>
+          ))}
+          {!(Array.isArray(cfg.collections) && (cfg.collections as string[]).length > 0) && (
+            <div style={{ fontSize: 11, color: '#6b7280', marginTop: 6 }}>No collections added yet</div>
+          )}
         </>
       )}
 
-      {step.type === 'updateCollection' && (
-        <>
-          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Collection *</label>
-          <select style={S.fieldSelect}><option value="">Choose an collection</option></select>
-          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Update type</label>
-          <select style={S.fieldSelect}><option value="replaceAll">Replace all</option></select>
-          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Data *</label>
-          <input style={S.fieldInput} placeholder="New collection data" />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
-            <span style={{ fontSize: 12, color: '#9ca3af' }}>Refresh filters</span>
-            <div style={S.toggleGroup}>
-              <button style={S.toggleBtn(!!(cfg.refreshFilters))} onClick={() => setCfg('refreshFilters', true)}>On</button>
-              <button style={S.toggleBtn(!(cfg.refreshFilters))} onClick={() => setCfg('refreshFilters', false)}>Off</button>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-            <span style={{ fontSize: 12, color: '#9ca3af' }}>Refresh sort</span>
-            <div style={S.toggleGroup}>
-              <button style={S.toggleBtn(!!(cfg.refreshSort))} onClick={() => setCfg('refreshSort', true)}>On</button>
-              <button style={S.toggleBtn(!(cfg.refreshSort))} onClick={() => setCfg('refreshSort', false)}>Off</button>
-            </div>
-          </div>
-        </>
-      )}
+      {step.type === 'updateCollection' && (() => {
+        const updateType = (cfg.updateType as string) ?? 'replaceAll';
+        const byId = (cfg.findBy as string) === 'id';
+        const needsFindBy = updateType === 'update' || updateType === 'delete';
+        // Insert always uses position (no By index/By id toggle); update/delete use it only when By index
+        const needsPosition = updateType === 'insert' || (!byId && (updateType === 'update' || updateType === 'delete'));
+        const needsIdFields = byId && needsFindBy;
+        const needsMerge = updateType === 'update';
+        const needsData = updateType !== 'delete';
+        const dataPlaceholder = updateType === 'insert' ? 'Data to insert' : updateType === 'update' ? 'Data to update' : 'New collection data';
+
+        return (
+          <>
+            <label style={{ ...S.fieldLabel, marginTop: 10 }}>Collection *</label>
+            <CollectionPickerDropdown
+              value={(cfg.collectionId as string) ?? ''}
+              onChange={v => setCfg('collectionId', v)}
+            />
+
+            <label style={{ ...S.fieldLabel, marginTop: 10 }}>Update type</label>
+            <OptionPickerDropdown
+              value={updateType}
+              onChange={v => setCfg('updateType', v)}
+              options={[
+                { value: 'replaceAll', label: 'Replace all' },
+                { value: 'update', label: 'Update' },
+                { value: 'insert', label: 'Insert' },
+                { value: 'delete', label: 'Delete' },
+              ]}
+            />
+
+            {/* By index / By id sub-toggle for Update and Delete */}
+            {needsFindBy && (
+              <div style={{ display: 'flex', background: '#1f2937', borderRadius: 4, padding: 2, gap: 2, marginTop: 10 }}>
+                <button
+                  style={{ flex: 1, padding: '4px 0', fontSize: 11, border: 'none', cursor: 'pointer', borderRadius: 3, fontWeight: 500,
+                    background: !byId ? '#374151' : 'transparent', color: !byId ? '#f3f4f6' : '#6b7280' }}
+                  onClick={() => setCfg('findBy', 'index')}
+                >By index</button>
+                <button
+                  style={{ flex: 1, padding: '4px 0', fontSize: 11, border: 'none', cursor: 'pointer', borderRadius: 3, fontWeight: 500,
+                    background: byId ? '#374151' : 'transparent', color: byId ? '#f3f4f6' : '#6b7280' }}
+                  onClick={() => setCfg('findBy', 'id')}
+                >By id</button>
+              </div>
+            )}
+
+            {/* Position (index) */}
+            {needsPosition && (
+              <BoundField
+                label="Position (index)"
+                numeric
+                value={cfg.position as FormulaValue | undefined}
+                onChange={v => setCfg('position', v)}
+                placeholder="0"
+                workflowTrigger={workflowTrigger}
+                expectedType={'number' as const}
+              />
+            )}
+
+            {/* ID key + ID value */}
+            {needsIdFields && (
+              <>
+                <BoundField
+                  label="ID key"
+                  value={cfg.idKey as FormulaValue | undefined}
+                  onChange={v => setCfg('idKey', v)}
+                  placeholder="id"
+                  workflowTrigger={workflowTrigger}
+                />
+                <BoundField
+                  label="ID value"
+                  value={cfg.idValue as FormulaValue | undefined}
+                  onChange={v => setCfg('idValue', v)}
+                  placeholder="123"
+                  workflowTrigger={workflowTrigger}
+                />
+              </>
+            )}
+
+            {/* Merge toggle (Update only) */}
+            {needsMerge && (
+              <BoundToggleField
+                label="Merge"
+                value={cfg.merge as FormulaValue | undefined}
+                onChange={v => setCfg('merge', v)}
+                workflowTrigger={workflowTrigger}
+              />
+            )}
+
+            {/* Data field (not for Delete) */}
+            {needsData && (
+              <BoundField
+                label="Data"
+                required
+                value={cfg.data as FormulaValue | undefined}
+                onChange={v => setCfg('data', v)}
+                placeholder={dataPlaceholder}
+                multiline
+                workflowTrigger={workflowTrigger}
+              />
+            )}
+
+            {/* Refresh filters */}
+            <BoundToggleField
+              label="Refresh filters"
+              value={cfg.refreshFilters as FormulaValue | undefined}
+              onChange={v => setCfg('refreshFilters', v)}
+              workflowTrigger={workflowTrigger}
+            />
+
+            {/* Refresh sort */}
+            <BoundToggleField
+              label="Refresh sort"
+              value={cfg.refreshSort as FormulaValue | undefined}
+              onChange={v => setCfg('refreshSort', v)}
+              workflowTrigger={workflowTrigger}
+            />
+          </>
+        );
+      })()}
 
       {step.type === 'executeComponentAction' && (
-        <>
-          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Component</label>
-          <select style={S.fieldSelect}><option value="">Component</option></select>
-        </>
+        <ExecuteComponentActionConfig cfg={cfg} onUpdate={patch => onUpdate({ config: patch })} />
       )}
 
-      {step.type === 'returnValue' && (
-        <>
-          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Type</label>
-          <select style={S.fieldSelect} value={(cfg.valueType as string) ?? 'text'} onChange={e => setCfg('valueType', e.target.value)}>
-            <option value="text">T Text</option>
-            <option value="number">N Number</option>
-            <option value="boolean">B Boolean</option>
-            <option value="object">O Object</option>
-            <option value="array">A Array</option>
-          </select>
-          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Value *</label>
-          <textarea style={{ ...S.fieldInput, minHeight: 56 }} placeholder="Enter a value" value={(cfg.value as string) ?? ''} onChange={e => setCfg('value', e.target.value)} />
-        </>
-      )}
+      {step.type === 'returnValue' && (() => {
+        const valueType = (cfg.valueType as string) ?? 'text';
+        return (
+          <>
+            <label style={{ ...S.fieldLabel, marginTop: 10 }}>Type</label>
+            <OptionPickerDropdown
+              value={valueType}
+              onChange={v => setCfg('valueType', v)}
+              options={[
+                { value: 'text',    label: 'Text' },
+                { value: 'number',  label: 'Number' },
+                { value: 'boolean', label: 'Boolean' },
+                { value: 'object',  label: 'Object' },
+                { value: 'array',   label: 'Array' },
+              ]}
+            />
+
+            {valueType === 'boolean' ? (
+              <BoundToggleField
+                label="Value"
+                value={cfg.value as FormulaValue | undefined}
+                onChange={v => setCfg('value', v)}
+                workflowTrigger={workflowTrigger}
+              />
+            ) : (
+              <BoundField
+                label="Value"
+                required
+                value={cfg.value as FormulaValue | undefined}
+                onChange={v => setCfg('value', v)}
+                placeholder={
+                  valueType === 'number'  ? '0' :
+                  valueType === 'object'  ? '{\n  "key": "value"\n}' :
+                  valueType === 'array'   ? '[\n  \n]' :
+                  'Enter a value'
+                }
+                code={valueType === 'object' || valueType === 'array'}
+                numeric={valueType === 'number'}
+                workflowTrigger={workflowTrigger}
+                expectedType={valueType === 'number' ? 'number' : 'string'}
+              />
+            )}
+          </>
+        );
+      })()}
 
       {step.type === 'timeDelay' && (
-        <>
-          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Time (ms) *</label>
-          <input style={S.fieldInput} placeholder="Enter a value" type="number" value={(cfg.time as string) ?? ''} onChange={e => setCfg('time', e.target.value)} />
-        </>
+        <BoundField
+          label="Time (ms)"
+          required
+          numeric
+          value={cfg.time as FormulaValue | undefined}
+          onChange={v => setCfg('time', v)}
+          placeholder="1000"
+          workflowTrigger={workflowTrigger}
+          expectedType="number"
+        />
       )}
 
       {step.type === 'uploadFile' && (
@@ -1724,32 +2870,56 @@ export function NodePropsPanel({
       )}
 
       {step.type === 'copyToClipboard' && (
-        <>
-          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Value *</label>
-          <textarea style={{ ...S.fieldInput, minHeight: 56 }} placeholder="Enter a value" value={(cfg.value as string) ?? ''} onChange={e => setCfg('value', e.target.value)} />
-        </>
+        <BoundField
+          label="Value"
+          required
+          value={cfg.value as FormulaValue | undefined}
+          onChange={v => setCfg('value', v)}
+          placeholder="Enter a value"
+          workflowTrigger={workflowTrigger}
+        />
       )}
 
       {step.type === 'downloadFileFromUrl' && (
         <>
-          <label style={{ ...S.fieldLabel, marginTop: 10 }}>File URL *</label>
-          <input style={S.fieldInput} value={(cfg.url as string) ?? ''} onChange={e => setCfg('url', e.target.value)} />
-          <label style={{ ...S.fieldLabel, marginTop: 10 }}>File name</label>
-          <input style={S.fieldInput} placeholder="Optional filename" value={(cfg.filename as string) ?? ''} onChange={e => setCfg('filename', e.target.value)} />
+          <BoundField
+            label="File URL"
+            required
+            value={cfg.url as FormulaValue | undefined}
+            onChange={v => setCfg('url', v)}
+            placeholder="https://example.com/file.pdf"
+            workflowTrigger={workflowTrigger}
+          />
+          <BoundField
+            label="File name"
+            value={cfg.filename as FormulaValue | undefined}
+            onChange={v => setCfg('filename', v)}
+            placeholder="Optional filename"
+            workflowTrigger={workflowTrigger}
+          />
         </>
       )}
 
       {step.type === 'createUrlFromBase64' && (
-        <>
-          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Base64</label>
-          <input style={S.fieldInput} placeholder="Enter a value" value={(cfg.base64 as string) ?? ''} onChange={e => setCfg('base64', e.target.value)} />
-        </>
+        <BoundField
+          label="Base64"
+          value={cfg.base64 as FormulaValue | undefined}
+          onChange={v => setCfg('base64', v)}
+          placeholder="Enter a value"
+          workflowTrigger={workflowTrigger}
+        />
       )}
 
       {step.type === 'encodeFileAsBase64' && (
         <>
-          <label style={{ ...S.fieldLabel, marginTop: 10 }}>File object *</label>
-          <select style={S.fieldSelect}><option value="">Select a file variable</option></select>
+          <BoundField
+            label="File object"
+            required
+            value={cfg.fileObject as FormulaValue | undefined}
+            onChange={v => setCfg('fileObject', v)}
+            placeholder="Select a file variable"
+            workflowTrigger={workflowTrigger}
+          />
           <label style={{ ...S.fieldLabel, marginTop: 10 }}>Output format</label>
           <div style={S.toggleGroup}>
             <button style={S.toggleBtn((cfg.outputFormat as string) !== 'base64')} onClick={() => setCfg('outputFormat', 'dataUrl')}>Data URL</button>
@@ -1792,7 +2962,7 @@ export function NodePropsPanel({
       )}
 
       {step.type === 'fetchData' && (
-        <FetchDataStepConfig cfg={cfg} setCfg={setCfg} />
+        <FetchDataStepConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
       )}
 
       <label style={{ ...S.fieldLabel, marginTop: 12 }}>Description</label>

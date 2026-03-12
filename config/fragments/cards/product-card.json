@@ -30,7 +30,7 @@
           "props": {
             "className": "w-full h-full flex items-center justify-center text-[var(--theme-content-textMuted)]"
           },
-          "condition": "!{{context.item.data.productAsset}}",
+          "condition": "!context?.item?.data?.productAsset",
           "children": [
             {
               "type": "Text",
@@ -59,7 +59,7 @@
             "className": "text-lg font-bold text-[var(--theme-content-text)]"
           },
           "text": {
-            "expr": "{{context.item.data.priceWithTax.__typename}} === 'SinglePrice' ? formatCurrency({{context.item.data.priceWithTax.value}} / 100, {{context.item.data.currencyCode}} || 'USD') : 'from ' + formatCurrency({{context.item.data.priceWithTax.min}} / 100, {{context.item.data.currencyCode}} || 'USD')"
+            "expr": "context?.item?.data?.priceWithTax?.__typename === 'SinglePrice' ? formatCurrency(context?.item?.data?.priceWithTax?.value / 100, context?.item?.data?.currencyCode || 'USD') : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min / 100, context?.item?.data?.currencyCode || 'USD')"
           }
         }
       ]

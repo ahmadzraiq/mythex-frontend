@@ -74,7 +74,7 @@
         "props": {
           "className": "p-6"
         },
-        "condition": "{{showAddForm}}",
+        "condition": "get('showAddForm')",
         "children": [
           {
             "type": "Heading",
@@ -104,7 +104,7 @@
                   },
                   {
                     "type": "Input",
-                        "id": "ddc7570e-0709-4d9e-a8e0-ea73f60a49fe",
+                    "id": "ddc7570e-0709-4d9e-a8e0-ea73f60a49fe",
                     "children": [
                       {
                         "type": "InputField",
@@ -132,7 +132,7 @@
                   },
                   {
                     "type": "Input",
-                        "id": "06219502-9af1-40b6-b1b3-0089df2b1431",
+                    "id": "06219502-9af1-40b6-b1b3-0089df2b1431",
                     "children": [
                       {
                         "type": "InputField",
@@ -224,7 +224,7 @@
                   },
                   {
                     "type": "Input",
-                        "id": "079e999a-72c4-4389-b736-1a2c961ddb8e",
+                    "id": "079e999a-72c4-4389-b736-1a2c961ddb8e",
                     "children": [
                       {
                         "type": "InputField",
@@ -294,7 +294,7 @@
         "props": {
           "className": "text-center py-12"
         },
-        "condition": "({{collections.a9b0c1d2-e3f4-5678-abcd-789012345678.data.activeCustomer.addresses.length}} || 0) === 0",
+        "condition": "(collections['a9b0c1d2-e3f4-5678-abcd-789012345678']?.data?.activeCustomer?.addresses?.length || 0) === 0",
         "children": [
           {
             "type": "Text",

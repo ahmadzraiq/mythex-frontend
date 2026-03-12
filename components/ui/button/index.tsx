@@ -52,7 +52,7 @@ const buttonStyle = tva({
       negative:
         'bg-error-500 border-error-300 data-[hover=true]:bg-error-600 data-[hover=true]:border-error-400 data-[active=true]:bg-error-700 data-[active=true]:border-error-500 data-[focus-visible=true]:web:ring-indicator-info',
       default:
-        'bg-transparent data-[hover=true]:bg-background-50 data-[active=true]:bg-transparent',
+        'bg-gray-100 border border-gray-200 text-gray-800 data-[hover=true]:bg-gray-200 data-[active=true]:bg-gray-300',
       custom:
         'bg-transparent data-[active=true]:bg-transparent',
     },
@@ -176,6 +176,12 @@ const buttonTextStyle = tva({
         'text-typography-0 data-[hover=true]:text-typography-0 data-[active=true]:text-typography-0',
     },
     {
+      variant: 'solid',
+      action: 'default',
+      class:
+        'text-gray-700 data-[hover=true]:text-gray-800 data-[active=true]:text-gray-900',
+    },
+    {
       variant: 'outline',
       action: 'primary',
       class:
@@ -225,9 +231,10 @@ const buttonIconStyle = tva({
         'text-typography-500 data-[hover=true]:text-typography-600 data-[active=true]:text-typography-700',
       positive:
         'text-success-600 data-[hover=true]:text-success-600 data-[active=true]:text-success-700',
-
       negative:
         'text-error-600 data-[hover=true]:text-error-600 data-[active=true]:text-error-700',
+      default:
+        'text-gray-700 data-[hover=true]:text-gray-800 data-[active=true]:text-gray-900',
       custom: '',
     },
   },

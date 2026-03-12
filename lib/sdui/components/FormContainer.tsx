@@ -24,44 +24,10 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { FormContext, EMPTY_FORM_STATE, type FormState, type FieldValidationConfig, type ValidationRule } from '../form-context';
+import { FormContext, EMPTY_FORM_STATE, type FormState, type FieldValidationConfig, type FieldValidationRule } from '../form-context';
 import { getGlobalVariableStore } from '../global-variable-store';
 import { useBuilderMode } from '../builder-context';
-import { evaluateFormula, storedValueToFormula, FORMULA_FNS, type FormulaValue } from '../formula-evaluator';
-
-/** Validate a single field value against its rules. Returns '' if valid, error message if not. */
-function applyFieldRules(
-  rules: ValidationRule[],
-  value: unknown,
-  formulaCtx: Record<string, unknown>,
-): string {
-  const str = String(value ?? '').trim();
-  for (const rule of rules) {
-    const msg = rule.message || 'Invalid value';
-    let isValid = true;
-    switch (rule.type) {
-      case 'required':  isValid = !!str; break;
-      case 'email':     isValid = !str || !!(FORMULA_FNS.isEmail as (v: unknown) => boolean)(value); break;
-      case 'phone':     isValid = !str || !!(FORMULA_FNS.isPhone as (v: unknown) => boolean)(value); break;
-      case 'url':       isValid = !str || !!(FORMULA_FNS.isUrl as (v: unknown) => boolean)(value); break;
-      case 'minLength': isValid = !str || !!(FORMULA_FNS.hasMinLength as (v: unknown, n: number) => boolean)(value, Number(rule.value ?? 0)); break;
-      case 'maxLength': isValid = !str || !!(FORMULA_FNS.hasMaxLength as (v: unknown, n: number) => boolean)(value, Number(rule.value ?? Infinity)); break;
-      case 'pattern':   isValid = !str || !rule.value || !!(FORMULA_FNS.matchesPattern as (v: unknown, p: string) => boolean)(value, rule.value); break;
-      case 'formula': {
-        if (rule.formula) {
-          const formulaStr = storedValueToFormula(rule.formula as FormulaValue);
-          const result = evaluateFormula(formulaStr, formulaCtx);
-          if (result.value === true || result.value === '') { isValid = true; }
-          else if (typeof result.value === 'string' && result.value) { return result.value; }
-          else { isValid = false; }
-        }
-        break;
-      }
-    }
-    if (!isValid) return msg;
-  }
-  return '';
-}
+import { applyFieldRules } from '../validation-utils';
 
 interface FormContainerProps {
   children?: React.ReactNode;
@@ -69,6 +35,8 @@ interface FormContainerProps {
   style?: React.CSSProperties;
   /** Called when the form submits (all built-in validation passes) */
   onSubmitAction?: () => void;
+  /** Called when form submission is blocked by validation errors */
+  onValidationErrorAction?: () => void;
   /**
    * Pre-declare field names so the formula editor shows them immediately on drop.
    * E.g. { email: '', password: '' } — values are the initial field values.
@@ -83,7 +51,7 @@ interface FormContainerProps {
   [key: string]: unknown;
 }
 
-export function FormContainer({ children, className, style, onSubmitAction, initialFormData, _formNodeId, ...rest }: FormContainerProps) {
+export function FormContainer({ children, className, style, onSubmitAction, onValidationErrorAction, initialFormData, _formNodeId, ...rest }: FormContainerProps) {
   const { builderMode } = useBuilderMode();
   const [formState, setFormState] = useState<FormState>(() => {
     if (initialFormData && Object.keys(initialFormData).length > 0) {
@@ -113,10 +81,34 @@ export function FormContainer({ children, className, style, onSubmitAction, init
   // Sync to global variable store so {{local.data.form.*}} resolves in formulas.
   // Also write to variables['{stableId}-form'] so formulas like
   // variables['uuid-form']?.['formData']?.['fieldName'] resolve correctly.
+  //
+  // MERGE, not overwrite: directWriteField bypasses React state for zero-latency typing.
+  // When a new field registers it calls setFormState → this effect fires with React state
+  // that may lag behind what the user has typed. Overwriting would clobber live values.
+  // Fix: for existing fields, prefer the current store value; only add NEW fields from state.
   useEffect(() => {
     getGlobalVariableStore().getState().setState((prev) => {
-      const next = { ...prev, local: { data: { form: formState } } };
-      next[formStoreKey] = formState;
+      const storedLocal = (prev['local'] ?? {}) as Record<string, unknown>;
+      const storedData = (storedLocal['data'] ?? {}) as Record<string, unknown>;
+      const storedForm = (storedData['form'] ?? {}) as Record<string, unknown>;
+      const storedFormData = (storedForm['formData'] ?? {}) as Record<string, unknown>;
+      const storedFields = (storedForm['fields'] ?? {}) as Record<string, unknown>;
+
+      // React state supplies the authoritative shape (field list, isSubmitting, etc.).
+      // For each field value, the store wins if it already has a value — user may have
+      // typed since the last React render (directWriteField path).
+      const mergedFormData = { ...formState.formData, ...storedFormData };
+      const mergedFields: Record<string, unknown> = { ...formState.fields };
+      for (const [name, storedField] of Object.entries(storedFields)) {
+        if (name in mergedFields) {
+          // Keep store's field object (has latest typed value + isValid from validation)
+          mergedFields[name] = storedField;
+        }
+      }
+
+      const mergedForm = { ...formState, formData: mergedFormData, fields: mergedFields };
+      const next = { ...prev, local: { ...storedLocal, data: { ...storedData, form: mergedForm } } };
+      next[formStoreKey] = mergedForm;
       return next;
     });
   }, [formState, formStoreKey]);
@@ -151,6 +143,75 @@ export function FormContainer({ children, className, style, onSubmitAction, init
       };
     });
   }, []);
+
+  // Updates formData + fields[name].value only — does NOT touch isValid/error state.
+  // Used by onChange tracking in form-field-tracker so live typing doesn't reset
+  // validation errors shown after a submit attempt.
+  const setFieldValue = useCallback((name: string, value: unknown) => {
+    setFormState((prev) => {
+      const existing = prev.fields[name] ?? { value, isValid: '' };
+      return {
+        ...prev,
+        formData: { ...prev.formData, [name]: value },
+        fields: { ...prev.fields, [name]: { ...existing, value } },
+      };
+    });
+  }, []);
+
+  // Zero-React-render fast path for live typing.
+  // Updates stateRef directly (no React re-render) and writes both
+  //   local.data.form.formData.{name}
+  //   variables['{formStoreKey}'].formData.{name}
+  // in ONE atomic global-store write — single subscription trigger, one re-render pass.
+  const directWriteField = useCallback((name: string, value: unknown) => {
+    // Keep stateRef in sync so doSubmit reads the latest values without a React render.
+    const prev = stateRef.current;
+    const existingField = prev.fields[name] ?? { value, isValid: '' };
+    stateRef.current = {
+      ...prev,
+      formData: { ...prev.formData, [name]: value },
+      fields: { ...prev.fields, [name]: { ...existingField, value } },
+    };
+
+    // Single atomic write — updates ALL formula-accessible paths in one pass:
+    //   local.data.form.formData.{name}
+    //   local.data.form.fields.{name}.value
+    //   variables['uuid-form']?.['formData']?.['name']
+    //   variables['uuid-form']?.['fields']?.['name']?.['value']
+    const key = formStoreKey;
+    getGlobalVariableStore().getState().setState(vs => {
+      const local = (vs['local'] ?? {}) as Record<string, unknown>;
+      const data  = (local['data']  ?? {}) as Record<string, unknown>;
+      const form  = (data['form']   ?? {}) as Record<string, unknown>;
+      const fd    = (form['formData'] ?? {}) as Record<string, unknown>;
+      const flds  = (form['fields']  ?? {}) as Record<string, unknown>;
+      const fld   = (flds[name]      ?? { value, isValid: '' }) as Record<string, unknown>;
+      const existingVar    = (vs[key] ?? stateRef.current) as Record<string, unknown>;
+      const existingVarFd  = (existingVar['formData'] ?? {}) as Record<string, unknown>;
+      const existingVarFlds = (existingVar['fields']  ?? {}) as Record<string, unknown>;
+      const existingFld    = (existingVarFlds[name]   ?? { value, isValid: '' }) as Record<string, unknown>;
+      const updatedFields = { ...existingVarFlds, [name]: { ...existingFld, value } };
+      return {
+        ...vs,
+        local: {
+          ...local,
+          data: {
+            ...data,
+            form: {
+              ...form,
+              formData: { ...fd, [name]: value },
+              fields:   { ...flds, [name]: { ...fld, value } },
+            },
+          },
+        },
+        [key]: {
+          ...existingVar,
+          formData: { ...existingVarFd,  [name]: value },
+          fields:   updatedFields,
+        },
+      };
+    });
+  }, [formStoreKey]);
 
   const setFormStatePatch = useCallback(
     (patch: Partial<Pick<FormState, 'isSubmitting' | 'isSubmitted'>>) => {
@@ -241,6 +302,8 @@ export function FormContainer({ children, className, style, onSubmitAction, init
       });
       // Also update React state (triggers the sync useEffect which re-confirms the write)
       setFormState(nextForm);
+      // Fire the submitValidationError workflow if one is bound
+      onValidationErrorAction?.();
       return;
     }
 
@@ -259,12 +322,14 @@ export function FormContainer({ children, className, style, onSubmitAction, init
   );
 
   // Filter out SDUI-specific props that shouldn't reach the DOM
-  const { onSubmitAction: _osa, initialFormData: _ifd, ...domRest } = { onSubmitAction, initialFormData, ...rest };
-  void _osa; void _ifd;
+  const { onSubmitAction: _osa, onValidationErrorAction: _ovea, initialFormData: _ifd, ...domRest } = { onSubmitAction, onValidationErrorAction, initialFormData, ...rest };
+  void _osa; void _ovea; void _ifd;
 
   const ctxValue = {
     state: formState,
     setField,
+    setFieldValue,
+    directWriteField,
     setFormState: setFormStatePatch,
     reset,
     registerField,
