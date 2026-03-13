@@ -18,6 +18,57 @@ export type SearchParamSyncDef = {
   routePrefix?: string;
 };
 
+/** Shape of a variable entry with optional urlParam field */
+type VariableWithUrlParam = {
+  initialValue?: unknown;
+  urlParam?: {
+    param: string;
+    /** Zustand path to write the value to (e.g. "route.q"). Defaults to the variable UUID. */
+    path?: string;
+    default?: string;
+    type?: 'array';
+    transform?: string;
+    pageSize?: number;
+    triggersParamChange?: boolean;
+    routePrefix?: string;
+  };
+};
+
+/**
+ * Build SearchParamSyncDef array from variables.json entries that have a urlParam field.
+ * Replaces store.json searchParamSync — no hardcoded paths needed in page.tsx.
+ */
+export function buildSyncDefsFromVariables(
+  variables: Record<string, VariableWithUrlParam>
+): SearchParamSyncDef[] {
+  const defs: SearchParamSyncDef[] = [];
+  for (const [uuid, variable] of Object.entries(variables)) {
+    const urlParam = variable.urlParam;
+    if (!urlParam) continue;
+    // path in Zustand store (for route.* keys); defaults to UUID (for pagination UUIDs)
+    const path = urlParam.path ?? uuid;
+    const def: SearchParamSyncDef = {
+      param: urlParam.param,
+      path,
+      variableStorePath: uuid,
+    };
+    if (urlParam.default !== undefined) def.default = urlParam.default;
+    else if (
+      typeof variable.initialValue === 'string' &&
+      urlParam.type !== 'array'
+    ) {
+      def.default = variable.initialValue;
+    }
+    if (urlParam.type) def.type = urlParam.type;
+    if (urlParam.transform) def.transform = urlParam.transform;
+    if (urlParam.pageSize !== undefined) def.pageSize = urlParam.pageSize;
+    if (urlParam.triggersParamChange) def.triggersParamChange = true;
+    if (urlParam.routePrefix) def.routePrefix = urlParam.routePrefix;
+    defs.push(def);
+  }
+  return defs;
+}
+
 export function valuesEqual(a: unknown, b: unknown): boolean {
   if (Array.isArray(a) && Array.isArray(b)) {
     return a.length === b.length && a.every((x, i) => x === b[i]);

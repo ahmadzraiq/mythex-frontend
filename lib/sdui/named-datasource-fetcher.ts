@@ -17,14 +17,11 @@ import { getNestedValue } from './nested-utils';
 import { evaluateFormula } from './formula-evaluator';
 import { dsCacheGet, dsCacheSet } from './ds-cache';
 import { extractReferencedDataSources } from './nested-utils';
-import { CONVENTIONS } from './conventions';
 import { computeMergedState as computeMergedStateFn, finalizeMergedWithVariableStore } from './merge-state';
 import type { SDUIConfig } from './types';
 import type { NamedDataSourceDef } from './engine-types';
 
-import storeConfig from '@/config/store-config';
-
-const computedDefs = (storeConfig as { computed?: unknown[] }).computed ?? [];
+const computedDefs: { output: string; expr: object }[] = [];
 
 type SduiStore = ReturnType<typeof useSduiStore>;
 
@@ -38,9 +35,8 @@ export function useNamedDataSourceFetcher(
 
   useEffect(() => {
     if (!dataSources || Object.keys(dataSources).length === 0) return;
-    const conventions = CONVENTIONS as { loadingSuffix?: string; errorSuffix?: string };
-    const loadingSuffix = conventions.loadingSuffix ?? '_loading';
-    const errorSuffix = conventions.errorSuffix ?? '_error';
+    const loadingSuffix = 'loading';
+    const errorSuffix = 'error';
 
     const mergedBase = computeMergedStateFn(
       useSduiStore.getState(),
@@ -75,12 +71,6 @@ export function useNamedDataSourceFetcher(
           } catch {
             result[k] = null;
           }
-        } else if (typeof v === 'object' && v !== null && 'var' in (v as object)) {
-          const varRef = (v as { var: string | [string, unknown] }).var;
-          const pathStr = Array.isArray(varRef) ? varRef[0] : varRef;
-          const defaultVal = Array.isArray(varRef) ? varRef[1] : null;
-          const resolved = getNestedValue(currentState, pathStr as string);
-          result[k] = resolved !== undefined && resolved !== null ? resolved : defaultVal;
         } else if (typeof v === 'object' && v !== null && !Array.isArray(v)) {
           result[k] = resolveVariables(v as Record<string, unknown>);
         } else if (typeof v === 'string') {
@@ -153,12 +143,11 @@ export function useNamedDataSourceFetcher(
             }
           }
           const resolvedVariables = resolveVariables((ds.variables ?? {}) as Record<string, unknown>);
-          const gqlCredentials = (CONVENTIONS as { graphqlCredentials?: RequestCredentials }).graphqlCredentials;
           fetch(endpoint, {
             method: 'POST',
             headers,
             body: JSON.stringify({ query: ds.query, variables: resolvedVariables }),
-            ...(gqlCredentials ? { credentials: gqlCredentials } : {}),
+            credentials: 'include',
           })
             .then(res => res.json())
             .then((json: unknown) => {

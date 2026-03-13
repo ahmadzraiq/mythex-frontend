@@ -549,6 +549,10 @@ export default function BuilderPage() {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      // Suppress all builder shortcuts while any overlay is active — the overlay
+      // registers its own window keydown handler and should own the keyboard entirely.
+      if (useBuilderStore.getState().workflowCanvasTarget) return;
+
       const isCmd = e.metaKey || e.ctrlKey;
       const tag = (document.activeElement as HTMLElement)?.tagName?.toLowerCase();
       const isInput = tag === 'input' || tag === 'textarea' || tag === 'select'
@@ -593,6 +597,7 @@ export default function BuilderPage() {
     };
 
     const onKeyUp = (e: KeyboardEvent) => {
+      if (useBuilderStore.getState().workflowCanvasTarget) return;
       if (e.key === 'Alt') store.setAltMode(false);
     };
 

@@ -16,13 +16,6 @@ const CodeMirror = lazy(() => import('@uiw/react-codemirror'));
 import ReactDOM from 'react-dom';
 import { useBuilderStore, type DataSourceConfig, type DataSourceParam, type CustomVar, type Folder, persistPreviewData } from './_store';
 import { SP_BTN_PRIMARY, SP_BTN_SECONDARY, SP_INPUT, SP_LABEL } from './_slide-panel';
-// When a storeIn/id is a bare UUID, data lives under collections.UUID to match the
-// {{collections.UUID.data.*}} path convention used in all screen/fragment configs.
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-function resolveStoreKey(key: string): string {
-  return UUID_RE.test(key) ? `collections.${key}` : key;
-}
-
 // Thin SVG chevron — rotated via CSS transform to point in any direction
 function Chevron({ open, size = 12, color = 'currentColor', style }: { open?: boolean; size?: number; color?: string; style?: React.CSSProperties }) {
   return (
@@ -37,113 +30,9 @@ function Chevron({ open, size = 12, color = 'currentColor', style }: { open?: bo
   );
 }
 
-// Width used when the result panel is open
-const SLIDE_WITH_RESULT = 660;
 // FORMULA_ANCHOR_LEFT and SLIDE_DEFAULT are imported from _data-source-form (used there too)
 
 // ─── JsonTree — expandable JSON result viewer ─────────────────────────────────
-
-function JsonNode({ value, depth = 0 }: { value: unknown; depth?: number }) {
-  const [open, setOpen] = useState(depth < 2);
-
-  if (value === null) return <span style={{ color: '#9ca3af' }}>null</span>;
-  if (value === undefined) return <span style={{ color: '#9ca3af' }}>undefined</span>;
-  if (typeof value === 'boolean') return <span style={{ color: '#fb923c' }}>{String(value)}</span>;
-  if (typeof value === 'number') return <span style={{ color: '#34d399' }}>{value}</span>;
-  if (typeof value === 'string') return <span style={{ color: '#f9a8d4' }}>"{value}"</span>;
-
-  const isArr = Array.isArray(value);
-  const entries = isArr
-    ? (value as unknown[]).map((v, i) => [String(i), v] as [string, unknown])
-    : Object.entries(value as Record<string, unknown>);
-
-  if (entries.length === 0) return <span style={{ color: '#6b7280' }}>{isArr ? '[]' : '{}'}</span>;
-
-  const INDENT = 14;
-  const openBrace = isArr ? '[' : '{';
-  const closeBrace = isArr ? ']' : '}';
-  const previewCount = Math.min(entries.length, 3);
-  const preview = entries.slice(0, previewCount).map(([k]) => isArr ? '' : k).filter(Boolean).join(', ');
-
-  return (
-    <span>
-      <button
-        onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: '0 2px', fontSize: 10, lineHeight: 1, verticalAlign: 'middle' }}
-      >
-        {open ? '▾' : '▸'}
-      </button>
-      {!open && (
-        <span style={{ color: '#6b7280', fontSize: 10 }}>
-          {openBrace}{preview && !isArr ? <span style={{ color: '#9ca3af' }}> {preview}… </span> : <span style={{ color: '#9ca3af' }}> {entries.length} items </span>}{closeBrace}
-        </span>
-      )}
-      {open && (
-        <span>
-          <span style={{ color: '#6b7280' }}>{openBrace}</span>
-          <div style={{ marginLeft: INDENT }}>
-            {entries.map(([k, v], i) => (
-              <div key={k} style={{ lineHeight: '1.7', fontSize: 11 }}>
-                {!isArr && <span style={{ color: '#93c5fd' }}>{k}</span>}
-                {!isArr && <span style={{ color: '#6b7280' }}>: </span>}
-                <JsonNode value={v} depth={depth + 1} />
-                {i < entries.length - 1 && <span style={{ color: '#4b5563' }}>,</span>}
-              </div>
-            ))}
-          </div>
-          <span style={{ color: '#6b7280' }}>{closeBrace}</span>
-        </span>
-      )}
-    </span>
-  );
-}
-
-interface FetchState {
-  status: 'idle' | 'loading' | 'success' | 'error';
-  data?: unknown;
-  error?: string;
-}
-
-function FetchResultPanel({ result }: { result: FetchState }) {
-  const isSuccess = result.status === 'success';
-  return (
-    <div style={{ width: 320, flexShrink: 0, borderLeft: '1px solid #1f2937', display: 'flex', flexDirection: 'column', height: '100%', background: '#0f172a' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-        <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Result</span>
-        <span style={{
-          fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10,
-          background: isSuccess ? '#064e3b' : '#7f1d1d',
-          color: isSuccess ? '#34d399' : '#f87171',
-        }}>
-          {isSuccess ? 'Success' : 'Error'}
-        </span>
-      </div>
-      {/* Tree */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px', fontFamily: 'monospace', fontSize: 11, lineHeight: 1.6, color: '#f3f4f6' }}>
-        {result.status === 'error'
-          ? <span style={{ color: '#f87171' }}>{result.error}</span>
-          : <JsonNode value={result.data} depth={0} />
-        }
-      </div>
-    </div>
-  );
-}
-
-// ─── Formula resolution helpers ───────────────────────────────────────────────
-
-/** Extract a nested value by a dot-separated path (e.g. "data.search.items"). */
-function extractByPath(data: unknown, path: string): unknown {
-  if (!path) return data;
-  return path.split('.').reduce<unknown>((acc, key) => {
-    if (acc == null || typeof acc !== 'object') return undefined;
-    return (acc as Record<string, unknown>)[key];
-  }, data);
-}
-
-/** Build the current context from Zustand + variable store (same as FormulaEditor). */
-// buildContext and resolveEntryValue moved to _data-source-form.tsx (shared with RestForm/GraphQLForm)
-
 
 // ─── Extracted modules ───────────────────────────────────────────────────────
 import {

@@ -346,6 +346,7 @@ export const S = {
     textTransform: 'uppercase' as const,
     padding: '8px 12px 4px',
     letterSpacing: '0.05em',
+    background: '#1f2937',
   },
   dropdownItem: (active: boolean) => ({
     display: 'flex',
@@ -354,7 +355,7 @@ export const S = {
     padding: '7px 12px',
     fontSize: 12,
     color: '#e5e7eb',
-    background: active ? '#1d4ed8' : 'transparent',
+    background: active ? '#1d4ed8' : '#1f2937',
     cursor: 'pointer',
     border: 'none',
     width: '100%',

@@ -18,7 +18,6 @@ import { RunActionProvider } from './run-action-context';
 import type { SDUIConfig, SDUIContext, SDUIAction, SDUIDataSource } from './types';
 import { getNestedValue, setNestedValue } from './nested-utils';
 import { dsCacheClear } from './ds-cache';
-import storeConfig from '@/config/store-config';
 import { CONVENTIONS } from './conventions';
 import { PAGES_MAP, THEME_OBJ } from './engine-static-data';
 import { isScopeVariable } from './path-utils';
@@ -30,8 +29,6 @@ import { useNamedDataSourceFetcher } from './named-datasource-fetcher';
 
 export type { ValidationRule, ActionsConfig, EngineConfig, RouteConfig, SDUIEngineProps, NamedDataSourceDef } from './engine-types';
 
-
-const computedDefs = (storeConfig as { computed?: unknown[] }).computed ?? [];
 
 /** Ref for page to trigger fetch when searchParams change (avoids engine remount) */
 export const paramChangeRunActionRef: { current: ((action: string) => void) | null } = { current: null };
@@ -70,7 +67,7 @@ export function SDUIEngine({
 
   const computeMergedState = useCallback(
     (state: { data: Record<string, unknown>; loading: Record<string, boolean>; error: Record<string, string | null> }) =>
-      computeMergedStateFn(state, config as { state?: Record<string, unknown>; meta?: Record<string, unknown> }, computedDefs as { output: string; expr: object }[]),
+      computeMergedStateFn(state, config as { state?: Record<string, unknown>; meta?: Record<string, unknown> }, []),
     [config]
   );
 
@@ -80,7 +77,7 @@ export function SDUIEngine({
     const base = computeMergedStateFn(
       useSduiStore.getState(),
       config as { state?: Record<string, unknown>; meta?: Record<string, unknown> },
-      computedDefs as { output: string; expr: object }[]
+      []
     );
     const vs = getGlobalVariableStore().getState().getFullState();
     let initial = finalizeMergedWithVariableStore(base, vs);
@@ -366,7 +363,6 @@ export function SDUIEngine({
           payload,
           scope,
           event,
-          CONVENTIONS,
           router,
           pathname: pathname ?? '/',
           searchParams: searchParams ?? null,
@@ -468,7 +464,7 @@ export function SDUIEngine({
       fetchData: fetchDataStable,
       actionsConfig,
       screenName: configName,
-      screenScopedAliases: CONVENTIONS.screenScopedAliases,
+      screenScopedAliases: [],
       previewState: activePreviewStateForOverrides,
     }),
     [store, mergedStore, variableStoreConfig, runActionStable, fetchDataStable, actionsConfig, configName, activePreviewStateForOverrides]

@@ -4,11 +4,11 @@
 
 import { setNestedValue } from '../../nested-utils';
 import { resolveValue } from '../resolve-value';
+import { PERSIST_PATHS } from '../../variable-config';
 import type { ActionDef, ActionHandlerContext } from './types';
 
 export const setHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
   (ctx) => async (actionDef) => {
-    const CONVENTIONS = ctx.CONVENTIONS as { persistPaths?: string[] };
     const path = (actionDef.path ?? '') as string;
     const rawValue = actionDef.value;
     const fullState = ctx.getFullMergedState();
@@ -25,7 +25,7 @@ export const setHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) =
       if (!path.startsWith('screens.')) {
         ctx.store.getState().setState((prev) => setNestedValue(prev, path, value));
       }
-      if (CONVENTIONS.persistPaths?.includes(path) && typeof value === 'string' && value) {
+      if (PERSIST_PATHS.includes(path) && typeof value === 'string' && value) {
         try {
           if (typeof window !== 'undefined') window.sessionStorage.setItem(path, value);
         } catch (_) {}

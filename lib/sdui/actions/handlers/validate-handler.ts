@@ -10,18 +10,13 @@
 
 import { setNestedValue } from '../../nested-utils';
 import { isScreenScopedPath } from '../../path-utils';
+import { CONVENTIONS } from '../../conventions';
 import type { ActionDef, ActionHandlerContext } from './types';
 import type { ValidationRule } from '../../engine-types';
 import { getGlobalVariableStore } from '../../global-variable-store';
 
 export const validateHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
   (ctx) => async (actionDef) => {
-    const CONVENTIONS = ctx.CONVENTIONS as {
-      defaultStoreErrorsIn?: string;
-      screenScopedAliases?: string[];
-      workflowPath?: string;
-    };
-
     const useFormContainer = !actionDef.rules && !actionDef.storeErrorsIn;
 
     let errors: Record<string, unknown> = {};
@@ -97,16 +92,16 @@ export const validateHandler: (ctx: ActionHandlerContext) => (actionDef: ActionD
     } else {
       // Legacy inline rules mode
       const rules = (actionDef.rules ?? {}) as Record<string, ValidationRule & { equalsField?: string }>;
-      const storeErrorsIn = (actionDef.storeErrorsIn ?? CONVENTIONS.defaultStoreErrorsIn ?? 'errors') as string;
+      const storeErrorsIn = (actionDef.storeErrorsIn ?? 'errors') as string;
       const errorsPath =
-        ctx.configName && isScreenScopedPath(storeErrorsIn, CONVENTIONS.screenScopedAliases ?? [])
+        ctx.configName && isScreenScopedPath(storeErrorsIn, [])
           ? `screens.${ctx.configName}.${storeErrorsIn}`
           : storeErrorsIn;
 
       for (const [fieldPath, rule] of Object.entries(rules)) {
         if (!rule) continue;
         let actualPath = fieldPath;
-        if (ctx.configName && isScreenScopedPath(fieldPath, CONVENTIONS.screenScopedAliases ?? [])) {
+        if (ctx.configName && isScreenScopedPath(fieldPath, [])) {
           actualPath = `screens.${ctx.configName}.${fieldPath}`;
         }
         const value = ctx.get(actualPath);
@@ -140,7 +135,7 @@ export const validateHandler: (ctx: ActionHandlerContext) => (actionDef: ActionD
         }
         if (rule.equalsField != null) {
           let compareField = rule.equalsField;
-          if (ctx.configName && isScreenScopedPath(compareField, CONVENTIONS.screenScopedAliases ?? [])) {
+          if (ctx.configName && isScreenScopedPath(compareField, [])) {
             compareField = `screens.${ctx.configName}.${compareField}`;
           }
           const otherVal = ctx.get(compareField);
@@ -156,7 +151,7 @@ export const validateHandler: (ctx: ActionHandlerContext) => (actionDef: ActionD
 
     if (firstMsg) {
       ctx.store.getState().setState((prev) =>
-        setNestedValue(prev, CONVENTIONS.workflowPath ?? '_workflow', {
+        setNestedValue(prev, CONVENTIONS.workflowPath, {
           lastAction: ctx.actionName,
           lastError: firstMsg,
         })

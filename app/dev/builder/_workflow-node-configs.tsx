@@ -174,7 +174,7 @@ export function WorkflowBindButton({ value, onChange }: WorkflowBindButtonProps)
                   fontSize: 11, cursor: 'pointer',
                 }}
                 onMouseEnter={e => { if (w.id !== value) (e.currentTarget as HTMLElement).style.background = '#374151'; }}
-                onMouseLeave={e => { if (w.id !== value) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                onMouseLeave={e => { if (w.id !== value) (e.currentTarget as HTMLElement).style.background = '#1f2937'; }}
               >
                 <div style={{ fontWeight: 600 }}>{toHumanName(w.name ?? w.id)}</div>
                 {w.trigger && <div style={{ fontSize: 10, color: '#6b7280', marginTop: 1 }}>On {w.trigger}</div>}
@@ -294,7 +294,7 @@ export function TypeSearchDropdown({
                     if (item.type !== value) (e.currentTarget as HTMLButtonElement).style.background = '#374151';
                   }}
                   onMouseLeave={e => {
-                    if (item.type !== value) (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                    if (item.type !== value) (e.currentTarget as HTMLButtonElement).style.background = '#1f2937';
                   }}
                   onClick={() => { onChange(item.type as ActionStepType); setOpen(false); setSearch(''); }}
                   data-testid={`type-option-${item.type}`}
@@ -467,7 +467,7 @@ export function PagePickerDropdown({
               key={p.path}
               style={S.dropdownItem(p.path === effectiveValue)}
               onMouseEnter={e => { if (p.path !== effectiveValue) (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-              onMouseLeave={e => { if (p.path !== effectiveValue) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+              onMouseLeave={e => { if (p.path !== effectiveValue) (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
               onClick={() => { onChange(p.path); setOpen(false); setSearch(''); }}
             >
               <span style={{ flex: 1 }}>{p.name}</span>
@@ -546,7 +546,7 @@ export function OptionPickerDropdown({
               key={o.value}
               style={S.dropdownItem(o.value === value)}
               onMouseEnter={e => { if (o.value !== value) (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-              onMouseLeave={e => { if (o.value !== value) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+              onMouseLeave={e => { if (o.value !== value) (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
               onClick={() => { onChange(o.value); setOpen(false); }}
             >
               <span style={{ flex: 1 }}>{o.label}</span>
@@ -674,7 +674,7 @@ export function CollectionPickerDropdown({
               key={c.id}
               style={S.dropdownItem(c.id === value)}
               onMouseEnter={e => { if (c.id !== value) (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-              onMouseLeave={e => { if (c.id !== value) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+              onMouseLeave={e => { if (c.id !== value) (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
               onClick={() => { onChange(c.id); setOpen(false); setSearch(''); }}
             >
               <span style={{ flex: 1 }}>{getLabel(c)}</span>
@@ -1628,7 +1628,7 @@ function ExecuteComponentActionConfig({
                   key={w.id}
                   style={{ ...S.dropdownItem(isActive), flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}
                   onMouseEnter={ev => { if (!isActive) (ev.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-                  onMouseLeave={ev => { if (!isActive) (ev.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+                  onMouseLeave={ev => { if (!isActive) (ev.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
                   onClick={() => { onUpdate({ ...cfg, action: w.id }); setOpen(false); setSearch(''); }}
                 >
                   <span style={{ fontSize: 12, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>

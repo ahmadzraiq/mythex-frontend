@@ -47,30 +47,18 @@ function resolveStoreKey(storeIn: string): string {
 
 export const graphqlHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<unknown> =
   (ctx) => async (actionDef) => {
-    const CONVENTIONS = ctx.CONVENTIONS as {
-      graphqlEndpoint?: string;
-      graphqlHeaders?: Record<string, string>;
-      graphqlCredentials?: RequestCredentials;
-      loadingSuffix?: string;
-      errorSuffix?: string;
-    };
-
     const storeIn = resolveStoreKey((actionDef.storeIn ?? '') as string);
     const fullState = ctx.getFullMergedState();
 
     // ── Endpoint ──────────────────────────────────────────────────────────────
-    const rawEndpoint = (actionDef.endpoint ?? CONVENTIONS.graphqlEndpoint ?? '') as string;
+    const rawEndpoint = (actionDef.endpoint ?? '') as string;
     const endpoint = interpolateUrl(rawEndpoint, ctx.get, ctx.scope);
     if (!endpoint) {
-      console.warn('[graphql] no endpoint defined; set engineConventions.graphqlEndpoint or action.endpoint');
+      console.warn('[graphql] no endpoint defined; set action.endpoint');
       return;
     }
 
     // ── Headers ───────────────────────────────────────────────────────────────
-    const globalHeaders: Record<string, string> = {};
-    for (const [k, v] of Object.entries(CONVENTIONS.graphqlHeaders ?? {})) {
-      globalHeaders[k] = interpolateUrl(String(v), ctx.get, ctx.scope);
-    }
     const actionHeaders: Record<string, string> = {};
     const rawHeaders = actionDef.headers as Record<string, unknown> | undefined;
     if (rawHeaders) {
@@ -83,7 +71,6 @@ export const graphqlHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDe
     }
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...globalHeaders,
       ...actionHeaders,
     };
 
@@ -127,11 +114,12 @@ export const graphqlHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDe
     let stepError: unknown = undefined;
 
     try {
+      const credentials = (actionDef.credentials ?? 'include') as RequestCredentials;
       const res = await fetch(endpoint, {
         method: 'POST',
         headers,
         body: JSON.stringify({ query: actionDef.query, variables }),
-        ...(CONVENTIONS.graphqlCredentials ? { credentials: CONVENTIONS.graphqlCredentials } : {}),
+        credentials,
       });
 
       // ── HTTP error ──────────────────────────────────────────────────────────

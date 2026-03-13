@@ -5,6 +5,7 @@
 import { toast } from 'sonner';
 import { getNestedValue, setNestedValue } from '../../nested-utils';
 import { resolveActionValue, resolveValue } from '../resolve-value';
+import { PERSIST_PATHS, THEME_PATH } from '../../variable-config';
 import type { ActionDef, ActionHandlerContext } from './types';
 
 export const restoreHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
@@ -27,9 +28,8 @@ export const restoreHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDe
 
 export const clearPersistedPathsHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
   (ctx) => async (actionDef) => {
-    const CONVENTIONS = ctx.CONVENTIONS as { persistPaths?: string[] };
     const pathsRaw = actionDef.paths as string[] | undefined;
-    const paths = Array.isArray(pathsRaw) && pathsRaw.length > 0 ? pathsRaw : (CONVENTIONS.persistPaths ?? []);
+    const paths = Array.isArray(pathsRaw) && pathsRaw.length > 0 ? pathsRaw : PERSIST_PATHS;
     if (typeof window !== 'undefined' && paths.length > 0) {
       try {
         for (const p of paths) {
@@ -48,11 +48,18 @@ export const clearPersistedPathsHandler: (ctx: ActionHandlerContext) => (actionD
 
 export const goToPageHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
   (ctx) => async (actionDef) => {
-    const CONVENTIONS = ctx.CONVENTIONS as { defaultPaginationPath?: string; defaultPaginationFetchAction?: string };
-    const path = (actionDef.path ?? CONVENTIONS.defaultPaginationPath ?? 'collectionSkip') as string;
+    const path = (actionDef.path ?? '') as string;
+    if (!path) {
+      console.warn('[goToPage] missing required "path" config; add path to the goToPage step');
+      return;
+    }
     const page = resolveActionValue(actionDef.page, ctx.get, ctx.scope, 1);
     const pageSize = resolveActionValue(actionDef.pageSize, ctx.get, ctx.scope, 12);
-    const fetchAction = (actionDef.fetchAction ?? CONVENTIONS.defaultPaginationFetchAction ?? 'fetchCollection') as string;
+    const fetchAction = (actionDef.fetchAction ?? '') as string;
+    if (!fetchAction) {
+      console.warn('[goToPage] missing required "fetchAction" config; add fetchAction to the goToPage step');
+      return;
+    }
     const skip = Math.max(0, (page - 1) * pageSize);
     ctx.store.getState().setState((prev) => setNestedValue(prev, path, skip));
     if (!path.startsWith('screens.')) {
@@ -78,25 +85,18 @@ export const removeAtHandler: (ctx: ActionHandlerContext) => (actionDef: ActionD
 
 export const shareHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
   (ctx) => async (actionDef) => {
-    const CONVENTIONS = ctx.CONVENTIONS as { shareSlugPrefix?: string };
     const titleRaw = actionDef.title;
-    const urlRaw = actionDef.url;
+    const urlRaw = actionDef.url as unknown;
     const title =
       titleRaw != null && typeof titleRaw === 'object' && 'var' in titleRaw
         ? String(ctx.get(String((titleRaw as { var: string }).var), ctx.scope) ?? '')
         : String(titleRaw ?? '');
-    const urlVal =
-      urlRaw != null && typeof urlRaw === 'object' && 'var' in urlRaw
+    const urlVal: unknown =
+      urlRaw != null && typeof urlRaw === 'object' && 'var' in (urlRaw as object)
         ? ctx.get(String((urlRaw as { var: string }).var), ctx.scope)
         : urlRaw;
-    const pathOrSlug = typeof urlVal === 'string' ? urlVal : (urlVal as { slug?: string })?.slug ?? '';
-    const prefix = CONVENTIONS.shareSlugPrefix ?? '/product';
-    const url =
-      typeof window !== 'undefined'
-        ? pathOrSlug.startsWith('/')
-          ? `${window.location.origin}${pathOrSlug}`
-          : `${window.location.origin}${prefix}${pathOrSlug.startsWith('/') ? '' : '/'}${pathOrSlug}`
-        : '';
+    // url must be a full URL (e.g. "https://example.com/product/my-slug") — no prefix fallback
+    const url = typeof urlVal === 'string' ? urlVal : '';
     if (typeof navigator !== 'undefined' && navigator.share && title && url) {
       await navigator.share({ title, url }).catch(() => {});
     }
@@ -104,10 +104,9 @@ export const shareHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef)
 
 export const setThemeHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
   (ctx) => async (actionDef) => {
-    const CONVENTIONS = ctx.CONVENTIONS as { themePath?: string };
     const value = (actionDef.value ?? 'system') as 'light' | 'dark' | 'system';
     ctx.setColorScheme?.(value);
-    ctx.setData(CONVENTIONS.themePath ?? 'nav.colorScheme', value);
+    ctx.setData(THEME_PATH, value);
   };
 
 export const setStateHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =

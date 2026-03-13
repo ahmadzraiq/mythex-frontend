@@ -137,15 +137,17 @@ import type { WorkflowTestEntry } from './_store-types';
  */
 function WorkflowResultsTab({
   testResults,
+  stepNameMap,
   onSelect,
 }: {
   testResults: Record<string, WorkflowTestEntry>;
+  stepNameMap: Map<string, string>;
   onSelect: (stepId: string, path: string, actionIndex: number, source: 'result' | 'error') => void;
 }) {
   const sorted = Object.entries(testResults).sort((a, b) => a[1].stepIndex - b[1].stepIndex);
 
   if (sorted.length === 0) {
-  return (
+    return (
       <div style={{ padding: 16, fontSize: 11, color: '#6b7280', textAlign: 'center' }}>
         No test results yet.<br />
         Run a step with the ▶ button in the workflow canvas.
@@ -153,17 +155,17 @@ function WorkflowResultsTab({
     );
   }
 
-            return (
+  return (
     <div style={{ overflowY: 'auto', flex: 1 }}>
       {sorted.map(([stepId, entry], idx) => (
         <WorkflowResultGroup
           key={stepId}
           stepId={stepId}
           entry={entry}
-          actionIndex={idx + 1}
+          label={stepNameMap.get(stepId) || entry.actionName || `Action ${idx + 1}`}
           onSelect={onSelect}
-              />
-                ))}
+        />
+      ))}
     </div>
   );
 }
@@ -174,11 +176,11 @@ const WF_RESULT_CHIP = { bg: '#1d4ed8', bgHover: '#2563eb', border: '#2563eb', t
 const WF_ERROR_CHIP  = { bg: '#991b1b', bgHover: '#b91c1c', border: '#b91c1c', text: '#fecaca' };
 
 function WorkflowResultGroup({
-  stepId, entry, actionIndex, onSelect,
+  stepId, entry, label, onSelect,
 }: {
   stepId: string;
   entry: WorkflowTestEntry;
-  actionIndex: number;
+  label: string;
   onSelect: (stepId: string, path: string, actionIndex: number, source: 'result' | 'error') => void;
 }) {
   const [open, setOpen] = React.useState(true);
@@ -193,11 +195,11 @@ function WorkflowResultGroup({
   // Strip the leading "result." or "error." prefix — source is passed separately
   const handleResultInsert = (rawPath: string) => {
     const subPath = rawPath === 'result' ? '' : rawPath.replace(/^result\./, '');
-    onSelect(stepId, subPath, actionIndex, 'result');
+    onSelect(stepId, subPath, 0, 'result');
   };
   const handleErrorInsert = (rawPath: string) => {
     const subPath = rawPath === 'error' ? '' : rawPath.replace(/^error\./, '');
-    onSelect(stepId, subPath, actionIndex, 'error');
+    onSelect(stepId, subPath, 0, 'error');
   };
 
   // Error can be a full object (Axios error with request/response) or a plain string
@@ -221,7 +223,7 @@ function WorkflowResultGroup({
       >
         <span style={{ color: '#6b7280' }}><FEChevron open={open} size={8} /></span>
         <span style={{ fontSize: 10, letterSpacing: '0.05em', color: '#9ca3af', marginRight: 2 }}>FROM ACTION</span>
-        <span style={{ fontSize: 11 }}>{entry.actionName || `Action ${actionIndex}`}</span>
+        <span style={{ fontSize: 11 }}>{label}</span>
       </button>
 
       {open && (
@@ -271,7 +273,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   const historyIdxRef = useRef(-1);
   const isUndoRedoRef = useRef(false);
   const historyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { globalFormulas, pageDataSources, customVars, varFolders, workflowTestResults } = useBuilderStore();
+  const { globalFormulas, pageDataSources, customVars, varFolders, workflowTestResults, workflowCanvasTarget, pageWorkflows, globalWorkflows, liveCanvasSteps } = useBuilderStore();
   const selectedIds = useBuilderStore(s => s.selectedIds);
   const pageNodes = useBuilderStore(s => s.pageNodes);
   const [isFocused, setIsFocused] = useState(false);
@@ -289,20 +291,26 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     return false;
   }, [selectedIds, pageNodes]);
 
-  // Detect if the selected node is a FormContainer or has one as an ancestor
-  const isInsideForm = useMemo(() => {
+  // Detect if the selected node is a FormContainer or has one as an ancestor.
+  // Also returns the nearest ancestor FormContainer's id so FormLocalSection can
+  // read from the right isolated variables['{id}-form'] store key.
+  const { isInsideForm, nearestFormContainerId } = useMemo(() => {
     const id = selectedIds[0];
-    if (!id) return false;
-    // Check the selected node itself first (e.g. FormContainer is directly selected for workflow editing)
+    if (!id) return { isInsideForm: false, nearestFormContainerId: null };
+    // Check the selected node itself first
     const selfNode = findNode(pageNodes, id);
-    if ((selfNode as { type?: string })?.type === 'FormContainer') return true;
+    if ((selfNode as { type?: string })?.type === 'FormContainer') {
+      return { isInsideForm: true, nearestFormContainerId: selfNode?.id ?? id };
+    }
     let node = findParentNode(pageNodes, id);
     while (node) {
-      if ((node as { type?: string }).type === 'FormContainer') return true;
+      if ((node as { type?: string }).type === 'FormContainer') {
+        return { isInsideForm: true, nearestFormContainerId: node.id ?? null };
+      }
       const parent = findParentNode(pageNodes, node.id ?? '');
       node = parent ?? null;
     }
-    return false;
+    return { isInsideForm: false, nearestFormContainerId: null };
   }, [selectedIds, pageNodes]);
   // Subscribe to live Zustand data so context stays fresh
   const zustandData = useSduiStore(s => s.data);
@@ -331,10 +339,28 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   // formula state: serialized string from the contenteditable div
   const [formula, setFormula] = useState(initialFormula);
 
+  // Filter test results to only those belonging to the currently open workflow canvas.
+  // Entries from other workflows (e.g. Login, older runs) are excluded so the Workflow
+  // tab only shows results relevant to the formula being edited right now.
+  const currentWorkflowTestResults = useMemo(() => {
+    if (!workflowTestResults) return {} as typeof workflowTestResults;
+    if (!workflowCanvasTarget) return workflowTestResults;
+    // Derive the same ID used by workflowIdFromTarget in _workflow-canvas.tsx
+    const t = workflowCanvasTarget;
+    let currentId: string;
+    if (t.kind === 'element')          currentId = `element:${t.nodeId}:${t.event}`;
+    else if (t.kind === 'pageTrigger') currentId = `pageTrigger:${t.trigger}`;
+    else if (t.kind === 'pageWorkflow') currentId = `pageWorkflow:${t.name}`;
+    else                               currentId = `globalWorkflow:${t.id}`;
+    return Object.fromEntries(
+      Object.entries(workflowTestResults).filter(([, entry]) => entry.workflowId === currentId)
+    ) as typeof workflowTestResults;
+  }, [workflowTestResults, workflowCanvasTarget]);
+
   const showQuickTab = isInsideRepeat || isInsideForm;
   // Show Workflow tab when there are test results OR when a trigger with event data is active
   const hasEventContext = !!(workflowTrigger && Object.keys(EVENT_SHAPES[workflowTrigger] ?? {}).length > 0);
-  const showWorkflowTab = hasEventContext || Object.keys(workflowTestResults ?? {}).length > 0;
+  const showWorkflowTab = hasEventContext || Object.keys(currentWorkflowTestResults ?? {}).length > 0;
 
   const [tab, setTab] = useState<Tab>(hasEventContext ? 'workflow' : 'variables');
   const [search, setSearch] = useState('');
@@ -396,11 +422,89 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     [customVars, controlledInputVarEntries, formContainerVarEntries]
   );
 
+  // stepId → human-readable action name — lets populateEditor show the same label
+  // on reopen as when the chip was first inserted from the Workflow tab.
+  // Build stepId → 1-based position from the current workflow's steps (no test run needed).
+  // Prefers liveCanvasSteps (pushed by the canvas on every edit) over the persisted store
+  // data so the index is always correct even before the canvas is saved/closed.
+  // Maps stepId → { pos: 1-based position, name: user-defined step name if set }
+  // Derived from liveCanvasSteps (updated on every canvas edit) so position and name
+  // are always current — no test run required.
+  const staticStepMap = useMemo(() => {
+    const map = new Map<string, { pos: number; name?: string }>();
+    if (!workflowCanvasTarget) return map;
+
+    // Live steps (updated on every add/remove in the open canvas) take priority
+    let rawSteps: unknown[] | undefined = liveCanvasSteps ?? undefined;
+
+    if (!rawSteps) {
+      if (workflowCanvasTarget.kind === 'pageWorkflow')
+        rawSteps = pageWorkflows[workflowCanvasTarget.name] as unknown[] | undefined;
+      else if (workflowCanvasTarget.kind === 'globalWorkflow')
+        rawSteps = globalWorkflows[workflowCanvasTarget.id] as unknown[] | undefined;
+      else if (workflowCanvasTarget.kind === 'element') {
+        const node = pageNodes.find(n => n.id === workflowCanvasTarget.nodeId);
+        const actions = (node?.actions as Record<string, unknown> | undefined);
+        const wf = actions?.[workflowCanvasTarget.event] as { steps?: unknown[] } | undefined;
+        rawSteps = wf?.steps;
+      }
+    }
+    if (!rawSteps) return map;
+
+    let counter = 0;
+    const traverse = (steps: unknown[]) => {
+      for (const step of steps) {
+        const s = step as { id?: string; name?: string; trueBranch?: unknown[]; falseBranch?: unknown[]; loopBody?: unknown[]; branches?: Array<{ steps?: unknown[] }> };
+        if (s.id) map.set(s.id, { pos: ++counter, name: s.name || undefined });
+        if (s.trueBranch?.length)  traverse(s.trueBranch);
+        if (s.falseBranch?.length) traverse(s.falseBranch);
+        if (s.loopBody?.length)    traverse(s.loopBody);
+        if (s.branches)            for (const b of s.branches) if (b.steps?.length) traverse(b.steps);
+      }
+    };
+    traverse(rawSteps);
+    return map;
+  }, [workflowCanvasTarget, liveCanvasSteps, pageWorkflows, globalWorkflows, pageNodes]);
+
+  const stepNameMap = useMemo(() => {
+    // Build the display label for every known step:
+    //   1. Live canvas position/name (staticStepMap) is the primary source — always current.
+    //      Name takes priority over index: show the step's user-defined name when set,
+    //      otherwise "Action N" using the live 1-based position.
+    //   2. Test-result actionName overrides when the step has been explicitly named at
+    //      run time (covers renamed steps that haven't reloaded their canvas state yet).
+    //   3. For steps not in the static map (canvas closed / step deleted), fall back to
+    //      the sorted test-result order so the Workflow tab still shows something useful.
+    const map = new Map<string, string>();
+
+    // Step 1: seed from live canvas (name > "Action N")
+    for (const [stepId, { pos, name }] of staticStepMap) {
+      map.set(stepId, name || `Action ${pos}`);
+    }
+
+    // Step 2 & 3: fallback only for steps NOT in the live canvas.
+    // The live canvas always wins — if the user renames or clears a step name,
+    // staticStepMap already reflects that and we must NOT let a stale cached
+    // actionName from a previous test run override it.
+    const sorted = Object.entries(currentWorkflowTestResults ?? {})
+      .sort(([, a], [, b]) => a.stepIndex - b.stepIndex);
+    sorted.forEach(([stepId, entry], idx) => {
+      if (!map.has(stepId)) {
+        // Step is not in the live canvas (canvas closed / step deleted) →
+        // use the cached name or sort-order index as a last resort.
+        map.set(stepId, entry.actionName || `Action ${idx + 1}`);
+      }
+      // Step IS in the live canvas → keep whatever staticStepMap already set.
+    });
+
+    return map;
+  }, [currentWorkflowTestResults, staticStepMap]);
+
   // Populate the editor on mount with the initial formula and seed history
   useEffect(() => {
     const el = editorRef.current;
     if (!el) return;
-    populateEditor(el, initialFormula, dsMap, varMap);
+    populateEditor(el, initialFormula, dsMap, varMap, stepNameMap);
     setFormula(initialFormula);
     historyRef.current = [initialFormula];
     historyIdxRef.current = 0;
@@ -454,6 +558,28 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       });
     }
   }, [varMap]);
+
+  // Label reactivity: when stepNameMap changes (step added/removed), update workflow
+  // chip display text in place so "Action N" stays correct without a re-mount.
+  // We avoid complex CSS attribute selectors with special chars ([, ') by selecting
+  // all collection/error chips and filtering by formula in JS instead.
+  useEffect(() => {
+    const el = editorRef.current;
+    if (!el) return;
+    el.querySelectorAll<HTMLElement>('[data-type="collection"],[data-type="error"]').forEach(chip => {
+      const formulaPath = chip.dataset.formula ?? '';
+      if (!formulaPath.startsWith("context.workflow['")) return;
+      const stepIdMatch = formulaPath.match(/^context\.workflow\['([^']*)'\]/);
+      if (!stepIdMatch) return;
+      const stepId = stepIdMatch[1];
+      const actionName = stepNameMap.get(stepId);
+      if (!actionName) return;
+      const afterStepId = formulaPath.slice(stepIdMatch[0].length);
+      const friendly = (actionName + afterStepId).replace(/\?\./g, '.').replace(/\.\[(\d+)\]/g, '[$1]');
+      const inner = chip.querySelector('span') ?? chip;
+      inner.textContent = friendly;
+    });
+  }, [stepNameMap]);
 
   // Build context for evaluation — includes context.item from repeat ancestor, globalContext, pages, theme
   const context = useMemo(() => {
@@ -542,7 +668,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     // Build context.workflow from persisted test results so formulas like
     // context.workflow['0'].result?.login?.errorCode evaluate correctly
     const workflowMap: Record<string, { result: unknown; error: unknown }> = {};
-    for (const [key, entry] of Object.entries(workflowTestResults ?? {})) {
+    for (const [key, entry] of Object.entries(currentWorkflowTestResults ?? {})) {
       workflowMap[key] = { result: entry.result, error: entry.error };
     }
 
@@ -575,7 +701,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       pages,
       theme,
     };
-  }, [zustandData, selectedIds, pageNodes, workflowTestResults]);
+  }, [zustandData, selectedIds, pageNodes, currentWorkflowTestResults]);
 
   // When a workflowTrigger is set, inject the trigger's event shape as preview context
   const contextWithEvent = useMemo(() => {
@@ -626,7 +752,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     const el = editorRef.current;
     if (!el) return;
     isUndoRedoRef.current = true;
-    populateEditor(el, f, dsMap, varMap);
+    populateEditor(el, f, dsMap, varMap, stepNameMap);
     setFormula(f);
     // Move cursor to end
     const r = document.createRange();
@@ -634,7 +760,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     const sel = window.getSelection();
     sel?.removeAllRanges(); sel?.addRange(r);
     isUndoRedoRef.current = false;
-  }, [dsMap]);
+  }, [dsMap, varMap, stepNameMap]);
 
   // Restore the saved caret position before any programmatic insertion
   const restoreCaret = useCallback(() => {
@@ -732,11 +858,11 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     } else {
       restoreCaret();
     }
-    insertPastedFormulaAtCaret(el, text, dsMap, varMap);
+    insertPastedFormulaAtCaret(el, text, dsMap, varMap, stepNameMap);
     // Normalize after insert: remove any stray <br>/<div> and add ZWS chip guards
     normalizeEditorContent(el);
     const f = serializeEditor(el); setFormula(f); pushHistory(f);
-  }, [dsMap, restoreCaret, pushHistory]);
+  }, [dsMap, varMap, stepNameMap, restoreCaret, pushHistory]);
 
   const insertVar = useCallback((formulaPath: string, displayLabel: string, type: 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'event' = 'variable') => {
     insertChip(formulaPath, displayLabel, type);
@@ -1081,7 +1207,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       {/* ── Tab Body ── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
         {tab === 'variables' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+          <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
             <PageComponentsSection onInsert={insertChip} search={search} />
             <VariableTree
               onSelect={insertVar}
@@ -1114,7 +1240,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
         {tab === 'quick' && (
           <div style={{ overflowY: 'auto', flex: 1 }}>
             {isInsideForm && (
-              <FormLocalSection onInsert={insertChip} pageFormFields={pageFormFields} />
+              <FormLocalSection onInsert={insertChip} pageFormFields={pageFormFields} nearestFormContainerId={nearestFormContainerId} />
             )}
             {isInsideRepeat && (
               <>
@@ -1136,13 +1262,15 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
               />
             )}
             {/* Previous action test results */}
-            {Object.keys(workflowTestResults ?? {}).length > 0 && (
+            {Object.keys(currentWorkflowTestResults ?? {}).length > 0 && (
               <WorkflowResultsTab
-                testResults={workflowTestResults ?? {}}
+                testResults={currentWorkflowTestResults ?? {}}
+                stepNameMap={stepNameMap}
                 onSelect={(stepId, path, _actionIndex, source) => {
                   const base = source === 'error' ? 'error' : 'result';
                   const formulaPath = `context.workflow['${stepId}']${path ? `.${base}?.${path}` : `.${base}`}`;
-                  const actionLabel = (workflowTestResults ?? {})[stepId]?.actionName || 'Action';
+                  // Always use the live stepNameMap label (reflects current canvas name/index)
+                  const actionLabel = stepNameMap.get(stepId) || stepId;
                   const displayLabel = path
                     ? `${actionLabel}.${base}.${path}`
                     : `${actionLabel}.${base}`;

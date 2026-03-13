@@ -24,7 +24,8 @@
       "config": "product",
       "auth": false,
       "layout": "full",
-      "dynamic": true
+      "dynamic": true,
+      "params": ["slug"]
     },
     {
       "path": "/collection",
@@ -32,7 +33,8 @@
       "auth": false,
       "layout": "full",
       "dynamic": true,
-      "paramChangeAction": "fetchCollection"
+      "paramChangeAction": "fetchCollection",
+      "params": ["slug"]
     },
     {
       "path": "/search",
@@ -88,7 +90,8 @@
       "config": "accountOrderDetail",
       "auth": true,
       "layout": "full",
-      "dynamic": true
+      "dynamic": true,
+      "params": ["id"]
     },
     {
       "path": "/account/addresses",
@@ -107,7 +110,8 @@
       "config": "orderConfirmation",
       "auth": false,
       "layout": "full",
-      "dynamic": true
+      "dynamic": true,
+      "params": ["id"]
     },
     {
       "path": "/not-found",

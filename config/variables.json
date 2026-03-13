@@ -25,31 +25,55 @@
       "label": "Color Scheme",
       "type": "string",
       "initialValue": "system",
-      "folder": "Navigation"
+      "folder": "Navigation",
+      "role": "theme"
     },
     "e4f5a6b7-c8d9-0123-efab-234567890123": {
       "label": "Theme Menu Open",
       "type": "boolean",
       "initialValue": false,
-      "folder": "Navigation"
+      "folder": "Navigation",
+      "resetOnNavigate": true
     },
     "f5a6b7c8-d9e0-1234-fabc-345678901234": {
       "label": "Search Query",
       "type": "string",
       "initialValue": "",
-      "folder": "Navigation"
+      "folder": "Navigation",
+      "urlParam": {
+        "param": "q",
+        "path": "route.q",
+        "default": "",
+        "triggersParamChange": true
+      }
     },
     "a6b7c8d9-e0f1-2345-abcd-456789012345": {
       "label": "Collection Skip",
       "type": "number",
       "initialValue": 0,
-      "folder": "Pagination"
+      "folder": "Pagination",
+      "urlParam": {
+        "param": "page",
+        "default": "1",
+        "transform": "pageToSkip",
+        "pageSize": 12,
+        "routePrefix": "/collection",
+        "triggersParamChange": true
+      }
     },
     "b7c8d9e0-f1a2-3456-bcde-567890123456": {
       "label": "Search Skip",
       "type": "number",
       "initialValue": 0,
-      "folder": "Pagination"
+      "folder": "Pagination",
+      "urlParam": {
+        "param": "page",
+        "default": "1",
+        "transform": "pageToSkip",
+        "pageSize": 12,
+        "routePrefix": "/search",
+        "triggersParamChange": true
+      }
     },
     "c8d9e0f1-a2b3-4567-cdef-678901234567": {
       "label": "Sort Menu Open",
@@ -85,7 +109,8 @@
       "label": "Selected Payment",
       "type": "string",
       "initialValue": null,
-      "folder": "Checkout"
+      "folder": "Checkout",
+      "persist": "session"
     },
     "c4d5e6f7-a8b9-0123-cdef-234567890123": {
       "label": "Selected Options",
@@ -534,6 +559,244 @@
       "type": "string",
       "initialValue": "(not submitted)",
       "folder": "WA Tests"
+    },
+    "fa000001-0000-0000-0000-000000000001": {
+      "label": "Collection Page Size",
+      "type": "number",
+      "initialValue": 12,
+      "folder": "Pagination"
+    },
+    "fa000002-0000-0000-0000-000000000001": {
+      "label": "Route Sort",
+      "type": "string",
+      "initialValue": "name-asc",
+      "folder": "Routing",
+      "urlParam": {
+        "param": "sort",
+        "path": "route.sort",
+        "default": "name-asc",
+        "triggersParamChange": true
+      }
+    },
+    "fa000003-0000-0000-0000-000000000001": {
+      "label": "Route Facets",
+      "type": "array",
+      "initialValue": [],
+      "folder": "Routing",
+      "urlParam": {
+        "param": "facets",
+        "path": "route.facets",
+        "type": "array",
+        "triggersParamChange": true
+      }
+    },
+    "fa000004-0000-0000-0000-000000000001": {
+      "label": "Route Token",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Routing",
+      "urlParam": {
+        "param": "token",
+        "path": "route.token",
+        "default": ""
+      }
+    },
+    "fa000005-0000-0000-0000-000000000001": {
+      "label": "Sort Input Map",
+      "type": "object",
+      "initialValue": {
+        "name-asc": { "name": "ASC" },
+        "name-desc": { "name": "DESC" },
+        "price-asc": { "price": "ASC" },
+        "price-desc": { "price": "DESC" }
+      },
+      "folder": "Catalog"
+    },
+    "fa000006-0000-0000-0000-000000000001": {
+      "label": "Default Sort Input",
+      "type": "object",
+      "initialValue": { "name": "ASC" },
+      "folder": "Catalog"
+    },
+    "wa-chain-0000-0000-0000-000000000001": {
+      "label": "API Chain: Status",
+      "type": "string",
+      "initialValue": "idle",
+      "folder": "Workflow Demo"
+    },
+    "wa-chain-0000-0000-0000-000000000002": {
+      "label": "API Chain: GQL Country",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Workflow Demo"
+    },
+    "wa-chain-0000-0000-0000-000000000003": {
+      "label": "API Chain: REST Echo",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Workflow Demo"
+    },
+    "wa-chain-0000-0000-0000-000000000004": {
+      "label": "API Chain: Branch Path",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Workflow Demo"
+    },
+    "wa-chain-0000-0000-0000-000000000005": {
+      "label": "API Chain: Pipeline Result",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Workflow Demo"
+    },
+    "wa-chain-0000-0000-0000-000000000006": {
+      "label": "API Chain: Collection Status",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Workflow Demo"
+    },
+    "wa-chain-0000-0000-0000-000000000007": {
+      "label": "API Chain: While Count",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Workflow Demo"
+    },
+    "wa-chain-0000-0000-0000-000000000008": {
+      "label": "API Chain: ForEach Result",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Workflow Demo"
+    },
+    "wa-chain-0000-0000-0000-000000000009": {
+      "label": "API Chain: Multi Branch Result",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Workflow Demo"
+    },
+    "wa-val2-0000-0000-0000-000000000001": {
+      "label": "Val2: Username",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa-val2-0000-0000-0000-000000000002": {
+      "label": "Val2: Email",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa-val2-0000-0000-0000-000000000003": {
+      "label": "Val2: Submit Result",
+      "type": "string",
+      "initialValue": "(not submitted)",
+      "folder": "WA Tests"
+    },
+    "wa-val2-0000-0000-0000-000000000004": {
+      "label": "Val2: Validation Error",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa-val2-0000-0000-0000-000000000005": {
+      "label": "Val2: Phone",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa-val2-0000-0000-0000-000000000006": {
+      "label": "Val2: Age",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa-val2-0000-0000-0000-000000000007": {
+      "label": "Val2: Password",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa-val2-0000-0000-0000-000000000008": {
+      "label": "Val2: Confirm Password",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa-eca-0000-0000-0000-000000000001": {
+      "label": "ECA: Direct Result",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa-eca-0000-0000-0000-000000000002": {
+      "label": "ECA: Chain Step1",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa-eca-0000-0000-0000-000000000003": {
+      "label": "ECA: Chain Final",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa-eca-0000-0000-0000-000000000004": {
+      "label": "ECA: Loop Count",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "WA Tests"
+    },
+    "wa-eca-0000-0000-0000-000000000005": {
+      "label": "ECA: Nested Result",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa-evt-0000-0000-0000-000000000001": {
+      "label": "Event: onChange value",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa-evt-0000-0000-0000-000000000002": {
+      "label": "Event: onClick coords",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa-evt-0000-0000-0000-000000000003": {
+      "label": "Event: onEnterKey",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa-evt-0000-0000-0000-000000000004": {
+      "label": "Event: onFocus",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa-evt-0000-0000-0000-000000000005": {
+      "label": "Event: onBlur",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa-evt-0000-0000-0000-000000000006": {
+      "label": "Event: onScroll",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa-evt-0000-0000-0000-000000000007": {
+      "label": "Event: onValueChange",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa-evt-0000-0000-0000-000000000008": {
+      "label": "Event: onCheckbox",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
     }
   },
   "varFolders": [
@@ -548,6 +811,10 @@
     {
       "id": "Navigation",
       "label": "Navigation"
+    },
+    {
+      "id": "Routing",
+      "label": "Routing"
     },
     {
       "id": "Pagination",

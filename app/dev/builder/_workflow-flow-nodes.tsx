@@ -362,8 +362,7 @@ export function ActionNode({
           data-testid="context-menu-btn"
           style={S.moreBtn}
           type="button"
-          onPointerDown={e => { e.stopPropagation(); onContextMenu(e as unknown as React.MouseEvent, step, stepPath); }}
-          onClick={e => e.stopPropagation()}
+          onClick={e => { e.stopPropagation(); onContextMenu(e, step, stepPath); }}
           title="More options"
         >
           ⋮
@@ -426,8 +425,7 @@ export function PassThroughNode({
       <button
         style={{ ...S.moreBtn, fontSize: 14 }}
         type="button"
-        onPointerDown={e => { e.stopPropagation(); onContextMenu(e as unknown as React.MouseEvent, step, stepPath); }}
-        onClick={e => e.stopPropagation()}
+        onClick={e => { e.stopPropagation(); onContextMenu(e, step, stepPath); }}
       >
         ⋮
       </button>
@@ -501,7 +499,7 @@ export function BranchNode({
       >
         <span>⟐</span>
         <span>{step.name || 'True/False split'}</span>
-        <button style={S.moreBtn} type="button" onPointerDown={e => { e.stopPropagation(); onContextMenu(e as unknown as React.MouseEvent, step, stepPath); }} onClick={e => e.stopPropagation()}>⋮</button>
+        <button style={S.moreBtn} type="button" onClick={e => { e.stopPropagation(); onContextMenu(e, step, stepPath); }}>⋮</button>
       </div>
       {/* Top split SVG: center drop → horizontal bar → per-column drops */}
       <svg width={rowW} height={32} style={{ flexShrink: 0, overflow: 'visible' }}>
@@ -625,7 +623,7 @@ export function MultiOptionBranchNode({
       <div style={S.pillNode(isSelected)} onClick={() => onSelect(stepPath)}>
         <span>⟐</span>
         <span>{step.name || 'Multi-option split'}</span>
-        <button style={S.moreBtn} type="button" onPointerDown={e => { e.stopPropagation(); onContextMenu(e as unknown as React.MouseEvent, step, stepPath); }} onClick={e => e.stopPropagation()}>⋮</button>
+        <button style={S.moreBtn} type="button" onClick={e => { e.stopPropagation(); onContextMenu(e, step, stepPath); }}>⋮</button>
       </div>
       {/* Top split SVG: center drop → horizontal bar → per-column drops */}
       <svg width={rowW} height={32} style={{ flexShrink: 0, overflow: 'visible' }}>
@@ -729,7 +727,7 @@ export function LoopNode({
         <div style={S.pillNode(isSelected)} onClick={() => onSelect(stepPath)}>
           <span>{icon}</span>
           <span>{step.name || label}</span>
-          <button style={S.moreBtn} type="button" onPointerDown={e => { e.stopPropagation(); onContextMenu(e as unknown as React.MouseEvent, step, stepPath); }} onClick={e => e.stopPropagation()}>⋮</button>
+          <button style={S.moreBtn} type="button" onClick={e => { e.stopPropagation(); onContextMenu(e, step, stepPath); }}>⋮</button>
         </div>
       </div>
       {/* Loop body row: left back-arrow | right dashed container */}

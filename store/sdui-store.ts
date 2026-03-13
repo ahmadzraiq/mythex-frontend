@@ -1,10 +1,9 @@
 /**
  * SDUI Store - Zustand-based state for JSON-driven UI
- * Replaces Redux config slice. Initial state from config/store.json.
+ * Initial state seeded from screen config on first render.
  */
 
 import { create } from 'zustand';
-import storeConfig from '@/config/store-config';
 
 export interface SduiState {
   data: Record<string, unknown>;
@@ -16,10 +15,8 @@ export interface SduiState {
   append: (path: string, value: unknown) => void;
 }
 
-const initialData = (storeConfig as { initialData?: Record<string, unknown> }).initialData ?? {};
-
 export const useSduiStore = create<SduiState>()((set) => ({
-  data: { ...initialData },
+  data: {},
   loading: {},
   error: {},
 

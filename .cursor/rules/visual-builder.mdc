@@ -2774,3 +2774,261 @@ When a text field is bound to a plain string (e.g. the word `Email`), `formulaTo
 `renderer.tsx` disables browser autofill for Input/InputField nodes when `builderMode === true`:
 - General inputs: `autoComplete="off"`
 - Password inputs (`type="password"`): `autoComplete="new-password"`
+
+---
+
+## §55 Formula Editor — Workflow Chip Labels (liveCanvasSteps)
+
+### Problem: Static "Action N" chip numbers
+
+When a workflow action was added before an existing step (shifting its position), or when an action was renamed in the canvas, formula chips built from that step's result continued to show the old "Action N" number or the old cached name — they never updated.
+
+**Root cause:** The chip label was derived from `currentWorkflowTestResults` — the last-saved test run. That data is frozen at run time and does not change as the canvas is edited.
+
+### Fix: `staticStepMap` from `liveCanvasSteps`
+
+`_formula-editor.tsx` now derives chip labels from `liveCanvasSteps` (the live in-editor step list, updated on every canvas edit):
+
+```ts
+// staticStepMap: stepId → { pos: 1-based index, name?: user-defined name }
+const staticStepMap = useMemo(() => {
+  const map = new Map<string, { pos: number; name?: string }>();
+  (liveCanvasSteps ?? []).forEach((step, i) => {
+    map.set(step.id, { pos: i + 1, name: step.name || undefined });
+  });
+  return map;
+}, [liveCanvasSteps]);
+
+// stepNameMap: stepId → human-readable display label (used by chips + Workflow tab header)
+const stepNameMap = useMemo(() => {
+  const map = new Map<string, string>();
+  // Priority 1: live canvas name or index (always wins)
+  for (const [id, { pos, name }] of staticStepMap) {
+    map.set(id, name ?? `Action ${pos}`);
+  }
+  // Priority 2: cached actionName from test results (only for steps no longer in canvas)
+  for (const [stepId, entry] of Object.entries(currentWorkflowTestResults ?? {})) {
+    if (!map.has(stepId) && entry.actionName) map.set(stepId, entry.actionName);
+  }
+  return map;
+}, [staticStepMap, currentWorkflowTestResults]);
+```
+
+**Priority order:**
+1. User-defined `name` from live canvas (`step.name`)
+2. `"Action N"` using live position (`pos`)
+3. Cached `entry.actionName` from test results — **only** when the step is no longer in the canvas
+
+This ensures:
+- Adding steps before an existing one immediately updates that step's chip number
+- Naming a step shows the name in chips immediately (no need to re-run)
+- Removing a name reverts to "Action N" instantly (no stale cache)
+- The "FROM ACTION" header in the Workflow tab reflects live canvas names
+
+### Pasted formula chips
+
+When a formula is pasted into the editor, `insertPastedFormulaAtCaret` calls `populateEditor` which converts `context.workflow['stepId'].*` paths to chips. The `stepNameMap` must be passed through so pasted chips also show human-readable labels instead of raw step IDs.
+
+```ts
+// _formula-editor-dom.ts
+export function insertPastedFormulaAtCaret(
+  editorEl: HTMLElement,
+  text: string,
+  dsMap: Map<string, { label: string }>,
+  varMap?: Map<string, { label: string }>,
+  stepNameMap?: Map<string, string>, // ← required for correct chip labels on paste
+): void { ... }
+```
+
+### Label reactivity useEffect
+
+After `stepNameMap` changes, existing chips in the DOM (already rendered) must also update their displayed label. A `useEffect` rescans all `[data-type="collection"],[data-type="error"]` chips in the editor, filters to those whose `data-formula` starts with `context.workflow['`, and updates their visible text:
+
+```ts
+useEffect(() => {
+  const editorEl = editorRef.current;
+  if (!editorEl) return;
+  editorEl.querySelectorAll<HTMLElement>('[data-type="collection"],[data-type="error"]')
+    .forEach(chip => {
+      const formulaPath = chip.dataset.formula ?? '';
+      if (!formulaPath.startsWith("context.workflow['")) return;
+      const stepIdMatch = formulaPath.match(/^context\.workflow\['([^']*)'\]/);
+      const stepId = stepIdMatch?.[1];
+      if (!stepId) return;
+      const label = stepNameMap.get(stepId);
+      if (label) { /* update chip's inner text node */ }
+    });
+}, [stepNameMap]);
+```
+
+**Rule:** Use the attribute selector `[data-type="collection"],[data-type="error"]` and filter in JavaScript — do NOT use `[data-formula^="context.workflow['"]` in CSS (special characters make it unreliable in some browsers).
+
+---
+
+## §56 Formula Editor — `local?.data` Optional Chaining in CHIP_RE
+
+### Problem
+
+`CHIP_RE` only matched `local.data` (no optional chaining prefix). Formulas stored as `local?.data?.form?.formData?.['fieldName']` were not tokenized into chips — the entire expression fell through as plain text.
+
+### Fix
+
+`CHIP_RE` was updated to accept `local?.data` and optional-chaining path segments:
+
+```
+// Before: only dot notation
+local\.data(?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*
+
+// After: optional ? before .data, and ?.word segments
+local\??\.data(?:\??\.(?:\['[^']*'\]|[\w$]+)|\?\.\[\d+\])*
+```
+
+This matches all of:
+- `local.data` — original canonical form
+- `local?.data` — optional-chaining prefix
+- `local.data.form.field` — dot notation segments
+- `local?.data?.form?.formData?.['fieldName']` — full optional-chaining form
+
+`populateEditor` was also updated to use a robust segment-by-segment parser for both `local.data` and `local?.data` paths:
+
+```ts
+} else if (/^local\??\.data/.test(formulaPath)) {
+  const stripped = formulaPath.replace(/^local\??\.data/, '');
+  const segs: Array<string | number> = [];
+  let rem = stripped;
+  while (rem.length > 0) {
+    const bracketM = rem.match(/^\??\.(?:\['([^']+)'\])(.*)/s);
+    if (bracketM) { segs.push(bracketM[1]); rem = bracketM[2]; continue; }
+    const numM = rem.match(/^\?\.\[(\d+)\](.*)/s);
+    if (numM) { segs.push(Number(numM[1])); rem = numM[2]; continue; }
+    const wordM = rem.match(/^\??\.(\w[\w$]*)(.*)/s);
+    if (wordM) { segs.push(wordM[1]); rem = wordM[2]; continue; }
+    break;
+  }
+  const normalized = 'local.data' + segs.map(s =>
+    typeof s === 'number' ? `?.[${s}]` : `?.['${s}']`
+  ).join('');
+  const friendly = 'local.data' + segs.map(s =>
+    typeof s === 'number' ? `[${s}]` : `.${s}`
+  ).join('');
+  el.appendChild(buildChipSpan(normalized, friendly, 'form'));
+}
+```
+
+**Rule:** All `local.data.*` and `local?.data.*` paths render as green `form` chips. The canonical storage form is `local.data?.['seg']` (no `?` before `.data`); the parser accepts both forms when reading back from JSON.
+
+---
+
+## §57 Settings Panel — Validation Rules: `equalsField` and Formula Editor
+
+### `equalsField` rule type
+
+`equalsField` validates that a field's value matches another named field (e.g. confirm password = password). It was missing from `RULE_TYPE_OPTIONS` and `RULE_DEFAULTS` in `_panel-right-settings.tsx`, causing it to render as "Required" in the dropdown (the browser falls back to the first `<option>` when the value doesn't match any option).
+
+**Fix:** Added to both lists:
+
+```ts
+// RULE_TYPE_OPTIONS
+{ value: 'equalsField', label: 'Equals field', hasValue: true, valuePlaceholder: 'fieldName' },
+
+// RULE_DEFAULTS
+equalsField: { message: 'Fields do not match', value: '' },
+```
+
+`hasValue: true` means the rule shows both a **Value** input (the field name to compare against, e.g. `v2password`) and a **message** input in the same row — reusing the existing `opt?.hasValue` layout already used by `minLength`, `maxLength`, and `pattern`.
+
+**Rule:** `equalsField` config shape: `{ "type": "equalsField", "value": "otherFieldName", "message": "Error text" }`.
+
+### Formula validation rule: missing imports crash `openRuleFormula`
+
+`closeAllEditors` and `registerEditorClose` are exported from `_formula-panel.tsx` and are used in `_panel-right-settings.tsx` — but they were never imported there. TypeScript reported "Cannot find name" errors. At runtime, calling `closeAllEditors()` inside `openRuleFormula` threw `TypeError: closeAllEditors is not a function`, so `setFormulaOpenRuleIdx(idx)` never ran — the formula editor never opened.
+
+**Fix:** Add to the import line:
+
+```ts
+import {
+  FieldWithBinding, BindingIcon, type FormulaValue,
+  closeAllEditors, registerEditorClose   // ← were missing
+} from './_formula-panel';
+```
+
+**Rule:** Any file that calls `closeAllEditors()` or registers with `registerEditorClose()` MUST import them from `_formula-panel`. They are not global — they are module-level utilities managing a `Set` of close callbacks.
+
+### "Add formula" label when formula exists
+
+The JSON config stores a formula validation rule's formula in the `value` key as a plain string:
+```json
+{ "type": "formula", "value": "Number(local?.data?.form?.formData?.['v2age']) >= 18", "message": "..." }
+```
+But the button checked `rule.formula` (a `FormulaValue` object). Since `rule.formula` was `undefined`, the button always showed "Add formula" even when a formula was already configured.
+
+**Fix (button label):**
+```tsx
+ƒ {(rule.formula || rule.value) ? 'Edit formula' : 'Add formula'}
+```
+
+**Fix (FormulaEditor initial value):**
+```tsx
+value={rule.formula ?? (rule.value ? { formula: rule.value } : null)}
+```
+
+This ensures formulas stored as plain strings under `value` are pre-loaded into the editor correctly.
+
+---
+
+## §58 E2E Tests — Reliable Pipeline Completion Signal
+
+### Problem: `runPipeline` returning too early
+
+The `runPipeline` helper waited for `status.includes('done')`. But intermediate status strings like `"(step 3/6: REST done)"` contain the word "done" — the waiter resolved at step 3 of an 8-step pipeline, before `whileLoop`, `forEach`, or `multiOptionBranch` had run. Tests for those outputs then read empty strings.
+
+### Fix: wait for a loop output, not the status string
+
+Use `out-chain-while = "3"` as the unambiguous completion signal — that element is only set to `3` after the `whileLoop` step runs, which comes after all API steps:
+
+```ts
+async function runPipeline(page: Page) {
+  await page.locator('[data-testid="btn-run-chain"]').click();
+  await page.waitForFunction(
+    () => document.querySelector('[data-testid="out-chain-while"]')?.textContent === '3',
+    { timeout: PIPELINE_TIMEOUT }
+  );
+}
+```
+
+**Rule:** When choosing a completion-wait signal for a multi-step pipeline, pick an output that is **only set at or after the step you care about**, never a string that appears in intermediate status messages.
+
+### Problem: WA-92 second run completing instantly
+
+After the first pipeline run, the `out-chain-while` was already `"3"`. The second `runPipeline()` call clicked the button and the `waitForFunction` resolved immediately (the DOM already had `"3"`), reading the first run's values as the second run's results.
+
+**Fix:** Call `resetPage()` between the two runs to navigate back to the page, resetting all variables to initial values:
+
+```ts
+// Run 1
+await resetPage(page);
+await runPipeline(page);
+const while1 = ...
+
+// Navigate back to reset variable store before run 2
+await resetPage(page);
+await runPipeline(page);
+const while2 = ...
+```
+
+### Resilient API-dependent assertions
+
+For tests that verify steps using external APIs (GQL, REST), assert invariants that hold regardless of whether the API succeeds or fails — never assert a specific success value when the API is flaky:
+
+```ts
+// ❌ Brittle — fails when GQL endpoint is down
+expect(gqlText).toBe('France');
+
+// ✅ Resilient — proves the step ran, regardless of API outcome
+expect(gqlText!.length).toBeGreaterThan(0);
+
+// ✅ For known two-outcome steps (multiOptionBranch):
+expect(['multi:GQL-OK', 'multi:FALLBACK']).toContain(multiText);
+```
+
+Pure-logic steps (whileLoop, forEach) with no external dependencies can and should use exact value assertions.

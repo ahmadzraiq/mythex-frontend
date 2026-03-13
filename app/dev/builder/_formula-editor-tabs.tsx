@@ -1312,10 +1312,15 @@ export function ItemContextGroup({
 export function FormLocalSection({
   onInsert,
   pageFormFields,
+  nearestFormContainerId,
   variant = 'quick',
 }: {
   onInsert: (formulaPath: string, displayLabel: string, type: VarRowItem['type']) => void;
   pageFormFields?: string[];
+  /** ID of the nearest ancestor FormContainer of the selected node.
+   * When set, reads from the isolated variables['{id}-form'] store key instead
+   * of the shared local.data.form — ensures nested FormContainers show their own scope. */
+  nearestFormContainerId?: string | null;
   variant?: 'quick' | 'variables';
 }) {
   const [open, setOpen] = useState(true);
@@ -1336,30 +1341,45 @@ export function FormLocalSection({
   const vsData = getGlobalVariableStore()(state => state.data);
 
   const formState = useMemo(() => {
-    const local = (vsData['local'] ?? {}) as Record<string, unknown>;
-    const data = (local['data'] ?? {}) as Record<string, unknown>;
-    const raw = (data['form'] ?? { formData: {}, fields: {}, isSubmitting: false, isSubmitted: false, isValid: false }) as {
-      formData: Record<string, unknown>;
-      fields: Record<string, { value: unknown; isValid: boolean }>;
-      isSubmitting: boolean;
-      isSubmitted: boolean;
-      isValid: boolean;
+    // Prefer the per-container isolated store (variables['{id}-form']) when a nearest
+    // FormContainer is known. This ensures nested containers show their own scope, not
+    // the shared local.data.form which is overwritten by the last-mounted container.
+    const isolated = nearestFormContainerId
+      ? (vsData[`${nearestFormContainerId}-form`] ?? null) as Record<string, unknown> | null
+      : null;
+
+    const raw = (isolated ?? (() => {
+      const local = (vsData['local'] ?? {}) as Record<string, unknown>;
+      const data = (local['data'] ?? {}) as Record<string, unknown>;
+      return data['form'] ?? {};
+    })()) as {
+      formData?: Record<string, unknown>;
+      fields?: Record<string, { value: unknown; isValid: boolean }>;
+      isSubmitting?: boolean;
+      isSubmitted?: boolean;
+      isValid?: boolean;
     };
-    // Filter formData and fields to only keys present on the current page.
-    // This prevents field names from other pages (e.g. phoneNumber from account profile)
-    // from leaking into the Quick tab for other forms.
+
+    const base = {
+      formData: raw.formData ?? {},
+      fields: raw.fields ?? {},
+      isSubmitting: raw.isSubmitting ?? false,
+      isSubmitted: raw.isSubmitted ?? false,
+      isValid: raw.isValid ?? false,
+    };
+
+    // Filter formData and fields to only keys present on the current page/form.
+    // This prevents field names from other pages from leaking into the Quick tab.
     if (pageFormFields && pageFormFields.length > 0) {
       const allowed = new Set(pageFormFields);
-      const filteredFormData = Object.fromEntries(
-        Object.entries(raw.formData).filter(([k]) => allowed.has(k))
-      );
-      const filteredFields = Object.fromEntries(
-        Object.entries(raw.fields).filter(([k]) => allowed.has(k))
-      );
-      return { ...raw, formData: filteredFormData, fields: filteredFields };
+      return {
+        ...base,
+        formData: Object.fromEntries(Object.entries(base.formData).filter(([k]) => allowed.has(k))),
+        fields: Object.fromEntries(Object.entries(base.fields).filter(([k]) => allowed.has(k))),
+      };
     }
-    return raw;
-  }, [vsData, pageFormFields]);
+    return base;
+  }, [vsData, pageFormFields, nearestFormContainerId]);
 
   const FORM_CC   = { bg: '#c2410c', bgHover: '#b91c0c', border: '#ea580c', text: '#ffedd5' };
   // Green chips for the Variables tab variant

@@ -4,7 +4,6 @@
  */
 
 import routes from './routes.json';
-import storeJson from './store.json';
 import themeJson from './theme.json';
 import dataSourcesJson from './datasources.json';
 
@@ -137,7 +136,7 @@ const actionsByFile = {
 
 export const root = {
   routes,
-  store: storeJson,
+  store: {} as Record<string, never>,
   theme: themeJson,
   screens,
   layouts,

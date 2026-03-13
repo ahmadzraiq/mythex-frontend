@@ -16,6 +16,16 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useBuilderStore, findNode, hasFormContainerAncestor } from './_store';
 import type { WorkflowCanvasTarget, WorkflowMeta } from './_store';
+
+/** Derives a stable ID that uniquely identifies the open workflow, used to scope test results. */
+function workflowIdFromTarget(t: WorkflowCanvasTarget): string {
+  switch (t.kind) {
+    case 'element':       return `element:${t.nodeId}:${t.event}`;
+    case 'pageTrigger':   return `pageTrigger:${t.trigger}`;
+    case 'pageWorkflow':  return `pageWorkflow:${t.name}`;
+    case 'globalWorkflow': return `globalWorkflow:${t.id}`;
+  }
+}
 import { BindingIcon, isBoundValue, type FormulaValue } from './_formula-panel';
 import { FormulaEditor } from './_formula-editor';
 import {
@@ -58,7 +68,6 @@ function ContextMenuPopup({
   state,
   copiedStep,
   onClose,
-  onDisable,
   onCopy,
   onPaste,
   onDuplicate,
@@ -68,7 +77,6 @@ function ContextMenuPopup({
   state: ContextMenuState;
   copiedStep: ActionStep | null;
   onClose: () => void;
-  onDisable: () => void;
   onCopy: () => void;
   onPaste: () => void;
   onDuplicate: () => void;
@@ -87,8 +95,7 @@ function ContextMenuPopup({
 
   const items: ({ label: string; shortcut?: string; action: () => void; danger?: boolean } | null)[] = [
     canTestStep ? { label: 'Test action', shortcut: 'ENTER', action: () => { onTestStep(); onClose(); } } : null,
-    { label: state.step.disabled ? 'Enable' : 'Disable', action: () => { onDisable(); onClose(); } },
-    null,
+    canTestStep ? null : null,
     { label: 'Copy action', shortcut: '⌘C', action: () => { onCopy(); onClose(); } },
     copiedStep ? { label: 'Paste action', shortcut: '⌘V', action: () => { onPaste(); onClose(); } } : null,
     { label: 'Duplicate action', shortcut: '⌘D', action: () => { onDuplicate(); onClose(); } },
@@ -110,7 +117,7 @@ function ContextMenuPopup({
             key={i}
             style={S.contextItem(item.danger)}
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = item.danger ? '#450a0a' : '#374151'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
             onClick={item.action}
           >
             <span>{item.label}</span>
@@ -195,7 +202,7 @@ function AddActionPopover({
         <button
           style={{ ...S.dropdownItem(false), fontWeight: 600, borderBottom: '1px solid #374151' }}
           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
           onClick={() => { onPaste(); onClose(); }}
         >
           📋 Paste action
@@ -211,7 +218,7 @@ function AddActionPopover({
                   key={wf.id}
                   style={S.dropdownItem(false)}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
                   onClick={() => { onSelectWorkflow(wf.id, wf.name); onClose(); }}
                 >
                   <span style={{ fontSize: 12 }}>⚡</span>
@@ -227,7 +234,7 @@ function AddActionPopover({
               key={item.type}
               style={S.dropdownItem(false)}
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
               onClick={() => { onSelect(item.type); onClose(); }}
             >
               <span style={{ fontSize: 12 }}>{item.icon}</span>
@@ -353,7 +360,7 @@ function WorkflowOptionsMenu({
         <button
           style={{ ...itemStyle, color: '#f87171' }}
           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#450a0a'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
           onClick={() => onDelete()}
         >
           Delete workflow
@@ -381,8 +388,6 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
 
   // ── Local state ─────────────────────────────────────────────────────────────
   const [steps, setSteps] = useState<ActionStep[]>([]);
-  const [onErrorSteps, setOnErrorSteps] = useState<ActionStep[]>([]);
-  const [activeTab, setActiveTab] = useState<'default' | 'onError'>('default');
   const [selectedPath, setSelectedPath] = useState<(string | number)[] | null>(null);
   const [zoomDisplay, setZoomDisplay] = useState(1);
   const zoomRef = useRef(1);
@@ -400,16 +405,20 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
   const workflowMenuBtnRef = useRef<HTMLButtonElement>(null);
 
   // ── History (undo/redo) ───────────────────────────────────────────────────────
-  const historyRef = useRef<{ steps: ActionStep[]; onErrorSteps: ActionStep[] }[]>([]);
+  const historyRef = useRef<ActionStep[][]>([]);
   const historyIdxRef = useRef(-1);
-  // Keep live refs so undo/redo always sees current values without stale closures
+  // Keep live ref so undo/redo always sees current value without stale closures
   const stepsRef = useRef(steps);
-  const onErrorStepsRef = useRef(onErrorSteps);
   stepsRef.current = steps;
-  onErrorStepsRef.current = onErrorSteps;
 
-  const currentSteps = activeTab === 'default' ? steps : onErrorSteps;
-  const setCurrentSteps = activeTab === 'default' ? setSteps : setOnErrorSteps;
+  // Push live step tree to the store so the formula editor can build accurate
+  // step-index chips (Action 1, Action 2…) without waiting for canvas close/save.
+  useEffect(() => {
+    store.setLiveCanvasSteps(steps as object[]);
+  }, [steps]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const currentSteps = steps;
+  const setCurrentSteps = setSteps;
 
   // ── Init ─────────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -455,7 +464,7 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
       setSteps(initialSteps);
     }
     // Seed history with the initial state so undo never goes past it
-    historyRef.current = [{ steps: initialSteps, onErrorSteps: [] }];
+    historyRef.current = [initialSteps];
     historyIdxRef.current = 0;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -507,33 +516,22 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
 
   // ── History helpers ───────────────────────────────────────────────────────────
   // Push the NEW state (after a mutation) so undo/redo both read the correct snapshot.
-  function pushHistory(newCurrentSteps: ActionStep[]) {
-    const snapshot = {
-      steps: activeTab === 'default' ? newCurrentSteps : stepsRef.current,
-      onErrorSteps: activeTab === 'onError' ? newCurrentSteps : onErrorStepsRef.current,
-    };
+  function pushHistory(newSteps: ActionStep[]) {
     historyRef.current = historyRef.current.slice(0, historyIdxRef.current + 1);
-    historyRef.current.push(snapshot);
+    historyRef.current.push(newSteps);
     historyIdxRef.current = historyRef.current.length - 1;
   }
 
   function undo() {
-    // idx=0 means we're already at the initial snapshot — nothing to undo
     if (historyIdxRef.current <= 0) return;
     historyIdxRef.current -= 1;
-    const snapshot = historyRef.current[historyIdxRef.current];
-    setSteps(snapshot.steps);
-    setOnErrorSteps(snapshot.onErrorSteps);
-    setSelectedPath(null);
+    setSteps(historyRef.current[historyIdxRef.current]);
   }
 
   function redo() {
     if (historyIdxRef.current >= historyRef.current.length - 1) return;
     historyIdxRef.current += 1;
-    const snapshot = historyRef.current[historyIdxRef.current];
-    setSteps(snapshot.steps);
-    setOnErrorSteps(snapshot.onErrorSteps);
-    setSelectedPath(null);
+    setSteps(historyRef.current[historyIdxRef.current]);
   }
 
   // ── Step mutations ────────────────────────────────────────────────────────────
@@ -550,7 +548,7 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
       ] : undefined,
       loopBody: (type === 'forEach' || type === 'whileLoop') ? [createPlaceholderStep()] : undefined,
     };
-    const cur = activeTab === 'default' ? stepsRef.current : onErrorStepsRef.current;
+    const cur = stepsRef.current;
     const next = pathPrefix.length === 0
       ? (() => { const c = [...cur]; c.splice(insertIdx, 0, newStep); return c; })()
       : insertStepAtPath(cur, [...pathPrefix, insertIdx] as number[], newStep);
@@ -562,7 +560,7 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
   function pasteStep(insertIdx: number, pathPrefix: (string | number)[]) {
     if (!copiedStep) return;
     const pasted: ActionStep = { ...copiedStep, id: generateId() };
-    const cur = activeTab === 'default' ? stepsRef.current : onErrorStepsRef.current;
+    const cur = stepsRef.current;
     const next = pathPrefix.length === 0
       ? (() => { const c = [...cur]; c.splice(insertIdx, 0, pasted); return c; })()
       : insertStepAtPath(cur, [...pathPrefix, insertIdx] as number[], pasted);
@@ -573,14 +571,14 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
 
   function updateSelectedStep(patch: Partial<ActionStep>) {
     if (!selectedPath) return;
-    const cur = activeTab === 'default' ? stepsRef.current : onErrorStepsRef.current;
+    const cur = stepsRef.current;
     const next = updateStepAtPath(cur, selectedPath as number[], s => ({ ...s, ...patch }));
     setCurrentSteps(next);
     pushHistory(next);
   }
 
   function deleteStep(path: (string | number)[]) {
-    const cur = activeTab === 'default' ? stepsRef.current : onErrorStepsRef.current;
+    const cur = stepsRef.current;
     const next = removeStepAtPath(cur, path as number[]);
     setCurrentSteps(next);
     pushHistory(next);
@@ -593,7 +591,7 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
     const dup: ActionStep = { ...step, id: generateId() };
     const parentPath = path.slice(0, -1);
     const idx = path[path.length - 1] as number;
-    const cur = activeTab === 'default' ? stepsRef.current : onErrorStepsRef.current;
+    const cur = stepsRef.current;
     const next = parentPath.length === 0
       ? (() => { const c = [...cur]; c.splice(idx + 1, 0, dup); return c; })()
       : insertStepAtPath(cur, [...parentPath, idx + 1] as number[], dup);
@@ -602,7 +600,7 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
   }
 
   function toggleDisableStep(path: (string | number)[]) {
-    const cur = activeTab === 'default' ? stepsRef.current : onErrorStepsRef.current;
+    const cur = stepsRef.current;
     const next = updateStepAtPath(cur, path as number[], s => ({ ...s, disabled: !s.disabled }));
     setCurrentSteps(next);
     pushHistory(next);
@@ -654,7 +652,9 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
     const stepIndex = typeof stepPath[stepPath.length - 1] === 'number'
       ? stepPath[stepPath.length - 1] as number
       : 0;
-    const actionName = (step as { name?: string }).name || step.type || 'Action';
+    // Only use the step's explicit name — type names like "fetchData" are not human-readable labels.
+    // Empty string signals the display layer to show "Action N" (index-based fallback).
+    const actionName = (step as { name?: string }).name || '';
 
     // Minimal runOne that only handles inline action types (no named action lookup)
     const runOne = async (a: import('@/lib/sdui/types').SDUIAction): Promise<unknown> => {
@@ -689,7 +689,6 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
         store: { getState: () => ({ setState: () => {} }) },
         configName: 'builder-test',
         actionName: step.type ?? 'unknown',
-        CONVENTIONS: store.engineConventions ?? {},
         setStepResult: (result, error) => {
           stepResult = result;
           if (error) stepError = error;
@@ -709,9 +708,10 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
         : err;
     }
 
-    // Use stableKey (stepPath-based) so re-running the same step always replaces its entry
-    store.setWorkflowStepTestResult(stableKey, stepResult, stepError, stepIndex, actionName);
-  }, [store]);
+    // Use stableKey (stepPath-based) so re-running the same step always replaces its entry.
+    // Pass workflowId so the formula picker can filter to only this workflow's results.
+    store.setWorkflowStepTestResult(stableKey, stepResult, stepError, stepIndex, actionName, workflowIdFromTarget(target));
+  }, [store, target]);
 
   // Memoise the context value so FlowRenderer sub-trees don't re-render needlessly
   const canvasCtxValue = useMemo(() => ({
@@ -722,6 +722,9 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
   // ── Keyboard shortcuts ────────────────────────────────────────────────────────
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      // Always stop propagation so the builder's window listener never sees keys
+      // that the canvas has handled (or is about to handle).
+      e.stopImmediatePropagation();
       if (e.key === 'Escape') { handleClose(); return; }
       const isMod = e.metaKey || e.ctrlKey;
       if (isMod) {
@@ -743,14 +746,19 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
         if (selectedStep && selectedPath) {
           if (e.key === 'c') { e.preventDefault(); setCopiedStep({ ...selectedStep }); }
           if (e.key === 'd') { e.preventDefault(); duplicateStep(selectedPath); }
+          if (e.key === 'x') { e.preventDefault(); setCopiedStep({ ...selectedStep }); deleteStep(selectedPath); }
         }
       }
-      if (e.key === 'Delete' && selectedPath) {
+      const isInput = (e.target as HTMLElement).closest('input, textarea, [contenteditable]');
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedPath && !isInput) {
+        e.preventDefault();
         deleteStep(selectedPath);
       }
     }
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    // Capture phase ensures this fires before the builder's bubble-phase listener
+    // regardless of registration order, so stopImmediatePropagation works correctly.
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStep, selectedPath, copiedStep, currentSteps]);
 
@@ -817,11 +825,6 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
           <span style={{ fontSize: 13, fontWeight: 600, color: '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {target.kind === 'globalWorkflow' || target.kind === 'pageWorkflow' ? toHumanName(workflowMeta.name) : 'Workflow'}
           </span>
-        </div>
-        {/* Center: Default / On error tabs */}
-        <div style={{ display: 'flex', background: '#1f2937', borderRadius: 24, padding: 2 }}>
-          <button data-testid="workflow-tab-default" style={S.tabPill(activeTab === 'default')} onClick={() => setActiveTab('default')}>Default</button>
-          <button data-testid="workflow-tab-onerror" style={S.tabPill(activeTab === 'onError')} onClick={() => setActiveTab('onError')}>On error</button>
         </div>
         {/* Right: Close */}
         <button data-testid="workflow-canvas-close" style={S.closeBtn} onClick={handleClose}>
@@ -1039,7 +1042,6 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
           state={contextMenuState}
           copiedStep={copiedStep}
           onClose={() => setContextMenuState(null)}
-          onDisable={() => toggleDisableStep(contextMenuState.path)}
           onCopy={() => setCopiedStep({ ...contextMenuState.step })}
           onPaste={() => {
             const idx = (contextMenuState.path[contextMenuState.path.length - 1] as number) + 1;

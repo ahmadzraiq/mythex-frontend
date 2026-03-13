@@ -2,9 +2,9 @@
  * Handler for type: "navigate" - router navigation (path or routeConfig + slug)
  */
 
-import { CONVENTIONS } from '../../conventions';
 import { setNestedValue } from '../../nested-utils';
 import { interpolateUrl, resolveValue } from '../resolve-value';
+import { RESET_ON_NAVIGATE_PATHS } from '../../variable-config';
 import type { ActionDef, ActionHandlerContext } from './types';
 
 export const navigateHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
@@ -61,7 +61,7 @@ export const navigateHandler: (ctx: ActionHandlerContext) => (actionDef: ActionD
     }
 
     // Reset variable store paths configured to clear on navigation (e.g. open menus)
-    const resetPaths = CONVENTIONS.resetVarsOnNavigate;
+    const resetPaths = RESET_ON_NAVIGATE_PATHS;
     if (resetPaths.length > 0) {
       ctx.store.getState().setState((prev) => {
         let next = prev;

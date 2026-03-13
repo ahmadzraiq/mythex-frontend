@@ -1260,13 +1260,15 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     set(s => { const { [name]: _, ...rest } = s.globalWorkflows; return { globalWorkflows: rest }; }),
   setGlobalWorkflowMeta: (id, meta) =>
     set(s => ({ globalWorkflowMeta: { ...s.globalWorkflowMeta, [id]: { ...s.globalWorkflowMeta[id], ...meta, id } } })),
-  setWorkflowStepTestResult: (stepId, result, error, stepIndex, actionName = 'Action') => {
-    const entry: import('./_store-types').WorkflowTestEntry = { result, error, actionName, stepIndex, ranAt: Date.now() };
+  setWorkflowStepTestResult: (stepId, result, error, stepIndex, actionName = 'Action', workflowId = '') => {
+    const entry: import('./_store-types').WorkflowTestEntry = { result, error, actionName, stepIndex, ranAt: Date.now(), workflowId };
     persistWorkflowStepTestResult(stepId, entry);
     set(s => ({ workflowTestResults: { ...s.workflowTestResults, [stepId]: entry } }));
   },
   openWorkflowCanvas: (target) => set({ workflowCanvasTarget: target }),
-  closeWorkflowCanvas: () => set({ workflowCanvasTarget: null }),
+  closeWorkflowCanvas: () => set({ workflowCanvasTarget: null, liveCanvasSteps: null }),
+  liveCanvasSteps: null,
+  setLiveCanvasSteps: (steps) => set({ liveCanvasSteps: steps }),
   setGlobalFormula: (name, expr) =>
     set(s => ({ globalFormulas: { ...s.globalFormulas, [name]: expr } })),
   removeGlobalFormula: (name) =>

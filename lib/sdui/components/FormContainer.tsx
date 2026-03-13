@@ -231,23 +231,33 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
   // in ONE atomic global-store write — single subscription trigger, one re-render pass.
   const directWriteField = useCallback((name: string, value: unknown) => {
     // Keep stateRef in sync so doSubmit reads the latest values without a React render.
-    // isValid is intentionally preserved — validation is submit-triggered, so errors shown
-    // after a submit attempt must remain visible while the user corrects the field.
-    // They only clear when the form is reset or the user submits again and the field passes.
     const prev = stateRef.current;
     const existingField = prev.fields[name] ?? { value, isValid: '' };
+
+    // For trigger:"change" fields: run validation immediately so inline errors
+    // appear live as the user types. For trigger:"submit" fields: preserve the
+    // existing isValid so errors stay visible after a submit attempt.
+    const validationConfig = fieldValidationsRef.current[name];
+    let newIsValid: boolean | string = existingField.isValid;
+    if (validationConfig?.trigger === 'change') {
+      const updatedFormData = { ...prev.formData, [name]: value };
+      const formulaCtx = { local: { data: { form: { formData: updatedFormData } } } } as Record<string, unknown>;
+      newIsValid = applyFieldRules(validationConfig.rules, value, formulaCtx);
+    }
+
     stateRef.current = {
       ...prev,
       formData: { ...prev.formData, [name]: value },
-      fields: { ...prev.fields, [name]: { ...existingField, value } },
+      fields: { ...prev.fields, [name]: { ...existingField, value, isValid: newIsValid } },
     };
 
     // Single atomic write — updates ALL formula-accessible paths in one pass:
     //   local.data.form.formData.{name}
-    //   local.data.form.fields.{name}.value
+    //   local.data.form.fields.{name}.value (+isValid for change-trigger fields)
     //   variables['uuid-form']?.['formData']?.['name']
     //   variables['uuid-form']?.['fields']?.['name']?.['value']
     const key = formStoreKey;
+    const isValidToWrite = newIsValid;
     getGlobalVariableStore().getState().setState(vs => {
       const local = (vs['local'] ?? {}) as Record<string, unknown>;
       const data  = (local['data']  ?? {}) as Record<string, unknown>;
@@ -259,7 +269,8 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
       const existingVarFd  = (existingVar['formData'] ?? {}) as Record<string, unknown>;
       const existingVarFlds = (existingVar['fields']  ?? {}) as Record<string, unknown>;
       const existingFld    = (existingVarFlds[name]   ?? { value, isValid: '' }) as Record<string, unknown>;
-      const updatedFields = { ...existingVarFlds, [name]: { ...existingFld, value } };
+      const updatedField = { ...existingFld, value, isValid: isValidToWrite };
+      const updatedFields = { ...existingVarFlds, [name]: updatedField };
       return {
         ...vs,
         local: {
@@ -269,7 +280,7 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
             form: {
               ...form,
               formData: { ...fd, [name]: value },
-              fields:   { ...flds, [name]: { ...fld, value } },
+              fields:   { ...flds, [name]: { ...fld, value, isValid: isValidToWrite } },
             },
           },
         },
@@ -280,7 +291,7 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
         },
       };
     });
-  }, [formStoreKey]);
+  }, [formStoreKey, fieldValidationsRef]);
 
   const setFormStatePatch = useCallback(
     (patch: Partial<Pick<FormState, 'isSubmitting' | 'isSubmitted'>>) => {
@@ -404,12 +415,13 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
     const validations = fieldValidationsRef.current;
     const formulaCtx = { local: { data: { form: storedForm } } } as Record<string, unknown>;
 
-    // Validate all fields that have trigger: "submit" rules
+    // Validate all registered fields regardless of trigger — both "submit" and "change"
+    // trigger fields are validated on submit so nothing slips through.
     let hasErrors = false;
     const newFields = { ...storedForm.fields } as Record<string, { value: unknown; isValid: unknown }>;
 
     for (const [fieldName, config] of Object.entries(validations)) {
-      if (config.trigger !== 'submit') continue;
+      if (config.trigger !== 'submit' && config.trigger !== 'change') continue;
       const value = (storedForm.formData ?? {})[fieldName] ?? '';
       const error = applyFieldRules(config.rules, value, formulaCtx);
       const existing = (newFields[fieldName] ?? { value, isValid: '' }) as Record<string, unknown>;

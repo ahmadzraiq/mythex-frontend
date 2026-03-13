@@ -1372,7 +1372,7 @@
           {
             "type": "Text",
             "props": { "className": "text-xs text-gray-400 italic" },
-            "condition": { "not": { "var": "collections.c3d4e5f6-a7b8-9012-cdef-123456789012.data.length" } },
+            "condition": "!collections?.['c3d4e5f6-a7b8-9012-cdef-123456789012']?.data?.length",
             "text": "No items — click Seed first"
           }
             ]
@@ -2398,7 +2398,741 @@
           ]
         }
       ]
-    }
+    },
+
+    {
+      "type": "Box",
+      "props": {
+        "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4"
+      },
+      "children": [
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-col gap-1" },
+          "children": [
+            {
+              "type": "Heading",
+              "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-100" },
+              "text": "Card A — Full Pipeline: API Chain + Response Reading"
+            },
+            {
+          "type": "Text",
+            "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+            "text": "Runs graphql → branch → REST GET → REST POST (body from GQL result) → updateCollection → executeComponentAction → whileLoop → forEach → multiOptionBranch → passThroughCondition. Every branch and loop type is covered."
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-row items-center gap-3 flex-wrap" },
+          "children": [
+            {
+              "type": "Button",
+              "props": { "action": "primary", "size": "sm", "data-testid": "btn-run-chain" },
+              "actions": [{ "action": "waApiChain" }],
+              "children": [{ "type": "ButtonText", "text": "Run Pipeline" }]
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-col gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50" },
+          "children": [
+            {
+              "type": "Box",
+              "props": { "className": "flex flex-row items-center gap-2" },
+              "children": [
+                { "type": "Text", "props": { "className": "text-xs font-mono text-gray-500 dark:text-gray-400 w-40" }, "text": "status" },
+                { "type": "Text", "props": { "className": "text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400", "data-testid": "out-chain-status" }, "text": "{{variables['wa-chain-0000-0000-0000-000000000001']}}" }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": { "className": "flex flex-row items-center gap-2" },
+              "children": [
+                { "type": "Text", "props": { "className": "text-xs font-mono text-gray-500 dark:text-gray-400 w-40" }, "text": "GQL country" },
+                { "type": "Text", "props": { "className": "text-xs font-mono text-gray-800 dark:text-gray-200", "data-testid": "out-chain-gql" }, "text": "{{variables['wa-chain-0000-0000-0000-000000000002']}}" }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": { "className": "flex flex-row items-center gap-2" },
+              "children": [
+                { "type": "Text", "props": { "className": "text-xs font-mono text-gray-500 dark:text-gray-400 w-40" }, "text": "REST echo" },
+                { "type": "Text", "props": { "className": "text-xs font-mono text-gray-800 dark:text-gray-200", "data-testid": "out-chain-rest" }, "text": "{{variables['wa-chain-0000-0000-0000-000000000003']}}" }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": { "className": "flex flex-row items-center gap-2" },
+              "children": [
+                { "type": "Text", "props": { "className": "text-xs font-mono text-gray-500 dark:text-gray-400 w-40" }, "text": "branch path" },
+                { "type": "Text", "props": { "className": "text-xs font-mono text-gray-800 dark:text-gray-200", "data-testid": "out-chain-branch" }, "text": "{{variables['wa-chain-0000-0000-0000-000000000004']}}" }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": { "className": "flex flex-row items-center gap-2" },
+              "children": [
+                { "type": "Text", "props": { "className": "text-xs font-mono text-gray-500 dark:text-gray-400 w-40" }, "text": "collection" },
+                { "type": "Text", "props": { "className": "text-xs font-mono text-gray-800 dark:text-gray-200", "data-testid": "out-chain-collection" }, "text": "{{variables['wa-chain-0000-0000-0000-000000000006']}}" }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": { "className": "flex flex-row items-center gap-2" },
+              "children": [
+                { "type": "Text", "props": { "className": "text-xs font-mono text-gray-500 dark:text-gray-400 w-40" }, "text": "pipeline result" },
+                { "type": "Text", "props": { "className": "text-xs font-mono font-semibold text-green-700 dark:text-green-400", "data-testid": "out-chain-result" }, "text": "{{variables['wa-chain-0000-0000-0000-000000000005']}}" }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": { "className": "flex flex-row items-center gap-2" },
+              "children": [
+                { "type": "Text", "props": { "className": "text-xs font-mono text-gray-500 dark:text-gray-400 w-40" }, "text": "while count" },
+                { "type": "Text", "props": { "className": "text-xs font-mono text-gray-800 dark:text-gray-200", "data-testid": "out-chain-while" }, "text": "{{variables['wa-chain-0000-0000-0000-000000000007']}}" }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": { "className": "flex flex-row items-center gap-2" },
+              "children": [
+                { "type": "Text", "props": { "className": "text-xs font-mono text-gray-500 dark:text-gray-400 w-40" }, "text": "forEach items" },
+                { "type": "Text", "props": { "className": "text-xs font-mono text-gray-800 dark:text-gray-200", "data-testid": "out-chain-foreach" }, "text": "{{variables['wa-chain-0000-0000-0000-000000000008']}}" }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": { "className": "flex flex-row items-center gap-2" },
+              "children": [
+                { "type": "Text", "props": { "className": "text-xs font-mono text-gray-500 dark:text-gray-400 w-40" }, "text": "multi-branch" },
+                { "type": "Text", "props": { "className": "text-xs font-mono text-gray-800 dark:text-gray-200", "data-testid": "out-chain-multi" }, "text": "{{variables['wa-chain-0000-0000-0000-000000000009']}}" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "type": "Box",
+      "props": {
+        "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4"
+      },
+      "children": [
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-col gap-1" },
+          "children": [
+            {
+              "type": "Heading",
+              "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-100" },
+              "text": "Card B — Complex Form Validation"
+            },
+            {
+              "type": "Text",
+              "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+              "text": "Six fields covering every _validation rule type: required, minLength, pattern, equalsField, and a custom formula rule. Per-field inline error messages. Pre-fill and Reset buttons."
+            }
+          ]
+        },
+        {
+          "type": "FormContainer",
+          "id": "val2-form-container",
+          "actions": [
+            { "action": "waVal2Submit" },
+            { "action": "waVal2ValidationError" }
+          ],
+          "children": [
+            {
+              "type": "Box",
+              "props": { "className": "flex flex-col gap-4" },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": { "className": "flex flex-col gap-1" },
+                  "children": [
+                    { "type": "Text", "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300" }, "text": "Username *" },
+                    {
+                      "type": "Input",
+                      "id": "val2-username-input",
+                      "props": { "variant": "outline", "size": "sm" },
+                      "children": [
+                        {
+                          "type": "InputField",
+                          "props": {
+                            "name": "v2username",
+                            "placeholder": "Min 3 characters",
+                            "placeholderTextColor": "#9ca3af",
+                            "className": "!text-gray-900 dark:!text-gray-100",
+                            "value": "{{variables['wa-val2-0000-0000-0000-000000000001']}}"
+                          },
+                          "_validation": {
+                            "trigger": "change",
+                            "rules": [
+                              { "type": "required", "message": "Username is required" },
+                              { "type": "minLength", "value": "3", "message": "Username must be at least 3 characters" }
+                            ]
+                          },
+                          "actions": [{ "action": "waVal2UsernameChange" }]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "condition": "local?.data?.form?.fields?.['v2username']?.isValid",
+                      "props": { "className": "text-xs text-red-500", "data-testid": "err-val2-username" },
+                      "text": "{{local.data.form.fields['v2username'].isValid}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": { "className": "flex flex-col gap-1" },
+                  "children": [
+                    { "type": "Text", "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300" }, "text": "Email *" },
+                    {
+                      "type": "Input",
+                      "id": "val2-email-input",
+                      "props": { "variant": "outline", "size": "sm" },
+                      "children": [
+                        {
+                          "type": "InputField",
+                          "props": {
+                            "name": "v2email",
+                            "placeholder": "valid@email.com",
+                            "placeholderTextColor": "#9ca3af",
+                            "className": "!text-gray-900 dark:!text-gray-100",
+                            "keyboardType": "email-address",
+                            "value": "{{variables['wa-val2-0000-0000-0000-000000000002']}}"
+                          },
+                          "_validation": {
+                            "trigger": "change",
+                            "rules": [
+                              { "type": "required", "message": "Email is required" },
+                              { "type": "pattern", "value": "^[^@]+@[^@]+\\.[^@]+$", "message": "Enter a valid email address" }
+                            ]
+                          },
+                          "actions": [{ "action": "waVal2EmailChange" }]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "condition": "local?.data?.form?.fields?.['v2email']?.isValid",
+                      "props": { "className": "text-xs text-red-500", "data-testid": "err-val2-email" },
+                      "text": "{{local.data.form.fields['v2email'].isValid}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": { "className": "flex flex-col gap-1" },
+                  "children": [
+                    { "type": "Text", "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300" }, "text": "Phone (optional — must match +digits if filled)" },
+                    {
+                      "type": "Input",
+                      "id": "val2-phone-input",
+                      "props": { "variant": "outline", "size": "sm" },
+                      "children": [
+                        {
+                          "type": "InputField",
+                          "props": {
+                            "name": "v2phone",
+                            "placeholder": "+12345678",
+                            "placeholderTextColor": "#9ca3af",
+                            "className": "!text-gray-900 dark:!text-gray-100",
+                            "keyboardType": "phone-pad",
+                            "value": "{{variables['wa-val2-0000-0000-0000-000000000005']}}"
+                          },
+                          "_validation": {
+                            "trigger": "change",
+                            "rules": [
+                              { "type": "pattern", "value": "^(\\+?[0-9]{7,15})?$", "message": "Phone must be blank or a valid number like +12345678" }
+                            ]
+                          },
+                          "actions": [{ "action": "waVal2PhoneChange" }]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "condition": "local?.data?.form?.fields?.['v2phone']?.isValid",
+                      "props": { "className": "text-xs text-red-500", "data-testid": "err-val2-phone" },
+                      "text": "{{local.data.form.fields['v2phone'].isValid}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": { "className": "flex flex-col gap-1" },
+                  "children": [
+                    { "type": "Text", "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300" }, "text": "Age * (must be 18 or older)" },
+                    {
+                      "type": "Input",
+                      "id": "val2-age-input",
+                      "props": { "variant": "outline", "size": "sm" },
+                      "children": [
+                        {
+                          "type": "InputField",
+                          "props": {
+                            "name": "v2age",
+                            "placeholder": "18",
+                            "placeholderTextColor": "#9ca3af",
+                            "className": "!text-gray-900 dark:!text-gray-100",
+                            "keyboardType": "numeric",
+                            "value": "{{variables['wa-val2-0000-0000-0000-000000000006']}}"
+                          },
+                          "_validation": {
+                            "trigger": "change",
+                            "rules": [
+                              { "type": "required", "message": "Age is required" },
+                              { "type": "formula", "value": "Number(local?.data?.form?.formData?.['v2age']) >= 18", "message": "You must be at least 18 years old" }
+                            ]
+                          },
+                          "actions": [{ "action": "waVal2AgeChange" }]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "condition": "local?.data?.form?.fields?.['v2age']?.isValid",
+                      "props": { "className": "text-xs text-red-500", "data-testid": "err-val2-age" },
+                      "text": "{{local.data.form.fields['v2age'].isValid}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": { "className": "flex flex-col gap-1" },
+                  "children": [
+                    { "type": "Text", "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300" }, "text": "Password * (8+ chars, upper, lower, digit, special)" },
+                    {
+                      "type": "Input",
+                      "id": "val2-password-input",
+                      "props": { "variant": "outline", "size": "sm" },
+                      "children": [
+                        {
+                          "type": "InputField",
+                          "props": {
+                            "name": "v2password",
+                            "placeholder": "e.g. SecureP@ss1",
+                            "placeholderTextColor": "#9ca3af",
+                            "className": "!text-gray-900 dark:!text-gray-100",
+                            "secureTextEntry": true,
+                            "value": "{{variables['wa-val2-0000-0000-0000-000000000007']}}"
+                          },
+                          "_validation": {
+                            "trigger": "change",
+                            "rules": [
+                              { "type": "required", "message": "Password is required" },
+                              { "type": "minLength", "value": "8", "message": "Password must be at least 8 characters" },
+                              { "type": "pattern", "value": "[A-Z]", "message": "Password must contain at least one uppercase letter" },
+                              { "type": "pattern", "value": "[a-z]", "message": "Password must contain at least one lowercase letter" },
+                              { "type": "pattern", "value": "[0-9]", "message": "Password must contain at least one number" },
+                              { "type": "pattern", "value": "[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]", "message": "Password must contain at least one special character (!@#$%^&*...)" }
+                            ]
+                          },
+                          "actions": [{ "action": "waVal2PasswordChange" }]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "condition": "local?.data?.form?.fields?.['v2password']?.isValid",
+                      "props": { "className": "text-xs text-red-500", "data-testid": "err-val2-password" },
+                      "text": "{{local.data.form.fields['v2password'].isValid}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": { "className": "flex flex-col gap-1" },
+                  "children": [
+                    { "type": "Text", "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300" }, "text": "Confirm Password *" },
+                    {
+                      "type": "Input",
+                      "id": "val2-confirm-input",
+                      "props": { "variant": "outline", "size": "sm" },
+                      "children": [
+                        {
+                          "type": "InputField",
+                          "props": {
+                            "name": "v2confirm",
+                            "placeholder": "Repeat password",
+                            "placeholderTextColor": "#9ca3af",
+                            "className": "!text-gray-900 dark:!text-gray-100",
+                            "secureTextEntry": true,
+                            "value": "{{variables['wa-val2-0000-0000-0000-000000000008']}}"
+                          },
+                          "_validation": {
+                            "trigger": "change",
+                            "rules": [
+                              { "type": "required", "message": "Please confirm your password" },
+                              { "type": "equalsField", "value": "v2password", "message": "Passwords do not match" }
+                            ]
+                          },
+                          "actions": [{ "action": "waVal2ConfirmChange" }]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "condition": "local?.data?.form?.fields?.['v2confirm']?.isValid",
+                      "props": { "className": "text-xs text-red-500", "data-testid": "err-val2-confirm" },
+                      "text": "{{local.data.form.fields['v2confirm'].isValid}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "condition": "variables['wa-val2-0000-0000-0000-000000000004']",
+                  "props": { "className": "text-sm font-medium text-red-600 dark:text-red-400 p-2 rounded-md bg-red-50 dark:bg-red-900/20", "data-testid": "out-val2-validation-error" },
+                  "text": "{{variables['wa-val2-0000-0000-0000-000000000004']}}"
+                },
+                {
+                  "type": "Box",
+                  "props": { "className": "flex flex-col gap-1 p-2 rounded-md bg-blue-50 dark:bg-blue-900/20" },
+                  "children": [
+                    { "type": "Text", "props": { "className": "text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1" }, "text": "Submit result" },
+                    { "type": "Text", "props": { "className": "text-xs font-mono text-blue-800 dark:text-blue-300", "data-testid": "out-val2-result" }, "text": "{{variables['wa-val2-0000-0000-0000-000000000003']}}" },
+                    { "type": "Text", "props": { "className": "text-xs text-blue-600 dark:text-blue-400 mt-1", "data-testid": "out-val2-form-state" }, "text": "isSubmitting: {{local.data.form.isSubmitting}} | isSubmitted: {{local.data.form.isSubmitted}}" }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": { "className": "flex flex-row gap-2 flex-wrap" },
+                  "children": [
+                    {
+                      "type": "Button",
+                      "props": { "action": "default", "size": "sm", "className": "!border-gray-300 dark:!border-gray-600", "data-testid": "btn-val2-prefill" },
+                      "actions": [{ "action": "waVal2PreFill" }],
+                      "children": [{ "type": "ButtonText", "text": "Pre-fill" }]
+                    },
+                    {
+                      "type": "Button",
+                      "props": { "action": "default", "size": "sm", "className": "!border-gray-300 dark:!border-gray-600", "data-testid": "btn-val2-reset" },
+                      "actions": [{ "action": "waVal2Reset" }],
+                      "children": [{ "type": "ButtonText", "text": "Reset" }]
+                    },
+                    {
+                      "type": "Button",
+                      "props": { "type": "submit", "action": "primary", "size": "sm", "data-testid": "btn-val2-submit" },
+                      "children": [
+                        { "type": "ButtonText", "condition": "!local?.data?.form?.isSubmitting", "text": "Submit" },
+                        { "type": "ButtonText", "condition": "local?.data?.form?.isSubmitting", "text": "Submitting..." }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "type": "Box",
+      "props": { "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-5" },
+      "children": [
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-col gap-1" },
+          "children": [
+            { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-100" }, "text": "Card C — executeComponentAction: All Patterns" },
+              { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "Tests 4 ECA patterns: (1) direct call, (2) chain — two ECAs sequentially where step-2 reads step-1 output, (3) ECA inside forEach loop, (4) nested ECA — sub-workflow internally calls another ECA." }
+            ]
+          },
+
+          {
+            "type": "Box",
+            "props": { "className": "grid grid-cols-2 gap-x-6 gap-y-3" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "direct result" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-eca-direct" }, "text": "{{variables['wa-eca-0000-0000-0000-000000000001']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "chain step1 / final" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-eca-chain-step1" }, "text": "{{variables['wa-eca-0000-0000-0000-000000000002']}} / {{variables['wa-eca-0000-0000-0000-000000000003']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "loop count (expect 3)" },
+                  { "type": "Text", "props": { "className": "font-bold text-lg text-gray-900 dark:text-gray-100", "data-testid": "out-eca-loop" }, "text": "{{variables['wa-eca-0000-0000-0000-000000000004']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "nested result" },
+                  { "type": "Text", "props": { "className": "font-medium text-gray-900 dark:text-gray-100", "data-testid": "out-eca-nested" }, "text": "{{variables['wa-eca-0000-0000-0000-000000000005']}}" }
+                ]
+              }
+            ]
+          },
+
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row flex-wrap gap-2" },
+            "children": [
+              {
+                "type": "Button",
+                "props": { "action": "primary", "size": "sm", "data-testid": "btn-eca-direct" },
+                "actions": [{ "action": "waEcaDirect" }],
+                "children": [{ "type": "ButtonText", "text": "1. Direct" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "primary", "size": "sm", "data-testid": "btn-eca-chain" },
+                "actions": [{ "action": "waEcaChain" }],
+                "children": [{ "type": "ButtonText", "text": "2. Chain" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "primary", "size": "sm", "data-testid": "btn-eca-loop" },
+                "actions": [{ "action": "waEcaLoop" }],
+                "children": [{ "type": "ButtonText", "text": "3. forEach Loop" }]
+              },
+              {
+                "type": "Button",
+                "props": { "action": "primary", "size": "sm", "data-testid": "btn-eca-nested" },
+                "actions": [{ "action": "waEcaNested" }],
+                "children": [{ "type": "ButtonText", "text": "4. Nested" }]
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-5" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-1" },
+            "children": [
+              { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-100" }, "text": "Card D — Event Object by Trigger Type" },
+              { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "Each trigger produces a different event shape. Interact with each element to see what event fields are captured: change→{value}, click→{x,y,button}, enterKey→{key,value}, focus/blur→{value}, scroll→{scrollTop,scrollLeft}, valueChange→{value}, checkbox change→{value:boolean}." }
+            ]
+          },
+
+          {
+            "type": "Box",
+            "props": { "className": "grid grid-cols-1 gap-4" },
+            "children": [
+
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" }, "text": "onChange (Input)" },
+                  {
+                    "type": "Input",
+                    "id": "evt-input-change",
+                    "props": { "variant": "outline", "size": "sm" },
+                    "children": [
+                      {
+                        "type": "InputField",
+                        "props": { "name": "evtChange", "placeholder": "Type anything…" },
+                        "actions": [{ "action": "waEvtChange" }]
+                      }
+                    ]
+                  },
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-blue-600 dark:text-blue-400", "data-testid": "out-evt-change" }, "text": "{{variables['wa-evt-0000-0000-0000-000000000001']}}" }
+                ]
+              },
+
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" }, "text": "onClick (Button / Pressable)" },
+                  {
+                    "type": "Button",
+                    "props": { "action": "secondary", "size": "sm", "data-testid": "btn-evt-click" },
+                    "actions": [{ "action": "waEvtClick" }],
+                    "children": [{ "type": "ButtonText", "text": "Click me (captures x / y / button)" }]
+                  },
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-blue-600 dark:text-blue-400", "data-testid": "out-evt-click" }, "text": "{{variables['wa-evt-0000-0000-0000-000000000002']}}" }
+                ]
+              },
+
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" }, "text": "onEnterKey (Input — press Enter)" },
+                  {
+                    "type": "Input",
+                    "id": "evt-input-enter",
+                    "props": { "variant": "outline", "size": "sm" },
+                    "children": [
+                      {
+                        "type": "InputField",
+                        "props": { "name": "evtEnter", "placeholder": "Type something then press Enter…" },
+                        "actions": [{ "action": "waEvtEnterKey" }]
+                      }
+                    ]
+                  },
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-blue-600 dark:text-blue-400", "data-testid": "out-evt-enterkey" }, "text": "{{variables['wa-evt-0000-0000-0000-000000000003']}}" }
+                ]
+              },
+
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row gap-3" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-col gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 flex-1" },
+                    "children": [
+                      { "type": "Text", "props": { "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" }, "text": "onFocus" },
+                      {
+                        "type": "Input",
+                        "id": "evt-input-focus",
+                        "props": { "variant": "outline", "size": "sm" },
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": { "name": "evtFocus", "placeholder": "Click to focus…" },
+                            "actions": [{ "action": "waEvtFocus" }]
+                          }
+                        ]
+                      },
+                      { "type": "Text", "props": { "className": "text-xs font-mono text-blue-600 dark:text-blue-400", "data-testid": "out-evt-focus" }, "text": "{{variables['wa-evt-0000-0000-0000-000000000004']}}" }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-col gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 flex-1" },
+                    "children": [
+                      { "type": "Text", "props": { "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" }, "text": "onBlur" },
+                      {
+                        "type": "Input",
+                        "id": "evt-input-blur",
+                        "props": { "variant": "outline", "size": "sm" },
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": { "name": "evtBlur", "placeholder": "Focus then click away…" },
+                            "actions": [{ "action": "waEvtBlur" }]
+                          }
+                        ]
+                      },
+                      { "type": "Text", "props": { "className": "text-xs font-mono text-blue-600 dark:text-blue-400", "data-testid": "out-evt-blur" }, "text": "{{variables['wa-evt-0000-0000-0000-000000000005']}}" }
+                    ]
+                  }
+                ]
+              },
+
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" }, "text": "onScroll (scrollable Box — scroll inside it)" },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "h-24 overflow-y-auto rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3",
+                      "data-testid": "evt-scroll-box"
+                    },
+                    "actions": [{ "action": "waEvtScroll" }],
+                    "children": [
+                      { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "Scroll me ↓" },
+                      { "type": "Text", "props": { "className": "text-xs text-gray-300 mt-2" }, "text": "Line 2" },
+                      { "type": "Text", "props": { "className": "text-xs text-gray-300 mt-2" }, "text": "Line 3" },
+                      { "type": "Text", "props": { "className": "text-xs text-gray-300 mt-2" }, "text": "Line 4" },
+                      { "type": "Text", "props": { "className": "text-xs text-gray-300 mt-2" }, "text": "Line 5" },
+                      { "type": "Text", "props": { "className": "text-xs text-gray-300 mt-2" }, "text": "Line 6" },
+                      { "type": "Text", "props": { "className": "text-xs text-gray-300 mt-2" }, "text": "Line 7 (end)" }
+                    ]
+                  },
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-blue-600 dark:text-blue-400", "data-testid": "out-evt-scroll" }, "text": "{{variables['wa-evt-0000-0000-0000-000000000006']}}" }
+                ]
+              },
+
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" }, "text": "onValueChange (Select)" },
+                  {
+                    "type": "Select",
+                    "props": {},
+                    "actions": [{ "action": "waEvtValueChange" }],
+                    "children": [
+                      {
+                        "type": "SelectTrigger",
+                        "props": { "data-testid": "evt-select-trigger" },
+                        "children": [
+                          { "type": "SelectInput", "props": { "placeholder": "Pick an option…" } },
+                          { "type": "SelectIcon", "children": [{ "type": "NavIcon", "props": { "icon": "ChevronDown", "size": 14 } }] }
+                        ]
+                      },
+                      {
+                        "type": "SelectPortal",
+                        "children": [
+                          { "type": "SelectBackdrop" },
+                          {
+                            "type": "SelectContent",
+                            "children": [
+                              { "type": "SelectItem", "props": { "label": "Alpha", "value": "alpha" } },
+                              { "type": "SelectItem", "props": { "label": "Beta", "value": "beta" } },
+                              { "type": "SelectItem", "props": { "label": "Gamma", "value": "gamma" } }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-blue-600 dark:text-blue-400", "data-testid": "out-evt-valuechange" }, "text": "{{variables['wa-evt-0000-0000-0000-000000000007']}}" }
+                ]
+              },
+
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" }, "text": "onChange (Checkbox — event.value is boolean)" },
+                  {
+                    "type": "Checkbox",
+                    "id": "evt-checkbox-node",
+                    "props": { "data-testid": "evt-checkbox", "value": "toggle", "size": "md" },
+                    "actions": [{ "action": "waEvtCheckbox" }],
+                    "children": [
+                      {
+                        "type": "CheckboxIndicator",
+                        "children": [
+                          { "type": "CheckboxIcon", "props": { "className": "stroke-white" } }
+                        ]
+                      },
+                      { "type": "CheckboxLabel", "props": { "className": "text-sm text-gray-600 dark:text-gray-300" }, "text": "Toggle me" }
+                    ]
+                  },
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-blue-600 dark:text-blue-400", "data-testid": "out-evt-checkbox" }, "text": "{{variables['wa-evt-0000-0000-0000-000000000008']}}" }
+                ]
+              }
+
+            ]
+          }
+        ]
+      }
+
     ]
   }
 }

@@ -13,7 +13,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useBuilderStore, findParentNode } from './_store';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import { SECTION_STYLE, LABEL_STYLE, SectionHeader, ToggleBtn } from './_panel-primitives';
-import { FieldWithBinding, BindingIcon, type FormulaValue } from './_formula-panel';
+import { FieldWithBinding, BindingIcon, type FormulaValue, closeAllEditors, registerEditorClose } from './_formula-panel';
 import { FormulaEditor } from './_formula-editor';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 
@@ -106,7 +106,7 @@ function SettingsTextInput({ value, onChange, placeholder, expandable = false }:
   );
 }
 
-type ValidationRuleType = 'required' | 'email' | 'minLength' | 'maxLength' | 'phone' | 'url' | 'pattern' | 'formula';
+type ValidationRuleType = 'required' | 'email' | 'minLength' | 'maxLength' | 'phone' | 'url' | 'pattern' | 'equalsField' | 'formula';
 type ValidationRule = { type: ValidationRuleType; message: string; value?: string; formula?: FormulaValue };
 type NodeValidation = { trigger?: 'submit' | 'change'; rules?: ValidationRule[] };
 
@@ -152,24 +152,26 @@ function RuleValueInput({ value, onChange, placeholder = '', style }: {
 type NodeDebounce = { enabled?: boolean; delay?: number };
 
 const RULE_TYPE_OPTIONS: { value: ValidationRuleType; label: string; hasValue?: boolean; valuePlaceholder?: string }[] = [
-  { value: 'required',  label: 'Required' },
-  { value: 'email',     label: 'Email' },
-  { value: 'minLength', label: 'Min length', hasValue: true, valuePlaceholder: '2' },
-  { value: 'maxLength', label: 'Max length', hasValue: true, valuePlaceholder: '100' },
-  { value: 'phone',     label: 'Phone' },
-  { value: 'url',       label: 'URL' },
-  { value: 'pattern',   label: 'Pattern (regex)', hasValue: true, valuePlaceholder: '^[a-z]+$' },
-  { value: 'formula',   label: 'Custom formula' },
+  { value: 'required',    label: 'Required' },
+  { value: 'email',       label: 'Email' },
+  { value: 'minLength',   label: 'Min length',    hasValue: true, valuePlaceholder: '2' },
+  { value: 'maxLength',   label: 'Max length',    hasValue: true, valuePlaceholder: '100' },
+  { value: 'phone',       label: 'Phone' },
+  { value: 'url',         label: 'URL' },
+  { value: 'pattern',     label: 'Pattern (regex)', hasValue: true, valuePlaceholder: '^[a-z]+$' },
+  { value: 'equalsField', label: 'Equals field',  hasValue: true, valuePlaceholder: 'fieldName' },
+  { value: 'formula',     label: 'Custom formula' },
 ];
 const RULE_DEFAULTS: Record<ValidationRuleType, Partial<ValidationRule>> = {
-  required:  { message: 'This field is required' },
-  email:     { message: 'Please enter a valid email address' },
-  minLength: { message: 'Must be at least N characters', value: '2' },
-  maxLength: { message: 'Must be at most N characters', value: '100' },
-  phone:     { message: 'Please enter a valid phone number' },
-  url:       { message: 'Please enter a valid URL' },
-  pattern:   { message: 'Invalid format', value: '' },
-  formula:   { message: 'Invalid value' },
+  required:    { message: 'This field is required' },
+  email:       { message: 'Please enter a valid email address' },
+  minLength:   { message: 'Must be at least N characters', value: '2' },
+  maxLength:   { message: 'Must be at most N characters', value: '100' },
+  phone:       { message: 'Please enter a valid phone number' },
+  url:         { message: 'Please enter a valid URL' },
+  pattern:     { message: 'Invalid format', value: '' },
+  equalsField: { message: 'Fields do not match', value: '' },
+  formula:     { message: 'Invalid value' },
 };
 
 function findSubmitButtonInTree(nodes: SDUINode[]): SDUINode | null {
@@ -609,12 +611,12 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
                             onClick={e => openRuleFormula(e, idx)}
                             style={{ padding: '2px 8px', background: isFormulaOpen ? '#3b0764' : '#2e1065', border: '1px solid #7c3aed', borderRadius: 4, color: '#a78bfa', fontSize: 10, cursor: 'pointer', fontWeight: 500, width: '100%', textAlign: 'left' }}
                           >
-                            ƒ {rule.formula ? 'Edit formula' : 'Add formula'}
+                            ƒ {(rule.formula || rule.value) ? 'Edit formula' : 'Add formula'}
                           </button>
                           {isFormulaOpen && (
                             <FormulaEditor
                               label="Validation formula"
-                              value={rule.formula ?? null}
+                              value={rule.formula ?? (rule.value ? { formula: rule.value } : null)}
                               expectedType="any"
                               hint='true = valid · false = invalid · "Error message" = invalid with message'
                               anchor="right"

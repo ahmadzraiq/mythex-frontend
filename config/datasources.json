@@ -61,16 +61,16 @@
     "endpoint": "http://localhost:3000/shop-api",
     "query": "query GetCollectionProducts($slug: String!, $input: SearchInput!) { collection(slug: $slug) { id name slug description featuredAsset { id preview } } search(input: $input) { totalItems items { productId productName slug productAsset { id preview } priceWithTax { __typename ... on PriceRange { min max } ... on SinglePrice { value } } currencyCode } facetValues { count facetValue { id name facet { id name } } } } }",
     "variables": {
-      "slug": { "var": "route.slug" },
+      "slug": { "expr": "route?.slug" },
       "input": {
-        "collectionSlug": { "var": "route.slug" },
-        "take": { "var": ["collectionPageSize", 12] },
-        "skip": { "var": ["a6b7c8d9-e0f1-2345-abcd-456789012345", 0] },
+        "collectionSlug": { "expr": "route?.slug" },
+        "take": { "expr": "variables?.['fa000001-0000-0000-0000-000000000001']" },
+        "skip": { "expr": "variables?.['a6b7c8d9-e0f1-2345-abcd-456789012345']" },
         "groupByProduct": true,
         "sort": {
-          "expr": "lookupMap(_conventions?.sortInputMap, route?.sort, _conventions?.defaultSortInput)"
+          "expr": "lookupMap(variables?.['fa000005-0000-0000-0000-000000000001'], route?.sort, variables?.['fa000006-0000-0000-0000-000000000001'])"
         },
-        "facetValueIds": { "var": ["route.facets", []] }
+        "facetValueIds": { "expr": "variables?.['fa000003-0000-0000-0000-000000000001'] ?? []" }
       }
     },
     "headers": {
@@ -93,14 +93,14 @@
     "query": "query SearchProducts($input: SearchInput!) { search(input: $input) { totalItems items { productId productName slug productAsset { id preview } priceWithTax { __typename ... on PriceRange { min max } ... on SinglePrice { value } } currencyCode } facetValues { count facetValue { id name facet { id name } } } } }",
     "variables": {
       "input": {
-        "term": { "var": "route.q" },
-        "take": { "var": ["collectionPageSize", 12] },
-        "skip": { "var": ["b7c8d9e0-f1a2-3456-bcde-567890123456", 0] },
+        "term": { "expr": "route?.q" },
+        "take": { "expr": "variables?.['fa000001-0000-0000-0000-000000000001']" },
+        "skip": { "expr": "variables?.['b7c8d9e0-f1a2-3456-bcde-567890123456']" },
         "groupByProduct": true,
         "sort": {
-          "expr": "lookupMap(_conventions?.sortInputMap, route?.sort, _conventions?.defaultSortInput)"
+          "expr": "lookupMap(variables?.['fa000005-0000-0000-0000-000000000001'], route?.sort, variables?.['fa000006-0000-0000-0000-000000000001'])"
         },
-        "facetValueIds": { "var": ["route.facets", []] }
+        "facetValueIds": { "expr": "variables?.['fa000003-0000-0000-0000-000000000001'] ?? []" }
       }
     },
     "headers": {

@@ -430,7 +430,7 @@
         "type": "decrement",
         "config": {
           "path": "a6b7c8d9-e0f1-2345-abcd-456789012345",
-          "amount": "{{collectionPageSize}}"
+          "amount": "{{variables['fa000001-0000-0000-0000-000000000001']}}"
         }
       },
       {
@@ -442,7 +442,7 @@
         "type": "navigateTo",
         "config": {
           "path": {
-            "expr": "cat(route?.path, '?page=', max(1, max(1, floor((variables['a6b7c8d9-e0f1-2345-abcd-456789012345'] || 0) / (get('collectionPageSize') || 12) + 1)) - 1))"
+            "expr": "cat(route?.path, '?page=', max(1, max(1, floor((variables['a6b7c8d9-e0f1-2345-abcd-456789012345'] || 0) / (variables?.['fa000001-0000-0000-0000-000000000001'] || 12) + 1)) - 1))"
           }
         }
       }
@@ -457,8 +457,10 @@
         "id": "step-1",
         "type": "goToPage",
         "config": {
+          "path": "a6b7c8d9-e0f1-2345-abcd-456789012345",
           "page": "{{$item}}",
-          "pageSize": "{{collectionPageSize}}"
+          "pageSize": "{{variables['fa000001-0000-0000-0000-000000000001']}}",
+          "fetchAction": "fetchCollection"
         }
       },
       {
@@ -480,7 +482,7 @@
         "type": "increment",
         "config": {
           "path": "a6b7c8d9-e0f1-2345-abcd-456789012345",
-          "amount": "{{collectionPageSize}}"
+          "amount": "{{variables['fa000001-0000-0000-0000-000000000001']}}"
         }
       },
       {
@@ -492,7 +494,7 @@
         "type": "navigateTo",
         "config": {
           "path": {
-            "expr": "cat(route?.path, '?page=', min(max(1, ceil((collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.data?.search?.totalItems || 0) / (get('collectionPageSize') || 12))), max(1, floor((variables['a6b7c8d9-e0f1-2345-abcd-456789012345'] || 0) / (get('collectionPageSize') || 12) + 1)) + 1))"
+            "expr": "cat(route?.path, '?page=', min(max(1, ceil((collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.data?.search?.totalItems || 0) / (variables?.['fa000001-0000-0000-0000-000000000001'] || 12))), max(1, floor((variables['a6b7c8d9-e0f1-2345-abcd-456789012345'] || 0) / (variables?.['fa000001-0000-0000-0000-000000000001'] || 12) + 1)) + 1))"
           }
         }
       }
@@ -508,7 +510,7 @@
         "type": "decrement",
         "config": {
           "path": "b7c8d9e0-f1a2-3456-bcde-567890123456",
-          "amount": "{{collectionPageSize}}"
+          "amount": "{{variables['fa000001-0000-0000-0000-000000000001']}}"
         }
       },
       {
@@ -520,7 +522,7 @@
         "type": "navigateTo",
         "config": {
           "path": {
-            "expr": "cat(route?.path, '?page=', max(1, max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) - 1))"
+            "expr": "cat(route?.path, '?page=', max(1, max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (variables?.['fa000001-0000-0000-0000-000000000001'] || 12) + 1)) - 1))"
           }
         }
       }
@@ -537,7 +539,7 @@
         "config": {
           "path": "b7c8d9e0-f1a2-3456-bcde-567890123456",
           "page": "{{$item}}",
-          "pageSize": "{{collectionPageSize}}",
+          "pageSize": "{{variables['fa000001-0000-0000-0000-000000000001']}}",
           "fetchAction": "fetchSearchResults"
         }
       },
@@ -564,7 +566,7 @@
         "type": "increment",
         "config": {
           "path": "b7c8d9e0-f1a2-3456-bcde-567890123456",
-          "amount": "{{collectionPageSize}}"
+          "amount": "{{variables['fa000001-0000-0000-0000-000000000001']}}"
         }
       },
       {
@@ -576,7 +578,7 @@
         "type": "navigateTo",
         "config": {
           "path": {
-            "expr": "cat(route?.path, '?page=', min(max(1, ceil((collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems || 0) / (get('collectionPageSize') || 12))), max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) + 1))"
+            "expr": "cat(route?.path, '?page=', min(max(1, ceil((collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems || 0) / (variables?.['fa000001-0000-0000-0000-000000000001'] || 12))), max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (variables?.['fa000001-0000-0000-0000-000000000001'] || 12) + 1)) + 1))"
           }
         }
       }

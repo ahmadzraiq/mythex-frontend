@@ -1044,12 +1044,23 @@ The `map` field with a string path IS correctly subscribed.
 ```
 The `text` template subscribes to `local.data.form.fields.fieldName.isValid`. When validation writes an error, the subscription fires, the node re-renders, and the `condition` is re-evaluated with the new error string (truthy → node shows). The same `{{path}}` subscription drives both display and visibility.
 
-**⚠️ JSON Logic conditions (`{ "not": { "var": "..." } }`, `{ "==": [...] }`) are NOT supported by `evaluateFormula` at runtime.** They always return `null` (falsy), so the node is always hidden. Only use formula strings for `condition` values in JSON config. JSON Logic patterns in `extractPathsFromObject` are a subscription mechanism only — they were never wired to runtime evaluation.
+**⚠️ JSON Logic conditions (`{ "not": { "var": "..." } }`, `{ "==": [...] }`) are NOT supported and have been removed.** The `{ "var" }` branch was removed from `extractPathsFromObject` in `dependency-extractor.ts`. Never use JSON Logic syntax in `condition` — it never evaluated correctly and is now unsupported for subscriptions too.
+
+**`condition` subscription self-subscribes via formula string:** The renderer directly extracts paths from formula strings in `condition` values — any `variables['UUID']`, `collections['UUID']`, `route.*`, or other paths in the formula string generate subscriptions automatically.
+
+```json
+// ❌ WRONG — JSON Logic; removed from codebase
+{ "condition": { "not": { "var": "collections.UUID.data.length" } } }
+
+// ✅ CORRECT — formula string; auto-subscribes and evaluates correctly
+{ "condition": "!collections?.['c3d4e5f6-a7b8-9012-cdef-123456789012']?.data?.length" }
+{ "condition": "!local?.data?.form?.isSubmitting" }
+{ "condition": "variables?.['UUID'] === 'active'" }
+```
 
 **Rule:** For any node that displays or gates on dynamically-changing store data:
 - Use `{{path}}` template strings for `text` (subscribed)
-- Use formula strings for `condition` (e.g., `"local?.data?.form?.isSubmitting"`, `"!local?.data?.form?.isSubmitting"`)
-- Ensure at least one `{{path}}` template or prop subscription on the same node covers the same data the condition checks
+- Use **plain JS formula strings** for `condition` (self-subscribing via `extractPathsFromObject` scanning for identifiers)
 - Only use `text: { "expr": "..." }` for static/config-time values or inside a `map` scope where the parent already re-renders
 
 ---
@@ -1166,3 +1177,46 @@ Because `storedVarFields[key] !== undefined` is always `true` for registered fie
 ```
 
 **State bleeding between FormContainers:** If two FormContainers are on the same page and you use `local.data.form.*` in both, each one's nodes correctly read ONLY their own container's state. Submitting FormContainer A will NOT cause FormContainer B's `local.data.form.isSubmitting` to change.
+
+---
+
+## Validation Rule: `equalsField` — Confirm Password Pattern
+
+`equalsField` checks that a field's value matches another field. Use it for confirm-password fields:
+
+```json
+{
+  "type": "InputField",
+  "props": {
+    "name": "v2confirm",
+    "secureTextEntry": true
+  },
+  "_validation": {
+    "trigger": "submit",
+    "rules": [
+      { "type": "required", "message": "Please confirm your password" },
+      { "type": "equalsField", "value": "v2password", "message": "Passwords do not match" }
+    ]
+  }
+}
+```
+
+**`value` field** = the `name` of the field to match against (`v2password` here).
+
+**Engine behaviour:** At submit time, the `equalsField` rule reads `formData['value']` and compares it to `formData['fieldName']`. If they differ, `isValid` is set to the error message.
+
+**Builder Design Panel:** In the Settings panel, `equalsField` renders with `hasValue: true` — shows a Value input (for the field name) and a message input on the same row. Selecting it from the rule-type dropdown shows "Equals field".
+
+---
+
+## `formula` Validation Rule — Plain String `value` vs `FormulaValue`
+
+When a formula validation rule is created from JSON config (not via the builder), the formula is often stored as a plain string under the `value` key:
+
+```json
+{ "type": "formula", "value": "Number(local?.data?.form?.formData?.['v2age']) >= 18", "message": "You must be at least 18 years old" }
+```
+
+The builder's Settings panel uses a `FormulaValue` object (`{ formula: "..." }`) under the `formula` key. Both representations are valid; the builder normalises when the user opens and saves the formula editor.
+
+**Rule:** The engine reads the formula from `rule.formula ?? rule.value` — check both when implementing new validation-rule consumers.

@@ -2,12 +2,9 @@
  * Merge state helpers - split from computeMergedState for readability
  */
 
-import storeConfig from '@/config/store-config';
 import { setNestedValue } from './nested-utils';
 import { runComputed } from './computed-runner';
-import { CONVENTIONS, buildConventionsForComputed } from './conventions';
-
-const computedDefs = (storeConfig as { computed?: unknown[] }).computed ?? [];
+import { CONVENTIONS } from './conventions';
 
 type StoreState = {
   data: Record<string, unknown>;
@@ -48,7 +45,6 @@ export function mergeLoadingPaths(
   loading: Record<string, boolean>
 ): Record<string, unknown> {
   const suffix = CONVENTIONS.loadingSuffix;
-  if (!suffix) return merged;
   let next = merged;
   for (const path of Object.keys(loading)) {
     const slice = path.split('.')[0];
@@ -63,7 +59,6 @@ export function mergeErrorPaths(
   error: Record<string, string | null>
 ): Record<string, unknown> {
   const suffix = CONVENTIONS.errorSuffix;
-  if (!suffix) return merged;
   let next = merged;
   for (const path of Object.keys(error)) {
     const slice = path.split('.')[0];
@@ -82,11 +77,12 @@ export function applyComputed(
 }
 
 /**
- * Overlays variable store onto merged state, then injects _conventions and runs store.json computed.
+ * Overlays variable store onto merged state, then runs any computed defs.
  */
 export function finalizeMergedWithVariableStore(
   merged: Record<string, unknown>,
-  vs: Record<string, unknown>
+  vs: Record<string, unknown>,
+  computedDefs: ComputedDef[] = []
 ): Record<string, unknown> {
   let next: Record<string, unknown> = { ...merged };
   for (const [key, val] of Object.entries(vs)) {
@@ -100,7 +96,6 @@ export function finalizeMergedWithVariableStore(
       next[key] = val;
     }
   }
-  next = setNestedValue(next, '_conventions', buildConventionsForComputed());
   if (computedDefs.length > 0) {
     next = runComputed(next, computedDefs as Parameters<typeof runComputed>[1], {});
   }

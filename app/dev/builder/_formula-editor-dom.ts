@@ -158,7 +158,7 @@ export function serializeRangeFromEditor(editorEl: HTMLElement, sel: Selection):
  *   local.data(?.['key'])*   — weWeb-style FormContainer local state
  *   event(?.['key'])*        — workflow trigger event context
  */
-export const CHIP_RE = /collections\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|variables\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|local\.data(?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|context\.workflow\['[^']+'\](?:(?:\?)?\.[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|context\.(?:item|index|parent)(?:(?:\?\.\['[^']*'\]|\?\.\[\d+\])|(?:\.\w+))*|globalContext\.(?:browser|screen)(?:\?\.\['[^']*'\])*|pages\['[^']+'\](?:\?\.\['[^']*'\])*|theme(?:\.(?:colors|sections|fonts|radius)|\?\.\['(?:colors|sections|fonts|radius)'\])(?:\?\.\['[^']*'\]|\.\w+)*|components\?\.\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|event(?:\?\.\['[^']*'\]|\?\.\[\d+\])*/g;
+export const CHIP_RE = /collections\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|variables\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|local\??\.data(?:\??\.(?:\['[^']*'\]|[\w$]+)|\?\.\[\d+\])*|context\.workflow\['[^']+'\](?:(?:\?)?\.[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|context\.(?:item|index|parent)(?:(?:\?\.\['[^']*'\]|\?\.\[\d+\])|(?:\.\w+))*|globalContext\.(?:browser|screen)(?:\?\.\['[^']*'\])*|pages\['[^']+'\](?:\?\.\['[^']*'\])*|theme(?:\.(?:colors|sections|fonts|radius)|\?\.\['(?:colors|sections|fonts|radius)'\])(?:\?\.\['[^']*'\]|\.\w+)*|components\?\.\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|event(?:\?\.\['[^']*'\]|\?\.\[\d+\])*/g;
 
 export const CHIP_INNER_CSS = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;display:block';
 
@@ -692,6 +692,7 @@ export function populateEditor(
   formula: string,
   dsMap: Map<string, { label: string }>,
   varMap?: Map<string, { label: string }>,
+  stepNameMap?: Map<string, string>,
 ): void {
   el.innerHTML = '';
   if (!formula) return;
@@ -749,27 +750,32 @@ export function populateEditor(
         break;
       }
       el.appendChild(buildChipSpan(formulaPath, buildDisplayLabel(base, segs), 'variable'));
-    } else if (formulaPath.startsWith('local.data')) {
-      const after = formulaPath.slice('local.data'.length);
-      let normalized: string;
-      if (!after || after.startsWith("?.['")) {
-        normalized = formulaPath;
-      } else {
-        normalized = 'local.data';
-        for (const seg of after.slice(1).split('.')) {
-          if (seg) normalized += `?.['${seg}']`;
-        }
+    } else if (/^local\??\.data/.test(formulaPath)) {
+      // Handles both `local.data` and `local?.data` (optional-chaining prefix).
+      // Extracts all path segments and rebuilds in canonical `local.data?.['seg']` form.
+      const stripped = formulaPath.replace(/^local\??\.data/, '');
+      const segs: Array<string | number> = [];
+      let rem = stripped;
+      while (rem.length > 0) {
+        const bracketM = rem.match(/^\??\.(?:\['([^']+)'\])(.*)/s);
+        if (bracketM) { segs.push(bracketM[1]); rem = bracketM[2]; continue; }
+        const numM = rem.match(/^\?\.\[(\d+)\](.*)/s);
+        if (numM) { segs.push(Number(numM[1])); rem = numM[2]; continue; }
+        const wordM = rem.match(/^\??\.(\w[\w$]*)(.*)/s);
+        if (wordM) { segs.push(wordM[1]); rem = wordM[2]; continue; }
+        break;
       }
-      const friendly = normalized
-        .replace(/\?\.\['([^']+)'\]/g, '.$1')
-        .replace(/\?\.\[(\d+)\]/g, '[$1]');
+      const normalized = 'local.data' + segs.map(s => (typeof s === 'number' ? `?.[${s}]` : `?.['${s}']`)).join('');
+      const friendly = 'local.data' + segs.map(s => (typeof s === 'number' ? `[${s}]` : `.${s}`)).join('');
       el.appendChild(buildChipSpan(normalized, friendly, 'form'));
     } else if (formulaPath.startsWith('context.workflow[')) {
       // Workflow step result/error path — "stepId.result.field" (blue) or "stepId.error.field" (red)
       const stepIdMatch = formulaPath.match(/^context\.workflow\['([^']*)'\]/);
       const stepId = stepIdMatch?.[1] ?? 'Action';
       const afterStepId = formulaPath.slice((stepIdMatch?.[0] ?? '').length);
-      const friendly = (stepId + afterStepId)
+      // Use human-readable action name when available (passed via stepNameMap from test results)
+      const actionName = stepNameMap?.get(stepId) ?? stepId;
+      const friendly = (actionName + afterStepId)
         .replace(/\?\./g, '.')
         .replace(/\.\[(\d+)\]/g, '[$1]');
       const isErrorPath = afterStepId.startsWith('.error');
@@ -824,9 +830,10 @@ export function insertPastedFormulaAtCaret(
   text: string,
   dsMap: Map<string, { label: string }>,
   varMap?: Map<string, { label: string }>,
+  stepNameMap?: Map<string, string>,
 ): void {
   const temp = document.createElement('div');
-  populateEditor(temp, text, dsMap, varMap);
+  populateEditor(temp, text, dsMap, varMap, stepNameMap);
 
   editorEl.focus();
   const sel = window.getSelection();

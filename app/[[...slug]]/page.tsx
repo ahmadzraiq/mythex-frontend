@@ -5,19 +5,21 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useSduiStore } from '@/store/sdui-store';
 import { SDUIEngine, paramChangeRunActionRef, type ActionsConfig, type NamedDataSourceDef } from '@/lib/sdui/sdui-engine';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
-import { syncSearchParams, type SearchParamSyncDef } from '@/lib/sdui/search-param-sync';
+import { syncSearchParams } from '@/lib/sdui/search-param-sync';
 import { sortRoutes, matchRoute } from '@/lib/sdui/route-utils';
 import type { SDUIConfig } from '@/lib/sdui/types';
 import type { AppConfig, PageUI } from '@/config/types';
 
 import appConfig from '@/config/app';
-import storeConfig from '@/config/store-config';
+import variablesJson from '@/config/variables.json';
+import { buildSyncDefsFromVariables } from '@/lib/sdui/search-param-sync';
 
-const PATHS = (storeConfig as { paths?: { authUser?: string; routePath?: string; routeSlug?: string } }).paths ?? {};
-const AUTH_USER_PATH = PATHS.authUser ?? 'auth.user';
-const ROUTE_PATH = PATHS.routePath ?? 'route.path';
-const ROUTE_SLUG = PATHS.routeSlug ?? 'route.slug';
-const syncDefs = (storeConfig as { searchParamSync?: SearchParamSyncDef[] }).searchParamSync ?? [];
+const AUTH_USER_PATH = 'auth.user';
+const ROUTE_PATH = 'route.path';
+const ROUTE_SLUG = 'route.slug';
+const syncDefs = buildSyncDefsFromVariables(
+  (variablesJson as { variables?: Record<string, unknown> }).variables ?? {}
+);
 
 const app = appConfig as AppConfig;
 
@@ -47,10 +49,25 @@ export default function DynamicRoutePage() {
       (r) => (r as { dynamic?: boolean }).dynamic && path.startsWith(r.path + '/')
     );
     if (dynamicRoute) {
-      const slug = path.slice(dynamicRoute.path.length + 1).split('/')[0] || '';
-      const currentSlug = useSduiStore.getState().data[ROUTE_SLUG];
-      if (currentSlug !== slug) {
-        setData(ROUTE_SLUG, slug);
+      const segments = path.slice(dynamicRoute.path.length + 1).split('/');
+      const namedParams = (dynamicRoute as { params?: string[] }).params;
+      if (namedParams && namedParams.length > 0) {
+        // Extract named params (e.g. params: ["slug"] or params: ["id", "name"])
+        for (const [i, paramName] of namedParams.entries()) {
+          const paramValue = segments[i] ?? '';
+          const paramStorePath = `route.${paramName}`;
+          const currentVal = useSduiStore.getState().data[paramStorePath];
+          if (currentVal !== paramValue) {
+            setData(paramStorePath, paramValue);
+          }
+        }
+      } else {
+        // Legacy fallback: first segment becomes route.slug
+        const slug = segments[0] || '';
+        const currentSlug = useSduiStore.getState().data[ROUTE_SLUG];
+        if (currentSlug !== slug) {
+          setData(ROUTE_SLUG, slug);
+        }
       }
     }
     syncSearchParams({

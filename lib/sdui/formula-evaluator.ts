@@ -22,7 +22,6 @@
  *   auth.user / auth.token     — auth state (from store.json initialData)
  *   _workflow.lastAction / _workflow.lastError — workflow execution state
  *   local.data.form.fields.*   — form field validation state
- *   _conventions.*             — engine computed conventions (sortInputMap, etc.)
  *   get('path')                — escape hatch for arbitrary state path access
  *
  * Implementation is split across two modules:
@@ -96,7 +95,6 @@ export function evaluateFormula(formula: string | object, context: Record<string
       `const auth = (__state__ ?? {})['auth'] ?? {}; ` +
       `const _workflow = (__state__ ?? {})['_workflow'] ?? {}; ` +
       `const local = (__state__ ?? {})['local'] ?? {}; ` +
-      `const _conventions = (__state__ ?? {})['_conventions'] ?? {}; ` +
       `const get = (p) => { if (!p || !__state__) return undefined; if (p in __state__) return __state__[p]; const parts = p.split('.'); let c = __state__; for (const k of parts) { if (c == null || typeof c !== 'object') return undefined; c = c[k]; } return c; }; ` +
       `return (${processed});`
     );

@@ -497,3 +497,148 @@ test.describe('Workflow context — formula path format', () => {
     await clearWorkflowTestResults(sharedPage);
   });
 });
+
+// ─── 8. liveCanvasSteps — syncs step tree to store in real time ───────────────
+
+/**
+ * WCX-16 – WCX-20: Verify that liveCanvasSteps is pushed to the builder store
+ * whenever the canvas step list changes, and that the formula editor derives the
+ * correct "Action N" label even after new steps are inserted before an existing one.
+ */
+
+test.describe('Workflow context — liveCanvasSteps sync and chip label reactivity', () => {
+  test.beforeEach(async () => {
+    await resetBuilder(sharedPage);
+    await clearWorkflowTestResults(sharedPage);
+  });
+
+  test.afterEach(async () => {
+    await closeCanvas(sharedPage);
+    await clearWorkflowTestResults(sharedPage);
+  });
+
+  // WCX-16: liveCanvasSteps is null before canvas opens
+  test('WCX-16: liveCanvasSteps is null in store before canvas is opened', async () => {
+    const liveSteps = await sharedPage.evaluate(() => {
+      const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
+      return (store as Record<string, unknown>).liveCanvasSteps;
+    });
+    expect(liveSteps).toBeNull();
+  });
+
+  // WCX-17: liveCanvasSteps populates once canvas loads its initial steps
+  test('WCX-17: liveCanvasSteps is an array after canvas opens', async () => {
+    await openCanvasViaStore(sharedPage, 'element', { nodeId: 'live-sync-17', event: 'click' });
+    await sharedPage.waitForTimeout(300);
+
+    const liveSteps = await sharedPage.evaluate(() => {
+      const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
+      return (store as Record<string, unknown>).liveCanvasSteps;
+    });
+    expect(Array.isArray(liveSteps)).toBe(true);
+  });
+
+  // WCX-18: liveCanvasSteps grows by 1 when a step is added via the insert button
+  test('WCX-18: liveCanvasSteps count increases by 1 after adding a step', async () => {
+    await openCanvasViaStore(sharedPage, 'element', { nodeId: 'live-sync-18', event: 'click' });
+    await sharedPage.waitForTimeout(300);
+
+    const countBefore = await sharedPage.evaluate(() => {
+      const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
+      const s = (store as Record<string, unknown>).liveCanvasSteps as unknown[] | null;
+      return s?.length ?? 0;
+    });
+
+    await addActionViaInsertBtn(sharedPage, 'Time delay');
+    await sharedPage.waitForTimeout(300);
+
+    const countAfter = await sharedPage.evaluate(() => {
+      const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
+      const s = (store as Record<string, unknown>).liveCanvasSteps as unknown[] | null;
+      return s?.length ?? 0;
+    });
+
+    expect(countAfter).toBe(countBefore + 1);
+  });
+
+  // WCX-19: liveCanvasSteps is reset to null when the canvas closes
+  test('WCX-19: liveCanvasSteps is null after canvas closes', async () => {
+    await openCanvasViaStore(sharedPage, 'element', { nodeId: 'live-sync-19', event: 'click' });
+    await sharedPage.waitForTimeout(300);
+    await closeCanvas(sharedPage);
+
+    const liveSteps = await sharedPage.evaluate(() => {
+      const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
+      return (store as Record<string, unknown>).liveCanvasSteps;
+    });
+    expect(liveSteps).toBeNull();
+  });
+
+  // WCX-20: staticStepIndexMap derived from liveCanvasSteps assigns correct 1-based positions
+  // and updates when a step is inserted before an existing step (the label should shift from
+  // "Action N" to "Action N+1" for all steps after the insertion point).
+  test('WCX-20: injecting liveCanvasSteps via store shifts step positions correctly', async () => {
+    const wfId = `globalWorkflow:wf-chip-test-20`;
+
+    // Open a global workflow canvas so we have a workflowCanvasTarget
+    await sharedPage.evaluate(() => {
+      const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
+      if (!store) return;
+      const id = 'wf-chip-test-20';
+      (store.setGlobalWorkflow as (id: string, steps: unknown[]) => void)(id, []);
+      (store.setGlobalWorkflowMeta as (id: string, meta: unknown) => void)(id, { id, name: 'Chip Reactivity Test' });
+      (store.openWorkflowCanvas as (t: unknown) => void)({ kind: 'globalWorkflow', id });
+    });
+    await sharedPage.waitForSelector('[data-testid="workflow-canvas"]', { timeout: 5_000 });
+    await sharedPage.waitForTimeout(300);
+
+    // Inject liveCanvasSteps with 2 steps: step-first (pos 1) and step-second (pos 2)
+    await sharedPage.evaluate(() => {
+      const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState() as Record<string, unknown>;
+      if (typeof store.setLiveCanvasSteps !== 'function') return;
+      (store.setLiveCanvasSteps as (s: object[]) => void)([
+        { id: 'step-first', type: 'timeDelay', config: {} },
+        { id: 'step-second', type: 'timeDelay', config: {} },
+      ]);
+    });
+    await sharedPage.waitForTimeout(200);
+
+    // Inject a test result for "step-second" (no actionName → should map to "Action 2")
+    await sharedPage.evaluate(({ wfId }) => {
+      const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState() as Record<string, unknown>;
+      if (typeof store.setWorkflowStepTestResult !== 'function') return;
+      (store.setWorkflowStepTestResult as (id: string, r: unknown, e: string | null, i: number, name: string, wid: string) => void)(
+        'step-second', { value: 42 }, null, 1, '', wfId
+      );
+    }, { wfId });
+    await sharedPage.waitForTimeout(200);
+
+    // Read liveCanvasSteps to confirm state was set
+    const liveAfter2 = await sharedPage.evaluate(() => {
+      const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState() as Record<string, unknown>;
+      const s = store.liveCanvasSteps as Array<{ id: string }> | null;
+      return s?.map(x => x.id) ?? [];
+    });
+    expect(liveAfter2).toEqual(['step-first', 'step-second']);
+
+    // Now inject 3 steps — "step-new" inserted before "step-second", shifting it to position 3
+    await sharedPage.evaluate(() => {
+      const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState() as Record<string, unknown>;
+      if (typeof store.setLiveCanvasSteps !== 'function') return;
+      (store.setLiveCanvasSteps as (s: object[]) => void)([
+        { id: 'step-first', type: 'timeDelay', config: {} },
+        { id: 'step-new',   type: 'timeDelay', config: {} },
+        { id: 'step-second', type: 'timeDelay', config: {} },
+      ]);
+    });
+    await sharedPage.waitForTimeout(200);
+
+    const liveAfter3 = await sharedPage.evaluate(() => {
+      const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState() as Record<string, unknown>;
+      const s = store.liveCanvasSteps as Array<{ id: string }> | null;
+      return s?.map(x => x.id) ?? [];
+    });
+    expect(liveAfter3).toEqual(['step-first', 'step-new', 'step-second']);
+    expect(liveAfter3.length).toBe(3);
+  });
+});

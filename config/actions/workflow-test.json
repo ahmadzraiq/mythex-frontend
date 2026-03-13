@@ -2255,5 +2255,956 @@
         "config": { "isSubmitting": false, "isSubmitted": true }
       }
     ]
+  },
+
+  "waApiChainSubTask": {
+    "type": "workflowSteps",
+    "name": "API Chain: Sub-task (multiOptionBranch + forEach)",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s-reset-result",
+        "name": "Reset pipeline result",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-chain-0000-0000-0000-000000000005",
+          "value": ""
+        }
+      },
+      {
+        "id": "s-multi",
+        "name": "Multi-option branch on branch path",
+        "type": "multiOptionBranch",
+        "config": {
+          "conditionPath": "wa-chain-0000-0000-0000-000000000004"
+        },
+        "branches": [
+          {
+            "label": "GQL OK \u2013 France confirmed",
+            "steps": [
+              {
+                "id": "s-foreach-codes",
+                "name": "For each country code: append to result",
+                "type": "forEach",
+                "config": {
+                  "list": ["FR", "DE", "US"]
+                },
+                "loopBody": [
+                  {
+                    "id": "s-append-code",
+                    "name": "Append country code to result",
+                    "type": "changeVariableValue",
+                    "config": {
+                      "variableName": "wa-chain-0000-0000-0000-000000000005",
+                      "value": {
+                        "formula": "(variables['wa-chain-0000-0000-0000-000000000005'] ? variables['wa-chain-0000-0000-0000-000000000005'] + ',' : '') + context.item.data.value + '(' + context.item.data.index + ')'"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "s-set-result",
+                "name": "Set final pipeline result",
+                "type": "changeVariableValue",
+                "config": {
+                  "variableName": "wa-chain-0000-0000-0000-000000000005",
+                  "value": {
+                    "formula": "'GQL:' + variables['wa-chain-0000-0000-0000-000000000002'] + ' | echo:' + variables['wa-chain-0000-0000-0000-000000000003'] + ' | codes:' + variables['wa-chain-0000-0000-0000-000000000005']"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "defaultBranch": [
+          {
+            "id": "s-fail-result",
+            "name": "Set pipeline failed result",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "wa-chain-0000-0000-0000-000000000005",
+              "value": {
+                "formula": "'pipeline-failed: ' + variables['wa-chain-0000-0000-0000-000000000004']"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+
+  "waApiChain": {
+    "type": "workflowSteps",
+    "name": "API Chain: Full Pipeline",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s-reset",
+        "name": "Reset all chain vars",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-chain-0000-0000-0000-000000000001",
+          "value": "(step 1/6: starting\u2026)"
+        }
+      },
+      {
+        "id": "s-reset-002",
+        "name": "Clear GQL country",
+        "type": "changeVariableValue",
+        "config": { "variableName": "wa-chain-0000-0000-0000-000000000002", "value": "" }
+      },
+      {
+        "id": "s-reset-003",
+        "name": "Clear REST echo",
+        "type": "changeVariableValue",
+        "config": { "variableName": "wa-chain-0000-0000-0000-000000000003", "value": "" }
+      },
+      {
+        "id": "s-reset-004",
+        "name": "Clear branch path",
+        "type": "changeVariableValue",
+        "config": { "variableName": "wa-chain-0000-0000-0000-000000000004", "value": "" }
+      },
+      {
+        "id": "s-reset-005",
+        "name": "Clear pipeline result",
+        "type": "changeVariableValue",
+        "config": { "variableName": "wa-chain-0000-0000-0000-000000000005", "value": "" }
+      },
+      {
+        "id": "s-reset-006",
+        "name": "Clear collection status",
+        "type": "changeVariableValue",
+        "config": { "variableName": "wa-chain-0000-0000-0000-000000000006", "value": "" }
+      },
+      {
+        "id": "s-reset-007",
+        "name": "Clear while-count",
+        "type": "changeVariableValue",
+        "config": { "variableName": "wa-chain-0000-0000-0000-000000000007", "value": 0 }
+      },
+      {
+        "id": "s-reset-008",
+        "name": "Clear forEach result",
+        "type": "changeVariableValue",
+        "config": { "variableName": "wa-chain-0000-0000-0000-000000000008", "value": "" }
+      },
+      {
+        "id": "s-reset-009",
+        "name": "Clear multi-branch result",
+        "type": "changeVariableValue",
+        "config": { "variableName": "wa-chain-0000-0000-0000-000000000009", "value": "" }
+      },
+      {
+        "id": "s-delay-1",
+        "name": "Wait 250ms (progress beat 1)",
+        "type": "timeDelay",
+        "config": { "time": 250 }
+      },
+      {
+        "id": "s-gql-fr",
+        "name": "GraphQL: fetch France country data",
+        "type": "graphql",
+        "config": {
+          "endpoint": "https://countries.trevorblades.com/",
+          "query": "{ country(code: \"FR\") { name capital currency } }",
+          "storeFullResponseIn": "waChainGql1"
+        }
+      },
+      {
+        "id": "s-read-gql",
+        "name": "Read GQL result: extract country name",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-chain-0000-0000-0000-000000000002",
+          "value": {
+            "formula": "context.workflow['s-gql-fr']?.result?.data?.country?.name || '(gql-failed)'"
+          }
+        }
+      },
+      {
+        "id": "s-status-2",
+        "name": "Set status: step 2 GQL done",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-chain-0000-0000-0000-000000000001",
+          "value": "(step 2/6: GQL done)"
+        }
+      },
+      {
+        "id": "s-branch-gql",
+        "name": "Branch: GQL returned a country?",
+        "type": "branch",
+        "config": {
+          "condition": "context.workflow['s-gql-fr']?.result?.data?.country !== undefined && context.workflow['s-gql-fr']?.result?.data?.country !== null"
+        },
+        "trueBranch": [
+          {
+            "id": "s-path-ok",
+            "name": "Set branch path: GQL OK",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "wa-chain-0000-0000-0000-000000000004",
+              "value": "GQL OK \u2013 France confirmed"
+            }
+          }
+        ],
+        "falseBranch": [
+          {
+            "id": "s-path-fail",
+            "name": "Set branch path: GQL FAILED",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "wa-chain-0000-0000-0000-000000000004",
+              "value": "GQL FAILED"
+            }
+          }
+        ]
+      },
+      {
+        "id": "s-delay-2",
+        "name": "Wait 250ms (progress beat 2)",
+        "type": "timeDelay",
+        "config": { "time": 250 }
+      },
+      {
+        "id": "s-rest-get",
+        "name": "REST GET https://httpbin.org/get",
+        "type": "fetchData",
+        "config": {
+          "url": "https://httpbin.org/get",
+          "method": "GET",
+          "storeFullResponseIn": "waChainRestGet"
+        }
+      },
+      {
+        "id": "s-rest-post",
+        "name": "REST POST with body from GQL result",
+        "type": "fetchData",
+        "config": {
+          "url": "https://httpbin.org/post",
+          "method": "POST",
+          "body": "{\"country\":\"{{wa-chain-0000-0000-0000-000000000002}}\",\"step\":2}",
+          "storeFullResponseIn": "waChainRestPost"
+        }
+      },
+      {
+        "id": "s-read-rest",
+        "name": "Read REST result: extract echoed country",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-chain-0000-0000-0000-000000000003",
+          "value": {
+            "formula": "context.workflow['s-rest-post']?.result?.json?.country || '(rest-failed)'"
+          }
+        }
+      },
+      {
+        "id": "s-status-3",
+        "name": "Set status: step 3 REST done",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-chain-0000-0000-0000-000000000001",
+          "value": "(step 3/6: REST done)"
+        }
+      },
+      {
+        "id": "s-delay-3",
+        "name": "Wait 250ms (progress beat 3)",
+        "type": "timeDelay",
+        "config": { "time": 250 }
+      },
+      {
+        "id": "s-update-col",
+        "name": "updateCollection: insert REST-echo item at position 0",
+        "type": "updateCollection",
+        "config": {
+          "collectionId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+          "updateType": "insert",
+          "position": 0,
+          "data": "{\"id\":\"chain-item\",\"name\":\"Chain: {{wa-chain-0000-0000-0000-000000000003}}\"}"
+        }
+      },
+      {
+        "id": "s-set-col-status",
+        "name": "Set collection status to updated",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-chain-0000-0000-0000-000000000006",
+          "value": "inserted chain-item into collection"
+        }
+      },
+      {
+        "id": "s-status-4",
+        "name": "Set status: step 4 collection updated",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-chain-0000-0000-0000-000000000001",
+          "value": "(step 4/6: collection updated)"
+        }
+      },
+      {
+        "id": "s-exec-comp",
+        "name": "executeComponentAction: run sub-task workflow",
+        "type": "executeComponentAction",
+        "config": {
+          "action": "waApiChainSubTask"
+        }
+      },
+      {
+        "id": "s-status-5",
+        "name": "Set status: step 5 sub-task done",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-chain-0000-0000-0000-000000000001",
+          "value": "(step 5/8: sub-task done)"
+        }
+      },
+      {
+        "id": "s-status-5b",
+        "name": "Set status: step 6 loops starting",
+        "type": "changeVariableValue",
+        "config": { "variableName": "wa-chain-0000-0000-0000-000000000001", "value": "(step 6/8: loops\u2026)" }
+      },
+      {
+        "id": "s-while-count",
+        "name": "whileLoop: count to 3",
+        "type": "whileLoop",
+        "config": {
+          "condition": "variables['wa-chain-0000-0000-0000-000000000007'] < 3"
+        },
+        "loopBody": [
+          {
+            "id": "s-while-inc",
+            "name": "Increment while counter",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "wa-chain-0000-0000-0000-000000000007",
+              "value": { "formula": "(variables['wa-chain-0000-0000-0000-000000000007'] || 0) + 1" }
+            }
+          }
+        ]
+      },
+      {
+        "id": "s-foreach-main",
+        "name": "forEach: build alpha|beta|gamma string",
+        "type": "forEach",
+        "config": { "list": ["alpha", "beta", "gamma"] },
+        "loopBody": [
+          {
+            "id": "s-foreach-append",
+            "name": "Append item to forEach result",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "wa-chain-0000-0000-0000-000000000008",
+              "value": {
+                "formula": "(variables['wa-chain-0000-0000-0000-000000000008'] ? variables['wa-chain-0000-0000-0000-000000000008'] + '|' : '') + context.item.data.value"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "s-multi-main",
+        "name": "multiOptionBranch: on GQL branch path",
+        "type": "multiOptionBranch",
+        "config": {
+          "conditionPath": "wa-chain-0000-0000-0000-000000000004"
+        },
+        "branches": [
+          {
+            "label": "GQL OK \u2013 France confirmed",
+            "steps": [
+              {
+                "id": "s-multi-ok",
+                "name": "multiOptionBranch matched GQL-OK",
+                "type": "changeVariableValue",
+                "config": {
+                  "variableName": "wa-chain-0000-0000-0000-000000000009",
+                  "value": "multi:GQL-OK"
+                }
+              }
+            ]
+          }
+        ],
+        "defaultBranch": [
+          {
+            "id": "s-multi-default",
+            "name": "multiOptionBranch default fallback",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "wa-chain-0000-0000-0000-000000000009",
+              "value": "multi:FALLBACK"
+            }
+          }
+        ]
+      },
+      {
+        "id": "s-status-6",
+        "name": "Set status: step 7 loops done",
+        "type": "changeVariableValue",
+        "config": { "variableName": "wa-chain-0000-0000-0000-000000000001", "value": "(step 7/8: loops done)" }
+      },
+      {
+        "id": "s-delay-4",
+        "name": "Wait 250ms (progress beat 4)",
+        "type": "timeDelay",
+        "config": { "time": 250 }
+      },
+      {
+        "id": "s-pass",
+        "name": "passThroughCondition: only continue if country was read",
+        "type": "passThroughCondition",
+        "config": {
+          "condition": "variables['wa-chain-0000-0000-0000-000000000002'] !== '' && variables['wa-chain-0000-0000-0000-000000000002'] !== '(gql-failed)'"
+        }
+      },
+      {
+        "id": "s-done",
+        "name": "Set status: done \u2713",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-chain-0000-0000-0000-000000000001",
+          "value": "done \u2713"
+        }
+      }
+    ]
+  },
+
+  "waVal2Submit": {
+    "type": "workflowSteps",
+    "name": "Val2: Form Submit",
+    "trigger": "submit",
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Set isSubmitting true",
+        "type": "setFormState",
+        "config": { "isSubmitting": true }
+      },
+      {
+        "id": "s2",
+        "name": "Simulate delay (600ms)",
+        "type": "timeDelay",
+        "config": { "delay": 600 }
+      },
+      {
+        "id": "s3",
+        "name": "Store submitted field values as result",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-val2-0000-0000-0000-000000000003",
+          "value": {
+            "formula": "'user:' + (local?.data?.form?.formData?.['v2username'] || '') + ' | email:' + (local?.data?.form?.formData?.['v2email'] || '') + ' | age:' + (local?.data?.form?.formData?.['v2age'] || '') + ' | phone:' + (local?.data?.form?.formData?.['v2phone'] || '')"
+          }
+        }
+      },
+      {
+        "id": "s4",
+        "name": "Clear validation error",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-val2-0000-0000-0000-000000000004",
+          "value": ""
+        }
+      },
+      {
+        "id": "s5",
+        "name": "Set isSubmitting false, isSubmitted true",
+        "type": "setFormState",
+        "config": { "isSubmitting": false, "isSubmitted": true }
+      }
+    ]
+  },
+  "waVal2ValidationError": {
+    "type": "workflowSteps",
+    "name": "Val2: Validation Error",
+    "trigger": "submitValidationError",
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Set validation error message",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-val2-0000-0000-0000-000000000004",
+          "value": "Fix the highlighted fields before submitting"
+        }
+      }
+    ]
+  },
+  "waVal2PreFill": {
+    "type": "workflowSteps",
+    "name": "Val2: Pre-fill Form",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Pre-fill username",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-val2-0000-0000-0000-000000000001",
+          "value": "alice"
+        }
+      },
+      {
+        "id": "s2",
+        "name": "Pre-fill email",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-val2-0000-0000-0000-000000000002",
+          "value": "alice@example.com"
+        }
+      },
+      {
+        "id": "s3",
+        "name": "Pre-fill phone",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-val2-0000-0000-0000-000000000005",
+          "value": "+12345678"
+        }
+      },
+      {
+        "id": "s4",
+        "name": "Pre-fill age",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-val2-0000-0000-0000-000000000006",
+          "value": "25"
+        }
+      },
+      {
+        "id": "s5",
+        "name": "Pre-fill password",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-val2-0000-0000-0000-000000000007",
+          "value": "SecureP@ss1"
+        }
+      },
+      {
+        "id": "s6",
+        "name": "Pre-fill confirm password",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-val2-0000-0000-0000-000000000008",
+          "value": "SecureP@ss1"
+        }
+      }
+    ]
+  },
+  "waVal2Reset": {
+    "type": "workflowSteps",
+    "name": "Val2: Reset Form",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Reset all form fields",
+        "type": "resetForm",
+        "config": {}
+      },
+      {
+        "id": "s2",
+        "name": "Reset submit result",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-val2-0000-0000-0000-000000000003",
+          "value": "(not submitted)"
+        }
+      },
+      {
+        "id": "s3",
+        "name": "Clear validation error",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-val2-0000-0000-0000-000000000004",
+          "value": ""
+        }
+      }
+    ]
+  },
+  "waVal2UsernameChange": {
+    "type": "workflowSteps",
+    "name": "Val2: Username Change",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Sync username variable from input event",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-val2-0000-0000-0000-000000000001",
+          "value": { "formula": "event?.['value']" }
+        }
+      }
+    ]
+  },
+  "waVal2EmailChange": {
+    "type": "workflowSteps",
+    "name": "Val2: Email Change",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Sync email variable from input event",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-val2-0000-0000-0000-000000000002",
+          "value": { "formula": "event?.['value']" }
+        }
+      }
+    ]
+  },
+  "waVal2PhoneChange": {
+    "type": "workflowSteps",
+    "name": "Val2: Phone Change",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-val2-0000-0000-0000-000000000005",
+          "value": { "formula": "event?.['value']" }
+        }
+      }
+    ]
+  },
+  "waVal2AgeChange": {
+    "type": "workflowSteps",
+    "name": "Val2: Age Change",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-val2-0000-0000-0000-000000000006",
+          "value": { "formula": "event?.['value']" }
+        }
+      }
+    ]
+  },
+  "waVal2PasswordChange": {
+    "type": "workflowSteps",
+    "name": "Val2: Password Change",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-val2-0000-0000-0000-000000000007",
+          "value": { "formula": "event?.['value']" }
+        }
+      }
+    ]
+  },
+  "waVal2ConfirmChange": {
+    "type": "workflowSteps",
+    "name": "Val2: Confirm Password Change",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-val2-0000-0000-0000-000000000008",
+          "value": { "formula": "event?.['value']" }
+        }
+      }
+    ]
+  },
+
+  "waEcaSubDirect": {
+    "type": "workflowSteps",
+    "name": "ECA Sub: Direct — sets direct-result var",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-eca-0000-0000-0000-000000000001",
+          "value": "direct-ok"
+        }
+      }
+    ]
+  },
+
+  "waEcaSubChain1": {
+    "type": "workflowSteps",
+    "name": "ECA Sub: Chain step-1 — sets chain-step1 var",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-eca-0000-0000-0000-000000000002",
+          "value": "step1-done"
+        }
+      }
+    ]
+  },
+
+  "waEcaSubChain2": {
+    "type": "workflowSteps",
+    "name": "ECA Sub: Chain step-2 — reads step1 var and sets final",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-eca-0000-0000-0000-000000000003",
+          "value": { "formula": "variables['wa-eca-0000-0000-0000-000000000002'] + '→step2'" }
+        }
+      }
+    ]
+  },
+
+  "waEcaSubCounter": {
+    "type": "workflowSteps",
+    "name": "ECA Sub: Counter — increments loop count",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-eca-0000-0000-0000-000000000004",
+          "value": { "formula": "Number(variables['wa-eca-0000-0000-0000-000000000004'] || 0) + 1" }
+        }
+      }
+    ]
+  },
+
+  "waEcaSubNested": {
+    "type": "workflowSteps",
+    "name": "ECA Sub: Nested — calls waEcaSubDirect then reads its output",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s-nested-call",
+        "name": "Nested ECA: call waEcaSubDirect",
+        "type": "executeComponentAction",
+        "config": { "action": "waEcaSubDirect" }
+      },
+      {
+        "id": "s-nested-read",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-eca-0000-0000-0000-000000000005",
+          "value": { "formula": "'nested\u2190' + (variables['wa-eca-0000-0000-0000-000000000001'] || 'empty')" }
+        }
+      }
+    ]
+  },
+
+  "waEcaDirect": {
+    "type": "workflowSteps",
+    "name": "Card C: ECA Direct",
+    "trigger": "click",
+    "steps": [
+      { "id": "r1", "type": "changeVariableValue", "config": { "variableName": "wa-eca-0000-0000-0000-000000000001", "value": "" } },
+      {
+        "id": "s-eca-direct",
+        "name": "executeComponentAction: call waEcaSubDirect",
+        "type": "executeComponentAction",
+        "config": { "action": "waEcaSubDirect" }
+      }
+    ]
+  },
+
+  "waEcaChain": {
+    "type": "workflowSteps",
+    "name": "Card C: ECA Chain (two sequential ECAs)",
+    "trigger": "click",
+    "steps": [
+      { "id": "r1", "type": "changeVariableValue", "config": { "variableName": "wa-eca-0000-0000-0000-000000000002", "value": "" } },
+      { "id": "r2", "type": "changeVariableValue", "config": { "variableName": "wa-eca-0000-0000-0000-000000000003", "value": "" } },
+      {
+        "id": "s-chain-1",
+        "name": "executeComponentAction: chain step 1",
+        "type": "executeComponentAction",
+        "config": { "action": "waEcaSubChain1" }
+      },
+      {
+        "id": "s-chain-2",
+        "name": "executeComponentAction: chain step 2 (reads step 1 output)",
+        "type": "executeComponentAction",
+        "config": { "action": "waEcaSubChain2" }
+      }
+    ]
+  },
+
+  "waEcaLoop": {
+    "type": "workflowSteps",
+    "name": "Card C: ECA in forEach loop",
+    "trigger": "click",
+    "steps": [
+      { "id": "r1", "type": "changeVariableValue", "config": { "variableName": "wa-eca-0000-0000-0000-000000000004", "value": 0 } },
+      {
+        "id": "s-foreach",
+        "name": "forEach [A,B,C] — call waEcaSubCounter each time",
+        "type": "forEach",
+        "config": { "list": ["A", "B", "C"] },
+        "loopBody": [
+          {
+            "id": "s-loop-eca",
+            "name": "executeComponentAction: increment counter",
+            "type": "executeComponentAction",
+            "config": { "action": "waEcaSubCounter" }
+          }
+        ]
+      }
+    ]
+  },
+
+  "waEcaNested": {
+    "type": "workflowSteps",
+    "name": "Card C: ECA Nested (ECA calls another ECA internally)",
+    "trigger": "click",
+    "steps": [
+      { "id": "r1", "type": "changeVariableValue", "config": { "variableName": "wa-eca-0000-0000-0000-000000000001", "value": "" } },
+      { "id": "r2", "type": "changeVariableValue", "config": { "variableName": "wa-eca-0000-0000-0000-000000000005", "value": "" } },
+      {
+        "id": "s-nested",
+        "name": "executeComponentAction: call waEcaSubNested (which itself calls waEcaSubDirect)",
+        "type": "executeComponentAction",
+        "config": { "action": "waEcaSubNested" }
+      }
+    ]
+  },
+
+  "waEvtChange": {
+    "type": "workflowSteps",
+    "name": "Event: onChange — capture event.value",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-evt-0000-0000-0000-000000000001",
+          "value": { "formula": "'value:' + String(event?.['value'] ?? '')" }
+        }
+      }
+    ]
+  },
+
+  "waEvtClick": {
+    "type": "workflowSteps",
+    "name": "Event: onClick — capture event.x / event.y / event.button",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-evt-0000-0000-0000-000000000002",
+          "value": { "formula": "'x:' + String(event?.['x'] ?? '?') + ' y:' + String(event?.['y'] ?? '?') + ' btn:' + String(event?.['button'] ?? '?')" }
+        }
+      }
+    ]
+  },
+
+  "waEvtEnterKey": {
+    "type": "workflowSteps",
+    "name": "Event: onEnterKey — capture event.key + event.value",
+    "trigger": "enterKey",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-evt-0000-0000-0000-000000000003",
+          "value": { "formula": "'key:' + String(event?.['key'] ?? '') + ' val:' + String(event?.['value'] ?? '')" }
+        }
+      }
+    ]
+  },
+
+  "waEvtFocus": {
+    "type": "workflowSteps",
+    "name": "Event: onFocus — capture event.value",
+    "trigger": "focus",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-evt-0000-0000-0000-000000000004",
+          "value": { "formula": "'focus:' + String(event?.['value'] ?? '')" }
+        }
+      }
+    ]
+  },
+
+  "waEvtBlur": {
+    "type": "workflowSteps",
+    "name": "Event: onBlur — capture event.value",
+    "trigger": "blur",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-evt-0000-0000-0000-000000000005",
+          "value": { "formula": "'blur:' + String(event?.['value'] ?? '')" }
+        }
+      }
+    ]
+  },
+
+  "waEvtScroll": {
+    "type": "workflowSteps",
+    "name": "Event: onScroll — capture event.scrollTop / event.scrollLeft",
+    "trigger": "scroll",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-evt-0000-0000-0000-000000000006",
+          "value": { "formula": "'top:' + String(event?.['scrollTop'] ?? 0) + ' left:' + String(event?.['scrollLeft'] ?? 0)" }
+        }
+      }
+    ]
+  },
+
+  "waEvtValueChange": {
+    "type": "workflowSteps",
+    "name": "Event: onValueChange (Select) — capture event.value",
+    "trigger": "valueChange",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-evt-0000-0000-0000-000000000007",
+          "value": { "formula": "'selected:' + String(event?.['value'] ?? '')" }
+        }
+      }
+    ]
+  },
+
+  "waEvtCheckbox": {
+    "type": "workflowSteps",
+    "name": "Event: onChange (Checkbox) — capture event.value (boolean)",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-evt-0000-0000-0000-000000000008",
+          "value": { "formula": "'checked:' + String(event?.['value'] ?? false)" }
+        }
+      }
+    ]
   }
 }

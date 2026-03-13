@@ -22,7 +22,7 @@ import { json } from '@codemirror/lang-json';
 import { oneDark } from '@codemirror/theme-one-dark';
 const CodeMirror = lazy(() => import('@uiw/react-codemirror'));
 import ReactDOM from 'react-dom';
-import { useBuilderStore, type DataSourceConfig, type DataSourceParam, type Folder } from './_store';
+import { useBuilderStore, type DataSourceConfig, type DataSourceParam, type Folder, persistPreviewData } from './_store';
 import { SP_BTN_PRIMARY, SP_BTN_SECONDARY, SP_INPUT, SP_LABEL } from './_slide-panel';
 import { BindingIcon, isBoundValue } from './_formula-panel';
 import { FormulaEditor, type FormulaValue, storedValueToFormula, evaluateFormula } from './_formula-editor';
@@ -30,6 +30,102 @@ import { Chevron } from './_layers-panel';
 import { OptionPickerDropdown, BoundField, BoundToggleField, PillToggle } from './_workflow-node-configs';
 import { useSduiStore } from '@/store/sdui-store';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
+
+// ─── Fetch result helpers ─────────────────────────────────────────────────────
+
+export const SLIDE_WITH_RESULT = 660;
+
+export interface FetchState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  data?: unknown;
+  error?: string;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export function resolveStoreKey(key: string): string {
+  return UUID_RE.test(key) ? `collections.${key}` : key;
+}
+
+export function extractByPath(data: unknown, path: string): unknown {
+  if (!path) return data;
+  return path.split('.').reduce<unknown>((acc, key) => {
+    if (acc == null || typeof acc !== 'object') return undefined;
+    return (acc as Record<string, unknown>)[key];
+  }, data);
+}
+
+// ─── JSON result tree viewer ──────────────────────────────────────────────────
+
+function JsonNode({ value, depth = 0 }: { value: unknown; depth?: number }) {
+  const [open, setOpen] = React.useState(depth < 2);
+  if (value === null) return <span style={{ color: '#9ca3af' }}>null</span>;
+  if (value === undefined) return <span style={{ color: '#9ca3af' }}>undefined</span>;
+  if (typeof value === 'string') return <span style={{ color: '#86efac' }}>"{value}"</span>;
+  if (typeof value === 'number') return <span style={{ color: '#93c5fd' }}>{value}</span>;
+  if (typeof value === 'boolean') return <span style={{ color: '#fcd34d' }}>{String(value)}</span>;
+  if (Array.isArray(value)) {
+    if (value.length === 0) return <span style={{ color: '#6b7280' }}>[]</span>;
+    return (
+      <span>
+        <button onClick={() => setOpen(o => !o)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#9ca3af', fontSize: 11 }}>
+          {open ? '▾' : '▸'} Array({value.length})
+        </button>
+        {open && (
+          <div style={{ paddingLeft: 14 }}>
+            {value.slice(0, 20).map((item, i) => (
+              <div key={i}><span style={{ color: '#6b7280' }}>{i}: </span><JsonNode value={item} depth={depth + 1} /></div>
+            ))}
+            {value.length > 20 && <div style={{ color: '#6b7280' }}>… {value.length - 20} more</div>}
+          </div>
+        )}
+      </span>
+    );
+  }
+  if (typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>);
+    if (entries.length === 0) return <span style={{ color: '#6b7280' }}>{'{}'}</span>;
+    return (
+      <span>
+        <button onClick={() => setOpen(o => !o)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#9ca3af', fontSize: 11 }}>
+          {open ? '▾' : '▸'} Object({entries.length})
+        </button>
+        {open && (
+          <div style={{ paddingLeft: 14 }}>
+            {entries.slice(0, 30).map(([k, v]) => (
+              <div key={k}><span style={{ color: '#c4b5fd' }}>{k}: </span><JsonNode value={v} depth={depth + 1} /></div>
+            ))}
+            {entries.length > 30 && <div style={{ color: '#6b7280' }}>… {entries.length - 30} more</div>}
+          </div>
+        )}
+      </span>
+    );
+  }
+  return <span>{String(value)}</span>;
+}
+
+export function FetchResultPanel({ result }: { result: FetchState }) {
+  const isSuccess = result.status === 'success';
+  return (
+    <div style={{ width: 320, flexShrink: 0, borderLeft: '1px solid #1f2937', display: 'flex', flexDirection: 'column', height: '100%', background: '#0f172a' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
+        <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Result</span>
+        <span style={{
+          fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10,
+          background: isSuccess ? '#064e3b' : '#7f1d1d',
+          color: isSuccess ? '#34d399' : '#f87171',
+        }}>
+          {isSuccess ? 'Success' : 'Error'}
+        </span>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px', fontFamily: 'monospace', fontSize: 11, lineHeight: 1.6, color: '#f3f4f6' }}>
+        {result.status === 'error'
+          ? <span style={{ color: '#f87171' }}>{result.error}</span>
+          : <JsonNode value={result.data} depth={0} />
+        }
+      </div>
+    </div>
+  );
+}
 
 // ─── Shared constants ─────────────────────────────────────────────────────────
 
@@ -492,7 +588,7 @@ export function RestForm({ initial, onSave, onBack, onWidthChange }: {
   const [urlBound, setUrlBound] = useState(false);
   const [method, setMethod] = useState<DataSourceConfig['method']>(initial.method ?? 'GET');
   const [bodyMode, setBodyMode] = useState<'parsed' | 'raw'>((initial as { bodyMode?: 'parsed' | 'raw' }).bodyMode ?? 'parsed');
-  const [fields, setFields] = useState<KvEntry[]>(() => toKvEntries((initial as { fields?: unknown }).fields ?? []));
+  const [fields, setFields] = useState<KvEntry[]>(() => toKvEntries(((initial as { fields?: { key: string; value: string }[] }).fields) ?? []));
   const [body, setBody] = useState<string | FormulaValue>((initial as { body?: string | FormulaValue }).body ?? '');
   const [contentType, setContentType] = useState<string>((initial as { contentType?: string }).contentType ?? '');
   const [headers, setHeaders] = useState<KvEntry[]>(() => toKvEntries(initial.headers ?? []));

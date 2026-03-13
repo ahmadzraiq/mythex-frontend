@@ -12,14 +12,10 @@ export function extractPathsFromTemplate(template: string): string[] {
   return [...(template.matchAll(/\{\{([^}]+)\}\}/g) ?? [])].map((m) => m[1].trim());
 }
 
-/** Extract variable paths from objects (e.g. { var: "path" }) and strings (e.g. "{{path}}") */
+/** Extract variable paths from objects and strings (e.g. "{{path}}" or formula strings) */
 export function extractPathsFromObject(obj: unknown): string[] {
   if (obj == null) return [];
   if (typeof obj === 'string') return extractPathsFromTemplate(obj);
-  if (typeof obj === 'object' && !Array.isArray(obj) && 'var' in obj) {
-    const v = (obj as { var: string | [string, unknown] }).var;
-    return [Array.isArray(v) ? String(v[0]) : String(v)];
-  }
   // Builder formula bindings: { formula: "expression" }
   // The expression is used directly as the subscription path. getNestedValue handles
   // bracket-notation / optional-chain syntax (components?.['id']?.['value'], variables['uuid']).

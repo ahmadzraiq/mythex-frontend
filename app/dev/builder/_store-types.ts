@@ -39,6 +39,7 @@ export interface WorkflowTestEntry {
   actionName: string;   // display name shown in formula picker header
   stepIndex: number;
   ranAt: number;
+  workflowId: string;   // which workflow this result belongs to (scopes formula picker results)
 }
 
 // ─── Data Source Config ────────────────────────────────────────────────────────
@@ -342,13 +343,17 @@ export interface BuilderStore {
    * Used by the formula picker's Workflow tab to show FROM ACTION N groups.
    */
   workflowTestResults: Record<string, WorkflowTestEntry>;
-  setWorkflowStepTestResult: (stepId: string, result: unknown, error: unknown, stepIndex: number, actionName?: string) => void;
+  setWorkflowStepTestResult: (stepId: string, result: unknown, error: unknown, stepIndex: number, actionName?: string, workflowId?: string) => void;
 
   // ── Workflow Canvas ───────────────────────────────────────────────────────────
   /** Which workflow is currently open in the full-screen canvas overlay */
   workflowCanvasTarget: WorkflowCanvasTarget | null;
   openWorkflowCanvas: (target: WorkflowCanvasTarget) => void;
   closeWorkflowCanvas: () => void;
+  /** Live step tree from the open canvas — updated on every step add/remove/reorder.
+   *  Used by the formula editor to build accurate step-index chips without waiting for save. */
+  liveCanvasSteps: object[] | null;
+  setLiveCanvasSteps: (steps: object[] | null) => void;
 
   // ── Folders ──────────────────────────────────────────────────────────────────
   /** Folders for organising variables */

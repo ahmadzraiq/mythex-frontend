@@ -29,7 +29,6 @@ export interface ActionHandlerContext {
   payload?: Record<string, unknown>;
   scope?: Record<string, unknown>;
   event?: unknown;
-  CONVENTIONS: Record<string, unknown>;
   router?: { push: (url: string) => void };
   pathname?: string;
   searchParams?: URLSearchParams | null;

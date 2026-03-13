@@ -4,17 +4,15 @@
  * StorePath Picker — searchable dropdown for selecting store variable paths.
  *
  * Shows all known paths from:
- *   - store.json initialData (flattened)
- *   - screens.*.form.* / screens.*.errors.*
+ *   - route.* (path, slug, id, named params)
  *   - _workflow.lastAction / lastError / loading
  *   - $item.* / $index (when inMapContext = true)
- *   - route.*
+ *   - auth.* / local.data.form.*
  *
  * Used by: ExprBuilder (var field), ActionBuilder (path fields), LogicPanel sections.
  */
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import initialData from '@/config/store.json';
 import routesConfig from '@/config/routes.json';
 
 // ─── Path generation ──────────────────────────────────────────────────────────
@@ -58,24 +56,29 @@ function flattenObject(
 
 function buildPaths(inMapContext = false): PathEntry[] {
   const paths: PathEntry[] = [];
-  const data = (initialData as { initialData: Record<string, unknown> }).initialData;
 
-  // Flatten store.json initialData
-  flattenObject(data, '', 'store', paths);
-
-  // Screens — derive from routes
-  const routes = (routesConfig as { routes: Array<{ config: string }> }).routes;
+  // route.* — static path + named params from dynamic routes
+  paths.push({ path: 'route.path', label: 'route.path', type: 'string', group: 'route' });
+  paths.push({ path: 'route.slug', label: 'route.slug', type: 'string', group: 'route' });
+  const routes = (routesConfig as { routes: Array<{ config?: string; params?: string[] }> }).routes;
+  const seenParams = new Set<string>(['path', 'slug']);
   for (const r of routes) {
-    const name = r.config;
-    const base = `screens.${name}`;
-    paths.push({ path: `${base}.form`, label: `${base}.form`, type: 'object', group: 'screens' });
-    paths.push({ path: `${base}.errors`, label: `${base}.errors`, type: 'object', group: 'screens' });
-    // Common form fields
-    for (const field of ['email', 'password', 'name', 'phone', 'address']) {
-      paths.push({ path: `${base}.form.${field}`, label: `${base}.form.${field}`, type: 'string', group: 'screens' });
-      paths.push({ path: `${base}.errors.form.${field}`, label: `${base}.errors.form.${field}`, type: 'string', group: 'screens' });
+    for (const p of r.params ?? []) {
+      if (!seenParams.has(p)) {
+        seenParams.add(p);
+        paths.push({ path: `route.${p}`, label: `route.${p}`, type: 'string', group: 'route' });
+      }
     }
   }
+
+  // auth.*
+  paths.push({ path: 'auth.user', label: 'auth.user', type: 'object', group: 'store' });
+  paths.push({ path: 'auth.token', label: 'auth.token', type: 'string', group: 'store' });
+
+  // local form state
+  paths.push({ path: 'local.data.form.formData', label: 'local.data.form.formData', type: 'object', group: 'store' });
+  paths.push({ path: 'local.data.form.isSubmitted', label: 'local.data.form.isSubmitted', type: 'boolean', group: 'store' });
+  paths.push({ path: 'local.data.form.isSubmitting', label: 'local.data.form.isSubmitting', type: 'boolean', group: 'store' });
 
   // _workflow
   paths.push({ path: '_workflow.lastAction', label: '_workflow.lastAction', type: 'string', group: '_workflow' });
