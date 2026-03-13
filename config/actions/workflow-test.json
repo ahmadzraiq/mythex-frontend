@@ -588,13 +588,36 @@
     "steps": [
       {
         "id": "s1",
+        "type": "setFormState",
+        "config": { "isSubmitting": true }
+      },
+      {
+        "id": "s1b",
+        "type": "timeDelay",
+        "config": { "delay": 800 }
+      },
+      {
+        "id": "s2",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000009",
           "value": {
-            "formula": "'submitted: ' + (variables['wa000001-0000-0000-0000-000000000006'] || '(empty)')"
+            "formula": "'submitted: ' + (local?.data?.form?.formData?.['wa-email'] || '(empty)') + (local?.data?.form?.formData?.['wa-name'] ? ' / ' + local?.data?.form?.formData?.['wa-name'] : '')"
           }
         }
+      },
+      {
+        "id": "s3",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000010",
+          "value": ""
+        }
+      },
+      {
+        "id": "s4",
+        "type": "setFormState",
+        "config": { "isSubmitting": false, "isSubmitted": true }
       }
     ]
   },
@@ -618,10 +641,18 @@
     "steps": [
       {
         "id": "s1",
-        "type": "setFormState",
+        "type": "changeVariableValue",
         "config": {
-          "path": "local.data.form.formData.wa-email",
+          "variableName": "wa000001-0000-0000-0000-000000000043",
           "value": "prefilled@example.com"
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000044",
+          "value": "Pre-filled Name"
         }
       }
     ]
@@ -654,6 +685,34 @@
     ]
   },
 
+  "waEmailInputChange": {
+    "type": "workflowSteps",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000043",
+          "value": { "formula": "event?.['value']" }
+        }
+      }
+    ]
+  },
+  "waNameInputChange": {
+    "type": "workflowSteps",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa000001-0000-0000-0000-000000000044",
+          "value": { "formula": "event?.['value']" }
+        }
+      }
+    ]
+  },
   "waNavigateHome": {
     "type": "workflowSteps",
     "trigger": "click",
@@ -1730,6 +1789,109 @@
             }
           }
         ]
+      }
+    ]
+  },
+
+  "waUpdateReplaceAll": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "updateCollection",
+        "config": {
+          "collectionId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+          "updateType": "replaceAll",
+          "data": "[{\"id\":\"item-1\",\"name\":\"Alpha\"},{\"id\":\"item-2\",\"name\":\"Beta\"},{\"id\":\"item-3\",\"name\":\"Gamma\"}]"
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-upd-0000-0000-0000-000000000001",
+          "value": "seeded-3-items"
+        }
+      }
+    ]
+  },
+
+  "waUpdateInsert": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "updateCollection",
+        "config": {
+          "collectionId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+          "updateType": "insert",
+          "position": 0,
+          "data": "{\"id\":\"item-new\",\"name\":\"New Item\"}"
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-upd-0000-0000-0000-000000000002",
+          "value": "insert-done"
+        }
+      }
+    ]
+  },
+
+  "waUpdateItem": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "updateCollection",
+        "config": {
+          "collectionId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+          "updateType": "update",
+          "findBy": "id",
+          "idKey": "id",
+          "idValue": "item-1",
+          "merge": true,
+          "data": "{\"name\":\"Alpha UPDATED\"}"
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-upd-0000-0000-0000-000000000003",
+          "value": "update-done"
+        }
+      }
+    ]
+  },
+
+  "waUpdateDelete": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "updateCollection",
+        "config": {
+          "collectionId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+          "updateType": "delete",
+          "findBy": "id",
+          "idKey": "id",
+          "idValue": "item-2"
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-upd-0000-0000-0000-000000000004",
+          "value": "delete-done"
+        }
       }
     ]
   }

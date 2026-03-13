@@ -110,7 +110,7 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
   // See lib/sdui/form-field-tracker.ts for the full implementation.
   const formCtx = useContext(FormContext);
   const parentInputId = useParentInputId();
-  useFormFieldRegistration(node, formCtx);
+  useFormFieldRegistration(node, formCtx, parentInputId);
 
   // External value sync: subscribes to the node's variable-store slot and returns
   // controlled React props. Active for all controlled types including those inside

@@ -73,18 +73,24 @@ export const setFormStateHandler: (ctx: ActionHandlerContext) => (actionDef: Act
     ctx.store.getState().setState((prev) => writeFormState(prev, nextForm));
   };
 
-/** resetForm — clears all form fields back to empty */
+/** resetForm — clears all form fields back to empty and signals FormContainer to reset its React state */
 export const resetFormHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
   (_ctx) => async (_actionDef) => {
-    const emptyForm = {
-      formData: {},
-      fields: {},
-      isSubmitting: false,
-      isSubmitted: false,
-      isValid: false,
-    };
-    getGlobalVariableStore().getState().setState((prev) => writeFormState(prev, emptyForm));
-    _ctx.store.getState().setState((prev) => writeFormState(prev, emptyForm));
+    getGlobalVariableStore().getState().setState((prev) => {
+      const local = (prev['local'] ?? {}) as Record<string, unknown>;
+      const data  = (local['data']  ?? {}) as Record<string, unknown>;
+      const form  = (data['form']   ?? {}) as Record<string, unknown>;
+      const fd    = (form['formData'] ?? {}) as Record<string, unknown>;
+      // Clear each existing field to '' so per-field subscriptions fire with a
+      // defined empty value ('' instead of undefined), ensuring controlled inputs
+      // in FormContainer visually clear even on the first reset call.
+      const clearedFormData = Object.fromEntries(Object.keys(fd).map(k => [k, '']));
+      const emptyForm = { formData: clearedFormData, fields: {}, isSubmitting: false, isSubmitted: false, isValid: false };
+      const withForm = writeFormState(prev, emptyForm);
+      // Increment _form_reset_v so FormContainer's subscription fires and resets its React state.
+      const currentV = (withForm['_form_reset_v'] as number) || 0;
+      return { ...withForm, _form_reset_v: currentV + 1 };
+    });
   };
 
 /** submitForm — superseded by FormContainer.doSubmit; kept as no-op for backward compat with

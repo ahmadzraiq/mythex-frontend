@@ -156,57 +156,110 @@ test('WA-10: blur trigger — blurring input sets out-focus-state = "blurred"', 
 
 // ─── Card 7: Form Triggers ────────────────────────────────────────────────────
 
-// WA-11: trigger "submit" (FormContainer) — submit shows result
+// WA-11: trigger "submit" (FormContainer) — submit shows the actual form field value
 test('WA-11: submit trigger — submitting form sets out-form-result to submitted value', async () => {
   const page = sharedPage;
   await resetPage(page);
-  // Type something in the email field to populate the change variable first
   const emailInput = page.locator('[data-testid="wa-form-email"]').first();
   await emailInput.fill('test@example.com');
   await page.waitForTimeout(300);
   await clickBtn(page, 'btn-wa-submit');
-  const result = await page.locator('[data-testid="out-form-result"]').textContent({ timeout: 5_000 });
-  expect(result).toMatch(/submitted/i);
+  await expect(page.locator('[data-testid="out-form-result"]')).toHaveText('submitted: test@example.com', { timeout: 5_000 });
 });
 
-// WA-12: setFormState — Pre-fill sets the change variable
-test('WA-12: setFormState — Pre-fill button populates the change variable', async () => {
+// WA-12: setFormState — Pre-fill populates input fields visually
+test('WA-12: setFormState — Pre-fill button populates input fields visually', async () => {
   const page = sharedPage;
   await resetPage(page);
-  await clickBtn(page, 'btn-wa-prefill');
-  // After pre-fill, if form state flows into out-change:
-  // (setFormState writes to form path, which change trigger would pick up on next change event)
-  // Just verify the button fires without crash
-  await expect(page.locator('[data-testid="btn-wa-prefill"]')).toBeVisible();
-});
-
-// WA-13: resetForm — Reset clears form result
-test('WA-13: resetForm — Reset clears out-form-result back to initial', async () => {
-  const page = sharedPage;
-  await resetPage(page);
-  // First submit to set a result
   const emailInput = page.locator('[data-testid="wa-form-email"]').first();
+  const nameInput = page.locator('[data-testid="wa-form-name"]').first();
+  await clickBtn(page, 'btn-wa-prefill');
+  // Pre-fill writes to wa-input-email-value and wa-input-name-value top-level slots.
+  // The inputFieldActive subscription fires and visually populates both inputs.
+  await expect(emailInput).toHaveValue('prefilled@example.com', { timeout: 5_000 });
+  await expect(nameInput).toHaveValue('Pre-filled Name', { timeout: 5_000 });
+});
+
+// WA-12b: Pre-fill then submit — validation passes with pre-filled values
+test('WA-12b: Pre-fill then submit — form submits successfully with pre-filled values', async () => {
+  const page = sharedPage;
+  await resetPage(page);
+  // Pre-fill both inputs via changeVariableValue
+  await clickBtn(page, 'btn-wa-prefill');
+  // Confirm inputs are visually populated
+  await expect(page.locator('[data-testid="wa-form-email"]').first()).toHaveValue('prefilled@example.com', { timeout: 5_000 });
+  // Submit — should NOT show validation errors, should show submit result
+  await clickBtn(page, 'btn-wa-submit');
+  await expect(page.locator('[data-testid="out-form-result"]')).not.toHaveText('(not submitted)', { timeout: 5_000 });
+  await expect(page.locator('[data-testid="out-form-validation-error"]')).not.toHaveText('validation failed', { timeout: 3_000 });
+  // No inline "required" error should appear
+  await expect(page.getByText('Email is required')).not.toBeVisible({ timeout: 3_000 });
+});
+
+// WA-13: resetForm — Reset clears form result and input fields
+test('WA-13: resetForm — Reset clears out-form-result back to initial and clears input fields', async () => {
+  const page = sharedPage;
+  await resetPage(page);
+  const emailInput = page.locator('[data-testid="wa-form-email"]').first();
+  const nameInput = page.locator('[data-testid="wa-form-name"]').first();
+  // Fill both inputs
   await emailInput.fill('reset-test@example.com');
+  await page.waitForTimeout(100);
+  await nameInput.fill('Reset User');
   await page.waitForTimeout(200);
+  // Submit to set a result
   await clickBtn(page, 'btn-wa-submit');
   await expect(page.locator('[data-testid="out-form-result"]')).not.toHaveText('(not submitted)');
-  // Now reset
+  // Now reset — should clear both the result AND the input fields
   await clickBtn(page, 'btn-wa-reset-form');
-  await expect(page.locator('[data-testid="out-form-result"]')).toHaveText('(not submitted)');
+  await expect(page.locator('[data-testid="out-form-result"]')).toHaveText('(not submitted)', { timeout: 5_000 });
+  await expect(emailInput).toHaveValue('', { timeout: 5_000 });
+  await expect(nameInput).toHaveValue('', { timeout: 5_000 });
 });
 
 // WA-14: trigger "submitValidationError" — submitting with empty required field
 test('WA-14: submitValidationError trigger — submitting empty form sets validation-error output', async () => {
   const page = sharedPage;
   await resetPage(page);
-  // The form has required validation — submitting empty should trigger submitValidationError
-  // (This depends on the form having _validation rules; the test documents the trigger behavior)
   await expect(page.locator('[data-testid="wa-form-container"]')).toBeVisible();
-  // Submit without filling required field
+  // Submit without filling required field — validation should fire
   await clickBtn(page, 'btn-wa-submit');
-  // Either the form submits (no validation configured) or validation error fires
-  // We verify the page doesn't crash and the button is still accessible
-  await expect(page.locator('[data-testid="btn-wa-submit"]')).toBeVisible();
+  await expect(page.locator('[data-testid="out-form-validation-error"]')).toHaveText('validation failed', { timeout: 5_000 });
+  // Inline field error should appear below the email input
+  await expect(page.locator('[data-testid="wa-email-error"]')).toBeVisible({ timeout: 5_000 });
+});
+
+// WA-14b: validation survives reset — filling, resetting, then submitting empty must still fire validation
+test('WA-14b: validation after reset — reset then submit empty still triggers validation errors', async () => {
+  const page = sharedPage;
+  await resetPage(page);
+  const emailInput = page.locator('[data-testid="wa-form-email"]').first();
+  const nameInput  = page.locator('[data-testid="wa-form-name"]').first();
+  // Fill and submit
+  await emailInput.fill('test@example.com');
+  await page.waitForTimeout(100);
+  await nameInput.fill('Test User');
+  await page.waitForTimeout(100);
+  await clickBtn(page, 'btn-wa-submit');
+  await expect(page.locator('[data-testid="out-form-result"]')).not.toHaveText('(not submitted)', { timeout: 5_000 });
+  // Reset the form
+  await clickBtn(page, 'btn-wa-reset-form');
+  await expect(page.locator('[data-testid="out-form-result"]')).toHaveText('(not submitted)', { timeout: 5_000 });
+  await expect(emailInput).toHaveValue('', { timeout: 5_000 });
+  // Submit again with empty inputs — validation must still fire
+  await clickBtn(page, 'btn-wa-submit');
+  await expect(page.locator('[data-testid="out-form-validation-error"]')).toHaveText('validation failed', { timeout: 5_000 });
+  await expect(page.locator('[data-testid="wa-email-error"]')).toBeVisible({ timeout: 5_000 });
+  // Typing must NOT clear the error (trigger: "submit" validation, not "change")
+  await emailInput.fill('a');
+  await page.waitForTimeout(200);
+  await expect(page.locator('[data-testid="wa-email-error"]')).toBeVisible({ timeout: 5_000 });
+  // Submitting with a valid value clears both the inline error and the output variable
+  await emailInput.fill('valid@example.com');
+  await page.waitForTimeout(100);
+  await clickBtn(page, 'btn-wa-submit');
+  await expect(page.locator('[data-testid="wa-email-error"]')).toBeHidden({ timeout: 5_000 });
+  await expect(page.locator('[data-testid="out-form-validation-error"]')).toHaveText('', { timeout: 5_000 });
 });
 
 // WA-15: Form initial state
@@ -215,6 +268,31 @@ test('WA-15: form initial state — out-form-result and validation-error start a
   await resetPage(page);
   await expect(page.locator('[data-testid="out-form-result"]')).toHaveText('(not submitted)');
   await expect(page.locator('[data-testid="out-form-validation-error"]')).toHaveText('');
+  await expect(page.locator('[data-testid="out-form-is-submitted"]')).toHaveText('false');
+  await expect(page.locator('[data-testid="out-form-is-submitting"]')).toHaveText('false');
+});
+
+// WA-15b: isSubmitted / isSubmitting lifecycle — set on submit, reset by resetForm
+test('WA-15b: isSubmitted and isSubmitting — set by submit workflow, cleared by resetForm', async () => {
+  const page = sharedPage;
+  await resetPage(page);
+  const emailInput = page.locator('[data-testid="wa-form-email"]').first();
+  // Before submit: both false
+  await expect(page.locator('[data-testid="out-form-is-submitted"]')).toHaveText('false');
+  await expect(page.locator('[data-testid="out-form-is-submitting"]')).toHaveText('false');
+  // Submit with a value — isSubmitting briefly becomes true, then false; isSubmitted ends true
+  await emailInput.fill('test@example.com');
+  await page.waitForTimeout(100);
+  await clickBtn(page, 'btn-wa-submit');
+  // isSubmitting = true while the delay step runs
+  await expect(page.locator('[data-testid="out-form-is-submitting"]')).toHaveText('true', { timeout: 3_000 });
+  // after the delay, isSubmitting = false and isSubmitted = true
+  await expect(page.locator('[data-testid="out-form-is-submitting"]')).toHaveText('false', { timeout: 3_000 });
+  await expect(page.locator('[data-testid="out-form-is-submitted"]')).toHaveText('true', { timeout: 3_000 });
+  // Reset — both back to false
+  await clickBtn(page, 'btn-wa-reset-form');
+  await expect(page.locator('[data-testid="out-form-is-submitted"]')).toHaveText('false', { timeout: 5_000 });
+  await expect(page.locator('[data-testid="out-form-is-submitting"]')).toHaveText('false', { timeout: 5_000 });
 });
 
 // ─── Card 8: Navigation ───────────────────────────────────────────────────────
@@ -453,7 +531,8 @@ test('WA-38: passThroughCondition — with flag=false, workflow is blocked (resu
   const page = sharedPage;
   await resetPage(page);
   await clickBtn(page, 'btn-wa-flag-off');
-  await page.waitForTimeout(200);
+  // Flag indicator must update to false
+  await expect(page.locator('[data-testid="out-pass-flag"]')).toHaveText('false', { timeout: 3_000 });
   await clickBtn(page, 'btn-wa-pass-through');
   await expect(page.locator('[data-testid="out-pass-result"]')).toHaveText('(blocked)');
 });
@@ -463,7 +542,8 @@ test('WA-39: passThroughCondition — with flag=true, workflow continues (result
   const page = sharedPage;
   await resetPage(page);
   await clickBtn(page, 'btn-wa-flag-on');
-  await page.waitForTimeout(200);
+  // Flag indicator must update to true
+  await expect(page.locator('[data-testid="out-pass-flag"]')).toHaveText('true', { timeout: 3_000 });
   await clickBtn(page, 'btn-wa-pass-through');
   await expect(page.locator('[data-testid="out-pass-result"]')).toHaveText('passed through!', { timeout: 5_000 });
 });
@@ -472,13 +552,15 @@ test('WA-39: passThroughCondition — with flag=true, workflow continues (result
 test('WA-40: passThroughCondition — toggling flag ON/OFF changes outcome correctly', async () => {
   const page = sharedPage;
   await resetPage(page);
-  // Flag ON → passes
+  // Flag ON → indicator = true, passes
   await clickBtn(page, 'btn-wa-flag-on');
+  await expect(page.locator('[data-testid="out-pass-flag"]')).toHaveText('true', { timeout: 3_000 });
   await clickBtn(page, 'btn-wa-pass-through');
   await expect(page.locator('[data-testid="out-pass-result"]')).toHaveText('passed through!');
-  // Flag OFF → blocked (reset page to reset pass-result)
+  // Flag OFF → indicator = false, blocked
   await resetPage(page);
   await clickBtn(page, 'btn-wa-flag-off');
+  await expect(page.locator('[data-testid="out-pass-flag"]')).toHaveText('false', { timeout: 3_000 });
   await clickBtn(page, 'btn-wa-pass-through');
   await expect(page.locator('[data-testid="out-pass-result"]')).toHaveText('(blocked)');
 });
@@ -571,6 +653,43 @@ test('WA-48: printPdf — clicking button sets out-pdf-fired = "fired" (pre-step
   await expect(page.locator('[data-testid="out-pdf-fired"]')).toHaveText('fired', { timeout: 5_000 });
 });
 
+// WA-48b: printPdf — theme class on <html> is preserved even when the class is flipped
+// synchronously (beforeprint) AND asynchronously (simulated React async commit after print).
+test('WA-48b: printPdf — theme class on <html> is unchanged after print (sync + async flips)', async () => {
+  const page = sharedPage;
+  await resetPage(page);
+
+  const darkBefore = await page.evaluate(() => document.documentElement.classList.contains('dark'));
+
+  // Inject a beforeprint listener that flips the class synchronously (simulates NativeWind
+  // reacting to a prefers-color-scheme change fired during the beforeprint event).
+  await page.evaluate(() => {
+    window.addEventListener('beforeprint', () => {
+      const html = document.documentElement;
+      if (html.classList.contains('dark')) html.classList.remove('dark');
+      else html.classList.add('dark');
+    });
+  });
+
+  await clickBtn(page, 'btn-wa-print-pdf');
+
+  // Simulate the async React commit that fires AFTER window.print() returns —
+  // NativeWind's state update schedules a render that re-flips the class.
+  await page.waitForTimeout(50); // let window.print() + sync code settle
+  await page.evaluate(() => {
+    // Re-flip as if React just committed NativeWind's stale color-scheme state
+    const html = document.documentElement;
+    if (html.classList.contains('dark')) html.classList.remove('dark');
+    else html.classList.add('dark');
+  });
+
+  // Wait for the MutationObserver to catch and revert the flip (it stays active for 600ms)
+  await page.waitForTimeout(200);
+
+  const darkAfter = await page.evaluate(() => document.documentElement.classList.contains('dark'));
+  expect(darkAfter).toBe(darkBefore);
+});
+
 // WA-49: downloadFileFromUrl — fires pre-step var, no crash
 test('WA-49: downloadFileFromUrl — clicking button sets out-download-fired = "fired"', async () => {
   const page = sharedPage;
@@ -593,12 +712,12 @@ test('WA-50: createUrlFromBase64 — clicking button sets out-b64-url to a non-e
 });
 
 // WA-51: encodeFileAsBase64 — fires without crash
-test('WA-51: encodeFileAsBase64 — clicking button does not crash the page', async () => {
+test('WA-51: encodeFileAsBase64 — clicking button sets out-encode-b64 to a non-empty value', async () => {
   const page = sharedPage;
   await resetPage(page);
   await clickBtn(page, 'btn-wa-encode-b64');
-  // Verify the page is still functional after the action
-  await expect(page.locator('[data-testid="out-clipboard"]')).toBeVisible();
+  // The handler strips the data URI prefix and stores just the base64 string
+  await expect(page.locator('[data-testid="out-encode-b64"]')).not.toHaveText('', { timeout: 3_000 });
 });
 
 // WA-52: Advanced actions — all buttons present
@@ -729,4 +848,67 @@ test('WA-62: Complex17 — initial state: fast-count=0, slow-sum=0, result=(not 
   await expect(page.locator('[data-testid="out-fast-count"]')).toHaveText('0');
   await expect(page.locator('[data-testid="out-slow-sum"]')).toHaveText('0');
   await expect(page.locator('[data-testid="out-complex-result"]')).toHaveText('(not run)');
+});
+
+// ─── Update Collection (all 4 types) ─────────────────────────────────────────
+
+// WA-63: updateCollection replaceAll — seeds 3 items into the collection
+test('WA-63: updateCollection replaceAll — seeds collection with Alpha, Beta, Gamma (count=3)', async () => {
+  const page = sharedPage;
+  await resetPage(page);
+  await expect(page.locator('[data-testid="out-update-replace-all"]')).toHaveText('(not run)');
+  await clickBtn(page, 'btn-wa-update-replace-all');
+  await expect(page.locator('[data-testid="out-update-replace-all"]')).toHaveText('seeded-3-items', { timeout: 5_000 });
+  // Verify the 3 items are now visible
+  await expect(page.locator('[data-testid="out-update-count"]')).toHaveText('3', { timeout: 3_000 });
+  const names = page.locator('[data-testid="out-item-name"]');
+  await expect(names.nth(0)).toHaveText('Alpha');
+  await expect(names.nth(1)).toHaveText('Beta');
+  await expect(names.nth(2)).toHaveText('Gamma');
+});
+
+// WA-64: updateCollection insert — inserts "New Item" at position 0
+test('WA-64: updateCollection insert — inserts "New Item" at position 0, count becomes 4', async () => {
+  const page = sharedPage;
+  await resetPage(page);
+  // Seed first
+  await clickBtn(page, 'btn-wa-update-replace-all');
+  await expect(page.locator('[data-testid="out-update-count"]')).toHaveText('3', { timeout: 5_000 });
+  // Insert
+  await clickBtn(page, 'btn-wa-update-insert');
+  await expect(page.locator('[data-testid="out-update-insert"]')).toHaveText('insert-done', { timeout: 5_000 });
+  await expect(page.locator('[data-testid="out-update-count"]')).toHaveText('4', { timeout: 3_000 });
+  // First item should be the new one
+  await expect(page.locator('[data-testid="out-item-name"]').first()).toHaveText('New Item');
+});
+
+// WA-65: updateCollection update (by id) — updates item-1 name to "Alpha UPDATED"
+test('WA-65: updateCollection update (by id) — item-1 name becomes "Alpha UPDATED"', async () => {
+  const page = sharedPage;
+  await resetPage(page);
+  // Seed first
+  await clickBtn(page, 'btn-wa-update-replace-all');
+  await expect(page.locator('[data-testid="out-update-count"]')).toHaveText('3', { timeout: 5_000 });
+  // Update
+  await clickBtn(page, 'btn-wa-update-item');
+  await expect(page.locator('[data-testid="out-update-item"]')).toHaveText('update-done', { timeout: 5_000 });
+  await expect(page.locator('[data-testid="out-update-count"]')).toHaveText('3');
+  await expect(page.locator('[data-testid="out-item-name"]').first()).toHaveText('Alpha UPDATED');
+});
+
+// WA-66: updateCollection delete (by id) — removes item-2 (Beta), count becomes 2
+test('WA-66: updateCollection delete (by id) — item-2 (Beta) removed, count becomes 2', async () => {
+  const page = sharedPage;
+  await resetPage(page);
+  // Seed first
+  await clickBtn(page, 'btn-wa-update-replace-all');
+  await expect(page.locator('[data-testid="out-update-count"]')).toHaveText('3', { timeout: 5_000 });
+  // Delete
+  await clickBtn(page, 'btn-wa-update-delete');
+  await expect(page.locator('[data-testid="out-update-delete"]')).toHaveText('delete-done', { timeout: 5_000 });
+  await expect(page.locator('[data-testid="out-update-count"]')).toHaveText('2', { timeout: 3_000 });
+  // Beta should be gone — only Alpha and Gamma remain
+  const names = page.locator('[data-testid="out-item-name"]');
+  await expect(names.nth(0)).toHaveText('Alpha');
+  await expect(names.nth(1)).toHaveText('Gamma');
 });

@@ -372,6 +372,8 @@ export interface BuilderStore {
   // ── Data Sources ─────────────────────────────────────────────────────────────
   /** Page-level API data sources (REST or GraphQL) */
   pageDataSources: DataSourceConfig[];
+  /** Reverse lookup: datasourceUUID → actionUUID (from datasource-actions.json), for resolving old-format collectionName in fetchCollection steps */
+  dsActionsMap: Record<string, string>;
   addPageDataSource: (cfg: DataSourceConfig) => void;
   updatePageDataSource: (id: string, patch: Partial<DataSourceConfig>) => void;
   removePageDataSource: (id: string) => void;

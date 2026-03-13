@@ -48,7 +48,7 @@ function buildInitialState(): Record<string, unknown> {
 }
 
 const globalStore = createVariableStore({
-  initialState: buildInitialState(),
+  initialState: { ...buildInitialState(), _form_reset_v: 0 },
   adapters: [],
 });
 

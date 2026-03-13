@@ -573,6 +573,25 @@ export function CollectionPickerDropdown({
   placeholder?: string;
 }) {
   const collections = useBuilderStore(s => s.pageDataSources);
+  // dsActionsMap: datasourceUUID → actionUUID (for saving old-format collectionName)
+  // actionsByDs: actionUUID → datasourceUUID (for resolving old-format display)
+  const dsActionsMap = useBuilderStore(s => s.dsActionsMap);
+
+  // Resolve value: if value is an action UUID (old format), find the corresponding datasource UUID
+  const resolvedValue = (() => {
+    if (!value) return value;
+    // Check if value matches a datasource id directly (new format)
+    const direct = (collections as Array<{ id: string }>).find(c => c.id === value);
+    if (direct) return value;
+    // Check if value is a datasource UUID that has an action (should already match above)
+    // Otherwise, it might be an action UUID — check dsActionsMap for reverse lookup
+    // dsActionsMap is datasourceUUID→actionUUID, so we need actionUUID→datasourceUUID
+    for (const [dsId, actionId] of Object.entries(dsActionsMap)) {
+      if (actionId === value) return dsId;
+    }
+    return value;
+  })();
+
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
@@ -588,7 +607,7 @@ export function CollectionPickerDropdown({
     const lbl = getLabel(c).toLowerCase();
     return !q || lbl.includes(q) || c.id.toLowerCase().includes(q);
   });
-  const selected = (collections as RichDs[]).find(c => c.id === value);
+  const selected = (collections as RichDs[]).find(c => c.id === resolvedValue);
 
   useEffect(() => {
     if (!open) return;
@@ -931,40 +950,14 @@ export function SetFormStateConfig({
   cfg: Record<string, unknown>;
   setCfg: (key: string, value: unknown) => void;
 }) {
-  const [openField, setOpenField] = useState<'isSubmitting' | 'isSubmitted' | null>(null);
-
   function renderBoolField(key: 'isSubmitting' | 'isSubmitted', label: string) {
-    const val = cfg[key] as FormulaValue | boolean | undefined;
-    const bound = isBoundValue(val as FormulaValue);
+    const val = cfg[key] as boolean | undefined;
     return (
       <>
         <label style={{ ...S.fieldLabel, marginTop: 10 }}>{label}</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {/* Bind icon on the LEFT, matching WeWeb reference */}
-          <BindingIcon
-            isBound={bound}
-            onClick={() => setOpenField(f => f === key ? null : key)}
-          />
-          {bound ? (
-            <button
-              onClick={() => setOpenField(f => f === key ? null : key)}
-              style={{ flex: 1, padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed',
-                borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
-                textAlign: 'left' }}
-            >ƒ Edit formula</button>
-          ) : (
-            <CanvasOnOffToggle value={!!val} onChange={v => setCfg(key, v)} />
-          )}
+          <CanvasOnOffToggle value={val === true} onChange={v => setCfg(key, v)} />
         </div>
-        {openField === key && (
-          <FormulaEditor
-            label={label}
-            value={(val as FormulaValue) ?? null}
-            onChange={v => { setCfg(key, v); setOpenField(null); }}
-            onClose={() => setOpenField(null)}
-            anchorRight={292}
-          />
-        )}
       </>
     );
   }
@@ -1552,49 +1545,8 @@ function FetchDataStepConfig({
 }
 
 // ─── ExecuteComponentActionConfig ────────────────────────────────────────────
-// Dropdown that lists every node × workflow combination on the page.
-
-/** Walk the node tree and collect {id, name, type} for every node that has workflows */
-function collectNodesWithWorkflows(
-  nodes: import('@/lib/sdui/types/node').SDUINode[],
-  meta: Record<string, import('./_store-types').WorkflowMeta>,
-): Array<{ nodeId: string; nodeName: string; workflowId: string; workflowName: string; trigger: string }> {
-  const results: Array<{ nodeId: string; nodeName: string; workflowId: string; workflowName: string; trigger: string }> = [];
-
-  function walk(node: import('@/lib/sdui/types/node').SDUINode) {
-    const nodeId = (node as { id?: string }).id;
-    if (nodeId && node.actions) {
-      const rawArr = Array.isArray(node.actions) ? node.actions : null;
-      const rawObj = (!Array.isArray(node.actions) && node.actions) ? node.actions as Record<string, unknown> : null;
-      const entries: string[] = [];
-      if (rawArr) {
-        for (const a of rawArr) {
-          const id = (a as { action?: string }).action;
-          if (id && !meta[id]?.isSystem) entries.push(id);
-        }
-      } else if (rawObj) {
-        for (const [, v] of Object.entries(rawObj)) {
-          const id = (v as { action?: string }).action;
-          if (id && !meta[id]?.isSystem) entries.push(id);
-        }
-      }
-      for (const wfId of entries) {
-        const wfMeta = meta[wfId];
-        results.push({
-          nodeId,
-          nodeName: (node as { name?: string }).name || node.type,
-          workflowId: wfId,
-          workflowName: wfMeta?.name || 'Workflow',
-          trigger: wfMeta?.trigger || 'click',
-        });
-      }
-    }
-    if (node.children) for (const child of node.children) walk(child);
-  }
-
-  for (const n of nodes) walk(n);
-  return results;
-}
+// Searchable dropdown listing all named non-system workflows from pageWorkflowMeta.
+// Optionally records a component element ID for targeted dispatch.
 
 function ExecuteComponentActionConfig({
   cfg,
@@ -1603,32 +1555,28 @@ function ExecuteComponentActionConfig({
   cfg: Record<string, unknown>;
   onUpdate: (patch: Record<string, unknown>) => void;
 }) {
-  const pageNodes = useBuilderStore(s => s.pageNodes);
   const pageWorkflowMeta = useBuilderStore(s => s.pageWorkflowMeta);
-  const [search, setSearch] = React.useState('');
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  const entries = React.useMemo(
-    () => collectNodesWithWorkflows(pageNodes, pageWorkflowMeta),
-    [pageNodes, pageWorkflowMeta],
-  );
-
-  const selected = entries.find(e => e.workflowId === (cfg.action as string));
+  const allWorkflows = Object.values(pageWorkflowMeta)
+    .filter(w => !w.isSystem)
+    .sort((a, b) => (a.name ?? a.id).localeCompare(b.name ?? b.id));
 
   const q = search.toLowerCase();
   const filtered = q
-    ? entries.filter(e =>
-        `${e.nodeName} ${e.workflowName} ${e.trigger}`.toLowerCase().includes(q),
-      )
-    : entries;
+    ? allWorkflows.filter(w => (w.name ?? w.id).toLowerCase().includes(q))
+    : allWorkflows;
+
+  const selected = pageWorkflowMeta[cfg.action as string];
 
   useEffect(() => {
     if (!open) return;
     searchRef.current?.focus();
     const handler = (e: MouseEvent) => {
-      if (!(e.target as HTMLElement).closest('[data-popover="component-picker"]')) {
+      if (!(e.target as HTMLElement).closest('[data-popover="component-action-picker"]')) {
         setOpen(false);
         setSearch('');
       }
@@ -1640,31 +1588,19 @@ function ExecuteComponentActionConfig({
   return (
     <>
       <label style={{ ...S.fieldLabel, marginTop: 10 }}>Component *</label>
-      <div ref={wrapperRef} data-popover="component-picker" style={{ position: 'relative', width: '100%' }}>
+      <div ref={wrapperRef} data-popover="component-action-picker" style={{ position: 'relative', width: '100%' }}>
         <button
-          style={{
-            ...S.fieldSelect,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            cursor: 'pointer',
-            textAlign: 'left',
-            paddingRight: 28,
-          }}
+          style={{ ...S.fieldSelect, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', textAlign: 'left', paddingRight: 28 }}
           onClick={() => { setOpen(v => !v); setSearch(''); }}
         >
           <span style={{ fontSize: 12, flexShrink: 0 }}>⚡</span>
-          {selected ? (
-            <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, color: '#f3f4f6' }}>
-                {selected.nodeName}
-              </span>
-              <span style={{ fontSize: 10, color: '#6b7280', flexShrink: 0 }}>
-                {selected.workflowName} · {selected.trigger}
-              </span>
+          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: selected ? '#f3f4f6' : '#6b7280' }}>
+            {selected ? (selected.name ?? selected.id) : 'Choose a component…'}
+          </span>
+          {selected?.trigger && (
+            <span style={{ fontSize: 10, color: '#6b7280', flexShrink: 0, marginRight: 16 }}>
+              {selected.trigger}
             </span>
-          ) : (
-            <span style={{ flex: 1, color: '#6b7280' }}>Choose a component…</span>
           )}
           <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: '#6b7280', pointerEvents: 'none' }}>
             {open ? '▴' : '▾'}
@@ -1672,53 +1608,51 @@ function ExecuteComponentActionConfig({
         </button>
 
         {open && (
-          <div
-            style={{
-              ...S.dropdown,
-              position: 'absolute',
-              top: '100%',
-              left: 0,
-              right: 0,
-              zIndex: 300,
-              minWidth: 'unset',
-              width: '100%',
-              maxHeight: 320,
-            }}
-          >
+          <div style={{ ...S.dropdown, position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 300, minWidth: 'unset', width: '100%', maxHeight: 280 }}>
             <input
               ref={searchRef}
               style={S.dropdownSearch}
-              placeholder="Search components…"
+              placeholder="Search workflows…"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
             {filtered.length === 0 && (
               <div style={{ padding: '8px 12px', fontSize: 12, color: '#6b7280' }}>
-                {entries.length === 0 ? 'No components with workflows on this page' : 'No results'}
+                {allWorkflows.length === 0 ? 'No workflows available' : 'No results'}
               </div>
             )}
-            {filtered.map(e => {
-              const isActive = e.workflowId === (cfg.action as string);
+            {filtered.map(w => {
+              const isActive = w.id === (cfg.action as string);
               return (
                 <button
-                  key={`${e.nodeId}-${e.workflowId}`}
+                  key={w.id}
                   style={{ ...S.dropdownItem(isActive), flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}
                   onMouseEnter={ev => { if (!isActive) (ev.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
                   onMouseLeave={ev => { if (!isActive) (ev.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
-                  onClick={() => { onUpdate({ ...cfg, action: e.workflowId, componentId: e.nodeId }); setOpen(false); setSearch(''); }}
+                  onClick={() => { onUpdate({ ...cfg, action: w.id }); setOpen(false); setSearch(''); }}
                 >
                   <span style={{ fontSize: 12, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
-                    {e.nodeName}
+                    {w.name ?? w.id}
                   </span>
-                  <span style={{ fontSize: 10, color: '#6b7280' }}>
-                    {e.workflowName} · {e.trigger}
-                  </span>
+                  {w.trigger && (
+                    <span style={{ fontSize: 10, color: '#6b7280' }}>{w.trigger}</span>
+                  )}
                 </button>
               );
             })}
           </div>
         )}
       </div>
+
+      <label style={{ ...S.fieldLabel, marginTop: 10 }}>
+        Component ID <span style={{ color: '#6b7280', fontWeight: 400 }}>(optional)</span>
+      </label>
+      <input
+        style={S.fieldInput}
+        placeholder="e.g. my-form-id"
+        value={(cfg.componentId as string) ?? ''}
+        onChange={e => onUpdate({ ...cfg, componentId: e.target.value || undefined })}
+      />
     </>
   );
 }
@@ -2028,24 +1962,46 @@ export function BoundField({
   code?: boolean;
   numeric?: boolean;
   workflowTrigger?: string;
-  expectedType?: 'string' | 'number' | 'boolean' | 'any';
+  expectedType?: 'string' | 'number' | 'boolean' | 'array' | 'object' | 'any';
 }) {
   const [open, setOpen] = React.useState(false);
   // Must be called unconditionally — used by CodeMirror when code=true
   const handleCodeChange = useCallback((val: string) => onChange(val || undefined), [onChange]);
-  // For code editor mode, only treat formula objects as "bound" — plain JSON strings are not formulas
-  const isBound = isBoundValue(value) || (!code && typeof value === 'string' && (value as string).trim().length > 0);
-  const strVal = isBound && !isBoundValue(value) ? (value as string) : '';
+  // Only formula objects (e.g. { formula: "..." }) are truly "bound" — plain text strings are not.
+  // Using any non-empty string as isBound=true was making the icon appear active for plain text values.
+  const isBound = isBoundValue(value);
+  // strVal is the plain-text string shown in the textarea/input — only populated when not a formula object
+  const strVal = !isBoundValue(value) ? (value as string) ?? '' : '';
   const isMultiline = multiline || code;
+
+  // Save the value at the moment the formula editor opens.
+  // When the user clicks "Unbind" (which fires onChange('')), we restore this saved value
+  // if the original was plain text — preventing accidental loss of plain-text values.
+  const preEditValueRef = useRef<FormulaValue | undefined>(value);
+  const handleOpenEditor = useCallback(() => {
+    preEditValueRef.current = value;
+    setOpen(v => !v);
+  }, [value]);
+
+  const handleFormulaChange = useCallback((v: FormulaValue | null) => {
+    // Unbind fires onChange('') — if the original value was plain text (not a formula object),
+    // restore it instead of clearing, so the user doesn't lose their text by clicking Unbind.
+    if ((v === '' || v == null) && typeof preEditValueRef.current === 'string' && !isBoundValue(preEditValueRef.current)) {
+      onChange(preEditValueRef.current || undefined);
+    } else {
+      onChange(v ?? undefined);
+    }
+    setOpen(false);
+  }, [onChange]);
 
   return (
     <>
       <label style={{ ...S.fieldLabel, marginTop: 10 }}>{label}{required ? ' *' : ''}</label>
       <div style={{ display: 'flex', alignItems: isMultiline ? 'flex-start' : 'center', gap: 6 }}>
-        <BindingIcon isBound={isBound} onClick={() => setOpen(v => !v)} />
+        <BindingIcon isBound={isBound} onClick={handleOpenEditor} />
         {isBoundValue(value) ? (
           <button
-            onClick={() => setOpen(v => !v)}
+            onClick={handleOpenEditor}
             style={{ flex: 1, padding: '5px 8px', background: '#2e1065', border: '1px solid #7c3aed',
               borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
               textAlign: 'left' }}
@@ -2091,7 +2047,7 @@ export function BoundField({
         <FormulaEditor
           label={label}
           value={value ?? null}
-          onChange={v => { onChange(v ?? undefined); setOpen(false); }}
+          onChange={handleFormulaChange}
           onClose={() => setOpen(false)}
           anchorRight={292}
           expectedType={expectedType}
@@ -2535,13 +2491,32 @@ export function NodePropsPanel({
 
       {step.type === 'forEach' && (
         <>
-          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Items to parse (array) *</label>
-          <textarea
-            style={{ ...S.fieldInput, minHeight: 64, fontFamily: 'monospace', fontSize: 11 }}
-            value={(cfg.items as string) ?? ''}
-            placeholder="[]"
-            onChange={e => setCfg('items', e.target.value)}
+          <BoundField
+            label="Items to parse (array)"
+            required
+            value={(() => {
+              // cfg.items is the canonical field set by this editor (FormulaValue)
+              if (cfg.items !== undefined) return cfg.items as FormulaValue;
+              // cfg.list: inline array literal — serialize to JSON string for CodeMirror display
+              if (Array.isArray(cfg.list)) return JSON.stringify(cfg.list) as FormulaValue;
+              // Legacy: itemsPath / listPath store a variable UUID as a plain string.
+              // Wrap as a formula binding so the field shows "ƒ Edit formula" (not raw UUID).
+              const legacyId = (cfg.itemsPath ?? cfg.listPath) as string | undefined;
+              if (legacyId) return { formula: `variables['${legacyId}']` } as FormulaValue;
+              return undefined;
+            })()}
+            onChange={v => setCfg('items', v)}
+            placeholder="e.g. collections['UUID'].data.items"
+            code
+            expectedType="array"
+            workflowTrigger={workflowTrigger}
           />
+          <div style={S.helpText}>
+            Expression that evaluates to an array. Each element is accessible inside the loop as{' '}
+            <code style={{ background: '#1f2937', padding: '1px 4px', borderRadius: 3 }}>context.item.data.value</code>
+            {' '}and the index as{' '}
+            <code style={{ background: '#1f2937', padding: '1px 4px', borderRadius: 3 }}>context.item.data.index</code>.
+          </div>
         </>
       )}
 
@@ -2624,8 +2599,12 @@ export function NodePropsPanel({
         <>
           <label style={{ ...S.fieldLabel, marginTop: 10 }}>Collection *</label>
           <CollectionPickerDropdown
-            value={(cfg.collectionId as string) ?? ''}
-            onChange={v => setCfg('collectionId', v)}
+            value={(cfg.collectionId as string) ?? (cfg.collectionName as string) ?? ''}
+            onChange={v => {
+              setCfg('collectionId', v);
+              // Clear old-format field so engine uses new collectionId path
+              setCfg('collectionName', undefined);
+            }}
           />
         </>
       )}
@@ -2637,40 +2616,57 @@ export function NodePropsPanel({
             <button
               style={{ fontSize: 11, color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer' }}
               onClick={() => {
-                const prev = Array.isArray(cfg.collections) ? (cfg.collections as string[]) : [];
+                // Use cfg.collections (new format) or fall back to cfg.collectionNames (old format)
+                const prev = Array.isArray(cfg.collections)
+                  ? (cfg.collections as string[])
+                  : Array.isArray(cfg.collectionNames) ? (cfg.collectionNames as string[]) : [];
                 setCfg('collections', [...prev, '']);
+                setCfg('collectionNames', undefined);
               }}
             >+ Add</button>
           </div>
-          {(Array.isArray(cfg.collections) ? (cfg.collections as string[]) : []).map((colId, idx) => (
-            <div key={idx} style={{ display: 'flex', gap: 6, marginTop: 6, alignItems: 'center' }}>
-              <div style={{ flex: 1 }}>
-                <CollectionPickerDropdown
-                  value={colId}
-                  onChange={v => {
-                    const next = [...(cfg.collections as string[])];
-                    next[idx] = v;
+          {(Array.isArray(cfg.collections)
+            ? (cfg.collections as string[])
+            : Array.isArray(cfg.collectionNames) ? (cfg.collectionNames as string[]) : []
+          ).map((colId, idx) => {
+            const currentList = Array.isArray(cfg.collections)
+              ? (cfg.collections as string[])
+              : Array.isArray(cfg.collectionNames) ? (cfg.collectionNames as string[]) : [];
+            return (
+              <div key={idx} style={{ display: 'flex', gap: 6, marginTop: 6, alignItems: 'center' }}>
+                <div style={{ flex: 1 }}>
+                  <CollectionPickerDropdown
+                    value={colId}
+                    onChange={v => {
+                      const next = [...currentList];
+                      next[idx] = v;
+                      setCfg('collections', next);
+                      setCfg('collectionNames', undefined);
+                    }}
+                  />
+                </div>
+                <button
+                  style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 16, flexShrink: 0 }}
+                  onClick={() => {
+                    const next = currentList.filter((_, i) => i !== idx);
                     setCfg('collections', next);
+                    setCfg('collectionNames', undefined);
                   }}
-                />
+                >−</button>
               </div>
-              <button
-                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 16, flexShrink: 0 }}
-                onClick={() => {
-                  const next = (cfg.collections as string[]).filter((_, i) => i !== idx);
-                  setCfg('collections', next);
-                }}
-              >−</button>
-            </div>
-          ))}
-          {!(Array.isArray(cfg.collections) && (cfg.collections as string[]).length > 0) && (
+            );
+          })}
+          {!((Array.isArray(cfg.collections) && (cfg.collections as string[]).length > 0) ||
+             (Array.isArray(cfg.collectionNames) && (cfg.collectionNames as string[]).length > 0)) && (
             <div style={{ fontSize: 11, color: '#6b7280', marginTop: 6 }}>No collections added yet</div>
           )}
         </>
       )}
 
       {step.type === 'updateCollection' && (() => {
-        const updateType = (cfg.updateType as string) ?? 'replaceAll';
+        // Normalize legacy "replace" value to "replaceAll"
+        const rawUpdateType = (cfg.updateType as string) ?? '';
+        const updateType = rawUpdateType === 'replace' ? 'replaceAll' : rawUpdateType || 'replaceAll';
         const byId = (cfg.findBy as string) === 'id';
         const needsFindBy = updateType === 'update' || updateType === 'delete';
         // Insert always uses position (no By index/By id toggle); update/delete use it only when By index
@@ -2678,20 +2674,31 @@ export function NodePropsPanel({
         const needsIdFields = byId && needsFindBy;
         const needsMerge = updateType === 'update';
         const needsData = updateType !== 'delete';
-        const dataPlaceholder = updateType === 'insert' ? 'Data to insert' : updateType === 'update' ? 'Data to update' : 'New collection data';
+        // data is required only for insert/update; replaceAll treats it as optional (triggers refetch when absent)
+        const dataRequired = updateType === 'insert' || updateType === 'update';
+        const dataPlaceholder = updateType === 'insert' ? 'Data to insert' : updateType === 'update' ? 'Data to update' : 'New collection data (optional)';
 
         return (
           <>
             <label style={{ ...S.fieldLabel, marginTop: 10 }}>Collection *</label>
             <CollectionPickerDropdown
-              value={(cfg.collectionId as string) ?? ''}
-              onChange={v => setCfg('collectionId', v)}
+              value={(cfg.collectionId as string) ?? (cfg.collectionName as string) ?? (cfg.name as string) ?? ''}
+              onChange={v => {
+                setCfg('collectionId', v);
+                // Clear old-format fields so engine uses new collectionId path
+                setCfg('collectionName', undefined);
+                setCfg('name', undefined);
+              }}
             />
 
             <label style={{ ...S.fieldLabel, marginTop: 10 }}>Update type</label>
             <OptionPickerDropdown
               value={updateType}
-              onChange={v => setCfg('updateType', v)}
+              onChange={v => {
+                setCfg('updateType', v);
+                // If legacy "replace" was stored, normalize it now
+                if (rawUpdateType === 'replace') setCfg('updateType', v);
+              }}
               options={[
                 { value: 'replaceAll', label: 'Replace all' },
                 { value: 'update', label: 'Update' },
@@ -2763,11 +2770,12 @@ export function NodePropsPanel({
             {needsData && (
               <BoundField
                 label="Data"
-                required
+                required={dataRequired}
                 value={cfg.data as FormulaValue | undefined}
                 onChange={v => setCfg('data', v)}
                 placeholder={dataPlaceholder}
-                multiline
+                code
+                expectedType="object"
                 workflowTrigger={workflowTrigger}
               />
             )}
@@ -2846,8 +2854,13 @@ export function NodePropsPanel({
           label="Time (ms)"
           required
           numeric
-          value={cfg.time as FormulaValue | undefined}
-          onChange={v => setCfg('time', v)}
+          value={(cfg.time ?? cfg.delay ?? cfg.ms) as FormulaValue | undefined}
+          onChange={v => {
+            setCfg('time', v);
+            // Clear legacy field names on edit
+            if (cfg.delay !== undefined) setCfg('delay', undefined);
+            if (cfg.ms !== undefined) setCfg('ms', undefined);
+          }}
           placeholder="1000"
           workflowTrigger={workflowTrigger}
           expectedType="number"
@@ -2915,9 +2928,9 @@ export function NodePropsPanel({
           <BoundField
             label="File object"
             required
-            value={cfg.fileObject as FormulaValue | undefined}
-            onChange={v => setCfg('fileObject', v)}
-            placeholder="Select a file variable"
+            value={(cfg.fileObject ?? cfg.dataUrl ?? cfg.value) as FormulaValue | undefined}
+            onChange={v => { setCfg('fileObject', v); setCfg('dataUrl', undefined); setCfg('value', undefined); }}
+            placeholder="File variable or data URL"
             workflowTrigger={workflowTrigger}
           />
           <label style={{ ...S.fieldLabel, marginTop: 10 }}>Output format</label>

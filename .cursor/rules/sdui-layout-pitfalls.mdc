@@ -608,6 +608,111 @@ if (SUBMIT_BUTTON_TYPES.has(node.type) && cleanProps.type === 'submit' && formCt
 
 ---
 
+## Form Validation Lifecycle — `trigger: "submit"` Behavior
+
+**How validation works end-to-end:**
+
+1. **Submit with empty/invalid field** → inline error appears (`local.data.form.fields[name].isValid` = error message), `submitValidationError` trigger fires
+2. **User types in field** → error STAYS (validation is `trigger: "submit"`, not `trigger: "change"`) — `directWriteField` preserves `isValid`
+3. **Submit again with valid value** → `doSubmit` clears all `isValid` errors from fields; `onSubmitAction` fires
+4. **Reset** → all field errors clear along with form data
+
+**Submit workflow must clear the validation-error output variable:**
+
+If you have an output display variable that shows the validation error (set by the `submitValidationError` trigger workflow), the `submit` trigger workflow must clear it on success — the engine does not do this automatically:
+
+```json
+// submit trigger workflow — step 1 sets result, step 2 clears the error output
+"waFormSubmit": {
+  "type": "workflowSteps",
+  "trigger": "submit",
+  "steps": [
+    { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "UUID-result", "value": { "formula": "..." } } },
+    { "id": "s2", "type": "changeVariableValue", "config": { "variableName": "UUID-validationError", "value": "" } }
+  ]
+}
+```
+
+**Inline error display pattern:**
+
+```json
+{
+  "type": "Text",
+  "condition": "local?.data?.form?.fields?.['fieldName']?.isValid",
+  "props": { "className": "text-sm text-red-500" },
+  "text": "{{local.data.form.fields['fieldName'].isValid}}"
+}
+```
+
+The `condition` is truthy when `isValid` is a non-empty error string, falsy when `''` (valid/reset).
+
+---
+
+## `resetForm` — Auto-Clears Named Variable Bindings
+
+**Problem:** InputFields bound to named variables via `value="{{variables['UUID']}}"` were not visually cleared by `resetForm` alone — extra `changeVariableValue` steps were needed in the reset workflow.
+
+**Fix (built into the engine):** When an InputField with `value="{{variables['UUID']}}"` mounts inside a `FormContainer`, the UUID is auto-registered. `resetForm` now resets those variables to `''` atomically — no extra workflow steps needed.
+
+```json
+// ✅ resetForm is self-sufficient — no extra changeVariableValue for input variables
+"waResetForm": {
+  "type": "workflowSteps",
+  "trigger": "click",
+  "steps": [
+    { "id": "s1", "type": "resetForm", "config": {} },
+    { "id": "s2", "type": "changeVariableValue", "config": { "variableName": "UUID-result", "value": "(not submitted)" } },
+    { "id": "s3", "type": "changeVariableValue", "config": { "variableName": "UUID-validationError", "value": "" } }
+  ]
+}
+```
+
+Steps s2 and s3 reset **output display variables** (submit result, validation error label) — not input field values. The input field variables are cleared automatically by `resetForm`.
+
+**Rule:** When inputs use named variable bindings for their `value` prop, `resetForm` handles visual clearing automatically. Only add `changeVariableValue` steps in the reset workflow for output/display variables that `resetForm` has no knowledge of.
+
+---
+
+## Pre-fill via `changeVariableValue` — Validation Must Read the Same Value
+
+**Problem:** Pre-filling an InputField by setting its named variable (e.g. `changeVariableValue` on `variables['UUID']`) makes the input *visually* show the new value, but `local.data.form.formData.{name}` is NOT updated. When the user then clicks Submit, `doSubmit` reads `formData` for validation — sees the old empty value — and fires "Email is required" even though the input clearly shows a value.
+
+**Why it happens:** The `{parentInputId}-value` registry slot (which triggers `useExternalFormSync`) is only written when the user *types*. External `changeVariableValue` writes go to the global variable store under the UUID key, bypassing the registry. So `useExternalFormSync`'s normal path never fires.
+
+**Fix (built into the engine):** `useExternalFormSync` now has a second subscription that directly watches the InputField's named variable UUID (extracted from `value="{{variables['UUID']}}"` props). When `changeVariableValue` fires, this subscription automatically calls `directWriteField(fieldName, newValue)` — the same code path as user typing — keeping `formData` in sync.
+
+```json
+// ✅ Pre-fill workflow — changeVariableValue alone is enough
+"waPreFillForm": {
+  "type": "workflowSteps",
+  "trigger": "click",
+  "steps": [
+    { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "UUID-email", "value": "prefilled@example.com" } },
+    { "id": "s2", "type": "changeVariableValue", "config": { "variableName": "UUID-name",  "value": "Pre-filled Name" } }
+  ]
+}
+
+// ✅ InputField wired correctly — value bound to named variable, name for formData tracking
+{
+  "type": "InputField",
+  "props": {
+    "name": "emailAddress",
+    "value": "{{variables['UUID-email']}}",
+    "placeholder": "Email"
+  }
+}
+```
+
+After the engine fix:
+1. `changeVariableValue` sets `variables['UUID-email'] = "prefilled@example.com"` in the global store.
+2. `useExternalFormSync`'s UUID subscription fires → calls `directWriteField('emailAddress', 'prefilled@example.com')`.
+3. `local.data.form.formData.emailAddress` is updated.
+4. Submit reads the correct value → validation passes.
+
+**Rule:** To pre-fill form inputs, bind their `value` prop to a named variable (`{{variables['UUID']}}`) and use `changeVariableValue` in the workflow. No extra `setVar` to `local.data.form.formData.*` is needed — the engine syncs it automatically.
+
+---
+
 ## Global Variables vs Screen-Scoped Paths
 
 **Problem:** Unsupported step types (anything not in the supported list in `build-guide.mdc`) and `screens.*` paths are not rendered in the workflow canvas.
@@ -772,3 +877,119 @@ Inside the loop body, access the current item via:
 `context.item.data.value` is set to the raw array element; `context.item.data.index` is the 0-based iteration index.
 
 **Applies to:** All `changeVariableValue` actions in `config/actions/`, all `variables['UUID']` conditions in screens and fragments.
+
+---
+
+## `setFormState` Step — `isSubmitted` / `isSubmitting` Display
+
+**How `setFormState` works:** The `setFormState` workflow step writes `isSubmitting`/`isSubmitted` directly to `local.data.form` in both the global variable store and the Zustand SDUI store.
+
+**Display rule:** To display these flags in the UI, use `{{local.data.form.isSubmitted}}` / `{{local.data.form.isSubmitting}}` template syntax — NOT `{ "expr": "String(local?.data?.form?.isSubmitted ?? false)" }`.
+
+**Why:** `{ "expr": "..." }` text nodes use `extractPathsFromObject` for dependency tracking, which only extracts `{{...}}` patterns from expression strings. A raw JS expression like `String(local?.data?.form?.isSubmitted ?? false)` generates **zero subscriptions** — the node never re-renders when the value changes. Template strings `{{path}}` do generate subscriptions via `extractPathsFromTemplate`.
+
+```json
+// ❌ BAD — no subscription generated; node never re-renders when isSubmitted changes
+{ "type": "Text", "text": { "expr": "String(local?.data?.form?.isSubmitted ?? false)" } }
+
+// ✅ GOOD — generates subscription to local.data.form.isSubmitted; re-renders on change
+{ "type": "Text", "text": "{{local.data.form.isSubmitted}}" }
+```
+
+**`setFormState` step lifecycle pattern (submit workflow):**
+
+```json
+"waFormSubmit": {
+  "type": "workflowSteps",
+  "trigger": "submit",
+  "steps": [
+    { "id": "s1", "type": "setFormState", "config": { "isSubmitting": true } },
+    { "id": "s2", "type": "changeVariableValue", "config": { "variableName": "UUID-result", "value": { "formula": "..." } } },
+    { "id": "s3", "type": "changeVariableValue", "config": { "variableName": "UUID-validationError", "value": "" } },
+    { "id": "s4", "type": "setFormState", "config": { "isSubmitting": false, "isSubmitted": true } }
+  ]
+}
+```
+
+**`resetForm` auto-clears these:** `resetFormHandler` sets `isSubmitting: false` and `isSubmitted: false` as part of the empty form state — no extra `setFormState` step needed in the reset workflow.
+
+**FormContainer sync `useEffect` — preserve workflow writes:** The `useEffect` that syncs `formState` back to the global store is patched to preserve `isSubmitting`/`isSubmitted` from the store when not resetting. This prevents the React state snapshot (which is stale at `useEffect` fire time) from overwriting values set by `setFormState` workflow steps running concurrently as microtasks.
+
+**Rule:** Always use `{{local.data.form.isSubmitted}}` and `{{local.data.form.isSubmitting}}` in display nodes. Never use `expr` for these — you'll get a node that shows the initial render value forever.
+
+---
+
+## `updateCollection` — In-Memory Data Manipulation
+
+`updateCollection` with `updateType: "insert"`, `"update"`, or `"delete"` performs **in-memory mutations** on the Zustand store — it does NOT make an API call.
+
+### Storage key rule — always use `.data` sub-path
+
+**Problem:** Storing the array directly at `collections.UUID` (i.e. `ctx.setData("collections.UUID", [...])`) causes `setNestedValue` to overwrite it with `{loading: false}` when it processes the sibling path `collections.UUID.loading`. In `setNestedValue`, when an intermediate path segment holds an array, the traversal code falls back to `{}` (since arrays fail the `!Array.isArray(next)` guard), silently replacing the array.
+
+**Fix (built into the engine):** `refetchDataSourceHandler` always stores the array at `collections.UUID.data` (i.e. the flat Zustand key `"collections.UUID.data"`). The `updateType` config uses `dataPath: "data"` by default. Sibling `.loading` and `.error` keys then safely modify the wrapping object without destroying the array.
+
+```json
+// ✅ CORRECT — in-memory updateCollection workflow
+{
+  "type": "updateCollection",
+  "config": {
+    "collectionId": "UUID",
+    "updateType": "insert",
+    "position": 0,
+    "data": "{\"id\":\"new-1\",\"name\":\"New Item\"}"
+  }
+}
+```
+
+**Supported updateTypes:**
+
+| `updateType` | Effect | Required config |
+|---|---|---|
+| `"replaceAll"` + `data` | Replaces the stored array with `data` (parsed from JSON string or formula) | `data` |
+| `"replaceAll"` (no `data`) | Triggers a real API refetch | — |
+| `"insert"` | Inserts item at `position` (default: end) | `data`, optional `position` |
+| `"update"` | Finds item by `findBy: "id"` + `idKey` + `idValue`, merges when `merge: true` | `data`, `findBy`, `idKey`, `idValue` |
+| `"delete"` | Removes item found by `findBy: "id"` + `idKey` + `idValue` | `findBy`, `idKey`, `idValue` |
+
+**Accessing the array after mutation:** the array lives at `collections.UUID.data`, NOT `collections.UUID`:
+
+```json
+// Map over in-memory items
+"map": "collections.c3d4e5f6-a7b8-9012-cdef-123456789012.data"
+
+// Count — use template syntax (see subscription rule below)
+"text": "{{collections.c3d4e5f6-a7b8-9012-cdef-123456789012.data.length}}"
+```
+
+---
+
+## Reactive Subscriptions — `text: { expr }` and `condition` Strings Are NOT Subscribed
+
+**Problem:** Each renderer node (`SDURendererInner`) subscribes only to the paths returned by `extractNodeDependencies`. This extractor can only find paths inside `{{...}}` template strings and `{ "var": "path" }` JSON Logic objects. Plain formula strings — whether in `text: { "expr": "..." }` or `"condition": "formula string"` — contain **no** `{{...}}` patterns, so **zero deps are extracted** and the node **never re-renders** when store data changes.
+
+The `map` field with a string path IS correctly subscribed. So a `map` node will update but a sibling `text: { expr }` node counting the same items will stay frozen at its initial value.
+
+**Fix — use the right syntax per field:**
+
+| Field | Wrong (not subscribed) | Correct (subscribed) |
+|---|---|---|
+| `text` count/length | `"text": { "expr": "arr.length" }` | `"text": "{{path.to.array.length}}"` |
+| `text` formula result | `"text": { "expr": "x + y" }` | Use `{{path}}` template or move to computed |
+| `condition` single path | `"condition": "arr.length === 0"` | `"condition": { "not": { "var": "path.to.array.length" } }` |
+| `condition` path check | `"condition": "val === 'foo'"` | `"condition": { "==": [{ "var": "path" }, "foo"] }` |
+
+```json
+// ❌ BAD — shows 0 forever; never re-renders when collection.data changes
+{ "text": { "expr": "(collections['UUID']?.data || []).length", "suffix": "" } }
+{ "condition": "(collections['UUID']?.data || []).length === 0" }
+
+// ✅ GOOD — subscribed; updates immediately when data changes
+{ "text": "{{collections.UUID.data.length}}" }
+{ "condition": { "not": { "var": "collections.UUID.data.length" } } }
+```
+
+**Rule:** For any node that displays or gates on dynamically-changing Zustand store data:
+- Use `{{path}}` template strings for `text` (subscribed via `extractPathsFromTemplate`)
+- Use JSON Logic objects (`{ "var": "path" }`, `{ "==": [...] }`, `{ "not": {...} }`) for `condition` (subscribed via `extractPathsFromObject`)
+- Only use `text: { "expr": "..." }` for static/config-time values or inside a `map` scope where the parent map already re-renders on data change

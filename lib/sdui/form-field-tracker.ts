@@ -225,10 +225,35 @@ function hasSetFormFieldAction(actions: unknown): boolean {
 export function useFormFieldRegistration(
   node: SDUINode,
   formCtx: FormContextValue | null,
+  parentInputId?: string | null,
 ): void {
   useEffect(() => {
     if (formCtx) {
       let cleanup: (() => void) | undefined;
+
+      // Register {parentInputId}-value slot with FormContainer so reset() can clear it.
+      if (INPUT_FIELD_TYPES.has(node.type as string) && parentInputId) {
+        const slotKey = `${parentInputId}-value`;
+        formCtx.registerFieldSlot(slotKey);
+        const prev = cleanup;
+        cleanup = () => { prev?.(); formCtx.unregisterFieldSlot(slotKey); };
+      }
+
+      // Auto-register named variable bindings: if the InputField has
+      // value="{{variables['UUID']}}" in its props, register the UUID so reset() can
+      // reset that variable back to its initial value — making resetForm self-sufficient.
+      if (INPUT_FIELD_TYPES.has(node.type as string)) {
+        const valueProp = (node.props as Record<string, unknown> | undefined)?.value;
+        if (typeof valueProp === 'string') {
+          const match = valueProp.match(/\{\{variables\['([^']+)'\]\}\}/);
+          if (match) {
+            const uuid = match[1];
+            formCtx.registerVariableBinding(uuid, '');
+            const prev = cleanup;
+            cleanup = () => { prev?.(); formCtx.unregisterVariableBinding(uuid); };
+          }
+        }
+      }
 
       // ── Validation registration ───────────────────────────────────────────
       // Use resolveFieldName so that name in node.props.name is found too
@@ -342,7 +367,7 @@ export function useFormFieldRegistration(
       };
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [node.actions, node.id, node.type, formCtx?.registerField, formCtx?.unregisterField, formCtx?.registerFieldValidation, formCtx?.unregisterFieldValidation]);
+  }, [node.actions, node.id, node.type, parentInputId, formCtx?.registerField, formCtx?.unregisterField, formCtx?.registerFieldSlot, formCtx?.unregisterFieldSlot, formCtx?.registerFieldValidation, formCtx?.unregisterFieldValidation]);
 }
 
 // ── External value sync ────────────────────────────────────────────────────────
@@ -553,4 +578,37 @@ export function useExternalFormSync(
       formCtx.directWriteField(fieldName, currentVal);
     }
   }, [externalValue, externalIsChecked, shouldSync, formCtx, fieldName, isInputFieldNode]);
+
+  // Watch the named variable UUID directly so that changeVariableValue workflow steps
+  // (pre-fill, external updates) also write through to local.data.form.formData.
+  // The {parentInputId}-value registry path (tracked by shouldSync above) is only
+  // updated when the user types — external variable changes bypass it entirely.
+  // This second subscription catches those external writes.
+  const namedVarUuid = (() => {
+    if (!formCtx || !fieldName || !isInputFieldNode) return null;
+    const valueProp = (node.props as Record<string, unknown> | undefined)?.value;
+    if (typeof valueProp !== 'string') return null;
+    const match = valueProp.match(/\{\{variables\['([^']+)'\]\}\}/);
+    return match?.[1] ?? null;
+  })();
+
+  const namedVarValue = useSyncExternalStore(
+    namedVarUuid ? getKeySubscribe(namedVarUuid) : NOOP_SUBSCRIBE,
+    () => {
+      if (!namedVarUuid) return undefined;
+      const val = getGlobalVariableStore().getState().getFullState()[namedVarUuid];
+      return val as string | undefined;
+    },
+    () => undefined,
+  );
+
+  const prevNamedVarRef = useRef<unknown>(namedVarValue);
+
+  useEffect(() => {
+    if (!formCtx || !fieldName || !namedVarUuid) return;
+    if (namedVarValue === prevNamedVarRef.current) return; // skip initial mount
+    prevNamedVarRef.current = namedVarValue;
+    // Sync the new variable value into the form data so doSubmit reads it correctly.
+    formCtx.directWriteField(fieldName, namedVarValue ?? '');
+  }, [namedVarValue, formCtx, fieldName, namedVarUuid]);
 }

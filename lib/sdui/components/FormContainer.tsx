@@ -78,6 +78,17 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
   // Registry of field _validation rules — populated by child InputField nodes via context
   const fieldValidationsRef = useRef<Record<string, FieldValidationConfig>>({});
 
+  // Registry of {parentInputId}-value top-level slot keys — populated when an InputField
+  // with a parentInputId registers inside this FormContainer. reset() uses this set to
+  // clear those slots synchronously so the reliable top-level subscription path fires.
+  const fieldSlotKeysRef = useRef<Set<string>>(new Set());
+
+  // Registry of named variable bindings: maps variable UUID → initial value.
+  // Populated when an InputField inside this FormContainer has value="{{variables['UUID']}}"
+  // in its props. reset() resets these variables so resetForm alone is sufficient to
+  // visually clear inputs — no extra changeVariableValue steps needed in the workflow.
+  const variableBindingsRef = useRef<Map<string, unknown>>(new Map());
+
   // Sync to global variable store so {{local.data.form.*}} resolves in formulas.
   // Also write to variables['{stableId}-form'] so formulas like
   // variables['uuid-form']?.['formData']?.['fieldName'] resolve correctly.
@@ -86,6 +97,11 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
   // When a new field registers it calls setFormState → this effect fires with React state
   // that may lag behind what the user has typed. Overwriting would clobber live values.
   // Fix: for existing fields, prefer the current store value; only add NEW fields from state.
+  //
+  // Reset exception: when formState.formData is empty (after reset()), we are in a reset
+  // pass — do NOT merge store values back in. Writing {} clears the store, which fires
+  // per-field subscriptions with undefined, causing each InputField to re-render with value=''.
+  // Without this guard, "store wins" would immediately restore user-typed values after a reset.
   useEffect(() => {
     getGlobalVariableStore().getState().setState((prev) => {
       const storedLocal = (prev['local'] ?? {}) as Record<string, unknown>;
@@ -94,19 +110,34 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
       const storedFormData = (storedForm['formData'] ?? {}) as Record<string, unknown>;
       const storedFields = (storedForm['fields'] ?? {}) as Record<string, unknown>;
 
-      // React state supplies the authoritative shape (field list, isSubmitting, etc.).
-      // For each field value, the store wins if it already has a value — user may have
-      // typed since the last React render (directWriteField path).
-      const mergedFormData = { ...formState.formData, ...storedFormData };
-      const mergedFields: Record<string, unknown> = { ...formState.fields };
-      for (const [name, storedField] of Object.entries(storedFields)) {
-        if (name in mergedFields) {
-          // Keep store's field object (has latest typed value + isValid from validation)
-          mergedFields[name] = storedField;
+      const isResetting = Object.keys(formState.formData).length === 0;
+
+      // When formState is empty (reset pass), clear everything — do not let the store
+      // win and restore previously-typed values.
+      const mergedFormData = isResetting ? {} : { ...formState.formData, ...storedFormData };
+      const mergedFields: Record<string, unknown> = isResetting ? {} : { ...formState.fields };
+
+      if (!isResetting) {
+        for (const [name, storedField] of Object.entries(storedFields)) {
+          if (name in mergedFields) {
+            // Keep store's field object (has latest typed value + isValid from validation)
+            mergedFields[name] = storedField;
+          }
         }
       }
 
-      const mergedForm = { ...formState, formData: mergedFormData, fields: mergedFields };
+      // Prefer the store's isSubmitting/isSubmitted when not resetting — workflow steps
+      // (setFormState step type) write to the store independently and their writes must win
+      // over the React state snapshot in formState, which may be stale relative to the store.
+      const mergedForm = {
+        ...formState,
+        formData: mergedFormData,
+        fields: mergedFields,
+        ...(isResetting ? {} : {
+          isSubmitting: (storedForm['isSubmitting'] as boolean) ?? formState.isSubmitting,
+          isSubmitted:  (storedForm['isSubmitted']  as boolean) ?? formState.isSubmitted,
+        }),
+      };
       const next = { ...prev, local: { ...storedLocal, data: { ...storedData, form: mergedForm } } };
       next[formStoreKey] = mergedForm;
       return next;
@@ -124,6 +155,27 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
         return next;
       });
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Subscribe to the global form-reset signal emitted by resetFormHandler.
+  // When _form_reset_v increments, reset our React state so that all InputField
+  // children (which use storedValueFallback or isFormFieldFallback) re-render
+  // with value='' — guaranteeing visual input clearing even when the TextInput
+  // DOM node doesn't update from the value prop alone.
+  useEffect(() => {
+    const resetVersionRef = { current: (getGlobalVariableStore().getState().getFullState()['_form_reset_v'] as number) || 0 };
+    const unsubscribe = getGlobalVariableStore().subscribe(
+      (state) => (state as { data: Record<string, unknown> }).data['_form_reset_v'] as number,
+      (newVersion) => {
+        if (newVersion !== resetVersionRef.current) {
+          resetVersionRef.current = newVersion;
+          setFormState(EMPTY_FORM_STATE);
+          stateRef.current = EMPTY_FORM_STATE;
+        }
+      }
+    );
+    return unsubscribe;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -165,6 +217,9 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
   // in ONE atomic global-store write — single subscription trigger, one re-render pass.
   const directWriteField = useCallback((name: string, value: unknown) => {
     // Keep stateRef in sync so doSubmit reads the latest values without a React render.
+    // isValid is intentionally preserved — validation is submit-triggered, so errors shown
+    // after a submit attempt must remain visible while the user corrects the field.
+    // They only clear when the form is reset or the user submits again and the field passes.
     const prev = stateRef.current;
     const existingField = prev.fields[name] ?? { value, isValid: '' };
     stateRef.current = {
@@ -221,8 +276,32 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
   );
 
   const reset = useCallback(() => {
+    // Synchronously clear the store BEFORE scheduling the React state update.
+    // This fires per-field Zustand subscriptions immediately so InputField nodes
+    // re-render with value='' in the same microtask — before any React commit.
+    // Also clear all {parentInputId}-value top-level slots so the reliable
+    // top-level subscription path (inputFieldActive) fires for inputs with IDs.
+    // And reset any named variables bound as `value` props to InputField nodes
+    // so resetForm alone visually clears those inputs without extra workflow steps.
+    const key = formStoreKey;
+    const slotsToReset = [...fieldSlotKeysRef.current];
+    const varBindings = [...variableBindingsRef.current.entries()];
+    getGlobalVariableStore().getState().setState((vs) => {
+      const local = (vs['local'] ?? {}) as Record<string, unknown>;
+      const data  = (local['data']  ?? {}) as Record<string, unknown>;
+      const slotResets = Object.fromEntries(slotsToReset.map((k) => [k, '']));
+      const varResets = Object.fromEntries(varBindings.map(([uuid, initVal]) => [uuid, initVal]));
+      return {
+        ...vs,
+        ...slotResets,
+        ...varResets,
+        local: { ...local, data: { ...data, form: EMPTY_FORM_STATE } },
+        [key]: EMPTY_FORM_STATE,
+      };
+    });
+    stateRef.current = EMPTY_FORM_STATE;
     setFormState(EMPTY_FORM_STATE);
-  }, []);
+  }, [formStoreKey]);
 
   /** Called by child nodes when they mount with a `name` prop inside a FormContainer */
   const registerField = useCallback((name: string, initialValue: unknown = '') => {
@@ -244,6 +323,28 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
       const allValid = Object.values(fields).every((f) => f.isValid);
       return { ...prev, formData, fields, isValid: allValid };
     });
+  }, []);
+
+  /** Called when an InputField with a parentInputId mounts inside this FormContainer.
+   *  Stores the `{parentInputId}-value` slot key so reset() can clear it synchronously. */
+  const registerFieldSlot = useCallback((slotKey: string) => {
+    fieldSlotKeysRef.current.add(slotKey);
+  }, []);
+
+  /** Called when such an InputField unmounts */
+  const unregisterFieldSlot = useCallback((slotKey: string) => {
+    fieldSlotKeysRef.current.delete(slotKey);
+  }, []);
+
+  /** Called when an InputField mounts with value="{{variables['UUID']}}" inside this FormContainer.
+   *  reset() resets the variable to initialValue so resetForm alone visually clears the input. */
+  const registerVariableBinding = useCallback((uuid: string, initialValue: unknown) => {
+    variableBindingsRef.current.set(uuid, initialValue);
+  }, []);
+
+  /** Called when such an InputField unmounts */
+  const unregisterVariableBinding = useCallback((uuid: string) => {
+    variableBindingsRef.current.delete(uuid);
   }, []);
 
   /** Called by child InputField nodes to register their _validation config */
@@ -293,7 +394,15 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
     }
 
     if (hasErrors) {
-      const nextForm: FormState = { ...storedForm, fields: newFields as FormState['fields'], isValid: false };
+      // Ensure formData has an entry for every validated field (even if empty string).
+      // Without this, formData can be {} after a reset — and the sync useEffect treats
+      // Object.keys(formData).length === 0 as a "reset pass", clearing fields: {} and
+      // wiping the validation errors we just set. Populating formData prevents this.
+      const safeFormData = { ...(storedForm.formData ?? {}) };
+      for (const fieldName of Object.keys(validations)) {
+        if (!(fieldName in safeFormData)) safeFormData[fieldName] = '';
+      }
+      const nextForm: FormState = { ...storedForm, formData: safeFormData, fields: newFields as FormState['fields'], isValid: false };
       // Write errors immediately to the global variable store so the renderer shows them
       getGlobalVariableStore().getState().setState((prev) => {
         const local = (prev['local'] ?? {}) as Record<string, unknown>;
@@ -306,6 +415,18 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
       onValidationErrorAction?.();
       return;
     }
+
+    // All fields valid — clear any stale isValid errors so inline error nodes hide.
+    const clearedFields = Object.fromEntries(
+      Object.entries(storedForm.fields ?? {}).map(([k, f]) => [k, { ...(f as object), isValid: '' }])
+    ) as FormState['fields'];
+    const successForm: FormState = { ...storedForm, fields: clearedFields, isValid: true };
+    getGlobalVariableStore().getState().setState((prev) => {
+      const local = (prev['local'] ?? {}) as Record<string, unknown>;
+      const data = (local['data'] ?? {}) as Record<string, unknown>;
+      return { ...prev, local: { ...local, data: { ...data, form: successForm } } };
+    });
+    setFormState(successForm);
 
     // Use the caller-provided success callback (e.g. from a child element with trigger:"submit")
     // or fall back to the FormContainer's own onSubmitAction workflow.
@@ -334,6 +455,10 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
     reset,
     registerField,
     unregisterField,
+    registerFieldSlot,
+    unregisterFieldSlot,
+    registerVariableBinding,
+    unregisterVariableBinding,
     registerFieldValidation,
     unregisterFieldValidation,
     submit: doSubmit,

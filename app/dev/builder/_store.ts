@@ -269,6 +269,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   dsFolders: [],
   customVars: [],
   pageDataSources: [],
+  dsActionsMap: {} as Record<string, string>,
   engineConventions: {},
   appPreviewData: (() => {
     const defaults: Record<string, unknown> = {
@@ -1336,6 +1337,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
         varFolders?: Array<{ id: string; label: string }>;
         workflows?: Array<{ id: string; name: string; trigger: string; steps: object[]; onErrorSteps?: object[] }>;
         directActions?: Record<string, Record<string, unknown>>;
+        dsActionsMap?: Record<string, string>;
       };
 
       set(s => {
@@ -1356,6 +1358,11 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
           const userDsFolders = s.dsFolders.filter(f => !configFolderIds.has(f.id));
           next.pageDataSources = [...withFetches, ...userAddedWithFetches];
           next.dsFolders = [...(json.dsFolders ?? []), ...userDsFolders];
+        }
+
+        // ── Datasource-actions reverse map (actionUUID → datasourceUUID, for backward compat display) ──
+        if (json.dsActionsMap && typeof json.dsActionsMap === 'object') {
+          next.dsActionsMap = json.dsActionsMap as Record<string, string>;
         }
 
         // ── Variables from config/variables.json ──────────────────────────────

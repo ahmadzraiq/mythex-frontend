@@ -486,6 +486,42 @@
       "type": "array",
       "initialValue": [1, 2, 3, 4, 5],
       "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000043": {
+      "label": "WA Email Input",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa000001-0000-0000-0000-000000000044": {
+      "label": "WA Name Input",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa-upd-0000-0000-0000-000000000001": {
+      "label": "WA Update ReplaceAll Result",
+      "type": "string",
+      "initialValue": "(not run)",
+      "folder": "WA Tests"
+    },
+    "wa-upd-0000-0000-0000-000000000002": {
+      "label": "WA Update Insert Result",
+      "type": "string",
+      "initialValue": "(not run)",
+      "folder": "WA Tests"
+    },
+    "wa-upd-0000-0000-0000-000000000003": {
+      "label": "WA Update Item Result",
+      "type": "string",
+      "initialValue": "(not run)",
+      "folder": "WA Tests"
+    },
+    "wa-upd-0000-0000-0000-000000000004": {
+      "label": "WA Update Delete Result",
+      "type": "string",
+      "initialValue": "(not run)",
+      "folder": "WA Tests"
     }
   },
   "varFolders": [

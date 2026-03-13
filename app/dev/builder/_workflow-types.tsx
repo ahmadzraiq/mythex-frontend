@@ -540,11 +540,20 @@ export function isStepComplete(step: ActionStep): boolean {
     case 'fetchData':
       return Boolean(cfg.url);
     case 'fetchCollection':
-      return Boolean(cfg.collectionId);
-    case 'updateCollection':
-      return Boolean(cfg.collectionId) && (cfg.data !== undefined && cfg.data !== null && cfg.data !== '');
+      return Boolean(cfg.collectionId ?? cfg.collectionName ?? cfg.name);
+    case 'updateCollection': {
+      const hasCollection = Boolean(cfg.collectionId ?? cfg.collectionName ?? cfg.name);
+      // Normalize legacy "replace" → "replaceAll"
+      const uType = cfg.updateType === 'replace' ? 'replaceAll' : (cfg.updateType as string | undefined);
+      const hasUpdateType = Boolean(uType);
+      // replaceAll triggers a refetch — data is optional. insert/update require data; delete requires nothing extra.
+      const needsData = uType === 'insert' || uType === 'update';
+      const hasData = !needsData || (cfg.data !== undefined && cfg.data !== null && cfg.data !== '');
+      return hasCollection && hasUpdateType && hasData;
+    }
     case 'fetchCollectionsParallel':
-      return Array.isArray(cfg.collections) && (cfg.collections as string[]).some(Boolean);
+      return (Array.isArray(cfg.collections) && (cfg.collections as string[]).some(Boolean)) ||
+        (Array.isArray(cfg.collectionNames) && (cfg.collectionNames as string[]).some(Boolean));
     case 'branch':
       return Boolean(cfg.condition);
     case 'forEach':
@@ -554,7 +563,7 @@ export function isStepComplete(step: ActionStep): boolean {
     case 'runProjectWorkflow':
       return Boolean(cfg.workflowId || step.action);
     case 'timeDelay':
-      return Boolean(cfg.time);
+      return Boolean(cfg.time ?? cfg.delay ?? cfg.ms);
     case 'copyToClipboard':
       return Boolean(cfg.value);
     case 'downloadFileFromUrl':
@@ -570,7 +579,8 @@ export function isStepComplete(step: ActionStep): boolean {
     case 'returnValue':
       return cfg.value !== undefined && cfg.value !== null && cfg.value !== '';
     case 'setFormState':
-      return Boolean(cfg.formId);
+      // complete when at least one flag is explicitly set (false is a valid value)
+      return cfg.isSubmitting !== undefined || cfg.isSubmitted !== undefined;
     // These are self-contained — no config needed
     case 'navigatePrev':
     case 'breakLoop':
@@ -625,21 +635,29 @@ export function getStepSummary(
       return (cfg.url as string) || null;
     case 'fetchCollection':
     case 'updateCollection': {
-      const cId = cfg.collectionId as string | undefined;
+      const cId = (cfg.collectionId ?? cfg.collectionName ?? cfg.name) as string | undefined;
       if (!cId) return null;
+      // collectionNames is keyed by datasource UUID; if cId is an action UUID, collectionNames also has action→label mapping
       return collectionNames?.[cId] ?? cId;
     }
     case 'fetchCollectionsParallel': {
-      const cols = (cfg.collections as string[] | undefined) ?? [];
+      const cols = ((cfg.collections ?? cfg.collectionNames) as string[] | undefined) ?? [];
       const names = cols.filter(Boolean).map(id => collectionNames?.[id] ?? id);
       return names.length > 0 ? names.join(', ') : null;
     }
     case 'runProjectWorkflow':
       return (cfg.workflowId as string) || (step.action as string) || null;
-    case 'timeDelay':
-      return cfg.time ? `${cfg.time}ms` : null;
-    case 'forEach':
-      return cfg.items ? String(cfg.items) : null;
+    case 'timeDelay': {
+      const ms = cfg.time ?? cfg.delay ?? cfg.ms;
+      return ms != null ? `${ms}ms` : null;
+    }
+    case 'forEach': {
+      const fi = cfg.items;
+      if (!fi) return null;
+      if (typeof fi === 'object' && fi !== null && 'formula' in (fi as object))
+        return ((fi as Record<string, string>).formula ?? '').slice(0, 40);
+      return String(fi).slice(0, 40);
+    }
     case 'branch':
       return cfg.condition ? String(cfg.condition).slice(0, 40) : null;
     case 'whileLoop':

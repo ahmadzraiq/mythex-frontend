@@ -76,17 +76,36 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
     case 'fetchData':
       return { type: 'fetch', ...cfg };
     case 'fetchCollection':
-      // Visual builder's fetchCollection step: calls a named action
+      // New format (builder): cfg.collectionId = datasource UUID → trigger refetch directly
+      if (cfg.collectionId) {
+        return { type: 'refetchDataSource', name: cfg.collectionId as string };
+      }
+      // Old format: cfg.collectionName = action UUID → call via action lookup (backward compat)
       return { action: (cfg.collectionName ?? cfg.name ?? '') as string };
     case 'fetchCollectionsParallel': {
-      const names = (cfg.collectionNames ?? cfg.collections ?? []) as string[];
+      // New format (builder): cfg.collections = datasource UUIDs → refetch each directly
+      if (Array.isArray(cfg.collections) && (cfg.collections as string[]).some(Boolean)) {
+        const actions = (cfg.collections as string[]).filter(Boolean).map(id => ({ type: 'refetchDataSource', name: id }));
+        return actions.length > 0 ? { type: 'runMultiple', actions } : null;
+      }
+      // Old format: cfg.collectionNames = action UUIDs → call via action lookup (backward compat)
+      const names = (cfg.collectionNames ?? []) as string[];
       const actions = names.filter(Boolean).map((name) => ({ action: name }));
       return actions.length > 0 ? { type: 'runMultiple', actions } : null;
     }
     case 'executeComponentAction':
       return typeof cfg.action === 'string' ? { action: cfg.action as string } : null;
-    case 'updateCollection':
+    case 'updateCollection': {
+      // New format (builder): cfg.collectionId = datasource UUID → trigger refetch directly
+      if (cfg.collectionId) {
+        return { type: 'refetchDataSource', name: cfg.collectionId as string, ...cfg };
+      }
+      // Old format: cfg.name = action UUID → call via action lookup (backward compat)
+      if (cfg.name && !cfg.collectionId) {
+        return { action: cfg.name as string };
+      }
       return { type: 'refetchDataSource', ...cfg };
+    }
 
     // ── Variables ────────────────────────────────────────────────────────────
     case 'changeVariableValue':
@@ -197,11 +216,36 @@ async function runSteps(
 
     // ── Structural: For-each loop ─────────────────────────────────────────────
     if (step.type === 'forEach') {
-      // Support three list sources: inline array (`list`), path via `itemsPath`, path via `listPath`
+      // Resolve the items array from whichever source is configured:
+      //   items      — FormulaValue set by the builder (formula object or plain string/UUID)
+      //   list       — inline array literal
+      //   itemsPath  — variable UUID passed to ctx.get()
+      //   listPath   — alias for itemsPath
+      const rawItems = step.config?.items;
       const inlineList = step.config?.list;
       const itemsPath = ((step.config?.itemsPath ?? step.config?.listPath) as string) ?? '';
-      const items = Array.isArray(inlineList) ? inlineList
-                  : itemsPath ? (ctx.get(itemsPath) as unknown[]) : [];
+      let items: unknown[] = [];
+      if (rawItems !== undefined && rawItems !== null && rawItems !== '') {
+        if (Array.isArray(rawItems)) {
+          items = rawItems;
+        } else if (typeof rawItems === 'object' && ('formula' in (rawItems as object) || 'expr' in (rawItems as object))) {
+          const fullState = getGlobalVariableStore().getState().getFullState();
+          const resolved = evaluateFormula(rawItems as Record<string, unknown>, fullState);
+          items = Array.isArray(resolved) ? resolved : [];
+        } else if (typeof rawItems === 'string') {
+          // Try as a variable UUID / state path first, then as JSON literal
+          const fromState = ctx.get(rawItems) as unknown;
+          if (Array.isArray(fromState)) {
+            items = fromState;
+          } else {
+            try { const parsed = JSON.parse(rawItems); if (Array.isArray(parsed)) items = parsed; } catch { /* not JSON */ }
+          }
+        }
+      } else if (Array.isArray(inlineList)) {
+        items = inlineList;
+      } else if (itemsPath) {
+        items = (ctx.get(itemsPath) as unknown[]) ?? [];
+      }
       if (Array.isArray(items)) {
         for (let i = 0; i < items.length; i++) {
           // Expose current item via context.item.data so formulas like
@@ -336,7 +380,46 @@ async function runSteps(
     }
 
     if (step.type === 'printPdf') {
-      if (typeof window !== 'undefined') window.print();
+      if (typeof window !== 'undefined') {
+        // Snapshot the theme class before the print dialog opens.
+        // The browser's beforeprint/afterprint events trigger a prefers-color-scheme change which
+        // NativeWind/GluestackUIProvider picks up. GluestackUIProvider re-applies the system
+        // theme class on every React render, so a single deferred enforce is not enough —
+        // multiple renders can keep re-adding/removing 'dark'. Guard with a MutationObserver
+        // that immediately reverts any class flip and stays active for 600ms after print ends
+        // to cover all pending React commits.
+        const html = document.documentElement;
+        const wasDark = html.classList.contains('dark');
+        const enforce = () => {
+          if (html.classList.contains('dark') !== wasDark) {
+            if (wasDark) html.classList.add('dark');
+            else html.classList.remove('dark');
+          }
+        };
+        const observer = new MutationObserver(enforce);
+        observer.observe(html, { attributes: true, attributeFilter: ['class'] });
+
+        let guardTimer: ReturnType<typeof setTimeout> | null = null;
+        const stopGuard = () => {
+          if (guardTimer) { clearTimeout(guardTimer); guardTimer = null; }
+          observer.disconnect();
+          window.removeEventListener('beforeprint', enforce);
+          window.removeEventListener('afterprint', scheduleStopGuard);
+          enforce();
+        };
+        const scheduleStopGuard = () => {
+          // Keep the observer alive for 600ms after afterprint so all React re-renders settle
+          if (guardTimer) clearTimeout(guardTimer);
+          guardTimer = setTimeout(stopGuard, 600);
+        };
+
+        window.addEventListener('beforeprint', enforce);
+        window.addEventListener('afterprint', scheduleStopGuard);
+        window.print();
+        // Trigger the guard window immediately for browsers where afterprint fired
+        // synchronously inside window.print() (or never fires)
+        scheduleStopGuard();
+      }
       continue;
     }
 
@@ -356,7 +439,7 @@ async function runSteps(
     }
 
     if (step.type === 'encodeFileAsBase64') {
-      const dataUrl = String(step.config?.dataUrl ?? step.config?.value ?? '');
+      const dataUrl = String(step.config?.fileObject ?? step.config?.dataUrl ?? step.config?.value ?? '');
       const storeIn = step.config?.storeIn as string | undefined;
       if (dataUrl && storeIn) {
         const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;

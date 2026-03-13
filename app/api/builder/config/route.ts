@@ -10,6 +10,7 @@ import accountActions from '@/config/actions/account.json';
 import productsActions from '@/config/actions/products.json';
 import layoutActions from '@/config/actions/layout.json';
 import workflowTestActions from '@/config/actions/workflow-test.json';
+import dsActionsJson from '@/config/actions/datasource-actions.json';
 import type { NamedDataSourceDef } from '@/config/datasource-types';
 
 /**
@@ -140,7 +141,15 @@ export async function GET() {
       .filter(([, def]) => def.type && def.type !== 'workflowSteps')
   );
 
-  return NextResponse.json({ dataSources: dataSourceList, dsFolders, variables, varFolders, workflows, directActions });
+  // Build a reverse lookup: datasourceUUID → actionUUID (for resolving old collectionName configs in the builder)
+  const dsActionsMap: Record<string, string> = {};
+  for (const [actionId, def] of Object.entries(dsActionsJson as Record<string, { name?: string; type?: string }>)) {
+    if (def.type === 'refetchDataSource' && def.name) {
+      dsActionsMap[def.name] = actionId;
+    }
+  }
+
+  return NextResponse.json({ dataSources: dataSourceList, dsFolders, variables, varFolders, workflows, directActions, dsActionsMap });
 }
 
 /**

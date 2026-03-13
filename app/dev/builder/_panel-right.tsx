@@ -585,6 +585,26 @@ function DesignTab({ node }: { node: SDUINode }) {
         : null;
   const hasContent = hasDirectText || !!buttonTextChild;
 
+  // Convert a stored text string → FormulaValue for FieldWithBinding.
+  // A whole-string template expression like "{{variables['UUID']}}" or "{{collections['X'].data.y}}"
+  // is treated as a formula binding so it shows "ƒ Edit formula" instead of a raw UUID textarea.
+  // Mixed/partial templates like "Hello {{name}}" stay as plain strings.
+  function textToFormulaValue(text: string): FormulaValue {
+    if (!text) return text;
+    const m = text.match(/^\{\{(.+)\}\}$/);
+    if (m) return { formula: m[1] } as unknown as FormulaValue;
+    return text;
+  }
+
+  // Convert FormulaValue back → stored text template string.
+  // Formula objects are wrapped in {{}} for the SDUI renderer's template engine.
+  function formulaValueToText(v: FormulaValue): string {
+    if (v && typeof v === 'object' && 'formula' in (v as object)) {
+      return `{{${(v as { formula: string }).formula}}}`;
+    }
+    return (v as string) ?? '';
+  }
+
   return (
     <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }} onFocus={() => { editingNodeIdRef.current = nodeId; }}>
 
@@ -593,46 +613,45 @@ function DesignTab({ node }: { node: SDUINode }) {
         <div style={SECTION_STYLE}>
           <SectionHeader title="Content" />
           <div style={{ marginTop: 6 }}>
-            <FieldWithBinding
-              label="text"
-              displayLabel="Text"
-              hint='any text or {{variable}} template'
-              topAlign
-              expectedType="string"
-              value={(buttonTextChild
+            {(() => {
+              const rawText = buttonTextChild
                 ? ((buttonTextChild as { text?: string }).text ?? '')
-                : ((node as { text?: string }).text ?? '')
-              ) as FormulaValue}
-              onChange={v => {
-                const targetId = buttonTextChild ? (buttonTextChild as { id?: string }).id ?? '' : nodeId;
-                store.patchProp(targetId, 'text', v as string);
-                commitHistory();
-              }}
-            >
-              <textarea
-                data-testid="input-text-content"
-                value={
-                  buttonTextChild
-                    ? ((buttonTextChild as { text?: string }).text ?? '')
-                    : ((node as { text?: string }).text ?? '')
-                }
-                rows={2}
-                onChange={e => {
-                  if (buttonTextChild) {
-                    store.patchProp((buttonTextChild as { id?: string }).id ?? '', 'text', e.target.value);
-                  } else {
-                    store.patchProp(nodeId, 'text', e.target.value);
-                  }
-                  commitHistory();
-                }}
-                style={{
-                  width: '100%', boxSizing: 'border-box',
-                  background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
-                  color: '#f3f4f6', fontSize: 12, padding: '5px 8px', resize: 'vertical',
-                  fontFamily: 'inherit',
-                }}
-              />
-            </FieldWithBinding>
+                : ((node as { text?: string }).text ?? '');
+              const targetId = buttonTextChild
+                ? (buttonTextChild as { id?: string }).id ?? ''
+                : nodeId;
+              const displayValue = textToFormulaValue(rawText);
+              return (
+                <FieldWithBinding
+                  label="text"
+                  displayLabel="Text"
+                  hint='any text or {{variable}} template'
+                  topAlign
+                  expectedType="string"
+                  value={displayValue}
+                  onChange={v => {
+                    store.patchProp(targetId, 'text', formulaValueToText(v));
+                    commitHistory();
+                  }}
+                >
+                  <textarea
+                    data-testid="input-text-content"
+                    value={rawText}
+                    rows={2}
+                    onChange={e => {
+                      store.patchProp(targetId, 'text', e.target.value);
+                      commitHistory();
+                    }}
+                    style={{
+                      width: '100%', boxSizing: 'border-box',
+                      background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
+                      color: '#f3f4f6', fontSize: 12, padding: '5px 8px', resize: 'vertical',
+                      fontFamily: 'inherit',
+                    }}
+                  />
+                </FieldWithBinding>
+              );
+            })()}
           </div>
         </div>
       )}

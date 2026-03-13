@@ -251,6 +251,7 @@ export function ActionNode({
   // Build lookup maps for variable and collection name resolution in summaries
   const customVars = useBuilderStore(s => s.customVars);
   const pageDataSources = useBuilderStore(s => s.pageDataSources);
+  const dsActionsMap = useBuilderStore(s => s.dsActionsMap);
   const pageNodes = useBuilderStore(s => s.pageNodes);
   const pageWorkflowMeta = useBuilderStore(s => s.pageWorkflowMeta);
   const varLabels = useMemo(() => {
@@ -287,8 +288,15 @@ export function ActionNode({
       const rich = ds as typeof ds & { _label?: string; _operationName?: string };
       map[ds.id] = rich._label || rich._operationName || ds.name || ds.id;
     }
+    // Also map action UUIDs → datasource label (for old-format collectionName configs)
+    // dsActionsMap: datasourceUUID → actionUUID, so invert it here
+    for (const [dsId, actionId] of Object.entries(dsActionsMap)) {
+      if (map[dsId]) {
+        map[actionId] = map[dsId];
+      }
+    }
     return map;
-  }, [pageDataSources]);
+  }, [pageDataSources, dsActionsMap]);
 
   const unconfigured = !isConfigured(step);
   const complete = !unconfigured && isStepComplete(step);

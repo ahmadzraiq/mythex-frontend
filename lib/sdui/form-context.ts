@@ -61,6 +61,22 @@ export type FormContextValue = {
   /** Remove validation rules when the field unmounts */
   unregisterFieldValidation: (name: string) => void;
   /**
+   * Register a `{parentInputId}-value` top-level store slot owned by an InputField child.
+   * Called when an InputField with a parentInputId mounts inside this FormContainer so
+   * reset() can clear the slot synchronously via the reliable top-level subscription path.
+   */
+  registerFieldSlot: (slotKey: string) => void;
+  /** Remove the slot registration when the InputField unmounts */
+  unregisterFieldSlot: (slotKey: string) => void;
+  /**
+   * Register a named variable that is bound as the `value` prop of an InputField child.
+   * When reset() fires, the variable is cleared back to `initialValue` so the input
+   * visually clears without needing explicit changeVariableValue steps in the workflow.
+   */
+  registerVariableBinding: (uuid: string, initialValue: unknown) => void;
+  /** Remove the variable binding when the InputField unmounts */
+  unregisterVariableBinding: (uuid: string) => void;
+  /**
    * Programmatically submit the form: validates all registered _validation fields,
    * shows errors if any, and calls onSubmitAction (or the provided callback) if all valid.
    * Called by the renderer when a Button with type="submit" is clicked, or when any

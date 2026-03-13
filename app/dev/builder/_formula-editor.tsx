@@ -96,7 +96,7 @@ export interface FormulaEditorProps {
   value: FormulaValue;
   onChange: (v: FormulaValue) => void;
   onClose: () => void;
-  expectedType?: 'string' | 'number' | 'boolean' | 'any';
+  expectedType?: 'string' | 'number' | 'boolean' | 'array' | 'object' | 'any';
   /** Human-readable hint describing the expected value format, e.g. "e.g. 200px, 50%, auto" */
   hint?: string;
   /**
