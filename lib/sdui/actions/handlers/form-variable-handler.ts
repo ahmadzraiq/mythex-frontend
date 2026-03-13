@@ -71,17 +71,17 @@ export const setFormStateHandler: (ctx: ActionHandlerContext) => (actionDef: Act
     const nextForm = { ...current, ...patch };
     getGlobalVariableStore().getState().setState((prev) => {
       const result = writeFormState(prev, nextForm);
-      // Also patch all per-container stores (variables['{id}-form']) so reactive
-      // bindings like {{variables['uuid-form'].isSubmitting}} update immediately.
+      // Also patch the ACTIVE FormContainer's isolated store (variables['{id}-form'])
+      // so reactive bindings like {{variables['uuid-form'].isSubmitting}} update immediately.
       // setFormStateHandler writes to local.data.form directly (bypassing FormContainer
       // React state), so the FormContainer useEffect never fires for these flags.
-      for (const key of Object.keys(prev)) {
-        if (key.endsWith('-form') && typeof prev[key] === 'object' && prev[key] !== null) {
-          (result as Record<string, unknown>)[key] = {
-            ...(prev[key] as Record<string, unknown>),
-            ...patch,
-          };
-        }
+      // Only update the active container — patching all would bleed state across FCs.
+      const activeKey = prev['_activeFormKey'] as string | undefined;
+      if (activeKey && activeKey.endsWith('-form') && typeof prev[activeKey] === 'object' && prev[activeKey] !== null) {
+        (result as Record<string, unknown>)[activeKey] = {
+          ...(prev[activeKey] as Record<string, unknown>),
+          ...patch,
+        };
       }
       return result;
     });

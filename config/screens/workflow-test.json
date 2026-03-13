@@ -2019,9 +2019,9 @@
                       },
                       {
                         "type": "Text",
-                        "condition": "local?.data?.form?.fields?.['input1']?.isValid",
+                        "condition": "local?.data?.form?.fields?.input1?.isValid",
                         "props": { "className": "text-xs text-red-500" },
-                        "text": "{{local.data.form.fields['input1'].isValid}}"
+                        "text": "{{local.data.form.fields.input1.isValid}}"
                       }
                     ]
                   },
@@ -2054,9 +2054,9 @@
                       },
                       {
                         "type": "Text",
-                        "condition": "local?.data?.form?.fields?.['input2']?.isValid",
+                        "condition": "local?.data?.form?.fields?.input2?.isValid",
                         "props": { "className": "text-xs text-red-500" },
-                        "text": "{{local.data.form.fields['input2'].isValid}}"
+                        "text": "{{local.data.form.fields.input2.isValid}}"
                       }
                     ]
                   },
@@ -2083,7 +2083,7 @@
                       {
                         "type": "Text",
                         "props": { "className": "text-xs font-semibold text-indigo-400 uppercase tracking-wide mb-1" },
-                        "text": "local.data.form (inside)"
+                        "text": "local.data.form (inside FormContainer)"
                       },
                       {
                         "type": "Box",
@@ -2248,7 +2248,157 @@
             ]
           }
         ]
-      }
+      },
+      {
+        "type": "Box",
+        "props": { "className": "flex flex-col gap-4 p-4 rounded-xl bg-white dark:bg-gray-900 shadow-sm border border-gray-100 dark:border-gray-800" },
+        "children": [
+        {
+          "type": "Text",
+          "props": { "className": "text-sm font-semibold text-gray-700 dark:text-gray-200" },
+          "text": "Card — Nested FormContainers"
+        },
+        {
+          "type": "Text",
+          "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+          "text": "local.data.form is scoped to the nearest enclosing FormContainer — typing or submitting the inner form does NOT affect the outer form's display, and vice versa."
+        },
+        {
+          "type": "FormContainer",
+          "id": "nested-outer-fc00-0000-0000-000000000001",
+          "actions": [{ "action": "waNestedOuterSubmit" }],
+          "props": { "className": "flex flex-col gap-3 p-3 rounded-lg border-2 border-indigo-200 dark:border-indigo-800 bg-indigo-50/30 dark:bg-indigo-950/20" },
+          "children": [
+            {
+              "type": "Text",
+              "props": { "className": "text-xs font-bold text-indigo-500 uppercase tracking-wide" },
+              "text": "Outer FormContainer"
+            },
+            {
+              "type": "Input",
+              "id": "nested-outer-input",
+              "props": { "variant": "outline", "size": "sm" },
+              "children": [
+                {
+                  "type": "InputField",
+                  "props": { "name": "outerField", "placeholder": "Type in outer field..." }
+                }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": { "className": "flex flex-col gap-1 p-2 rounded-md bg-indigo-100 dark:bg-indigo-900/40" },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": { "className": "text-xs font-semibold text-indigo-400 mb-1" },
+                  "text": "local.data.form (outer scope)"
+                },
+                {
+                  "type": "Box",
+                  "props": { "className": "flex flex-row items-center gap-2" },
+                  "children": [
+                    { "type": "Text", "props": { "className": "text-xs font-mono text-indigo-400 w-36" }, "text": "formData.outerField" },
+                    { "type": "Text", "props": { "className": "text-xs font-mono text-indigo-700 dark:text-indigo-300" }, "text": "{{local.data.form.formData.outerField}}" }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": { "className": "flex flex-row items-center gap-2" },
+                  "children": [
+                    { "type": "Text", "props": { "className": "text-xs font-mono text-indigo-400 w-36" }, "text": "isSubmitting" },
+                    { "type": "Text", "props": { "className": "text-xs font-mono text-indigo-700 dark:text-indigo-300" }, "text": "{{local.data.form.isSubmitting}}" }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": { "className": "flex flex-row items-center gap-2" },
+                  "children": [
+                    { "type": "Text", "props": { "className": "text-xs font-mono text-indigo-400 w-36" }, "text": "isSubmitted" },
+                    { "type": "Text", "props": { "className": "text-xs font-mono text-indigo-700 dark:text-indigo-300" }, "text": "{{local.data.form.isSubmitted}}" }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Button",
+              "props": { "type": "submit", "action": "primary", "size": "sm" },
+              "children": [
+                { "type": "ButtonText", "condition": "!local?.data?.form?.isSubmitting", "text": "Submit Outer" },
+                { "type": "ButtonText", "condition": "local?.data?.form?.isSubmitting", "text": "Submitting..." }
+              ]
+            },
+            {
+              "type": "FormContainer",
+              "id": "nested-inner-fc00-0000-0000-000000000001",
+              "actions": [{ "action": "waNestedInnerSubmit" }],
+              "props": { "className": "flex flex-col gap-3 p-3 rounded-lg border-2 border-emerald-200 dark:border-emerald-800 bg-emerald-50/30 dark:bg-emerald-950/20" },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": { "className": "text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide" },
+                  "text": "Inner FormContainer (nested inside outer)"
+                },
+                {
+                  "type": "Input",
+                  "id": "nested-inner-input",
+                  "props": { "variant": "outline", "size": "sm" },
+                  "children": [
+                    {
+                      "type": "InputField",
+                      "props": { "name": "innerField", "placeholder": "Type in inner field..." }
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": { "className": "flex flex-col gap-1 p-2 rounded-md bg-emerald-100 dark:bg-emerald-900/40" },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": { "className": "text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-1" },
+                      "text": "local.data.form (inner scope)"
+                    },
+                    {
+                      "type": "Box",
+                      "props": { "className": "flex flex-row items-center gap-2" },
+                      "children": [
+                        { "type": "Text", "props": { "className": "text-xs font-mono text-emerald-600 dark:text-emerald-500 w-36" }, "text": "formData.innerField" },
+                        { "type": "Text", "props": { "className": "text-xs font-mono text-emerald-700 dark:text-emerald-300" }, "text": "{{local.data.form.formData.innerField}}" }
+                      ]
+                    },
+                    {
+                      "type": "Box",
+                      "props": { "className": "flex flex-row items-center gap-2" },
+                      "children": [
+                        { "type": "Text", "props": { "className": "text-xs font-mono text-emerald-600 dark:text-emerald-500 w-36" }, "text": "isSubmitting" },
+                        { "type": "Text", "props": { "className": "text-xs font-mono text-emerald-700 dark:text-emerald-300" }, "text": "{{local.data.form.isSubmitting}}" }
+                      ]
+                    },
+                    {
+                      "type": "Box",
+                      "props": { "className": "flex flex-row items-center gap-2" },
+                      "children": [
+                        { "type": "Text", "props": { "className": "text-xs font-mono text-emerald-600 dark:text-emerald-500 w-36" }, "text": "isSubmitted" },
+                        { "type": "Text", "props": { "className": "text-xs font-mono text-emerald-700 dark:text-emerald-300" }, "text": "{{local.data.form.isSubmitted}}" }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Button",
+                  "props": { "type": "submit", "action": "primary", "size": "sm", "className": "!bg-emerald-600 hover:!bg-emerald-700 !text-white" },
+                  "children": [
+                    { "type": "ButtonText", "condition": "!local?.data?.form?.isSubmitting", "text": "Submit Inner" },
+                    { "type": "ButtonText", "condition": "local?.data?.form?.isSubmitting", "text": "Submitting..." }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
     ]
   }
 }

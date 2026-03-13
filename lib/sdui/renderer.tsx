@@ -10,7 +10,8 @@
  */
 
 import React, { memo, useSyncExternalStore, useContext, useEffect, useRef, useMemo } from 'react';
-import { FormContext } from './form-context';
+import { FormContext, FormScopeContext } from './form-context';
+import { getNestedValue } from './nested-utils';
 import { trackFormFieldProps, useFormFieldRegistration, useExternalNodeValueSync, useExternalFormSync } from './form-field-tracker';
 import { evaluateFormula } from './formula-evaluator';
 import { getComponent } from './component-registry';
@@ -79,16 +80,33 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
   const merged = mergedStore
     ? (builderMode ? mergedFromStore : mergedStore.getState().merged)
     : (mergedState ?? STABLE_EMPTY_OBJECT);
+
+  // FormScopeContext: set by FormContainer — scopes local.data.form.* to the
+  // nearest enclosing FormContainer's isolated store instead of the shared singleton.
+  const activeFormKey = useContext(FormScopeContext);
+
   const rawDeps = extractNodeDependencies(node);
-  const deps =
+  const screenMappedDeps =
     screenName && rawDeps.some((p) => isScreenScopedPath(p, screenScopedAliases))
       ? rawDeps.map((p) => (isScreenScopedPath(p, screenScopedAliases) ? `screens.${screenName}.${p}` : p))
       : rawDeps;
+  // When inside a FormContainer, redirect local.data.form.* subscriptions to the
+  // per-container isolated store (variables['formKey'].*) so only this container's
+  // state changes trigger re-renders for this node — not other containers' submits.
+  const LOCAL_FORM = 'local.data.form';
+  const deps = activeFormKey
+    ? screenMappedDeps.map(p => {
+        if (p === LOCAL_FORM) return `variables['${activeFormKey}']`;
+        if (p.startsWith(LOCAL_FORM + '.')) return `variables['${activeFormKey}'].${p.slice(LOCAL_FORM.length + 1)}`;
+        return p;
+      })
+    : screenMappedDeps;
+
   useVariablePaths(store, deps, scope, mergedStore);
   const get = createGet(store, merged, scope, mergedStore, screenName, screenScopedAliases);
   const storeState = store.getState().getFullState();
   const state = merged ? { ...storeState, ...merged } : storeState;
-  const stateWithScope = scope
+  const stateBase = scope
     ? {
         ...state,
         // Legacy scope vars — kept for backward compat
@@ -98,10 +116,31 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
         context: scope.context ?? { item: scope.$item, index: scope.$index, parent: scope.$parent },
       }
     : state;
+
+  // Inject per-FormContainer local scope: override state.local so that any formula
+  // or template expression using local.data.form.* resolves against THIS container's
+  // isolated store (variables[formKey]) rather than the shared singleton.
+  const formStateForScope = activeFormKey
+    ? ((state.variables as Record<string, unknown> | undefined)?.[activeFormKey] as Record<string, unknown> | undefined) ?? null
+    : null;
+  const stateWithScope = formStateForScope
+    ? { ...stateBase, local: { data: { form: formStateForScope } } }
+    : stateBase;
+
+  // Scoped getter: redirect local.data.form.* to the per-FC isolated store
+  // so {{local.data.form.formData.x}} template interpolation also resolves correctly.
+  const scopedGet = formStateForScope
+    ? (path: string, s?: Record<string, unknown>) => {
+        if (path === LOCAL_FORM) return formStateForScope;
+        if (path.startsWith(LOCAL_FORM + '.')) return getNestedValue(formStateForScope, path.slice(LOCAL_FORM.length + 1));
+        return get(path, s);
+      }
+    : get;
+
   const sduiContext: SDUIContext = {
     state: stateWithScope,
     setState: (updater) => store.getState().setState(updater),
-    get,
+    get: scopedGet,
     runAction,
     fetchData,
   };

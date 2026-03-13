@@ -1009,9 +1009,9 @@ Inside the loop body, access the current item via:
 
 ## Reactive Subscriptions — `text: { expr }` and `condition` Strings Are NOT Subscribed
 
-**Problem:** Each renderer node (`SDURendererInner`) subscribes only to the paths returned by `extractNodeDependencies`. This extractor can only find paths inside `{{...}}` template strings and `{ "var": "path" }` JSON Logic objects. Plain formula strings — whether in `text: { "expr": "..." }` or `"condition": "formula string"` — contain **no** `{{...}}` patterns, so **zero deps are extracted** and the node **never re-renders** when store data changes.
+**Problem:** Each renderer node subscribes only to the paths returned by `extractNodeDependencies`. This extractor finds paths inside `{{...}}` template strings only. Plain formula strings in `text: { "expr": "..." }` or `"condition": "formula string"` have **no `{{...}}`**, so **zero deps are extracted** and the node **never re-renders** when store data changes.
 
-The `map` field with a string path IS correctly subscribed. So a `map` node will update but a sibling `text: { expr }` node counting the same items will stay frozen at its initial value.
+The `map` field with a string path IS correctly subscribed.
 
 **Fix — use the right syntax per field:**
 
@@ -1019,20 +1019,150 @@ The `map` field with a string path IS correctly subscribed. So a `map` node will
 |---|---|---|
 | `text` count/length | `"text": { "expr": "arr.length" }` | `"text": "{{path.to.array.length}}"` |
 | `text` formula result | `"text": { "expr": "x + y" }` | Use `{{path}}` template or move to computed |
-| `condition` single path | `"condition": "arr.length === 0"` | `"condition": { "not": { "var": "path.to.array.length" } }` |
-| `condition` path check | `"condition": "val === 'foo'"` | `"condition": { "==": [{ "var": "path" }, "foo"] }` |
+| `condition` (needs own subscription) | `"condition": "path.length === 0"` | pair with a `text: "{{path.length}}"` on the same node, OR use a parent `map` that already subscribes |
 
 ```json
 // ❌ BAD — shows 0 forever; never re-renders when collection.data changes
 { "text": { "expr": "(collections['UUID']?.data || []).length", "suffix": "" } }
-{ "condition": "(collections['UUID']?.data || []).length === 0" }
 
 // ✅ GOOD — subscribed; updates immediately when data changes
 { "text": "{{collections.UUID.data.length}}" }
-{ "condition": { "not": { "var": "collections.UUID.data.length" } } }
 ```
 
-**Rule:** For any node that displays or gates on dynamically-changing Zustand store data:
-- Use `{{path}}` template strings for `text` (subscribed via `extractPathsFromTemplate`)
-- Use JSON Logic objects (`{ "var": "path" }`, `{ "==": [...] }`, `{ "not": {...} }`) for `condition` (subscribed via `extractPathsFromObject`)
-- Only use `text: { "expr": "..." }` for static/config-time values or inside a `map` scope where the parent map already re-renders on data change
+**`condition` subscription rule:** Formula string conditions evaluate correctly at runtime but do NOT self-subscribe. A condition node re-renders (and re-evaluates its condition) whenever ANY other subscribed path on that node changes:
+- If the node has `"text": "{{path}}"` on the same path the condition checks → re-renders correctly ✓
+- If the node has no `text` or `props` subscriptions → condition is evaluated once on mount and never again ✗
+
+**Inline error text nodes use this correctly:**
+```json
+{
+  "type": "Text",
+  "condition": "local?.data?.form?.fields?.['fieldName']?.isValid",
+  "props": { "className": "text-xs text-red-500" },
+  "text": "{{local.data.form.fields['fieldName'].isValid}}"
+}
+```
+The `text` template subscribes to `local.data.form.fields.fieldName.isValid`. When validation writes an error, the subscription fires, the node re-renders, and the `condition` is re-evaluated with the new error string (truthy → node shows). The same `{{path}}` subscription drives both display and visibility.
+
+**⚠️ JSON Logic conditions (`{ "not": { "var": "..." } }`, `{ "==": [...] }`) are NOT supported by `evaluateFormula` at runtime.** They always return `null` (falsy), so the node is always hidden. Only use formula strings for `condition` values in JSON config. JSON Logic patterns in `extractPathsFromObject` are a subscription mechanism only — they were never wired to runtime evaluation.
+
+**Rule:** For any node that displays or gates on dynamically-changing store data:
+- Use `{{path}}` template strings for `text` (subscribed)
+- Use formula strings for `condition` (e.g., `"local?.data?.form?.isSubmitting"`, `"!local?.data?.form?.isSubmitting"`)
+- Ensure at least one `{{path}}` template or prop subscription on the same node covers the same data the condition checks
+- Only use `text: { "expr": "..." }` for static/config-time values or inside a `map` scope where the parent already re-renders
+
+---
+
+## FormContainer — Four Rules to Avoid Silent Bugs
+
+### Rule 1 — `_validation` must be a TOP-LEVEL node field, NOT inside `props`
+
+**Problem:** `form-field-tracker.ts` reads `node._validation` (top level of the SDUI node). If you put `_validation` inside `node.props`, it becomes a regular DOM prop passed to the InputField component — validation is silently ignored, no errors ever fire.
+
+```json
+// ❌ BAD — _validation inside props: silently ignored
+{
+  "type": "InputField",
+  "props": {
+    "name": "email",
+    "_validation": { "trigger": "submit", "rules": [{ "type": "required", "message": "Required" }] }
+  }
+}
+
+// ✅ GOOD — _validation at top level of the node
+{
+  "type": "InputField",
+  "_validation": {
+    "trigger": "submit",
+    "rules": [
+      { "type": "required", "message": "Email is required" },
+      { "type": "email", "message": "Please enter a valid email" }
+    ]
+  },
+  "props": { "name": "email", "placeholder": "Enter email" }
+}
+```
+
+**Supported rule types:** `required`, `email`, `phone`, `url`, `minLength`, `maxLength`, `pattern`, `formula`.
+
+---
+
+### Rule 2 — FormContainer must have an explicit `id` to stabilise `formStoreKey`
+
+**Problem:** Without `"id"` on the FormContainer node, the component falls back to `crypto.randomUUID()` on every mount. `formStoreKey` = `"{id}-form"` — a new UUID each time means `variables['uuid-form']` bindings never resolve, the amber-box displays show nothing, and the builder's layer panel can assign duplicate IDs via localStorage cache collisions (two nodes end up with the same UUID → both highlight on selection).
+
+**Fix:** Always put a stable UUID-format `id` directly on the FormContainer in JSON:
+
+```json
+// ✅ CORRECT
+{
+  "type": "FormContainer",
+  "id": "6f32095d-4bc7-4b18-8408-14a34645265d",
+  "actions": [{ "action": "myFormSubmit" }],
+  "children": [...]
+}
+```
+
+**Builder ID collision:** If you hardcode an `id` that was previously auto-generated for a DIFFERENT node (the builder stores positional-key → UUID in `localStorage`), the builder marks BOTH nodes as selected simultaneously. Prevent this by generating a fresh UUID for new FormContainers rather than re-using a previously auto-assigned one.
+
+---
+
+### Rule 3 — `setFormState` workflow step must target the active FormContainer only
+
+**Problem:** The `setFormState` workflow step (`{ "type": "setFormState", "config": { "isSubmitting": true } }`) calls `setFormStateHandler`. If the handler patches ALL `*-form` keys in the variable store, submitting any form on the page bleeds `isSubmitting`/`isSubmitted` into every other FormContainer's isolated store.
+
+**Fix (already applied in `setFormStateHandler`):** The handler now reads `_activeFormKey` from the global store (set by `doSubmit` at the start of each submission) and only patches that specific `variables[formStoreKey]` entry.
+
+**Fix (already applied in `FormContainer.doSubmit`):** `doSubmit` sets `_activeFormKey = formStoreKey` at the very start, before any workflow steps run, so `setFormStateHandler` always knows which container is submitting.
+
+---
+
+### Rule 4 — Validation errors wiped by the FormContainer `useEffect` merge
+
+**Problem:** `doSubmit` writes validation errors to both `local.data.form.fields` and `variables[formStoreKey].fields` then calls `setFormState(nextForm)`. The `useEffect([formState])` fires a moment later and performs a merge:
+
+```ts
+// OLD (buggy) — stale per-container store value overwrites fresh error
+mergedFields[key] = storedVarFields[key] !== undefined
+  ? storedVarFields[key]   // ← { isValid: '' } from before submission
+  : formState.fields[key]; // ← { isValid: 'Email is required' } — never reached
+```
+
+Because `storedVarFields[key] !== undefined` is always `true` for registered fields (initialized as `{ value: '', isValid: '' }`), the merge always preferred the stale store value, wiping the error the user just saw.
+
+**Fix (already applied in `FormContainer.doSubmit`):** `doSubmit` now writes the full `nextForm` (with errors) to **both** `local.data.form` AND `variables[formStoreKey]` in one atomic store write. When the `useEffect` fires and reads `storedVarFields`, the per-container store already has the errors — the merge sees them and preserves them instead of restoring the pre-error state.
+
+**Also fixed:** `doSubmit` now reads form data from `variables[formStoreKey]` first (isolated per-container) rather than the shared `local.data.form`. This prevents incorrect validation when multiple FormContainers coexist on the same page — each container's submit reads its own fields, not whatever the last-active FormContainer wrote to the shared slot.
+
+---
+
+## `local.data.form` is Scoped Per-FormContainer (NOT a Shared Singleton)
+
+**Correct architecture:** `local.data.form.*` is **scoped to the nearest enclosing FormContainer**. Inside FormContainer A, `{{local.data.form.formData.email}}` refers to FormContainer A's state. Inside FormContainer B, it refers to FormContainer B's state. There is **no shared `local.data.form` singleton** — each FormContainer owns its own scope.
+
+**How it works (engine internals):**
+1. `FormContainer` provides a `FormScopeContext` (React context) with its `formStoreKey` to all children.
+2. The renderer (`SDURendererInner`) reads `FormScopeContext`. When a non-null key is present:
+   - **Subscriptions:** deps starting with `local.data.form` are translated to `variables['formKey'].*` so only the enclosing FormContainer's state changes trigger a re-render.
+   - **State override:** `state.local` is replaced with `{ data: { form: variables[formKey] } }` so formula evaluation (`evaluateFormula`) sees the correct per-container data.
+   - **Getter override:** `sduiContext.get('local.data.form.*')` is redirected to the per-container store so template interpolation (`{{local.data.form.*}}`) also resolves correctly.
+
+**In config:** Always use `local.data.form.*` inside FormContainers. Never use `variables['uuid-form'].*` for inside-FC bindings — that is only for external/outside-FC access.
+
+```json
+// ✅ CORRECT — inside FormContainer
+"condition": "local?.data?.form?.isSubmitting"
+"text": "{{local.data.form.formData.email}}"
+"text": "{{local.data.form.fields.email.isValid}}"
+
+// ✅ CORRECT — outside FormContainer (external observer)
+"text": "{{variables['uuid-form'].isSubmitting}}"
+"text": "{{variables['uuid-form'].formData.email}}"
+
+// ❌ WRONG — using variables['uuid-form'] inside the FormContainer
+// (works by coincidence when only one FC is present, breaks with multiple)
+"condition": "variables?.['uuid-form']?.isSubmitting"
+```
+
+**State bleeding between FormContainers:** If two FormContainers are on the same page and you use `local.data.form.*` in both, each one's nodes correctly read ONLY their own container's state. Submitting FormContainer A will NOT cause FormContainer B's `local.data.form.isSubmitting` to change.

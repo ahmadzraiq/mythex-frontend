@@ -24,7 +24,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { FormContext, EMPTY_FORM_STATE, type FormState, type FieldValidationConfig, type FieldValidationRule } from '../form-context';
+import { FormContext, FormScopeContext, EMPTY_FORM_STATE, type FormState, type FieldValidationConfig, type FieldValidationRule } from '../form-context';
 import { getGlobalVariableStore } from '../global-variable-store';
 import { useBuilderMode } from '../builder-context';
 import { applyFieldRules } from '../validation-utils';
@@ -386,6 +386,10 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
 
     const key = formStoreKey;
 
+    // Mark this FormContainer as the active one so setFormStateHandler knows which
+    // variables['{id}-form'] key to update when workflow steps call setFormState.
+    getGlobalVariableStore().getState().setState(prev => ({ ...prev, _activeFormKey: key }));
+
     // Read form data from the PER-CONTAINER store first so validation runs against
     // the correct data when multiple FormContainers coexist on the same page.
     // local.data.form is a shared slot that any FC can overwrite; variables[key] is isolated.
@@ -491,30 +495,34 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
   // interfering with the builder UI (e.g. formula editor, binding icons).
   if (builderMode) {
     return (
-      <FormContext.Provider value={ctxValue}>
-        <div
-          className={className}
-          style={style}
-          {...(domRest as React.HTMLAttributes<HTMLDivElement>)}
-        >
-          {children}
-        </div>
-      </FormContext.Provider>
+      <FormScopeContext.Provider value={formStoreKey}>
+        <FormContext.Provider value={ctxValue}>
+          <div
+            className={className}
+            style={style}
+            {...(domRest as React.HTMLAttributes<HTMLDivElement>)}
+          >
+            {children}
+          </div>
+        </FormContext.Provider>
+      </FormScopeContext.Provider>
     );
   }
 
   return (
-    <FormContext.Provider value={ctxValue}>
-      <form
-        className={className}
-        style={style}
-        onSubmit={handleSubmit}
-        noValidate
-        {...(domRest as React.FormHTMLAttributes<HTMLFormElement>)}
-      >
-        {children}
-      </form>
-    </FormContext.Provider>
+    <FormScopeContext.Provider value={formStoreKey}>
+      <FormContext.Provider value={ctxValue}>
+        <form
+          className={className}
+          style={style}
+          onSubmit={handleSubmit}
+          noValidate
+          {...(domRest as React.FormHTMLAttributes<HTMLFormElement>)}
+        >
+          {children}
+        </form>
+      </FormContext.Provider>
+    </FormScopeContext.Provider>
   );
 }
 

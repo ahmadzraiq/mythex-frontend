@@ -2205,5 +2205,55 @@
         }
       }
     ]
+  },
+  "waNestedOuterSubmit": {
+    "type": "workflowSteps",
+    "name": "Nested: Outer Form Submit",
+    "trigger": "submit",
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Set isSubmitting",
+        "type": "setFormState",
+        "config": { "isSubmitting": true }
+      },
+      {
+        "id": "s2",
+        "name": "Simulate delay (1s)",
+        "type": "timeDelay",
+        "config": { "delay": 1000 }
+      },
+      {
+        "id": "s3",
+        "name": "Set submitted",
+        "type": "setFormState",
+        "config": { "isSubmitting": false, "isSubmitted": true }
+      }
+    ]
+  },
+  "waNestedInnerSubmit": {
+    "type": "workflowSteps",
+    "name": "Nested: Inner Form Submit",
+    "trigger": "submit",
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Set isSubmitting",
+        "type": "setFormState",
+        "config": { "isSubmitting": true }
+      },
+      {
+        "id": "s2",
+        "name": "Simulate delay (1s)",
+        "type": "timeDelay",
+        "config": { "delay": 1000 }
+      },
+      {
+        "id": "s3",
+        "name": "Set submitted",
+        "type": "setFormState",
+        "config": { "isSubmitting": false, "isSubmitted": true }
+      }
+    ]
   }
 }

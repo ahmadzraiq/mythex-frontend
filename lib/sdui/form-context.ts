@@ -8,6 +8,14 @@
 
 import { createContext, useContext } from 'react';
 
+/**
+ * FormScopeContext — provided by FormContainer to its children.
+ * Holds the formStoreKey for the nearest enclosing FormContainer so the
+ * renderer can redirect `local.data.form.*` formula/template paths to the
+ * per-container isolated store instead of the shared singleton.
+ */
+export const FormScopeContext = createContext<string | null>(null);
+
 export type FormFieldState = {
   value: unknown;
   /** '' means valid (no error); a non-empty string is the validation error message */
