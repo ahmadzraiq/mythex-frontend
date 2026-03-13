@@ -15,6 +15,7 @@ import type { SDUINode } from '@/lib/sdui/types/node';
 import { SECTION_STYLE, LABEL_STYLE, SectionHeader, ToggleBtn } from './_panel-primitives';
 import { FieldWithBinding, BindingIcon, type FormulaValue } from './_formula-panel';
 import { FormulaEditor } from './_formula-editor';
+import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 
 // ─── Settings Tab ─────────────────────────────────────────────────────────────
 
@@ -191,6 +192,26 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
   const [nameDraft, setNameDraft] = useState(currentName);
   useEffect(() => { setNameDraft(currentName); }, [currentName]);
 
+  // Captured at focus time to avoid two stale-closure bugs:
+  //
+  // Bug A — wrong target: When the user clicks a different canvas element while editing,
+  // React synchronously re-renders (useSyncExternalStore) with the new element's node prop
+  // BEFORE blur fires. nodeId/nodeProps in the closure now refer to the NEW element.
+  // Fix: capture nodeId at focus time, always commit to that node.
+  //
+  // Bug B — wrong value: The same React re-render also updates the controlled input
+  // (value={fieldNameDraft}) with the NEW element's field name BEFORE blur fires.
+  // So e.target.value in onBlur is the NEW element's name, not what the user typed.
+  // Fix: track the typed value in the ref (updated on every onChange), use it at commit.
+  const nameEditRef = useRef<{ nodeId: string; currentName: string; draftValue: string } | null>(null);
+  const fieldEditRef = useRef<{
+    nodeId: string;
+    nodeProps: Record<string, unknown>;
+    formContainerAncestor: SDUINode | null;
+    fieldName: string;
+    draftValue: string;
+  } | null>(null);
+
   // Walk up tree to find FormContainer ancestor
   const formContainerAncestor = useMemo(() => {
     let current = findParentNode(pageNodes, nodeId);
@@ -234,10 +255,13 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
 
   // ── helpers ──────────────────────────────────────────────────────────────────
 
-  const commitName = (value: string) => {
-    const trimmed = value.trim() || undefined;
-    if (trimmed === currentName) return;
-    store.patchNodeField(nodeId, 'name', trimmed);
+  const commitName = () => {
+    const ctx = nameEditRef.current;
+    if (!ctx) return;
+    nameEditRef.current = null;
+    const trimmed = ctx.draftValue.trim() || undefined;
+    if (trimmed === ctx.currentName) return;
+    store.patchNodeField(ctx.nodeId, 'name', trimmed);
   };
 
   const syncValidationToAction = (nextValidation: NodeValidation) => {
@@ -316,25 +340,74 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
     }
   };
 
-  const commitFieldName = (value: string) => {
-    const trimmed = value.trim();
+  const commitFieldName = () => {
+    // Use ref captured at focus time — the closure might have stale nodeId/nodeProps
+    // if the user clicked a different canvas element while this input had focus.
+    // draftValue is updated on every onChange, so it always holds what the user typed —
+    // NOT e.target.value which React may have overwritten with the new element's name.
+    const ctx = fieldEditRef.current;
+    if (!ctx) return;
+    fieldEditRef.current = null;
+    const { nodeId: targetId, nodeProps: targetProps, formContainerAncestor: fc, fieldName: oldName, draftValue } = ctx;
+
+    const trimmed = draftValue.trim();
     if (!trimmed) return;
-    const oldName = fieldName;
 
     // 1. Write the field name to node.props.name (source of truth)
-    store.patchNodeField(nodeId, 'props', { ...nodeProps, name: trimmed });
+    store.patchNodeField(targetId, 'props', { ...targetProps, name: trimmed });
 
     // 2. Update node.name (display name) to match the field name
-    store.patchNodeField(nodeId, 'name', trimmed);
+    store.patchNodeField(targetId, 'name', trimmed);
 
     // 3. Rename the key in FormContainer's initialFormData so the formula path stays in sync
-    if (oldName && oldName !== trimmed && formContainerAncestor) {
-      const fcId = (formContainerAncestor as { id?: string }).id ?? '';
-      const fcProps = (formContainerAncestor.props ?? {}) as Record<string, unknown>;
+    if (oldName && oldName !== trimmed && fc) {
+      const fcId = (fc as { id?: string }).id ?? '';
+      const fcProps = (fc.props ?? {}) as Record<string, unknown>;
       const oldData = (fcProps.initialFormData ?? {}) as Record<string, unknown>;
       if (oldName in oldData) {
         const { [oldName]: oldVal, ...rest } = oldData;
         store.patchNodeField(fcId, 'props', { ...fcProps, initialFormData: { ...rest, [trimmed]: oldVal } });
+      }
+
+      // 4. Immediately rename the key in the live runtime variable store so the formula
+      //    tree and data source panel update without requiring the user to type in the field.
+      if (fcId) {
+        const runtimeKey = `${fcId}-form`;
+        getGlobalVariableStore().getState().setState(vs => {
+          const formEntry = (vs[runtimeKey] ?? {}) as Record<string, unknown>;
+          const fd    = (formEntry['formData'] ?? {}) as Record<string, unknown>;
+          const flds  = (formEntry['fields']   ?? {}) as Record<string, unknown>;
+          const { [oldName]: oldFdVal,  ...restFd   } = fd;
+          const { [oldName]: oldFldVal, ...restFlds  } = flds;
+
+          const storedLocal = (vs['local'] ?? {}) as Record<string, unknown>;
+          const storedData  = (storedLocal['data'] ?? {}) as Record<string, unknown>;
+          const storedForm  = (storedData['form']  ?? {}) as Record<string, unknown>;
+          const localFd   = (storedForm['formData'] ?? {}) as Record<string, unknown>;
+          const localFlds = (storedForm['fields']   ?? {}) as Record<string, unknown>;
+          const { [oldName]: oldLocalFdVal,  ...restLocalFd   } = localFd;
+          const { [oldName]: oldLocalFldVal, ...restLocalFlds  } = localFlds;
+
+          return {
+            ...vs,
+            [runtimeKey]: {
+              ...formEntry,
+              formData: { ...restFd,   [trimmed]: oldFdVal  ?? '' },
+              fields:   { ...restFlds, [trimmed]: oldFldVal ?? { value: '', isValid: '' } },
+            },
+            local: {
+              ...storedLocal,
+              data: {
+                ...storedData,
+                form: {
+                  ...storedForm,
+                  formData: { ...restLocalFd,   [trimmed]: oldLocalFdVal  ?? '' },
+                  fields:   { ...restLocalFlds, [trimmed]: oldLocalFldVal ?? { value: '', isValid: '' } },
+                },
+              },
+            },
+          };
+        });
       }
     }
   };
@@ -373,9 +446,10 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
           <input
             data-testid="settings-name-input"
             value={nameDraft}
-            onChange={e => setNameDraft(e.target.value)}
-            onBlur={e => commitName(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') { commitName(nameDraft); (e.target as HTMLInputElement).blur(); } }}
+            onFocus={() => { nameEditRef.current = { nodeId, currentName, draftValue: nameDraft }; }}
+            onChange={e => { setNameDraft(e.target.value); if (nameEditRef.current) nameEditRef.current.draftValue = e.target.value; }}
+            onBlur={() => commitName()}
+            onKeyDown={e => { if (e.key === 'Enter') { commitName(); (e.target as HTMLInputElement).blur(); } }}
             placeholder={`e.g. ${nodeType}`}
             style={{ width: '100%', boxSizing: 'border-box' as const, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '4px 7px', outline: 'none' }}
           />
@@ -416,8 +490,11 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
         </div>
       )}
 
+      {/* ── FormContainer: registered fields inspector ───────────────────────── */}
+      {nodeType === 'FormContainer' && <FormContainerFieldsPanel nodeId={nodeId} />}
+
       {/* ── For non-input, non-button types: show nothing more ───────────────── */}
-      {!SETTINGS_INPUT_TYPES.has(nodeType) && nodeType !== 'Button' && (
+      {!SETTINGS_INPUT_TYPES.has(nodeType) && nodeType !== 'Button' && nodeType !== 'FormContainer' && (
         <div style={{ padding: 16, color: '#4b5563', fontSize: 11, textAlign: 'center' }}>
           No specific settings for this element
         </div>
@@ -439,9 +516,10 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
             <input
               data-testid="settings-field-name-input"
               value={fieldNameDraft}
-              onChange={e => setFieldNameDraft(e.target.value)}
-              onBlur={e => commitFieldName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') { commitFieldName(fieldNameDraft); (e.target as HTMLInputElement).blur(); } }}
+              onFocus={() => { fieldEditRef.current = { nodeId, nodeProps, formContainerAncestor, fieldName, draftValue: fieldNameDraft }; }}
+              onChange={e => { setFieldNameDraft(e.target.value); if (fieldEditRef.current) fieldEditRef.current.draftValue = e.target.value; }}
+              onBlur={() => commitFieldName()}
+              onKeyDown={e => { if (e.key === 'Enter') { commitFieldName(); (e.target as HTMLInputElement).blur(); } }}
               placeholder="e.g. email"
               style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', width: 110, boxSizing: 'border-box' as const }}
             />
@@ -711,6 +789,97 @@ export function AlignDistributePanel({ ids }: { ids: string[] }) {
           >
             {icon}
           </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── FormContainer Fields Inspector ───────────────────────────────────────────
+
+function FormContainerFieldsPanel({ nodeId }: { nodeId: string }) {
+  const [formData, setFormData] = useState<Record<string, unknown>>({});
+  const [fields, setFields] = useState<Record<string, { value?: unknown; isValid?: unknown }>>({});
+  const [flags, setFlags] = useState({ isSubmitting: false, isSubmitted: false, isValid: false });
+  const formStoreKey = nodeId ? `${nodeId}-form` : null;
+
+  useEffect(() => {
+    const read = () => {
+      const vs = getGlobalVariableStore().getState().getFullState();
+      // Read from per-container key (variables[nodeId-form]) so we only see THIS
+      // FormContainer's fields — not fields from other containers on the same page.
+      const form = formStoreKey
+        ? (vs[formStoreKey] as Record<string, unknown> | undefined)
+        : undefined;
+      setFormData((form?.['formData'] as Record<string, unknown>) ?? {});
+      setFields((form?.['fields'] as Record<string, { value?: unknown; isValid?: unknown }>) ?? {});
+      setFlags({
+        isSubmitting: Boolean(form?.['isSubmitting']),
+        isSubmitted: Boolean(form?.['isSubmitted']),
+        isValid: Boolean(form?.['isValid']),
+      });
+    };
+    read();
+    return getGlobalVariableStore().subscribe(() => read());
+  }, [nodeId, formStoreKey]);
+
+  const fieldNames = Object.keys(formData);
+
+  return (
+    <div style={{ borderBottom: '1px solid #1f2937', padding: '8px 0 4px' }}>
+      <div style={{ padding: '0 12px 6px', display: 'flex', alignItems: 'center', gap: 5 }}>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 10h8M8 14h5"/>
+        </svg>
+        <span style={{ fontSize: 10, color: '#6366f1', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Registered Fields</span>
+      </div>
+
+      {/* Formula path hint */}
+      {formStoreKey && (
+        <div style={{ padding: '0 12px 6px', fontSize: 9, color: '#4b5563', lineHeight: 1.4 }}>
+          Formula path:{' '}
+          <code style={{ background: '#1f2937', padding: '1px 4px', borderRadius: 3, color: '#6366f1' }}>
+            variables[&apos;{formStoreKey}&apos;].formData.fieldName
+          </code>
+        </div>
+      )}
+      {!formStoreKey && (
+        <div style={{ padding: '4px 12px 6px', fontSize: 9, color: '#f87171' }}>
+          Set an <code style={{ background: '#1f2937', padding: '1px 4px', borderRadius: 3 }}>id</code> on this FormContainer to enable per-form tracking.
+        </div>
+      )}
+      {fieldNames.length === 0 ? (
+        <div style={{ padding: '4px 12px 8px', fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>
+          No fields registered yet — add InputField nodes with a{' '}
+          <code style={{ background: '#1f2937', padding: '1px 4px', borderRadius: 3 }}>name</code> prop.
+        </div>
+      ) : (
+        <div style={{ padding: '0 12px 4px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {fieldNames.map(name => {
+            const val = formData[name];
+            const isValid = fields[name]?.isValid;
+            return (
+              <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 6px', background: '#0f172a', borderRadius: 4, border: '1px solid #1e293b' }}>
+                <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#86efac', minWidth: 80, flexShrink: 0 }}>{name}</span>
+                <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#94a3b8', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {val === undefined || val === null || val === '' ? <span style={{ color: '#374151' }}>(empty)</span> : String(val)}
+                </span>
+                {isValid ? (
+                  <span style={{ fontSize: 9, color: '#f87171', flexShrink: 0 }}>⚠ {String(isValid)}</span>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Form state flags */}
+      <div style={{ padding: '4px 12px 6px', display: 'flex', gap: 8 }}>
+        {(['isSubmitting', 'isSubmitted', 'isValid'] as const).map(key => (
+          <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: flags[key] ? '#86efac' : '#374151', flexShrink: 0 }} />
+            <span style={{ fontSize: 9, color: '#6b7280' }}>{key}</span>
+          </div>
         ))}
       </div>
     </div>

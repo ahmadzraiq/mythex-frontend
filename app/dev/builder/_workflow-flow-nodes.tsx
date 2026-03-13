@@ -305,8 +305,12 @@ export function ActionNode({
   const label = unconfigured ? 'Action' : getActionLabel(step.type);
   const icon = unconfigured ? '⚡' : getActionIcon(step.type);
   const summary = unconfigured ? null : getStepSummary(step, varLabels, collectionNames);
-  // subtext: summary when complete, nothing when actionIncomplete (badge handles it), "Click to configure" when unconfigured
-  const subtextLabel = unconfigured ? 'Click to configure' : (complete ? summary : null);
+  // subtext: when name exists → "Type · summary"; otherwise just summary. Unconfigured → "Click to configure"
+  const subtextLabel = unconfigured
+    ? 'Click to configure'
+    : (complete
+      ? (step.name ? [label, summary].filter(Boolean).join(' · ') : summary)
+      : null);
 
   const handleTest = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -369,13 +373,18 @@ export function ActionNode({
         <div style={S.cardSubtext(true)}>Click to configure</div>
       )}
       {actionIncomplete && (
-        <div style={{
-          display: 'inline-block', marginTop: 6,
-          background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)',
-          borderRadius: 6, padding: '2px 8px',
-          fontSize: 11, fontWeight: 500, color: '#f59e0b',
-        }}>
-          Action incomplete
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+          {step.name && (
+            <span style={{ fontSize: 11, color: '#9ca3af' }}>{label}</span>
+          )}
+          <div style={{
+            display: 'inline-block',
+            background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)',
+            borderRadius: 6, padding: '2px 8px',
+            fontSize: 11, fontWeight: 500, color: '#f59e0b',
+          }}>
+            Action incomplete
+          </div>
         </div>
       )}
       {!unconfigured && !actionIncomplete && subtextLabel && (

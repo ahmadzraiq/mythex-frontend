@@ -1403,11 +1403,13 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
             Object.entries(s.pageWorkflowMeta).filter(([id]) => !configWorkflowIds.has(id))
           );
           // A workflow is "system" if it's a single-step onChange setter (e.g. changeVariableValue)
+          // BUT only when it has no explicit name (name equals id = auto-generated).
           const SYSTEM_STEP_TYPES = new Set(['changeVariableValue', 'setState', 'set']);
-          const isSystemWorkflow = (w: { trigger?: string; steps?: unknown[] }) =>
+          const isSystemWorkflow = (w: { id?: string; name?: string; trigger?: string; steps?: unknown[] }) =>
             w.trigger === 'change' &&
             Array.isArray(w.steps) && w.steps.length === 1 &&
-            SYSTEM_STEP_TYPES.has((w.steps[0] as Record<string, unknown>)?.type as string);
+            SYSTEM_STEP_TYPES.has((w.steps[0] as Record<string, unknown>)?.type as string) &&
+            (!w.name || w.name === w.id);
 
           // Key by UUID id, display name comes from the "name" field in the definition.
           // Convert raw camelCase/kebab names to human-readable text for the builder UI.

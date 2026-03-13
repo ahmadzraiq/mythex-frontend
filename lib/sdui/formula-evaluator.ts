@@ -112,7 +112,10 @@ export function evaluateFormula(formula: string | object, context: Record<string
       context,
     );
     return { value, error: null };
-  } catch {
+  } catch (e) {
+    // TypeError = accessing a property on undefined/null (e.g. variables['UUID'].field
+    // when the variable isn't initialised yet). Treat as undefined — not a formula error.
+    if (e instanceof TypeError) return { value: undefined, error: null };
     // Fall back: try resolving as a bare variable path
     const varVal = resolveVar(formulaStr.trim(), context);
     if (varVal !== undefined) return { value: varVal, error: null };
@@ -156,7 +159,8 @@ export function storedValueToFormula(value: FormulaValue): string {
     if (typeof v.formula === 'string') return v.formula;
     // { expr: "..." } inline expression — show just the expression
     if (typeof v.expr === 'string') return v.expr;
-    return '';
+    // Fallback: show raw JSON for JSON Logic or other object conditions so the editor isn't blank
+    try { return JSON.stringify(value); } catch { return ''; }
   }
   return String(value);
 }

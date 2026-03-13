@@ -1,10 +1,12 @@
 {
   "wfMsgHello": {
     "type": "workflowSteps",
+    "name": "Set Message: Hello",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set demo message to Hello World",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111101",
@@ -15,10 +17,12 @@
   },
   "wfMsgBye": {
     "type": "workflowSteps",
+    "name": "Set Message: Goodbye",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set demo message to Goodbye World",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111101",
@@ -29,10 +33,12 @@
   },
   "wfMsgTest": {
     "type": "workflowSteps",
+    "name": "Set Message: Test",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set demo message to Testing 123",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111101",
@@ -43,10 +49,12 @@
   },
   "wfSetNumLow": {
     "type": "workflowSteps",
+    "name": "Set Number: Low",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set score to 3",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111102",
@@ -57,10 +65,12 @@
   },
   "wfSetNumHigh": {
     "type": "workflowSteps",
+    "name": "Set Number: High",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set score to 15",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111102",
@@ -71,10 +81,12 @@
   },
   "wfEvalBranch": {
     "type": "workflowSteps",
+    "name": "Evaluate Branch",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Branch: score >= 10?",
         "type": "branch",
         "config": {
           "condition": "variables['d1e2f3a4-b5c6-7890-defa-111111111102'] >= 10"
@@ -82,6 +94,7 @@
         "trueBranch": [
           {
             "id": "t1",
+            "name": "Set result: TRUE branch",
             "type": "changeVariableValue",
             "config": {
               "variableName": "d1e2f3a4-b5c6-7890-defa-111111111104",
@@ -92,6 +105,7 @@
         "falseBranch": [
           {
             "id": "f1",
+            "name": "Set result: FALSE branch",
             "type": "changeVariableValue",
             "config": {
               "variableName": "d1e2f3a4-b5c6-7890-defa-111111111104",
@@ -104,10 +118,12 @@
   },
   "wfRunMultiple": {
     "type": "workflowSteps",
+    "name": "Run Multiple Steps",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Mark step 1 complete",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111111",
@@ -116,6 +132,7 @@
       },
       {
         "id": "s2",
+        "name": "Mark step 2 complete",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111112",
@@ -124,6 +141,7 @@
       },
       {
         "id": "s3",
+        "name": "Mark step 3 complete",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111113",
@@ -134,10 +152,12 @@
   },
   "wfIncrCount": {
     "type": "workflowSteps",
+    "name": "Increment Counter",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Increment counter by 1",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111103",
@@ -150,10 +170,12 @@
   },
   "wfDecrCount": {
     "type": "workflowSteps",
+    "name": "Decrement Counter",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Decrement counter by 1 (min 0)",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111103",
@@ -166,10 +188,12 @@
   },
   "wfResetCount": {
     "type": "workflowSteps",
+    "name": "Reset Counter",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Reset counter to 0",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111103",
@@ -180,10 +204,12 @@
   },
   "wfSetScore20": {
     "type": "workflowSteps",
+    "name": "Set Score: 20",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set score to 20",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111102",
@@ -194,10 +220,12 @@
   },
   "wfSetScore45": {
     "type": "workflowSteps",
+    "name": "Set Score: 45",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set score to 45",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111102",
@@ -208,10 +236,12 @@
   },
   "wfSetScore75": {
     "type": "workflowSteps",
+    "name": "Set Score: 75",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set score to 75",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111102",
@@ -222,10 +252,12 @@
   },
   "wfSetScore95": {
     "type": "workflowSteps",
+    "name": "Set Score: 95",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set score to 95",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111102",
@@ -236,10 +268,12 @@
   },
   "wfComplexAll": {
     "type": "workflowSteps",
+    "name": "Complex: Branch + forEach + While",
     "trigger": "click",
     "steps": [
       {
         "id": "reset-grade",
+        "name": "Reset grade to evaluating",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111105",
@@ -248,6 +282,7 @@
       },
       {
         "id": "reset-loopCount",
+        "name": "Reset loop count to 0",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111106",
@@ -256,6 +291,7 @@
       },
       {
         "id": "reset-retryCount",
+        "name": "Reset retry count to 0",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111107",
@@ -264,6 +300,7 @@
       },
       {
         "id": "reset-whileActive",
+        "name": "Enable while loop flag",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111108",
@@ -272,6 +309,7 @@
       },
       {
         "id": "reset-items",
+        "name": "Reset items list to [A, B, C]",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111109",
@@ -284,6 +322,7 @@
       },
       {
         "id": "reset-done",
+        "name": "Set pipeline status to running",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111110",
@@ -292,6 +331,7 @@
       },
       {
         "id": "delay-300",
+        "name": "Wait 300ms",
         "type": "timeDelay",
         "config": {
           "time": 300
@@ -299,6 +339,7 @@
       },
       {
         "id": "branch-outer",
+        "name": "Branch: score >= 60?",
         "type": "branch",
         "config": {
           "condition": "variables['d1e2f3a4-b5c6-7890-defa-111111111102'] >= 60"
@@ -306,6 +347,7 @@
         "trueBranch": [
           {
             "id": "grade-pass-base",
+            "name": "Set grade to PASS",
             "type": "changeVariableValue",
             "config": {
               "variableName": "d1e2f3a4-b5c6-7890-defa-111111111105",
@@ -314,6 +356,7 @@
           },
           {
             "id": "branch-inner-high",
+            "name": "Branch: score >= 90?",
             "type": "branch",
             "config": {
               "condition": "variables['d1e2f3a4-b5c6-7890-defa-111111111102'] >= 90"
@@ -321,6 +364,7 @@
             "trueBranch": [
               {
                 "id": "grade-excellent",
+                "name": "Set grade to EXCELLENT",
                 "type": "changeVariableValue",
                 "config": {
                   "variableName": "d1e2f3a4-b5c6-7890-defa-111111111105",
@@ -331,6 +375,7 @@
             "falseBranch": [
               {
                 "id": "grade-good",
+                "name": "Set grade to GOOD",
                 "type": "changeVariableValue",
                 "config": {
                   "variableName": "d1e2f3a4-b5c6-7890-defa-111111111105",
@@ -343,6 +388,7 @@
         "falseBranch": [
           {
             "id": "branch-inner-low",
+            "name": "Branch: score >= 30?",
             "type": "branch",
             "config": {
               "condition": "variables['d1e2f3a4-b5c6-7890-defa-111111111102'] >= 30"
@@ -350,6 +396,7 @@
             "trueBranch": [
               {
                 "id": "grade-poor",
+                "name": "Set grade to POOR",
                 "type": "changeVariableValue",
                 "config": {
                   "variableName": "d1e2f3a4-b5c6-7890-defa-111111111105",
@@ -360,6 +407,7 @@
             "falseBranch": [
               {
                 "id": "grade-fail",
+                "name": "Set grade to FAIL",
                 "type": "changeVariableValue",
                 "config": {
                   "variableName": "d1e2f3a4-b5c6-7890-defa-111111111105",
@@ -372,6 +420,7 @@
       },
       {
         "id": "foreach-items",
+        "name": "For each item: increment loop count",
         "type": "forEach",
         "config": {
           "itemsPath": "d1e2f3a4-b5c6-7890-defa-111111111109"
@@ -379,6 +428,7 @@
         "loopBody": [
           {
             "id": "foreach-incr",
+            "name": "Increment loop count",
             "type": "changeVariableValue",
             "config": {
               "variableName": "d1e2f3a4-b5c6-7890-defa-111111111106",
@@ -391,6 +441,7 @@
       },
       {
         "id": "while-retry",
+        "name": "While flag is true: increment retry count",
         "type": "whileLoop",
         "config": {
           "conditionPath": "d1e2f3a4-b5c6-7890-defa-111111111108"
@@ -398,6 +449,7 @@
         "loopBody": [
           {
             "id": "while-incr",
+            "name": "Increment retry count",
             "type": "changeVariableValue",
             "config": {
               "variableName": "d1e2f3a4-b5c6-7890-defa-111111111107",
@@ -408,6 +460,7 @@
           },
           {
             "id": "while-stop-check",
+            "name": "Branch: retry count >= 3?",
             "type": "branch",
             "config": {
               "condition": "variables['d1e2f3a4-b5c6-7890-defa-111111111107'] >= 3"
@@ -415,6 +468,7 @@
             "trueBranch": [
               {
                 "id": "while-stop",
+                "name": "Disable while loop flag",
                 "type": "changeVariableValue",
                 "config": {
                   "variableName": "d1e2f3a4-b5c6-7890-defa-111111111108",
@@ -428,6 +482,7 @@
       },
       {
         "id": "final-done",
+        "name": "Mark pipeline as complete",
         "type": "changeVariableValue",
         "config": {
           "variableName": "d1e2f3a4-b5c6-7890-defa-111111111110",
@@ -439,10 +494,12 @@
 
   "waOnCreated": {
     "type": "workflowSteps",
+    "name": "On Created",
     "trigger": "created",
     "steps": [
       {
         "id": "s1",
+        "name": "Set created status to auto-loaded",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000001",
@@ -453,10 +510,12 @@
   },
   "waOnMounted": {
     "type": "workflowSteps",
+    "name": "On Mounted",
     "trigger": "mounted",
     "steps": [
       {
         "id": "s1",
+        "name": "Set mounted status to mounted",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000002",
@@ -467,10 +526,12 @@
   },
   "waOnClick": {
     "type": "workflowSteps",
+    "name": "On Click",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set click status to clicked",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000003",
@@ -481,10 +542,12 @@
   },
   "waOnDblClick": {
     "type": "workflowSteps",
+    "name": "On Double Click",
     "trigger": "doubleClick",
     "steps": [
       {
         "id": "s1",
+        "name": "Increment double-click counter",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000004",
@@ -497,10 +560,12 @@
   },
   "waOnMouseEnter": {
     "type": "workflowSteps",
+    "name": "On Mouse Enter",
     "trigger": "mouseEnter",
     "steps": [
       {
         "id": "s1",
+        "name": "Set hover status to over",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000005",
@@ -511,10 +576,12 @@
   },
   "waOnMouseLeave": {
     "type": "workflowSteps",
+    "name": "On Mouse Leave",
     "trigger": "mouseLeave",
     "steps": [
       {
         "id": "s1",
+        "name": "Set hover status to out",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000005",
@@ -525,10 +592,12 @@
   },
   "waOnChange": {
     "type": "workflowSteps",
+    "name": "On Change",
     "trigger": "change",
     "steps": [
       {
         "id": "s1",
+        "name": "Store changed value from event",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000006",
@@ -541,10 +610,12 @@
   },
   "waOnEnterKey": {
     "type": "workflowSteps",
+    "name": "On Enter Key",
     "trigger": "enterKey",
     "steps": [
       {
         "id": "s1",
+        "name": "Set enter key status to entered",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000007",
@@ -555,10 +626,12 @@
   },
   "waOnFocus": {
     "type": "workflowSteps",
+    "name": "On Focus",
     "trigger": "focus",
     "steps": [
       {
         "id": "s1",
+        "name": "Set focus status to focused",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000008",
@@ -569,10 +642,12 @@
   },
   "waOnBlur": {
     "type": "workflowSteps",
+    "name": "On Blur",
     "trigger": "blur",
     "steps": [
       {
         "id": "s1",
+        "name": "Set focus status to blurred",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000008",
@@ -584,20 +659,24 @@
 
   "waFormSubmit": {
     "type": "workflowSteps",
+    "name": "Form Submit",
     "trigger": "submit",
     "steps": [
       {
         "id": "s1",
+        "name": "Set form state: submitting",
         "type": "setFormState",
         "config": { "isSubmitting": true }
       },
       {
         "id": "s1b",
+        "name": "Wait 800ms (simulated delay)",
         "type": "timeDelay",
         "config": { "delay": 800 }
       },
       {
         "id": "s2",
+        "name": "Store submitted email and name",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000009",
@@ -608,6 +687,7 @@
       },
       {
         "id": "s3",
+        "name": "Clear validation error message",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000010",
@@ -616,6 +696,7 @@
       },
       {
         "id": "s4",
+        "name": "Set form state: submitted",
         "type": "setFormState",
         "config": { "isSubmitting": false, "isSubmitted": true }
       }
@@ -623,10 +704,12 @@
   },
   "waFormValidationError": {
     "type": "workflowSteps",
+    "name": "Form Validation Error",
     "trigger": "submitValidationError",
     "steps": [
       {
         "id": "s1",
+        "name": "Set validation status to failed",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000010",
@@ -637,10 +720,12 @@
   },
   "waPreFillForm": {
     "type": "workflowSteps",
+    "name": "Pre-fill Form",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Pre-fill email field",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000043",
@@ -649,6 +734,7 @@
       },
       {
         "id": "s2",
+        "name": "Pre-fill name field",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000044",
@@ -659,15 +745,18 @@
   },
   "waResetForm": {
     "type": "workflowSteps",
+    "name": "Reset Form",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Reset all form fields",
         "type": "resetForm",
         "config": {}
       },
       {
         "id": "s2",
+        "name": "Reset submit result to not submitted",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000009",
@@ -676,6 +765,7 @@
       },
       {
         "id": "s3",
+        "name": "Clear validation error message",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000010",
@@ -687,10 +777,12 @@
 
   "waEmailInputChange": {
     "type": "workflowSteps",
+    "name": "Email Input Change",
     "trigger": "change",
     "steps": [
       {
         "id": "s1",
+        "name": "Update email variable from input",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000043",
@@ -701,10 +793,12 @@
   },
   "waNameInputChange": {
     "type": "workflowSteps",
+    "name": "Name Input Change",
     "trigger": "change",
     "steps": [
       {
         "id": "s1",
+        "name": "Update name variable from input",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000044",
@@ -715,10 +809,12 @@
   },
   "waNavigateHome": {
     "type": "workflowSteps",
+    "name": "Navigate Home",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Navigate to home page",
         "type": "navigateTo",
         "config": {
           "path": "/"
@@ -728,10 +824,12 @@
   },
   "waNavigatePrev": {
     "type": "workflowSteps",
+    "name": "Navigate Previous",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Navigate to previous page",
         "type": "navigatePrev",
         "config": {
           "defaultRedirect": "/"
@@ -742,10 +840,12 @@
 
   "waFetchRest": {
     "type": "workflowSteps",
+    "name": "Fetch REST (GET)",
     "trigger": "click",
     "steps": [
       {
         "id": "s-before",
+        "name": "Set REST status to fetching",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000013",
@@ -754,6 +854,7 @@
       },
       {
         "id": "s-fetch",
+        "name": "GET request to httpbin",
         "type": "fetchData",
         "config": {
           "url": "https://httpbin.org/get",
@@ -763,6 +864,7 @@
       },
       {
         "id": "s-after",
+        "name": "Mark REST result as ok",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000011",
@@ -771,6 +873,7 @@
       },
       {
         "id": "s-status",
+        "name": "Set REST status to done",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000013",
@@ -781,10 +884,12 @@
   },
   "waFetchRestPost": {
     "type": "workflowSteps",
+    "name": "Fetch REST (POST)",
     "trigger": "click",
     "steps": [
       {
         "id": "s-before",
+        "name": "Set REST status to fetching-post",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000013",
@@ -793,6 +898,7 @@
       },
       {
         "id": "s-fetch",
+        "name": "POST request to httpbin",
         "type": "fetchData",
         "config": {
           "url": "https://httpbin.org/post",
@@ -803,6 +909,7 @@
       },
       {
         "id": "s-after",
+        "name": "Mark REST result as post-ok",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000011",
@@ -811,6 +918,7 @@
       },
       {
         "id": "s-status",
+        "name": "Set REST status to post-done",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000013",
@@ -821,10 +929,12 @@
   },
   "waFetchGraphql": {
     "type": "workflowSteps",
+    "name": "Fetch GraphQL",
     "trigger": "click",
     "steps": [
       {
         "id": "s-before",
+        "name": "Set GraphQL status to fetching",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000012",
@@ -833,6 +943,7 @@
       },
       {
         "id": "s-gql",
+        "name": "Query country US from trevorblades",
         "type": "graphql",
         "config": {
           "endpoint": "https://countries.trevorblades.com/",
@@ -842,6 +953,7 @@
       },
       {
         "id": "s-after",
+        "name": "Set GraphQL status to ok",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000012",
@@ -853,10 +965,12 @@
 
   "waFetchCollection": {
     "type": "workflowSteps",
+    "name": "Fetch Collection",
     "trigger": "click",
     "steps": [
       {
         "id": "s-before",
+        "name": "Set collection status to fetching",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000014",
@@ -865,6 +979,7 @@
       },
       {
         "id": "s-fetch",
+        "name": "Fetch test datasource",
         "type": "fetchCollection",
         "config": {
           "collectionName": "2581ca97-d8e7-4d7b-a0eb-483c4f919cc2"
@@ -872,6 +987,7 @@
       },
       {
         "id": "s-after",
+        "name": "Set collection status to fetched",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000014",
@@ -882,10 +998,12 @@
   },
   "waFetchParallel": {
     "type": "workflowSteps",
+    "name": "Fetch Collections Parallel",
     "trigger": "click",
     "steps": [
       {
         "id": "s-before1",
+        "name": "Set parallel status 1 to fetching",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000015",
@@ -894,6 +1012,7 @@
       },
       {
         "id": "s-before2",
+        "name": "Set parallel status 2 to fetching",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000016",
@@ -902,6 +1021,7 @@
       },
       {
         "id": "s-parallel",
+        "name": "Fetch two datasources in parallel",
         "type": "fetchCollectionsParallel",
         "config": {
           "collectionNames": [
@@ -912,6 +1032,7 @@
       },
       {
         "id": "s-after1",
+        "name": "Set parallel status 1 to fetched",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000015",
@@ -920,6 +1041,7 @@
       },
       {
         "id": "s-after2",
+        "name": "Set parallel status 2 to fetched",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000016",
@@ -930,10 +1052,12 @@
   },
   "waUpdateCollection": {
     "type": "workflowSteps",
+    "name": "Update Collection",
     "trigger": "click",
     "steps": [
       {
         "id": "s-update",
+        "name": "Trigger collection replace",
         "type": "updateCollection",
         "config": {
           "name": "2581ca97-d8e7-4d7b-a0eb-483c4f919cc2",
@@ -942,6 +1066,7 @@
       },
       {
         "id": "s-after",
+        "name": "Set collection status to updated",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000014",
@@ -952,10 +1077,12 @@
   },
   "waResetVars": {
     "type": "workflowSteps",
+    "name": "Reset Variable",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Reset variable to default value",
         "type": "resetVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000017",
@@ -966,10 +1093,12 @@
   },
   "waSetResetCheck": {
     "type": "workflowSteps",
+    "name": "Set Variable: Modified",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set variable to modified",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000017",
@@ -981,10 +1110,12 @@
 
   "waSubWorkflow": {
     "type": "workflowSteps",
+    "name": "Sub-workflow",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set sub-workflow result",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000019",
@@ -995,10 +1126,12 @@
   },
   "waRunSubWorkflow": {
     "type": "workflowSteps",
+    "name": "Run Sub-workflow",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Run waSubWorkflow",
         "type": "runProjectWorkflow",
         "config": {
           "workflowId": "waSubWorkflow"
@@ -1008,10 +1141,12 @@
   },
   "waComponentWorkflow": {
     "type": "workflowSteps",
+    "name": "Component Action",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set component action result",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000020",
@@ -1022,10 +1157,12 @@
   },
   "waExecuteComponent": {
     "type": "workflowSteps",
+    "name": "Execute Component Action",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Execute waComponentWorkflow action",
         "type": "executeComponentAction",
         "config": {
           "action": "waComponentWorkflow"
@@ -1036,10 +1173,12 @@
 
   "waReturnHigh": {
     "type": "workflowSteps",
+    "name": "Return Value: High Score",
     "trigger": "click",
     "steps": [
       {
         "id": "s-set-score",
+        "name": "Set score to 80",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000033",
@@ -1048,6 +1187,7 @@
       },
       {
         "id": "s-branch",
+        "name": "Branch: score >= 60?",
         "type": "branch",
         "config": {
           "condition": "variables['wa000001-0000-0000-0000-000000000033'] >= 60"
@@ -1055,6 +1195,7 @@
         "trueBranch": [
           {
             "id": "s-ret-pass",
+            "name": "Return PASS",
             "type": "returnValue",
             "config": {
               "path": "wa000001-0000-0000-0000-000000000018",
@@ -1065,6 +1206,7 @@
         "falseBranch": [
           {
             "id": "s-ret-fail",
+            "name": "Return FAIL",
             "type": "returnValue",
             "config": {
               "path": "wa000001-0000-0000-0000-000000000018",
@@ -1077,10 +1219,12 @@
   },
   "waReturnLow": {
     "type": "workflowSteps",
+    "name": "Return Value: Low Score",
     "trigger": "click",
     "steps": [
       {
         "id": "s-set-score",
+        "name": "Set score to 30",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000033",
@@ -1089,6 +1233,7 @@
       },
       {
         "id": "s-branch",
+        "name": "Branch: score >= 60?",
         "type": "branch",
         "config": {
           "condition": "variables['wa000001-0000-0000-0000-000000000033'] >= 60"
@@ -1096,6 +1241,7 @@
         "trueBranch": [
           {
             "id": "s-ret-pass",
+            "name": "Return PASS",
             "type": "returnValue",
             "config": {
               "path": "wa000001-0000-0000-0000-000000000018",
@@ -1106,6 +1252,7 @@
         "falseBranch": [
           {
             "id": "s-ret-fail",
+            "name": "Return FAIL",
             "type": "returnValue",
             "config": {
               "path": "wa000001-0000-0000-0000-000000000018",
@@ -1119,10 +1266,12 @@
 
   "waLoopControl": {
     "type": "workflowSteps",
+    "name": "Loop Control (break / continue)",
     "trigger": "click",
     "steps": [
       {
         "id": "s-reset-sum",
+        "name": "Reset loop sum to 0",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000021",
@@ -1131,6 +1280,7 @@
       },
       {
         "id": "s-foreach",
+        "name": "For each item in array",
         "type": "forEach",
         "config": {
           "listPath": "wa000001-0000-0000-0000-000000000042"
@@ -1138,6 +1288,7 @@
         "loopBody": [
           {
             "id": "s-continue-check",
+            "name": "Branch: skip even numbers",
             "type": "branch",
             "config": {
               "condition": "context.item.data.value % 2 === 0"
@@ -1145,6 +1296,7 @@
             "trueBranch": [
               {
                 "id": "s-continue",
+                "name": "Continue (skip even)",
                 "type": "continueLoop",
                 "config": {}
               }
@@ -1153,6 +1305,7 @@
           },
           {
             "id": "s-break-check",
+            "name": "Branch: stop when sum >= 4",
             "type": "branch",
             "config": {
               "condition": "variables['wa000001-0000-0000-0000-000000000021'] >= 4"
@@ -1160,6 +1313,7 @@
             "trueBranch": [
               {
                 "id": "s-break",
+                "name": "Break loop",
                 "type": "breakLoop",
                 "config": {}
               }
@@ -1168,6 +1322,7 @@
           },
           {
             "id": "s-add",
+            "name": "Add item value to sum",
             "type": "changeVariableValue",
             "config": {
               "variableName": "wa000001-0000-0000-0000-000000000021",
@@ -1183,10 +1338,12 @@
 
   "waPassFlagOn": {
     "type": "workflowSteps",
+    "name": "Set Pass Flag: ON",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Enable pass-through flag",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000022",
@@ -1197,10 +1354,12 @@
   },
   "waPassFlagOff": {
     "type": "workflowSteps",
+    "name": "Set Pass Flag: OFF",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Disable pass-through flag",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000022",
@@ -1211,10 +1370,12 @@
   },
   "waPassThrough": {
     "type": "workflowSteps",
+    "name": "Pass Through Condition",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Pass through if flag is true",
         "type": "passThroughCondition",
         "config": {
           "condition": "variables['wa000001-0000-0000-0000-000000000022'] === true"
@@ -1222,6 +1383,7 @@
       },
       {
         "id": "s2",
+        "name": "Set pass-through result",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000023",
@@ -1233,10 +1395,12 @@
 
   "waSetModeA": {
     "type": "workflowSteps",
+    "name": "Set Mode: A",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set mode to A",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000024",
@@ -1247,10 +1411,12 @@
   },
   "waSetModeB": {
     "type": "workflowSteps",
+    "name": "Set Mode: B",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set mode to B",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000024",
@@ -1261,10 +1427,12 @@
   },
   "waSetModeC": {
     "type": "workflowSteps",
+    "name": "Set Mode: C",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set mode to C",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000024",
@@ -1275,10 +1443,12 @@
   },
   "waEvalMultiOption": {
     "type": "workflowSteps",
+    "name": "Evaluate Multi-option Branch",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Multi-option branch on mode",
         "type": "multiOptionBranch",
         "config": {
           "conditionPath": "wa000001-0000-0000-0000-000000000024"
@@ -1289,6 +1459,7 @@
             "steps": [
               {
                 "id": "s-a",
+                "name": "Set result: Option A selected",
                 "type": "changeVariableValue",
                 "config": {
                   "variableName": "wa000001-0000-0000-0000-000000000025",
@@ -1302,6 +1473,7 @@
             "steps": [
               {
                 "id": "s-b",
+                "name": "Set result: Option B selected",
                 "type": "changeVariableValue",
                 "config": {
                   "variableName": "wa000001-0000-0000-0000-000000000025",
@@ -1315,6 +1487,7 @@
             "steps": [
               {
                 "id": "s-c",
+                "name": "Set result: Option C selected",
                 "type": "changeVariableValue",
                 "config": {
                   "variableName": "wa000001-0000-0000-0000-000000000025",
@@ -1327,6 +1500,7 @@
         "defaultBranch": [
           {
             "id": "s-default",
+            "name": "Set result: no option matched",
             "type": "changeVariableValue",
             "config": {
               "variableName": "wa000001-0000-0000-0000-000000000025",
@@ -1340,10 +1514,12 @@
 
   "waCopyClipboard": {
     "type": "workflowSteps",
+    "name": "Copy to Clipboard",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Copy test value to clipboard",
         "type": "copyToClipboard",
         "config": {
           "value": "clipboard-test-value"
@@ -1351,6 +1527,7 @@
       },
       {
         "id": "s2",
+        "name": "Set clipboard status to copied",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000026",
@@ -1361,10 +1538,12 @@
   },
   "waOuterClick": {
     "type": "workflowSteps",
+    "name": "Outer Click",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set outer click result",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000027",
@@ -1375,15 +1554,18 @@
   },
   "waInnerClick": {
     "type": "workflowSteps",
+    "name": "Inner Click (Stop Propagation)",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Stop event propagation",
         "type": "stopPropagation",
         "config": {}
       },
       {
         "id": "s2",
+        "name": "Set inner click result",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000028",
@@ -1394,10 +1576,12 @@
   },
   "waPrintPdf": {
     "type": "workflowSteps",
+    "name": "Print PDF",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set print status to fired",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000029",
@@ -1406,6 +1590,7 @@
       },
       {
         "id": "s2",
+        "name": "Trigger PDF print dialog",
         "type": "printPdf",
         "config": {}
       }
@@ -1413,10 +1598,12 @@
   },
   "waDownloadFile": {
     "type": "workflowSteps",
+    "name": "Download File",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set download status to fired",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000030",
@@ -1425,6 +1612,7 @@
       },
       {
         "id": "s2",
+        "name": "Download robots.txt from httpbin",
         "type": "downloadFileFromUrl",
         "config": {
           "url": "https://httpbin.org/robots.txt",
@@ -1435,10 +1623,12 @@
   },
   "waCreateB64Url": {
     "type": "workflowSteps",
+    "name": "Create URL from Base64",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Create object URL from base64 string",
         "type": "createUrlFromBase64",
         "config": {
           "base64": "SGVsbG8gV29ybGQ=",
@@ -1450,10 +1640,12 @@
   },
   "waEncodeBase64": {
     "type": "workflowSteps",
+    "name": "Encode File as Base64",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Strip data URL prefix and encode as base64",
         "type": "encodeFileAsBase64",
         "config": {
           "dataUrl": "data:text/plain;base64,SGVsbG8gV29ybGQ=",
@@ -1465,10 +1657,12 @@
 
   "waSetScoreHigh": {
     "type": "workflowSteps",
+    "name": "Set Score: High (75)",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set score to 75",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000033",
@@ -1479,10 +1673,12 @@
   },
   "waSetScoreLow": {
     "type": "workflowSteps",
+    "name": "Set Score: Low (30)",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set score to 30",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000033",
@@ -1493,10 +1689,12 @@
   },
   "waComplexBranchLoop": {
     "type": "workflowSteps",
+    "name": "Complex: Branch + forEach Loop",
     "trigger": "click",
     "steps": [
       {
         "id": "s-reset-loop",
+        "name": "Reset loop counter to 0",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000034",
@@ -1505,6 +1703,7 @@
       },
       {
         "id": "s-reset-status",
+        "name": "Set branch status to running",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000035",
@@ -1513,6 +1712,7 @@
       },
       {
         "id": "s-outer-branch",
+        "name": "Branch: score >= 50?",
         "type": "branch",
         "config": {
           "condition": "variables['wa000001-0000-0000-0000-000000000033'] >= 50"
@@ -1520,6 +1720,7 @@
         "trueBranch": [
           {
             "id": "s-foreach",
+            "name": "For each item in [A, B, C]",
             "type": "forEach",
             "config": {
               "list": ["A", "B", "C"]
@@ -1527,6 +1728,7 @@
             "loopBody": [
               {
                 "id": "s-inner-branch",
+                "name": "Branch: is item B?",
                 "type": "branch",
                 "config": {
                   "condition": "context.item.data.value === 'B'"
@@ -1534,6 +1736,7 @@
                 "trueBranch": [
                   {
                     "id": "s-break",
+                    "name": "Break loop at B",
                     "type": "breakLoop",
                     "config": {}
                   }
@@ -1541,6 +1744,7 @@
                 "falseBranch": [
                   {
                     "id": "s-incr",
+                    "name": "Increment loop counter",
                     "type": "changeVariableValue",
                     "config": {
                       "variableName": "wa000001-0000-0000-0000-000000000034",
@@ -1555,6 +1759,7 @@
           },
           {
             "id": "s-status-true",
+            "name": "Set branch status to done-true",
             "type": "changeVariableValue",
             "config": {
               "variableName": "wa000001-0000-0000-0000-000000000035",
@@ -1565,6 +1770,7 @@
         "falseBranch": [
           {
             "id": "s-status-false",
+            "name": "Set branch status to done-false",
             "type": "changeVariableValue",
             "config": {
               "variableName": "wa000001-0000-0000-0000-000000000035",
@@ -1578,10 +1784,12 @@
 
   "waSetComplexModeFast": {
     "type": "workflowSteps",
+    "name": "Set Complex Mode: Fast",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set complex mode to fast",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000036",
@@ -1592,10 +1800,12 @@
   },
   "waSetComplexModeSlow": {
     "type": "workflowSteps",
+    "name": "Set Complex Mode: Slow",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set complex mode to slow",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000036",
@@ -1606,10 +1816,12 @@
   },
   "waSetComplexModeSkip": {
     "type": "workflowSteps",
+    "name": "Set Complex Mode: Skip",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Set complex mode to skip",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000036",
@@ -1620,10 +1832,12 @@
   },
   "waComplexCombined": {
     "type": "workflowSteps",
+    "name": "Complex: Multi-option + Loops",
     "trigger": "click",
     "steps": [
       {
         "id": "s-reset-fast",
+        "name": "Reset fast counter to 0",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000037",
@@ -1632,6 +1846,7 @@
       },
       {
         "id": "s-reset-slow",
+        "name": "Reset slow sum to 0",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000038",
@@ -1640,6 +1855,7 @@
       },
       {
         "id": "s-reset-result",
+        "name": "Set combined result to running",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000039",
@@ -1648,6 +1864,7 @@
       },
       {
         "id": "s-reset-while-flag",
+        "name": "Enable while loop flag",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000041",
@@ -1656,6 +1873,7 @@
       },
       {
         "id": "s-multi-branch",
+        "name": "Multi-option branch on complex mode",
         "type": "multiOptionBranch",
         "config": {
           "conditionPath": "wa000001-0000-0000-0000-000000000036"
@@ -1666,6 +1884,7 @@
             "steps": [
               {
                 "id": "s-while",
+                "name": "While flag: increment fast counter",
                 "type": "whileLoop",
                 "config": {
                   "conditionPath": "wa000001-0000-0000-0000-000000000041"
@@ -1673,6 +1892,7 @@
                 "loopBody": [
                   {
                     "id": "s-incr-fast",
+                    "name": "Increment fast counter",
                     "type": "changeVariableValue",
                     "config": {
                       "variableName": "wa000001-0000-0000-0000-000000000037",
@@ -1683,6 +1903,7 @@
                   },
                   {
                     "id": "s-stop-check",
+                    "name": "Branch: fast counter >= 3?",
                     "type": "branch",
                     "config": {
                       "condition": "variables['wa000001-0000-0000-0000-000000000037'] >= 3"
@@ -1690,6 +1911,7 @@
                     "trueBranch": [
                       {
                         "id": "s-stop",
+                        "name": "Disable while loop flag",
                         "type": "changeVariableValue",
                         "config": {
                           "variableName": "wa000001-0000-0000-0000-000000000041",
@@ -1703,6 +1925,7 @@
               },
               {
                 "id": "s-fast-done",
+                "name": "Set combined result to fast-done",
                 "type": "changeVariableValue",
                 "config": {
                   "variableName": "wa000001-0000-0000-0000-000000000039",
@@ -1716,6 +1939,7 @@
             "steps": [
               {
                 "id": "s-foreach-slow",
+                "name": "For each item: sum odd values",
                 "type": "forEach",
                 "config": {
                   "listPath": "wa000001-0000-0000-0000-000000000042"
@@ -1723,6 +1947,7 @@
                 "loopBody": [
                   {
                     "id": "s-continue-even",
+                    "name": "Branch: skip even values",
                     "type": "branch",
                     "config": {
                       "condition": "context.item.data.value % 2 === 0"
@@ -1730,6 +1955,7 @@
                     "trueBranch": [
                       {
                         "id": "s-continue",
+                        "name": "Continue (skip even)",
                         "type": "continueLoop",
                         "config": {}
                       }
@@ -1738,6 +1964,7 @@
                   },
                   {
                     "id": "s-add-slow",
+                    "name": "Add odd value to slow sum",
                     "type": "changeVariableValue",
                     "config": {
                       "variableName": "wa000001-0000-0000-0000-000000000038",
@@ -1750,6 +1977,7 @@
               },
               {
                 "id": "s-slow-done",
+                "name": "Set combined result to slow-done",
                 "type": "changeVariableValue",
                 "config": {
                   "variableName": "wa000001-0000-0000-0000-000000000039",
@@ -1763,6 +1991,7 @@
             "steps": [
               {
                 "id": "s-pass",
+                "name": "Pass through if skip flag is true",
                 "type": "passThroughCondition",
                 "config": {
                   "condition": "variables['wa000001-0000-0000-0000-000000000040'] === true"
@@ -1770,6 +1999,7 @@
               },
               {
                 "id": "s-skip-done",
+                "name": "Set combined result to skipped",
                 "type": "changeVariableValue",
                 "config": {
                   "variableName": "wa000001-0000-0000-0000-000000000039",
@@ -1782,6 +2012,7 @@
         "defaultBranch": [
           {
             "id": "s-no-match",
+            "name": "Set combined result to no-mode-matched",
             "type": "changeVariableValue",
             "config": {
               "variableName": "wa000001-0000-0000-0000-000000000039",
@@ -1795,10 +2026,12 @@
 
   "waUpdateReplaceAll": {
     "type": "workflowSteps",
+    "name": "Update Collection: Replace All",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Replace collection with Alpha, Beta, Gamma",
         "type": "updateCollection",
         "config": {
           "collectionId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
@@ -1808,6 +2041,7 @@
       },
       {
         "id": "s2",
+        "name": "Set update status to seeded-3-items",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-upd-0000-0000-0000-000000000001",
@@ -1819,10 +2053,12 @@
 
   "waUpdateInsert": {
     "type": "workflowSteps",
+    "name": "Update Collection: Insert",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Insert New Item at position 0",
         "type": "updateCollection",
         "config": {
           "collectionId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
@@ -1833,6 +2069,7 @@
       },
       {
         "id": "s2",
+        "name": "Set update status to insert-done",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-upd-0000-0000-0000-000000000002",
@@ -1844,10 +2081,12 @@
 
   "waUpdateItem": {
     "type": "workflowSteps",
+    "name": "Update Collection: Update Item",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Update item-1 name to Alpha UPDATED",
         "type": "updateCollection",
         "config": {
           "collectionId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
@@ -1861,6 +2100,7 @@
       },
       {
         "id": "s2",
+        "name": "Set update status to update-done",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-upd-0000-0000-0000-000000000003",
@@ -1870,12 +2110,82 @@
     ]
   },
 
+  "waSyncInput1Change": {
+    "type": "workflowSteps",
+    "name": "Sync: Input 1 Change",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Update Input 1 value from event",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-sync-0000-0000-0000-000000000001",
+          "value": { "formula": "event?.['value']" }
+        }
+      }
+    ]
+  },
+  "waSyncInput2Change": {
+    "type": "workflowSteps",
+    "name": "Sync: Input 2 drives Input 1",
+    "trigger": "change",
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Mirror Input 2 value into Input 1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-sync-0000-0000-0000-000000000001",
+          "value": { "formula": "event?.['value']" }
+        }
+      }
+    ]
+  },
+  "waSyncFormSubmit": {
+    "type": "workflowSteps",
+    "name": "Sync: Form Submit",
+    "trigger": "submit",
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Set isSubmitting true",
+        "type": "setFormState",
+        "config": { "isSubmitting": true }
+      },
+      {
+        "id": "s2",
+        "name": "Simulate delay (1.5s)",
+        "type": "timeDelay",
+        "config": { "delay": 1500 }
+      },
+      {
+        "id": "s3",
+        "name": "Store submitted values",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-sync-0000-0000-0000-000000000003",
+          "value": {
+            "formula": "'input1: ' + (variables['wa-sync-0000-0000-0000-000000000001'] || '(empty)') + ' | input2: ' + (local?.data?.form?.formData?.['input2'] || '(empty)')"
+          }
+        }
+      },
+      {
+        "id": "s4",
+        "name": "Set isSubmitting false, isSubmitted true",
+        "type": "setFormState",
+        "config": { "isSubmitting": false, "isSubmitted": true }
+      }
+    ]
+  },
   "waUpdateDelete": {
     "type": "workflowSteps",
+    "name": "Update Collection: Delete Item",
     "trigger": "click",
     "steps": [
       {
         "id": "s1",
+        "name": "Delete item-2 from collection",
         "type": "updateCollection",
         "config": {
           "collectionId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
@@ -1887,6 +2197,7 @@
       },
       {
         "id": "s2",
+        "name": "Set update status to delete-done",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-upd-0000-0000-0000-000000000004",

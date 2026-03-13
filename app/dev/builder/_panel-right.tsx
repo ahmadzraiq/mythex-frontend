@@ -589,8 +589,13 @@ function DesignTab({ node }: { node: SDUINode }) {
   // A whole-string template expression like "{{variables['UUID']}}" or "{{collections['X'].data.y}}"
   // is treated as a formula binding so it shows "ƒ Edit formula" instead of a raw UUID textarea.
   // Mixed/partial templates like "Hello {{name}}" stay as plain strings.
-  function textToFormulaValue(text: string): FormulaValue {
-    if (!text) return text;
+  function textToFormulaValue(text: string | { formula?: string } | unknown): FormulaValue {
+    if (!text) return text as FormulaValue;
+    // Already a formula object (e.g. { formula: "..." }) — pass through directly
+    if (typeof text === 'object' && text !== null && 'formula' in (text as object)) {
+      return text as unknown as FormulaValue;
+    }
+    if (typeof text !== 'string') return String(text) as unknown as FormulaValue;
     const m = text.match(/^\{\{(.+)\}\}$/);
     if (m) return { formula: m[1] } as unknown as FormulaValue;
     return text;

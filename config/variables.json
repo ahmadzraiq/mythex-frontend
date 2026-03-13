@@ -522,6 +522,18 @@
       "type": "string",
       "initialValue": "(not run)",
       "folder": "WA Tests"
+    },
+    "wa-sync-0000-0000-0000-000000000001": {
+      "label": "Sync: Input 1 Value",
+      "type": "string",
+      "initialValue": "",
+      "folder": "WA Tests"
+    },
+    "wa-sync-0000-0000-0000-000000000003": {
+      "label": "Sync: Submit Result",
+      "type": "string",
+      "initialValue": "(not submitted)",
+      "folder": "WA Tests"
     }
   },
   "varFolders": [

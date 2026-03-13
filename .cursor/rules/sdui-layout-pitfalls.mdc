@@ -648,6 +648,49 @@ The `condition` is truthy when `isValid` is a non-empty error string, falsy when
 
 ---
 
+## Controlled Input Without Self-Updating onChange — Input Appears Frozen
+
+**Problem:** An `InputField` with `value="{{variables['UUID']}}"` (controlled) has an `onChange` workflow that updates a *different* variable, not its own bound variable. Since React re-renders the input with the same `value` after every keystroke, the input visually reverts to the old value — it looks frozen even though the workflow fires.
+
+**Fix:** Either:
+1. Make the input **uncontrolled** (remove the `value` prop) so the DOM owns the display value, OR
+2. Ensure the `onChange` workflow **also** updates the input's own bound variable (the one in `value="{{variables['UUID']}}"`).
+
+```json
+// ❌ BAD — Input 2 is controlled (value bound to UUID-b) but onChange only updates UUID-a
+// Result: typing in Input 2 appears to do nothing
+{
+  "type": "InputField",
+  "props": { "value": "{{variables['UUID-b']}}", "name": "input2" },
+  "actions": [{ "action": "waMirrorToInput1" }]
+}
+// waMirrorToInput1 changes UUID-a but never touches UUID-b → input re-renders with old value
+
+// ✅ FIX A — Remove the value binding (uncontrolled); DOM manages display, formData tracks via name
+{
+  "type": "InputField",
+  "props": { "name": "input2" },
+  "actions": [{ "action": "waMirrorToInput1" }]
+}
+
+// ✅ FIX B — onChange updates both: mirror target AND its own variable
+// waMirrorToInput1 steps: [update UUID-a with event.value, update UUID-b with event.value]
+```
+
+**Submit formula after making an input uncontrolled:** If you remove the `value` binding, there is no variable to read at submit time. Instead, read the value from `local.data.form.formData.fieldName` — the FormContainer automatically tracks uncontrolled inputs via their `name` prop:
+
+```json
+// ❌ BAD — reads a variable that is never updated
+"formula": "variables['UUID-b'] || '(empty)'"
+
+// ✅ GOOD — reads the form's auto-tracked value by field name
+"formula": "local?.data?.form?.formData?.['input2'] || '(empty)'"
+```
+
+**Rule:** Before binding `value` to a variable on any InputField with a custom `onChange` workflow, verify the workflow updates that exact variable. If it doesn't, either add the self-update step or remove the `value` binding and read `local.data.form.formData.fieldName` at submit time.
+
+---
+
 ## `resetForm` — Auto-Clears Named Variable Bindings
 
 **Problem:** InputFields bound to named variables via `value="{{variables['UUID']}}"` were not visually cleared by `resetForm` alone — extra `changeVariableValue` steps were needed in the reset workflow.

@@ -107,23 +107,37 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
       const storedLocal = (prev['local'] ?? {}) as Record<string, unknown>;
       const storedData = (storedLocal['data'] ?? {}) as Record<string, unknown>;
       const storedForm = (storedData['form'] ?? {}) as Record<string, unknown>;
-      const storedFormData = (storedForm['formData'] ?? {}) as Record<string, unknown>;
-      const storedFields = (storedForm['fields'] ?? {}) as Record<string, unknown>;
 
-      const isResetting = Object.keys(formState.formData).length === 0;
+      // Use the PER-CONTAINER store for merge source (not the shared local.data.form).
+      // local.data.form is shared across all FormContainers on the page — using it as
+      // the merge source would copy other containers' fields (wa-email, wa-name, etc.)
+      // into this container's isolated variables[formStoreKey] entry.
+      const storedVarForm = (prev[formStoreKey] ?? {}) as Record<string, unknown>;
+      const storedVarFormData = (storedVarForm['formData'] ?? {}) as Record<string, unknown>;
+      const storedVarFields = (storedVarForm['fields'] ?? {}) as Record<string, unknown>;
 
-      // When formState is empty (reset pass), clear everything — do not let the store
-      // win and restore previously-typed values.
-      const mergedFormData = isResetting ? {} : { ...formState.formData, ...storedFormData };
-      const mergedFields: Record<string, unknown> = isResetting ? {} : { ...formState.fields };
+      // formState.formData is the authoritative list of which fields CURRENTLY exist.
+      // Keys no longer in formState (e.g. renamed fields) must NOT be re-introduced from
+      // the store — this was the bug that caused old field names to persist after rename.
+      //
+      // For each currently-registered field, prefer the live store value (preserves
+      // what the user typed via directWriteField between React renders), falling back
+      // to the React state value for fields not yet in the store.
+      //
+      // When formState.formData is empty (reset pass OR no fields registered yet),
+      // write an empty object — do not restore stale store values.
+      const mergedFormData: Record<string, unknown> = {};
+      for (const key of Object.keys(formState.formData)) {
+        mergedFormData[key] = storedVarFormData[key] !== undefined
+          ? storedVarFormData[key]
+          : formState.formData[key];
+      }
 
-      if (!isResetting) {
-        for (const [name, storedField] of Object.entries(storedFields)) {
-          if (name in mergedFields) {
-            // Keep store's field object (has latest typed value + isValid from validation)
-            mergedFields[name] = storedField;
-          }
-        }
+      const mergedFields: Record<string, unknown> = {};
+      for (const key of Object.keys(formState.fields)) {
+        mergedFields[key] = storedVarFields[key] !== undefined
+          ? storedVarFields[key]
+          : formState.fields[key];
       }
 
       // Prefer the store's isSubmitting/isSubmitted when not resetting — workflow steps
@@ -133,10 +147,10 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
         ...formState,
         formData: mergedFormData,
         fields: mergedFields,
-        ...(isResetting ? {} : {
-          isSubmitting: (storedForm['isSubmitting'] as boolean) ?? formState.isSubmitting,
-          isSubmitted:  (storedForm['isSubmitted']  as boolean) ?? formState.isSubmitted,
-        }),
+        ...(Object.keys(mergedFormData).length > 0 ? {
+          isSubmitting: (storedVarForm['isSubmitting'] as boolean) ?? (storedForm['isSubmitting'] as boolean) ?? formState.isSubmitting,
+          isSubmitted:  (storedVarForm['isSubmitted']  as boolean) ?? (storedForm['isSubmitted']  as boolean) ?? formState.isSubmitted,
+        } : {}),
       };
       const next = { ...prev, local: { ...storedLocal, data: { ...storedData, form: mergedForm } } };
       next[formStoreKey] = mergedForm;
@@ -370,12 +384,18 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
   const doSubmit = useCallback((onSuccess?: () => void) => {
     if (builderMode) return;
 
-    // The form-field-tracker writes directly to the global variable store (not to FormContainer React state).
-    // Read form data from there so validation runs against what the user actually typed.
+    const key = formStoreKey;
+
+    // Read form data from the PER-CONTAINER store first so validation runs against
+    // the correct data when multiple FormContainers coexist on the same page.
+    // local.data.form is a shared slot that any FC can overwrite; variables[key] is isolated.
     const vs = getGlobalVariableStore().getState().getFullState();
+    const storedVarForm = (vs[key] ?? {}) as Record<string, unknown>;
     const storedLocal = (vs['local'] ?? {}) as Record<string, unknown>;
     const storedData = (storedLocal['data'] ?? {}) as Record<string, unknown>;
-    const storedForm = (storedData['form'] ?? stateRef.current) as FormState;
+    const storedForm = (
+      Object.keys(storedVarForm).length > 0 ? storedVarForm : storedData['form'] ?? stateRef.current
+    ) as FormState;
 
     const validations = fieldValidationsRef.current;
     const formulaCtx = { local: { data: { form: storedForm } } } as Record<string, unknown>;
@@ -395,23 +415,24 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
 
     if (hasErrors) {
       // Ensure formData has an entry for every validated field (even if empty string).
-      // Without this, formData can be {} after a reset — and the sync useEffect treats
-      // Object.keys(formData).length === 0 as a "reset pass", clearing fields: {} and
-      // wiping the validation errors we just set. Populating formData prevents this.
       const safeFormData = { ...(storedForm.formData ?? {}) };
       for (const fieldName of Object.keys(validations)) {
         if (!(fieldName in safeFormData)) safeFormData[fieldName] = '';
       }
       const nextForm: FormState = { ...storedForm, formData: safeFormData, fields: newFields as FormState['fields'], isValid: false };
-      // Write errors immediately to the global variable store so the renderer shows them
+      // Write errors to BOTH local.data.form AND variables[key] in one atomic write.
+      // Writing to variables[key] ensures the useEffect merge sees the errors in
+      // storedVarFields and doesn't overwrite them with stale pre-error values.
       getGlobalVariableStore().getState().setState((prev) => {
         const local = (prev['local'] ?? {}) as Record<string, unknown>;
         const data = (local['data'] ?? {}) as Record<string, unknown>;
-        return { ...prev, local: { ...local, data: { ...data, form: nextForm } } };
+        return {
+          ...prev,
+          [key]: nextForm,
+          local: { ...local, data: { ...data, form: nextForm } },
+        };
       });
-      // Also update React state (triggers the sync useEffect which re-confirms the write)
       setFormState(nextForm);
-      // Fire the submitValidationError workflow if one is bound
       onValidationErrorAction?.();
       return;
     }
@@ -424,15 +445,17 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
     getGlobalVariableStore().getState().setState((prev) => {
       const local = (prev['local'] ?? {}) as Record<string, unknown>;
       const data = (local['data'] ?? {}) as Record<string, unknown>;
-      return { ...prev, local: { ...local, data: { ...data, form: successForm } } };
+      return {
+        ...prev,
+        [key]: successForm,
+        local: { ...local, data: { ...data, form: successForm } },
+      };
     });
     setFormState(successForm);
 
-    // Use the caller-provided success callback (e.g. from a child element with trigger:"submit")
-    // or fall back to the FormContainer's own onSubmitAction workflow.
     if (onSuccess) onSuccess();
     else if (onSubmitAction) onSubmitAction();
-  }, [onSubmitAction, builderMode]);
+  }, [onSubmitAction, builderMode, formStoreKey]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {

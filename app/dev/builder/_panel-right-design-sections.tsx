@@ -130,10 +130,14 @@ export function ToggleBind({
 export function VisibilityInDesign({ node }: { node: SDUINode }) {
   const store = useBuilderStore();
   const nodeId = (node as { id?: string }).id ?? '';
-  const condition = (node as { condition?: unknown }).condition;
-  const isBound = isBoundValue(condition as FormulaValue);
-  const isHidden = !isBound && condition === false;
-  const hasCondition = condition != null;
+  const rawCondition = (node as { condition?: unknown }).condition;
+  // Normalize: plain string conditions (JS formula expressions) → { formula } so the editor recognises them as bound
+  const condition: FormulaValue = typeof rawCondition === 'string' && rawCondition !== ''
+    ? { formula: rawCondition }
+    : rawCondition as FormulaValue;
+  const isBound = isBoundValue(condition);
+  const isHidden = !isBound && rawCondition === false;
+  const hasCondition = rawCondition != null;
   const forceShow = !!(node as { _forceShowInEditor?: boolean })._forceShowInEditor;
 
   return (
@@ -141,14 +145,19 @@ export function VisibilityInDesign({ node }: { node: SDUINode }) {
       <ToggleBind
         rowLabel="Visible"
         fieldId="visibility-condition"
-        hint="e.g. {{isLoggedIn}}, {{cart.items.length > 0}}"
+        hint="e.g. variables['UUID'] > 0, local?.data?.form?.isSubmitting"
         expectedType="boolean"
         isOn={!isHidden}
-        value={(isBound ? condition : !isHidden) as FormulaValue}
+        value={isBound ? condition : !isHidden as unknown as FormulaValue}
         onToggle={() => store.patchCondition(nodeId, isHidden ? null : false as unknown as object)}
         onChange={v => {
-          if (isBoundValue(v)) store.patchCondition(nodeId, v as object);
-          else store.patchCondition(nodeId, null);
+          if (isBoundValue(v)) {
+            // Unwrap { formula: "..." } back to plain string for runtime compatibility
+            const f = (v as { formula?: string }).formula;
+            store.patchCondition(nodeId, (typeof f === 'string' ? f : v) as unknown as object);
+          } else {
+            store.patchCondition(nodeId, null);
+          }
         }}
         style={{ borderTop: 'none', padding: 0 }}
       />

@@ -158,7 +158,7 @@ export function serializeRangeFromEditor(editorEl: HTMLElement, sel: Selection):
  *   local.data(?.['key'])*   — weWeb-style FormContainer local state
  *   event(?.['key'])*        — workflow trigger event context
  */
-export const CHIP_RE = /collections\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|variables\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|local\.data(?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|context\.workflow\['[^']+'\](?:(?:\?)?\.[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|context\.(?:item|index|parent)(?:(?:\?\.\['[^']*'\]|\?\.\[\d+\])|(?:\.\w+))*|globalContext\.(?:browser|screen)(?:\?\.\['[^']*'\])*|pages\['[^']+'\](?:\?\.\['[^']*'\])*|theme(?:\.(?:colors|sections|fonts|radius)|\?\.\['(?:colors|sections|fonts|radius)'\])(?:\?\.\['[^']*'\]|\.\w+)*|components\?\.\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|event(?:\?\.\['[^']*'\]|\?\.\[\d+\])*/g;
+export const CHIP_RE = /collections\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|variables\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|local\.data(?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|context\.workflow\['[^']+'\](?:(?:\?)?\.[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|context\.(?:item|index|parent)(?:(?:\?\.\['[^']*'\]|\?\.\[\d+\])|(?:\.\w+))*|globalContext\.(?:browser|screen)(?:\?\.\['[^']*'\])*|pages\['[^']+'\](?:\?\.\['[^']*'\])*|theme(?:\.(?:colors|sections|fonts|radius)|\?\.\['(?:colors|sections|fonts|radius)'\])(?:\?\.\['[^']*'\]|\.\w+)*|components\?\.\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|event(?:\?\.\['[^']*'\]|\?\.\[\d+\])*/g;
 
 export const CHIP_INNER_CSS = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;display:block';
 
@@ -727,6 +727,9 @@ export function populateEditor(
         if (numM) { segs.push(Number(numM[1])); rem = numM[2]; continue; }
         const strM = rem.match(/^\?\.\['([^']+)'\](.*)/);
         if (strM) { segs.push(strM[1]); rem = strM[2]; continue; }
+        // dot-notation sub-path: .fieldName or .field.sub.path
+        const dotM = rem.match(/^\.([^.[]+)(.*)/);
+        if (dotM) { segs.push(dotM[1]); rem = dotM[2]; continue; }
         break;
       }
       el.appendChild(buildChipSpan(formulaPath, buildDisplayLabel(base, segs), 'collection'));
@@ -740,6 +743,9 @@ export function populateEditor(
         if (numM) { segs.push(Number(numM[1])); rem = numM[2]; continue; }
         const strM = rem.match(/^\?\.\['([^']+)'\](.*)/);
         if (strM) { segs.push(strM[1]); rem = strM[2]; continue; }
+        // dot-notation sub-path: .fieldName or .field.sub.path
+        const dotM = rem.match(/^\.([^.[]+)(.*)/);
+        if (dotM) { segs.push(dotM[1]); rem = dotM[2]; continue; }
         break;
       }
       el.appendChild(buildChipSpan(formulaPath, buildDisplayLabel(base, segs), 'variable'));

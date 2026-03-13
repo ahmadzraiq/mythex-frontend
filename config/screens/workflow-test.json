@@ -974,6 +974,7 @@
           },
           {
             "type": "FormContainer",
+            "id": "fc000001-0000-4000-8000-000000000001",
             "props": { "data-testid": "wa-form-container" },
             "actions": [{ "action": "waFormSubmit" }, { "action": "waFormValidationError" }],
             "children": [
@@ -1946,6 +1947,302 @@
                     "type": "ButtonText",
                     "text": "Reset"
                   }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+      ,
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-1" },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Card — Input Sync + FormContainer"
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+                "text": "Typing in Input 2 mirrors its value into Input 1 via onChange. The bound text below updates live."
+              }
+            ]
+          },
+          {
+            "type": "FormContainer",
+            "id": "6f32095d-4bc7-4b18-8408-14a34645265d",
+            "actions": [{ "action": "waSyncFormSubmit" }],
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-3" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-col gap-1" },
+                    "children": [
+                      {
+                        "type": "Input",
+                        "id": "sync-input-1",
+                        "props": { "variant": "outline", "size": "md" },
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "id": "sync-input-1-field",
+                            "_validation": {
+                              "trigger": "submit",
+                              "rules": [
+                                { "type": "required", "message": "Email is required" },
+                                { "type": "email", "message": "Please enter a valid email" }
+                              ]
+                            },
+                            "props": {
+                              "name": "input1",
+                              "placeholder": "Input 1 — enter a valid email",
+                              "value": "{{variables['wa-sync-0000-0000-0000-000000000001']}}",
+                              "className": "!text-gray-900 dark:!text-gray-100"
+                            },
+                            "actions": [{ "action": "waSyncInput1Change" }]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "condition": "local?.data?.form?.fields?.['input1']?.isValid",
+                        "props": { "className": "text-xs text-red-500" },
+                        "text": "{{local.data.form.fields['input1'].isValid}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-col gap-1" },
+                    "children": [
+                      {
+                        "type": "Input",
+                        "id": "sync-input-2",
+                        "props": { "variant": "outline", "size": "md" },
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "id": "sync-input-2-field",
+                            "_validation": {
+                              "trigger": "submit",
+                              "rules": [
+                                { "type": "required", "message": "Input 2 is required" }
+                              ]
+                            },
+                            "props": {
+                              "name": "input2",
+                              "placeholder": "Input 2 — type here to update Input 1",
+                              "className": "!text-gray-900 dark:!text-gray-100"
+                            },
+                            "actions": [{ "action": "waSyncInput2Change" }]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "condition": "local?.data?.form?.fields?.['input2']?.isValid",
+                        "props": { "className": "text-xs text-red-500" },
+                        "text": "{{local.data.form.fields['input2'].isValid}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Button",
+                    "props": { "type": "submit", "action": "primary", "size": "md" },
+                    "children": [
+                      {
+                        "type": "ButtonText",
+                        "condition": "!local?.data?.form?.isSubmitting",
+                        "text": "Submit"
+                      },
+                      {
+                        "type": "ButtonText",
+                        "condition": "local?.data?.form?.isSubmitting",
+                        "text": "Submitting..."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-col gap-1 mt-2 p-3 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-800" },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-xs font-semibold text-indigo-400 uppercase tracking-wide mb-1" },
+                        "text": "local.data.form (inside)"
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-row items-center gap-2" },
+                        "children": [
+                          { "type": "Text", "props": { "className": "text-xs font-mono text-indigo-400 w-40" }, "text": "formData.input1" },
+                          { "type": "Text", "props": { "className": "text-xs font-mono text-indigo-700 dark:text-indigo-300" }, "text": "{{local.data.form.formData.input1}}" }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-row items-center gap-2" },
+                        "children": [
+                          { "type": "Text", "props": { "className": "text-xs font-mono text-indigo-400 w-40" }, "text": "fields.input1.value" },
+                          { "type": "Text", "props": { "className": "text-xs font-mono text-indigo-700 dark:text-indigo-300" }, "text": "{{local.data.form.fields.input1.value}}" }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-row items-center gap-2" },
+                        "children": [
+                          { "type": "Text", "props": { "className": "text-xs font-mono text-indigo-400 w-40" }, "text": "fields.input1.isValid" },
+                          { "type": "Text", "props": { "className": "text-xs font-mono text-indigo-700 dark:text-indigo-300" }, "text": "{{local.data.form.fields.input1.isValid}}" }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-row items-center gap-2" },
+                        "children": [
+                          { "type": "Text", "props": { "className": "text-xs font-mono text-indigo-400 w-40" }, "text": "isSubmitting" },
+                          { "type": "Text", "props": { "className": "text-xs font-mono text-indigo-700 dark:text-indigo-300" }, "text": "{{local.data.form.isSubmitting}}" }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-row items-center gap-2" },
+                        "children": [
+                          { "type": "Text", "props": { "className": "text-xs font-mono text-indigo-400 w-40" }, "text": "isSubmitted" },
+                          { "type": "Text", "props": { "className": "text-xs font-mono text-indigo-700 dark:text-indigo-300" }, "text": "{{local.data.form.isSubmitted}}" }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-row items-center gap-2" },
+                        "children": [
+                          { "type": "Text", "props": { "className": "text-xs font-mono text-indigo-400 w-40" }, "text": "isValid" },
+                          { "type": "Text", "props": { "className": "text-xs font-mono text-indigo-700 dark:text-indigo-300" }, "text": "{{local.data.form.isValid}}" }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-1 pt-2 border-t border-gray-100 dark:border-gray-800" },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                "text": "Bound value (Input 1):"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-base font-medium text-gray-800 dark:text-gray-100"
+                },
+                "text": "{{variables['wa-sync-0000-0000-0000-000000000001']}}"
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-xs text-gray-400 dark:text-gray-500 mt-2" },
+                "text": "Submit result:"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm font-mono text-indigo-500 dark:text-indigo-400"
+                },
+                "text": "{{variables['wa-sync-0000-0000-0000-000000000003']}}"
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-1 mt-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-800" },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-xs font-semibold text-amber-500 dark:text-amber-400 uppercase tracking-wide mb-1" },
+                    "text": "variables['...form'] (outside)"
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center gap-2" },
+                    "children": [
+                      { "type": "Text", "props": { "className": "text-xs font-mono text-amber-400 w-40" }, "text": "formData.input1" },
+                      { "type": "Text", "props": { "className": "text-xs font-mono text-amber-700 dark:text-amber-300" }, "text": "{{variables['6f32095d-4bc7-4b18-8408-14a34645265d-form'].formData.input1}}" }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center gap-2" },
+                    "children": [
+                      { "type": "Text", "props": { "className": "text-xs font-mono text-amber-400 w-40" }, "text": "fields.input1.value" },
+                      { "type": "Text", "props": { "className": "text-xs font-mono text-amber-700 dark:text-amber-300" }, "text": "{{variables['6f32095d-4bc7-4b18-8408-14a34645265d-form'].fields.input1.value}}" }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center gap-2" },
+                    "children": [
+                      { "type": "Text", "props": { "className": "text-xs font-mono text-amber-400 w-40" }, "text": "fields.input1.isValid" },
+                      { "type": "Text", "props": { "className": "text-xs font-mono text-amber-700 dark:text-amber-300" }, "text": "{{variables['6f32095d-4bc7-4b18-8408-14a34645265d-form'].fields.input1.isValid}}" }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center gap-2" },
+                    "children": [
+                      { "type": "Text", "props": { "className": "text-xs font-mono text-amber-400 w-40" }, "text": "isSubmitting" },
+                      { "type": "Text", "props": { "className": "text-xs font-mono text-amber-700 dark:text-amber-300" }, "text": "{{variables['6f32095d-4bc7-4b18-8408-14a34645265d-form'].isSubmitting}}" }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center gap-2" },
+                    "children": [
+                      { "type": "Text", "props": { "className": "text-xs font-mono text-amber-400 w-40" }, "text": "isSubmitted" },
+                      { "type": "Text", "props": { "className": "text-xs font-mono text-amber-700 dark:text-amber-300" }, "text": "{{variables['6f32095d-4bc7-4b18-8408-14a34645265d-form'].isSubmitted}}" }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center gap-2" },
+                    "children": [
+                      { "type": "Text", "props": { "className": "text-xs font-mono text-amber-400 w-40" }, "text": "isValid" },
+                      { "type": "Text", "props": { "className": "text-xs font-mono text-amber-700 dark:text-amber-300" }, "text": "{{variables['6f32095d-4bc7-4b18-8408-14a34645265d-form'].isValid}}" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-1 mt-2 p-3 rounded-lg bg-violet-50 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-800" },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-xs font-semibold text-violet-400 uppercase tracking-wide mb-1" },
+                "text": "global variable store (direct)"
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row items-center gap-2" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-violet-400 w-56" }, "text": "variables['wa-sync-...001']" },
+                  { "type": "Text", "props": { "className": "text-xs font-mono text-violet-700 dark:text-violet-300" }, "text": "{{variables['wa-sync-0000-0000-0000-000000000001']}}" }
                 ]
               }
             ]

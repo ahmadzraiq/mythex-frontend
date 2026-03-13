@@ -69,7 +69,22 @@ export const setFormStateHandler: (ctx: ActionHandlerContext) => (actionDef: Act
     if (actionDef.isSubmitted !== undefined) patch['isSubmitted'] = Boolean(actionDef.isSubmitted);
 
     const nextForm = { ...current, ...patch };
-    getGlobalVariableStore().getState().setState((prev) => writeFormState(prev, nextForm));
+    getGlobalVariableStore().getState().setState((prev) => {
+      const result = writeFormState(prev, nextForm);
+      // Also patch all per-container stores (variables['{id}-form']) so reactive
+      // bindings like {{variables['uuid-form'].isSubmitting}} update immediately.
+      // setFormStateHandler writes to local.data.form directly (bypassing FormContainer
+      // React state), so the FormContainer useEffect never fires for these flags.
+      for (const key of Object.keys(prev)) {
+        if (key.endsWith('-form') && typeof prev[key] === 'object' && prev[key] !== null) {
+          (result as Record<string, unknown>)[key] = {
+            ...(prev[key] as Record<string, unknown>),
+            ...patch,
+          };
+        }
+      }
+      return result;
+    });
     ctx.store.getState().setState((prev) => writeFormState(prev, nextForm));
   };
 

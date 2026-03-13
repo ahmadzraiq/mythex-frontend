@@ -25,6 +25,9 @@
  * ST-22  Validation trigger dropdown defaults to 'On form submit'
  * ST-23  Validation trigger dropdown changes to 'On input change'
  * ST-24  Interactions section is absent from the Design tab
+ * ST-25   Field name persists after selecting another element and coming back (stale-closure fix)
+ * ST-25b  Typing in field A + switching to B does not copy B's name into A (wrong-value fix)
+ * ST-26   Node name persists after selecting another element and coming back (stale-closure fix)
  *
  * Run: npx playwright test e2e/builder-settings-tab.spec.ts --reporter=list
  */
@@ -517,4 +520,145 @@ test('ST-24: Interactions section is absent from the Design tab', async ({ page 
 
   // The Interactions section must not exist anywhere in the DOM
   await expect(page.getByTestId('interactions-section')).toHaveCount(0);
+});
+
+// ─── ST-25: Field name persists after selecting another element and returning ──
+
+test('ST-25: Field name persists after selecting another element and coming back', async ({ page }) => {
+  await gotoBuilder(page);
+
+  // Add a FormContainer with two InputFields
+  await page.evaluate(() => {
+    const store = (window as unknown as Record<string, BuilderStore>).__builderStore?.getState();
+    (store?.addNode as (node: unknown, parentId: null) => void)({
+      type: 'FormContainer',
+      id: 'st25-form',
+      props: { className: 'w-full' },
+      children: [
+        {
+          type: 'Input',
+          id: 'st25-input-a',
+          props: { variant: 'outline', size: 'md' },
+          children: [
+            { type: 'InputField', id: 'st25-field-a', props: { name: 'originalName', placeholder: 'Field A' } },
+          ],
+        },
+        {
+          type: 'Box',
+          id: 'st25-sibling',
+          props: { className: 'w-full h-8 bg-gray-100' },
+        },
+      ],
+    }, null);
+  });
+  await page.waitForTimeout(500);
+
+  // 1. Select the InputField and open Settings tab
+  await selectNode(page, 'st25-field-a');
+  await openSettingsTab(page);
+
+  const fieldNameInput = page.locator('[data-testid="settings-field-name-input"]');
+  await expect(fieldNameInput).toHaveValue('originalName', { timeout: 5_000 });
+
+  // 2. Focus the field name input and type a new name
+  await fieldNameInput.click();
+  await fieldNameInput.fill('renamedField');
+
+  // 3. Blur by selecting the sibling Box node (simulates clicking another element)
+  //    selectNode uses store.select() which triggers the same sync re-render as clicking canvas
+  await selectNode(page, 'st25-sibling');
+  await page.waitForTimeout(300);
+
+  // 4. Come back to the InputField
+  await selectNode(page, 'st25-field-a');
+  await page.waitForTimeout(300);
+
+  // 5. The field name input should show 'renamedField', NOT 'originalName'
+  const fieldNameInputAfter = page.locator('[data-testid="settings-field-name-input"]');
+  await expect(fieldNameInputAfter).toHaveValue('renamedField', { timeout: 5_000 });
+
+  // Also verify the store was updated
+  const node = await getNodeFromStore(page, 'st25-field-a') as Record<string, unknown> | null;
+  const props = node?.props as Record<string, unknown> | undefined;
+  expect(props?.name).toBe('renamedField');
+});
+
+// ─── ST-25b: Field name doesn't get overwritten with sibling's name ───────────
+
+test('ST-25b: Typing in field A then switching to field B does not copy B name into A', async ({ page }) => {
+  await gotoBuilder(page);
+
+  // Two InputFields in the same FormContainer
+  await page.evaluate(() => {
+    const store = (window as unknown as Record<string, BuilderStore>).__builderStore?.getState();
+    (store?.addNode as (node: unknown, parentId: null) => void)({
+      type: 'FormContainer',
+      id: 'st25b-form',
+      props: { className: 'w-full flex flex-col gap-4' },
+      children: [
+        {
+          type: 'Input', id: 'st25b-input-a', props: { variant: 'outline', size: 'md' },
+          children: [{ type: 'InputField', id: 'st25b-field-a', props: { name: 'firstField', placeholder: 'A' } }],
+        },
+        {
+          type: 'Input', id: 'st25b-input-b', props: { variant: 'outline', size: 'md' },
+          children: [{ type: 'InputField', id: 'st25b-field-b', props: { name: 'secondField', placeholder: 'B' } }],
+        },
+      ],
+    }, null);
+  });
+  await page.waitForTimeout(500);
+
+  // 1. Select Field A, open settings, type new name
+  await selectNode(page, 'st25b-field-a');
+  await openSettingsTab(page);
+  const inputA = page.locator('[data-testid="settings-field-name-input"]');
+  await inputA.click();
+  await inputA.fill('renamedFieldA');
+
+  // 2. Immediately select Field B (triggers sync re-render + controlled input value update before blur)
+  await selectNode(page, 'st25b-field-b');
+  await page.waitForTimeout(400);
+
+  // 3. Verify Field A got 'renamedFieldA', NOT 'secondField' (which would be the bug)
+  const nodeA = await getNodeFromStore(page, 'st25b-field-a') as Record<string, unknown> | null;
+  expect((nodeA?.props as Record<string, unknown>)?.name).toBe('renamedFieldA');
+
+  // 4. Field B must be unchanged
+  const nodeB = await getNodeFromStore(page, 'st25b-field-b') as Record<string, unknown> | null;
+  expect((nodeB?.props as Record<string, unknown>)?.name).toBe('secondField');
+});
+
+// ─── ST-26: Node name persists after selecting another element and returning ──
+
+test('ST-26: Node name persists after selecting another element and coming back', async ({ page }) => {
+  await gotoBuilder(page);
+
+  // Two boxes side by side
+  await addNode(page, { type: 'Box', id: 'st26-box-a', props: { className: 'w-full h-8' } });
+  await addNode(page, { type: 'Box', id: 'st26-box-b', props: { className: 'w-full h-8' } });
+  await page.waitForTimeout(300);
+
+  // 1. Select Box A, open Settings, type a name
+  await selectNode(page, 'st26-box-a');
+  await openSettingsTab(page);
+
+  const nameInput = page.locator('[data-testid="settings-name-input"]');
+  await nameInput.click();
+  await nameInput.fill('BoxRenamed');
+
+  // 2. Blur by selecting Box B
+  await selectNode(page, 'st26-box-b');
+  await page.waitForTimeout(300);
+
+  // 3. Come back to Box A
+  await selectNode(page, 'st26-box-a');
+  await page.waitForTimeout(300);
+
+  // 4. Name should be preserved
+  const nameInputAfter = page.locator('[data-testid="settings-name-input"]');
+  await expect(nameInputAfter).toHaveValue('BoxRenamed', { timeout: 5_000 });
+
+  const node = await getNodeFromStore(page, 'st26-box-a') as Record<string, unknown> | null;
+  expect(node?.name).toBe('BoxRenamed');
 });
