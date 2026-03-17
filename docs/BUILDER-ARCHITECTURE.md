@@ -32,7 +32,8 @@ The visual builder lives at `app/dev/builder/`. It renders SDUI components direc
 | `_showcase.ts` | ~200 | Pre-built component showcase nodes |
 | `_color-picker.tsx` | ~300 | Color picker widget |
 | `_action-builder.tsx` | ~200 | Action builder slide-out panel |
-| `_state-bar.tsx` | ~150 | Canvas state bar (viewport, zoom) |
+| `_state-bar.tsx` | ~200 | StateBar — single-select state preview chips (Normal / Loading / Validation / Empty / Disabled / Custom). State changes wrapped in `startTransition` for performance. |
+| `_canvas-helpers.tsx` | ~280 | `PageEngine` (memoized active-page SDUI wrapper), `InactivePageEngine` (memoized background-page SDUI wrapper, applies `applyStateTagOverrides` inside its own `useMemo`), `InactivePagesGrid` (isolated component with targeted store subscription — renders all inactive pages without re-rendering on hover/select). |
 | `_floating-toolbar.tsx` | ~250 | Floating mini-toolbar for selected nodes |
 
 ---
@@ -125,6 +126,24 @@ When a workflow step is stored as `{ "action": "uuid" }` (ActionRef), `deseriali
 ### FormContainer Submit Pattern
 Gluestack `Button` renders as `<div role="button">` — clicking it does NOT fire the HTML form's `onSubmit`. The renderer (`lib/sdui/renderer.tsx`) auto-wires `onPress`/`onClick` to `formCtx.submit()` when a Button has `type="submit"` props and is inside a `FormContainer`. `formCtx.submit()` reads from the global variable store, validates `_validation` rules, writes errors, and calls `onSubmitAction` (the bound workflow).
 
+### State Preview System
+
+`lib/sdui/builder-preview.ts` contains all builder-only state simulation logic:
+
+| Export | Purpose |
+|---|---|
+| `applyPreviewStatePatch` | Modifies merged state for `loading` / `validation` / `empty` preview. **Validation** scans `merged.variables` for keys ending in `-form` (FormContainer store keys) and injects `isValid: 'This field is required'` into all registered fields. |
+| `applyStateTagOverrides` | Deep-walks node trees and applies `_forceShowInEditor: true` or `condition: false` overrides based on `_stateTag` and active preview states. Fast-paths (no clone) when no relevant state is active. |
+| `applyPreviewDataPatch` | Overlays preview data on top of merged state. |
+
+**`_stateTag` values:** `"loading"` / `"empty"` / `"default"` / `"custom-*"` — set via the Design panel's Visibility section when a node has a `condition`. Never rendered at runtime.
+
+**FormContainer stable `id` rule:** FormContainers MUST have a stable `id` field in JSON config so the validation preview can find `variables['${id}-form']`. Without it, the component falls back to `crypto.randomUUID()` on every mount and the form state key is unpredictable.
+
+**StateBar single-select + `startTransition`:** Clicking a chip calls `setPreviewState` (replacing the active state). Re-clicking the active chip reverts to `'normal'`. All calls are wrapped in `React.startTransition` to prevent blocking pan/mouse interactions during the heavy re-render.
+
+**`InactivePagesGrid`:** Inactive pages are rendered in a dedicated `memo`-wrapped component (`_canvas-helpers.tsx`) that subscribes only to `pages`, `currentPageId`, `activePreviewStates`, and `switchPage` from the store. This prevents hover/select events from triggering inactive page re-renders. `applyStateTagOverrides` runs inside each `InactivePageEngine`'s `useMemo` — not inline in JSX.
+
 ---
 
 ## Cursor AI Tips
@@ -142,3 +161,6 @@ When working on a specific area, read ONLY the relevant file:
 | Work on SDUI form submission | `lib/sdui/form-context.ts`, `lib/sdui/components/FormContainer.tsx`, `lib/sdui/renderer.tsx` |
 | Work on formula evaluation | `lib/sdui/formula-evaluator.ts` |
 | Work on config API | `app/api/builder/config/route.ts` |
+| Work on StateBar / state preview | `_state-bar.tsx`, `lib/sdui/builder-preview.ts`, `_canvas-helpers.tsx` |
+| Work on inactive page rendering | `_canvas-helpers.tsx` (`InactivePageEngine`, `InactivePagesGrid`) |
+| Add / modify `_stateTag` behaviour | `lib/sdui/builder-preview.ts` (`applyStateTagOverrides`), `_panel-right-design-sections.tsx` (StateTagPicker), `_layers-panel.tsx` (badges) |

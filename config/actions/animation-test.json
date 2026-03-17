@@ -1,0 +1,110 @@
+{
+  "animHide": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "anim-0000-0000-0000-000000000005", "value": true } },
+      { "id": "s2", "type": "timeDelay", "config": { "ms": 270 } },
+      { "id": "s3", "type": "changeVariableValue", "config": { "variableName": "anim-0000-0000-0000-000000000001", "value": false } },
+      { "id": "s4", "type": "changeVariableValue", "config": { "variableName": "anim-0000-0000-0000-000000000005", "value": false } }
+    ]
+  },
+  "animShow": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "anim-0000-0000-0000-000000000001", "value": true } }
+    ]
+  },
+  "animLayoutAdd": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "anim-0000-0000-0000-000000000002",
+          "value": {
+            "formula": "(variables?.['anim-0000-0000-0000-000000000002'] || []).concat([{ id: 'li-' + Date.now(), label: 'Item ' + ((variables?.['anim-0000-0000-0000-000000000002'] || []).length + 1) }])"
+          }
+        }
+      }
+    ]
+  },
+  "animLayoutRemove": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "anim-0000-0000-0000-000000000002",
+          "value": {
+            "formula": "slice(variables?.['anim-0000-0000-0000-000000000002'] || [], 0, -1)"
+          }
+        }
+      }
+    ]
+  },
+  "animTriggerShake": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": { "variableName": "anim-0000-0000-0000-000000000004", "value": { "formula": "Date.now()" } }
+      }
+    ]
+  },
+  "cycleP11State": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "anim-0000-0000-0000-00000000p011",
+          "value": {
+            "formula": "variables?.['anim-0000-0000-0000-00000000p011'] === 'idle' ? 'loading' : variables?.['anim-0000-0000-0000-00000000p011'] === 'loading' ? 'success' : variables?.['anim-0000-0000-0000-00000000p011'] === 'success' ? 'error' : 'idle'"
+          }
+        }
+      }
+    ]
+  },
+  "carouselNext": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "anim-0000-0000-0000-00000000p017",
+          "value": {
+            "formula": "((variables?.['anim-0000-0000-0000-00000000p017'] ?? 0) + 1) % 4"
+          }
+        }
+      }
+    ]
+  },
+  "carouselPrev": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "anim-0000-0000-0000-00000000p017",
+          "value": {
+            "formula": "((variables?.['anim-0000-0000-0000-00000000p017'] ?? 0) + 3) % 4"
+          }
+        }
+      }
+    ]
+  }
+}

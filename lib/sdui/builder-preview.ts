@@ -8,8 +8,9 @@
  * which is now guarded by `builderMode` so this code is dead in production.
  */
 
-import { getNestedValue, setNestedValue } from './nested-utils';
+import { setNestedValue } from './nested-utils';
 import { mergeDataPaths } from './merge-state';
+import type { SDUINode } from './types/node';
 
 /** Recursively replace all arrays in a value with empty arrays. */
 function deepClearArrays(val: unknown): unknown {
@@ -41,53 +42,39 @@ export function applyPreviewStatePatch(
     }
     return next;
   }
-  if (previewState === 'error') {
-    let next = setNestedValue(
-      setNestedValue({ ...merged }, '_workflow.lastError', 'Preview error'),
-      '_workflow.lastAction', 'preview'
-    );
-    if (configName) {
-      const screenForm = (getNestedValue(merged, `screens.${configName}.form`) ??
-        getNestedValue(merged, 'form')) as Record<string, unknown> | undefined;
-      if (screenForm && typeof screenForm === 'object') {
-        for (const field of Object.keys(screenForm)) {
-          if (typeof (screenForm as Record<string, unknown>)[field] !== 'object') {
-            next = setNestedValue(next, `screens.${configName}.errors.form.${field}`, 'Preview error');
-          }
-        }
-      }
-      const screenErrors = (getNestedValue(merged, `screens.${configName}.errors`) ??
-        getNestedValue(merged, 'errors')) as Record<string, unknown> | undefined;
-      if (screenErrors && typeof screenErrors === 'object') {
-        for (const field of Object.keys(screenErrors)) {
-          next = setNestedValue(next, `screens.${configName}.errors.${field}`, 'Preview error');
-        }
-      }
-    }
-    return next;
-  }
   if (previewState === 'validation') {
     let next = { ...merged };
-    if (configName) {
-      const screenForm = (getNestedValue(merged, `screens.${configName}.form`) ??
-        getNestedValue(merged, 'form')) as Record<string, unknown> | undefined;
-      if (screenForm && typeof screenForm === 'object') {
-        for (const field of Object.keys(screenForm)) {
-          if (typeof (screenForm as Record<string, unknown>)[field] !== 'object') {
-            next = setNestedValue(next, `screens.${configName}.errors.form.${field}`, 'This field is required');
-          }
+    // Inject mock validation errors into every FormContainer's isolated variable store.
+    // FormContainer stores field state at variables['${formId}-form'].fields.{name}.isValid.
+    // We scan variables for any key ending in '-form' and inject errors into all
+    // registered fields so inline error Text nodes (which check isValid) become visible.
+    const variables = next.variables as Record<string, unknown> | undefined;
+    if (variables && typeof variables === 'object') {
+      const patchedVars: Record<string, unknown> = { ...variables };
+      for (const key of Object.keys(variables)) {
+        if (!key.endsWith('-form')) continue;
+        const formStore = variables[key] as Record<string, unknown> | undefined;
+        if (!formStore || typeof formStore !== 'object') continue;
+        const fields = formStore.fields as Record<string, unknown> | undefined;
+        if (!fields || typeof fields !== 'object') continue;
+        const patchedFields: Record<string, unknown> = {};
+        for (const fieldName of Object.keys(fields)) {
+          const field = fields[fieldName] as Record<string, unknown> | undefined;
+          patchedFields[fieldName] = {
+            ...(typeof field === 'object' && field !== null ? field : {}),
+            isValid: 'This field is required',
+          };
         }
+        patchedVars[key] = { ...formStore, fields: patchedFields };
       }
+      next = { ...next, variables: patchedVars };
     }
     return next;
   }
   if (previewState === 'empty') {
     return deepClearArrays(merged) as Record<string, unknown>;
   }
-  if (previewState === 'disabled') {
-    return setNestedValue({ ...merged }, '_preview_disabled', true);
-  }
-  // custom states — no global patch; _stateOverrides handled per-node in renderer
+  // custom states and 'disabled' — no global patch; handled per-node via applyStateTagOverrides
   return merged;
 }
 
@@ -98,4 +85,64 @@ export function applyPreviewDataPatch(
 ): Record<string, unknown> {
   if (!previewData || Object.keys(previewData).length === 0) return merged;
   return mergeDataPaths(merged, previewData);
+}
+
+/**
+ * Walk the node tree and apply show/hide overrides based on _stateTag annotations
+ * and the currently active preview states.
+ *
+ * - 'loading' active: loading-tagged nodes → _forceShowInEditor:true; default/empty-tagged → condition:false
+ * - 'empty'   active: empty-tagged nodes   → _forceShowInEditor:true; default/loading-tagged → condition:false
+ * - 'disabled' active: nodes with props.disabled configured → _forceDisabledInEditor:true
+ *
+ * Returns the original array unchanged (no clone) when no overrides are needed (fast path).
+ * This function is builder-only and never runs in production.
+ */
+export function applyStateTagOverrides(
+  nodes: SDUINode[],
+  activePreviewStates: string[]
+): SDUINode[] {
+  const loading  = activePreviewStates.includes('loading');
+  const empty    = activePreviewStates.includes('empty');
+  const disabled = activePreviewStates.includes('disabled');
+  if (!loading && !empty && !disabled) return nodes; // fast path — no cloning
+
+  function walk(node: SDUINode): SDUINode {
+    const tag = (node as unknown as Record<string, unknown>)._stateTag as string | undefined;
+    const hasDisabledProp =
+      (node.props as Record<string, unknown> | undefined)?.disabled != null;
+
+    let patched: SDUINode = node;
+
+    // Loading state isolation: show loading nodes, hide default/empty nodes
+    if (loading && tag) {
+      if (tag === 'loading') {
+        patched = { ...patched, _forceShowInEditor: true } as unknown as SDUINode;
+      } else if (tag === 'default' || tag === 'empty') {
+        patched = { ...patched, condition: false } as unknown as SDUINode;
+      }
+    }
+
+    // Empty state isolation: show empty nodes, hide default/loading nodes
+    if (empty && tag) {
+      if (tag === 'empty') {
+        patched = { ...patched, _forceShowInEditor: true } as unknown as SDUINode;
+      } else if (tag === 'default' || tag === 'loading') {
+        patched = { ...patched, condition: false } as unknown as SDUINode;
+      }
+    }
+
+    // Disabled state: force the per-node overlay on nodes that have disabled configured
+    if (disabled && hasDisabledProp) {
+      patched = { ...patched, _forceDisabledInEditor: true } as unknown as SDUINode;
+    }
+
+    // Recurse into children
+    if (patched.children?.length) {
+      patched = { ...patched, children: patched.children.map(walk) };
+    }
+    return patched;
+  }
+
+  return nodes.map(walk);
 }

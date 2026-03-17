@@ -6,6 +6,7 @@ import appConfig from '@/config/app';
 import type { SDUIConfig } from '@/lib/sdui/types';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import { BUILDER_PREVIEW_KEY } from '../page';
+import { loadPopups } from '@/lib/builder/popup-data';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const app = appConfig as any;
@@ -27,6 +28,8 @@ interface PreviewData {
   /** Project-wide global workflow definitions keyed by UUID */
   globalWorkflows?: Record<string, unknown[]>;
   globalWorkflowMeta?: Record<string, WorkflowMeta>;
+  /** Live popup models snapshotted from the builder's in-memory store. */
+  popupModels?: Record<string, unknown>;
 }
 
 /** Convert hex → space-separated RGB triplet (matches ThemeStyles format). */
@@ -87,6 +90,11 @@ export default function PreviewPage() {
       if (raw) {
         const parsed = JSON.parse(raw) as PreviewData;
         setData(parsed);
+        // Seed the in-memory popup store so openPopupHandler can find dynamically
+        // created popup models (they aren't in config/popups.json yet).
+        if (parsed.popupModels) {
+          loadPopups(parsed.popupModels as Record<string, unknown>);
+        }
         // Apply theme overrides saved from the builder
         if (parsed.themeOverrides || parsed.themeDarkOverrides) {
           applyPreviewTheme(parsed.themeOverrides ?? {}, parsed.themeDarkOverrides ?? {});
@@ -139,6 +147,7 @@ export default function PreviewPage() {
       actionsConfig={{ ...app.actions ?? {}, ...workflowActionsConfig }}
       routes={app.routes ?? []}
       dataSources={app.dataSources ?? {}}
+      popupModels={data.popupModels}
     />
   );
 }

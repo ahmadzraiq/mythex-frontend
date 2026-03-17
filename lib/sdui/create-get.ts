@@ -34,8 +34,14 @@ export function createGet(
 ): (path: string, s?: Record<string, unknown>) => unknown {
   return (path: string, s?: Record<string, unknown>) => {
     const sc = s ?? scope;
-    if (sc && isScopeVariable(path)) {
-      return getNestedValue(sc, path);
+    if (sc) {
+      // Resolve from scope when: it's a known scope variable ($item etc / context.*)
+      // OR the root key of the path exists directly in the scope object (e.g. `popup`
+      // for popup instances so {{popup.props.title}} resolves correctly).
+      const rootKey = path.split('.')[0];
+      if (isScopeVariable(path) || rootKey in (sc as Record<string, unknown>)) {
+        return getNestedValue(sc, path);
+      }
     }
     const resolvedPath =
       screenName && isScreenScopedPath(path, screenScopedAliases)

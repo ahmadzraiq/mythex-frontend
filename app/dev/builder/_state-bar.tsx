@@ -9,21 +9,19 @@
  * store.activePreviewState so the canvas can simulate the state.
  */
 
-import React, { useState } from 'react';
+import React, { useState, startTransition } from 'react';
 import { useBuilderStore } from './_store';
 
 // ─── State config ─────────────────────────────────────────────────────────────
 
-export type PreviewState = 'normal' | 'hover' | 'loading' | 'error' | 'empty' | 'disabled' | string;
+export type PreviewState = 'normal' | 'loading' | 'validation' | 'empty' | 'disabled' | string;
 
 const BASE_STATES: Array<{ id: PreviewState; label: string; color: string; description: string }> = [
   { id: 'normal',     label: 'Normal',     color: '#9ca3af', description: 'Default state' },
-  { id: 'hover',      label: 'Hover',      color: '#818cf8', description: 'Mouse over element' },
-  { id: 'loading',    label: 'Loading',    color: '#fbbf24', description: 'Sets _workflow.loading = true' },
-  { id: 'error',      label: 'Error',      color: '#f87171', description: 'Sets _workflow.lastError + injects per-field errors (API failure scenario)' },
+  { id: 'loading',    label: 'Loading',    color: '#fbbf24', description: 'Sets _workflow.loading = true; force-shows nodes tagged _stateTag: "loading"' },
   { id: 'validation', label: 'Validation', color: '#fb923c', description: 'Injects per-field form validation errors without API error banner' },
-  { id: 'empty',      label: 'Empty',      color: '#6ee7b7', description: 'Clears bound array to []' },
-  { id: 'disabled',   label: 'Disabled',   color: '#9ca3af', description: 'Disabled interaction states' },
+  { id: 'empty',      label: 'Empty',      color: '#6ee7b7', description: 'Clears bound arrays to []; force-shows nodes tagged _stateTag: "empty"' },
+  { id: 'disabled',   label: 'Disabled',   color: '#9ca3af', description: 'Force-shows disabled overlay on nodes that have props.disabled configured' },
 ];
 
 // ─── Custom state editor ──────────────────────────────────────────────────────
@@ -68,23 +66,32 @@ function CustomStateChip({ id, label, isActive, color, onClick, onRemove }: {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function StateBar() {
-  const { activePreviewStates, togglePreviewState, setPreviewState } = useBuilderStore();
+  const { activePreviewStates, setPreviewState } = useBuilderStore();
   const [customStates, setCustomStates] = useState<Array<{ id: string; label: string }>>([]);
   const [showAddCustom, setShowAddCustom] = useState(false);
   const [newCustomName, setNewCustomName] = useState('');
+
+  // Single-select: clicking the active chip goes back to Normal.
+  // Wrapped in startTransition so the heavy canvas re-render is low-priority
+  // and won't block ongoing pan/mouse interactions.
+  const selectState = (id: PreviewState) => {
+    startTransition(() => {
+      setPreviewState(activePreviewStates.includes(id) ? 'normal' : id);
+    });
+  };
 
   const addCustom = () => {
     if (!newCustomName.trim()) return;
     const id = `custom-${newCustomName.toLowerCase().replace(/\s+/g, '-')}`;
     setCustomStates(prev => [...prev, { id, label: newCustomName.trim() }]);
-    togglePreviewState(id);
+    startTransition(() => setPreviewState(id));
     setNewCustomName('');
     setShowAddCustom(false);
   };
 
   const removeCustom = (id: string) => {
     setCustomStates(prev => prev.filter(s => s.id !== id));
-    if (activePreviewStates.includes(id)) setPreviewState('normal');
+    if (activePreviewStates.includes(id)) startTransition(() => setPreviewState('normal'));
   };
 
   const cycleState = () => {
@@ -92,7 +99,7 @@ export function StateBar() {
     const current = activePreviewStates[0] ?? 'normal';
     const idx = all.indexOf(current);
     const next = all[(idx + 1) % all.length];
-    setPreviewState(next);
+    startTransition(() => setPreviewState(next));
   };
 
   return (
@@ -123,7 +130,7 @@ export function StateBar() {
           <React.Fragment key={state.id}>
             <button
               data-testid={`state-chip-${state.id}`}
-              onClick={() => togglePreviewState(state.id)}
+              onClick={() => selectState(state.id)}
               title={state.description}
               style={{
                 background: isActive ? state.color + '25' : 'transparent',
@@ -155,7 +162,7 @@ export function StateBar() {
           label={state.label}
           isActive={activePreviewStates.includes(state.id)}
           color="#c084fc"
-          onClick={() => togglePreviewState(state.id)}
+          onClick={() => selectState(state.id)}
           onRemove={() => removeCustom(state.id)}
         />
       ))}

@@ -23,6 +23,7 @@ import type { SDUINode } from '@/lib/sdui/types/node';
 import { BindingIcon, isBoundValue, type FormulaValue } from './_formula-panel';
 import { FormulaEditor } from './_formula-editor';
 import { PANEL_STYLE, SECTION_STYLE, LABEL_STYLE, SectionHeader, NumberInput, SelectInput, ToggleBtn } from './_panel-primitives';
+import { FigmaColorPicker } from './_color-picker';
 import { BUILDER_FORM_INPUT_TYPES } from '@/lib/sdui/controlled-component-registry';
 
 // ─── Design-tab inline sections (moved from Logic) ────────────────────────────
@@ -127,6 +128,108 @@ export function ToggleBind({
   );
 }
 
+// ─── State tag options ───────────────────────────────────────────────────────
+
+const STATE_TAG_OPTIONS = [
+  { id: undefined,   label: 'None',    icon: '–',  color: '#6b7280', bg: 'transparent', border: '#374151' },
+  { id: 'loading',   label: 'Loading', icon: '⟳',  color: '#fbbf24', bg: '#451a03',     border: '#fbbf24' },
+  { id: 'empty',     label: 'Empty',   icon: '○',  color: '#6ee7b7', bg: '#022c22',     border: '#6ee7b7' },
+  { id: 'default',   label: 'Default', icon: '◉',  color: '#9ca3af', bg: '#1f2937',     border: '#9ca3af' },
+  { id: 'custom',    label: 'Custom',  icon: '◈',  color: '#c084fc', bg: '#2e1065',     border: '#c084fc' },
+] as const;
+
+function StateTagPicker({ nodeId, node }: { nodeId: string; node: SDUINode }) {
+  const store = useBuilderStore();
+  const currentTag = (node as unknown as Record<string, unknown>)._stateTag as string | undefined;
+
+  // Determine which pill is active: if tag exists but isn't one of the fixed ids, it's 'custom'
+  const fixedIds = ['loading', 'empty', 'default'] as const;
+  const isCustom = !!currentTag && !(fixedIds as readonly string[]).includes(currentTag);
+  const activeId = isCustom ? 'custom' : currentTag;
+
+  const [customInput, setCustomInput] = useState(isCustom ? currentTag : '');
+
+  // Keep custom input in sync when node changes (e.g. different node selected)
+  useEffect(() => {
+    const tag = (node as unknown as Record<string, unknown>)._stateTag as string | undefined;
+    const isC = !!tag && !(fixedIds as readonly string[]).includes(tag);
+    setCustomInput(isC ? tag : '');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodeId]);
+
+  const selectTag = (id: string | undefined) => {
+    if (id === 'custom') {
+      // Keep whatever was in custom input, or clear to let user type
+      const val = customInput.trim() || '';
+      store.patchNodeField(nodeId, '_stateTag', val || undefined);
+    } else {
+      store.patchNodeField(nodeId, '_stateTag', id);
+      setCustomInput('');
+    }
+  };
+
+  const commitCustom = () => {
+    const val = customInput.trim();
+    store.patchNodeField(nodeId, '_stateTag', val || undefined);
+  };
+
+  return (
+    <div style={{ marginTop: 8, paddingTop: 6, borderTop: '1px solid #1f2937' }}>
+      <span style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 5 }}>
+        State
+      </span>
+      <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+        {STATE_TAG_OPTIONS.map(opt => {
+          const isActive = opt.id === undefined ? !currentTag : opt.id === activeId;
+          return (
+            <button
+              key={String(opt.id ?? 'none')}
+              data-testid={`state-tag-pill-${opt.id ?? 'none'}`}
+              onClick={() => selectTag(opt.id)}
+              title={opt.label}
+              style={{
+                fontSize: 9,
+                padding: '2px 7px',
+                borderRadius: 4,
+                border: `1px solid ${isActive ? opt.border : '#374151'}`,
+                background: isActive ? opt.bg : 'transparent',
+                color: isActive ? opt.color : '#6b7280',
+                cursor: 'pointer',
+                fontWeight: isActive ? 600 : 400,
+                transition: 'all 0.1s',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {opt.icon} {opt.label}
+            </button>
+          );
+        })}
+      </div>
+      {activeId === 'custom' && (
+        <input
+          data-testid="state-tag-custom-input"
+          value={customInput}
+          onChange={e => setCustomInput(e.target.value)}
+          onBlur={commitCustom}
+          onKeyDown={e => { if (e.key === 'Enter') commitCustom(); }}
+          placeholder="state name…"
+          style={{
+            marginTop: 5,
+            background: '#1f2937',
+            border: '1px solid #374151',
+            borderRadius: 4,
+            color: '#c084fc',
+            fontSize: 10,
+            padding: '3px 7px',
+            width: '100%',
+            outline: 'none',
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
 export function VisibilityInDesign({ node }: { node: SDUINode }) {
   const store = useBuilderStore();
   const nodeId = (node as { id?: string }).id ?? '';
@@ -162,17 +265,20 @@ export function VisibilityInDesign({ node }: { node: SDUINode }) {
         style={{ borderTop: 'none', padding: 0 }}
       />
       {hasCondition && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, paddingTop: 6, borderTop: '1px solid #1f2937' }}>
-          <span style={{ fontSize: 10, color: '#4b5563' }}>Force show in editor</span>
-          <button
-            data-testid="force-show-toggle"
-            onClick={() => store.patchNodeField(nodeId, '_forceShowInEditor', forceShow ? undefined : true)}
-            title="Override condition — always render this node on the canvas"
-            style={{ width: 32, height: 18, borderRadius: 9, background: forceShow ? '#f59e0b' : '#374151', border: 'none', cursor: 'pointer', position: 'relative', flexShrink: 0 }}
-          >
-            <span style={{ position: 'absolute', top: 2, left: forceShow ? 16 : 2, width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
-          </button>
-        </div>
+        <>
+          <StateTagPicker nodeId={nodeId} node={node} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, paddingTop: 6, borderTop: '1px solid #1f2937' }}>
+            <span style={{ fontSize: 10, color: '#4b5563' }}>Force show in editor</span>
+            <button
+              data-testid="force-show-toggle"
+              onClick={() => store.patchNodeField(nodeId, '_forceShowInEditor', forceShow ? undefined : true)}
+              title="Override condition — always render this node on the canvas"
+              style={{ width: 32, height: 18, borderRadius: 9, background: forceShow ? '#f59e0b' : '#374151', border: 'none', cursor: 'pointer', position: 'relative', flexShrink: 0 }}
+            >
+              <span style={{ position: 'absolute', top: 2, left: forceShow ? 16 : 2, width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

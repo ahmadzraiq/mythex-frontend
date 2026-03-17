@@ -10,6 +10,8 @@
  */
 
 import React, { memo, useSyncExternalStore, useContext, useEffect, useRef, useMemo } from 'react';
+import { AnimatedNode } from './components/animated-node';
+import type { AnimationConfig } from './components/animated-node';
 import { FormContext, FormScopeContext } from './form-context';
 import { getNestedValue } from './nested-utils';
 import { trackFormFieldProps, useFormFieldRegistration, useExternalNodeValueSync, useExternalFormSync } from './form-field-tracker';
@@ -28,7 +30,7 @@ import { PARENT_CONTEXT_PROVIDER_TYPES } from './controlled-component-registry';
 import {
   PRESS_ONLY_TYPES,
   applyFormContextBindings, applyStateOverrides, applyClassFormulas, applyAutofill,
-  applyDisabledPreview, injectControlledProps, applyBuilderAnnotation,
+  injectControlledProps, applyBuilderAnnotation,
   wrapWithClickHandler, renderWithDisabledOverlay,
   DataSourceWrapper,
 } from './renderer-node-props';
@@ -114,6 +116,11 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
         // Pass through the already-structured context.item built by the map loop above,
         // so context.item.data / context.item.parent / context.item.index all resolve correctly.
         context: scope.context ?? { item: scope.$item, index: scope.$index, parent: scope.$parent },
+        // Spread any additional custom scope keys (e.g. `popup` for popup instances,
+        // so {{popup.props.title}} resolves in templates and formula expressions).
+        ...Object.fromEntries(
+          Object.entries(scope).filter(([k]) => !['$item', '$index', '$parent', 'context'].includes(k))
+        ),
       }
     : state;
 
@@ -277,7 +284,7 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
   );
 
   const cleanProps = Object.fromEntries(
-    Object.entries(resolvedProps).filter(([k]) => !k.startsWith('$') && k !== '_meta')
+    Object.entries(resolvedProps).filter(([k]) => !k.startsWith('$') && k !== '_meta' && k !== 'animation')
   ) as Record<string, unknown>;
 
   // Map data-testid → testID so Gluestack Button/Pressable surfaces it in the DOM.
@@ -291,7 +298,6 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
   applyStateOverrides(node, cleanProps, previewState, builderMode);
   applyClassFormulas(node, cleanProps, sduiContext);
   applyAutofill(node, cleanProps, builderMode);
-  applyDisabledPreview(node, cleanProps, merged, builderMode);
 
   Object.assign(cleanProps, bindActionsToProps(node.actions, runAction, actionsConfig, scope, node.type));
   applyFormContextBindings(node, cleanProps, formCtx, actionsConfig);
@@ -305,7 +311,15 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
     cleanProps._formNodeId = node.id ?? '';
   }
 
-  applyBuilderAnnotation(node, cleanProps, builderMode);
+  // In builder mode, animated nodes own their own data-builder-id (set directly on the
+  // outer View in AnimatedNode). Skip applyBuilderAnnotation for those so the inner
+  // element never gets a duplicate data-builder-id via the ref callback.
+  const animCfgForIdCheck = (node.props as Record<string, unknown>)?.animation
+    ?? (node as unknown as Record<string, unknown>).animation;
+  const animNodeOwnsId = !!(builderMode && node.id && animCfgForIdCheck);
+  if (!animNodeOwnsId) {
+    applyBuilderAnnotation(node, cleanProps, builderMode);
+  }
 
   const textContent = node.text != null ? resolveText(node.text, sduiContext, scope) : undefined;
 
@@ -337,6 +351,89 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
 
   const element = React.createElement(Component, { ...cleanProps, key: node.key }, children);
 
+  // Wrap with AnimatedNode when the node has an animation config.
+  // Support both node.props.animation (canonical) and node.animation (top-level alias).
+  const animCfg = (node.props as Record<string, unknown> | undefined)?.animation
+    ?? (node as unknown as Record<string, unknown>).animation;
+  if (animCfg && typeof animCfg === 'object') {
+    // $index is the top-level map iteration index set on scope (scope.$index = index).
+    // repeatIndex lives inside scope.context.item, not at scope root — use $index.
+    const staggerIndex =
+      typeof (scope as { $index?: number } | undefined)?.$index === 'number'
+        ? (scope as { $index: number }).$index
+        : typeof (scope as { repeatIndex?: number } | undefined)?.repeatIndex === 'number'
+          ? (scope as { repeatIndex: number }).repeatIndex
+          : 0;
+    // Resolve imperativeTrigger.watchVar — it's a formula expression like "variables['UUID']"
+    // that must be evaluated (not just path-looked-up) against the current state so
+    // AnimatedNode can watch its resolved value and re-play the animation when it changes.
+    let resolvedAnimCfg = animCfg as AnimationConfig;
+    const itCfg = (animCfg as AnimationConfig).imperativeTrigger;
+    if (itCfg && typeof itCfg.watchVar === 'string') {
+      const resolvedVal = evaluateFormula(itCfg.watchVar, stateWithScope).value;
+      resolvedAnimCfg = {
+        ...resolvedAnimCfg,
+        imperativeTrigger: { ...itCfg, watchVar: resolvedVal },
+      };
+    }
+    // Resolve states.watchVar so AnimatedNode receives the current state name
+    const smCfg = resolvedAnimCfg.states;
+    if (smCfg && typeof smCfg.watchVar === 'string') {
+      const resolvedState = evaluateFormula(smCfg.watchVar, stateWithScope).value;
+      resolvedAnimCfg = {
+        ...resolvedAnimCfg,
+        states: { ...smCfg, watchVar: String(resolvedState ?? '') },
+      };
+    }
+    // Auto-inject node.text into splitText.text and node className into splitText.className
+    // when the node uses animation.splitText but has no explicit values set.
+    // This lets the Text/Heading node own the content and styling in the builder while
+    // AnimatedNode uses those values when rendering the split spans in live mode.
+    const stCfg = resolvedAnimCfg.splitText;
+    const nodeClassName = resolvedProps?.className as string | undefined;
+    if (stCfg && textContent != null) {
+      resolvedAnimCfg = {
+        ...resolvedAnimCfg,
+        splitText: {
+          ...stCfg,
+          ...(!stCfg.text ? { text: String(textContent) } : {}),
+          ...(!stCfg.className && nodeClassName ? { className: nodeClassName } : {}),
+        },
+      };
+    }
+    // In builder mode the Animated.View is the selectable/resizable target:
+    // (1) Always clear data-builder-id from inner element — AnimatedNode sets it on the
+    //     Animated.View directly so patchStyle and canvas resize hit the right element.
+    // (2) Forward any inline style to outerStyle so patchProp changes survive re-renders.
+    // (3) Keep outerClassName forwarding only for paint-replacing animations (gradient/shimmer)
+    //     so regular enter-animation boxes don't have their className moved off the inner Box.
+    if (!resolvedAnimCfg.outerClassName && nodeClassName &&
+        (resolvedAnimCfg.gradientAnimation?.enabled || resolvedAnimCfg.color || resolvedAnimCfg.shimmer)) {
+      resolvedAnimCfg = { ...resolvedAnimCfg, outerClassName: nodeClassName };
+    }
+    // animNodeOwnsId is already true here (same condition) — data-builder-id was never
+    // added to cleanProps as a prop (applyBuilderAnnotation was skipped), so nothing to
+    // delete. Forward any inline style to outerStyle so patchProp commits survive re-renders.
+    if (animNodeOwnsId) {
+      if (cleanProps.style) {
+        resolvedAnimCfg = { ...resolvedAnimCfg, outerStyle: cleanProps.style as Record<string, unknown> };
+        delete (cleanProps as Record<string, unknown>).style;
+      }
+    }
+    return (
+      <AnimatedNode
+        key={node.key}
+        animation={resolvedAnimCfg}
+        staggerIndex={staggerIndex}
+        nodeId={node.id}
+        nodeType={node.type as string | undefined}
+        builderMode={builderMode}
+      >
+        {element}
+      </AnimatedNode>
+    );
+  }
+
   // Wrap non-interactive elements that have click handlers in a transparent div.
   const wrapped = wrapWithClickHandler(element, cleanProps, node.type as string, builderMode);
   if (wrapped !== element) return wrapped;
@@ -360,3 +457,10 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
 export function SDURenderer({ node, context }: Omit<RendererProps, 'scope'>) {
   return <SDURendererInner node={node} context={context} />;
 }
+
+/** Scoped renderer — like SDURenderer but accepts an initial scope (e.g. popup.props). */
+export function SDURendererScoped({ node, context, scope }: RendererProps) {
+  return <SDURendererInner node={node} context={context} scope={scope} />;
+}
+
+export type { RendererContext };

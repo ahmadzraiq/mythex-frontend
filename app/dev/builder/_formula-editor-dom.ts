@@ -158,7 +158,7 @@ export function serializeRangeFromEditor(editorEl: HTMLElement, sel: Selection):
  *   local.data(?.['key'])*   — weWeb-style FormContainer local state
  *   event(?.['key'])*        — workflow trigger event context
  */
-export const CHIP_RE = /collections\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|variables\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|local\??\.data(?:\??\.(?:\['[^']*'\]|[\w$]+)|\?\.\[\d+\])*|context\.workflow\['[^']+'\](?:(?:\?)?\.[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|context\.(?:item|index|parent)(?:(?:\?\.\['[^']*'\]|\?\.\[\d+\])|(?:\.\w+))*|globalContext\.(?:browser|screen)(?:\?\.\['[^']*'\])*|pages\['[^']+'\](?:\?\.\['[^']*'\])*|theme(?:\.(?:colors|sections|fonts|radius)|\?\.\['(?:colors|sections|fonts|radius)'\])(?:\?\.\['[^']*'\]|\.\w+)*|components\?\.\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|event(?:\?\.\['[^']*'\]|\?\.\[\d+\])*/g;
+export const CHIP_RE = /collections\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|variables\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|local\??\.data(?:\??\.(?:\['[^']*'\]|[\w$]+)|\?\.\[\d+\])*|context\.workflow\['[^']+'\](?:(?:\?)?\.[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|context\.(?:item|index|parent)(?:(?:\?\.\['[^']*'\]|\?\.\[\d+\])|(?:\.\w+))*|context\.component\?\.props\?\.\['[^']*'\]|context\.local(?:\?\.data(?:\?\.\['[^']*'\])*)*|globalContext\.(?:browser|screen)(?:\?\.\['[^']*'\])*|pages\['[^']+'\](?:\?\.\['[^']*'\])*|theme(?:\.(?:colors|sections|fonts|radius)|\?\.\['(?:colors|sections|fonts|radius)'\])(?:\?\.\['[^']*'\]|\.\w+)*|components\?\.\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|event(?:\?\.\['[^']*'\]|\?\.\[\d+\])*/g;
 
 export const CHIP_INNER_CSS = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;display:block';
 
@@ -171,6 +171,7 @@ export const CHIP_STYLE: Record<string, string> = {
   form:       'background:#c2410c;color:#ffedd5;border:1px solid #ea580c',
   error:      'background:#991b1b;color:#fecaca;border:1px solid #b91c1c',
   event:      'background:#92400e;color:#fed7aa;border:1px solid #fb923c',
+  popup:      'background:#78350f;color:#fde68a;border:1px solid #d97706',
 };
 
 // ─── Chip builders ────────────────────────────────────────────────────────────
@@ -178,7 +179,7 @@ export const CHIP_STYLE: Record<string, string> = {
 export function buildChipSpan(
   formulaPath: string,
   displayLabel: string,
-  type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event',
+  type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'popup',
 ): HTMLSpanElement {
   const span = document.createElement('span');
   span.contentEditable = 'false';
@@ -212,7 +213,7 @@ export function insertChipAtCaret(
   editorEl: HTMLElement,
   formulaPath: string,
   displayLabel: string,
-  type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event',
+  type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'popup',
 ): void {
   editorEl.focus();
   const sel = window.getSelection();
@@ -693,6 +694,7 @@ export function populateEditor(
   dsMap: Map<string, { label: string }>,
   varMap?: Map<string, { label: string }>,
   stepNameMap?: Map<string, string>,
+  popupPropMap?: Map<string, string>,
 ): void {
   el.innerHTML = '';
   if (!formula) return;
@@ -780,6 +782,16 @@ export function populateEditor(
         .replace(/\.\[(\d+)\]/g, '[$1]');
       const isErrorPath = afterStepId.startsWith('.error');
       el.appendChild(buildChipSpan(formulaPath, friendly, isErrorPath ? 'error' : 'collection'));
+    } else if (/^context\.component\?\.props\?\.\['([^']+)'\]$/.test(formulaPath)) {
+      // Popup property: context.component?.props?.['<uuid>'] → amber chip with prop name
+      const propUUID = formulaPath.match(/^context\.component\?\.props\?\.\['([^']+)'\]$/)?.[1] ?? '';
+      const propName = popupPropMap?.get(propUUID) ?? propUUID;
+      el.appendChild(buildChipSpan(formulaPath, propName, 'popup'));
+    } else if (formulaPath.startsWith('context.local')) {
+      // Popup local context: context.local.data?.['popup']?.['key'] → amber chip
+      const keyMatch = formulaPath.match(/\?\.\['([^']+)'\]\s*$/);
+      const friendly = keyMatch ? `local.${keyMatch[1]}` : 'local';
+      el.appendChild(buildChipSpan(formulaPath, friendly, 'popup'));
     } else if (formulaPath.startsWith('context.')) {
       if (!formulaPath.includes("?.['")) {
         formulaPath = contextPathToChipFormula(formulaPath);

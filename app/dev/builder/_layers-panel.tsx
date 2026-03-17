@@ -113,7 +113,7 @@ const LAYER_CONTAINER_TYPES = new Set([
   'FormContainer',
 ]);
 
-interface LayerDragState {
+export interface LayerDragState {
   dragId: string | null;
   /** ID of the row currently under the cursor */
   dropTargetId: string | null;
@@ -213,6 +213,17 @@ export const LayerRow = memo(function LayerRow_({
   const ds = (node as { dataSource?: unknown }).dataSource;
   if (ds != null) {
     badges.push({ key: 'ds', label: '↓', icon: '↓', color: '#34d399', bg: '#022c22', title: 'Has data source' });
+  }
+
+  const stateTag = (node as unknown as Record<string, unknown>)._stateTag as string | undefined;
+  if (stateTag === 'loading') {
+    badges.push({ key: 'state', label: 'loading', icon: '⟳', color: '#fbbf24', bg: '#451a03', title: 'State: Loading' });
+  } else if (stateTag === 'empty') {
+    badges.push({ key: 'state', label: 'empty', icon: '○', color: '#6ee7b7', bg: '#022c22', title: 'State: Empty' });
+  } else if (stateTag === 'default') {
+    badges.push({ key: 'state', label: 'default', icon: '◉', color: '#9ca3af', bg: '#1f2937', title: 'State: Default' });
+  } else if (stateTag) {
+    badges.push({ key: 'state', label: stateTag, icon: '◈', color: '#c084fc', bg: '#2e1065', title: `State: ${stateTag}` });
   }
 
   const startEdit = useCallback(() => {

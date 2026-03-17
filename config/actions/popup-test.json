@@ -1,0 +1,81 @@
+{
+  "openTestModal": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "openPopup",
+        "config": {
+          "popupId": "popup-test-modal",
+          "props": { "title": "Confirm Action", "message": "Are you sure you want to proceed? This action cannot be undone." },
+          "waitClose": false
+        }
+      }
+    ]
+  },
+  "openTestSheet": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "openPopup",
+        "config": {
+          "popupId": "popup-test-sheet",
+          "props": { "title": "Details Panel" },
+          "waitClose": false
+        }
+      }
+    ]
+  },
+  "openTestAlert": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "openPopup",
+        "config": {
+          "popupId": "popup-test-alert",
+          "props": { "title": "Important Notice", "message": "Please review this information carefully before continuing with your action." },
+          "waitClose": false
+        }
+      }
+    ]
+  },
+  "closeAllTestPopups": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "closeAllPopups",
+        "config": {}
+      }
+    ]
+  },
+  "openAndWaitClose": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "openPopup",
+        "config": {
+          "popupId": "popup-test-wait",
+          "props": {},
+          "waitClose": true
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "popup-test-0000-0000-0000-wait-result",
+          "value": "closed"
+        }
+      }
+    ]
+  }
+}

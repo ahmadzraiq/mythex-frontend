@@ -1,0 +1,4368 @@
+{
+  "meta": {
+    "title": "Animation Showcase"
+  },
+  "layout": "store",
+  "state": {},
+  "content": {
+    "type": "Box",
+    "props": {
+      "className": "w-full max-w-3xl mx-auto px-4 py-10 flex flex-col gap-8"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "flex flex-col gap-2"
+        },
+        "children": [
+          {
+            "type": "Heading",
+            "props": {
+              "size": "2xl",
+              "className": "font-bold text-gray-900 dark:text-gray-100"
+            },
+            "text": "Animation Showcase"
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-gray-500 dark:text-gray-400"
+            },
+            "text": "Each card demonstrates a different animation capability powered by react-native-reanimated."
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-xs text-gray-400 dark:text-gray-500",
+              "data-testid": "anim-ready"
+            },
+            "text": "ready"
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-spring"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Card 12 — Spring Physics"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Three boxes with different spring configurations — snappy, wobbly, and heavy."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row gap-4 flex-wrap"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex-1 min-w-[120px] rounded-xl bg-sky-500 flex items-center justify-center px-6 py-10",
+                  "data-testid": "spring-stiff",
+                  "animation": {
+                    "enter": {
+                      "type": "slideInUp",
+                      "spring": true,
+                      "stiffness": 400,
+                      "damping": 12
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-sm font-semibold text-center"
+                    },
+                    "text": "Stiff\n400/12"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex-1 min-w-[120px] rounded-xl bg-violet-500 flex items-center justify-center px-6 py-10",
+                  "data-testid": "spring-loose",
+                  "animation": {
+                    "enter": {
+                      "type": "slideInUp",
+                      "spring": true,
+                      "stiffness": 80,
+                      "damping": 8,
+                      "delay": 100
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-sm font-semibold text-center"
+                    },
+                    "text": "Loose\n80/8"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex-1 min-w-[120px] rounded-xl bg-rose-500 flex items-center justify-center px-6 py-10",
+                  "data-testid": "spring-heavy",
+                  "animation": {
+                    "enter": {
+                      "type": "slideInUp",
+                      "spring": true,
+                      "stiffness": 200,
+                      "damping": 30,
+                      "mass": 3,
+                      "delay": 200
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-sm font-semibold text-center"
+                    },
+                    "text": "Heavy\nm=3"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-p1-enter"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Phase 1 — New Enter Keyframes"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "New enter types: skewIn, blurIn, glowIn, flipIn3D, tiltIn, riseFade, dropIn, expandIn."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row flex-wrap gap-3"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-20 h-14 rounded-lg bg-sky-500 flex items-center justify-center",
+                  "data-testid": "p1-skewIn",
+                  "animation": {
+                    "enter": {
+                      "type": "skewIn",
+                      "duration": 500
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "skew"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-20 h-14 rounded-lg bg-violet-500 flex items-center justify-center",
+                  "data-testid": "p1-blurIn",
+                  "animation": {
+                    "enter": {
+                      "type": "blurIn",
+                      "duration": 600,
+                      "delay": 80
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "blur"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-20 h-14 rounded-lg bg-yellow-500 flex items-center justify-center",
+                  "data-testid": "p1-glowIn",
+                  "animation": {
+                    "enter": {
+                      "type": "glowIn",
+                      "duration": 700,
+                      "delay": 160
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "glow"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-20 h-14 rounded-lg bg-rose-500 flex items-center justify-center",
+                  "data-testid": "p1-flipIn3D",
+                  "animation": {
+                    "enter": {
+                      "type": "flipIn3D",
+                      "duration": 700,
+                      "delay": 240
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "flip3D"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-20 h-14 rounded-lg bg-teal-500 flex items-center justify-center",
+                  "data-testid": "p1-tiltIn",
+                  "animation": {
+                    "enter": {
+                      "type": "tiltIn",
+                      "duration": 600,
+                      "delay": 320
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "tilt"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-20 h-14 rounded-lg bg-orange-500 flex items-center justify-center",
+                  "data-testid": "p1-riseFade",
+                  "animation": {
+                    "enter": {
+                      "type": "riseFade",
+                      "duration": 600,
+                      "delay": 400
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "rise"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-20 h-14 rounded-lg bg-green-500 flex items-center justify-center",
+                  "data-testid": "p1-dropIn",
+                  "animation": {
+                    "enter": {
+                      "type": "dropIn",
+                      "duration": 600,
+                      "delay": 480
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "drop"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-20 h-14 rounded-lg bg-pink-500 flex items-center justify-center",
+                  "data-testid": "p1-expandIn",
+                  "animation": {
+                    "enter": {
+                      "type": "expandIn",
+                      "duration": 500,
+                      "delay": 560,
+                      "spring": true,
+                      "stiffness": 300,
+                      "damping": 15
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "expand"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-p1-loop"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Phase 1 — New Loop Keyframes"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "New loop types: breathe, float, wiggle, glowPulse, ripple, gradientDrift."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row flex-wrap gap-3"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-16 h-16 rounded-lg bg-sky-500 flex items-center justify-center",
+                  "data-testid": "p1-breathe",
+                  "animation": {
+                    "loop": {
+                      "type": "breathe",
+                      "duration": 2000,
+                      "repeatCount": -1
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs"
+                    },
+                    "text": "breathe"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-16 h-16 rounded-lg bg-violet-500 flex items-center justify-center",
+                  "data-testid": "p1-float",
+                  "animation": {
+                    "loop": {
+                      "type": "float",
+                      "duration": 2500,
+                      "repeatCount": -1,
+                      "direction": "alternate"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs"
+                    },
+                    "text": "float"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-16 h-16 rounded-lg bg-rose-500 flex items-center justify-center",
+                  "data-testid": "p1-wiggle",
+                  "animation": {
+                    "loop": {
+                      "type": "wiggle",
+                      "duration": 800,
+                      "repeatCount": -1
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs"
+                    },
+                    "text": "wiggle"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-16 h-16 rounded-full bg-yellow-400 flex items-center justify-center",
+                  "data-testid": "p1-glowPulse",
+                  "animation": {
+                    "outerStyle": { "borderRadius": 9999 },
+                    "loop": {
+                      "type": "glowPulse",
+                      "duration": 1500,
+                      "repeatCount": -1,
+                      "direction": "alternate",
+                      "color": "#facc15"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs"
+                    },
+                    "text": "glow"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-16 h-16 rounded-full bg-teal-500 flex items-center justify-center",
+                  "data-testid": "p1-ripple",
+                  "animation": {
+                    "outerStyle": { "borderRadius": 9999 },
+                    "loop": {
+                      "type": "ripple",
+                      "duration": 1200,
+                      "repeatCount": -1,
+                      "color": "#14b8a6"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs"
+                    },
+                    "text": "ripple"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-24 h-16 rounded-lg flex items-center justify-center",
+                  "data-testid": "p1-gradientDrift",
+                  "animation": {
+                    "outerStyle": {
+                      "backgroundImage": "linear-gradient(to right, #667eea, #764ba2, #f64f59, #c471ed, #667eea)",
+                      "backgroundSize": "400% 100%",
+                      "backgroundRepeat": "no-repeat",
+                      "borderRadius": 8
+                    },
+                    "loop": {
+                      "type": "gradientDrift",
+                      "duration": 3000,
+                      "repeatCount": -1
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "gradient"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-p2"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Phase 2 — Filter, Tilt, Mouse Parallax, Morph Shape"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "New animation categories: CSS filter blur, 3D tilt on mouse, cursor parallax, blob border-radius."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row flex-wrap gap-4"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-28 h-20 rounded-lg bg-indigo-500 flex items-center justify-center",
+                  "data-testid": "p2-filter",
+                  "animation": {
+                    "filter": {
+                      "enabled": true,
+                      "blur": 0,
+                      "brightness": 1.5,
+                      "dropShadow": "0 0 12px #6366f1"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "filter glow"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-28 h-20 rounded-lg bg-teal-500 flex items-center justify-center cursor-pointer",
+                  "data-testid": "p2-tilt",
+                  "animation": {
+                    "tilt": {
+                      "enabled": true,
+                      "maxX": 20,
+                      "maxY": 20,
+                      "perspective": 600,
+                      "scale": 1.06
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "hover to tilt"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-28 h-20 rounded-lg bg-rose-500 flex items-center justify-center",
+                  "data-testid": "p2-mouse-parallax",
+                  "animation": {
+                    "mouseParallax": {
+                      "enabled": true,
+                      "strength": 0.08,
+                      "axis": "both"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "mouse parallax"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-28 h-28 bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center",
+                  "data-testid": "p2-morph",
+                  "animation": {
+                    "morphShape": {
+                      "enabled": true,
+                      "from": "50% 50% 50% 50%",
+                      "to": "60% 40% 70% 30% / 50% 60% 40% 50%",
+                      "duration": 2000,
+                      "loop": true
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "morph blob"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-p3"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Phase 3 — Scroll Progress"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Scroll down — the box below fades in (opacity 0→1) linked to scroll progress through the viewport."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "w-full h-32 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 flex items-center justify-center",
+              "data-testid": "p3-scroll-progress",
+              "animation": {
+                "scrollProgress": {
+                  "enabled": true,
+                  "property": "opacity",
+                  "from": 0,
+                  "to": 1
+                }
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-white font-semibold"
+                },
+                "text": "Opacity linked to scroll position!"
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "w-full h-24 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center mt-4",
+              "data-testid": "p3-scroll-progress-translate",
+              "animation": {
+                "scrollProgress": {
+                  "enabled": true,
+                  "property": "translateY",
+                  "from": 60,
+                  "to": 0
+                }
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-white font-semibold"
+                },
+                "text": "translateY 60px → 0 on scroll"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-p4"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Phase 4 — Split-Text (char / word / line)"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Text split into units and staggered via animation.splitText config on a Box."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-6"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-3xl font-bold text-gray-900 dark:text-gray-100",
+                  "animation": {
+                    "splitText": {
+                      "split": "char",
+                      "type": "charBounce",
+                      "duration": 400,
+                      "stagger": 50,
+                      "delay": 0,
+                      "easing": "backOut",
+                      "testId": "p4-split-char"
+                    }
+                  }
+                },
+                "text": "Hello World!"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-xl text-indigo-600 dark:text-indigo-400",
+                  "animation": {
+                    "splitText": {
+                      "split": "word",
+                      "type": "slideInUp",
+                      "duration": 350,
+                      "stagger": 180,
+                      "delay": 200,
+                      "easing": "easeOut",
+                      "testId": "p4-split-word"
+                    }
+                  }
+                },
+                "text": "Words fan in one by one"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-lg font-mono text-gray-700 dark:text-gray-300",
+                  "animation": {
+                    "splitText": {
+                      "split": "char",
+                      "type": "typeIn",
+                      "duration": 80,
+                      "stagger": 60,
+                      "delay": 400,
+                      "testId": "p4-split-typewriter"
+                    }
+                  }
+                },
+                "text": "Type writer effect"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-enter"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Card 1 — Enter Animations"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "All enter types run on page load. Each box shows a different animation."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row flex-wrap gap-3"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-20 h-14 rounded-lg bg-blue-500 flex items-center justify-center",
+                  "data-testid": "enter-fadeIn",
+                  "animation": {
+                    "enter": {
+                      "type": "fadeIn",
+                      "duration": 900
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "fade"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-20 h-14 rounded-lg bg-indigo-500 flex items-center justify-center",
+                  "data-testid": "enter-slideInUp",
+                  "animation": {
+                    "enter": {
+                      "type": "slideInUp",
+                      "duration": 500,
+                      "delay": 80
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "slideUp"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-20 h-14 rounded-lg bg-purple-500 flex items-center justify-center",
+                  "data-testid": "enter-slideInDown",
+                  "animation": {
+                    "enter": {
+                      "type": "slideInDown",
+                      "duration": 500,
+                      "delay": 160
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "slideDown"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-20 h-14 rounded-lg bg-pink-500 flex items-center justify-center",
+                  "data-testid": "enter-slideInLeft",
+                  "animation": {
+                    "enter": {
+                      "type": "slideInLeft",
+                      "duration": 500,
+                      "delay": 240
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "slideLeft"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-20 h-14 rounded-lg bg-rose-500 flex items-center justify-center",
+                  "data-testid": "enter-slideInRight",
+                  "animation": {
+                    "enter": {
+                      "type": "slideInRight",
+                      "duration": 500,
+                      "delay": 320
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "slideRight"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-20 h-14 rounded-lg bg-orange-500 flex items-center justify-center",
+                  "data-testid": "enter-zoomIn",
+                  "animation": {
+                    "enter": {
+                      "type": "zoomIn",
+                      "duration": 500,
+                      "delay": 400
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "zoom"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-20 h-14 rounded-lg bg-yellow-500 flex items-center justify-center",
+                  "data-testid": "enter-bounceIn",
+                  "animation": {
+                    "enter": {
+                      "type": "bounceIn",
+                      "duration": 700,
+                      "delay": 480,
+                      "spring": true
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "bounce"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-20 h-14 rounded-lg bg-green-500 flex items-center justify-center",
+                  "data-testid": "enter-flipInX",
+                  "animation": {
+                    "enter": {
+                      "type": "flipInX",
+                      "duration": 600,
+                      "delay": 560
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "flipX"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-20 h-14 rounded-lg bg-teal-500 flex items-center justify-center",
+                  "data-testid": "enter-flipInY",
+                  "animation": {
+                    "enter": {
+                      "type": "flipInY",
+                      "duration": 600,
+                      "delay": 640
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "flipY"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-20 h-14 rounded-lg bg-cyan-500 flex items-center justify-center",
+                  "data-testid": "enter-rollIn",
+                  "animation": {
+                    "enter": {
+                      "type": "rollIn",
+                      "duration": 600,
+                      "delay": 720
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs text-center"
+                    },
+                    "text": "roll"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-exit"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Card 2 — Exit Animations"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Toggle visibility to trigger enter/exit animations."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row gap-3 flex-wrap"
+            },
+            "children": [
+              {
+                "type": "Button",
+                "props": {
+                  "action": "primary",
+                  "size": "sm",
+                  "data-testid": "btn-exit-hide"
+                },
+                "actions": [
+                  {
+                    "action": "animHide"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "ButtonText",
+                    "text": "Hide"
+                  }
+                ]
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "action": "secondary",
+                  "size": "sm",
+                  "data-testid": "btn-exit-show"
+                },
+                "actions": [
+                  {
+                    "action": "animShow"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "ButtonText",
+                    "text": "Show"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "condition": "variables?.['anim-0000-0000-0000-000000000001']",
+            "props": {
+              "className": "w-full h-20 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 flex items-center justify-center",
+              "data-testid": "exit-target",
+              "data-sub": "{{variables['anim-0000-0000-0000-000000000001']}}",
+              "animation": {
+                "enter": {
+                  "type": "fadeIn",
+                  "duration": 400
+                },
+                "exit": {
+                  "type": "fadeOut",
+                  "duration": 400
+                },
+                "states": {
+                  "watchVar": "variables?.['anim-0000-0000-0000-000000000005'] ? 'leaving' : 'visible'",
+                  "defaultState": "visible",
+                  "duration": 250,
+                  "easing": "easeOut",
+                  "states": {
+                    "visible": { "opacity": "1" },
+                    "leaving": { "opacity": "0" }
+                  }
+                }
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-white font-semibold"
+                },
+                "text": "I animate in and out!"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-stagger"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Card 3 — Stagger"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Items fan in sequentially — each delayed 100ms after the previous."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "map": "variables['anim-0000-0000-0000-000000000003']",
+            "key": "context.item.data.id",
+            "props": {
+              "className": "flex flex-col gap-2"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 flex flex-row items-center gap-3",
+                  "data-testid": "stagger-item",
+                  "animation": {
+                    "enter": {
+                      "type": "slideInLeftSubtle",
+                      "duration": 400,
+                      "stagger": 200
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-8 h-8 rounded-full flex items-center justify-center",
+                      "style": {
+                        "backgroundColor": "{{context.item.data.color}}"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-white text-sm font-bold"
+                        },
+                        "text": "{{context.item.data.index}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-gray-800 dark:text-gray-100"
+                    },
+                    "text": "{{context.item.data.label}}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-loop"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Card 3 — Loop Animations"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Continuous animations — all running simultaneously."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row flex-wrap gap-3"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-16 h-16 rounded-lg bg-blue-500 flex items-center justify-center",
+                  "data-testid": "loop-pulse",
+                  "animation": {
+                    "loop": {
+                      "type": "pulse",
+                      "duration": 1000,
+                      "repeatCount": -1
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs"
+                    },
+                    "text": "pulse"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-16 h-16 rounded-lg bg-red-500 flex items-center justify-center",
+                  "data-testid": "loop-shake",
+                  "animation": {
+                    "loop": {
+                      "type": "shake",
+                      "duration": 1000,
+                      "repeatCount": -1
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs"
+                    },
+                    "text": "shake"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-16 h-16 rounded-lg bg-yellow-500 flex items-center justify-center",
+                  "data-testid": "loop-spin",
+                  "animation": {
+                    "loop": {
+                      "type": "spin",
+                      "duration": 1500,
+                      "repeatCount": -1
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs"
+                    },
+                    "text": "spin"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-16 h-16 rounded-lg bg-green-500 flex items-center justify-center",
+                  "data-testid": "loop-bounce",
+                  "animation": {
+                    "loop": {
+                      "type": "bounce",
+                      "duration": 800,
+                      "repeatCount": -1
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs"
+                    },
+                    "text": "bounce"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-16 h-16 rounded-lg bg-pink-500 flex items-center justify-center",
+                  "data-testid": "loop-heartbeat",
+                  "animation": {
+                    "loop": {
+                      "type": "heartbeat",
+                      "duration": 1000,
+                      "repeatCount": -1
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs"
+                    },
+                    "text": "heart"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-16 h-16 rounded-lg bg-orange-500 flex items-center justify-center",
+                  "data-testid": "loop-flash",
+                  "animation": {
+                    "loop": {
+                      "type": "flash",
+                      "duration": 800,
+                      "repeatCount": -1,
+                      "direction": "alternate"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs"
+                    },
+                    "text": "flash"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-16 h-16 rounded-lg bg-teal-500 flex items-center justify-center",
+                  "data-testid": "loop-swing",
+                  "animation": {
+                    "loop": {
+                      "type": "swing",
+                      "duration": 1200,
+                      "repeatCount": -1
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs"
+                    },
+                    "text": "swing"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-16 h-16 rounded-lg bg-indigo-500 flex items-center justify-center",
+                  "data-testid": "loop-wobble",
+                  "animation": {
+                    "loop": {
+                      "type": "wobble",
+                      "duration": 1000,
+                      "repeatCount": -1
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white text-xs"
+                    },
+                    "text": "wobble"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-press"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Card 4 — Press Animation"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Press and hold the box — it scales down and becomes semi-transparent."
+              }
+            ]
+          },
+          {
+            "type": "Pressable",
+            "props": {
+              "className": "w-full h-24 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center",
+              "data-testid": "press-target",
+              "animation": {
+                "press": {
+                  "scale": 0.88,
+                  "opacity": 0.7,
+                  "duration": 120
+                }
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-white font-semibold"
+                },
+                "text": "Press me! (scale 0.88, opacity 0.7)"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-hover"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Card 5 — Hover Animation"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Move your mouse over the box — it lifts and scales up."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "w-full h-24 rounded-xl bg-gradient-to-r from-teal-400 to-cyan-500 flex items-center justify-center cursor-pointer",
+              "data-testid": "hover-target",
+              "animation": {
+                "hover": {
+                  "scale": 1.04,
+                  "y": -8,
+                  "duration": 200,
+                  "easing": "easeOut"
+                }
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-white font-semibold"
+                },
+                "text": "Hover me! (scale 1.04, lift 8px)"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-scroll"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Card 6 — Scroll Trigger"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "The box below fades in when it enters the viewport."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "w-full h-24 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 flex items-center justify-center",
+              "data-testid": "scroll-target",
+              "animation": {
+                "scroll": {
+                  "enabled": true,
+                  "type": "fadeIn",
+                  "threshold": 0.3,
+                  "once": false,
+                  "duration": 600
+                }
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-white font-semibold"
+                },
+                "text": "I fade in on scroll!"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4 overflow-hidden",
+          "data-testid": "card-parallax"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Card 7 — Parallax"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Scroll the page — the gradient box moves at 40% of scroll speed."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "w-full h-32 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 flex items-center justify-center",
+              "data-testid": "parallax-target",
+              "animation": {
+                "parallax": {
+                  "enabled": true,
+                  "speed": 0.4,
+                  "direction": "vertical",
+                  "clamp": 60
+                }
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-white font-semibold"
+                },
+                "text": "Parallax — speed 0.4"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-drag"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Card 8 — Drag"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Drag the box anywhere on both axes — it springs back when released."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "w-28 h-28 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center cursor-grab",
+              "data-testid": "drag-target",
+              "animation": {
+                "drag": {
+                  "enabled": true,
+                  "axis": "both",
+                  "snapBack": true,
+                  "springBack": true
+                }
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-white font-semibold text-center text-sm"
+                },
+                "text": "Drag me!"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-color"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Card 9 — Color Transition"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Background color cycles blue → red → blue continuously."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "w-full h-24 rounded-xl flex items-center justify-center",
+              "data-testid": "color-target",
+              "animation": {
+                "color": {
+                  "enabled": true,
+                  "property": "backgroundColor",
+                  "from": "#3b82f6",
+                  "to": "#ef4444",
+                  "duration": 1200,
+                  "loop": true
+                }
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-white font-semibold"
+                },
+                "text": "Blue → Red color loop"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-layout"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Card 10 — Layout Animation"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Add/remove items — the list reflows with a spring animation."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row gap-3"
+            },
+            "children": [
+              {
+                "type": "Button",
+                "props": {
+                  "action": "primary",
+                  "size": "sm",
+                  "data-testid": "btn-layout-add"
+                },
+                "actions": [
+                  {
+                    "action": "animLayoutAdd"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "ButtonText",
+                    "text": "+ Add item"
+                  }
+                ]
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "action": "secondary",
+                  "size": "sm",
+                  "data-testid": "btn-layout-remove"
+                },
+                "actions": [
+                  {
+                    "action": "animLayoutRemove"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "ButtonText",
+                    "text": "− Remove last"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-2",
+              "data-count": "{{variables['anim-0000-0000-0000-000000000002'].length}}",
+              "animation": {
+                "layout": {
+                  "enabled": true,
+                  "type": "spring",
+                  "duration": 300
+                }
+              }
+            },
+            "children": [
+              {
+                "type": "Box",
+                "map": "variables['anim-0000-0000-0000-000000000002']",
+                "key": "context.item.data.id",
+                "props": {
+                  "className": "flex flex-col gap-2"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 flex flex-row items-center justify-between",
+                      "data-testid": "layout-item-{{context.item.data.id}}",
+                      "animation": {
+                        "enter": {
+                          "type": "slideInUp",
+                          "duration": 350,
+                          "easing": "backOut"
+                        },
+                        "exit": {
+                          "type": "slideOutDown",
+                          "duration": 250,
+                          "easing": "easeIn"
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-gray-800 dark:text-gray-100 font-medium"
+                        },
+                        "text": "{{context.item.data.label}}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-sequence"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Card 13 — Imperative Trigger"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Click the button to imperatively trigger a shake animation on the target."
+              }
+            ]
+          },
+          {
+            "type": "Button",
+            "props": {
+              "action": "primary",
+              "size": "sm",
+              "data-testid": "btn-sequence-run"
+            },
+            "actions": [
+              {
+                "action": "animTriggerShake"
+              }
+            ],
+            "children": [
+              {
+                "type": "ButtonText",
+                "text": "Shake it!"
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "w-full h-24 rounded-xl bg-gradient-to-r from-fuchsia-500 to-pink-500 flex items-center justify-center",
+              "data-testid": "sequence-target",
+              "animation": {
+                "enter": {
+                  "type": "fadeIn",
+                  "duration": 400
+                },
+                "imperativeTrigger": {
+                  "type": "shake",
+                  "duration": 500,
+                  "watchVar": "variables['anim-0000-0000-0000-000000000004']"
+                }
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-white font-semibold"
+                },
+                "text": "Click the button to shake me!"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-p5"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Phase 5 — SVG Stroke Draw + LottiePlayer"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "SVG path-draw animation via stroke-dashoffset, and Lottie animation via dotlottie-react."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row flex-wrap gap-6 items-start"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-center gap-2",
+                  "data-testid": "p5-svg-stroke",
+                  "animation": {
+                    "svgStroke": {
+                      "enabled": true,
+                      "duration": 2000,
+                      "delay": 200,
+                      "easing": "easeInOut"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "svg",
+                    "props": {
+                      "viewBox": "0 0 100 100",
+                      "width": 160,
+                      "height": 160,
+                      "fill": "none",
+                      "stroke": "#6366f1",
+                      "aria-hidden": "true",
+                      "data-testid": "p5-svg-shape"
+                    },
+                    "children": [
+                      {
+                        "type": "path",
+                        "props": {
+                          "d": "M 15 50 L 38 73 L 85 27",
+                          "strokeWidth": 6,
+                          "strokeLinecap": "round",
+                          "strokeLinejoin": "round"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "SVG stroke draw (2s)"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-center gap-2"
+                },
+                "children": [
+                  {
+                    "type": "LottiePlayer",
+                    "props": {
+                      "src": "https://assets4.lottiefiles.com/packages/lf20_fcfjwiyb.json",
+                      "autoplay": true,
+                      "loop": true,
+                      "width": 160,
+                      "height": 160,
+                      "data-testid": "p5-lottie"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "Lottie (loop)"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-center gap-2"
+                },
+                "children": [
+                  {
+                    "type": "LottiePlayer",
+                    "props": {
+                      "src": "https://assets9.lottiefiles.com/packages/lf20_jR229r.json",
+                      "autoplay": true,
+                      "loop": false,
+                      "width": 160,
+                      "height": 160,
+                      "data-testid": "p5-lottie-no-loop"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "Lottie (no loop)"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-p6"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Phase 6 — Canvas Particles + Noise Background"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "HTML5 Canvas particle network via animation.particles and SVG feTurbulence grain via animation.noise on a Box."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-4"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "rounded-xl w-full",
+                  "style": {
+                    "height": 220
+                  },
+                  "data-testid": "p6-canvas-particles",
+                  "animation": {
+                    "particles": {
+                      "count": 60,
+                      "color": "#6366f1",
+                      "background": "#0f0f1a",
+                      "speed": 0.6,
+                      "maxRadius": 3,
+                      "connectDistance": 120,
+                      "interactive": true
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "rounded-xl bg-indigo-950 w-full flex items-center justify-center",
+                  "style": {
+                    "height": 160
+                  },
+                  "data-testid": "p6-noise-bg",
+                  "animation": {
+                    "noise": {
+                      "baseFrequency": 0.65,
+                      "numOctaves": 4,
+                      "opacity": 0.18,
+                      "color": "#6366f1",
+                      "animate": true,
+                      "animateDuration": 10
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white font-semibold text-lg"
+                    },
+                    "text": "Noise Texture (animated seed)"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-p7"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Phase 7 — Video"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "HTML5 Video element as background. Use a Box with position:relative + Video + absolute overlay Boxes for hero sections — all composable from JSON in the builder."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-4"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "rounded-xl overflow-hidden",
+                  "style": {
+                    "position": "relative",
+                    "width": "100%",
+                    "height": 240
+                  },
+                  "data-testid": "p7-video-bg"
+                },
+                "children": [
+                  {
+                    "type": "Video",
+                    "props": {
+                      "src": "https://www.w3schools.com/html/mov_bbb.mp4",
+                      "poster": "https://www.w3schools.com/images/w3schools_green.jpg",
+                      "autoPlay": true,
+                      "muted": true,
+                      "loop": true,
+                      "objectFit": "cover",
+                      "data-testid": "p7-video-bg-video",
+                      "style": {
+                        "position": "absolute",
+                        "inset": 0,
+                        "width": "100%",
+                        "height": "100%"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "style": {
+                        "position": "absolute",
+                        "inset": 0,
+                        "background": "rgba(0,0,0,0.45)",
+                        "pointerEvents": "none"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "style": {
+                        "position": "absolute",
+                        "inset": 0,
+                        "background": "linear-gradient(to top, transparent 0%, rgba(0,0,0,0.6) 100%)",
+                        "pointerEvents": "none"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "style": {
+                        "position": "relative",
+                        "zIndex": 1,
+                        "width": "100%",
+                        "height": "100%"
+                      },
+                      "className": "flex flex-col items-center justify-center gap-2"
+                    },
+                    "children": [
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "size": "xl",
+                          "className": "text-white font-bold drop-shadow-lg"
+                        },
+                        "text": "Video Hero"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-white/80 text-sm"
+                        },
+                        "text": "Video + overlay Box + gradient Box + content Box — all JSON config"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-6",
+          "data-testid": "card-p9"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Phase 9 — Flip Cards + Stagger List + Masonry Layout"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "3D CSS flip cards driven by animation.flip config on a Box, stagger-enter list, and Pinterest-style masonry grid."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row flex-wrap gap-6 items-start"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "width": 200,
+                    "height": 220
+                  },
+                  "animation": {
+                    "flip": {
+                      "trigger": "hover",
+                      "duration": 500
+                    }
+                  },
+                  "data-testid": "p9-flip-card"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-2 bg-indigo-500",
+                      "style": {
+                        "backfaceVisibility": "hidden"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-white font-bold text-lg text-center"
+                        },
+                        "text": "Hover to flip!"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-indigo-100 text-sm text-center"
+                        },
+                        "text": "Front face"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-2 bg-gray-900",
+                      "style": {
+                        "backfaceVisibility": "hidden",
+                        "transform": "rotateY(180deg)"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-white font-bold text-lg text-center"
+                        },
+                        "text": "Back face!"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-gray-300 text-sm text-center"
+                        },
+                        "text": "Revealed"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "width": 200,
+                    "height": 220
+                  },
+                  "animation": {
+                    "flip": {
+                      "trigger": "click",
+                      "duration": 600
+                    }
+                  },
+                  "data-testid": "p9-flip-card-click"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-2 bg-pink-500",
+                      "style": {
+                        "backfaceVisibility": "hidden"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-white font-bold text-lg text-center"
+                        },
+                        "text": "Click to flip!"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-pink-100 text-sm text-center"
+                        },
+                        "text": "Front face"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-2 bg-slate-800",
+                      "style": {
+                        "backfaceVisibility": "hidden",
+                        "transform": "rotateY(180deg)"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-white font-bold text-lg text-center"
+                        },
+                        "text": "You found it!"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-slate-300 text-sm text-center"
+                        },
+                        "text": "Click again to flip back"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-3 w-full",
+              "data-testid": "p9-stagger-list"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center gap-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl px-4 py-3",
+                  "animation": {
+                    "enter": {
+                      "type": "slideInLeft",
+                      "duration": 400,
+                      "delay": 0
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-3 h-3 rounded-full bg-blue-500"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-gray-800 dark:text-gray-100 font-medium"
+                    },
+                    "text": "First stagger item"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center gap-3 bg-purple-50 dark:bg-purple-900/30 rounded-xl px-4 py-3",
+                  "animation": {
+                    "enter": {
+                      "type": "slideInLeft",
+                      "duration": 400,
+                      "delay": 60
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-3 h-3 rounded-full bg-purple-500"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-gray-800 dark:text-gray-100 font-medium"
+                    },
+                    "text": "Second stagger item"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center gap-3 bg-pink-50 dark:bg-pink-900/30 rounded-xl px-4 py-3",
+                  "animation": {
+                    "enter": {
+                      "type": "slideInLeft",
+                      "duration": 400,
+                      "delay": 120
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-3 h-3 rounded-full bg-pink-500"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-gray-800 dark:text-gray-100 font-medium"
+                    },
+                    "text": "Third stagger item"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center gap-3 bg-amber-50 dark:bg-amber-900/30 rounded-xl px-4 py-3",
+                  "animation": {
+                    "enter": {
+                      "type": "slideInLeft",
+                      "duration": 400,
+                      "delay": 180
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-3 h-3 rounded-full bg-amber-500"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-gray-800 dark:text-gray-100 font-medium"
+                    },
+                    "text": "Fourth stagger item"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "data-testid": "p9-masonry",
+              "style": {
+                "columns": 3,
+                "columnGap": "10px"
+              }
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "rounded-xl bg-indigo-100 dark:bg-indigo-900/40 p-4",
+                  "style": {
+                    "breakInside": "avoid",
+                    "marginBottom": "10px"
+                  },
+                  "animation": {
+                    "enter": {
+                      "type": "fadeIn",
+                      "duration": 400,
+                      "delay": 0,
+                      "outerClassName": "break-inside-avoid mb-2.5"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-indigo-800 dark:text-indigo-200"
+                    },
+                    "text": "Card A"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs text-indigo-600 dark:text-indigo-400 mt-1"
+                    },
+                    "text": "Short content"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "rounded-xl bg-purple-100 dark:bg-purple-900/40 p-4",
+                  "style": {
+                    "breakInside": "avoid",
+                    "marginBottom": "10px"
+                  },
+                  "animation": {
+                    "enter": {
+                      "type": "fadeIn",
+                      "duration": 400,
+                      "delay": 60,
+                      "outerClassName": "break-inside-avoid mb-2.5"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-purple-800 dark:text-purple-200"
+                    },
+                    "text": "Card B"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs text-purple-600 dark:text-purple-400 mt-1"
+                    },
+                    "text": "Taller card with more content inside it to create the masonry offset effect."
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "rounded-xl bg-pink-100 dark:bg-pink-900/40 p-4",
+                  "style": {
+                    "breakInside": "avoid",
+                    "marginBottom": "10px"
+                  },
+                  "animation": {
+                    "enter": {
+                      "type": "fadeIn",
+                      "duration": 400,
+                      "delay": 120,
+                      "outerClassName": "break-inside-avoid mb-2.5"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-pink-800 dark:text-pink-200"
+                    },
+                    "text": "Card C"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs text-pink-600 dark:text-pink-400 mt-1"
+                    },
+                    "text": "Medium"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "rounded-xl bg-amber-100 dark:bg-amber-900/40 p-4",
+                  "style": {
+                    "breakInside": "avoid",
+                    "marginBottom": "10px"
+                  },
+                  "animation": {
+                    "enter": {
+                      "type": "fadeIn",
+                      "duration": 400,
+                      "delay": 180,
+                      "outerClassName": "break-inside-avoid mb-2.5"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-amber-800 dark:text-amber-200"
+                    },
+                    "text": "Card D"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs text-amber-600 dark:text-amber-400 mt-1"
+                    },
+                    "text": "Another variable-height card to demonstrate the natural masonry stacking."
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "rounded-xl bg-green-100 dark:bg-green-900/40 p-4",
+                  "style": {
+                    "breakInside": "avoid",
+                    "marginBottom": "10px"
+                  },
+                  "animation": {
+                    "enter": {
+                      "type": "fadeIn",
+                      "duration": 400,
+                      "delay": 240,
+                      "outerClassName": "break-inside-avoid mb-2.5"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-green-800 dark:text-green-200"
+                    },
+                    "text": "Card E"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs text-green-600 dark:text-green-400 mt-1"
+                    },
+                    "text": "Small card"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "rounded-xl bg-cyan-100 dark:bg-cyan-900/40 p-4",
+                  "style": {
+                    "breakInside": "avoid",
+                    "marginBottom": "10px"
+                  },
+                  "animation": {
+                    "enter": {
+                      "type": "fadeIn",
+                      "duration": 400,
+                      "delay": 300,
+                      "outerClassName": "break-inside-avoid mb-2.5"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-cyan-800 dark:text-cyan-200"
+                    },
+                    "text": "Card F"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs text-cyan-600 dark:text-cyan-400 mt-1"
+                    },
+                    "text": "Box + style.columns: 3 — masonry via CSS columns, no custom component needed."
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-950 p-6 flex flex-col gap-6",
+          "data-testid": "card-p10"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-white"
+                },
+                "text": "Phase 10 — Frosted Glass + Skeleton + Timeline"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-400"
+                },
+                "text": "Frosted-glass panel using Box + style.backdropFilter, shimmer skeleton loaders, and a declarative timeline animation."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "relative flex items-center justify-center h-48 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-700",
+              "style": {
+                "overflow": "clip"
+              }
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "backdropFilter": "blur(18px)",
+                    "WebkitBackdropFilter": "blur(18px)",
+                    "background": "rgba(255,255,255,0.12)",
+                    "border": "1px solid rgba(255,255,255,0.25)",
+                    "borderRadius": 14,
+                    "padding": 24,
+                    "boxShadow": "0 8px 32px rgba(0,0,0,0.3)"
+                  },
+                  "className": "flex flex-col gap-1",
+                  "data-testid": "p10-backdrop-blur"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white font-bold text-lg"
+                    },
+                    "text": "Frosted Glass"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white/70 text-sm"
+                    },
+                    "text": "backdrop-filter: blur(18px)"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row flex-wrap gap-6"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col gap-3 rounded-xl overflow-hidden p-3",
+                  "style": {
+                    "width": 220
+                  },
+                  "data-testid": "p10-skeleton-card"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "rounded-lg h-28 w-full",
+                      "animation": {
+                        "shimmer": {
+                          "baseColor": "#1e293b",
+                          "highlightColor": "#64748b",
+                          "duration": 1200
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "rounded-md h-4 w-3/4 mt-1",
+                      "animation": {
+                        "shimmer": {
+                          "baseColor": "#1e293b",
+                          "highlightColor": "#64748b",
+                          "duration": 1200
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "rounded-md h-4 w-1/2",
+                      "animation": {
+                        "shimmer": {
+                          "baseColor": "#1e293b",
+                          "highlightColor": "#64748b",
+                          "duration": 1400
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col gap-3 rounded-xl overflow-hidden p-3",
+                  "style": {
+                    "width": 240
+                  },
+                  "data-testid": "p10-skeleton-list"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-row items-center gap-3"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "rounded-full w-10 h-10 flex-shrink-0",
+                          "animation": {
+                            "shimmer": {
+                              "baseColor": "#1e293b",
+                              "highlightColor": "#64748b",
+                              "duration": 1200
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex-1 rounded-md h-4",
+                          "animation": {
+                            "shimmer": {
+                              "baseColor": "#1e293b",
+                              "highlightColor": "#64748b",
+                              "duration": 1200
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-row items-center gap-3"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "rounded-full w-10 h-10 flex-shrink-0",
+                          "animation": {
+                            "shimmer": {
+                              "baseColor": "#1e293b",
+                              "highlightColor": "#64748b",
+                              "duration": 1200
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex-1 rounded-md h-4",
+                          "animation": {
+                            "shimmer": {
+                              "baseColor": "#1e293b",
+                              "highlightColor": "#64748b",
+                              "duration": 1200
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-row items-center gap-3"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "rounded-full w-10 h-10 flex-shrink-0",
+                          "animation": {
+                            "shimmer": {
+                              "baseColor": "#1e293b",
+                              "highlightColor": "#64748b",
+                              "duration": 1200
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex-1 rounded-md h-4",
+                          "animation": {
+                            "shimmer": {
+                              "baseColor": "#1e293b",
+                              "highlightColor": "#64748b",
+                              "duration": 1200
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center gap-3 rounded-xl p-3",
+                  "style": {
+                    "width": 220
+                  },
+                  "data-testid": "p10-skeleton-avatar"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "rounded-full w-12 h-12 flex-shrink-0",
+                      "animation": {
+                        "shimmer": {
+                          "baseColor": "#1e293b",
+                          "highlightColor": "#64748b",
+                          "duration": 1200
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-col gap-2 flex-1 w-full min-w-0"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "rounded-md h-4 w-full",
+                          "animation": {
+                            "shimmer": {
+                              "baseColor": "#1e293b",
+                              "highlightColor": "#64748b",
+                              "duration": 1200
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "rounded-md h-3 w-2/3",
+                          "animation": {
+                            "shimmer": {
+                              "baseColor": "#1e293b",
+                              "highlightColor": "#64748b",
+                              "duration": 1400
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "w-full h-16 rounded-xl bg-indigo-900 flex items-center justify-center",
+              "data-testid": "p10-timeline-box",
+              "animation": {
+                "timeline": [
+                  {
+                    "property": "opacity",
+                    "from": "0.2",
+                    "to": "1",
+                    "startMs": 0,
+                    "endMs": 1200,
+                    "loop": true
+                  },
+                  {
+                    "property": "transform",
+                    "from": "scale(0.95)",
+                    "to": "scale(1.05)",
+                    "startMs": 0,
+                    "endMs": 1200,
+                    "loop": true
+                  }
+                ],
+                "customBezier": [
+                  0.34,
+                  1.56,
+                  0.64,
+                  1
+                ]
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-white font-semibold"
+                },
+                "text": "Timeline: opacity + scale loop"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-p11"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Phase 11 — State-Machine Animations"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Declarative `states` config drives CSS transitions as a state machine: idle → loading → success → error."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-4 items-start",
+              "data-testid": "p11-state-machine"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-full px-6 py-5 flex flex-row items-center justify-between gap-4",
+                  "data-testid": "p11-state-machine-box",
+                  "animation": {
+                    "outerClassName": "w-full rounded-xl",
+                    "states": {
+                      "watchVar": "variables?.['anim-0000-0000-0000-00000000p011']",
+                      "defaultState": "idle",
+                      "duration": 400,
+                      "states": {
+                        "idle": {
+                          "background": "#374151",
+                          "transform": "scale(1)",
+                          "borderRadius": "0.75rem"
+                        },
+                        "loading": {
+                          "background": "#6366f1",
+                          "transform": "scale(0.97)",
+                          "borderRadius": "0.75rem"
+                        },
+                        "success": {
+                          "background": "#10b981",
+                          "transform": "scale(1.04)",
+                          "borderRadius": "0.75rem"
+                        },
+                        "error": {
+                          "background": "#ef4444",
+                          "transform": "scale(1)",
+                          "borderRadius": "0.75rem"
+                        }
+                      }
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-col gap-1"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-white font-bold text-lg"
+                        },
+                        "text": "State Machine Box"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-white/70 text-sm"
+                        },
+                        "text": "Current: {{variables['anim-0000-0000-0000-00000000p011']}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-row gap-2"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "w-3 h-3 rounded-full bg-white/30"
+                        }
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "w-3 h-3 rounded-full bg-white/30"
+                        }
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "w-3 h-3 rounded-full bg-white/30"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Pressable",
+                "props": {
+                  "className": "px-5 py-2.5 rounded-lg bg-gray-700 hover:bg-gray-600",
+                  "data-testid": "p11-state-machine-next"
+                },
+                "actions": [
+                  {
+                    "action": "cycleP11State"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white font-medium text-sm"
+                    },
+                    "text": "Cycle State →"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-p12"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Phase 12 — Gradient Animation"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Linear color cycle, radial pulse, and conic angle rotation via GradientAnimationConfig."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row gap-4 flex-wrap"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "rounded-xl p-4 flex flex-col items-center justify-center gap-2",
+                  "style": {
+                    "width": 140,
+                    "height": 100
+                  },
+                  "data-testid": "p12-linear",
+                  "animation": {
+                    "gradientAnimation": {
+                      "enabled": true,
+                      "type": "linear",
+                      "colors": [
+                        "#6366f1",
+                        "#ec4899",
+                        "#f59e0b",
+                        "#6366f1"
+                      ],
+                      "angle": 135,
+                      "duration": 3000,
+                      "animateColors": true,
+                      "loop": true
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white font-semibold text-xs text-center"
+                    },
+                    "text": "Linear cycle"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "rounded-xl p-4 flex flex-col items-center justify-center gap-2",
+                  "style": {
+                    "width": 140,
+                    "height": 100
+                  },
+                  "data-testid": "p12-radial",
+                  "animation": {
+                    "gradientAnimation": {
+                      "enabled": true,
+                      "type": "radial",
+                      "colors": [
+                        "#10b981",
+                        "#3b82f6",
+                        "#10b981"
+                      ],
+                      "duration": 4000,
+                      "animateColors": true,
+                      "loop": true
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white font-semibold text-xs text-center"
+                    },
+                    "text": "Radial pulse"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "rounded-xl p-4 flex flex-col items-center justify-center gap-2",
+                  "style": {
+                    "width": 140,
+                    "height": 100
+                  },
+                  "data-testid": "p12-conic",
+                  "animation": {
+                    "gradientAnimation": {
+                      "enabled": true,
+                      "type": "conic",
+                      "colors": [
+                        "#f43f5e",
+                        "#f59e0b",
+                        "#84cc16",
+                        "#06b6d4",
+                        "#8b5cf6",
+                        "#f43f5e"
+                      ],
+                      "duration": 5000,
+                      "animateAngle": true,
+                      "loop": true
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white font-semibold text-xs text-center"
+                    },
+                    "text": "Conic rotate"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-p13"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Phase 13 — Clip-Path & Mask Animation"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Clip-path reveal on hover + mask wipe on enter."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row gap-4 flex-wrap"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "rounded-xl bg-indigo-500 p-4 flex items-center justify-center cursor-pointer",
+                  "style": {
+                    "width": 160,
+                    "height": 80
+                  },
+                  "data-testid": "p13-clip",
+                  "animation": {
+                    "clipPath": {
+                      "enabled": true,
+                      "from": "inset(0 100% 0 0)",
+                      "to": "inset(0 0% 0 0)",
+                      "trigger": "hover",
+                      "duration": 500,
+                      "easing": "easeOut"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white font-semibold text-sm"
+                    },
+                    "text": "Hover to reveal →"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 p-4 flex items-center justify-center",
+                  "style": {
+                    "width": 160,
+                    "height": 80
+                  },
+                  "data-testid": "p13-mask",
+                  "animation": {
+                    "mask": {
+                      "enabled": true,
+                      "image": "linear-gradient(to right, black, transparent)",
+                      "animateSize": true,
+                      "duration": 1200,
+                      "easing": "easeOut"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-white font-semibold text-sm"
+                    },
+                    "text": "Mask wipe"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-p14"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Phase 14 — SVG Morphing"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "SVG path morphing via SMIL animate — compose any SVG from json svg/path/animate nodes in the builder."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row gap-6 flex-wrap items-center"
+            },
+            "children": [
+              {
+                "type": "svg",
+                "props": {
+                  "viewBox": "0 0 100 100",
+                  "width": 160,
+                  "height": 160,
+                  "fill": "#6366f1",
+                  "stroke": "none",
+                  "aria-hidden": "true",
+                  "data-testid": "p14-morph-1"
+                },
+                "children": [
+                  {
+                    "type": "path",
+                    "props": {
+                      "d": "M 50,5 C 75,5 95,25 95,50 C 95,80 75,95 50,95 C 25,95 5,80 5,50 C 5,25 25,5 50,5 Z",
+                      "strokeLinecap": "round",
+                      "strokeLinejoin": "round"
+                    },
+                    "children": [
+                      {
+                        "type": "animate",
+                        "props": {
+                          "attributeName": "d",
+                          "dur": "1500ms",
+                          "values": "M 50,5 C 75,5 95,25 95,50 C 95,80 75,95 50,95 C 25,95 5,80 5,50 C 5,25 25,5 50,5 Z;M 50,5 L 60,40 L 95,40 L 68,60 L 78,95 L 50,75 L 22,95 L 32,60 L 5,40 L 40,40 Z;M 50,5 C 75,5 95,25 95,50 C 95,80 75,95 50,95 C 25,95 5,80 5,50 C 5,25 25,5 50,5 Z",
+                          "repeatCount": "indefinite",
+                          "calcMode": "spline",
+                          "keySplines": "0.4 0 0.2 1;0.4 0 0.2 1",
+                          "keyTimes": "0;0.5;1"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "svg",
+                "props": {
+                  "viewBox": "0 0 100 100",
+                  "width": 160,
+                  "height": 160,
+                  "fill": "none",
+                  "stroke": "#ec4899",
+                  "aria-hidden": "true",
+                  "data-testid": "p14-morph-2"
+                },
+                "children": [
+                  {
+                    "type": "path",
+                    "props": {
+                      "d": "M 50,50 m -40,0 a 40,40 0 1,0 80,0 a 40,40 0 1,0 -80,0",
+                      "strokeWidth": 4
+                    },
+                    "children": [
+                      {
+                        "type": "animate",
+                        "props": {
+                          "attributeName": "d",
+                          "dur": "2000ms",
+                          "values": "M 50,50 m -40,0 a 40,40 0 1,0 80,0 a 40,40 0 1,0 -80,0;M 10,10 L 90,10 L 90,90 L 10,90 Z;M 50,50 m -40,0 a 40,40 0 1,0 80,0 a 40,40 0 1,0 -80,0",
+                          "repeatCount": "indefinite",
+                          "calcMode": "spline",
+                          "keySplines": "0.4 0 0.2 1;0.4 0 0.2 1",
+                          "keyTimes": "0;0.5;1"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-p15"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Phase 15 — Pseudo-Element Effects"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "::before/::after driven by injected scoped <style> tags — animated underline, highlight overlay."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row gap-6 flex-wrap items-center"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "relative inline-flex px-6 py-3 font-semibold text-indigo-600 cursor-pointer",
+                  "data-testid": "p15-underline",
+                  "animation": {
+                    "pseudoElement": {
+                      "enabled": true,
+                      "target": "::after",
+                      "background": "#6366f1",
+                      "width": "0%",
+                      "height": "2px",
+                      "bottom": "0",
+                      "left": "0",
+                      "trigger": "hover",
+                      "hoverWidth": "100%",
+                      "hoverOpacity": 1
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-indigo-600 font-semibold"
+                    },
+                    "text": "Hover underline"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "relative inline-flex px-6 py-3 rounded-lg bg-emerald-100 font-semibold cursor-pointer",
+                  "data-testid": "p15-overlay",
+                  "animation": {
+                    "pseudoElement": {
+                      "enabled": true,
+                      "target": "::before",
+                      "background": "rgba(16,185,129,0.3)",
+                      "width": "0%",
+                      "height": "100%",
+                      "bottom": "0",
+                      "left": "0",
+                      "trigger": "hover",
+                      "hoverWidth": "100%",
+                      "hoverOpacity": 1
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-emerald-800 font-semibold relative"
+                    },
+                    "text": "Highlight sweep"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-p17"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Phase 17 — Swipe Carousel"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Drag / swipe left or right to change slides. Track follows your finger live (dragFeedback) and springs back if you release without completing a swipe."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-4 w-full"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-full rounded-2xl overflow-hidden shadow-lg select-none",
+                  "style": {
+                    "height": 260
+                  },
+                  "data-testid": "p17-viewport"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-row h-full cursor-grab",
+                      "style": {
+                        "width": "400%"
+                      },
+                      "data-testid": "p17-gesture",
+                      "animation": {
+                        "gesture": {
+                          "enabled": true,
+                          "swipe": true,
+                          "dragFeedback": true,
+                          "swipeThreshold": 40,
+                          "velocityThreshold": 0.01,
+                          "onSwipeLeftAction": "carouselNext",
+                          "onSwipeRightAction": "carouselPrev"
+                        },
+                        "states": {
+                          "watchVar": "variables?.['anim-0000-0000-0000-00000000p017'] ?? 0",
+                          "defaultState": "0",
+                          "duration": 420,
+                          "easing": "easeInOut",
+                          "states": {
+                            "0": {
+                              "transform": "translateX(0%)"
+                            },
+                            "1": {
+                              "transform": "translateX(-100%)"
+                            },
+                            "2": {
+                              "transform": "translateX(-200%)"
+                            },
+                            "3": {
+                              "transform": "translateX(-300%)"
+                            }
+                          }
+                        },
+                        "outerClassName": "w-full h-full"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "h-full flex flex-col items-center justify-center gap-4 flex-shrink-0",
+                          "style": {
+                            "width": "25%",
+                            "background": "linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)"
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "w-16 h-16 rounded-full bg-white/20 flex items-center justify-center"
+                            },
+                            "children": [
+                              {
+                                "type": "NavIcon",
+                                "props": {
+                                  "icon": "Rocket",
+                                  "size": 32,
+                                  "color": "#fff"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-white font-bold text-2xl text-center"
+                            },
+                            "text": "Getting Started"
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-white/70 text-sm text-center px-8"
+                            },
+                            "text": "Swipe left to explore →"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "h-full flex flex-col items-center justify-center gap-4 flex-shrink-0",
+                          "style": {
+                            "width": "25%",
+                            "background": "linear-gradient(135deg,#06b6d4 0%,#0284c7 100%)"
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "w-16 h-16 rounded-full bg-white/20 flex items-center justify-center"
+                            },
+                            "children": [
+                              {
+                                "type": "NavIcon",
+                                "props": {
+                                  "icon": "Zap",
+                                  "size": 32,
+                                  "color": "#fff"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-white font-bold text-2xl text-center"
+                            },
+                            "text": "Fast & Smooth"
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-white/70 text-sm text-center px-8"
+                            },
+                            "text": "60fps CSS animations, no libraries"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "h-full flex flex-col items-center justify-center gap-4 flex-shrink-0",
+                          "style": {
+                            "width": "25%",
+                            "background": "linear-gradient(135deg,#10b981 0%,#059669 100%)"
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "w-16 h-16 rounded-full bg-white/20 flex items-center justify-center"
+                            },
+                            "children": [
+                              {
+                                "type": "NavIcon",
+                                "props": {
+                                  "icon": "Layers",
+                                  "size": 32,
+                                  "color": "#fff"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-white font-bold text-2xl text-center"
+                            },
+                            "text": "JSON-Driven"
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-white/70 text-sm text-center px-8"
+                            },
+                            "text": "Configure everything in JSON"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "h-full flex flex-col items-center justify-center gap-4 flex-shrink-0",
+                          "style": {
+                            "width": "25%",
+                            "background": "linear-gradient(135deg,#f59e0b 0%,#ef4444 100%)"
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "w-16 h-16 rounded-full bg-white/20 flex items-center justify-center"
+                            },
+                            "children": [
+                              {
+                                "type": "NavIcon",
+                                "props": {
+                                  "icon": "Star",
+                                  "size": 32,
+                                  "color": "#fff"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-white font-bold text-2xl text-center"
+                            },
+                            "text": "Gesture-Powered"
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-white/70 text-sm text-center px-8"
+                            },
+                            "text": "Swipe right to go back ←"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center justify-between gap-4"
+                },
+                "children": [
+                  {
+                    "type": "Pressable",
+                    "props": {
+                      "className": "w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700",
+                      "data-testid": "p17-prev"
+                    },
+                    "actions": [
+                      {
+                        "action": "carouselPrev"
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "NavIcon",
+                        "props": {
+                          "icon": "ChevronLeft",
+                          "size": 20,
+                          "color": "#6b7280"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-row gap-2 items-center",
+                      "data-testid": "p17-dots"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "h-2 rounded-full",
+                          "animation": {
+                            "states": {
+                              "watchVar": "(!variables?.['anim-0000-0000-0000-00000000p017'] || variables?.['anim-0000-0000-0000-00000000p017'] === 0) ? 'active' : 'inactive'",
+                              "defaultState": "inactive",
+                              "duration": 300,
+                              "states": {
+                                "active": {
+                                  "background": "#6366f1",
+                                  "width": "24px"
+                                },
+                                "inactive": {
+                                  "background": "#d1d5db",
+                                  "width": "8px"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "h-2 rounded-full",
+                          "animation": {
+                            "states": {
+                              "watchVar": "variables?.['anim-0000-0000-0000-00000000p017'] === 1 ? 'active' : 'inactive'",
+                              "defaultState": "inactive",
+                              "duration": 300,
+                              "states": {
+                                "active": {
+                                  "background": "#06b6d4",
+                                  "width": "24px"
+                                },
+                                "inactive": {
+                                  "background": "#d1d5db",
+                                  "width": "8px"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "h-2 rounded-full",
+                          "animation": {
+                            "states": {
+                              "watchVar": "variables?.['anim-0000-0000-0000-00000000p017'] === 2 ? 'active' : 'inactive'",
+                              "defaultState": "inactive",
+                              "duration": 300,
+                              "states": {
+                                "active": {
+                                  "background": "#10b981",
+                                  "width": "24px"
+                                },
+                                "inactive": {
+                                  "background": "#d1d5db",
+                                  "width": "8px"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "h-2 rounded-full",
+                          "animation": {
+                            "states": {
+                              "watchVar": "variables?.['anim-0000-0000-0000-00000000p017'] === 3 ? 'active' : 'inactive'",
+                              "defaultState": "inactive",
+                              "duration": 300,
+                              "states": {
+                                "active": {
+                                  "background": "#f59e0b",
+                                  "width": "24px"
+                                },
+                                "inactive": {
+                                  "background": "#d1d5db",
+                                  "width": "8px"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Pressable",
+                    "props": {
+                      "className": "w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700",
+                      "data-testid": "p17-next"
+                    },
+                    "actions": [
+                      {
+                        "action": "carouselNext"
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "NavIcon",
+                        "props": {
+                          "icon": "ChevronRight",
+                          "size": 20,
+                          "color": "#6b7280"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

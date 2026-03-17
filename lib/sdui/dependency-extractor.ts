@@ -12,6 +12,22 @@ export function extractPathsFromTemplate(template: string): string[] {
   return [...(template.matchAll(/\{\{([^}]+)\}\}/g) ?? [])].map((m) => m[1].trim());
 }
 
+/**
+ * Extract `variables['UUID']` and `collections['UUID']` references from plain JS formula
+ * strings (not {{template}} syntax). Returns dot-notation paths like "variables.UUID".
+ * Used for condition strings and animation watchVar expressions so they auto-subscribe.
+ */
+function extractFormulaVarPaths(expr: string): string[] {
+  if (!expr || typeof expr !== 'string') return [];
+  const paths: string[] = [];
+  const re = /\b(variables|collections)\s*(?:\?\.)?\s*\[\s*['"]([^'"]+)['"]\s*\]/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(expr)) !== null) {
+    paths.push(`${m[1]}.${m[2]}`);
+  }
+  return paths;
+}
+
 /** Extract variable paths from objects and strings (e.g. "{{path}}" or formula strings) */
 export function extractPathsFromObject(obj: unknown): string[] {
   if (obj == null) return [];
@@ -50,11 +66,38 @@ export function extractNodeDependencies(node: Pick<SDUINode, 'text' | 'props' | 
     }
   }
   if (node.props) paths.push(...extractPathsFromObject(node.props));
-  if (node.condition) paths.push(...extractPathsFromObject(node.condition));
+  if (node.condition) {
+    paths.push(...extractPathsFromObject(node.condition));
+    // Also extract variables['UUID'] / collections['UUID'] from plain JS formula condition strings
+    if (typeof node.condition === 'string') {
+      paths.push(...extractFormulaVarPaths(node.condition));
+    }
+  }
   if (node.map) {
     if (typeof node.map === 'string') paths.push(node.map);
     else if (typeof node.map === 'object' && node.map !== null && 'expr' in node.map)
       paths.push(...extractPathsFromObject((node.map as { expr: unknown }).expr));
+  }
+  // animation.imperativeTrigger.watchVar and animation.states.watchVar are formula expressions
+  // (e.g. "variables['UUID']"), not {{template}} strings, so the generic object scan misses them.
+  // Extract variable paths so useVariablePaths can subscribe and trigger re-renders on change.
+  const animCfg = (node.props as Record<string, unknown> | undefined)?.animation;
+  if (animCfg && typeof animCfg === 'object' && !Array.isArray(animCfg)) {
+    const it = (animCfg as Record<string, unknown>).imperativeTrigger;
+    if (it && typeof it === 'object' && !Array.isArray(it)) {
+      const wv = (it as Record<string, unknown>).watchVar;
+      if (typeof wv === 'string' && wv.trim()) {
+        paths.push(...extractFormulaVarPaths(wv.trim()));
+      }
+    }
+    // State-machine watchVar — same formula expression pattern
+    const sm = (animCfg as Record<string, unknown>).states;
+    if (sm && typeof sm === 'object' && !Array.isArray(sm)) {
+      const wv = (sm as Record<string, unknown>).watchVar;
+      if (typeof wv === 'string' && wv.trim()) {
+        paths.push(...extractFormulaVarPaths(wv.trim()));
+      }
+    }
   }
   return [...new Set(paths)].filter((p): p is string => typeof p === 'string');
 }

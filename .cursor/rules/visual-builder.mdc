@@ -3032,3 +3032,168 @@ expect(['multi:GQL-OK', 'multi:FALLBACK']).toContain(multiText);
 ```
 
 Pure-logic steps (whileLoop, forEach) with no external dependencies can and should use exact value assertions.
+
+---
+
+## §59 StateBar — State Preview System
+
+### Overview
+
+The `StateBar` (`_state-bar.tsx`) is the bottom bar in the builder canvas for previewing component states. It is **single-select**: clicking a chip activates that state (replacing any previous one); clicking the active chip reverts to `Normal`.
+
+**Available states:**
+
+| Chip | Effect |
+|---|---|
+| Normal | No override — default render |
+| Loading | Sets `_workflow.loading = true` in merged state; force-shows nodes tagged `_stateTag: "loading"`, hides `default`/`empty` tagged nodes |
+| Validation | Injects `isValid: 'This field is required'` into all registered FormContainer fields in `merged.variables` |
+| Empty | Clears all arrays in merged state to `[]`; force-shows `_stateTag: "empty"` nodes, hides `default`/`loading` tagged nodes |
+| Disabled | Force-shows `_forceDisabledInEditor` overlay on nodes that have `props.disabled` configured |
+| + Custom | Stores a custom label; paired with `_stateTag: "custom-..."` on nodes |
+
+**Removed chips:** `Hover` and `Error` — no longer in the StateBar. Validation errors use the `Validation` chip via `FormContainer`'s field store.
+
+**State applies to ALL pages simultaneously.** When `Loading` is selected, every page (active and inactive) shows its loading-tagged nodes and hides its default-tagged nodes.
+
+---
+
+### `_stateTag` — Design-Time Node Annotation
+
+`_stateTag` is a top-level field on SDUI nodes, set via the Design panel's `VisibilityInDesign` section (only visible when the node has a `condition`). It is purely a builder hint — ignored at runtime.
+
+| Value | Meaning | StateBar behaviour |
+|---|---|---|
+| `"loading"` | This node is the loading skeleton/spinner | Force-shown when Loading active; hidden when Empty or Default active |
+| `"empty"` | This node is the empty-state UI | Force-shown when Empty active; hidden when Loading or Default active |
+| `"default"` | This node is the normal populated content | Hidden when Loading or Empty active |
+| `"custom-xyz"` | Custom named state | Force-shown when matching custom chip is active |
+
+**Adding `_stateTag` to JSON config:**
+```json
+{
+  "type": "Box",
+  "_stateTag": "loading",
+  "condition": "collections['UUID']?.loading",
+  "children": [...]
+}
+```
+
+**Layers panel badge:** Nodes with `_stateTag` show a badge in the Layers tree:
+- `⟳ loading` — amber
+- `○ empty` — green
+- `◉ default` — gray
+- `◈ custom-xyz` — purple
+
+---
+
+### `applyStateTagOverrides` (`lib/sdui/builder-preview.ts`)
+
+Called in `_canvas-helpers.tsx` (inside each page engine's `useMemo`) to deep-walk the node tree and apply show/hide overrides based on active preview states.
+
+**Fast path:** If none of `loading`, `empty`, `disabled` are active, returns the original array unchanged (no clone).
+
+**Overrides applied:**
+- `loading` active + node has `_stateTag: "loading"` → `_forceShowInEditor: true`
+- `loading` active + node has `_stateTag: "default"` or `"empty"` → `condition: false`
+- `empty` active + node has `_stateTag: "empty"` → `_forceShowInEditor: true`
+- `empty` active + node has `_stateTag: "default"` or `"loading"` → `condition: false`
+- `disabled` active + node has `props.disabled` → `_forceDisabledInEditor: true`
+
+**Placement:** This runs inside `InactivePageEngine`'s `useMemo([nodes, previewStates])` and inside the active page's `displayNodes` `useMemo`. Never call it inline in JSX — this causes it to run on every canvas render.
+
+---
+
+### `applyPreviewStatePatch` — Validation State Fix
+
+The validation preview injects mock errors into FormContainer's isolated variable store:
+
+```ts
+// Scans merged.variables for keys ending in '-form' (FormContainer store keys)
+// and sets isValid: 'This field is required' on all registered fields.
+for (const key of Object.keys(variables)) {
+  if (!key.endsWith('-form')) continue;
+  // patch fields[name].isValid for each registered field
+}
+```
+
+**Rule:** FormContainer nodes in JSON config **must have a stable `id`** for the validation preview to work reliably. Without an `id`, the component uses `crypto.randomUUID()` on every mount, making the `variables` key unpredictable:
+
+```json
+// ✅ CORRECT — stable formStoreKey = "sign-in-form-form"
+{ "type": "FormContainer", "id": "sign-in-form", "props": { ... } }
+
+// ❌ BAD — formStoreKey = "fc-{random}-form", changes every mount
+{ "type": "FormContainer", "props": { ... } }
+```
+
+---
+
+### Canvas Performance — State Preview (Causes 5 & 6)
+
+#### Cause 5: `setPreviewState` triggers synchronous heavy re-render
+
+**Problem:** Clicking a StateBar chip called `setPreviewState` synchronously, causing all subscribed SDUIEngine instances (one per page) to re-render immediately, blocking user input during the render.
+
+**Fix:** Wrap all `setPreviewState` calls in `React.startTransition`:
+```tsx
+const selectState = (id: PreviewState) => {
+  startTransition(() => {
+    setPreviewState(activePreviewStates.includes(id) ? 'normal' : id);
+  });
+};
+```
+This marks the re-render as low-priority. React finishes processing pending mouse/keyboard events (like pan) before rendering the state change.
+
+**Rule:** Any Zustand store call that triggers a heavy re-render of the entire canvas (page config, nodes, preview state) should be wrapped in `startTransition` when initiated from user input.
+
+#### Cause 6: Inactive pages re-rendered on hover/select events
+
+**Problem:** The inactive pages were rendered inside `BuilderCanvas` which subscribes to the full store including `hoveredId` and `selectedIds`. Every hover/select update caused the inactive pages map to re-run and pass new props to each `InactivePageEngine`.
+
+**Fix:** Extract inactive pages into a dedicated `InactivePagesGrid` component (`_canvas-helpers.tsx`) with its own targeted store subscription:
+```tsx
+export const InactivePagesGrid = memo(function InactivePagesGrid({ vpWidth, PAGE_GAP }) {
+  const pages            = useBuilderStore(s => s.pages);
+  const currentPageId    = useBuilderStore(s => s.currentPageId);
+  const activePreviewStates = useBuilderStore(s => s.activePreviewStates);
+  const switchPage       = useBuilderStore(s => s.switchPage);
+  // ... renders inactive page frames
+});
+```
+This component only re-renders when `pages`, `currentPageId`, `activePreviewStates`, or `switchPage` change — completely insulated from hover/select noise.
+
+**Rule:** Any component that renders expensive SDUI trees should subscribe only to the specific Zustand fields it needs, never to the full `useBuilderStore()` object.
+
+---
+
+## §60 E2E Tests — Builder States (`e2e/builder-states-data.spec.ts`)
+
+Tests for the StateBar and `_stateTag` system. All share a `sharedPage` with `beforeEach` reload guard.
+
+| Test | ID | What it verifies |
+|---|---|---|
+| BSD-02 | Loading state | `_workflow.loading = true` injected into merged state |
+| BSD-04 | Empty state | `activePreviewStates` contains `'empty'` |
+| BSD-05 | Data state | `setCurrentPagePreviewData` stores data |
+| BSD-10 | Single-select | Selecting a state replaces current; re-selecting reverts to `'normal'` |
+| BSD-11 | All-pages state | Active and inactive pages share the same `activePreviewStates` |
+| BSD-15 | `_stateTag` storage | `patchNodeField(id, '_stateTag', 'loading')` persists on node |
+| BSD-16 | Loading isolation | Loading chip: loading-tagged node gets `_forceShowInEditor: true`; default-tagged gets `condition: false` |
+| BSD-17 | Empty isolation | Empty chip: empty-tagged node gets `_forceShowInEditor: true`; default-tagged gets `condition: false` |
+| BSD-18 | Custom tag badge | Custom tag stored; badge appears in layers panel |
+| BSD-19 | Disabled overlay | Disabled chip adds `_forceDisabledInEditor: true` to nodes with `props.disabled` |
+| BSD-20 | No global dim | Disabled chip does NOT add `opacity-50` to nodes without `props.disabled` |
+| BSD-21 | No hover chip | `state-chip-hover` is absent from StateBar |
+| BSD-22 | No error chip | `state-chip-error` is absent from StateBar |
+| BSD-23 | Tag picker gating | `_stateTag` picker visible only when node has a `condition` set |
+
+**Stability fix:** A `beforeEach` hook reloads the builder if the page URL has drifted (e.g. after a test failure that navigated away):
+```ts
+test.beforeEach(async () => {
+  if (!sharedPage.url().includes('/dev/builder')) {
+    await gotoBuilder(sharedPage);
+  }
+  await resetBuilder(sharedPage);
+});
+```

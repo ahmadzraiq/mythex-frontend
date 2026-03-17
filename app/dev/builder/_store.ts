@@ -20,6 +20,8 @@ import routesConfig from '@/config/routes.json';
 import { showcaseNodes } from './_showcase';
 import root from '@/config/root';
 import { resolveScreenConfig, type ConfigRegistry } from '@/lib/sdui/config-resolver';
+import { updatePopup, getPopups } from '@/lib/builder/popup-data';
+import { getBuilderConfig } from '@/lib/builder/config-data';
 
 // ─── Node-tree helpers (extracted to _store-node-helpers.ts) ────────────────
 // Single import for internal use; explicit re-exports for external consumers.
@@ -233,6 +235,91 @@ const ROUTE_PAGES: BuilderPage[] = (routesConfig as { routes: Array<{ path: stri
 
 const INITIAL_PAGES: BuilderPage[] = [SHOWCASE_PAGE, ...ROUTE_PAGES];
 
+/**
+ * Strips popup root nodes from pageNodes, persists each popup's live content to
+ * the in-memory popup store (stripping builder-injected styles), and returns
+ * the cleaned node array plus the list of popup model IDs that were flushed.
+ * Used by switchPage / navigatePage so page content is never polluted with
+ * popup nodes after an in-progress popup edit.
+ */
+function _flushEditingPopups(s: ReturnType<typeof useBuilderStore.getState>) {
+  const BUILDER_KEYS = new Set(['position', 'top', 'left', 'right', 'zIndex']);
+  let cleanNodes = s.pageNodes as SDUINode[];
+  const popupIdsToClose: string[] = [];
+
+  for (const popupId of s.editingPopupIds) {
+    const content = s.editingPopupContentsMap[popupId];
+    // Always use the live model so renames made while the popup was open are kept.
+    const model   = getPopups()[popupId] ?? s.editingPopupModelsMap[popupId];
+    if (!content || !model) { popupIdsToClose.push(popupId); continue; }
+
+    const rootId = (content as unknown as { id?: string }).id;
+    const liveNode = rootId
+      ? (cleanNodes as SDUINode[]).find(n => (n as unknown as { id?: string }).id === rootId)
+      : undefined;
+
+    if (liveNode) {
+      const rawStyle = ((liveNode.props as Record<string, unknown>)?.style ?? {}) as Record<string, unknown>;
+      const cleanStyle = Object.fromEntries(Object.entries(rawStyle).filter(([k]) => !BUILDER_KEYS.has(k)));
+      const originalStyle = (content.props as Record<string, unknown> | undefined)?.style as Record<string, unknown> | undefined;
+      if (!originalStyle?.['height']) delete cleanStyle['height'];
+      const savedNode = {
+        ...liveNode,
+        props: { ...(liveNode.props ?? {}), style: Object.keys(cleanStyle).length > 0 ? cleanStyle : undefined },
+      };
+      updatePopup({ id: popupId, ...(model as { id: string }), content: savedNode as Record<string, unknown> });
+      cleanNodes = cleanNodes.filter(n => (n as unknown as { id?: string }).id !== rootId) as SDUINode[];
+    }
+    popupIdsToClose.push(popupId);
+  }
+
+  return { cleanNodes, popupIdsToClose };
+}
+
+/**
+ * Re-appends every currently-editing popup to `baseNodes` (the new page's node
+ * tree) using the freshest content from the in-memory popup store, then adds
+ * builder-specific absolute positioning so the popup sits at the right height
+ * in the canvas. Returns the merged node array and an updated contentsMap.
+ */
+function _reattachPopups(
+  s: ReturnType<typeof useBuilderStore.getState>,
+  baseNodes: SDUINode[],
+): { newNodes: SDUINode[]; newContentsMap: Record<string, SDUINode> } {
+  const newContentsMap: Record<string, SDUINode> = { ...s.editingPopupContentsMap };
+  let newNodes = baseNodes;
+
+  s.editingPopupIds.forEach((popupId, index) => {
+    // Use the freshest saved content from the popup store (just flushed above).
+    const liveModel = getPopups()[popupId];
+    const freshContent = (liveModel?.content ?? s.editingPopupContentsMap[popupId]) as SDUINode | undefined;
+    if (!freshContent) return;
+
+    const contentNode = clone(freshContent as unknown as SDUINode);
+    const existingStyle = ((contentNode.props as Record<string, unknown>)?.style ?? {}) as Record<string, unknown>;
+    const builderContent: SDUINode = {
+      ...contentNode,
+      props: {
+        ...(contentNode.props ?? {}),
+        style: {
+          ...existingStyle,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 900,
+          zIndex: 50 + index,
+        },
+      },
+    };
+
+    newNodes = [...newNodes, builderContent];
+    newContentsMap[popupId] = freshContent;
+  });
+
+  return { newNodes, newContentsMap };
+}
+
 export const useBuilderStore = create<BuilderStore>((set, get) => ({
   pages: INITIAL_PAGES,
   currentPageId: SHOWCASE_PAGE.id,
@@ -254,6 +341,13 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   history: [clone(showcaseNodes)],
   historyIdx: 0,
   pendingFitToPage: false,
+  editingPopupIds: [],
+  editingPopupId: null,
+  editingPopupContentsMap: {},
+  editingPopupModelsMap: {},
+  editingPopupContent: null,
+  editingPopupModel: null,
+  _savedPageNodes: null,
   activePreviewStates: ['normal'],
   showInteractionLines: false,
   activeLogicSection: null,
@@ -541,7 +635,13 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   },
 
   deleteNodes: (ids) => {
-    const idSet = new Set(ids);
+    // Protect ALL popup root nodes from being deleted while any popup is being edited.
+    const { editingPopupContentsMap } = get();
+    const popupRootIds = new Set(
+      Object.values(editingPopupContentsMap).map(c => (c as unknown as { id?: string }).id).filter(Boolean)
+    );
+    const idSet = new Set(ids.filter(id => !popupRootIds.has(id)));
+    if (idSet.size === 0) return;
     set(s => ({
       pageNodes: removeNodesByIds(s.pageNodes, idSet),
       selectedIds: s.selectedIds.filter(id => !idSet.has(id)),
@@ -1068,53 +1168,246 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   },
 
   switchPage: (pageId) => {
-    set(s => {
-      const target = s.pages.find(p => p.id === pageId);
-      if (!target || target.id === s.currentPageId) return s;
-      // Persist current page nodes
-      const savedPages = s.pages.map(p =>
-        p.id === s.currentPageId ? { ...p, nodes: clone(s.pageNodes) } : p
-      );
-      const newNodes = clone(target.nodes);
-      return {
-        pages: savedPages,
-        currentPageId: pageId,
-        pageNodes: newNodes,
-        selectedIds: [],
-        hoveredId: null,
-        history: [clone(newNodes)],
-        historyIdx: 0,
-      };
+    const s = get();
+    const target = s.pages.find(p => p.id === pageId);
+    if (!target || target.id === s.currentPageId) return;
+
+    // 1. Save current popup edits and get clean page nodes (no popup roots).
+    const { cleanNodes } = _flushEditingPopups(s);
+
+    // 2. Save the leaving page cleanly.
+    const savedPages = (s.pages as BuilderPage[]).map(p =>
+      p.id === s.currentPageId ? { ...p, nodes: clone(cleanNodes) } : p
+    );
+
+    // 3. Re-append each popup to the new page so editing continues seamlessly.
+    const { newNodes, newContentsMap } = _reattachPopups(s, clone(target.nodes) as SDUINode[]);
+
+    set({
+      pages: savedPages,
+      currentPageId: pageId,
+      pageNodes: newNodes,
+      editingPopupContentsMap: newContentsMap,
+      _savedPageNodes: clone(target.nodes) as SDUINode[],
+      selectedIds: [],
+      hoveredId: null,
+      history: [clone(newNodes)],
+      historyIdx: 0,
     });
   },
 
   navigatePage: (pageId) => {
-    // Switch to the page (same logic as switchPage) and trigger canvas fit
-    set(s => {
-      const target = s.pages.find(p => p.id === pageId);
-      if (!target) return s;
-      if (target.id === s.currentPageId) {
-        // Already on this page — just trigger a re-fit to scroll it into view
-        return { pendingFitToPage: true };
-      }
-      const savedPages = s.pages.map(p =>
-        p.id === s.currentPageId ? { ...p, nodes: clone(s.pageNodes) } : p
-      );
-      const newNodes = clone(target.nodes);
-      return {
-        pages: savedPages,
-        currentPageId: pageId,
-        pageNodes: newNodes,
-        selectedIds: [],
-        hoveredId: null,
-        history: [clone(newNodes)],
-        historyIdx: 0,
-        pendingFitToPage: true,
-      };
+    const s = get();
+    const target = s.pages.find(p => p.id === pageId);
+    if (!target) return;
+    if (target.id === s.currentPageId) {
+      set({ pendingFitToPage: true });
+      return;
+    }
+
+    const { cleanNodes } = _flushEditingPopups(s);
+
+    const savedPages = (s.pages as BuilderPage[]).map(p =>
+      p.id === s.currentPageId ? { ...p, nodes: clone(cleanNodes) } : p
+    );
+
+    const { newNodes, newContentsMap } = _reattachPopups(s, clone(target.nodes) as SDUINode[]);
+
+    set({
+      pages: savedPages,
+      currentPageId: pageId,
+      pageNodes: newNodes,
+      editingPopupContentsMap: newContentsMap,
+      _savedPageNodes: clone(target.nodes) as SDUINode[],
+      selectedIds: [],
+      hoveredId: null,
+      history: [clone(newNodes)],
+      historyIdx: 0,
+      pendingFitToPage: true,
     });
   },
 
   clearPendingFit: () => set({ pendingFitToPage: false }),
+
+  enterPopupEdit: (modelId, content, model) =>
+    set(s => {
+      // Inject builder-specific absolute positioning and explicit height DIRECTLY
+      // onto the popup root (backdrop) node. Using inline `style` means React's
+      // specificity rules make it win over the Tailwind `h-full` class, so the
+      // backdrop is definitively 900px (= VIEWPORT_H) in the builder canvas.
+      // The page nodes remain in pageNodes so the page stays visible behind the popup,
+      // and ALL builder ops (add/delete/move/resize) work because everything is in the
+      // same pageNodes tree.
+      // Multiple popups can be open simultaneously — each is just appended to pageNodes.
+      const contentNode = clone(content as unknown as SDUINode);
+      const existingStyle = ((contentNode.props as Record<string, unknown>)?.style ?? {}) as Record<string, unknown>;
+      const builderContent: SDUINode = {
+        ...contentNode,
+        props: {
+          ...(contentNode.props ?? {}),
+          style: {
+            ...existingStyle,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 900,
+            zIndex: 50 + s.editingPopupIds.length, // stack above existing open popups
+          },
+        },
+      };
+
+      const nextNodes = [...clone(s.pageNodes), builderContent] as SDUINode[];
+
+      // Save the original page nodes only on the FIRST popup being opened for editing.
+      // Subsequent calls must NOT overwrite this snapshot — otherwise closing the
+      // second popup would restore to "page + popup1's content" instead of the real page.
+      const savedPageNodes = s._savedPageNodes ?? clone(s.pageNodes);
+
+      return {
+        _savedPageNodes: savedPageNodes,
+        pageNodes: nextNodes,
+        editingPopupIds: [...s.editingPopupIds, modelId],
+        editingPopupId: modelId,                          // most-recently-opened
+        editingPopupContentsMap: { ...s.editingPopupContentsMap, [modelId]: content },
+        editingPopupModelsMap: { ...s.editingPopupModelsMap, [modelId]: model },
+        editingPopupContent: content,
+        editingPopupModel: model,
+        selectedIds: [],
+        history: [nextNodes],
+        historyIdx: 0,
+      };
+    }),
+
+  saveEditingPopup: (modelId) => {
+    const { editingPopupContentsMap, editingPopupModelsMap, pageNodes } = get();
+    const targetContent = editingPopupContentsMap[modelId];
+    // Prefer the live in-memory model (may have been renamed/updated since edit started)
+    const targetModel   = getPopups()[modelId] ?? editingPopupModelsMap[modelId];
+    if (!targetContent || !targetModel) return;
+
+    const popupRootId = (targetContent as unknown as { id?: string }).id;
+    const liveNode = popupRootId
+      ? (pageNodes as SDUINode[]).find(n => (n as unknown as { id?: string }).id === popupRootId)
+      : undefined;
+    if (!liveNode) return;
+
+    // Strip builder-injected positioning/height before saving.
+    const rawStyle = ((liveNode.props as Record<string, unknown>)?.style ?? {}) as Record<string, unknown>;
+    const BUILDER_KEYS = new Set(['position', 'top', 'left', 'right', 'zIndex']);
+    const cleanStyle = Object.fromEntries(Object.entries(rawStyle).filter(([k]) => !BUILDER_KEYS.has(k)));
+    const originalStyle = (targetContent.props as Record<string, unknown> | undefined)?.style as Record<string, unknown> | undefined;
+    if (!originalStyle?.['height']) delete cleanStyle['height'];
+
+    const savedNode = {
+      ...liveNode,
+      props: {
+        ...(liveNode.props ?? {}),
+        style: Object.keys(cleanStyle).length > 0 ? cleanStyle : undefined,
+      },
+    };
+
+    updatePopup({ ...(targetModel as { id: string }), content: savedNode as Record<string, unknown> });
+  },
+
+  exitPopupEdit: (modelId?) => {
+    const {
+      editingPopupId: lastId,
+      editingPopupIds,
+      editingPopupContentsMap,
+      editingPopupModelsMap,
+      pageNodes,
+      _savedPageNodes,
+    } = get();
+
+    // Resolve which popup to close — default to the most-recently-opened one.
+    const targetId = modelId ?? lastId;
+    if (!targetId) return;
+
+    const targetContent = editingPopupContentsMap[targetId];
+    // Always use the freshest model from the in-memory store so that renames
+    // (or any other metadata changes made while the popup was open) are preserved.
+    const targetModel   = getPopups()[targetId] ?? editingPopupModelsMap[targetId];
+
+    if (targetContent) {
+      // Find the live (possibly edited) popup node by the original root ID.
+      const popupRootId = (targetContent as unknown as { id?: string }).id;
+      const liveNode = popupRootId
+        ? (pageNodes as SDUINode[]).find(n => (n as unknown as { id?: string }).id === popupRootId)
+        : undefined;
+
+      if (liveNode) {
+        // Strip the builder-injected positioning/height keys before saving.
+        // We only added these so the backdrop has a definite 900px in the canvas;
+        // the popup should use its own h-full / PopupRenderer positioning in production.
+        const rawStyle = ((liveNode.props as Record<string, unknown>)?.style ?? {}) as Record<string, unknown>;
+        const BUILDER_KEYS = new Set(['position', 'top', 'left', 'right', 'zIndex']);
+        const cleanStyle = Object.fromEntries(Object.entries(rawStyle).filter(([k]) => !BUILDER_KEYS.has(k)));
+
+        // Also remove `height` unless the original content already had an explicit height.
+        const originalStyle = (targetContent.props as Record<string, unknown> | undefined)?.style as Record<string, unknown> | undefined;
+        if (!originalStyle?.['height']) delete cleanStyle['height'];
+
+        const savedNode = {
+          ...liveNode,
+          props: {
+            ...(liveNode.props ?? {}),
+            style: Object.keys(cleanStyle).length > 0 ? cleanStyle : undefined,
+          },
+        };
+
+        const updatedModel = { ...(targetModel ?? {}), content: savedNode };
+        updatePopup({ id: targetId, ...(updatedModel as Record<string, unknown>), content: savedNode as Record<string, unknown> });
+
+        // Remove just this popup's root node from pageNodes — leave the rest intact.
+        const newPageNodes = (pageNodes as SDUINode[]).filter(
+          n => (n as unknown as { id?: string }).id !== popupRootId
+        ) as SDUINode[];
+
+        const newEditingIds  = editingPopupIds.filter(id => id !== targetId);
+        const newContentsMap = Object.fromEntries(Object.entries(editingPopupContentsMap).filter(([k]) => k !== targetId));
+        const newModelsMap   = Object.fromEntries(Object.entries(editingPopupModelsMap).filter(([k]) => k !== targetId));
+        const newLastId      = newEditingIds[newEditingIds.length - 1] ?? null;
+        const allClosed      = newEditingIds.length === 0;
+
+        set({
+          pageNodes: newPageNodes,
+          _savedPageNodes: allClosed ? null : _savedPageNodes,
+          editingPopupIds: newEditingIds,
+          editingPopupId: newLastId,
+          editingPopupContentsMap: newContentsMap,
+          editingPopupModelsMap: newModelsMap,
+          editingPopupContent: newLastId ? newContentsMap[newLastId] ?? null : null,
+          editingPopupModel: newLastId ? newModelsMap[newLastId] ?? null : null,
+          selectedIds: [],
+          history: [clone(newPageNodes)],
+          historyIdx: 0,
+        });
+        return;
+      }
+    }
+
+    // Fallback: popup root not in current pageNodes (user switched pages while editing).
+    // Clean up tracking state only — do NOT touch pageNodes so the current page is preserved.
+    const newEditingIds  = editingPopupIds.filter(id => id !== targetId);
+    const newContentsMap = Object.fromEntries(Object.entries(editingPopupContentsMap).filter(([k]) => k !== targetId));
+    const newModelsMap   = Object.fromEntries(Object.entries(editingPopupModelsMap).filter(([k]) => k !== targetId));
+    const newLastId      = newEditingIds[newEditingIds.length - 1] ?? null;
+
+    set({
+      pageNodes: pageNodes as SDUINode[],   // keep current page untouched
+      _savedPageNodes: newEditingIds.length === 0 ? null : _savedPageNodes,
+      editingPopupIds: newEditingIds,
+      editingPopupId: newLastId,
+      editingPopupContentsMap: newContentsMap,
+      editingPopupModelsMap: newModelsMap,
+      editingPopupContent: newLastId ? newContentsMap[newLastId] ?? null : null,
+      editingPopupModel: newLastId ? newModelsMap[newLastId] ?? null : null,
+      selectedIds: [],
+      history: [clone(pageNodes as SDUINode[])],
+      historyIdx: 0,
+    });
+  },
 
   // ── Theme overrides ──────────────────────────────────────────────────────────
 
@@ -1330,9 +1623,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
 
   loadFromConfig: async () => {
     try {
-      const res = await fetch('/api/builder/config');
-      if (!res.ok) return;
-      const json = (await res.json()) as {
+      const json = getBuilderConfig() as unknown as {
         dataSources?: DataSourceConfig[];
         dsFolders?: Folder[];
         variables?: Array<{ id: string; label?: string; type?: string; initialValue?: unknown; folder?: string; fields?: CustomVar['fields'] }>;

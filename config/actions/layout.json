@@ -804,5 +804,13 @@
         }
       }
     ]
+  },
+  "closeAllPopups": {
+    "name": "closeAllPopups",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "closeAllPopups", "config": {} }
+    ]
   }
 }

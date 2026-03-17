@@ -23,6 +23,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import { json } from '@codemirror/lang-json';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { useBuilderStore } from './_store';
+import { getPopupList, subscribePopups } from '@/lib/builder/popup-data';
 import { BindingIcon, isBoundValue, type FormulaValue } from './_formula-panel';
 import { FormulaEditor, storedValueToFormula } from './_formula-editor';
 import { collectPageComponents } from './_formula-editor-tabs';
@@ -937,6 +938,204 @@ export function NavigateToConfig({
           </div>
         </>
       )}
+    </>
+  );
+}
+
+// ─── OpenPopupConfig ──────────────────────────────────────────────────────────
+
+interface PopupModelBrief {
+  id: string;
+  name: string;
+  type: string;
+  properties: Array<{ id: string; name: string; type: string; defaultValue?: unknown }>;
+}
+
+/** Searchable popup-model picker — same visual style as TypeSearchDropdown. */
+function PopupModelDropdown({
+  value,
+  models,
+  onChange,
+}: {
+  value: string;
+  models: PopupModelBrief[];
+  onChange: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    searchRef.current?.focus();
+    const handler = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('[data-popover="popup-model-search"]')) {
+        setOpen(false);
+        setSearch('');
+      }
+    };
+    window.addEventListener('mousedown', handler, true);
+    return () => window.removeEventListener('mousedown', handler, true);
+  }, [open]);
+
+  const q = search.toLowerCase();
+  const filtered = models.filter(m => m.name.toLowerCase().includes(q) || m.type.toLowerCase().includes(q));
+  const selectedModel = models.find(m => m.id === value);
+
+  return (
+    <div data-popover="popup-model-search" style={{ position: 'relative', width: '100%' }}>
+      <button
+        data-testid="openPopup-model-select"
+        style={{
+          ...S.fieldSelect,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          cursor: 'pointer',
+          textAlign: 'left',
+          paddingRight: 28,
+        }}
+        onClick={e => { e.stopPropagation(); setOpen(v => !v); setSearch(''); }}
+      >
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: value ? '#f3f4f6' : '#6b7280' }}>
+          {selectedModel ? `${selectedModel.name} (${selectedModel.type})` : 'Choose a popup model'}
+        </span>
+        <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: '#6b7280', pointerEvents: 'none' }}>
+          {open ? '▴' : '▾'}
+        </span>
+      </button>
+
+      {open && (
+        <div style={{ ...S.dropdown, position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 300, minWidth: 'unset', width: '100%', maxHeight: 260 }}>
+          <input
+            ref={searchRef}
+            style={S.dropdownSearch}
+            placeholder="Search popups…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {filtered.length === 0 && (
+            <div style={{ padding: '8px 12px', fontSize: 11, color: '#6b7280' }}>No popups found</div>
+          )}
+          {filtered.map(m => (
+            <button
+              key={m.id}
+              style={S.dropdownItem(m.id === value)}
+              onMouseEnter={e => { if (m.id !== value) (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
+              onMouseLeave={e => { if (m.id !== value) (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
+              onClick={e => { e.stopPropagation(); onChange(m.id); setOpen(false); setSearch(''); }}
+            >
+              <span style={{ flex: 1 }}>{m.name}</span>
+              <span style={{ fontSize: 10, color: '#6b7280' }}>{m.type}</span>
+              {m.id === value && <span style={{ color: '#3b82f6', fontSize: 10, marginLeft: 4 }}>✓</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function OpenPopupConfig({
+  cfg,
+  setCfg,
+}: {
+  cfg: Record<string, unknown>;
+  setCfg: (key: string, value: unknown) => void;
+}) {
+  const [models, setModels] = useState<PopupModelBrief[]>([]);
+  const [openField, setOpenField] = useState<string | null>(null);
+
+  // Load popup models from in-memory store (no API route needed) and subscribe to changes
+  useEffect(() => {
+    const refresh = () => setModels(getPopupList() as PopupModelBrief[]);
+    refresh();
+    const unsub = subscribePopups(refresh);
+    return unsub;
+  }, []);
+
+  const selectedModel = models.find(m => m.id === cfg.popupId);
+  // props are keyed by property UUID so context.component?.props?.['uuid'] resolves
+  const propValues = (cfg.props ?? {}) as Record<string, FormulaValue | string>;
+
+  // key: property UUID (not name) so the formula context.component?.props?.['uuid'] resolves
+  const setPropValue = (propId: string, value: FormulaValue | string) => {
+    setCfg('props', { ...propValues, [propId]: value });
+  };
+
+  return (
+    <>
+      {/* Popup model selector — custom searchable dropdown */}
+      <label style={{ ...S.fieldLabel, marginTop: 10 }}>Popup model</label>
+      <PopupModelDropdown
+        value={(cfg.popupId as string) ?? ''}
+        models={models}
+        onChange={id => { setCfg('popupId', id); setCfg('props', {}); }}
+      />
+
+      {/* Dynamic property inputs — keyed by prop.id (UUID) */}
+      {selectedModel && selectedModel.properties.length > 0 && (
+        <>
+          <div style={{ fontSize: 10, color: '#6b7280', marginTop: 10, marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Properties</div>
+          {selectedModel.properties.map(prop => {
+            const fieldKey = `prop_${prop.id}`;
+            // Key by UUID so context.component?.props?.['uuid'] resolves at runtime
+            const currentVal = propValues[prop.id];
+            const isBound = isBoundValue(currentVal as FormulaValue);
+            return (
+              <React.Fragment key={prop.id}>
+                <label style={{ ...S.fieldLabel, marginTop: 6 }}>{prop.name}</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {isBound ? (
+                    <button
+                      onClick={() => setOpenField(f => f === fieldKey ? null : fieldKey)}
+                      style={{ flex: 1, padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed',
+                        borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}
+                    >ƒ Edit formula</button>
+                  ) : (
+                    <input
+                      style={{ ...S.fieldInput, flex: 1 }}
+                      placeholder={prop.defaultValue != null ? String(prop.defaultValue) : `${prop.name}…`}
+                      value={typeof currentVal === 'string' ? currentVal : ''}
+                      onChange={e => setPropValue(prop.id, e.target.value)}
+                    />
+                  )}
+                  <BindingIcon
+                    isBound={isBound}
+                    onClick={() => setOpenField(f => f === fieldKey ? null : fieldKey)}
+                  />
+                </div>
+                {openField === fieldKey && (
+                  <FormulaEditor
+                    label={prop.name}
+                    value={(currentVal as FormulaValue) ?? null}
+                    onChange={v => { setPropValue(prop.id, v); setOpenField(null); }}
+                    onClose={() => setOpenField(null)}
+                    anchorRight={292}
+                  />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </>
+      )}
+
+      {/* Wait close event */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
+        <span style={{ fontSize: 12, color: '#9ca3af' }}>Wait close event</span>
+        <div style={S.toggleGroup}>
+          <button
+            data-testid="openPopup-waitClose-on"
+            style={S.toggleBtn(!!(cfg.waitClose))}
+            onClick={() => setCfg('waitClose', true)}
+          >On</button>
+          <button
+            data-testid="openPopup-waitClose-off"
+            style={S.toggleBtn(!(cfg.waitClose))}
+            onClick={() => setCfg('waitClose', false)}
+          >Off</button>
+        </div>
+      </div>
     </>
   );
 }
@@ -2942,24 +3141,13 @@ export function NodePropsPanel({
       )}
 
       {step.type === 'openPopup' && (
-        <>
-          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Popup model</label>
-          <select style={S.fieldSelect}><option value="">Choose a popup model</option></select>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
-            <span style={{ fontSize: 12, color: '#9ca3af' }}>Wait close event</span>
-            <div style={S.toggleGroup}>
-              <button style={S.toggleBtn(!!(cfg.waitClose))} onClick={() => setCfg('waitClose', true)}>On</button>
-              <button style={S.toggleBtn(!(cfg.waitClose))} onClick={() => setCfg('waitClose', false)}>Off</button>
-            </div>
-          </div>
-        </>
+        <OpenPopupConfig cfg={cfg} setCfg={setCfg} />
       )}
 
       {step.type === 'closeAllPopups' && (
-        <>
-          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Popup model</label>
-          <select style={S.fieldSelect}><option value="">Choose a popup model</option></select>
-        </>
+        <div style={{ marginTop: 10, fontSize: 11, color: '#6b7280', fontStyle: 'italic' }}>
+          Closes all currently open popup instances.
+        </div>
       )}
 
       {step.type === 'setFormState' && (

@@ -167,6 +167,30 @@ export interface BuilderStore {
   // ── Page state (active page working copy) ───────────────────────────────────
   pageNodes: SDUINode[];
 
+  // ── Popup edit mode ─────────────────────────────────────────────────────────
+  /** IDs of ALL popup models currently open for editing in the canvas */
+  editingPopupIds: string[];
+  /** The most-recently-opened editing popup — used for right-panel fallback */
+  editingPopupId: string | null;
+  /** Root content node map per popup being edited (keyed by modelId) */
+  editingPopupContentsMap: Record<string, SDUINode>;
+  /** Full popup model map per popup being edited (keyed by modelId) */
+  editingPopupModelsMap: Record<string, Record<string, unknown>>;
+  /** Convenience alias: content of the most-recently-opened popup (right-panel compat) */
+  editingPopupContent: SDUINode | null;
+  /** Convenience alias: model of the most-recently-opened popup (right-panel compat) */
+  editingPopupModel: Record<string, unknown> | null;
+  /** Original page nodes saved on the FIRST enterPopupEdit call; cleared when all popups are closed */
+  _savedPageNodes: SDUINode[] | null;
+  /** Enter popup-edit mode: appends popup to pageNodes; supports multiple concurrent popup edits */
+  enterPopupEdit: (modelId: string, content: SDUINode, model: Record<string, unknown>) => void;
+  /** Exit popup-edit mode for a specific popup (or the last opened if omitted).
+   *  Saves that popup to the API and removes its root node from pageNodes. */
+  exitPopupEdit: (modelId?: string) => void;
+  /** Save the current live state of a popup being edited to the API without exiting edit mode.
+   *  Called automatically on a debounce whenever pageNodes changes during popup edit. */
+  saveEditingPopup: (modelId: string) => void;
+
   // ── Selection ───────────────────────────────────────────────────────────────
   selectedIds: string[];
   hoveredId: string | null;

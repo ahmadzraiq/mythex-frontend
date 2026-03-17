@@ -47,11 +47,11 @@ import { FORMULA_FNS } from './formula-functions';
  *   - Plain JS expressions using named scopes: "variables['UUID'] > 0", "collections['UUID']?.data?.total"
  *   - Function calls: "if(variables['UUID'], null, variables['UUID2'])", "sum(1, 2, 3)"
  */
-export function evaluateFormula(formula: string | object, context: Record<string, unknown>): EvalResult {
+export function evaluateFormula(formula: string | object, context: Record<string, unknown>, ctxGet?: (path: string) => unknown): EvalResult {
   // { "expr": formula } — wrapper for inline formula; evaluate the inner expression
   if (typeof formula === 'object' && formula !== null && 'expr' in formula) {
     const inner = (formula as { expr: string | object }).expr;
-    return evaluateFormula(inner as string | object, context);
+    return evaluateFormula(inner as string | object, context, ctxGet);
   }
   // Non-string, non-expr object — not a supported formula type
   if (typeof formula === 'object' && formula !== null) {
@@ -82,7 +82,7 @@ export function evaluateFormula(formula: string | object, context: Record<string
     // get('path') is an escape hatch for arbitrary flat-key state access.
     // eslint-disable-next-line no-new-func
     const fn = new Function(
-      '__fns__', '__collections__', '__variables__', '__ctx__', '__globalCtx__', '__pages__', '__theme__', '__event__', '__state__',
+      '__fns__', '__collections__', '__variables__', '__ctx__', '__globalCtx__', '__pages__', '__theme__', '__event__', '__state__', '__ctxGet__',
       `"use strict"; ` +
       `const collections = __collections__ ?? {}; ` +
       `const variables = __variables__ ?? {}; ` +
@@ -95,7 +95,7 @@ export function evaluateFormula(formula: string | object, context: Record<string
       `const auth = (__state__ ?? {})['auth'] ?? {}; ` +
       `const _workflow = (__state__ ?? {})['_workflow'] ?? {}; ` +
       `const local = (__state__ ?? {})['local'] ?? {}; ` +
-      `const get = (p) => { if (!p || !__state__) return undefined; if (p in __state__) return __state__[p]; const parts = p.split('.'); let c = __state__; for (const k of parts) { if (c == null || typeof c !== 'object') return undefined; c = c[k]; } return c; }; ` +
+      `const get = (p) => { if (!p) return undefined; if (__ctxGet__) return __ctxGet__(p); if (!__state__) return undefined; if (p in __state__) return __state__[p]; const parts = p.split('.'); let c = __state__; for (const k of parts) { if (c == null || typeof c !== 'object') return undefined; c = c[k]; } return c; }; ` +
       `return (${processed});`
     );
     const value = fn(
@@ -108,6 +108,7 @@ export function evaluateFormula(formula: string | object, context: Record<string
       (context.theme ?? {}) as Record<string, unknown>,
       (context.event ?? {}) as Record<string, unknown>,
       context,
+      ctxGet ?? null,
     );
     return { value, error: null };
   } catch (e) {

@@ -165,7 +165,8 @@ const UNIVERSAL_TRIGGER_CATEGORIES: TriggerCategory[] = [
   {
     category: 'Other',
     options: [
-      { value: 'scroll', label: 'On scroll' },
+      { value: 'scroll',     label: 'On scroll' },
+      { value: 'escapeKey',  label: 'On Escape key' },
     ],
   },
   {
@@ -274,6 +275,7 @@ export function getTriggerIcon(value: string): React.ReactNode {
       return <TI.Fingerprint />;
     case 'scroll':
     case 'created':
+    case 'escapeKey':
       return <TI.Zap />;
     case 'mounted':
       return <TI.Rotate />;
@@ -364,6 +366,7 @@ export const ACTION_CATEGORIES: { category: string; items: ActionTypeDef[] }[] =
       { type: 'downloadFileFromUrl', label: 'Download file from URL', icon: '</>' },
       { type: 'createUrlFromBase64', label: 'Create URL from Base64', icon: '</>' },
       { type: 'encodeFileAsBase64', label: 'Encode file as Base64', icon: '</>' },
+      { type: 'animate', label: 'Trigger animation', icon: '✨' },
     ],
   },
   {

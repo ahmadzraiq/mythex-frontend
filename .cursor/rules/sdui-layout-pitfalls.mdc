@@ -1117,6 +1117,16 @@ The `text` template subscribes to `local.data.form.fields.fieldName.isValid`. Wh
 
 **Builder ID collision:** If you hardcode an `id` that was previously auto-generated for a DIFFERENT node (the builder stores positional-key → UUID in `localStorage`), the builder marks BOTH nodes as selected simultaneously. Prevent this by generating a fresh UUID for new FormContainers rather than re-using a previously auto-assigned one.
 
+**Builder Validation preview:** The `Validation` chip in the builder's StateBar works by scanning `merged.variables` for keys ending in `-form` and injecting mock `isValid` errors. This only works if the FormContainer has a stable `id` — without it, `formStoreKey = "fc-{random}-form"` changes on every mount and the validation state may fail to find the form's registered fields in time.
+
+```json
+// ✅ CORRECT — validation preview works; formStoreKey = "sign-in-form-form" (stable)
+{ "type": "FormContainer", "id": "sign-in-form", ... }
+
+// ❌ BAD — validation preview may show nothing; formStoreKey = "fc-{uuid}-form" (random)
+{ "type": "FormContainer", ... }
+```
+
 ---
 
 ### Rule 3 — `setFormState` workflow step must target the active FormContainer only
@@ -1220,3 +1230,179 @@ When a formula validation rule is created from JSON config (not via the builder)
 The builder's Settings panel uses a `FormulaValue` object (`{ formula: "..." }`) under the `formula` key. Both representations are valid; the builder normalises when the user opens and saves the formula editor.
 
 **Rule:** The engine reads the formula from `rule.formula ?? rule.value` — check both when implementing new validation-rule consumers.
+
+---
+
+## Screen `state` — Flat Keys Are NOT Accessible (By Design)
+
+**Problem:** Historically, putting values in a screen's `"state": { "myKey": ... }` spread them into the top-level merged state, making bare paths like `"map": "myKey"` or `"condition": "get('myKey')"` silently work. This was wrong — it hid missing variable declarations and let bad patterns accumulate.
+
+**Fix (enforced in engine):** `mergeConfigState` in `lib/sdui/merge-state.ts` no longer spreads `config.state` into the merged object. Only `meta` is exposed at the top level. Flat screen-state keys will return `undefined` everywhere — conditions will always be falsy, maps will always be empty arrays.
+
+**Rule:** `config.state` in screen JSON is intentionally dead for runtime resolution. All mutable state MUST be declared in `config/variables.json` with a UUID and accessed exclusively via `variables['UUID']`.
+
+```json
+// ❌ WRONG — flat screen state key; silently resolves to undefined/empty
+"map": "myItems"
+"map": { "expr": "myItems" }
+"condition": "get('myFlag')"
+
+// ✅ CORRECT — declared in variables.json, accessed by UUID
+"map": "variables['uuid-goes-here']"
+"condition": "variables?.['uuid-goes-here']"
+```
+
+**Note:** The engine's `useEffect` still writes screen `state` to the variable store at `screens.{configName}.*` — but nothing should read from those paths directly. Use `variables['UUID']` instead.
+
+---
+
+## Builder Workflow Canvas Empty — Action File Not Imported in Config API
+
+**Problem:** A workflow defined in `config/actions/my-feature.json` is opened in the builder's workflow canvas and shows as empty (only the trigger pill, no steps). The canvas correctly reads steps for actions from other files but not from this one.
+
+**Root cause:** `app/api/builder/config/route.ts` merges all action files into `allActions`. If a new action file is not imported and spread there, none of its workflows exist in the builder's `pageWorkflows` store → canvas has no steps to deserialize → empty canvas.
+
+**Fix:** Add the import and spread into `allActions` in `app/api/builder/config/route.ts`:
+
+```typescript
+// app/api/builder/config/route.ts
+import myFeatureActions from '@/config/actions/my-feature.json';
+
+const allActions = {
+  // ... existing imports ...
+  ...myFeatureActions as Record<string, Record<string, unknown>>,
+};
+```
+
+**Rule:** Every new `config/actions/*.json` file MUST be imported and spread into `allActions` in `app/api/builder/config/route.ts`. Without this, all workflows in that file are invisible to the builder — they won't appear in the canvas or the workflow list.
+
+---
+
+## `animation.imperativeTrigger.watchVar` — Formula Evaluation, Not Path Lookup
+
+**Problem:** A node with `animation.imperativeTrigger.watchVar: "variables['UUID']"` triggers an animation when a variable changes. The animation never fires even though the button workflow runs and the variable is confirmed to update.
+
+**Three compounding bugs (all fixed in engine):**
+
+### Bug 1 — `get()` cannot resolve bracket-notation formula strings
+`get()` → `getNestedValue()` splits by `.` and cannot parse `variables['UUID']` (bracket notation). It always returns `undefined`, so `AnimatedNode.watchVar` never gets a real value.
+
+**Fix (`lib/sdui/renderer.tsx`):** Use `evaluateFormula` (not `get`) to resolve `watchVar`:
+```typescript
+// ❌ WRONG — getNestedValue can't handle bracket notation
+const resolvedVal = get(itCfg.watchVar);
+
+// ✅ CORRECT — evaluateFormula handles "variables['UUID']" correctly
+const resolvedVal = evaluateFormula(itCfg.watchVar, stateWithScope).value;
+```
+
+### Bug 2 — Dependency extractor misses `watchVar` formula expressions
+`extractNodeDependencies` scans `node.props` recursively. When it hits a plain string like `"variables['UUID']"` (not a `{{template}}`), it calls `extractPathsFromTemplate` which only matches `{{...}}` patterns → returns `[]`. The renderer never subscribes to the variable → never re-renders when it changes → `evaluateFormula` always sees the initial value.
+
+**Fix (`lib/sdui/dependency-extractor.ts`):** Special-case `animation.imperativeTrigger.watchVar` and convert `"variables['UUID']"` to dot-notation `"variables.UUID"` so `useVariablePaths` / `getNestedValue` can subscribe:
+```typescript
+// Converts "variables['UUID']" → "variables.UUID" for subscription
+const m = wv.trim().match(/^variables\s*\[\s*['"]([^'"]+)['"]\s*\]$/);
+if (m) paths.push(`variables.${m[1]}`);
+```
+
+### Bug 3 — `watchVar` string is a formula expression, not a template
+`watchVar` in JSON must be a **formula expression** (`"variables['UUID']"`), not a template string (`"{{variables['UUID']}}"`). The renderer resolves it with `evaluateFormula`, which requires JS expression syntax. Template syntax would be treated as a literal string by `evaluateFormula`.
+
+**Rule:** `animation.imperativeTrigger.watchVar` must be a formula expression (e.g. `"variables['UUID']"`). The engine evaluates it on every render and passes the resolved value to `AnimatedNode`. `AnimatedNode` replays the animation when this value changes.
+
+```json
+// ✅ CORRECT — formula expression
+"imperativeTrigger": { "type": "shake", "duration": 500, "watchVar": "variables['my-uuid-here']" }
+
+// ❌ WRONG — template syntax (not evaluated as formula)
+"imperativeTrigger": { "type": "shake", "duration": 500, "watchVar": "{{variables['my-uuid-here']}}" }
+```
+
+**Trigger workflow:** Use `changeVariableValue` with `"value": { "formula": "Date.now()" }` to write a unique value on each click — this guarantees `watchVar` always changes even on repeated presses:
+```json
+{
+  "type": "changeVariableValue",
+  "config": { "variableName": "my-uuid-here", "value": { "formula": "Date.now()" } }
+}
+```
+
+---
+
+## Loop Animation — Three Critical Pitfalls
+
+### 1. `glowPulse` / `ripple` shadow invisible on light backgrounds
+
+**Problem:** The shadow color defaults to `rgba(255,255,255,opacity)` (white). On a white card background, a white glow = zero contrast → looks static even though the animation IS running.
+
+**Fix:** Always specify `loop.color` with a color that contrasts your card background. Default is purple-500 (`#a855f7`) which is visible on both light and dark backgrounds.
+
+```json
+// ❌ BAD — white glow on white card = invisible
+"loop": { "type": "glowPulse", "duration": 1500, "repeatCount": -1, "direction": "alternate" }
+
+// ✅ GOOD — color matches the element or contrasts the background
+"loop": { "type": "glowPulse", "duration": 1500, "repeatCount": -1, "direction": "alternate", "color": "#facc15" }
+```
+
+**Also** add `"outerStyle": { "borderRadius": N }` to make the shadow follow a rounded/circular element's shape (the outer `Animated.View` wrapper has no border-radius by default):
+
+```json
+"animation": {
+  "outerStyle": { "borderRadius": 9999 },
+  "loop": { "type": "glowPulse", "color": "#facc15", ... }
+}
+```
+
+### 2. `gradientDrift` moves the box instead of the gradient
+
+**Problem:** If `gradientDrift` animates `translateX` it physically moves the element. The correct effect drifts the `backgroundPosition` of an oversized gradient — the element stays still.
+
+**Fix:** The gradient must be on `animation.outerStyle` (not `props.style`) as `backgroundImage` + `backgroundSize`. The `Animated.View` wrapper (which Reanimated controls) then owns both the gradient AND the `backgroundPosition` animation.
+
+```json
+// ❌ BAD — gradient on props.style (inner Box); Reanimated can't reach it
+{
+  "props": {
+    "style": { "background": "linear-gradient(...)", "backgroundSize": "400% 100%" },
+    "animation": { "loop": { "type": "gradientDrift" } }
+  }
+}
+
+// ✅ GOOD — gradient on outerStyle (Animated.View wrapper); Reanimated owns it
+{
+  "props": {
+    "animation": {
+      "outerStyle": {
+        "backgroundImage": "linear-gradient(to right, #667eea, #764ba2, #f64f59, #c471ed, #667eea)",
+        "backgroundSize": "400% 100%",
+        "backgroundRepeat": "no-repeat",
+        "borderRadius": 8
+      },
+      "loop": { "type": "gradientDrift", "duration": 3000, "repeatCount": -1 }
+    }
+  }
+}
+```
+
+Use `backgroundImage` (not `background` shorthand) — it's a valid RNW style property and avoids shorthand reset issues.
+Use `"400% 100%"` for `backgroundSize` — wider than the element so the drift is visually obvious.
+
+### 3. Dedicated loop handlers must come BEFORE the `LOOP_ANIM` guard
+
+**Problem:** `lib/sdui/components/animated-node.tsx` loop `useEffect` checks `LOOP_ANIM[loop.type]` and calls `if (!mapping) return`. If a loop type has a dedicated handler block but is NOT in `LOOP_ANIM`, it returns early and the dedicated handler is never reached → animation is silently skipped.
+
+**Affected types:** `glowPulse`, `ripple`, `gradientDrift` — these have dedicated handler blocks. The three others (`glowPulse` and `ripple` also have placeholder entries in `LOOP_ANIM` as a safety net; `gradientDrift` does not).
+
+**Rule:** When adding a new dedicated loop handler in `animated-node.tsx`, place it **before** the `const mapping = LOOP_ANIM[loop.type]; if (!mapping) return;` guard:
+
+```ts
+// ✅ CORRECT order in the loop useEffect:
+if (loop.type === 'glowPulse')    { /* shadow anim */     return cleanup; }
+if (loop.type === 'ripple')       { /* shadow anim */     return cleanup; }
+if (loop.type === 'gradientDrift') { /* bgPosition anim */ return cleanup; }
+
+// THEN check LOOP_ANIM for generic types:
+const mapping = LOOP_ANIM[loop.type];
+if (!mapping) return;
+```

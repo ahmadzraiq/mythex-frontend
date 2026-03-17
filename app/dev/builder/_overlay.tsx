@@ -273,7 +273,7 @@ function SelectionBox({ rect, nodeId, onResizeStart, zoom, ringRef }: {
     <div
       ref={ringRef}
       data-testid="selection-ring"
-      style={{ position: 'absolute', left: rect.x, top: rect.y, width: rect.w, height: rect.h, border: '2px solid #3b82f6', pointerEvents: 'none', boxSizing: 'border-box' }}
+      style={{ position: 'absolute', left: rect.x, top: rect.y, width: rect.w, height: rect.h, boxShadow: '0 0 0 2px #3b82f6', pointerEvents: 'none', boxSizing: 'border-box' }}
     >
       {handles.map(handle => (
         <div
@@ -978,7 +978,7 @@ export default function BuilderOverlay({
         data-testid="hover-outline"
         style={{
           position: 'absolute', display: 'none',
-          border: '1px dashed rgba(59,130,246,0.7)',
+          boxShadow: '0 0 0 1px rgba(59,130,246,0.8)',
           pointerEvents: 'none', boxSizing: 'border-box',
         }}
       />

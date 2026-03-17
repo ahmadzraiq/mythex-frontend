@@ -33,9 +33,10 @@ import { LogicTab, type LogicSlideState } from './_logic-tab';
 
 
 // ─── Extracted modules ───────────────────────────────────────────────────────
-import { Chevron, NodeIcon, ContextMenu, LayerRow, LayerTree, type LayerRowProps, type ContextMenuProps } from './_layers-panel';
+import { Chevron, NodeIcon, ContextMenu, LayerRow, LayerTree, type LayerRowProps, type ContextMenuProps, type LayerDragState } from './_layers-panel';
 import { PRIMITIVE_COMPONENTS, SectionHeader, DraggablePrimitive, ComponentsTab } from './_components-tab';
 import { CustomVarsSection, VarsWorkflowsSection, VarsFormulasSection, VarsPanel } from './_vars-panel';
+import { PopupsTab } from './_popups-tab';
 
 
 // ─── Pages Tab ────────────────────────────────────────────────────────────────
@@ -458,7 +459,7 @@ function StoreTab({ embedded = false }: { embedded?: boolean }) {
 }
 
 function ActionsTab() {
-  const actions = app.actions as Record<string, { type: string }>;
+  const actions = app.actions as unknown as Record<string, { type: string }>;
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
@@ -533,7 +534,7 @@ function ActionsTab() {
 }
 
 function SourcesTab() {
-  const actions = app.actions as Record<string, { type: string; url?: string; method?: string; query?: string; endpoint?: string }>;
+  const actions = app.actions as unknown as Record<string, { type: string; url?: string; method?: string; query?: string; endpoint?: string }>;
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const sources = useMemo(() =>
     Object.entries(actions).filter(([, def]) => def.type === 'graphql' || def.type === 'fetch'),
@@ -798,24 +799,30 @@ export default function PanelLeft({
   onOpenPageConfig,
   onWidthChange,
 }: PanelLeftProps) {
-  const [tab, setTab] = useState<'layers' | 'components' | 'data' | 'logic'>('components');
+  const [tab, setTab] = useState<'layers' | 'components' | 'data' | 'logic' | 'popups'>('components');
   const [search, setSearch] = useState('');
   const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [layerDrag, setLayerDrag] = useState<LayerDragState>({ dragId: null, dropTargetId: null, dropPosition: 'above' });
 
   const store = useBuilderStore();
 
+  // (Removed: no longer auto-switching to layers when entering popup-edit mode)
+
   // Auto-expand ancestor nodes and scroll to the selected layer when canvas selection changes
   useEffect(() => {
     if (store.selectedIds.length !== 1) return;
     const targetId = store.selectedIds[0];
 
+    // Always search the full pageNodes tree so both page components and popup
+    // nodes are correctly expanded/scrolled-to when selected.
+    const searchRoot = store.pageNodes as SDUINode[];
+
     // Walk up ancestry and collect IDs to expand
     const idsToExpand: string[] = [];
-    let current: SDUINode | null = findNode(store.pageNodes as SDUINode[], targetId) ?? null;
+    let current: SDUINode | null = findNode(searchRoot, targetId) ?? null;
     while (current) {
       const currentId = (current as { id?: string }).id ?? '';
-      const parent = currentId ? findParentNode(store.pageNodes as SDUINode[], currentId) : null;
+      const parent = currentId ? findParentNode(searchRoot, currentId) : null;
       if (!parent) break;
       const parentId = (parent as { id?: string }).id ?? '';
       if (parentId && !store.expandedIds.has(parentId)) {
@@ -828,8 +835,7 @@ export default function PanelLeft({
       store.setExpandedIds(new Set([...store.expandedIds, ...idsToExpand]));
     }
 
-    // Switch to layers tab and scroll selected row into view after next paint
-    setTab('layers');
+    // Scroll the selected layer row into view (only if already on the layers tab)
     requestAnimationFrame(() => {
       document.querySelector(`[data-node-id="${CSS.escape(targetId)}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     });
@@ -885,8 +891,12 @@ export default function PanelLeft({
     setLayerDrag({ dragId: null, dropTargetId: null, dropPosition: 'above' });
   }, [layerDrag, store]);
 
+  // Show all pageNodes — in popup-edit mode this includes both the original page
+  // components AND the popup root appended at the end, so both are visible in layers.
+  const baseNodes = store.pageNodes as SDUINode[];
+
   const filteredNodes = useMemo(() => {
-    if (!search.trim()) return store.pageNodes;
+    if (!search.trim()) return baseNodes;
     const q = search.toLowerCase();
     const filterTree = (nodes: SDUINode[]): SDUINode[] =>
       nodes.reduce<SDUINode[]>((acc, n) => {
@@ -897,8 +907,9 @@ export default function PanelLeft({
         }
         return acc;
       }, []);
-    return filterTree(store.pageNodes as SDUINode[]);
-  }, [store.pageNodes, search]);
+    return filterTree(baseNodes);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseNodes, search]);
 
   const ctxHandlers = useMemo(() => ({
     show: (id: string, x: number, y: number) => setContextMenu({ id, x, y }),
@@ -910,26 +921,28 @@ export default function PanelLeft({
 
   return (
     <div data-testid="panel-left" style={{ width: 240, height: '100%', display: 'flex', flexDirection: 'column', background: '#111827', borderRight: '1px solid #1f2937', overflow: 'hidden' }}>
-      {/* Page settings bar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 8px', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-        <span style={{ fontSize: 10, opacity: 0.5, flexShrink: 0 }}>📄</span>
-        <span style={{ flex: 1, fontSize: 11, color: '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {currentPageName}
-        </span>
-        <button
-          data-testid="page-config-btn"
-          onClick={onOpenPageConfig}
-          title="Page settings (name, SEO meta, interactions)"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 14, padding: '2px 4px', borderRadius: 3, flexShrink: 0 }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#d1d5db')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
-        >
-          ⚙
-        </button>
-      </div>
+      {/* Page settings bar — always shows current page */}
+      {(
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 8px', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
+          <span style={{ fontSize: 10, opacity: 0.5, flexShrink: 0 }}>📄</span>
+          <span style={{ flex: 1, fontSize: 11, color: '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {currentPageName}
+          </span>
+          <button
+            data-testid="page-config-btn"
+            onClick={onOpenPageConfig}
+            title="Page settings (name, SEO meta, interactions)"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 14, padding: '2px 4px', borderRadius: 3, flexShrink: 0 }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#d1d5db')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+          >
+            ⚙
+          </button>
+        </div>
+      )}
       {/* Tab bar */}
       <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-        {(['layers', 'components', 'data', 'logic'] as const).map(t => (
+        {(['layers', 'components', 'data', 'logic', 'popups'] as const).map(t => (
           <button
             key={t}
             data-testid={`tab-${t}`}
@@ -967,7 +980,7 @@ export default function PanelLeft({
           {/* Empty state */}
           {filteredNodes.length === 0 && (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4b5563', fontSize: 12, textAlign: 'center', padding: 16 }}>
-              {store.pageNodes.length === 0
+              {baseNodes.length === 0
                 ? 'Drop a component to get started'
                 : 'No layers match your search'}
             </div>
@@ -1002,6 +1015,8 @@ export default function PanelLeft({
       {tab === 'data' && <DataTab onSetSlide={onSetDataSlide} onWidthChange={onWidthChange} />}
 
       {tab === 'logic' && <LogicTab onSetSlide={onSetLogicSlide} />}
+
+      {tab === 'popups' && <PopupsTab />}
 
       {/* Context menu */}
       {contextMenu && (

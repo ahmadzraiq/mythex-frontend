@@ -66,7 +66,7 @@ export const setVarHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef
           context: (ctx.scope?.context ?? (vsData['context'] as Record<string, unknown> | undefined) ?? {}) as Record<string, unknown>,
           event: (ctx.event as Record<string, unknown> | undefined) ?? {},
         };
-        value = evaluateFormula(obj.formula, evalCtx).value ?? null;
+        value = evaluateFormula(obj.formula, evalCtx, ctx.get).value ?? null;
       } else {
         value = resolvePayload(obj, ctx.get, ctx.scope);
       }

@@ -196,25 +196,6 @@ export function applyAutofill(
 }
 
 /**
- * Applies visual disabled styling to interactive nodes when the builder's
- * `_preview_disabled` flag is set on the merged state.
- */
-export function applyDisabledPreview(
-  node: SDUINode,
-  cleanProps: Record<string, unknown>,
-  merged: Record<string, unknown>,
-  builderMode: boolean,
-): void {
-  if (!builderMode || !(merged as Record<string, unknown> | null | undefined)?._preview_disabled) return;
-  if (!INTERACTIVE_TYPES.has(node.type)) return;
-  cleanProps.disabled = true;
-  cleanProps.className = mergeTailwindClasses(
-    (cleanProps.className as string) ?? '',
-    'opacity-50 pointer-events-none'
-  );
-}
-
-/**
  * Injects controlled `value` and `isChecked` props from the variable store onto
  * the component. Only sets them when not already provided by the node's own props.
  */

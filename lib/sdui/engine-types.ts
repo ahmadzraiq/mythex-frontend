@@ -96,6 +96,15 @@ export interface SDUIEngineProps {
   /** When true, annotates every rendered node with data-builder-* attributes.
    *  Used by /dev/builder. */
   builderMode?: boolean;
+  /** When false, suppresses PopupRenderer — use on inactive builder pages so
+   *  popup previews only appear on the active page canvas. Default: true. */
+  showPopups?: boolean;
+  /** In builder mode, caps the popup overlay height to the canvas viewport
+   *  (e.g. 900) so it doesn't cover the full scrollable page height. */
+  builderViewportHeight?: number;
+  /** Live popup model map injected by the builder so in-memory edits are
+   *  immediately visible in PopupRenderer without writing to disk. */
+  popupModels?: Record<string, unknown>;
   /** Active preview state name (e.g. 'hover', 'loading', 'error', 'empty').
    *  When set in builder mode, applies _stateOverrides and state patches. */
   previewState?: string;

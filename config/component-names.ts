@@ -19,7 +19,6 @@ export const COMPONENT_NAMES = [
   'Spinner',
   'Button',
   'ButtonText',
-  'ButtonIcon',
   'ButtonSpinner',
   'NextImage',
   'Image',

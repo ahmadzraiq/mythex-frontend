@@ -797,6 +797,64 @@
       "type": "string",
       "initialValue": "",
       "folder": "WA Tests"
+    },
+    "anim-0000-0000-0000-000000000001": {
+      "label": "Anim Show Exit",
+      "type": "boolean",
+      "initialValue": true,
+      "folder": "Animation Test"
+    },
+    "anim-0000-0000-0000-000000000002": {
+      "label": "Anim Layout Items",
+      "type": "array",
+      "initialValue": [
+        { "id": "li-1", "label": "Item 1" },
+        { "id": "li-2", "label": "Item 2" },
+        { "id": "li-3", "label": "Item 3" }
+      ],
+      "folder": "Animation Test"
+    },
+    "anim-0000-0000-0000-000000000003": {
+      "label": "Anim Stagger Items",
+      "type": "array",
+      "initialValue": [
+        { "id": "s-1", "label": "First staggered item", "index": "1", "color": "#3b82f6" },
+        { "id": "s-2", "label": "Second staggered item", "index": "2", "color": "#8b5cf6" },
+        { "id": "s-3", "label": "Third staggered item", "index": "3", "color": "#ec4899" },
+        { "id": "s-4", "label": "Fourth staggered item", "index": "4", "color": "#f59e0b" },
+        { "id": "s-5", "label": "Fifth staggered item", "index": "5", "color": "#10b981" }
+      ],
+      "folder": "Animation Test"
+    },
+    "anim-0000-0000-0000-000000000004": {
+      "label": "Anim Shake Trigger",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Animation Test"
+    },
+    "anim-0000-0000-0000-000000000005": {
+      "label": "Anim Exit Leaving",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Animation Test"
+    },
+    "anim-0000-0000-0000-00000000p011": {
+      "label": "Phase 11 Anim State",
+      "type": "string",
+      "initialValue": "idle",
+      "folder": "Animation Test"
+    },
+    "anim-0000-0000-0000-00000000p008": {
+      "label": "Phase 8 Panel Index",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Animation Test"
+    },
+    "popup-test-0000-0000-0000-wait-result": {
+      "label": "Popup Wait Close Result",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Popup Test"
     }
   },
   "varFolders": [
@@ -855,6 +913,14 @@
     {
       "id": "WA Tests",
       "label": "WA Tests"
+    },
+    {
+      "id": "Animation Test",
+      "label": "Animation Test"
+    },
+    {
+      "id": "Popup Test",
+      "label": "Popup Test"
     }
   ]
 }

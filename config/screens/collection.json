@@ -15,6 +15,7 @@
       },
       {
         "type": "Box",
+        "_stateTag": "default",
         "_meta": {
           "section": "collection-grid",
           "description": "Filters sidebar + sort bar + product grid"

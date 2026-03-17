@@ -19,6 +19,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useBuilderStore, findNode, findParentNode, type DataSourceConfig, type CustomVar, type SDUINode } from './_store';
+import { getPopups } from '@/lib/builder/popup-data';
 import { useSduiStore } from '@/store/sdui-store';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 import routesConfig from '@/config/routes.json';
@@ -99,7 +100,7 @@ const TYPE_BADGE_COLOR: Record<string, string> = {
 export interface VarRowItem {
   formulaPath: string;
   displayLabel: string;
-  type: 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'event';
+  type: 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'event' | 'popup';
   typeName: string;
   /** Sub-items for expandable types (form fields, object keys, etc.) */
   children?: VarRowItem[];
@@ -2255,3 +2256,126 @@ function EventFieldGroup({
   );
 }
 
+// ─── PopupContextSection ─────────────────────────────────────────────────────
+// Shown in the "Quick" tab when the selected node is inside a popup being edited.
+// Renders three groups matching the WeWeb design:
+//   PROPERTIES — one chip per defined popup property  → context.component?.props?.['<id>']
+//   LOCAL       — instancesCount / index / totalCount  → context.local.data?.['popup']?.['index']
+//   INSTANCE    — thisInstance (runtime props object)  → context.local.data?.['popup']?.['props']
+
+// Amber — matches CHIP_STYLE.popup in _formula-editor-dom.ts
+const POPUP_CHIP = { bg: '#78350f', border: '#d97706', text: '#fde68a' };
+
+function PopupPropChip({
+  icon, label, value, onInsert, formula,
+}: {
+  icon: string; label: string; value?: unknown;
+  formula: string;
+  onInsert: (f: string, l: string, t: VarRowItem['type']) => void;
+}) {
+  const displayVal = value === undefined ? undefined
+    : typeof value === 'object' ? JSON.stringify(value)
+    : String(value);
+
+  return (
+    <div
+      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 10px 3px 22px', cursor: 'default' }}
+      onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = '#0f1929')}
+      onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
+    >
+      <span
+      onClick={() => onInsert(formula, label, 'popup')}
+      title={formula}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 4,
+          background: POPUP_CHIP.bg, border: `1px solid ${POPUP_CHIP.border}`,
+          borderRadius: 4, padding: '1px 6px', cursor: 'pointer', userSelect: 'none',
+          fontSize: 11, color: POPUP_CHIP.text, fontWeight: 500,
+        }}
+      >
+        <span style={{ fontSize: 9, opacity: 0.8 }}>{icon}</span>
+        {label}
+      </span>
+      {displayVal !== undefined && (
+        <span style={{ fontSize: 11, color: '#64748b', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>
+          {displayVal}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function PopupSectionHeader({ label, open, onToggle }: { label: string; open: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
+    >
+      <span style={{ color: '#6b7280', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
+      <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' }}>{label}</span>
+    </button>
+  );
+}
+
+export function PopupContextSection({
+  onInsert,
+}: {
+  onInsert: (formulaPath: string, displayLabel: string, type: VarRowItem['type']) => void;
+}) {
+  const editingPopupId = useBuilderStore(s => s.editingPopupId);
+  const editingPopupModelsMap = useBuilderStore(s => s.editingPopupModelsMap);
+
+  const [propsOpen, setPropsOpen] = useState(true);
+  const [localOpen, setLocalOpen] = useState(true);
+
+  const popupModel = useMemo(() => {
+    if (!editingPopupId) return null;
+    // Prefer fresh in-memory model (captures renames done while popup is open)
+    const live = getPopups()[editingPopupId];
+    return live ?? (editingPopupModelsMap[editingPopupId] as { properties?: Array<{ id: string; name: string; defaultValue?: unknown }> } | undefined) ?? null;
+  }, [editingPopupId, editingPopupModelsMap]);
+
+  if (!popupModel) return null;
+
+  const properties = (popupModel as { properties?: Array<{ id: string; name: string; defaultValue?: unknown }> }).properties ?? [];
+
+  return (
+    <div style={{ borderTop: '1px solid #1f2937' }}>
+      {/* PROPERTIES */}
+      <PopupSectionHeader label="Properties" open={propsOpen} onToggle={() => setPropsOpen(o => !o)} />
+      {propsOpen && (
+        <div style={{ paddingBottom: 4 }}>
+          {properties.length === 0 ? (
+            <div style={{ padding: '2px 22px 6px', fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>No properties defined</div>
+          ) : properties.map(prop => (
+            <PopupPropChip
+              key={prop.id}
+              icon="T"
+              label={prop.name}
+              value={prop.defaultValue}
+              formula={`context.component?.props?.['${prop.id}']`}
+              onInsert={onInsert}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* LOCAL */}
+      <PopupSectionHeader label="Local" open={localOpen} onToggle={() => setLocalOpen(o => !o)} />
+      {localOpen && (
+        <div style={{ paddingBottom: 4 }}>
+          {[
+            { icon: '#', label: 'instancesCount', value: 1,   formula: `context.local.data?.['popup']?.['instancesCount']` },
+            { icon: '#', label: 'index',           value: 0,   formula: `context.local.data?.['popup']?.['index']` },
+            { icon: '#', label: 'totalCount',      value: 1,   formula: `context.local.data?.['popup']?.['totalCount']` },
+          ].map(item => (
+            <PopupPropChip key={item.label} icon={item.icon} label={item.label} value={item.value} formula={item.formula} onInsert={onInsert} />
+          ))}
+        </div>
+      )}
+
+    </div>
+  );
+}

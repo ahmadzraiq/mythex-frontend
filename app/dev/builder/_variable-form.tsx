@@ -13,8 +13,13 @@
  *  - TYPE_BADGE_COLORS    — badge color mapping by type
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, lazy, Suspense } from 'react';
 import ReactDOM from 'react-dom';
+import { json } from '@codemirror/lang-json';
+import { oneDark } from '@codemirror/theme-one-dark';
+import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
+
+const CodeMirror = lazy(() => import('@uiw/react-codemirror'));
 import { useBuilderStore, type CustomVar } from './_store';
 import { SP_BTN_PRIMARY, SP_BTN_SECONDARY, SP_INPUT, SP_LABEL } from './_slide-panel';
 import { BindingIcon } from './_formula-panel';

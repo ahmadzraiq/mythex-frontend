@@ -14,14 +14,23 @@ type StoreState = {
 
 type ComputedDef = { output: string; expr: object };
 
-/** Merge config state and meta into base merged object */
+/**
+ * Merge config meta into the base merged object.
+ *
+ * NOTE: config.state (screen-level state) is intentionally NOT spread here.
+ * All mutable state must be declared in config/variables.json and accessed via
+ * variables['UUID']. Spreading screen state as flat top-level keys allowed bare
+ * paths (e.g. "animShowExit") to silently resolve without a declaration — that
+ * pattern is forbidden. Screen state is still written to the variable store at
+ * screens.{configName}.* via the engine's useEffect, but nothing should read
+ * from those paths directly.
+ */
 export function mergeConfigState(
-  merged: Record<string, unknown>,
-  configState: Record<string, unknown> | undefined,
+  _merged: Record<string, unknown>,
+  _configState: Record<string, unknown> | undefined,
   meta: Record<string, unknown> | undefined
 ): Record<string, unknown> {
   return {
-    ...(configState ?? {}),
     ...(meta ? { meta } : {}),
   } as Record<string, unknown>;
 }

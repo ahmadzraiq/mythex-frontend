@@ -16,7 +16,7 @@ import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 
 // Interactive
-import { Button, ButtonText, ButtonIcon, ButtonSpinner } from '@/components/ui/button';
+import { Button, ButtonText, ButtonSpinner } from '@/components/ui/button';
 import { Pressable } from '@/components/ui/pressable';
 import { Link, LinkText } from '@/components/ui/link';
 
@@ -25,35 +25,9 @@ import { Spinner } from '@/components/ui/spinner';
 import { Divider } from '@/components/ui/divider';
 import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
 
-// Overlay
-import {
-  Drawer,
-  DrawerBackdrop,
-  DrawerContent,
-  DrawerHeader,
-  DrawerBody,
-  DrawerFooter,
-  DrawerCloseButton,
-} from '@/components/ui/drawer';
-import {
-  Modal,
-  ModalBackdrop,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ModalCloseButton,
-} from '@/components/ui/modal';
+// Overlay — only Tooltip and Menu remain; Modal/Drawer/Popover/AlertDialog/Actionsheet
+// are replaced by the generic popup system (see lib/sdui/popup-store.ts + PopupRenderer).
 import { Tooltip, TooltipContent, TooltipText } from '@/components/ui/tooltip';
-import {
-  Popover,
-  PopoverBackdrop,
-  PopoverContent,
-  PopoverHeader,
-  PopoverBody,
-  PopoverFooter,
-  PopoverCloseButton,
-} from '@/components/ui/popover';
 import { Menu, MenuItem, MenuItemLabel, MenuSeparator } from '@/components/ui/menu';
 
 // Form
@@ -82,6 +56,24 @@ import { Icon } from '@/components/ui/icon';
 import { View } from '@/components/ui/view';
 import { NavIcon } from './icons';
 import { NextImage, HtmlContent, InputWithField } from './components';
+import LottiePlayer from './components/LottiePlayer';
+import Video from './components/Video';
+
+// SVG primitive wrappers — let users build any SVG from JSON nodes
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const makeSvgEl = (tag: string) => (props: any) => React.createElement(tag, props);
+const SvgEl          = makeSvgEl('svg');
+const SvgPath        = makeSvgEl('path');
+const SvgCircle      = makeSvgEl('circle');
+const SvgRect        = makeSvgEl('rect');
+const SvgEllipse     = makeSvgEl('ellipse');
+const SvgLine        = makeSvgEl('line');
+const SvgPolygon     = makeSvgEl('polygon');
+const SvgPolyline    = makeSvgEl('polyline');
+const SvgG           = makeSvgEl('g');
+const SvgDefs        = makeSvgEl('defs');
+const SvgAnimate     = makeSvgEl('animate');
+const SvgAnimateTransform = makeSvgEl('animateTransform');
 import { FormContainer } from './components/FormContainer';
 import DatePicker from './components/DatePicker';
 import TimePicker from './components/TimePicker';
@@ -110,34 +102,6 @@ import {
   AccordionIcon,
   AccordionContent,
 } from '@/components/ui/accordion';
-
-// Actionsheet
-import {
-  Actionsheet,
-  ActionsheetContent,
-  ActionsheetItem,
-  ActionsheetItemText,
-  ActionsheetDragIndicator,
-  ActionsheetDragIndicatorWrapper,
-  ActionsheetBackdrop,
-  ActionsheetScrollView,
-  ActionsheetIcon,
-  ActionsheetVirtualizedList,
-  ActionsheetFlatList,
-  ActionsheetSectionList,
-  ActionsheetSectionHeaderText,
-} from '@/components/ui/actionsheet';
-
-// AlertDialog
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogCloseButton,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogBody,
-  AlertDialogBackdrop,
-} from '@/components/ui/alert-dialog';
 
 // Select
 import {
@@ -191,7 +155,6 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   Spinner,
   Button,
   ButtonText,
-  ButtonIcon,
   ButtonSpinner,
   NextImage,
   Image: UIImage,
@@ -204,30 +167,9 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   InputField: InputField,
   InputIcon,
   InputSlot,
-  Drawer,
-  DrawerBackdrop,
-  DrawerContent,
-  DrawerHeader,
-  DrawerBody,
-  DrawerFooter,
-  DrawerCloseButton,
-  Modal,
-  ModalBackdrop,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ModalCloseButton,
   Tooltip,
   TooltipContent,
   TooltipText,
-  Popover,
-  PopoverBackdrop,
-  PopoverContent,
-  PopoverHeader,
-  PopoverBody,
-  PopoverFooter,
-  PopoverCloseButton,
   Menu,
   MenuItem,
   MenuItemLabel,
@@ -263,6 +205,21 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   View,
   Icon,
   NavIcon,
+  LottiePlayer,
+  Video,
+  // SVG primitives — compose any SVG via JSON nodes
+  svg: SvgEl,
+  path: SvgPath,
+  circle: SvgCircle,
+  rect: SvgRect,
+  ellipse: SvgEllipse,
+  line: SvgLine,
+  polygon: SvgPolygon,
+  polyline: SvgPolyline,
+  g: SvgG,
+  defs: SvgDefs,
+  animate: SvgAnimate,
+  animateTransform: SvgAnimateTransform,
   Carousel,
   CarouselSlide,
   Accordion,
@@ -273,26 +230,6 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   AccordionContentText,
   AccordionIcon,
   AccordionContent,
-  Actionsheet,
-  ActionsheetContent,
-  ActionsheetItem,
-  ActionsheetItemText,
-  ActionsheetDragIndicator,
-  ActionsheetDragIndicatorWrapper,
-  ActionsheetBackdrop,
-  ActionsheetScrollView,
-  ActionsheetIcon,
-  ActionsheetVirtualizedList,
-  ActionsheetFlatList,
-  ActionsheetSectionList,
-  ActionsheetSectionHeaderText,
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogCloseButton,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogBody,
-  AlertDialogBackdrop,
   Select,
   SelectTrigger,
   SelectInput,

@@ -20,7 +20,6 @@ export type SDUIComponentType =
   | 'Icon'
   | 'Button'
   | 'ButtonText'
-  | 'ButtonIcon'
   | 'ButtonSpinner'
   | 'Card'
   | 'Heading'

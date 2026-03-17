@@ -28,6 +28,7 @@ import {
   mergeAtPathHandler,
 } from './misc-handlers';
 import { workflowStepsHandler } from './workflow-steps-handler';
+import { openPopupHandler, closeAllPopupsHandler } from './popup-handlers';
 
 type HandlerFactory = (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<unknown>;
 
@@ -58,6 +59,9 @@ export const ACTION_HANDLERS: Record<string, HandlerFactory> = {
   submitForm: submitFormHandler,
   // Visual workflow canvas step runner
   workflowSteps: workflowStepsHandler,
+  // Popup actions
+  openPopup: openPopupHandler,
+  closeAllPopups: closeAllPopupsHandler,
 };
 
 /**

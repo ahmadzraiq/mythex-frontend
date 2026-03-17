@@ -16,7 +16,7 @@ import {
   VIEWPORT_H,
   CanvasContextMenu, type CanvasCtxMenuProps,
   ZoomBtn, EmptyCanvas,
-  PageEngine, InactivePageEngine,
+  PageEngine, InactivePagesGrid,
 } from './_canvas-helpers';
 import { useBuilderStore, findNode, findParentNode, VIEWPORT_WIDTHS, REQUIRED_PARENT, ALLOWED_CHILDREN } from './_store';
 import { useCanvasPanZoom, MIN_ZOOM, MAX_ZOOM, PAGE_GAP } from './_canvas-hooks';
@@ -28,6 +28,9 @@ import type { SDUINode } from '@/lib/sdui/types/node';
 import { computeSnap, snapResizeSize, SNAP_THRESHOLD, type SnapGuide, type ContentRect } from './_snap-engine';
 import { removeTwToken } from './_tw-utils';
 import { StateBar } from './_state-bar';
+import { applyStateTagOverrides } from '@/lib/sdui/builder-preview';
+
+/** Stable 'normal' preview-state array passed to inactive pages — never changes reference. */
 
 /** Node types that act as containers and accept dropped children. */
 // Keep in sync with isContainer in _panel-right.tsx
@@ -138,6 +141,7 @@ export default function BuilderCanvas() {
     pageWorkflows,
     pageWorkflowMeta,
     globalWorkflows,
+    editingPopupId,
   } = useBuilderStore();
 
   // ── Pan / Zoom hook ───────────────────────────────────────────────────────
@@ -488,19 +492,32 @@ export default function BuilderCanvas() {
 
   // ── Build SDUI config ────────────────────────────────────────────────────
 
+  // Apply state-tag-based show/hide overrides when loading/empty/disabled is active.
+  // This produces a display-only clone of the node tree — pageNodes is never mutated.
+  const displayNodes = useMemo<SDUINode[]>(() => {
+    const needsOverrides = activePreviewStates.some(
+      s => s === 'loading' || s === 'empty' || s === 'disabled'
+    );
+    if (!needsOverrides) return pageNodes as SDUINode[];
+    return applyStateTagOverrides(pageNodes as SDUINode[], activePreviewStates);
+  }, [pageNodes, activePreviewStates]);
+
   const pageConfig = useMemo<SDUIConfig>(() => {
     // Include the screen's state (form fields, errors, etc.) so preview states like
     // "validation" can find the form fields and inject per-field error messages.
     const screenState = (app.screens?.[currentPageConfigName] as { state?: Record<string, unknown> } | undefined)?.state ?? {};
+
     return {
       state: screenState,
       ui: {
         type: 'Box',
+        // 'relative' is needed so the absolutely-positioned popup overlay node
+        // (added to pageNodes during popup edit mode) renders at the correct position.
         props: { className: 'flex flex-col w-full min-h-screen items-start relative' },
-        children: pageNodes,
+        children: displayNodes,
       } as SDUIConfig['ui'],
     };
-  }, [pageNodes, currentPageConfigName]);
+  }, [displayNodes, currentPageConfigName]);
 
   // ── Merged actions config for the preview engine ─────────────────────────
   // pageWorkflows + globalWorkflows are defined in the builder store but NOT in
@@ -1561,49 +1578,9 @@ export default function BuilderCanvas() {
           transform: `translate(${panX}px, ${panY}px) scale(${zoom})`,
         }}
       >
-        {/* ── All inactive page frames (behind the active one) ── */}
-        {pages.filter(p => p.id !== currentPageId).map(page => {
-          const absIdx = pages.findIndex(pg => pg.id === page.id);
-          const worldLeft = absIdx * (vpWidth + PAGE_GAP);
-          return (
-            <React.Fragment key={page.id}>
-              {/* Page name label */}
-              <div style={{ position: 'absolute', left: worldLeft, top: -26, fontSize: 11, color: '#9ca3af', pointerEvents: 'none', userSelect: 'none', fontFamily: 'system-ui', whiteSpace: 'nowrap', display: 'flex', gap: 6, alignItems: 'baseline' }}>
-                <span style={{ fontWeight: 500 }}>{page.name}</span>
-                {page.route && <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#4b5563' }}>{page.route}</span>}
-                <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#374151' }}>{vpWidth}px</span>
-              </div>
-              {/* Frame */}
-              <div
-                data-builder-page-id={page.id}
-                style={{
-                  position: 'absolute',
-                  left: worldLeft,
-                  top: 0,
-                  width: vpWidth,
-                  minHeight: VIEWPORT_H,
-                  background: '#ffffff',
-                  overflow: 'hidden',
-                  boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
-                  // Each page frame must be its own CSS transform ancestor so that
-                  // position:fixed children (e.g. navbar) are contained within this
-                  // frame rather than escaping to the worldRef transform container.
-                  transform: 'translateZ(0)',
-                }}
-              >
-                <InactivePageEngine
-                  pageId={page.id}
-                  configName={page.name || 'page'}
-                  nodes={page.nodes as SDUINode[]}
-                  previewStates={activePreviewStates}
-                  previewData={undefined}
-                />
-                {/* Fold line */}
-                <div data-builder-overlay="fold-line" style={{ position: 'absolute', left: 0, right: 0, top: VIEWPORT_H, height: 0, borderTop: '1.5px dashed rgba(99,130,246,0.3)', pointerEvents: 'none', zIndex: 9990 }} />
-              </div>
-            </React.Fragment>
-          );
-        })}
+        {/* ── All inactive page frames — isolated component; does NOT re-render
+              on hover/select changes in the active page, only on pages/state changes ── */}
+        <InactivePagesGrid vpWidth={vpWidth} PAGE_GAP={PAGE_GAP} />
 
         {/* ── Active page — label ── */}
         {(() => {
@@ -1642,6 +1619,7 @@ export default function BuilderCanvas() {
           previewStates={activePreviewStates}
           previewData={undefined}
           actionsConfig={previewActionsConfig}
+          showPopups={!editingPopupId}
         />
 
         {/* Viewport fold line — dashed line marking where the viewport ends.

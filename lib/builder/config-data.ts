@@ -1,6 +1,11 @@
-import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
+/**
+ * Builder config data — pure client-side, no server required.
+ *
+ * Reads statically-imported JSON configs and returns the same shape that the
+ * old /api/builder/config GET endpoint returned.  The `addVariable` helper
+ * is also in-memory only (changes do not persist to disk).
+ */
+
 import dataSourcesJson from '@/config/datasources.json';
 import variablesJson from '@/config/variables.json';
 import authActions from '@/config/actions/auth.json';
@@ -10,17 +15,24 @@ import accountActions from '@/config/actions/account.json';
 import productsActions from '@/config/actions/products.json';
 import layoutActions from '@/config/actions/layout.json';
 import workflowTestActions from '@/config/actions/workflow-test.json';
+import animationTestActions from '@/config/actions/animation-test.json';
+import popupTestActions from '@/config/actions/popup-test.json';
 import dsActionsJson from '@/config/actions/datasource-actions.json';
 import type { NamedDataSourceDef } from '@/config/datasource-types';
 
-/**
- * GET /api/builder/config
- * Returns config that the builder pre-populates from (data sources, variables, folders, etc.)
- */
-export async function GET() {
+// ── In-memory variable additions (lost on reload) ─────────────────────────────
+
+let _extraVariables: Array<{ id: string; [k: string]: unknown }> = [];
+
+export function addVariable(id: string, variable: Record<string, unknown>) {
+  _extraVariables = [..._extraVariables, { id, ...variable }];
+}
+
+// ── Main builder config ───────────────────────────────────────────────────────
+
+export function getBuilderConfig() {
   const dataSources = dataSourcesJson as Record<string, NamedDataSourceDef>;
 
-  // Build a stable map of folder name → folder id from config sources
   const folderNameToId = new Map<string, string>();
   for (const def of Object.values(dataSources)) {
     if (def.folder && !folderNameToId.has(def.folder)) {
@@ -28,7 +40,6 @@ export async function GET() {
     }
   }
 
-  // key = UUID (both id and storeIn), def.label = display name
   const dataSourceList = Object.entries(dataSources).map(([uuid, def]) => {
     const folderId = def.folder ? folderNameToId.get(def.folder) : undefined;
     const base = {
@@ -60,7 +71,6 @@ export async function GET() {
       };
     }
 
-    // REST
     const headersArr = Array.isArray(def.headers)
       ? def.headers
       : def.headers
@@ -80,14 +90,12 @@ export async function GET() {
     };
   });
 
-  // Build folder list in display order (order of first appearance in datasources.json)
   const dsFolders = Array.from(folderNameToId.entries()).map(([name, id]) => ({
     id,
     name,
     parentId: null as string | null,
   }));
 
-  // Build variables list from config/variables.json
   type VarDef = {
     label?: string;
     type?: string;
@@ -96,7 +104,7 @@ export async function GET() {
     fields?: Array<{ name: string; type?: string; initialValue?: unknown; validation?: Record<string, unknown> }>;
   };
   const varsConfig = variablesJson as { variables: Record<string, VarDef>; varFolders: Array<{ id: string; label: string }> };
-  const variables = Object.entries(varsConfig.variables ?? {}).map(([uuid, def]) => ({
+  const configVariables = Object.entries(varsConfig.variables ?? {}).map(([uuid, def]) => ({
     id: uuid,
     label: def.label ?? uuid,
     type: def.type ?? 'string',
@@ -106,42 +114,42 @@ export async function GET() {
     _fromConfig: true,
   }));
 
+  const variables = [
+    ...configVariables,
+    ..._extraVariables.map(v => ({ ...v, _fromConfig: false })),
+  ];
+
   const varFolders = (varsConfig.varFolders ?? []).map(f => ({
     id: f.id,
     label: f.label,
   }));
 
-  // ── Named workflows from config/actions/*.json ────────────────────────────
   const allActions: Record<string, Record<string, unknown>> = {
-    ...authActions as Record<string, Record<string, unknown>>,
-    ...cartActions as Record<string, Record<string, unknown>>,
-    ...checkoutActions as Record<string, Record<string, unknown>>,
-    ...accountActions as Record<string, Record<string, unknown>>,
-    ...productsActions as Record<string, Record<string, unknown>>,
-    ...layoutActions as Record<string, Record<string, unknown>>,
-    ...workflowTestActions as Record<string, Record<string, unknown>>,
+    ...(authActions as Record<string, Record<string, unknown>>),
+    ...(cartActions as Record<string, Record<string, unknown>>),
+    ...(checkoutActions as Record<string, Record<string, unknown>>),
+    ...(accountActions as Record<string, Record<string, unknown>>),
+    ...(productsActions as Record<string, Record<string, unknown>>),
+    ...(layoutActions as Record<string, Record<string, unknown>>),
+    ...(workflowTestActions as Record<string, Record<string, unknown>>),
+    ...(animationTestActions as Record<string, Record<string, unknown>>),
+    ...(popupTestActions as Record<string, Record<string, unknown>>),
   };
 
   const workflows = Object.entries(allActions)
     .filter(([, def]) => def.type === 'workflowSteps')
     .map(([id, def]) => ({
       id,
-      // After migration, "name" field holds the human-readable name; fall back to the UUID key
       name: (def.name as string) ?? id,
       trigger: (def.trigger as string) ?? 'click',
       steps: (def.steps as object[]) ?? [],
       onErrorSteps: (def.onErrorSteps as object[] | undefined),
     }));
 
-  // Direct (non-workflowSteps) actions: graphql mutations, fetch, navigate, etc.
-  // The canvas uses this map to resolve ActionRef UUIDs to their real type so a
-  // step that calls loginMutation shows as "GraphQL" rather than "Call workflow".
   const directActions = Object.fromEntries(
-    Object.entries(allActions)
-      .filter(([, def]) => def.type && def.type !== 'workflowSteps')
+    Object.entries(allActions).filter(([, def]) => def.type && def.type !== 'workflowSteps')
   );
 
-  // Build a reverse lookup: datasourceUUID → actionUUID (for resolving old collectionName configs in the builder)
   const dsActionsMap: Record<string, string> = {};
   for (const [actionId, def] of Object.entries(dsActionsJson as Record<string, { name?: string; type?: string }>)) {
     if (def.type === 'refetchDataSource' && def.name) {
@@ -149,32 +157,5 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({ dataSources: dataSourceList, dsFolders, variables, varFolders, workflows, directActions, dsActionsMap });
-}
-
-/**
- * PATCH /api/builder/config
- * Writes a new variable entry to config/variables.json (used when dropping Form component).
- */
-export async function PATCH(req: Request) {
-  try {
-    const body = await req.json() as {
-      action: 'addVariable';
-      id: string;
-      variable: Record<string, unknown>;
-    };
-
-    if (body.action === 'addVariable') {
-      const filePath = path.join(process.cwd(), 'config', 'variables.json');
-      const raw = await fs.readFile(filePath, 'utf-8');
-      const parsed = JSON.parse(raw) as { variables: Record<string, unknown>; varFolders: unknown[] };
-      parsed.variables[body.id] = body.variable;
-      await fs.writeFile(filePath, JSON.stringify(parsed, null, 2) + '\n', 'utf-8');
-      return NextResponse.json({ ok: true });
-    }
-
-    return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
-  }
+  return { dataSources: dataSourceList, dsFolders, variables, varFolders, workflows, directActions, dsActionsMap };
 }

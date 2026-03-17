@@ -26,7 +26,6 @@ import { FORM_REGISTERABLE_TYPES } from '@/lib/sdui/controlled-component-registr
  */
 export const REQUIRED_PARENT: Record<string, string> = {
   ButtonText:         'Button',
-  ButtonIcon:         'Button',
   InputField:         'Input',
   InputSlot:          'Input',
   InputIcon:          'Input',
@@ -82,7 +81,7 @@ export const REQUIRED_PARENT: Record<string, string> = {
  * Exported so _canvas.tsx can pre-check before routing a drag "inside".
  */
 export const ALLOWED_CHILDREN: Record<string, Set<string>> = {
-  Button:        new Set(['ButtonText', 'ButtonIcon', 'NavIcon']),
+  Button:        new Set(['ButtonText', 'NavIcon']),
   Input:         new Set(['InputField', 'InputSlot', 'InputIcon']),
   Checkbox:      new Set(['CheckboxIndicator', 'CheckboxIcon', 'CheckboxLabel']),
   Radio:         new Set(['RadioIndicator', 'RadioLabel', 'RadioIcon']),

@@ -48,6 +48,7 @@
             "children": [
               {
                 "type": "FormContainer",
+                "id": "sign-in-form",
                 "props": {
                   "initialFormData": {
                     "username": "",

@@ -124,6 +124,18 @@
       "config": "workflowTest",
       "auth": false,
       "layout": "full"
+    },
+    {
+      "path": "/animation-test",
+      "config": "animationTest",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/popup-test",
+      "config": "popupTest",
+      "auth": false,
+      "layout": "full"
     }
   ]
 }

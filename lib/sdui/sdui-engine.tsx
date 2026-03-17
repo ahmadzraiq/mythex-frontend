@@ -26,6 +26,7 @@ import { dispatchToHandler } from './actions/handlers';
 import type { ValidationRule, ActionsConfig, EngineConfig, RouteConfig, SDUIEngineProps, NamedDataSourceDef } from './engine-types';
 import { applyPreviewStatePatch, applyPreviewDataPatch } from './builder-preview';
 import { useNamedDataSourceFetcher } from './named-datasource-fetcher';
+import { PopupRenderer } from './components/PopupRenderer';
 
 export type { ValidationRule, ActionsConfig, EngineConfig, RouteConfig, SDUIEngineProps, NamedDataSourceDef } from './engine-types';
 
@@ -42,6 +43,9 @@ export function SDUIEngine({
   routes = [],
   paramChangeAction,
   builderMode = false,
+  showPopups = true,
+  builderViewportHeight,
+  popupModels,
   previewState,
   previewStates,
   previewData,
@@ -479,6 +483,7 @@ export function SDUIEngine({
     <BuilderContext.Provider value={builderContextValue}>
       <RunActionProvider value={runActionStable}>
         <SDURenderer node={config.ui} context={context} />
+        {showPopups && <PopupRenderer context={context} viewportHeight={builderViewportHeight} popupModels={popupModels as Record<string, import('./actions/handlers/popup-handlers').PopupModel> | undefined} />}
       </RunActionProvider>
     </BuilderContext.Provider>
   );

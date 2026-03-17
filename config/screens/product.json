@@ -7,6 +7,7 @@
   "content": [
     {
       "type": "Box",
+      "_stateTag": "empty",
       "condition": "!collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.loading && !collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product",
       "props": {
         "className": "container mx-auto px-4 py-16 text-center"
@@ -50,6 +51,7 @@
     },
     {
       "type": "Box",
+      "_stateTag": "loading",
       "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.loading",
       "props": {
         "className": "container mx-auto px-4 py-8 mt-16"
@@ -99,6 +101,7 @@
     },
     {
       "type": "Box",
+      "_stateTag": "default",
       "condition": "!collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.loading && collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product",
       "children": [
         {

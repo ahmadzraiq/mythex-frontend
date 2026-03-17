@@ -20,6 +20,7 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useBuilderStore, findNode, findParentNode, type DataSourceConfig } from './_store';
+import { getPopups } from '@/lib/builder/popup-data';
 
 // ─── Tab content components (extracted to _formula-editor-tabs.tsx) ───────────
 export { Tooltip, VariableTree, CollectionEntry, DataTreeNode, FunctionLibrary, FnRow,
@@ -30,6 +31,7 @@ import {
   Tooltip, VariableTree, CollectionEntry, FunctionLibrary,
   CollectionsDataTab, PageComponentsSection, FormLocalSection, ItemContextGroup,
   DataTreeNode, FEChevron, collectPageComponents, EVENT_SHAPES, EventContextSection,
+  PopupContextSection,
   type VarRowItem,
 } from './_formula-editor-tabs';
 import { useSduiStore } from '@/store/sdui-store';
@@ -276,6 +278,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   const { globalFormulas, pageDataSources, customVars, varFolders, workflowTestResults, workflowCanvasTarget, pageWorkflows, globalWorkflows, liveCanvasSteps } = useBuilderStore();
   const selectedIds = useBuilderStore(s => s.selectedIds);
   const pageNodes = useBuilderStore(s => s.pageNodes);
+  const editingPopupId = useBuilderStore(s => s.editingPopupId);
   const [isFocused, setIsFocused] = useState(false);
 
   // Detect if the selected node is inside a repeated context (has a map ancestor)
@@ -357,7 +360,16 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     ) as typeof workflowTestResults;
   }, [workflowTestResults, workflowCanvasTarget]);
 
-  const showQuickTab = isInsideRepeat || isInsideForm;
+  const isInsidePopup = !!editingPopupId;
+  const showQuickTab = isInsideRepeat || isInsideForm || isInsidePopup;
+
+  // Build a map from popup property UUID → property name for chip display
+  const popupPropMap = useMemo((): Map<string, string> => {
+    if (!editingPopupId) return new Map();
+    const model = getPopups()[editingPopupId];
+    const props = (model as { properties?: Array<{ id: string; name: string }> } | undefined)?.properties ?? [];
+    return new Map(props.map(p => [p.id, p.name]));
+  }, [editingPopupId]);
   // Show Workflow tab when there are test results OR when a trigger with event data is active
   const hasEventContext = !!(workflowTrigger && Object.keys(EVENT_SHAPES[workflowTrigger] ?? {}).length > 0);
   const showWorkflowTab = hasEventContext || Object.keys(currentWorkflowTestResults ?? {}).length > 0;
@@ -504,7 +516,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   useEffect(() => {
     const el = editorRef.current;
     if (!el) return;
-    populateEditor(el, initialFormula, dsMap, varMap, stepNameMap);
+    populateEditor(el, initialFormula, dsMap, varMap, stepNameMap, popupPropMap);
     setFormula(initialFormula);
     historyRef.current = [initialFormula];
     historyIdxRef.current = 0;
@@ -672,16 +684,38 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       workflowMap[key] = { result: entry.result, error: entry.error };
     }
 
+    // Build context.component.props from popup property defaultValues
+    const popupComponentContext = (() => {
+      if (!editingPopupId) return undefined;
+      const model = getPopups()[editingPopupId];
+      const props = (model as { properties?: Array<{ id: string; defaultValue?: unknown }> } | undefined)?.properties ?? [];
+      const propsMap: Record<string, unknown> = {};
+      for (const p of props) propsMap[p.id] = p.defaultValue ?? '';
+      return { props: propsMap };
+    })();
+
+    // Build context.local for popup instance info
+    const popupLocalContext = editingPopupId ? {
+      data: { popup: { instancesCount: 1, index: 0, totalCount: 1 } },
+    } : undefined;
+
     return {
       ...zustandData,
       ...vs,
       collections: collectionsMap,
       variables: vs,
-      context: contextItem ? {
-        item: {
-          ...contextItem,
-          data: {
+      context: {
+        ...(contextItem ? {
+          item: {
             ...contextItem,
+            data: {
+              ...contextItem,
+              index: 0,
+              repeatIndex: 0,
+              isACopy: false,
+              parent: null,
+              repeatedItems: [contextItem],
+            },
             index: 0,
             repeatIndex: 0,
             isACopy: false,
@@ -689,19 +723,16 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
             repeatedItems: [contextItem],
           },
           index: 0,
-          repeatIndex: 0,
-          isACopy: false,
-          parent: null,
-          repeatedItems: [contextItem],
-        },
-        index: 0,
+        } : {}),
         workflow: workflowMap,
-      } : { workflow: workflowMap },
+        ...(popupComponentContext ? { component: popupComponentContext } : {}),
+        ...(popupLocalContext ? { local: popupLocalContext } : {}),
+      },
       globalContext,
       pages,
       theme,
     };
-  }, [zustandData, selectedIds, pageNodes, currentWorkflowTestResults]);
+  }, [zustandData, selectedIds, pageNodes, currentWorkflowTestResults, editingPopupId]);
 
   // When a workflowTrigger is set, inject the trigger's event shape as preview context
   const contextWithEvent = useMemo(() => {
@@ -752,7 +783,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     const el = editorRef.current;
     if (!el) return;
     isUndoRedoRef.current = true;
-    populateEditor(el, f, dsMap, varMap, stepNameMap);
+    populateEditor(el, f, dsMap, varMap, stepNameMap, popupPropMap);
     setFormula(f);
     // Move cursor to end
     const r = document.createRange();
@@ -776,7 +807,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   }, []);
 
   // Insert a chip at the current caret position
-  const insertChip = useCallback((formulaPath: string, displayLabel: string, type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event') => {
+  const insertChip = useCallback((formulaPath: string, displayLabel: string, type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'popup') => {
     const el = editorRef.current;
     if (!el) return;
     restoreCaret();
@@ -1118,7 +1149,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
         {/* Row 1 — Current value (full width) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <span style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Current value</span>
-          <div style={{ width: '100%' }}>
+          <div style={{ width: '100%' }} data-testid="formula-current-value">
           {evalResult.error ? (
               <div style={{ fontSize: 10, color: '#f87171', fontFamily: 'monospace', wordBreak: 'break-all', lineHeight: 1.4, background: '#1a0a0a', border: '1px solid #3f1515', borderRadius: 4, padding: '3px 6px' }}>
               {evalResult.error}
@@ -1239,6 +1270,9 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
         )}
         {tab === 'quick' && (
           <div style={{ overflowY: 'auto', flex: 1 }}>
+            {isInsidePopup && (
+              <PopupContextSection onInsert={insertChip} />
+            )}
             {isInsideForm && (
               <FormLocalSection onInsert={insertChip} pageFormFields={pageFormFields} nearestFormContainerId={nearestFormContainerId} />
             )}

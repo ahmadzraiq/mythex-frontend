@@ -45,6 +45,7 @@ import {
 } from './_logic-tab';
 import routes from '@/config/routes.json';
 import { WorkflowCanvas } from './_workflow-canvas';
+import { getPopups } from '@/lib/builder/popup-data';
 
 void useRef; void useState; // suppress unused-import lint
 
@@ -541,6 +542,9 @@ export default function BuilderPage() {
       pageWorkflowMeta,
       globalWorkflows,
       globalWorkflowMeta,
+      // Live popup models from the in-memory store so edits made in the builder
+      // are visible when the user triggers a popup in the preview tab.
+      popupModels: getPopups(),
     }));
     window.open('/dev/builder/preview', '_blank');
   }, []);

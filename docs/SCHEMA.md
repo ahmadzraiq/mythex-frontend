@@ -682,7 +682,187 @@ All components from `@/components/ui/*` are supported. Use `type` in JSON to ref
 
 ---
 
-## 12. Quick Reference: Adding a New Screen
+## 12. Node Animation (`props.animation`)
+
+Any SDUI node can be animated by adding an `animation` object to its `props`. The renderer wraps the node in an `AnimatedNode` that drives all animation via React Native Reanimated.
+
+```json
+{
+  "type": "Box",
+  "props": {
+    "className": "w-16 h-16 rounded-full bg-yellow-400",
+    "animation": { ... }
+  }
+}
+```
+
+### Enter animation
+
+Plays once when the node mounts.
+
+```json
+"animation": {
+  "enter": {
+    "type": "fadeUp",
+    "duration": 400,
+    "delay": 0,
+    "easing": "spring"
+  }
+}
+```
+
+| Field | Values | Default |
+|---|---|---|
+| `type` | `"fade"`, `"fadeUp"`, `"fadeDown"`, `"fadeLeft"`, `"fadeRight"`, `"scale"`, `"scaleUp"`, `"slideUp"`, `"slideDown"`, `"flipX"`, `"flipY"` | — |
+| `duration` | ms | `400` |
+| `delay` | ms | `0` |
+| `easing` | `"spring"`, `"ease"`, `"easeIn"`, `"easeOut"`, `"easeInOut"`, `"bounce"` | `"ease"` |
+
+### Exit animation
+
+Plays when the node unmounts (requires conditional rendering).
+
+```json
+"animation": {
+  "exit": { "type": "fadeDown", "duration": 300 }
+}
+```
+
+Same `type` options as enter.
+
+### Loop animation
+
+Continuously repeats while the node is mounted.
+
+```json
+"animation": {
+  "loop": {
+    "type": "breathe",
+    "duration": 2000,
+    "repeatCount": -1,
+    "direction": "alternate"
+  }
+}
+```
+
+| Field | Description | Default |
+|---|---|---|
+| `type` | See loop type table below | — |
+| `duration` | ms per cycle | `1000` |
+| `delay` | ms before first cycle | `0` |
+| `repeatCount` | number of repeats; `-1` = infinite | `-1` |
+| `direction` | `"normal"` or `"alternate"` (reverse on even cycles) | `"normal"` |
+| `color` | CSS color string for shadow-based types (`glowPulse`, `ripple`) | purple-500 |
+
+**Loop types:**
+
+| `type` | Effect |
+|---|---|
+| `breathe` | Scale 1 → 1.08, alternate |
+| `float` | TranslateY 0 → -8px, alternate |
+| `wiggle` | Small left/right wiggle sequence |
+| `shake` | Fast shake sequence then pause |
+| `spin` | Continuous 360° rotation |
+| `ticker` | Same as spin |
+| `flash` | Opacity 1 → 0.4, alternate |
+| `swing` | Rotate ±15°, alternate |
+| `rubber` | Scale squash/stretch sequence |
+| `tada` | Combined scale + rotation burst |
+| `heartbeat` | Fast double-pulse scale |
+| `glowPulse` | Expanding box-shadow halo using `color`. Put `"outerStyle": { "borderRadius": N }` to match inner shape. |
+| `ripple` | Shadow ring expands outward and fades, using `color`. Put `"outerStyle": { "borderRadius": N }` to match inner shape. |
+| `gradientDrift` | Drifts `backgroundPosition` left ↔ right. **Requires** the gradient on `animation.outerStyle` (not `props.style`) — see example below. |
+
+**`glowPulse` and `ripple` example (circular element):**
+
+```json
+{
+  "type": "Box",
+  "props": {
+    "className": "w-16 h-16 rounded-full bg-yellow-400",
+    "animation": {
+      "outerStyle": { "borderRadius": 9999 },
+      "loop": {
+        "type": "glowPulse",
+        "duration": 1500,
+        "repeatCount": -1,
+        "direction": "alternate",
+        "color": "#facc15"
+      }
+    }
+  }
+}
+```
+
+- `color` must contrast with its background (default purple-500 works on both light and dark backgrounds)
+- `outerStyle.borderRadius` makes the shadow follow the inner element's shape
+
+**`gradientDrift` example:**
+
+```json
+{
+  "type": "Box",
+  "props": {
+    "className": "w-24 h-16 rounded-lg flex items-center justify-center",
+    "animation": {
+      "outerStyle": {
+        "backgroundImage": "linear-gradient(to right, #667eea, #764ba2, #f64f59, #c471ed, #667eea)",
+        "backgroundSize": "400% 100%",
+        "backgroundRepeat": "no-repeat",
+        "borderRadius": 8
+      },
+      "loop": {
+        "type": "gradientDrift",
+        "duration": 3000,
+        "repeatCount": -1
+      }
+    }
+  }
+}
+```
+
+**Why `outerStyle` for the gradient:** Reanimated animates `backgroundPosition` on the `Animated.View` wrapper. For the animation to work, the gradient background must be on the **same element** that Reanimated controls — i.e. `animation.outerStyle`, not `props.style`. Using `props.style` puts the gradient on the inner element, which Reanimated cannot reach.
+
+### Hover animation
+
+```json
+"animation": {
+  "hover": { "scale": 1.05, "opacity": 1.0, "y": -4, "duration": 200 }
+}
+```
+
+### Press animation
+
+```json
+"animation": {
+  "press": { "scale": 0.95, "opacity": 0.85, "duration": 100 }
+}
+```
+
+### Stagger children
+
+Staggers the enter animation of each direct child:
+
+```json
+"animation": {
+  "staggerChildren": { "delay": 80, "startDelay": 0 }
+}
+```
+
+### Outer style / class
+
+Applied to the `Animated.View` wrapper (not the inner component). Required for `gradientDrift`, `glowPulse` shape-matching, and any CSS property Reanimated should own:
+
+```json
+"animation": {
+  "outerStyle": { "borderRadius": 9999, "overflow": "hidden" },
+  "outerClassName": "absolute inset-0"
+}
+```
+
+---
+
+## 13. Quick Reference: Adding a New Screen
 
 1. Create `config/screens/myScreen.json`
 2. Add route in `config/routes.json`

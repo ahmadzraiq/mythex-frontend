@@ -13,7 +13,7 @@ alwaysApply: true
 - **JSON config** (screens, layouts, fragments, actions): Read [docs/BUILD-GUIDE.md](../../docs/BUILD-GUIDE.md) — structure, $ref/$slot, state paths, common patterns.
 - **Engine/renderer/actions** (lib/sdui/): Read [docs/CODE-ARCHITECTURE.md](../../docs/CODE-ARCHITECTURE.md) first — file map, data flow, where to add action types, **engine & performance patterns** (setNestedValue, useVariablePaths, computed memo, fetch cache LRU, searchParamSync routePrefix).
 
-**Also:** [docs/SCHEMA.md](../../docs/SCHEMA.md) for schema; [sdui-layout-pitfalls.mdc](./sdui-layout-pitfalls.mdc) for layout pitfalls; [nativewind-sdui-json.mdc](./nativewind-sdui-json.mdc) for Pressable/Box text (must use Text child).
+**Also:** [docs/SCHEMA.md](../../docs/SCHEMA.md) for schema (including **Section 12: Node Animation** — enter/exit/loop/hover/press, all loop types, `glowPulse`/`ripple`/`gradientDrift` rules); [sdui-layout-pitfalls.mdc](./sdui-layout-pitfalls.mdc) for layout pitfalls; [nativewind-sdui-json.mdc](./nativewind-sdui-json.mdc) for Pressable/Box text (must use Text child).
 
 **Layout part overrides** (navbar, hero, footer override types): Read [sdui-layout-part-overrides.mdc](./sdui-layout-part-overrides.mdc) — override types, fragment ID requirements, CountdownTimer conventions.
 
