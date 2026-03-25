@@ -1564,6 +1564,56 @@ export default function BuilderCanvas() {
         <rect width="100%" height="100%" fill="url(#builder-grid)" />
       </svg>
 
+      {/* ── Empty state: outside the world transform so it's never zoomed/panned ── */}
+      {pages.length === 0 && (
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
+          justifyContent: 'center', pointerEvents: 'none', userSelect: 'none',
+          zIndex: 10,
+        }}>
+          <div style={{ textAlign: 'center', fontFamily: 'system-ui', maxWidth: 320 }}>
+            <div style={{ fontSize: 36, marginBottom: 16, opacity: 0.2 }}>⬜</div>
+            <div style={{ fontSize: 15, color: '#e2e8f0', fontWeight: 600, marginBottom: 20 }}>
+              Your canvas is empty
+            </div>
+            {/* Step 1 */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14, textAlign: 'left' }}>
+              <div style={{
+                flexShrink: 0, width: 22, height: 22, borderRadius: '50%',
+                background: '#1d4ed8', color: '#fff',
+                fontSize: 11, fontWeight: 700,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>1</div>
+              <div>
+                <div style={{ fontSize: 12, color: '#d1d5db', fontWeight: 600, lineHeight: 1.3 }}>
+                  Add a page
+                </div>
+                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2, lineHeight: 1.5 }}>
+                  Open <span style={{ color: '#93c5fd', fontWeight: 500 }}>Select page</span> in the top bar and click <span style={{ color: '#93c5fd', fontWeight: 500 }}>+ Add page</span>
+                </div>
+              </div>
+            </div>
+            {/* Step 2 */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, textAlign: 'left' }}>
+              <div style={{
+                flexShrink: 0, width: 22, height: 22, borderRadius: '50%',
+                background: '#1d4ed8', color: '#fff',
+                fontSize: 11, fontWeight: 700,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>2</div>
+              <div>
+                <div style={{ fontSize: 12, color: '#d1d5db', fontWeight: 600, lineHeight: 1.3 }}>
+                  Drag a component
+                </div>
+                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2, lineHeight: 1.5 }}>
+                  Open the <span style={{ color: '#93c5fd', fontWeight: 500 }}>Components</span> tab in the left panel and drag any component onto the canvas
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── World container — all page frames live here.
            transform (translate + scale) is applied imperatively via worldRef
            during scroll/pan so React never re-renders just for viewport movement. ── */}
@@ -1578,12 +1628,13 @@ export default function BuilderCanvas() {
           transform: `translate(${panX}px, ${panY}px) scale(${zoom})`,
         }}
       >
+
         {/* ── All inactive page frames — isolated component; does NOT re-render
               on hover/select changes in the active page, only on pages/state changes ── */}
-        <InactivePagesGrid vpWidth={vpWidth} PAGE_GAP={PAGE_GAP} />
+        {pages.length > 0 && <InactivePagesGrid vpWidth={vpWidth} PAGE_GAP={PAGE_GAP} />}
 
         {/* ── Active page — label ── */}
-        {(() => {
+        {pages.length > 0 && (() => {
           const pg = pages.find(p => p.id === currentPageId);
           return (
             <div style={{ position: 'absolute', left: activePageIdx * (vpWidth + PAGE_GAP), top: -26, fontSize: 11, color: '#d1d5db', pointerEvents: 'none', userSelect: 'none', fontFamily: 'system-ui', whiteSpace: 'nowrap', display: 'flex', gap: 6, alignItems: 'baseline' }}>
@@ -1595,7 +1646,7 @@ export default function BuilderCanvas() {
         })()}
 
         {/* ── Active page frame: direct SDUI render (capture overlay lives here) ── */}
-        <div
+        {pages.length > 0 && <div
           ref={pageFrameRef}
           data-builder-page-frame="1"
           data-builder-page-id={currentPageId}
@@ -1949,7 +2000,7 @@ export default function BuilderCanvas() {
             }}
           />
         )}
-      </div>
+      </div>}
       {/* ── End active page frame ── */}
       </div>
       {/* ── End world container ── */}

@@ -26,6 +26,28 @@
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useSearchParams, usePathname } from 'next/navigation';
+
+/**
+ * Extract the builder projectId from the URL.
+ *
+ * Two cases:
+ *  1. /builder/<id>  — the protected platform route; middleware rewrites it to
+ *     /dev/builder?projectId=<id> internally, but the BROWSER URL still shows
+ *     /builder/<id>. useSearchParams() reads the browser URL, so it returns
+ *     null for projectId. We must parse the path instead.
+ *  2. /dev/builder?projectId=<id>  — legacy direct access / admin mode.
+ *     useSearchParams() works correctly here.
+ */
+function useProjectId(): string | null {
+  const searchParams = useSearchParams();
+  const pathname = usePathname() ?? '';
+  const fromSearch = searchParams.get('projectId');
+  const fromPath = pathname.startsWith('/builder/')
+    ? (pathname.split('/')[2] ?? null)
+    : null;
+  return fromSearch ?? fromPath;
+}
 import { useBuilderStore, restorePreviewData, VIEWPORT_WIDTHS, type ViewportSize } from './_store';
 import { useSduiStore } from '@/store/sdui-store';
 import type { BuilderPage } from './_store';
@@ -46,6 +68,7 @@ import {
 import routes from '@/config/routes.json';
 import { WorkflowCanvas } from './_workflow-canvas';
 import { getPopups } from '@/lib/builder/popup-data';
+import { useBuilderAutosave, type SaveStatus } from '@/lib/builder/autosave';
 
 void useRef; void useState; // suppress unused-import lint
 
@@ -116,6 +139,10 @@ function PagesPicker() {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
+  const projectId = useProjectId();
+  // APP ROUTES (from static config) are only relevant in admin/dev mode.
+  // Real backend projects start blank and use custom routes only.
+  const isAdminMode = !projectId || projectId === 'admin';
 
   const currentPage = pages.find(p => p.id === currentPageId);
   const allRoutes = (routes as { routes: Array<{ path: string; config: string }> }).routes;
@@ -135,7 +162,7 @@ function PagesPicker() {
   }, [open]);
 
   const commitRename = useCallback(() => {
-    if (renamingId && renameValue.trim()) renamePage(renamingId, renameValue.trim());
+    if (renamingId) renamePage(renamingId, renameValue);
     setRenamingId(null);
     setRenameValue('');
   }, [renamingId, renameValue, renamePage]);
@@ -267,7 +294,7 @@ function PagesPicker() {
                       </>
                     )}
                   </div>
-                  {pages.length > 1 && !isRenaming && (
+                  {!isRenaming && (
                     <button title="Remove page" onClick={e => { e.stopPropagation(); removePage(page.id); }}
                       style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 13, padding: '2px 4px', borderRadius: 3, flexShrink: 0 }}
                       onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
@@ -309,24 +336,28 @@ function PagesPicker() {
                     Add
                   </button>
                 </div>
-                {/* App routes */}
-                <div style={{ fontSize: 10, color: '#6b7280', letterSpacing: '0.04em', marginTop: 4 }}>APP ROUTES</div>
-                <div style={{ maxHeight: 160, overflowY: 'auto' }}>
-                  {allRoutes.map(r => {
-                    const alreadyAdded = pages.some((p: BuilderPage) => p.route === r.path);
-                    return (
-                      <button key={r.config} disabled={alreadyAdded}
-                        onClick={() => { if (!alreadyAdded) { addPage(r.path, r.config); setShowAdd(false); setOpen(false); } }}
-                        style={{ display: 'flex', width: '100%', alignItems: 'baseline', gap: 6, padding: '5px 4px', background: 'none', border: 'none', color: alreadyAdded ? '#4b5563' : '#d1d5db', fontSize: 11, textAlign: 'left', cursor: alreadyAdded ? 'default' : 'pointer' }}
-                        onMouseEnter={e => { if (!alreadyAdded) e.currentTarget.style.background = 'rgba(59,130,246,0.15)'; }}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                        <span style={{ fontFamily: 'monospace', fontSize: 10, color: alreadyAdded ? '#374151' : '#60a5fa', flexShrink: 0 }}>{r.path}</span>
-                        <span style={{ opacity: alreadyAdded ? 0.35 : 0.6 }}>{r.config}</span>
-                        {alreadyAdded && <span style={{ marginLeft: 'auto', fontSize: 9, color: '#374151' }}>✓</span>}
-                      </button>
-                    );
-                  })}
-                </div>
+                {/* App routes — only shown in admin/dev mode (static config routes) */}
+                {isAdminMode && (
+                  <>
+                    <div style={{ fontSize: 10, color: '#6b7280', letterSpacing: '0.04em', marginTop: 4 }}>APP ROUTES</div>
+                    <div style={{ maxHeight: 160, overflowY: 'auto' }}>
+                      {allRoutes.map(r => {
+                        const alreadyAdded = pages.some((p: BuilderPage) => p.route === r.path);
+                        return (
+                          <button key={r.config} disabled={alreadyAdded}
+                            onClick={() => { if (!alreadyAdded) { addPage(r.path, r.config); setShowAdd(false); setOpen(false); } }}
+                            style={{ display: 'flex', width: '100%', alignItems: 'baseline', gap: 6, padding: '5px 4px', background: 'none', border: 'none', color: alreadyAdded ? '#4b5563' : '#d1d5db', fontSize: 11, textAlign: 'left', cursor: alreadyAdded ? 'default' : 'pointer' }}
+                            onMouseEnter={e => { if (!alreadyAdded) e.currentTarget.style.background = 'rgba(59,130,246,0.15)'; }}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                            <span style={{ fontFamily: 'monospace', fontSize: 10, color: alreadyAdded ? '#374151' : '#60a5fa', flexShrink: 0 }}>{r.path}</span>
+                            <span style={{ opacity: alreadyAdded ? 0.35 : 0.6 }}>{r.config}</span>
+                            {alreadyAdded && <span style={{ marginLeft: 'auto', fontSize: 9, color: '#374151' }}>✓</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -336,10 +367,45 @@ function PagesPicker() {
   );
 }
 
-function TopBar({ onPreview }: { onPreview: () => void }) {
-  const { undo, redo, historyIdx, history, selectedIds, pageNodes, viewport, setViewport } = useBuilderStore();
+function SaveStatusBadge({ status }: { status: SaveStatus }) {
+  if (status === 'idle') return null;
+  const config: Record<SaveStatus, { label: string; color: string }> = {
+    idle:   { label: '',          color: 'transparent' },
+    saving: { label: 'Saving…',   color: '#6b7280' },
+    saved:  { label: '✓ Saved',   color: '#10b981' },
+    error:  { label: '⚠ Save failed', color: '#ef4444' },
+  };
+  const { label, color } = config[status];
+  return (
+    <span style={{ fontSize: 10, color, fontFamily: 'system-ui', transition: 'color 0.3s' }}>
+      {label}
+    </span>
+  );
+}
+
+function TopBar({
+  onPreview,
+  onSeed,
+  saveStatus,
+  projectId,
+}: {
+  onPreview: () => void | Promise<void>;
+  onSeed: () => Promise<void>;
+  saveStatus: SaveStatus;
+  projectId: string | null;
+}) {
+  const { undo, redo, historyIdx, history, selectedIds, pageNodes, viewport, setViewport, pages, currentPageId } = useBuilderStore();
   const canUndo = historyIdx > 0;
   const canRedo = historyIdx < history.length - 1;
+  const currentPageForPreview = pages.find(p => p.id === currentPageId);
+  const canPreview = !!currentPageForPreview?.route;
+  const previewTooltip = !currentPageId || pages.length === 0
+    ? 'Add a page to enable preview'
+    : !currentPageForPreview?.route
+      ? 'This page has no app route — select a routed page to preview'
+      : 'Preview in new tab (⌘P)';
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
   return (
     <div
@@ -355,6 +421,27 @@ function TopBar({ onPreview }: { onPreview: () => void }) {
         zIndex: 10,
       }}
     >
+      {/* Back to workspace link (only when opened from a project) */}
+      {projectId && (
+        <a
+          href="/workspaces"
+          title="Back to workspaces"
+          style={{
+            display: 'flex', alignItems: 'center',
+            fontSize: 10, color: '#6b7280',
+            textDecoration: 'none',
+            padding: '2px 6px',
+            borderRadius: 4,
+            fontFamily: 'system-ui',
+            transition: 'color 0.15s',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.color = '#9ca3af')}
+          onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+        >
+          ← Projects
+        </a>
+      )}
+
       <div style={{ width: 1, height: 20, background: '#1f2937' }} />
 
       {/* History */}
@@ -399,29 +486,35 @@ function TopBar({ onPreview }: { onPreview: () => void }) {
       {/* Dark / Light mode toggle */}
       <DarkModeToggle />
 
-      {/* Preview button — saves to localStorage then opens /dev/builder/preview in new tab */}
+      {/* Preview button — opens preview subdomain at the selected page route */}
       <button
         data-testid="btn-preview"
-        onClick={onPreview}
-        title="Preview in new tab (⌘P)"
+        onClick={canPreview ? onPreview : undefined}
+        disabled={!canPreview}
+        title={previewTooltip}
         style={{
           display: 'flex', alignItems: 'center', gap: 5,
           padding: '4px 12px',
-          background: '#10b981',
+          background: canPreview ? '#10b981' : '#374151',
           border: 'none',
           borderRadius: 5,
-          color: '#fff',
-          cursor: 'pointer',
+          color: canPreview ? '#fff' : '#6b7280',
+          cursor: canPreview ? 'pointer' : 'not-allowed',
           fontSize: 11,
           fontWeight: 600,
           fontFamily: 'system-ui',
           letterSpacing: '0.02em',
+          opacity: canPreview ? 1 : 0.6,
+          transition: 'background 0.15s, color 0.15s, opacity 0.15s',
         }}
       >
         ↗ Preview
       </button>
 
       <div style={{ width: 1, height: 20, background: '#1f2937' }} />
+
+      {/* Autosave status */}
+      <SaveStatusBadge status={saveStatus} />
 
       {/* Node count */}
       <span style={{ fontSize: 10, color: '#4b5563' }}>
@@ -432,6 +525,107 @@ function TopBar({ onPreview }: { onPreview: () => void }) {
         <span style={{ fontSize: 10, color: '#3b82f6' }}>
           · {selectedIds.length} selected
         </span>
+      )}
+
+      {/* ⋮ project menu — only shown when a project is open */}
+      {projectId && (
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setMenuOpen(v => !v)}
+            title="Project options"
+            style={{
+              width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: menuOpen ? '#1f2937' : 'transparent',
+              border: 'none', borderRadius: 5, cursor: 'pointer',
+              color: '#6b7280', fontSize: 16, fontFamily: 'system-ui',
+              transition: 'background 120ms',
+            }}
+            onMouseEnter={e => { if (!menuOpen) (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
+            onMouseLeave={e => { if (!menuOpen) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+          >
+            ⋮
+          </button>
+
+          {menuOpen && (
+            <>
+              {/* Click-outside backdrop */}
+              <div
+                style={{ position: 'fixed', inset: 0, zIndex: 40 }}
+                onClick={() => setMenuOpen(false)}
+              />
+              {/* Dropdown */}
+              <div style={{
+                position: 'absolute', right: 0, top: 32, zIndex: 50,
+                width: 200, background: '#1e293b',
+                border: '1px solid #334155', borderRadius: 8,
+                boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                overflow: 'hidden', fontFamily: 'system-ui',
+              }}>
+                {/* Section label */}
+                <div style={{ padding: '8px 12px 4px', fontSize: 10, fontWeight: 600, color: '#475569', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  Project
+                </div>
+
+                {/* Seed from template */}
+                <button
+                  disabled={seeding}
+                  onClick={async () => {
+                    setMenuOpen(false);
+                    if (!confirm('This will replace ALL current content with the default template config.\n\nContinue?')) return;
+                    setSeeding(true);
+                    try {
+                      await onSeed();
+                    } finally {
+                      setSeeding(false);
+                    }
+                  }}
+                  style={{
+                    width: '100%', padding: '9px 12px', textAlign: 'left',
+                    background: 'none', border: 'none', cursor: seeding ? 'not-allowed' : 'pointer',
+                    fontSize: 12.5, color: seeding ? '#475569' : '#e2e8f0',
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    opacity: seeding ? 0.6 : 1,
+                    transition: 'background 100ms',
+                  }}
+                  onMouseEnter={e => { if (!seeding) (e.currentTarget as HTMLButtonElement).style.background = '#0f172a'; }}
+                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'none'}
+                >
+                  {seeding ? (
+                    <>
+                      <span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid #3b82f6', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                      Seeding…
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ fontSize: 14 }}>🌱</span>
+                      Seed from template
+                    </>
+                  )}
+                </button>
+
+                <div style={{ height: 1, background: '#334155', margin: '4px 0' }} />
+
+                {/* Open preview */}
+                <button
+                  disabled={!canPreview}
+                  onClick={() => { if (!canPreview) return; setMenuOpen(false); void onPreview(); }}
+                  style={{
+                    width: '100%', padding: '9px 12px', textAlign: 'left',
+                    background: 'none', border: 'none', cursor: canPreview ? 'pointer' : 'not-allowed',
+                    fontSize: 12.5, color: canPreview ? '#e2e8f0' : '#4b5563',
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    transition: 'background 100ms',
+                  }}
+                  onMouseEnter={e => { if (canPreview) (e.currentTarget as HTMLButtonElement).style.background = '#0f172a'; }}
+                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'none'}
+                >
+                  <span style={{ fontSize: 14 }}>↗</span>
+                  Open preview
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       )}
     </div>
   );
@@ -502,13 +696,92 @@ export default function BuilderPage() {
   const closeWorkflowCanvas = useBuilderStore(s => s.closeWorkflowCanvas);
   const [leftSlide, setLeftSlide] = useState<LeftSlideState>(null);
   const [leftSlideWidth, setLeftSlideWidth] = useState(320);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  // True while loadFromConfig is in-flight — shows a full-screen loader so the
+  // user never sees an empty canvas flash while the project config is loading.
+  const [configLoading, setConfigLoading] = useState(true);
+
+  // Persistent reference to the dev-preview window so we can reuse it and send
+  // updated config via postMessage without reopening a new tab on every click.
+  const previewWinRef = useRef<Window | null>(null);
+
+  const projectId = useProjectId();
 
   // Install Gluestack primary token bridge immediately on mount so Checkbox,
   // Radio, Switch etc. reflect --primary even before a preset is applied.
   useEffect(() => { initTheme(); }, [initTheme]);
 
-  // Seed builder panels from app config files on first load (if empty)
-  useEffect(() => { void loadFromConfig(); }, [loadFromConfig]);
+  // Autosave: debounced 1-second save to backend whenever store state changes.
+  // seedAutosaveBaseline must be called once after the initial backend load so
+  // that the autosave snapshots match the loaded state and no bogus save fires.
+  const seedAutosaveBaseline = useBuilderAutosave(projectId, store, setSaveStatus);
+
+  // Load config from backend (real projectId) or static config (admin / no id).
+  // After the async load settles, seed the autosave baseline so it doesn't
+  // treat the freshly-loaded state as "dirty" and immediately save it back.
+  useEffect(() => {
+    void loadFromConfig(projectId ?? undefined).then(() => {
+      if (projectId && projectId !== 'admin') {
+        seedAutosaveBaseline(useBuilderStore.getState());
+      }
+      setConfigLoading(false);
+    });
+  }, [loadFromConfig, projectId, seedAutosaveBaseline]);
+
+  // Emergency save on tab close / refresh — uses keepalive fetch so the request
+  // survives the page unload even if the JS runtime shuts down.
+  useEffect(() => {
+    if (!projectId) return;
+    const handler = () => {
+      const s = useBuilderStore.getState();
+      const pagesWithLive = s.pages.map(p =>
+        p.id === s.currentPageId ? { ...p, nodes: s.pageNodes } : p
+      );
+      // Import synchronously via the already-loaded module (not dynamic import)
+      import('@/lib/builder/autosave').then(({ serializeBuilderState }) => {
+        const config = serializeBuilderState({ ...s, pages: pagesWithLive });
+        fetch(`/api/projects/${projectId}/config`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(config),
+          credentials: 'include',
+          keepalive: true,
+        }).catch(() => {/* best-effort */});
+      }).catch(() => {/* module not loaded yet */});
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [projectId]);
+
+  /**
+   * Seed the project with all screens / actions / variables / data sources
+   * from config/root.ts.  Saves to the backend then reloads the store so
+   * the builder shows the seeded content coming from the backend.
+   */
+  const handleSeed = useCallback(async () => {
+    if (!projectId) return;
+    setSaveStatus('saving');
+    try {
+      const { buildSeedConfig } = await import('@/lib/builder/seed-from-config');
+      const seedData = buildSeedConfig();
+
+      const res = await fetch(`/api/projects/${projectId}/config`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(seedData),
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setSaveStatus('saved');
+
+      // Reload builder state from the freshly saved backend config.
+      await loadFromConfig(projectId);
+      seedAutosaveBaseline(useBuilderStore.getState());
+    } catch (err) {
+      console.error('[builder] Seed failed:', err);
+      setSaveStatus('error');
+    }
+  }, [projectId, loadFromConfig, seedAutosaveBaseline, setSaveStatus]);
 
   // Hydrate SDUI store from persisted preview data so Run/Use-as-preview data survives refresh.
   // Migrate any legacy flat-UUID keys (stored before the collections.UUID convention) on the fly.
@@ -525,10 +798,24 @@ export default function BuilderPage() {
 
   // __builderStore is exposed at module level in _store.ts for E2E tests
 
-  /** Serialize current page + active theme overrides to localStorage then open preview. */
-  const openPreview = useCallback(() => {
+  /**
+   * Open preview.
+   *
+   * When the builder is opened with ?projectId=xxx (from the workspace):
+   *   1. Force-save the current state to the backend immediately (don't wait for debounce).
+   *   2. Open http://preview.localhost:3000/?projectId=xxx in a new tab.
+   *      The middleware rewrites preview.localhost/* → /app-preview/* so the SDUI
+   *      app renders in full isolation — no platform routes (like /login) conflict.
+   *
+   * When there is no projectId (builder-dev mode, static config):
+   *   Open preview-dev.localhost at the current page route — serves the same
+   *   static config/app.ts without any auth or backend dependency.
+   */
+  const openPreview = useCallback(async () => {
     const { pageNodes, viewport, pages, currentPageId, themeOverrides, themeDarkOverrides, pageWorkflows, pageWorkflowMeta, globalWorkflows, globalWorkflowMeta } = useBuilderStore.getState();
     const currentPage = pages.find(p => p.id === currentPageId);
+
+    // Always save to localStorage so the standalone preview (/dev/builder/preview) still works
     localStorage.setItem(BUILDER_PREVIEW_KEY, JSON.stringify({
       nodes: pageNodes,
       viewport,
@@ -536,18 +823,109 @@ export default function BuilderPage() {
       pageRoute: currentPage?.route ?? '/',
       themeOverrides,
       themeDarkOverrides,
-      // Workflow definitions must travel with the page so the engine can resolve
-      // { action: uuid } references stored on each node.
       pageWorkflows,
       pageWorkflowMeta,
       globalWorkflows,
       globalWorkflowMeta,
-      // Live popup models from the in-memory store so edits made in the builder
-      // are visible when the user triggers a popup in the preview tab.
       popupModels: getPopups(),
     }));
-    window.open('/dev/builder/preview', '_blank');
-  }, []);
+
+    if (projectId) {
+      // Open a blank window IMMEDIATELY while the user-gesture token is still
+      // active. Browsers expire popup permission after the first await, so any
+      // window.open() call that comes after an await silently navigates the
+      // current tab (destroying its history) instead of opening a new one.
+      const baseHost = window.location.host.replace(/^preview\./, '');
+      const pageRoute = currentPage?.route ?? '/';
+      const previewWin = window.open('about:blank', 'sdui-preview');
+
+      // Force-save current state to backend immediately (bypasses debounce).
+      // Sync live pageNodes back into pages first so unsaved edits aren't lost.
+      try {
+        const { serializeBuilderState } = await import('@/lib/builder/autosave');
+        const s = useBuilderStore.getState();
+        // Build a pages array that has the current live pageNodes for the active page
+        const pagesWithLiveNodes = s.pages.map(p =>
+          p.id === s.currentPageId ? { ...p, nodes: s.pageNodes } : p
+        );
+        const config = serializeBuilderState({ ...s, pages: pagesWithLiveNodes });
+        setSaveStatus('saving');
+        const res = await fetch(`/api/projects/${projectId}/config`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(config),
+          credentials: 'include',
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        setSaveStatus('saved');
+      } catch {
+        setSaveStatus('error');
+      }
+
+      // Fetch a short-lived preview token so the preview subdomain can call
+      // /api/projects/:id/config without the auth cookie (which is bound to
+      // the main domain and not sent by preview.localhost).
+      let previewToken = '';
+      try {
+        const tokenRes = await fetch(`/api/projects/${projectId}/preview-token`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+        if (tokenRes.ok) {
+          const { token } = await tokenRes.json() as { token: string };
+          previewToken = token;
+        }
+      } catch {
+        // Non-fatal — preview may still work if cookie is present
+      }
+
+      // Navigate the already-open window to the final preview URL.
+      // Pass projectId + token as query params — middleware strips them,
+      // sets cookies, and redirects to the clean URL.
+      const params = new URLSearchParams({ projectId });
+      if (previewToken) params.set('token', previewToken);
+      const previewUrl = `${window.location.protocol}//preview.${baseHost}${pageRoute}?${params}`;
+      if (previewWin) {
+        previewWin.location.href = previewUrl;
+      } else {
+        // Popup was blocked — nothing we can do, the user must allow popups
+        setSaveStatus('error');
+      }
+    } else {
+      // No projectId (builder-dev mode) — open preview-dev at the current page
+      // route. Config is sent via postMessage so localStorage isolation between
+      // subdomains is not an issue.
+      const pageRoute = currentPage?.route ?? '/';
+      const baseHost = window.location.host.replace(/^builder-dev\./, '');
+      const previewUrl = `${window.location.protocol}//preview-dev.${baseHost}${pageRoute}`;
+
+      const configPayload = JSON.parse(localStorage.getItem(BUILDER_PREVIEW_KEY) ?? '{}');
+      const msg = { type: 'BUILDER_LIVE_CONFIG', config: configPayload };
+
+      const sendToPreview = () => previewWinRef.current?.postMessage(msg, '*');
+
+      if (!previewWinRef.current || previewWinRef.current.closed) {
+        previewWinRef.current = window.open(previewUrl, 'sdui-dev-preview') ?? null;
+      } else {
+        // Reuse existing tab — navigate to new route
+        previewWinRef.current.location.href = previewUrl;
+        sendToPreview();
+      }
+
+      // Listen for PREVIEW_READY signal (new window signals when it's mounted)
+      const onReady = (e: MessageEvent) => {
+        if (e.data?.type === 'PREVIEW_READY') {
+          sendToPreview();
+          window.removeEventListener('message', onReady);
+        }
+      };
+      window.addEventListener('message', onReady);
+
+      // Fallback retries in case the READY signal arrives before we add the listener
+      setTimeout(sendToPreview, 400);
+      setTimeout(sendToPreview, 1000);
+    }
+  }, [projectId, setSaveStatus]);
 
   // ── Keyboard shortcuts ────────────────────────────────────────────────────────
 
@@ -562,8 +940,13 @@ export default function BuilderPage() {
       const isInput = tag === 'input' || tag === 'textarea' || tag === 'select'
         || (document.activeElement as HTMLElement)?.isContentEditable === true;
 
-      // Cmd+P → preview in new tab (before isInput guard so it always fires)
-      if (isCmd && e.key === 'p') { e.preventDefault(); openPreview(); return; }
+      // Cmd+P → preview in new tab (only when a page is selected)
+      if (isCmd && e.key === 'p') {
+        e.preventDefault();
+        const { pages: ps, currentPageId: cpId } = useBuilderStore.getState();
+        if (ps.length > 0 && cpId) void openPreview();
+        return;
+      }
 
       // Alt mode
       if (e.key === 'Alt') {
@@ -613,6 +996,34 @@ export default function BuilderPage() {
     };
   }, [store, openPreview]);
 
+  if (configLoading) {
+    return (
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        width: '100vw', height: '100vh', background: '#0f172a',
+        fontFamily: 'system-ui, -apple-system, sans-serif', gap: 20,
+      }}>
+        {/* Animated spinner */}
+        <div style={{ position: 'relative', width: 48, height: 48 }}>
+          <div style={{
+            position: 'absolute', inset: 0, borderRadius: '50%',
+            border: '3px solid rgba(255,255,255,0.08)',
+          }} />
+          <div style={{
+            position: 'absolute', inset: 0, borderRadius: '50%',
+            border: '3px solid transparent',
+            borderTopColor: '#3b82f6',
+            animation: 'spin 0.75s linear infinite',
+          }} />
+        </div>
+        <div style={{ fontSize: 13, color: '#64748b', letterSpacing: '0.02em' }}>
+          Loading project…
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -625,7 +1036,7 @@ export default function BuilderPage() {
         fontFamily: 'system-ui, -apple-system, sans-serif',
       }}
     >
-      <TopBar onPreview={openPreview} />
+      <TopBar onPreview={openPreview} onSeed={handleSeed} saveStatus={saveStatus} projectId={projectId} />
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         <PanelLeft

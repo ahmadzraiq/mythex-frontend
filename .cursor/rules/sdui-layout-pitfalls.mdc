@@ -1406,3 +1406,29 @@ if (loop.type === 'gradientDrift') { /* bgPosition anim */ return cleanup; }
 const mapping = LOOP_ANIM[loop.type];
 if (!mapping) return;
 ```
+
+---
+
+## `window.open` After `await` — Navigates Current Tab Instead of Opening New One
+
+**Problem:** Browsers tie popup permission to the user-gesture token, which expires at the **first `await`**. Any `window.open()` call that comes after an `await` silently navigates the **current tab** instead of opening a new window/tab — destroying the caller's browser history and leaving the user stranded.
+
+This is silent: no error is thrown, no console warning. The only symptom is that the current page navigates away unexpectedly.
+
+**Fix:** Call `window.open('about:blank', name)` **before the first `await`** to claim the popup slot while the gesture is valid. Do async work. Then set `.location.href` on the returned reference to send it to the final URL.
+
+```ts
+// ✅ CORRECT — claim popup slot before any await
+const win = window.open('about:blank', 'my-window');  // user gesture is active
+
+const data = await fetch('/api/save');                // gesture expired — safe, win already opened
+const { token } = await fetch('/api/token');          // still safe
+
+if (win) win.location.href = buildFinalUrl(data, token);  // navigate the already-open window
+
+// ❌ WRONG — window.open after await navigates the current tab
+const data = await fetch('/api/save');
+window.open(buildFinalUrl(data), '_blank');           // gesture expired → current tab navigates away
+```
+
+**Applies to:** Any async handler (button onClick, form submit, etc.) that calls `window.open` after one or more `await` operations — e.g. saving to a backend, fetching a token, dynamic import.

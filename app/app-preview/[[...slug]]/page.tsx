@@ -1,0 +1,346 @@
+'use client';
+
+/**
+ * /app-preview/[[...slug]]
+ *
+ * Renders the SDUI app for the preview subdomain (preview.localhost:3000).
+ * Accessed via: http://preview.localhost:3000/?projectId=xxx
+ *
+ * The middleware rewrites preview.localhost:3000/path → /app-preview/path and
+ * sets the preview_project_id cookie so projectId persists across navigation.
+ *
+ * On mount the page:
+ *   1. Reads projectId from cookie or sessionStorage
+ *   2. Fetches the builder-saved config from /api/projects/:id/config
+ *   3. Applies theme overrides
+ *   4. Renders the page matching the current path using SDUIEngine
+ *
+ * Navigation within the preview works normally — the middleware keeps
+ * rewriting preview.localhost paths to /app-preview paths, and the cookie
+ * carries the projectId forward.
+ */
+
+import { useEffect, useMemo, useState, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
+import { SDUIEngine } from '@/lib/sdui/sdui-engine';
+import type { SDUIConfig } from '@/lib/sdui/types';
+import type { SDUINode } from '@/lib/sdui/types/node';
+import appConfig from '@/config/app';
+import { loadPopups } from '@/lib/builder/popup-data';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const app = appConfig as any;
+
+const PREVIEW_COOKIE = 'preview_project_id';
+const PREVIEW_TOKEN_COOKIE = 'preview_token';
+const PREVIEW_SESSION_KEY = 'builder:previewProjectId';
+const CONFIG_CACHE_KEY_PREFIX = 'builder:previewConfig:';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface BuilderPage {
+  id: string;
+  name: string;
+  route?: string;
+  nodes: SDUINode[];
+}
+
+interface WorkflowMeta {
+  trigger?: string;
+  name?: string;
+  [key: string]: unknown;
+}
+
+interface ProjectConfig {
+  pages?: BuilderPage[];
+  pageWorkflows?: Record<string, unknown[]>;
+  pageWorkflowMeta?: Record<string, WorkflowMeta>;
+  globalWorkflows?: Record<string, unknown[]>;
+  globalWorkflowMeta?: Record<string, WorkflowMeta>;
+  themeOverrides?: Record<string, string>;
+  themeDarkOverrides?: Record<string, string>;
+  popupModels?: Record<string, unknown>;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function getCookieValue(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function getProjectIdFromCookie(): string | null {
+  return getCookieValue(PREVIEW_COOKIE);
+}
+
+function getPreviewToken(): string | null {
+  return getCookieValue(PREVIEW_TOKEN_COOKIE);
+}
+
+function hexToRgbTriplet(value: string): string {
+  if (!value.startsWith('#')) return value;
+  const clean = value.replace('#', '');
+  const full = clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  return `${r} ${g} ${b}`;
+}
+
+const GLUESTACK_PRIMARY_BRIDGE = [
+  '  --color-primary-400: var(--primary) !important;',
+  '  --color-primary-500: var(--primary) !important;',
+  '  --color-primary-600: var(--primary) !important;',
+  '  --color-primary-700: var(--primary) !important;',
+  '  --color-primary-800: var(--primary) !important;',
+].join('\n');
+
+function applyTheme(light: Record<string, string>, dark: Record<string, string>) {
+  const getOrCreate = (id: string) => {
+    let el = document.getElementById(id) as HTMLStyleElement | null;
+    if (!el) { el = document.createElement('style'); el.id = id; document.head.appendChild(el); }
+    return el;
+  };
+
+  const lightEl = getOrCreate('preview-light-overrides');
+  const colorLines: string[] = [];
+  const baseLines: string[] = [];
+  for (const [k, v] of Object.entries(light)) {
+    if (v.startsWith('#')) colorLines.push(`  --${k}: ${hexToRgbTriplet(v)};`);
+    else baseLines.push(`  --${k}: ${v};`);
+  }
+  const parts: string[] = [];
+  if (baseLines.length) parts.push(`:root {\n${baseLines.join('\n')}\n}`);
+  parts.push(`html:not(.dark) {\n${colorLines.join('\n')}${colorLines.length ? '\n' : ''}${GLUESTACK_PRIMARY_BRIDGE}\n}`);
+  lightEl.textContent = parts.join('\n\n');
+
+  const darkEl = getOrCreate('preview-dark-overrides');
+  const darkVars = Object.entries(dark).map(([k, v]) => `  --${k}: ${hexToRgbTriplet(v)};`).join('\n');
+  darkEl.textContent = `html.dark {\n${darkVars ? darkVars + '\n' : ''}${GLUESTACK_PRIMARY_BRIDGE}\n}`;
+}
+
+function buildActionsConfig(config: ProjectConfig): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+
+  const addWorkflows = (
+    workflows: Record<string, unknown[]> | undefined,
+    meta: Record<string, WorkflowMeta> | undefined,
+  ) => {
+    if (!workflows) return;
+    for (const [uuid, steps] of Object.entries(workflows)) {
+      result[uuid] = {
+        type: 'workflowSteps',
+        trigger: meta?.[uuid]?.trigger ?? 'click',
+        steps,
+      };
+    }
+  };
+
+  addWorkflows(config.pageWorkflows, config.pageWorkflowMeta);
+  addWorkflows(config.globalWorkflows, config.globalWorkflowMeta);
+  return result;
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export default function AppPreviewPage() {
+  const pathname = usePathname();
+  // Strip /app-preview prefix that the middleware adds internally
+  const appPath = pathname?.replace(/^\/app-preview/, '') || '/';
+
+  const [projectConfig, setProjectConfig] = useState<ProjectConfig | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchConfig = useCallback(async (projectId: string, bustCache = false) => {
+    try {
+      const cacheKey = `${CONFIG_CACHE_KEY_PREFIX}${projectId}`;
+
+      // Use the sessionStorage cache only for in-tab navigation (not reloads).
+      // This avoids a backend round-trip when the user clicks a link inside the
+      // preview, while still showing fresh data when they press F5 or explicitly
+      // navigate back to the preview after saving changes in the builder.
+      if (!bustCache) {
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+          const cfg = JSON.parse(cached) as ProjectConfig;
+          if (cfg.popupModels) loadPopups(cfg.popupModels as Record<string, unknown>);
+          if (cfg.themeOverrides || cfg.themeDarkOverrides) {
+            applyTheme(cfg.themeOverrides ?? {}, cfg.themeDarkOverrides ?? {});
+          }
+          setProjectConfig(cfg);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Always evict the stale cache entry before fetching fresh data.
+      sessionStorage.removeItem(cacheKey);
+
+      // Fetch with preview token (Bearer) — token was set as a cookie by middleware
+      const token = getPreviewToken();
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`/api/projects/${projectId}/config`, { headers });
+      if (!res.ok) {
+        setError(`Could not load project (HTTP ${res.status}). Make sure you are logged in.`);
+        setLoading(false);
+        return;
+      }
+      const data = await res.json() as { config?: ProjectConfig };
+      const cfg = data.config ?? {};
+
+      // Cache in sessionStorage — valid for this tab's lifetime (1 hour token)
+      try { sessionStorage.setItem(cacheKey, JSON.stringify(cfg)); } catch { /* quota */ }
+
+      // Seed popup store
+      if (cfg.popupModels) loadPopups(cfg.popupModels as Record<string, unknown>);
+
+      // Apply theme overrides
+      if (cfg.themeOverrides || cfg.themeDarkOverrides) {
+        applyTheme(cfg.themeOverrides ?? {}, cfg.themeDarkOverrides ?? {});
+      }
+
+      setProjectConfig(cfg);
+    } catch (err) {
+      setError(`Failed to load project: ${String(err)}`);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.add('preview-mode');
+    return () => document.documentElement.classList.remove('preview-mode');
+  }, []);
+
+  useEffect(() => {
+    // Resolve projectId: URL query (on first load) → cookie → sessionStorage
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = params.get('projectId');
+
+    let projectId = fromUrl
+      ?? getProjectIdFromCookie()
+      ?? sessionStorage.getItem(PREVIEW_SESSION_KEY);
+
+    if (fromUrl) {
+      // Persist in sessionStorage so it survives navigation
+      sessionStorage.setItem(PREVIEW_SESSION_KEY, fromUrl);
+      projectId = fromUrl;
+    }
+
+    if (!projectId) {
+      setError('No project ID found. Open the preview from the builder by clicking the Preview button.');
+      setLoading(false);
+      return;
+    }
+
+    // Bust the sessionStorage cache on explicit page reloads (F5 / Cmd+R) so
+    // the user always sees the latest saved changes from the builder.
+    const isReload =
+      typeof performance !== 'undefined' &&
+      (
+        // Modern Navigation Timing API
+        (performance.getEntriesByType?.('navigation') as PerformanceNavigationTiming[] | undefined)
+          ?.[0]?.type === 'reload' ||
+        // Legacy fallback
+        (performance.navigation as { type?: number } | undefined)?.type === 1
+      );
+
+    void fetchConfig(projectId, isReload);
+  }, [fetchConfig]);
+
+  // Find the page matching the current app path
+  const currentPage = useMemo<BuilderPage | null>(() => {
+    if (!projectConfig?.pages?.length) return null;
+    const pages = projectConfig.pages;
+
+    // Exact match first
+    const exact = pages.find(p => (p.route ?? '/') === appPath);
+    if (exact) return exact;
+
+    // Dynamic route match (prefix)
+    const dynamic = pages.find(p => p.route && appPath.startsWith(p.route + '/'));
+    if (dynamic) return dynamic;
+
+    // Home fallback
+    return pages.find(p => p.route === '/' || !p.route) ?? pages[0];
+  }, [projectConfig, appPath]);
+
+  const sdui = useMemo<SDUIConfig>(() => ({
+    state: {},
+    ui: {
+      type: 'Box',
+      props: { className: 'flex flex-col w-full min-h-screen' },
+      children: (currentPage?.nodes ?? []) as SDUINode[],
+    } as SDUIConfig['ui'],
+  }), [currentPage]);
+
+  const actionsConfig = useMemo(() => {
+    if (!projectConfig) return {};
+    return {
+      ...(app.actions ?? {}),
+      ...buildActionsConfig(projectConfig),
+    };
+  }, [projectConfig]);
+
+  // ── Loading / error states ────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        background: '#0f172a', color: '#94a3b8',
+        fontFamily: 'system-ui, sans-serif', gap: 12,
+      }}>
+        <div style={{
+          width: 28, height: 28,
+          border: '2px solid #3b82f6', borderTopColor: 'transparent',
+          borderRadius: '50%', animation: 'spin 0.8s linear infinite',
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <span style={{ fontSize: 13 }}>Loading preview…</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{
+        minHeight: '100vh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        background: '#0f172a', color: '#f87171',
+        fontFamily: 'system-ui, sans-serif', gap: 8, padding: '0 24px',
+        textAlign: 'center',
+      }}>
+        <span style={{ fontSize: 24 }}>⚠</span>
+        <p style={{ fontSize: 14, maxWidth: 360, lineHeight: 1.5, color: '#94a3b8' }}>{error}</p>
+      </div>
+    );
+  }
+
+  if (!currentPage) {
+    return (
+      <div style={{
+        minHeight: '100vh', display: 'flex', alignItems: 'center',
+        justifyContent: 'center', background: '#0f172a', color: '#94a3b8',
+        fontFamily: 'system-ui, sans-serif', fontSize: 14,
+      }}>
+        No pages found in this project. Add a page in the builder first.
+      </div>
+    );
+  }
+
+  return (
+    <SDUIEngine
+      config={sdui}
+      configName={appPath.replace(/[^a-zA-Z0-9]/g, '_') || 'preview'}
+      actionsConfig={actionsConfig}
+      routes={app.routes ?? []}
+      dataSources={app.dataSources ?? {}}
+    />
+  );
+}

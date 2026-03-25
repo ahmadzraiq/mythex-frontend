@@ -1,7 +1,7 @@
 import { test } from '@playwright/test';
 
 test('debug binding icons', async ({ page }) => {
-  await page.goto('/dev/builder');
+  await page.goto('http://builder-dev.localhost:3001');
   await page.waitForSelector('[data-builder-page-frame]', { timeout: 25_000 });
   await page.waitForFunction(
     () => !!(window as unknown as Record<string, unknown>).__builderStore,

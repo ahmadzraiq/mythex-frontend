@@ -14,7 +14,7 @@ import { test, expect, type Page, type Browser } from '@playwright/test';
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function gotoBuilder(page: Page) {
-  await page.goto('/dev/builder');
+  await page.goto('http://builder-dev.localhost:3001');
   await page.waitForSelector('[data-builder-page-frame]', { timeout: 30_000 });
   await page.waitForSelector('[data-testid="tab-components"]', { timeout: 15_000 });
   // __builderStore is set at module level in _store.ts — available once JS bundle loads

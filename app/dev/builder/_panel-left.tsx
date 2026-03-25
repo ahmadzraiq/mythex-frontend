@@ -65,8 +65,8 @@ function PagesTab() {
   const allRoutes = (routes as { routes: Array<{ path: string; config: string }> }).routes;
 
   const commitRename = useCallback(() => {
-    if (renamingId && renameValue.trim()) {
-      renamePage(renamingId, renameValue.trim());
+    if (renamingId) {
+      renamePage(renamingId, renameValue);
     }
     setRenamingId(null);
     setRenameValue('');
@@ -170,8 +170,8 @@ function PagesTab() {
                 )}
               </div>
 
-              {/* Delete button — only show when >1 page */}
-              {pages.length > 1 && !isRenaming && (
+              {/* Delete button */}
+              {!isRenaming && (
                 <button
                   title="Remove page"
                   onClick={e => { e.stopPropagation(); removePage(page.id); }}
@@ -657,7 +657,7 @@ const PC_SECTION: React.CSSProperties = {
 };
 
 export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }) {
-  const { pages, currentPageId, renamePage, setCurrentPageMeta, setCurrentPageInteractions, pageWorkflows } = useBuilderStore();
+  const { pages, currentPageId, renamePage, removePage, setCurrentPageMeta, setCurrentPageInteractions, pageWorkflows } = useBuilderStore();
   const currentPage = pages.find(p => p.id === currentPageId);
 
   const [pageName, setPageName] = useState(currentPage?.name ?? '');
@@ -695,7 +695,7 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
             data-testid="page-config-name"
             value={pageName}
             onChange={e => setPageName(e.target.value)}
-            onBlur={() => { if (pageName.trim() && currentPageId) renamePage(currentPageId, pageName.trim()); }}
+            onBlur={() => { if (currentPageId) renamePage(currentPageId, pageName); }}
             style={PC_INPUT}
           />
         </div>
@@ -770,7 +770,16 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
         </div>
       </div>
 
-      <div style={{ marginTop: 'auto', padding: '10px 12px', borderTop: '1px solid #1f2937', display: 'flex', justifyContent: 'flex-end' }}>
+      <div style={{ marginTop: 'auto', padding: '10px 12px', borderTop: '1px solid #1f2937', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button
+          title="Delete this page"
+          onClick={() => { if (currentPageId) { removePage(currentPageId); onClose(); } }}
+          style={{ padding: '5px 10px', background: 'none', border: '1px solid #374151', borderRadius: 4, color: '#f87171', fontSize: 11, cursor: 'pointer', marginRight: 'auto' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(248,113,113,0.1)'; e.currentTarget.style.borderColor = '#f87171'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = '#374151'; }}
+        >
+          Delete page
+        </button>
         <button
           onClick={onClose}
           style={{ padding: '5px 14px', background: '#1d4ed8', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, cursor: 'pointer' }}
@@ -921,8 +930,8 @@ export default function PanelLeft({
 
   return (
     <div data-testid="panel-left" style={{ width: 240, height: '100%', display: 'flex', flexDirection: 'column', background: '#111827', borderRight: '1px solid #1f2937', overflow: 'hidden' }}>
-      {/* Page settings bar — always shows current page */}
-      {(
+      {/* Page settings bar — only shown when a page exists */}
+      {pages.length > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 8px', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
           <span style={{ fontSize: 10, opacity: 0.5, flexShrink: 0 }}>📄</span>
           <span style={{ flex: 1, fontSize: 11, color: '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

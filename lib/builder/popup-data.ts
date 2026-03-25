@@ -106,3 +106,21 @@ export function loadPopups(models: Record<string, unknown>): void {
   _store = models as Record<string, PopupModel>;
   _notify();
 }
+
+/**
+ * Clears all popup models — used when opening a real (non-admin) project so
+ * the popups panel starts blank rather than showing the static config defaults.
+ */
+export function clearPopups(): void {
+  _store = {};
+  _notify();
+}
+
+/**
+ * Resets the popup store back to the initial data from config/popups.json.
+ * Used when entering admin / dev mode so the static showcase popups reappear.
+ */
+export function resetToConfigPopups(): void {
+  _store = { ...(initialData as unknown as Record<string, PopupModel>) };
+  _notify();
+}

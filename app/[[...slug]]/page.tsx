@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useSduiStore } from '@/store/sdui-store';
 import { SDUIEngine, paramChangeRunActionRef, type ActionsConfig, type NamedDataSourceDef } from '@/lib/sdui/sdui-engine';
@@ -9,6 +9,7 @@ import { syncSearchParams } from '@/lib/sdui/search-param-sync';
 import { sortRoutes, matchRoute } from '@/lib/sdui/route-utils';
 import type { SDUIConfig } from '@/lib/sdui/types';
 import type { AppConfig, PageUI } from '@/config/types';
+import type { SDUINode } from '@/lib/sdui/types/node';
 
 import appConfig from '@/config/app';
 import variablesJson from '@/config/variables.json';
@@ -23,12 +24,91 @@ const syncDefs = buildSyncDefsFromVariables(
 
 const app = appConfig as AppConfig;
 
+// ── Builder live-preview bridge ───────────────────────────────────────────────
+// When running on preview-dev.localhost, the builder sends the current page's
+// nodes + workflows via postMessage instead of writing to localStorage (which
+// is not shared across different subdomains).
+
+interface BuilderLiveConfig {
+  nodes?: SDUINode[];
+  pageWorkflows?: Record<string, unknown[]>;
+  pageWorkflowMeta?: Record<string, Record<string, unknown>>;
+  globalWorkflows?: Record<string, unknown[]>;
+  globalWorkflowMeta?: Record<string, Record<string, unknown>>;
+  themeOverrides?: Record<string, string>;
+  themeDarkOverrides?: Record<string, string>;
+}
+
+function hexToRgbTriplet(hex: string): string {
+  if (!hex.startsWith('#')) return hex;
+  const clean = hex.replace('#', '');
+  const full = clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean;
+  return `${parseInt(full.slice(0, 2), 16)} ${parseInt(full.slice(2, 4), 16)} ${parseInt(full.slice(4, 6), 16)}`;
+}
+
+function applyBuilderTheme(light: Record<string, string>, dark: Record<string, string>) {
+  const getOrCreate = (id: string) => {
+    let el = document.getElementById(id) as HTMLStyleElement | null;
+    if (!el) { el = document.createElement('style'); el.id = id; document.head.appendChild(el); }
+    return el;
+  };
+  const lightLines: string[] = [];
+  const colorLines: string[] = [];
+  for (const [k, v] of Object.entries(light)) {
+    if (v.startsWith('#')) colorLines.push(`  --${k}: ${hexToRgbTriplet(v)};`);
+    else lightLines.push(`  --${k}: ${v};`);
+  }
+  const parts: string[] = [];
+  if (lightLines.length) parts.push(`:root {\n${lightLines.join('\n')}\n}`);
+  if (colorLines.length) parts.push(`html:not(.dark) {\n${colorLines.join('\n')}\n}`);
+  getOrCreate('builder-live-light').textContent = parts.join('\n\n');
+  const darkVars = Object.entries(dark).map(([k, v]) => `  --${k}: ${hexToRgbTriplet(v)};`).join('\n');
+  getOrCreate('builder-live-dark').textContent = darkVars ? `html.dark {\n${darkVars}\n}` : '';
+}
+
+function buildLiveActionsConfig(cfg: BuilderLiveConfig): ActionsConfig {
+  const result: Record<string, unknown> = {};
+  const add = (wfs?: Record<string, unknown[]>, meta?: Record<string, Record<string, unknown>>) => {
+    if (!wfs) return;
+    for (const [uuid, steps] of Object.entries(wfs)) {
+      result[uuid] = { type: 'workflowSteps', trigger: meta?.[uuid]?.trigger ?? 'click', steps };
+    }
+  };
+  add(cfg.pageWorkflows, cfg.pageWorkflowMeta);
+  add(cfg.globalWorkflows, cfg.globalWorkflowMeta);
+  return result as ActionsConfig;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function DynamicRoutePage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const setData = useSduiStore((s) => s.setData);
   const isAuthenticated = !!useSduiStore((s) => s.data[AUTH_USER_PATH]);
+
+  // Receives live config from the builder via postMessage (preview-dev only)
+  const [builderLive, setBuilderLive] = useState<BuilderLiveConfig | null>(null);
+
+  // Set up postMessage bridge — only active on preview-dev subdomain
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!window.location.hostname.startsWith('preview-dev.')) return;
+
+    // Tell the builder we're ready to receive config
+    window.opener?.postMessage({ type: 'PREVIEW_READY' }, '*');
+
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type !== 'BUILDER_LIVE_CONFIG') return;
+      const cfg = e.data.config as BuilderLiveConfig;
+      setBuilderLive(cfg);
+      if (cfg.themeOverrides || cfg.themeDarkOverrides) {
+        applyBuilderTheme(cfg.themeOverrides ?? {}, cfg.themeDarkOverrides ?? {});
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
 
   const routes = app.routes;
   const defaultRedirect = app.defaultRedirect || '/';
@@ -141,13 +221,30 @@ export default function DynamicRoutePage() {
         .join('-')}`
     : path;
 
+  // When the builder sends a live config (preview-dev mode), override the
+  // static screen config with the builder's current nodes + workflows.
+  const effectiveConfig: SDUIConfig = builderLive
+    ? {
+        state: {},
+        ui: {
+          type: 'Box',
+          props: { className: 'flex flex-col w-full min-h-screen' },
+          children: (builderLive.nodes ?? []) as SDUINode[],
+        } as SDUIConfig['ui'],
+      }
+    : config as unknown as SDUIConfig;
+
+  const effectiveActions: ActionsConfig = builderLive
+    ? { ...(app.actions as ActionsConfig), ...buildLiveActionsConfig(builderLive) }
+    : app.actions as ActionsConfig;
+
   return (
     <main className={layoutClass}>
       <SDUIEngine
         key={engineKey}
-        config={config as unknown as SDUIConfig}
+        config={effectiveConfig}
         configName={configName}
-        actionsConfig={app.actions as ActionsConfig}
+        actionsConfig={effectiveActions}
         routes={app.routes}
         paramChangeAction={(route as { paramChangeAction?: string })?.paramChangeAction}
         dataSources={(app as { dataSources?: Record<string, NamedDataSourceDef> }).dataSources}

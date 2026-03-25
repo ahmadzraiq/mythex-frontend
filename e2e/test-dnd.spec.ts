@@ -13,7 +13,7 @@ import { test, expect, Page, Browser } from '@playwright/test';
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function gotoBuilder(page: Page) {
-  await page.goto('/dev/builder');
+  await page.goto('http://builder-dev.localhost:3001');
   await page.waitForSelector('[data-builder-page-frame]', { timeout: 20_000 });
   await page.waitForFunction(
     () => !!(window as unknown as Record<string, unknown>).__builderStore,
@@ -778,7 +778,7 @@ test('T1: W Fill button adds w-full class', async () => {
   const page = sharedPage;
   // Reload to get a clean canvas — previous tests accumulate many nodes which
   // can cause the first dragTo to silently fail (drop lands on an existing node).
-  await page.goto('/dev/builder');
+  await page.goto('http://builder-dev.localhost:3001');
   await page.waitForSelector('[data-builder-page-frame]', { timeout: 30_000 });
   await page.waitForFunction(
     () => !!(window as unknown as Record<string, unknown>).__builderStore,
@@ -1506,7 +1506,7 @@ test.describe('Group U — Right Panel: All Properties', () => {
     console.log('Typography visible for Text ✓');
 
     // Box node → Typography hidden (fresh page to avoid multi-node layer issues)
-    await page.goto('/dev/builder');
+    await page.goto('http://builder-dev.localhost:3001');
     await page.waitForSelector('[data-builder-page-frame]', { timeout: 30_000 });
     await page.waitForFunction(
       () => !!(window as unknown as Record<string, unknown>).__builderStore,
@@ -1969,7 +1969,7 @@ test.describe('Fix-MarqueeStale: marquee cleared when drag starts', () => {
   test('Fix-Marquee-2: marquee rect is gone after dragend', async () => {
     const page = sharedPage;
     // Fresh canvas so the drop reliably lands on empty space.
-    await page.goto('/dev/builder');
+    await page.goto('http://builder-dev.localhost:3001');
     await page.waitForSelector('[data-builder-page-frame]', { timeout: 30_000 });
     await page.waitForFunction(
       () => !!(window as unknown as Record<string, unknown>).__builderStore,
@@ -2654,7 +2654,7 @@ test.describe('DropIndicator-Direction: vertical line for row containers', () =>
   }
 
   test('DI-01: drop over HStack shows vertical line (dropLineX set, not dropLineY)', async ({ page }) => {
-    await page.goto('/dev/builder');
+    await page.goto('http://builder-dev.localhost:3001');
     await page.waitForSelector('[data-builder-page-frame]', { timeout: 30_000 });
     await waitForStore(page);
 
@@ -2716,7 +2716,7 @@ test.describe('DropIndicator-Direction: vertical line for row containers', () =>
   });
 
   test('DI-02: drop over Box flex-row shows vertical line', async ({ page }) => {
-    await page.goto('/dev/builder');
+    await page.goto('http://builder-dev.localhost:3001');
     await page.waitForSelector('[data-builder-page-frame]', { timeout: 30_000 });
     await waitForStore(page);
 
@@ -2772,7 +2772,7 @@ test.describe('DropIndicator-Direction: vertical line for row containers', () =>
   });
 
   test('DI-03: drop over Box flex-col (VStack) shows horizontal line', async ({ page }) => {
-    await page.goto('/dev/builder');
+    await page.goto('http://builder-dev.localhost:3001');
     await page.waitForSelector('[data-builder-page-frame]', { timeout: 30_000 });
     await waitForStore(page);
 
@@ -2828,7 +2828,7 @@ test.describe('DropIndicator-Direction: vertical line for row containers', () =>
   });
 
   test('DI-04: isRowContainer — HStack type is recognised as row', async ({ page }) => {
-    await page.goto('/dev/builder');
+    await page.goto('http://builder-dev.localhost:3001');
     await page.waitForSelector('[data-builder-page-frame]', { timeout: 30_000 });
     await waitForStore(page);
 

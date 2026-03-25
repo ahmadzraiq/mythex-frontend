@@ -30,9 +30,13 @@ test.setTimeout(60_000);
 
 let sharedPage: Page;
 
+// SDUI app routes are served on preview-dev.localhost (not the main domain
+// which is reserved for platform routes). Use the full URL with the subdomain.
+const PREVIEW_DEV_BASE = 'http://preview-dev.localhost:3001';
+
 test.beforeAll(async ({ browser }) => {
   sharedPage = await browser.newPage();
-  await sharedPage.goto('/animation-test');
+  await sharedPage.goto(`${PREVIEW_DEV_BASE}/animation-test`);
   await sharedPage.waitForSelector('[data-testid="anim-ready"]', { timeout: 30_000 });
   // Allow enter animations to complete
   await sharedPage.waitForTimeout(1200);
@@ -43,7 +47,7 @@ test.afterAll(async () => {
 });
 
 async function resetPage(page: Page) {
-  await page.goto('/animation-test');
+  await page.goto(`${PREVIEW_DEV_BASE}/animation-test`);
   await page.waitForSelector('[data-testid="anim-ready"]', { timeout: 30_000 });
   await page.waitForTimeout(1200);
 }

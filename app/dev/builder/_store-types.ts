@@ -163,6 +163,8 @@ export interface BuilderStore {
   // ── Multi-page state ────────────────────────────────────────────────────────
   pages: BuilderPage[];
   currentPageId: string;
+  /** Set of page IDs whose nodes have been fetched from the backend. */
+  loadedPageIds: Set<string>;
 
   // ── Page state (active page working copy) ───────────────────────────────────
   pageNodes: SDUINode[];
@@ -425,7 +427,7 @@ export interface BuilderStore {
 
   /** Load Data Sources, Workflows, Variables, Formulas from the app config files via the API.
    *  Only runs if panels are empty (user hasn't manually edited), unless forceReload=true. */
-  loadFromConfig: () => Promise<void>;
+  loadFromConfig: (projectId?: string) => Promise<void>;
 
   // Internal (debounce wrapper)
   _pushHistory: () => void;

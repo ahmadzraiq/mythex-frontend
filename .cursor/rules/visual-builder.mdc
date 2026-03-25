@@ -54,7 +54,14 @@ Components render directly in the React tree. The canvas uses a `data-builder-pa
 
 **`builderMode`**: a flag passed to the SDUI renderer that disables action execution and enables builder-specific ref callbacks.
 
-**Preview** (`↗ Preview` button / `⌘P`): Serializes `pageNodes` + `viewport` + page metadata to `localStorage` (key: `BUILDER_PREVIEW_KEY`) then opens `/dev/builder/preview` in a new tab. The preview page (`app/dev/builder/preview/page.tsx`) reads from localStorage and renders **only** `SDUIEngine` with no builder chrome — exactly as a real website. No overlays, no toolbar, no labels.
+**Preview** (`↗ Preview` button / `⌘P`):
+
+- **Disabled** when the current page has no app route (e.g. the Component Showcase page). The button is grayed out with a tooltip explaining why.
+- Always saves `pageNodes` + `viewport` + page metadata to `localStorage` (key: `BUILDER_PREVIEW_KEY`) as a local snapshot.
+- **builder-dev mode** (no `projectId`): opens `preview-dev.localhost:3001/<pageRoute>` in a named tab (`sdui-dev-preview`). The builder keeps a `previewWinRef` and reuses the same tab on subsequent clicks. Config is transferred to the preview tab via **postMessage** (`BUILDER_LIVE_CONFIG` message) — localStorage is NOT shared across subdomains. The preview-dev SDUI app (`app/[[...slug]]/page.tsx`) listens for this message and overrides its static config with the builder's current nodes + workflows + theme.
+- **project mode** (has `projectId`): opens `about:blank` in a named window (`sdui-preview`) **immediately** (while the user-gesture token is still active — see §window.open rule below), then saves to the backend and fetches a preview JWT, and finally navigates the already-open window to `preview.localhost:3001/<pageRoute>?projectId=...&token=...`. The middleware strips those params, sets cookies, and redirects to the clean URL.
+
+**`window.open` user-gesture rule:** Browsers expire popup permission after the first `await`. Any `window.open()` call that comes after an `await` silently navigates the **current** tab instead of opening a new one, destroying the builder's browser history. **Always call `window.open` before any `await`** — open `about:blank` to claim the tab, do async work, then set `.location.href` on the returned window reference.
 
 ---
 

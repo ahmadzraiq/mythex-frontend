@@ -12,6 +12,10 @@ import { test, expect, type Page, type Browser } from '@playwright/test';
 
 test.setTimeout(60_000);
 
+// SDUI app routes are served on preview-dev.localhost (not the main domain
+// which is reserved for platform routes). Use the full URL with the subdomain.
+const PREVIEW_DEV_BASE = 'http://preview-dev.localhost:3001';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper
 // ─────────────────────────────────────────────────────────────────────────────
@@ -32,7 +36,7 @@ let createdAlertId: string | undefined;
 test.describe('Builder UI', () => {
   test.beforeAll(async ({ browser }: { browser: Browser }) => {
     builderPage = await browser.newPage();
-    await builderPage.goto('/dev/builder');
+    await builderPage.goto('http://builder-dev.localhost:3001');
     await builderPage.waitForSelector('[data-testid="tab-layers"]', { timeout: 30_000 });
   });
 
@@ -278,7 +282,7 @@ let runtimePage: Page;
 test.describe('Runtime', () => {
   test.beforeAll(async ({ browser }: { browser: Browser }) => {
     runtimePage = await browser.newPage();
-    await runtimePage.goto('/popup-test');
+    await runtimePage.goto(`${PREVIEW_DEV_BASE}/popup-test`);
     await runtimePage.waitForSelector('[data-testid="open-modal-btn"]', { timeout: 30_000 });
   });
 

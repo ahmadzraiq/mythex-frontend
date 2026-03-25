@@ -45,11 +45,15 @@ test.setTimeout(60_000);
 // ─── Shared page ──────────────────────────────────────────────────────────────
 // Load once in beforeAll; each test calls resetPage() for a clean initial state.
 
+// SDUI app routes are served on preview-dev.localhost (not the main domain
+// which is reserved for platform routes). Use the full URL with the subdomain.
+const PREVIEW_DEV_BASE = 'http://preview-dev.localhost:3001';
+
 let sharedPage: Page;
 
 test.beforeAll(async ({ browser }) => {
   sharedPage = await browser.newPage();
-  await sharedPage.goto('/workflow-test');
+  await sharedPage.goto(`${PREVIEW_DEV_BASE}/workflow-test`);
   // Wait until the SDUI engine has rendered the initial state
   await sharedPage.waitForSelector('[data-testid="out-message"]', { timeout: 30_000 });
   await sharedPage.waitForTimeout(500);

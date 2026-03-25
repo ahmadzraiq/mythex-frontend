@@ -20,7 +20,7 @@ import { test, expect, type Page } from '@playwright/test';
 
 test.setTimeout(120_000);
 
-const BUILDER_URL = 'http://localhost:3000/dev/builder';
+const BUILDER_URL = 'http://builder-dev.localhost:3001';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 

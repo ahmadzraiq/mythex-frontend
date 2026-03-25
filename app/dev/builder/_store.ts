@@ -321,9 +321,11 @@ function _reattachPopups(
 }
 
 export const useBuilderStore = create<BuilderStore>((set, get) => ({
-  pages: INITIAL_PAGES,
-  currentPageId: SHOWCASE_PAGE.id,
-  pageNodes: showcaseNodes,
+  // Start blank — loadFromConfig populates pages for admin mode or loads from backend
+  pages: [],
+  currentPageId: '',
+  loadedPageIds: new Set<string>(),
+  pageNodes: [],
   selectedIds: [],
   hoveredId: null,
   altHoveredId: null,
@@ -338,7 +340,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   viewport: 'desktop',
   gridOverlay: { enabled: false, type: 'columns', count: 12, color: 'rgba(99,102,241,0.15)' },
   clipboard: [],
-  history: [clone(showcaseNodes)],
+  history: [[]],
   historyIdx: 0,
   pendingFitToPage: false,
   editingPopupIds: [],
@@ -1205,26 +1207,65 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
       return;
     }
 
-    const { cleanNodes } = _flushEditingPopups(s);
+    const doSwitch = (targetNodes: SDUINode[]) => {
+      const currentS = get();
+      const { cleanNodes } = _flushEditingPopups(currentS);
+      const savedPages = (currentS.pages as BuilderPage[]).map(p =>
+        p.id === currentS.currentPageId ? { ...p, nodes: clone(cleanNodes) } : p
+      );
+      const { newNodes, newContentsMap } = _reattachPopups(currentS, clone(targetNodes));
+      set({
+        pages: savedPages,
+        currentPageId: pageId,
+        pageNodes: newNodes,
+        editingPopupContentsMap: newContentsMap,
+        _savedPageNodes: clone(targetNodes),
+        selectedIds: [],
+        hoveredId: null,
+        history: [clone(newNodes)],
+        historyIdx: 0,
+        pendingFitToPage: true,
+      });
+    };
 
-    const savedPages = (s.pages as BuilderPage[]).map(p =>
-      p.id === s.currentPageId ? { ...p, nodes: clone(cleanNodes) } : p
-    );
+    // If the page nodes haven't been loaded yet AND the page has no nodes (stub from /config/meta),
+    // fetch them from the backend before switching.
+    const isLoaded = s.loadedPageIds.has(pageId);
+    const hasNodes = target.nodes.length > 0;
 
-    const { newNodes, newContentsMap } = _reattachPopups(s, clone(target.nodes) as SDUINode[]);
+    if (!isLoaded && !hasNodes) {
+      // Resolve projectId from either ?projectId= query param (legacy/admin mode)
+      // or from the /builder/<id> pathname (protected platform route — the browser
+      // URL stays as /builder/<id> even though middleware rewrites internally).
+      const projectId = typeof window !== 'undefined'
+        ? (new URLSearchParams(window.location.search).get('projectId') ??
+           (window.location.pathname.startsWith('/builder/')
+             ? window.location.pathname.split('/')[2] ?? null
+             : null))
+        : null;
 
-    set({
-      pages: savedPages,
-      currentPageId: pageId,
-      pageNodes: newNodes,
-      editingPopupContentsMap: newContentsMap,
-      _savedPageNodes: clone(target.nodes) as SDUINode[],
-      selectedIds: [],
-      hoveredId: null,
-      history: [clone(newNodes)],
-      historyIdx: 0,
-      pendingFitToPage: true,
-    });
+      if (projectId && projectId !== 'admin') {
+        fetch(`/api/projects/${projectId}/pages/${pageId}`, { credentials: 'include' })
+          .then(res => res.ok ? res.json() as Promise<{ page?: { nodes?: SDUINode[] } }> : null)
+          .then(data => {
+            const fetchedNodes = (data?.page?.nodes ?? []) as SDUINode[];
+            // Update the page in the pages array with the fetched nodes, mark as loaded
+            set(st => ({
+              pages: st.pages.map(p => p.id === pageId ? { ...p, nodes: fetchedNodes } : p),
+              loadedPageIds: new Set([...st.loadedPageIds, pageId]),
+            }));
+            doSwitch(fetchedNodes);
+          })
+          .catch(() => {
+            // On error, just switch with empty nodes
+            doSwitch([]);
+          });
+        return; // async — switch happens in the then() above
+      }
+    }
+
+    // Already loaded or admin mode — switch immediately
+    doSwitch(clone(target.nodes) as SDUINode[]);
   },
 
   clearPendingFit: () => set({ pendingFitToPage: false }),
@@ -1621,7 +1662,148 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     set(s => ({ pageDataSources: s.pageDataSources.filter(d => d.id !== id) }));
   },
 
-  loadFromConfig: async () => {
+  loadFromConfig: async (projectId?: string, opts?: { eagerAll?: boolean /* unused — always true for real projects now */ }) => {
+    // ── Real backend project ──────────────────────────────────────────────────
+    // Any projectId that is not the dev-only "admin" magic ID means a real
+    // backend project. We always clear popups and load exclusively from the
+    // backend — never fall through to static config.
+    if (projectId && projectId !== 'admin') {
+      // Clear the popup store immediately so non-admin projects start blank.
+      const { clearPopups } = await import('@/lib/builder/popup-data');
+      clearPopups();
+
+      try {
+        // ── Step 1: Load metadata (page list without nodes) + all non-page data
+        const metaRes = await fetch(`/api/projects/${projectId}/config/meta`, { credentials: 'include' });
+        const saved = metaRes.ok
+          ? ((await metaRes.json() as { config?: Record<string, unknown> }).config ?? null)
+          : null;
+
+        // Extract page stubs from whatever the backend returned (may be empty array for new project)
+        const pageStubs = (saved?.pages ?? []) as Array<{ id: string; name: string; route?: string }>;
+
+        if (pageStubs.length > 0) {
+          // ── Existing project — load pages ────────────────────────────────────
+          // Always fetch ALL pages in parallel — every page in the canvas shows
+          // its content immediately after load (no "Empty page" stubs).
+          const fetchPageNodes = async (pageId: string): Promise<SDUINode[]> => {
+            try {
+              const pageRes = await fetch(`/api/projects/${projectId}/pages/${pageId}`, { credentials: 'include' });
+              if (pageRes.ok) {
+                const pageData = await pageRes.json() as { page?: { nodes?: SDUINode[] } };
+                const rawNodes = (pageData.page?.nodes ?? []) as SDUINode[];
+                // Ensure every node has a UUID id so the builder can stamp
+                // data-builder-id and selection/hover works. Nodes seeded from
+                // the static config (home.json etc.) have no ids.
+                return _assignIds(rawNodes, pageId, { n: 0 });
+              }
+            } catch { /* ignore fetch errors — page stays empty */ }
+            return [];
+          };
+
+          const fetchedNodesList = await Promise.all(pageStubs.map(s => fetchPageNodes(s.id)));
+
+          const nodesByPageId = new Map<string, SDUINode[]>();
+          pageStubs.forEach((stub, i) => nodesByPageId.set(stub.id, fetchedNodesList[i]));
+
+          const firstPageId = pageStubs[0].id;
+          const firstPageNodes = nodesByPageId.get(firstPageId) ?? [];
+
+          const pages: BuilderPage[] = pageStubs.map(stub => ({
+            id: stub.id,
+            name: stub.name,
+            route: stub.route,
+            nodes: nodesByPageId.get(stub.id) ?? [],
+          }));
+
+          set(s => {
+            const next: Partial<typeof s> = {};
+            next.pages = pages;
+            next.loadedPageIds = new Set(pageStubs.map(s => s.id)); // all loaded
+            next.currentPageId = pages[0].id;
+            next.pageNodes = clone(firstPageNodes);
+            next.history = [clone(firstPageNodes)];
+            next.historyIdx = 0;
+            if (saved?.pageWorkflows) next.pageWorkflows = saved.pageWorkflows as typeof s.pageWorkflows;
+            if (saved?.pageWorkflowMeta) next.pageWorkflowMeta = saved.pageWorkflowMeta as typeof s.pageWorkflowMeta;
+            if (saved?.globalWorkflows) next.globalWorkflows = saved.globalWorkflows as typeof s.globalWorkflows;
+            if (saved?.globalWorkflowMeta) next.globalWorkflowMeta = saved.globalWorkflowMeta as typeof s.globalWorkflowMeta;
+            if (Array.isArray(saved?.customVars)) next.customVars = saved!.customVars as typeof s.customVars;
+            if (Array.isArray(saved?.varFolders)) next.varFolders = saved!.varFolders as typeof s.varFolders;
+            if (Array.isArray(saved?.pageDataSources)) next.pageDataSources = saved!.pageDataSources as typeof s.pageDataSources;
+            if (Array.isArray(saved?.dsFolders)) next.dsFolders = saved!.dsFolders as typeof s.dsFolders;
+            if (saved?.themeOverrides) next.themeOverrides = saved.themeOverrides as typeof s.themeOverrides;
+            if (saved?.themeDarkOverrides) next.themeDarkOverrides = saved.themeDarkOverrides as typeof s.themeDarkOverrides;
+            return next;
+          });
+        } else {
+          // ── Brand new project (no pages) — seed a default Home page ──────────
+          const homeId = crypto.randomUUID();
+          const homePage: BuilderPage = { id: homeId, name: 'Home', route: '/', nodes: [] };
+
+          set(() => ({
+            pages: [homePage],
+            currentPageId: homeId,
+            pageNodes: [],
+            history: [[]],
+            historyIdx: 0,
+            loadedPageIds: new Set<string>([homeId]),
+            pageWorkflows: {},
+            pageWorkflowMeta: {},
+            globalWorkflows: {},
+            globalWorkflowMeta: {},
+            customVars: [],
+            varFolders: [],
+            pageDataSources: [],
+            dsFolders: [],
+            themeOverrides: {},
+            themeDarkOverrides: {},
+          }));
+
+          // Persist the default page immediately so the autosave baseline and
+          // the backend are in sync from the very first load.
+          try {
+            const { serializeBuilderState } = await import('@/lib/builder/autosave');
+            const config = serializeBuilderState(useBuilderStore.getState());
+            await fetch(`/api/projects/${projectId}/config`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(config),
+              credentials: 'include',
+            });
+          } catch { /* non-fatal — autosave will retry on next change */ }
+        }
+        // Do NOT fall through to the static config loader.
+        return;
+      } catch (err) {
+        console.warn('[builder] Failed to load project config from backend:', err);
+        // Still clear & return — don't show static config for a real project.
+        set(() => ({
+          pages: [],
+          currentPageId: '',
+          pageNodes: [],
+          history: [[]],
+          historyIdx: 0,
+          loadedPageIds: new Set<string>(),
+        }));
+        return;
+      }
+    }
+
+    // ── Admin / dev mode (no projectId or projectId === 'admin') ──────────────
+    // Load the static showcase pages and reset popups to config/popups.json.
+    {
+      const { resetToConfigPopups } = await import('@/lib/builder/popup-data');
+      resetToConfigPopups();
+      set(() => ({
+        pages: INITIAL_PAGES,
+        currentPageId: SHOWCASE_PAGE.id,
+        pageNodes: clone(showcaseNodes),
+        history: [clone(showcaseNodes)],
+        historyIdx: 0,
+      }));
+    }
+
     try {
       const json = getBuilderConfig() as unknown as {
         dataSources?: DataSourceConfig[];
@@ -1758,8 +1940,18 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
 
   removePage: (pageId) => {
     set(s => {
-      if (s.pages.length <= 1) return s; // must keep at least one page
       const remaining = s.pages.filter(p => p.id !== pageId);
+      if (remaining.length === 0) {
+        return {
+          pages: [],
+          currentPageId: null,
+          pageNodes: [],
+          selectedIds: [],
+          hoveredId: null,
+          history: [[]],
+          historyIdx: 0,
+        };
+      }
       if (s.currentPageId !== pageId) {
         return { pages: remaining };
       }

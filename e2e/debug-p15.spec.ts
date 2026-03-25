@@ -2,7 +2,7 @@ import { test } from '@playwright/test';
 test.setTimeout(60_000);
 test('debug p15', async ({ browser }) => {
   const page = await browser.newPage();
-  await page.goto('http://localhost:3001/animation-test');
+  await page.goto('http://preview-dev.localhost:3001/animation-test');
   await page.waitForSelector('[data-testid="anim-ready"]', { timeout: 30_000 });
   await page.waitForTimeout(2000);
   const el = page.locator('[data-testid="p15-underline"]').first();

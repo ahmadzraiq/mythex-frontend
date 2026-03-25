@@ -25,13 +25,17 @@ import { test, expect, type Page } from '@playwright/test';
 
 test.setTimeout(60_000);
 
+// SDUI app routes are served on preview-dev.localhost (not the main domain
+// which is reserved for platform routes). Use the full URL with the subdomain.
+const PREVIEW_DEV_BASE = 'http://preview-dev.localhost:3001';
+
 // ─── Shared page ──────────────────────────────────────────────────────────────
 
 let sharedPage: Page;
 
 test.beforeAll(async ({ browser }) => {
   sharedPage = await browser.newPage();
-  await sharedPage.goto('/workflow-test');
+  await sharedPage.goto(`${PREVIEW_DEV_BASE}/workflow-test`);
   await sharedPage.waitForSelector('[data-testid="out-created"]', { timeout: 30_000 });
   await sharedPage.waitForTimeout(600);
 });
@@ -41,7 +45,7 @@ test.afterAll(async () => {
 });
 
 async function resetPage(page: Page) {
-  await page.goto('/workflow-test');
+  await page.goto(`${PREVIEW_DEV_BASE}/workflow-test`);
   await page.waitForSelector('[data-testid="out-created"]', { timeout: 30_000 });
   await page.waitForTimeout(500);
 }
@@ -939,7 +943,7 @@ test('WA-68: empty-state "No items" text is hidden after seeding collection', as
 
 // WA-69: URL query param ?q= syncs to route.q via variables.json urlParam
 test('WA-69: URL param ?q= syncs to Search Query variable via urlParam in variables.json', async ({ page }) => {
-  await page.goto('/workflow-test?q=hello');
+  await page.goto(`${PREVIEW_DEV_BASE}/workflow-test?q=hello`);
   await page.waitForSelector('[data-testid="out-created"]', { timeout: 30_000 });
   await page.waitForTimeout(600);
   // The search query variable should reflect the URL param
@@ -953,7 +957,7 @@ test('WA-69: URL param ?q= syncs to Search Query variable via urlParam in variab
 
 // WA-70: Dynamic route /product/:slug — route.slug is extracted from URL
 test('WA-70: dynamic route /product/:slug — route.slug extracted and stored', async ({ page }) => {
-  await page.goto('/product/my-test-slug');
+  await page.goto(`${PREVIEW_DEV_BASE}/product/my-test-slug`);
   await page.waitForTimeout(2_000);
   // Page should load without crashing (product config uses route.slug for data fetch)
   const title = await page.title();

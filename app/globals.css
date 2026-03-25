@@ -23,24 +23,4 @@
   }
 }
 
-/*
- * Preview mode — break the React Native View overflow:hidden clip that the
- * Gluestack/Next.js internals insert as the first child of the layout's
- * overflow-auto wrapper.  Without this, all page content is clipped to 100vh
- * and the page never scrolls.
- *
- * Scoped to html.preview-mode so it only fires on /dev/builder/preview.
- */
-html.preview-mode .min-h-screen.overflow-auto > div,
-html.preview-mode .min-h-screen.overflow-auto > div > div {
-  overflow: visible !important;
-  height: auto !important;
-  min-height: 0 !important;
-}
 
-/* Also allow the html/body to grow naturally in preview mode */
-html.preview-mode,
-html.preview-mode body {
-  height: auto !important;
-  overflow: visible !important;
-}

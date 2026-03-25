@@ -159,3 +159,26 @@ export function getBuilderConfig() {
 
   return { dataSources: dataSourceList, dsFolders, variables, varFolders, workflows, directActions, dsActionsMap };
 }
+
+// ── Backend project config load / save ────────────────────────────────────────
+
+/**
+ * Load a project's saved config blob from the backend.
+ * Returns `null` if the project has no saved config yet (empty `{}`),
+ * or if the fetch fails.
+ */
+export async function loadProjectConfig(projectId: string): Promise<Record<string, unknown> | null> {
+  try {
+    const res = await fetch(`/api/projects/${projectId}/config`, {
+      credentials: 'include',
+    });
+    if (!res.ok) return null;
+    const data = await res.json() as { config?: Record<string, unknown> };
+    const config = data.config;
+    // Treat an empty object as "no saved config yet"
+    if (!config || Object.keys(config).length === 0) return null;
+    return config;
+  } catch {
+    return null;
+  }
+}

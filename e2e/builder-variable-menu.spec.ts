@@ -20,7 +20,7 @@ import { test, expect, type Page } from '@playwright/test';
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function gotoBuilder(page: Page) {
-  await page.goto('/dev/builder', { timeout: 60_000 });
+  await page.goto('http://builder-dev.localhost:3001', { timeout: 60_000 });
   await page.waitForSelector('[data-builder-page-frame]', { timeout: 30_000 });
   await page.waitForFunction(
     () => !!(window as unknown as Record<string, unknown>).__builderStore,

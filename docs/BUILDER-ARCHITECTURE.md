@@ -106,6 +106,67 @@ import { WorkflowCanvas, WorkflowBindButton, toHumanName } from './_workflow-can
 
 ---
 
+## Routing & URL Structure
+
+| URL | Who can access | What happens |
+|---|---|---|
+| `builder-dev.localhost:3001/` | Dev only (`NODE_ENV=development`) | Rewrites to `/dev/builder` — admin mode, static config, no auth |
+| `builder-dev.localhost:3001/<anything>` | Dev only | Redirects to `/` on the same subdomain |
+| `preview-dev.localhost:3001/<route>` | Dev only | Passes through to `app/[[...slug]]/page.tsx` — static SDUI app, no auth |
+| `preview.localhost:3001/<route>` | All environments | Rewrites to `/app-preview/<route>` — needs `projectId` cookie + preview JWT |
+| `localhost:3001/builder/<projectId>` | Authenticated users only | Rewrites to `/dev/builder?projectId=<id>` after auth check |
+| `localhost:3001/builder` | — | Redirects to `/login` (no auth) or `/workspaces` (auth) |
+| `localhost:3001/workspaces/**` | Authenticated users only | Protected — redirects to `/login` if no `auth_token` cookie |
+| `localhost:3001/` | — | Redirects to `/login` (no auth) or `/workspaces` (auth) |
+
+**Dev-only subdomains** (`builder-dev`, `preview-dev`) are blocked in production — any request to them is redirected to the main domain's root. The guard is `process.env.NODE_ENV === 'development'` in `middleware.ts`.
+
+**Platform links:** Workspace project cards open `/builder/<projectId>` (protected). The middleware handles auth and internally rewrites to `/dev/builder`.
+
+---
+
+## Preview System
+
+### `↗ Preview` button / `⌘P`
+
+**Disabled** when the current page has no app route (e.g. the `✦ Component Showcase` page). Button is grayed out; tooltip explains why.
+
+Always writes a snapshot to `localStorage` under `BUILDER_PREVIEW_KEY` (`'builder_preview'`).
+
+#### builder-dev mode (no `projectId`)
+1. Opens `preview-dev.localhost:3001/<pageRoute>` in a named tab (`sdui-dev-preview`).
+2. Stores a `previewWinRef` — subsequent preview clicks reuse the same tab.
+3. Sends the current config to the preview tab via **`postMessage`** (`{ type: 'BUILDER_LIVE_CONFIG', config: {...} }`). localStorage is **not** shared between subdomains.
+4. `app/[[...slug]]/page.tsx` detects `preview-dev.*` hostname on mount, signals `{ type: 'PREVIEW_READY' }` to the opener, and listens for `BUILDER_LIVE_CONFIG`. On receipt it overrides the static `SDUIEngine` config with the builder's current nodes + workflows + theme — **no page reload needed**.
+
+#### project mode (has `projectId`)
+1. Opens `about:blank` **immediately** (while user-gesture token is active — see pitfall below).
+2. Saves current config to the backend (`PATCH /api/projects/:id/config`).
+3. Fetches a short-lived JWT (`POST /api/projects/:id/preview-token`).
+4. Navigates the already-open window to `preview.localhost:3001/<pageRoute>?projectId=...&token=...`.
+5. Middleware strips params, sets `preview_project_id` + `preview_token` cookies, redirects to the clean URL.
+
+### `window.open` — User-Gesture Pitfall
+
+> **Bug pattern:** Browsers expire popup permission after the first `await`. A `window.open()` call that comes after any `await` silently **navigates the current tab** instead of opening a new one, destroying the builder's browser history.
+
+**Fix:** Call `window.open('about:blank', name)` **before the first `await`**, then after all async work is done set `.location.href` on the returned reference:
+
+```ts
+// ✅ CORRECT — open before any await
+const previewWin = window.open('about:blank', 'sdui-preview');  // ← user gesture valid
+const { serializeBuilderState } = await import('...');          // ← gesture expired here
+const res = await fetch('/api/...');
+// Safe — we already have the window reference
+if (previewWin) previewWin.location.href = finalUrl;
+
+// ❌ WRONG — window.open after await navigates the current tab
+await fetch('/api/...');
+window.open(finalUrl, '_blank');  // ← gesture expired → current tab navigates
+```
+
+---
+
 ## Key Patterns
 
 ### Builder Store Access
