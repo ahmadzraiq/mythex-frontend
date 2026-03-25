@@ -142,6 +142,8 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
       return { type: 'openPopup', ...cfg };
     case 'closeAllPopups':
       return { type: 'closeAllPopups' };
+    case 'closePopup':
+      return { type: 'closePopup' };
 
     // ── Misc ─────────────────────────────────────────────────────────────────
     case 'stopPropagation':

@@ -132,15 +132,40 @@ export default function LottiePlayer({
   const [isLoaded, setIsLoaded] = useState(false);
   const [isError, setIsError] = useState(false);
 
-  const handleLoad = useCallback(() => setIsLoaded(true), []);
-  const handleLoadError = useCallback(() => setIsError(true), []);
+  // Wire up load/error/speed/loop via the instance ref callback.
+  // DotLottieReact doesn't expose onLoad/onLoadError as props — events must be
+  // subscribed via the DotLottie instance's addEventListener after mount.
+  const handleRefCallback = useCallback((dl: DotLottie | null) => {
+    dotLottieRef.current = dl;
+    if (!dl) return;
 
-  // Apply speed after the animation instance is available
+    const onLoad = () => {
+      setIsLoaded(true);
+      dl.setSpeed(speed ?? 1);
+      dl.setLoop(loop);
+      // Don't stop here — let the animation play once naturally.
+      // setLoop(false) already ensures it won't repeat after completing.
+    };
+    const onLoadError = () => setIsError(true);
+
+    dl.addEventListener('load', onLoad);
+    dl.addEventListener('loadError', onLoadError);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Keep speed/loop in sync when props change after load
   useEffect(() => {
     const dl = dotLottieRef.current;
-    if (!dl) return;
+    if (!dl || !isLoaded) return;
     dl.setSpeed(speed ?? 1);
   }, [speed, isLoaded]);
+
+  useEffect(() => {
+    const dl = dotLottieRef.current;
+    if (!dl || !isLoaded) return;
+    dl.setLoop(loop);
+    // If re-enabling loop and the animation has already stopped, restart it
+    if (loop && dl.isStopped) dl.play();
+  }, [loop, isLoaded]);
 
   if (!src || placeholder) {
     return (
@@ -187,11 +212,7 @@ export default function LottiePlayer({
         src={src}
         autoplay={autoplay}
         loop={loop}
-        onLoad={handleLoad}
-        onLoadError={handleLoadError}
-        dotLottieRefCallback={(dl) => {
-          dotLottieRef.current = dl;
-        }}
+        dotLottieRefCallback={handleRefCallback}
         style={{ width: '100%', height: '100%', display: isLoaded ? 'block' : 'none' }}
       />
     </div>

@@ -160,45 +160,87 @@ const STARTER_CONTENT: Record<string, Record<string, unknown>> = {
     }],
   },
 
+  // Alert and StackedAlert are toast-style. The backdrop wrapper is kept so
+  // builder edit mode (which appends model.content to pageNodes) shows the card
+  // at the correct bottom-right position inside the canvas.
+  // At runtime, PopupRenderer skips the backdrop and renders only the card
+  // (model.content.children[0]) inside the shared bottom-right stack container.
   Alert: {
     type: 'Box',
     name: 'Backdrop',
-    animation: { enter: { type: 'fade', duration: 150 }, exit: { type: 'fade', duration: 180 } },
-    actions: [{ action: 'closeAllPopups' }],
-    props: { className: 'w-full h-screen flex items-center justify-center p-5 bg-black/50' },
+    // Full-screen flex shell. Change items-*/justify-* to move the stack to a
+    // different corner (e.g. items-start justify-start = top-left).
+    // Change p-* to control the edge padding.
+    props: { className: 'w-full h-screen flex flex-col items-end justify-end p-4 pointer-events-none' },
     children: [{
       type: 'Box',
-      name: 'Alert',
-      animation: { enter: { type: 'zoomIn', duration: 200 }, exit: { type: 'zoomOut', duration: 180 } },
-      actions: [{ stopPropagation: true }],
-      props: { className: 'w-full max-w-sm bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5 flex flex-col gap-3' },
-      children: [
-        { type: 'Text', props: { className: 'text-base font-semibold text-gray-900 dark:text-white' }, text: 'Alert title' },
-        { type: 'Text', props: { className: 'text-sm text-gray-500' }, text: 'Alert message goes here.' },
-        {
-          type: 'Box',
-          props: { className: 'flex flex-row gap-2 justify-end' },
-          children: [{ type: 'Button', actions: [{ action: 'closeAllPopups' }], props: { action: 'primary' }, children: [{ type: 'ButtonText', text: 'OK' }] }],
-        },
-      ],
+      name: 'StackContainer',
+      // Normal-flow child — content-sized because parent has items-end.
+      // Change gap-* to space cards. Change flex-col-reverse to reverse stack order.
+      props: { className: 'flex flex-col gap-2 pointer-events-none' },
+      children: [{
+        type: 'Box',
+        name: 'Alert',
+        animation: { enter: { type: 'slideInRight', duration: 200 }, exit: { type: 'slideOutRight', duration: 180 } },
+        props: { className: 'pointer-events-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg px-4 py-3 flex flex-row items-start gap-3 min-w-72 max-w-sm border border-gray-100 dark:border-gray-700' },
+        children: [
+          {
+            type: 'Box',
+            props: { className: 'w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 items-center justify-center flex shrink-0 mt-0.5' },
+            children: [{ type: 'NavIcon', props: { icon: 'AlertTriangle', size: 16, color: '#f59e0b' } }],
+          },
+          {
+            type: 'Box',
+            props: { className: 'flex-1 flex flex-col gap-0.5' },
+            children: [
+              { type: 'Text', props: { className: 'text-sm font-semibold text-gray-900 dark:text-white' }, text: 'Alert title' },
+              { type: 'Text', props: { className: 'text-xs text-gray-500 dark:text-gray-400 leading-relaxed' }, text: 'Alert message goes here.' },
+            ],
+          },
+          {
+            type: 'Pressable',
+            actions: [{ action: 'closePopup' }],
+            props: { className: 'shrink-0 mt-0.5 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700' },
+            children: [{ type: 'NavIcon', props: { icon: 'X', size: 14, color: '#9ca3af' } }],
+          },
+        ],
+      }],
     }],
   },
 
   StackedAlert: {
     type: 'Box',
     name: 'Backdrop',
-    props: { className: 'w-full h-screen flex flex-col items-end justify-start p-4 gap-2 pointer-events-none' },
+    props: { className: 'w-full h-screen flex flex-col items-end justify-end p-4 pointer-events-none' },
     children: [{
       type: 'Box',
-      name: 'Toast',
-      animation: { enter: { type: 'slideInRight', duration: 200 }, exit: { type: 'slideOutRight', duration: 180 } },
-      props: { className: 'pointer-events-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg px-4 py-3 flex flex-row items-start gap-3 min-w-72 max-w-sm' },
+      name: 'StackContainer',
+      props: { className: 'flex flex-col gap-2 pointer-events-none' },
       children: [{
         type: 'Box',
-        props: { className: 'flex-1 flex flex-col gap-1' },
+        name: 'Toast',
+        animation: { enter: { type: 'slideInRight', duration: 200 }, exit: { type: 'slideOutRight', duration: 180 } },
+        props: { className: 'pointer-events-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg px-4 py-3 flex flex-row items-start gap-3 min-w-72 max-w-sm border border-gray-100 dark:border-gray-700' },
         children: [
-          { type: 'Text', props: { className: 'text-sm font-semibold text-gray-900 dark:text-white' }, text: 'Notification title' },
-          { type: 'Text', props: { className: 'text-xs text-gray-500' }, text: 'Notification message' },
+          {
+            type: 'Box',
+            props: { className: 'w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 items-center justify-center flex shrink-0 mt-0.5' },
+            children: [{ type: 'NavIcon', props: { icon: 'Bell', size: 16, color: '#3b82f6' } }],
+          },
+          {
+            type: 'Box',
+            props: { className: 'flex-1 flex flex-col gap-0.5' },
+            children: [
+              { type: 'Text', props: { className: 'text-sm font-semibold text-gray-900 dark:text-white' }, text: 'Notification title' },
+              { type: 'Text', props: { className: 'text-xs text-gray-500 dark:text-gray-400' }, text: 'Notification message' },
+            ],
+          },
+          {
+            type: 'Pressable',
+            actions: [{ action: 'closePopup' }],
+            props: { className: 'shrink-0 mt-0.5 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700' },
+            children: [{ type: 'NavIcon', props: { icon: 'X', size: 14, color: '#9ca3af' } }],
+          },
         ],
       }],
     }],
@@ -298,11 +340,23 @@ const POPUP_TYPES: Array<{ id: PopupModel['type']; label: string; preview: React
     id: 'Alert',
     label: 'Alert',
     preview: (
+      // Toast/snackbar at bottom-right corner (no modal overlay)
       <svg viewBox="0 0 120 80" style={{ width: '100%', height: '100%' }}>
         <rect width="120" height="80" fill="#374151" rx="4" />
-        <rect x="16" y="26" width="88" height="28" fill="#1f2937" rx="5" />
-        <rect x="24" y="32" width="44" height="5" fill="#6b7280" rx="2" />
-        <rect x="68" y="38" width="28" height="8" fill="#3b82f6" rx="3" />
+        {/* Page content hint */}
+        <rect x="8" y="8" width="64" height="4" fill="#4b5563" rx="1" opacity="0.5" />
+        <rect x="8" y="16" width="48" height="3" fill="#4b5563" rx="1" opacity="0.4" />
+        {/* Toast card bottom-right */}
+        <rect x="24" y="48" width="88" height="24" fill="#1f2937" rx="5" />
+        {/* Icon circle */}
+        <circle cx="36" cy="60" r="6" fill="#78350f" opacity="0.5" />
+        <rect x="34" y="57" width="4" height="6" fill="#f59e0b" rx="1" opacity="0.8" />
+        {/* Text lines */}
+        <rect x="47" y="54" width="36" height="4" fill="#6b7280" rx="1.5" />
+        <rect x="47" y="62" width="50" height="3" fill="#4b5563" rx="1" />
+        {/* X button */}
+        <line x1="104" y1="53" x2="108" y2="57" stroke="#6b7280" strokeWidth="1.5" />
+        <line x1="108" y1="53" x2="104" y2="57" stroke="#6b7280" strokeWidth="1.5" />
       </svg>
     ),
   },
@@ -310,14 +364,25 @@ const POPUP_TYPES: Array<{ id: PopupModel['type']; label: string; preview: React
     id: 'StackedAlert',
     label: 'Stacked Alert',
     preview: (
+      // Two toast cards stacked at bottom-right
       <svg viewBox="0 0 120 80" style={{ width: '100%', height: '100%' }}>
         <rect width="120" height="80" fill="#374151" rx="4" />
-        <rect x="16" y="14" width="88" height="22" fill="#1f2937" rx="4" />
-        <rect x="24" y="20" width="40" height="4" fill="#6b7280" rx="1.5" />
-        <rect x="24" y="27" width="60" height="3" fill="#4b5563" rx="1" />
-        <rect x="16" y="42" width="88" height="22" fill="#1f2937" rx="4" />
-        <rect x="24" y="48" width="40" height="4" fill="#6b7280" rx="1.5" />
-        <rect x="24" y="55" width="60" height="3" fill="#4b5563" rx="1" />
+        {/* Page content hint */}
+        <rect x="8" y="8" width="64" height="4" fill="#4b5563" rx="1" opacity="0.5" />
+        {/* Older toast (top of stack) */}
+        <rect x="24" y="22" width="88" height="22" fill="#1f2937" rx="4" />
+        <circle cx="34" cy="33" r="5" fill="#1e3a5f" opacity="0.7" />
+        <rect x="44" y="28" width="34" height="4" fill="#6b7280" rx="1.5" />
+        <rect x="44" y="35" width="50" height="3" fill="#4b5563" rx="1" />
+        <line x1="104" y1="25" x2="107" y2="28" stroke="#6b7280" strokeWidth="1.5" />
+        <line x1="107" y1="25" x2="104" y2="28" stroke="#6b7280" strokeWidth="1.5" />
+        {/* Newer toast (bottom of stack) */}
+        <rect x="24" y="50" width="88" height="22" fill="#1f2937" rx="4" />
+        <circle cx="34" cy="61" r="5" fill="#1e3a5f" opacity="0.7" />
+        <rect x="44" y="56" width="34" height="4" fill="#6b7280" rx="1.5" />
+        <rect x="44" y="63" width="50" height="3" fill="#4b5563" rx="1" />
+        <line x1="104" y1="53" x2="107" y2="56" stroke="#6b7280" strokeWidth="1.5" />
+        <line x1="107" y1="53" x2="104" y2="56" stroke="#6b7280" strokeWidth="1.5" />
       </svg>
     ),
   },

@@ -28,7 +28,7 @@ import {
   mergeAtPathHandler,
 } from './misc-handlers';
 import { workflowStepsHandler } from './workflow-steps-handler';
-import { openPopupHandler, closeAllPopupsHandler } from './popup-handlers';
+import { openPopupHandler, closeAllPopupsHandler, closePopupHandler } from './popup-handlers';
 
 type HandlerFactory = (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<unknown>;
 
@@ -62,6 +62,7 @@ export const ACTION_HANDLERS: Record<string, HandlerFactory> = {
   // Popup actions
   openPopup: openPopupHandler,
   closeAllPopups: closeAllPopupsHandler,
+  closePopup: closePopupHandler,
 };
 
 /**

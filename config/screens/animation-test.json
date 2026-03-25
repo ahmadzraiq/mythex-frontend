@@ -44,6 +44,499 @@
       {
         "type": "Box",
         "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-6",
+          "data-testid": "card-p9"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Phase 9 \u2014 Flip Cards"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "3D CSS flip cards driven by animation.flip config on a Box."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row flex-wrap gap-6 items-start"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "width": 200,
+                    "height": 220
+                  },
+                  "animation": {
+                    "flip": {
+                      "trigger": "hover",
+                      "duration": 500
+                    }
+                  },
+                  "data-testid": "p9-flip-card"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-2 bg-indigo-500",
+                      "style": {
+                        "backfaceVisibility": "hidden"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-white font-bold text-lg text-center"
+                        },
+                        "text": "Hover to flip!"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-indigo-100 text-sm text-center"
+                        },
+                        "text": "Front face"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-2 bg-gray-900",
+                      "style": {
+                        "backfaceVisibility": "hidden",
+                        "transform": "rotateY(180deg)"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-white font-bold text-lg text-center"
+                        },
+                        "text": "Back face!"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-gray-300 text-sm text-center"
+                        },
+                        "text": "Revealed"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "width": 200,
+                    "height": 220
+                  },
+                  "animation": {
+                    "flip": {
+                      "trigger": "click",
+                      "duration": 600
+                    }
+                  },
+                  "data-testid": "p9-flip-card-click"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-2 bg-pink-500",
+                      "style": {
+                        "backfaceVisibility": "hidden"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-white font-bold text-lg text-center"
+                        },
+                        "text": "Click to flip!"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-pink-100 text-sm text-center"
+                        },
+                        "text": "Front face"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-2 bg-slate-800",
+                      "style": {
+                        "backfaceVisibility": "hidden",
+                        "transform": "rotateY(180deg)"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-white font-bold text-lg text-center"
+                        },
+                        "text": "You found it!"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-slate-300 text-sm text-center"
+                        },
+                        "text": "Click again to flip back"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-stagger"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Card 3 \u2014 Stagger"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Items fan in sequentially \u2014 each delayed 100ms after the previous."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "map": "variables['anim-0000-0000-0000-000000000003']",
+            "key": "context.item.data.id",
+            "props": {
+              "className": "flex flex-col gap-2"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 flex flex-row items-center gap-3",
+                  "data-testid": "stagger-item",
+                  "animation": {
+                    "enter": {
+                      "type": "slideInLeftSubtle",
+                      "duration": 400,
+                      "stagger": 200
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-8 h-8 rounded-full flex items-center justify-center",
+                      "style": {
+                        "backgroundColor": "{{context.item.data.color}}"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-white text-sm font-bold"
+                        },
+                        "text": "{{context.item.data.index}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-gray-800 dark:text-gray-100"
+                    },
+                    "text": "{{context.item.data.label}}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-p5"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Phase 5 \u2014 SVG Stroke Draw + LottiePlayer"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "SVG path-draw animation via stroke-dashoffset, and Lottie animation via dotlottie-react."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row flex-wrap gap-6 items-start"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-center gap-2",
+                  "data-testid": "p5-svg-stroke",
+                  "animation": {
+                    "svgStroke": {
+                      "enabled": true,
+                      "duration": 2000,
+                      "delay": 200,
+                      "easing": "easeInOut"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "svg",
+                    "props": {
+                      "viewBox": "0 0 100 100",
+                      "width": 160,
+                      "height": 160,
+                      "fill": "none",
+                      "stroke": "#6366f1",
+                      "aria-hidden": "true",
+                      "data-testid": "p5-svg-shape"
+                    },
+                    "children": [
+                      {
+                        "type": "path",
+                        "props": {
+                          "d": "M 15 50 L 38 73 L 85 27",
+                          "strokeWidth": 6,
+                          "strokeLinecap": "round",
+                          "strokeLinejoin": "round"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "SVG stroke draw (2s)"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-center gap-2"
+                },
+                "children": [
+                  {
+                    "type": "LottiePlayer",
+                    "props": {
+                      "src": "https://assets4.lottiefiles.com/packages/lf20_fcfjwiyb.json",
+                      "autoplay": true,
+                      "loop": true,
+                      "width": 160,
+                      "height": 160,
+                      "data-testid": "p5-lottie"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "Lottie (loop)"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-center gap-2"
+                },
+                "children": [
+                  {
+                    "type": "LottiePlayer",
+                    "props": {
+                      "src": "https://assets9.lottiefiles.com/packages/lf20_jR229r.json",
+                      "autoplay": true,
+                      "loop": false,
+                      "width": 160,
+                      "height": 160,
+                      "data-testid": "p5-lottie-no-loop"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "Lottie (no loop)"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "data-testid": "card-p4"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Phase 4 \u2014 Split-Text (char / word / line)"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Text split into units and staggered via animation.splitText config on a Box."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-6"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-3xl font-bold text-gray-900 dark:text-gray-100",
+                  "animation": {
+                    "splitText": {
+                      "split": "char",
+                      "type": "charBounce",
+                      "duration": 400,
+                      "stagger": 50,
+                      "delay": 0,
+                      "easing": "backOut",
+                      "testId": "p4-split-char"
+                    }
+                  }
+                },
+                "text": "Hello World!"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-xl text-indigo-600 dark:text-indigo-400",
+                  "animation": {
+                    "splitText": {
+                      "split": "word",
+                      "type": "slideInUp",
+                      "duration": 350,
+                      "stagger": 180,
+                      "delay": 200,
+                      "easing": "easeOut",
+                      "testId": "p4-split-word"
+                    }
+                  }
+                },
+                "text": "Words fan in one by one"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-lg font-mono text-gray-700 dark:text-gray-300",
+                  "animation": {
+                    "splitText": {
+                      "split": "char",
+                      "type": "typeIn",
+                      "duration": 80,
+                      "stagger": 60,
+                      "delay": 400,
+                      "testId": "p4-split-typewriter"
+                    }
+                  }
+                },
+                "text": "Type writer effect"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
           "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
           "data-testid": "card-spring"
         },
@@ -60,14 +553,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 12 — Spring Physics"
+                "text": "Card 12 \u2014 Spring Physics"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Three boxes with different spring configurations — snappy, wobbly, and heavy."
+                "text": "Three boxes with different spring configurations \u2014 snappy, wobbly, and heavy."
               }
             ]
           },
@@ -175,7 +668,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 1 — New Enter Keyframes"
+                "text": "Phase 1 \u2014 New Enter Keyframes"
               },
               {
                 "type": "Text",
@@ -401,7 +894,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 1 — New Loop Keyframes"
+                "text": "Phase 1 \u2014 New Loop Keyframes"
               },
               {
                 "type": "Text",
@@ -494,7 +987,9 @@
                   "className": "w-16 h-16 rounded-full bg-yellow-400 flex items-center justify-center",
                   "data-testid": "p1-glowPulse",
                   "animation": {
-                    "outerStyle": { "borderRadius": 9999 },
+                    "outerStyle": {
+                      "borderRadius": 9999
+                    },
                     "loop": {
                       "type": "glowPulse",
                       "duration": 1500,
@@ -520,7 +1015,9 @@
                   "className": "w-16 h-16 rounded-full bg-teal-500 flex items-center justify-center",
                   "data-testid": "p1-ripple",
                   "animation": {
-                    "outerStyle": { "borderRadius": 9999 },
+                    "outerStyle": {
+                      "borderRadius": 9999
+                    },
                     "loop": {
                       "type": "ripple",
                       "duration": 1200,
@@ -591,7 +1088,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 2 — Filter, Tilt, Mouse Parallax, Morph Shape"
+                "text": "Phase 2 \u2014 Filter, Tilt, Mouse Parallax, Morph Shape"
               },
               {
                 "type": "Text",
@@ -683,14 +1180,21 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-28 h-28 bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center",
+                  "className": "w-36 h-36 bg-gradient-to-br from-violet-500 via-fuchsia-500 to-pink-500 flex items-center justify-center",
                   "data-testid": "p2-morph",
                   "animation": {
                     "morphShape": {
                       "enabled": true,
-                      "from": "50% 50% 50% 50%",
-                      "to": "60% 40% 70% 30% / 50% 60% 40% 50%",
-                      "duration": 2000,
+                      "steps": [
+                        "50% 50% 50% 50%",
+                        "70% 30% 60% 40%",
+                        "40% 60% 30% 70%",
+                        "60% 40% 70% 30%",
+                        "30% 70% 40% 60%",
+                        "50% 50% 50% 50%"
+                      ],
+                      "duration": 6000,
+                      "easing": "easeInOut",
                       "loop": true
                     }
                   }
@@ -699,7 +1203,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-xs text-center font-medium"
                     },
                     "text": "morph blob"
                   }
@@ -728,14 +1232,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 3 — Scroll Progress"
+                "text": "Phase 3 \u2014 Scroll Progress"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Scroll down — the box below fades in (opacity 0→1) linked to scroll progress through the viewport."
+                "text": "Scroll down \u2014 the box below fades in (opacity 0\u21921) linked to scroll progress through the viewport."
               }
             ]
           },
@@ -783,100 +1287,7 @@
                 "props": {
                   "className": "text-white font-semibold"
                 },
-                "text": "translateY 60px → 0 on scroll"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "type": "Box",
-        "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
-          "data-testid": "card-p4"
-        },
-        "children": [
-          {
-            "type": "Box",
-            "props": {
-              "className": "flex flex-col gap-1"
-            },
-            "children": [
-              {
-                "type": "Heading",
-                "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
-                },
-                "text": "Phase 4 — Split-Text (char / word / line)"
-              },
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
-                },
-                "text": "Text split into units and staggered via animation.splitText config on a Box."
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "flex flex-col gap-6"
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-3xl font-bold text-gray-900 dark:text-gray-100",
-                  "animation": {
-                    "splitText": {
-                      "split": "char",
-                      "type": "charBounce",
-                      "duration": 400,
-                      "stagger": 50,
-                      "delay": 0,
-                      "easing": "backOut",
-                      "testId": "p4-split-char"
-                    }
-                  }
-                },
-                "text": "Hello World!"
-              },
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-xl text-indigo-600 dark:text-indigo-400",
-                  "animation": {
-                    "splitText": {
-                      "split": "word",
-                      "type": "slideInUp",
-                      "duration": 350,
-                      "stagger": 180,
-                      "delay": 200,
-                      "easing": "easeOut",
-                      "testId": "p4-split-word"
-                    }
-                  }
-                },
-                "text": "Words fan in one by one"
-              },
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-lg font-mono text-gray-700 dark:text-gray-300",
-                  "animation": {
-                    "splitText": {
-                      "split": "char",
-                      "type": "typeIn",
-                      "duration": 80,
-                      "stagger": 60,
-                      "delay": 400,
-                      "testId": "p4-split-typewriter"
-                    }
-                  }
-                },
-                "text": "Type writer effect"
+                "text": "translateY 60px \u2192 0 on scroll"
               }
             ]
           }
@@ -901,7 +1312,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 1 — Enter Animations"
+                "text": "Card 1 \u2014 Enter Animations"
               },
               {
                 "type": "Text",
@@ -1171,7 +1582,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 2 — Exit Animations"
+                "text": "Card 2 \u2014 Exit Animations"
               },
               {
                 "type": "Text",
@@ -1243,16 +1654,6 @@
                 "exit": {
                   "type": "fadeOut",
                   "duration": 400
-                },
-                "states": {
-                  "watchVar": "variables?.['anim-0000-0000-0000-000000000005'] ? 'leaving' : 'visible'",
-                  "defaultState": "visible",
-                  "duration": 250,
-                  "easing": "easeOut",
-                  "states": {
-                    "visible": { "opacity": "1" },
-                    "leaving": { "opacity": "0" }
-                  }
                 }
               }
             },
@@ -1263,89 +1664,6 @@
                   "className": "text-white font-semibold"
                 },
                 "text": "I animate in and out!"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "type": "Box",
-        "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
-          "data-testid": "card-stagger"
-        },
-        "children": [
-          {
-            "type": "Box",
-            "props": {
-              "className": "flex flex-col gap-1"
-            },
-            "children": [
-              {
-                "type": "Heading",
-                "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
-                },
-                "text": "Card 3 — Stagger"
-              },
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
-                },
-                "text": "Items fan in sequentially — each delayed 100ms after the previous."
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "map": "variables['anim-0000-0000-0000-000000000003']",
-            "key": "context.item.data.id",
-            "props": {
-              "className": "flex flex-col gap-2"
-            },
-            "children": [
-              {
-                "type": "Box",
-                "props": {
-                  "className": "w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 flex flex-row items-center gap-3",
-                  "data-testid": "stagger-item",
-                  "animation": {
-                    "enter": {
-                      "type": "slideInLeftSubtle",
-                      "duration": 400,
-                      "stagger": 200
-                    }
-                  }
-                },
-                "children": [
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "w-8 h-8 rounded-full flex items-center justify-center",
-                      "style": {
-                        "backgroundColor": "{{context.item.data.color}}"
-                      }
-                    },
-                    "children": [
-                      {
-                        "type": "Text",
-                        "props": {
-                          "className": "text-white text-sm font-bold"
-                        },
-                        "text": "{{context.item.data.index}}"
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-gray-800 dark:text-gray-100"
-                    },
-                    "text": "{{context.item.data.label}}"
-                  }
-                ]
               }
             ]
           }
@@ -1370,14 +1688,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 3 — Loop Animations"
+                "text": "Card 3 \u2014 Loop Animations"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Continuous animations — all running simultaneously."
+                "text": "Continuous animations \u2014 all running simultaneously."
               }
             ]
           },
@@ -1595,14 +1913,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 4 — Press Animation"
+                "text": "Card 4 \u2014 Press Animation"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Press and hold the box — it scales down and becomes semi-transparent."
+                "text": "Press and hold the box \u2014 it scales down and becomes semi-transparent."
               }
             ]
           },
@@ -1650,14 +1968,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 5 — Hover Animation"
+                "text": "Card 5 \u2014 Hover Animation"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Move your mouse over the box — it lifts and scales up."
+                "text": "Move your mouse over the box \u2014 it lifts and scales up."
               }
             ]
           },
@@ -1706,7 +2024,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 6 — Scroll Trigger"
+                "text": "Card 6 \u2014 Scroll Trigger"
               },
               {
                 "type": "Text",
@@ -1763,14 +2081,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 7 — Parallax"
+                "text": "Card 7 \u2014 Parallax"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Scroll the page — the gradient box moves at 40% of scroll speed."
+                "text": "Scroll the page \u2014 the gradient box moves at 40% of scroll speed."
               }
             ]
           },
@@ -1794,7 +2112,7 @@
                 "props": {
                   "className": "text-white font-semibold"
                 },
-                "text": "Parallax — speed 0.4"
+                "text": "Parallax \u2014 speed 0.4"
               }
             ]
           }
@@ -1819,14 +2137,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 8 — Drag"
+                "text": "Card 8 \u2014 Drag"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Drag the box anywhere on both axes — it springs back when released."
+                "text": "Drag the box anywhere on both axes \u2014 it springs back when released."
               }
             ]
           },
@@ -1875,14 +2193,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 9 — Color Transition"
+                "text": "Card 9 \u2014 Color Transition"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Background color cycles blue → red → blue continuously."
+                "text": "Background color cycles blue \u2192 red \u2192 blue continuously."
               }
             ]
           },
@@ -1908,7 +2226,7 @@
                 "props": {
                   "className": "text-white font-semibold"
                 },
-                "text": "Blue → Red color loop"
+                "text": "Blue \u2192 Red color loop"
               }
             ]
           }
@@ -1933,14 +2251,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 10 — Layout Animation"
+                "text": "Card 10 \u2014 Layout Animation"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Add/remove items — the list reflows with a spring animation."
+                "text": "Add/remove items \u2014 the list reflows with a spring animation."
               }
             ]
           },
@@ -1984,7 +2302,7 @@
                 "children": [
                   {
                     "type": "ButtonText",
-                    "text": "− Remove last"
+                    "text": "\u2212 Remove last"
                   }
                 ]
               }
@@ -2065,7 +2383,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 13 — Imperative Trigger"
+                "text": "Card 13 \u2014 Imperative Trigger"
               },
               {
                 "type": "Text",
@@ -2128,145 +2446,6 @@
         "type": "Box",
         "props": {
           "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
-          "data-testid": "card-p5"
-        },
-        "children": [
-          {
-            "type": "Box",
-            "props": {
-              "className": "flex flex-col gap-1"
-            },
-            "children": [
-              {
-                "type": "Heading",
-                "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
-                },
-                "text": "Phase 5 — SVG Stroke Draw + LottiePlayer"
-              },
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
-                },
-                "text": "SVG path-draw animation via stroke-dashoffset, and Lottie animation via dotlottie-react."
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "flex flex-row flex-wrap gap-6 items-start"
-            },
-            "children": [
-              {
-                "type": "Box",
-                "props": {
-                  "className": "flex flex-col items-center gap-2",
-                  "data-testid": "p5-svg-stroke",
-                  "animation": {
-                    "svgStroke": {
-                      "enabled": true,
-                      "duration": 2000,
-                      "delay": 200,
-                      "easing": "easeInOut"
-                    }
-                  }
-                },
-                "children": [
-                  {
-                    "type": "svg",
-                    "props": {
-                      "viewBox": "0 0 100 100",
-                      "width": 160,
-                      "height": 160,
-                      "fill": "none",
-                      "stroke": "#6366f1",
-                      "aria-hidden": "true",
-                      "data-testid": "p5-svg-shape"
-                    },
-                    "children": [
-                      {
-                        "type": "path",
-                        "props": {
-                          "d": "M 15 50 L 38 73 L 85 27",
-                          "strokeWidth": 6,
-                          "strokeLinecap": "round",
-                          "strokeLinejoin": "round"
-                        }
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-sm text-gray-600 dark:text-gray-400"
-                    },
-                    "text": "SVG stroke draw (2s)"
-                  }
-                ]
-              },
-              {
-                "type": "Box",
-                "props": {
-                  "className": "flex flex-col items-center gap-2"
-                },
-                "children": [
-                  {
-                    "type": "LottiePlayer",
-                    "props": {
-                      "src": "https://assets4.lottiefiles.com/packages/lf20_fcfjwiyb.json",
-                      "autoplay": true,
-                      "loop": true,
-                      "width": 160,
-                      "height": 160,
-                      "data-testid": "p5-lottie"
-                    }
-                  },
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-sm text-gray-600 dark:text-gray-400"
-                    },
-                    "text": "Lottie (loop)"
-                  }
-                ]
-              },
-              {
-                "type": "Box",
-                "props": {
-                  "className": "flex flex-col items-center gap-2"
-                },
-                "children": [
-                  {
-                    "type": "LottiePlayer",
-                    "props": {
-                      "src": "https://assets9.lottiefiles.com/packages/lf20_jR229r.json",
-                      "autoplay": true,
-                      "loop": false,
-                      "width": 160,
-                      "height": 160,
-                      "data-testid": "p5-lottie-no-loop"
-                    }
-                  },
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-sm text-gray-600 dark:text-gray-400"
-                    },
-                    "text": "Lottie (no loop)"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "type": "Box",
-        "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
           "data-testid": "card-p6"
         },
         "children": [
@@ -2282,7 +2461,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 6 — Canvas Particles + Noise Background"
+                "text": "Phase 6 \u2014 Canvas Particles + Noise Background"
               },
               {
                 "type": "Text",
@@ -2372,14 +2551,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 7 — Video"
+                "text": "Phase 7 \u2014 Video"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "HTML5 Video element as background. Use a Box with position:relative + Video + absolute overlay Boxes for hero sections — all composable from JSON in the builder."
+                "text": "HTML5 Video element as background. Use a Box with position:relative + Video + absolute overlay Boxes for hero sections \u2014 all composable from JSON in the builder."
               }
             ]
           },
@@ -2466,524 +2645,9 @@
                         "props": {
                           "className": "text-white/80 text-sm"
                         },
-                        "text": "Video + overlay Box + gradient Box + content Box — all JSON config"
+                        "text": "Video + overlay Box + gradient Box + content Box \u2014 all JSON config"
                       }
                     ]
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "type": "Box",
-        "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-6",
-          "data-testid": "card-p9"
-        },
-        "children": [
-          {
-            "type": "Box",
-            "props": {
-              "className": "flex flex-col gap-1"
-            },
-            "children": [
-              {
-                "type": "Heading",
-                "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
-                },
-                "text": "Phase 9 — Flip Cards + Stagger List + Masonry Layout"
-              },
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
-                },
-                "text": "3D CSS flip cards driven by animation.flip config on a Box, stagger-enter list, and Pinterest-style masonry grid."
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "flex flex-row flex-wrap gap-6 items-start"
-            },
-            "children": [
-              {
-                "type": "Box",
-                "props": {
-                  "style": {
-                    "width": 200,
-                    "height": 220
-                  },
-                  "animation": {
-                    "flip": {
-                      "trigger": "hover",
-                      "duration": 500
-                    }
-                  },
-                  "data-testid": "p9-flip-card"
-                },
-                "children": [
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-2 bg-indigo-500",
-                      "style": {
-                        "backfaceVisibility": "hidden"
-                      }
-                    },
-                    "children": [
-                      {
-                        "type": "Text",
-                        "props": {
-                          "className": "text-white font-bold text-lg text-center"
-                        },
-                        "text": "Hover to flip!"
-                      },
-                      {
-                        "type": "Text",
-                        "props": {
-                          "className": "text-indigo-100 text-sm text-center"
-                        },
-                        "text": "Front face"
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-2 bg-gray-900",
-                      "style": {
-                        "backfaceVisibility": "hidden",
-                        "transform": "rotateY(180deg)"
-                      }
-                    },
-                    "children": [
-                      {
-                        "type": "Text",
-                        "props": {
-                          "className": "text-white font-bold text-lg text-center"
-                        },
-                        "text": "Back face!"
-                      },
-                      {
-                        "type": "Text",
-                        "props": {
-                          "className": "text-gray-300 text-sm text-center"
-                        },
-                        "text": "Revealed"
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "type": "Box",
-                "props": {
-                  "style": {
-                    "width": 200,
-                    "height": 220
-                  },
-                  "animation": {
-                    "flip": {
-                      "trigger": "click",
-                      "duration": 600
-                    }
-                  },
-                  "data-testid": "p9-flip-card-click"
-                },
-                "children": [
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-2 bg-pink-500",
-                      "style": {
-                        "backfaceVisibility": "hidden"
-                      }
-                    },
-                    "children": [
-                      {
-                        "type": "Text",
-                        "props": {
-                          "className": "text-white font-bold text-lg text-center"
-                        },
-                        "text": "Click to flip!"
-                      },
-                      {
-                        "type": "Text",
-                        "props": {
-                          "className": "text-pink-100 text-sm text-center"
-                        },
-                        "text": "Front face"
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-2 bg-slate-800",
-                      "style": {
-                        "backfaceVisibility": "hidden",
-                        "transform": "rotateY(180deg)"
-                      }
-                    },
-                    "children": [
-                      {
-                        "type": "Text",
-                        "props": {
-                          "className": "text-white font-bold text-lg text-center"
-                        },
-                        "text": "You found it!"
-                      },
-                      {
-                        "type": "Text",
-                        "props": {
-                          "className": "text-slate-300 text-sm text-center"
-                        },
-                        "text": "Click again to flip back"
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "flex flex-col gap-3 w-full",
-              "data-testid": "p9-stagger-list"
-            },
-            "children": [
-              {
-                "type": "Box",
-                "props": {
-                  "className": "flex flex-row items-center gap-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl px-4 py-3",
-                  "animation": {
-                    "enter": {
-                      "type": "slideInLeft",
-                      "duration": 400,
-                      "delay": 0
-                    }
-                  }
-                },
-                "children": [
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "w-3 h-3 rounded-full bg-blue-500"
-                    }
-                  },
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-gray-800 dark:text-gray-100 font-medium"
-                    },
-                    "text": "First stagger item"
-                  }
-                ]
-              },
-              {
-                "type": "Box",
-                "props": {
-                  "className": "flex flex-row items-center gap-3 bg-purple-50 dark:bg-purple-900/30 rounded-xl px-4 py-3",
-                  "animation": {
-                    "enter": {
-                      "type": "slideInLeft",
-                      "duration": 400,
-                      "delay": 60
-                    }
-                  }
-                },
-                "children": [
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "w-3 h-3 rounded-full bg-purple-500"
-                    }
-                  },
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-gray-800 dark:text-gray-100 font-medium"
-                    },
-                    "text": "Second stagger item"
-                  }
-                ]
-              },
-              {
-                "type": "Box",
-                "props": {
-                  "className": "flex flex-row items-center gap-3 bg-pink-50 dark:bg-pink-900/30 rounded-xl px-4 py-3",
-                  "animation": {
-                    "enter": {
-                      "type": "slideInLeft",
-                      "duration": 400,
-                      "delay": 120
-                    }
-                  }
-                },
-                "children": [
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "w-3 h-3 rounded-full bg-pink-500"
-                    }
-                  },
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-gray-800 dark:text-gray-100 font-medium"
-                    },
-                    "text": "Third stagger item"
-                  }
-                ]
-              },
-              {
-                "type": "Box",
-                "props": {
-                  "className": "flex flex-row items-center gap-3 bg-amber-50 dark:bg-amber-900/30 rounded-xl px-4 py-3",
-                  "animation": {
-                    "enter": {
-                      "type": "slideInLeft",
-                      "duration": 400,
-                      "delay": 180
-                    }
-                  }
-                },
-                "children": [
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "w-3 h-3 rounded-full bg-amber-500"
-                    }
-                  },
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-gray-800 dark:text-gray-100 font-medium"
-                    },
-                    "text": "Fourth stagger item"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "data-testid": "p9-masonry",
-              "style": {
-                "columns": 3,
-                "columnGap": "10px"
-              }
-            },
-            "children": [
-              {
-                "type": "Box",
-                "props": {
-                  "className": "rounded-xl bg-indigo-100 dark:bg-indigo-900/40 p-4",
-                  "style": {
-                    "breakInside": "avoid",
-                    "marginBottom": "10px"
-                  },
-                  "animation": {
-                    "enter": {
-                      "type": "fadeIn",
-                      "duration": 400,
-                      "delay": 0,
-                      "outerClassName": "break-inside-avoid mb-2.5"
-                    }
-                  }
-                },
-                "children": [
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "font-semibold text-indigo-800 dark:text-indigo-200"
-                    },
-                    "text": "Card A"
-                  },
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-xs text-indigo-600 dark:text-indigo-400 mt-1"
-                    },
-                    "text": "Short content"
-                  }
-                ]
-              },
-              {
-                "type": "Box",
-                "props": {
-                  "className": "rounded-xl bg-purple-100 dark:bg-purple-900/40 p-4",
-                  "style": {
-                    "breakInside": "avoid",
-                    "marginBottom": "10px"
-                  },
-                  "animation": {
-                    "enter": {
-                      "type": "fadeIn",
-                      "duration": 400,
-                      "delay": 60,
-                      "outerClassName": "break-inside-avoid mb-2.5"
-                    }
-                  }
-                },
-                "children": [
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "font-semibold text-purple-800 dark:text-purple-200"
-                    },
-                    "text": "Card B"
-                  },
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-xs text-purple-600 dark:text-purple-400 mt-1"
-                    },
-                    "text": "Taller card with more content inside it to create the masonry offset effect."
-                  }
-                ]
-              },
-              {
-                "type": "Box",
-                "props": {
-                  "className": "rounded-xl bg-pink-100 dark:bg-pink-900/40 p-4",
-                  "style": {
-                    "breakInside": "avoid",
-                    "marginBottom": "10px"
-                  },
-                  "animation": {
-                    "enter": {
-                      "type": "fadeIn",
-                      "duration": 400,
-                      "delay": 120,
-                      "outerClassName": "break-inside-avoid mb-2.5"
-                    }
-                  }
-                },
-                "children": [
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "font-semibold text-pink-800 dark:text-pink-200"
-                    },
-                    "text": "Card C"
-                  },
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-xs text-pink-600 dark:text-pink-400 mt-1"
-                    },
-                    "text": "Medium"
-                  }
-                ]
-              },
-              {
-                "type": "Box",
-                "props": {
-                  "className": "rounded-xl bg-amber-100 dark:bg-amber-900/40 p-4",
-                  "style": {
-                    "breakInside": "avoid",
-                    "marginBottom": "10px"
-                  },
-                  "animation": {
-                    "enter": {
-                      "type": "fadeIn",
-                      "duration": 400,
-                      "delay": 180,
-                      "outerClassName": "break-inside-avoid mb-2.5"
-                    }
-                  }
-                },
-                "children": [
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "font-semibold text-amber-800 dark:text-amber-200"
-                    },
-                    "text": "Card D"
-                  },
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-xs text-amber-600 dark:text-amber-400 mt-1"
-                    },
-                    "text": "Another variable-height card to demonstrate the natural masonry stacking."
-                  }
-                ]
-              },
-              {
-                "type": "Box",
-                "props": {
-                  "className": "rounded-xl bg-green-100 dark:bg-green-900/40 p-4",
-                  "style": {
-                    "breakInside": "avoid",
-                    "marginBottom": "10px"
-                  },
-                  "animation": {
-                    "enter": {
-                      "type": "fadeIn",
-                      "duration": 400,
-                      "delay": 240,
-                      "outerClassName": "break-inside-avoid mb-2.5"
-                    }
-                  }
-                },
-                "children": [
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "font-semibold text-green-800 dark:text-green-200"
-                    },
-                    "text": "Card E"
-                  },
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-xs text-green-600 dark:text-green-400 mt-1"
-                    },
-                    "text": "Small card"
-                  }
-                ]
-              },
-              {
-                "type": "Box",
-                "props": {
-                  "className": "rounded-xl bg-cyan-100 dark:bg-cyan-900/40 p-4",
-                  "style": {
-                    "breakInside": "avoid",
-                    "marginBottom": "10px"
-                  },
-                  "animation": {
-                    "enter": {
-                      "type": "fadeIn",
-                      "duration": 400,
-                      "delay": 300,
-                      "outerClassName": "break-inside-avoid mb-2.5"
-                    }
-                  }
-                },
-                "children": [
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "font-semibold text-cyan-800 dark:text-cyan-200"
-                    },
-                    "text": "Card F"
-                  },
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-xs text-cyan-600 dark:text-cyan-400 mt-1"
-                    },
-                    "text": "Box + style.columns: 3 — masonry via CSS columns, no custom component needed."
                   }
                 ]
               }
@@ -3010,7 +2674,7 @@
                   "size": "lg",
                   "className": "font-semibold text-white"
                 },
-                "text": "Phase 10 — Frosted Glass + Skeleton + Timeline"
+                "text": "Phase 10 \u2014 Frosted Glass + Skeleton + Timeline"
               },
               {
                 "type": "Text",
@@ -3359,21 +3023,21 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 11 — State-Machine Animations"
+                "text": "Phase 11 \u2014 State-Machine Animations"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Declarative `states` config drives CSS transitions as a state machine: idle → loading → success → error."
+                "text": "Declarative `states` config drives CSS transitions as a state machine: idle \u2192 loading \u2192 success \u2192 error."
               }
             ]
           },
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-4 items-start",
+              "className": "flex flex-col gap-4 w-full",
               "data-testid": "p11-state-machine"
             },
             "children": [
@@ -3481,7 +3145,7 @@
                     "props": {
                       "className": "text-white font-medium text-sm"
                     },
-                    "text": "Cycle State →"
+                    "text": "Cycle State \u2192"
                   }
                 ]
               }
@@ -3508,7 +3172,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 12 — Gradient Animation"
+                "text": "Phase 12 \u2014 Gradient Animation"
               },
               {
                 "type": "Text",
@@ -3655,7 +3319,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 13 — Clip-Path & Mask Animation"
+                "text": "Phase 13 \u2014 Clip-Path & Mask Animation"
               },
               {
                 "type": "Text",
@@ -3698,7 +3362,7 @@
                     "props": {
                       "className": "text-white font-semibold text-sm"
                     },
-                    "text": "Hover to reveal →"
+                    "text": "Hover to reveal \u2192"
                   }
                 ]
               },
@@ -3754,14 +3418,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 14 — SVG Morphing"
+                "text": "Phase 14 \u2014 SVG Morphing"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "SVG path morphing via SMIL animate — compose any SVG from json svg/path/animate nodes in the builder."
+                "text": "SVG path morphing via SMIL animate \u2014 compose any SVG from json svg/path/animate nodes in the builder."
               }
             ]
           },
@@ -3865,14 +3529,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 15 — Pseudo-Element Effects"
+                "text": "Phase 15 \u2014 Pseudo-Element Effects"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "::before/::after driven by injected scoped <style> tags — animated underline, highlight overlay."
+                "text": "::before/::after driven by injected scoped <style> tags \u2014 animated underline, highlight overlay."
               }
             ]
           },
@@ -3885,7 +3549,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "relative inline-flex px-6 py-3 font-semibold text-indigo-600 cursor-pointer",
+                  "className": "relative inline-flex self-start px-6 py-3 font-semibold text-indigo-600 cursor-pointer",
                   "data-testid": "p15-underline",
                   "animation": {
                     "pseudoElement": {
@@ -3915,7 +3579,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "relative inline-flex px-6 py-3 rounded-lg bg-emerald-100 font-semibold cursor-pointer",
+                  "className": "relative inline-flex self-start px-6 py-3 rounded-lg bg-emerald-100 font-semibold cursor-pointer",
                   "data-testid": "p15-overlay",
                   "animation": {
                     "pseudoElement": {
@@ -3965,7 +3629,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 17 — Swipe Carousel"
+                "text": "Phase 17 \u2014 Swipe Carousel"
               },
               {
                 "type": "Text",
@@ -4005,6 +3669,7 @@
                           "enabled": true,
                           "swipe": true,
                           "dragFeedback": true,
+                          "loop": true,
                           "swipeThreshold": 40,
                           "velocityThreshold": 0.01,
                           "onSwipeLeftAction": "carouselNext",
@@ -4037,10 +3702,9 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "h-full flex flex-col items-center justify-center gap-4 flex-shrink-0",
+                          "className": "h-full flex flex-col items-center justify-center gap-4 flex-shrink-0 bg-gradient-to-br from-[#6366f1] to-[#8b5cf6]",
                           "style": {
-                            "width": "25%",
-                            "background": "linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)"
+                            "width": "25%"
                           }
                         },
                         "children": [
@@ -4072,17 +3736,16 @@
                             "props": {
                               "className": "text-white/70 text-sm text-center px-8"
                             },
-                            "text": "Swipe left to explore →"
+                            "text": "Swipe left to explore \u2192"
                           }
                         ]
                       },
                       {
                         "type": "Box",
                         "props": {
-                          "className": "h-full flex flex-col items-center justify-center gap-4 flex-shrink-0",
+                          "className": "h-full flex flex-col items-center justify-center gap-4 flex-shrink-0 bg-gradient-to-br from-[#06b6d4] to-[#0284c7]",
                           "style": {
-                            "width": "25%",
-                            "background": "linear-gradient(135deg,#06b6d4 0%,#0284c7 100%)"
+                            "width": "25%"
                           }
                         },
                         "children": [
@@ -4121,10 +3784,9 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "h-full flex flex-col items-center justify-center gap-4 flex-shrink-0",
+                          "className": "h-full flex flex-col items-center justify-center gap-4 flex-shrink-0 bg-gradient-to-br from-[#10b981] to-[#059669]",
                           "style": {
-                            "width": "25%",
-                            "background": "linear-gradient(135deg,#10b981 0%,#059669 100%)"
+                            "width": "25%"
                           }
                         },
                         "children": [
@@ -4163,10 +3825,9 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "h-full flex flex-col items-center justify-center gap-4 flex-shrink-0",
+                          "className": "h-full flex flex-col items-center justify-center gap-4 flex-shrink-0 bg-gradient-to-br from-[#f59e0b] to-[#ef4444]",
                           "style": {
-                            "width": "25%",
-                            "background": "linear-gradient(135deg,#f59e0b 0%,#ef4444 100%)"
+                            "width": "25%"
                           }
                         },
                         "children": [
@@ -4198,7 +3859,7 @@
                             "props": {
                               "className": "text-white/70 text-sm text-center px-8"
                             },
-                            "text": "Swipe right to go back ←"
+                            "text": "Swipe right to go back \u2190"
                           }
                         ]
                       }
@@ -4253,11 +3914,13 @@
                               "states": {
                                 "active": {
                                   "background": "#6366f1",
-                                  "width": "24px"
+                                  "width": "24px",
+                                  "borderRadius": "9999px"
                                 },
                                 "inactive": {
                                   "background": "#d1d5db",
-                                  "width": "8px"
+                                  "width": "8px",
+                                  "borderRadius": "9999px"
                                 }
                               }
                             }
@@ -4276,11 +3939,13 @@
                               "states": {
                                 "active": {
                                   "background": "#06b6d4",
-                                  "width": "24px"
+                                  "width": "24px",
+                                  "borderRadius": "9999px"
                                 },
                                 "inactive": {
                                   "background": "#d1d5db",
-                                  "width": "8px"
+                                  "width": "8px",
+                                  "borderRadius": "9999px"
                                 }
                               }
                             }
@@ -4299,11 +3964,13 @@
                               "states": {
                                 "active": {
                                   "background": "#10b981",
-                                  "width": "24px"
+                                  "width": "24px",
+                                  "borderRadius": "9999px"
                                 },
                                 "inactive": {
                                   "background": "#d1d5db",
-                                  "width": "8px"
+                                  "width": "8px",
+                                  "borderRadius": "9999px"
                                 }
                               }
                             }
@@ -4322,11 +3989,13 @@
                               "states": {
                                 "active": {
                                   "background": "#f59e0b",
-                                  "width": "24px"
+                                  "width": "24px",
+                                  "borderRadius": "9999px"
                                 },
                                 "inactive": {
                                   "background": "#d1d5db",
-                                  "width": "8px"
+                                  "width": "8px",
+                                  "borderRadius": "9999px"
                                 }
                               }
                             }

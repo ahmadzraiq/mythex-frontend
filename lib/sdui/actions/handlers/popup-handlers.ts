@@ -119,3 +119,24 @@ export const closeAllPopupsHandler =
   async (_actionDef: ActionDef): Promise<void> => {
     usePopupStore.getState().closeAllPopups();
   };
+
+/**
+ * closePopupHandler — closes only the current popup instance.
+ *
+ * Supports two scope patterns:
+ * 1. Normal (Modal/Sheet): scope={{ popup: { instanceId } }} → readable as popup.instanceId
+ * 2. Toast map (Alert/StackedAlert): StackContainer has map="_popupInstances" so each
+ *    card renders in a map-item scope → readable as context.item.data.popup.instanceId
+ */
+export const closePopupHandler =
+  (ctx: ActionHandlerContext) =>
+  async (_actionDef: ActionDef): Promise<void> => {
+    const instanceId =
+      (ctx.get('popup.instanceId') as string | undefined) ??
+      (ctx.get('context.item.data.popup.instanceId') as string | undefined);
+    if (!instanceId) {
+      usePopupStore.getState().closeAllPopups();
+      return;
+    }
+    usePopupStore.getState().closeInstance(instanceId);
+  };

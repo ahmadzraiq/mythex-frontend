@@ -374,6 +374,7 @@ export const ACTION_CATEGORIES: { category: string; items: ActionTypeDef[] }[] =
     items: [
       { type: 'openPopup', label: 'Open popup', icon: '⊞' },
       { type: 'closeAllPopups', label: 'Close all popups', icon: '⊞' },
+      { type: 'closePopup', label: 'Close popup', icon: '⊞' },
     ],
   },
 ];

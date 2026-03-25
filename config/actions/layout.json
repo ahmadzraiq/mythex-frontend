@@ -812,5 +812,22 @@
     "steps": [
       { "id": "s1", "type": "closeAllPopups", "config": {} }
     ]
+  },
+  "closePopup": {
+    "name": "closePopup",
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "closePopup", "config": {} }
+    ]
+  },
+  "autoCloseToast": {
+    "name": "autoCloseToast",
+    "type": "workflowSteps",
+    "trigger": "created",
+    "steps": [
+      { "id": "s1", "type": "timeDelay", "config": { "time": 4000 } },
+      { "id": "s2", "type": "closePopup", "config": {} }
+    ]
   }
 }

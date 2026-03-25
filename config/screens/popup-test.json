@@ -102,6 +102,82 @@
             "type": "Box",
             "props": { "className": "px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex flex-row items-center gap-2" },
             "children": [
+              { "type": "NavIcon", "props": { "icon": "BellRing", "size": 15, "color": "#3b82f6" } },
+              { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white" }, "text": "Stacked Alerts" }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "p-5 flex flex-col gap-4" },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+                "text": "When allowStacking=true, each click adds a new toast to the stack instead of replacing the previous one. The backdrop Box is the shared container — edit its gap, direction, and alignment in the builder."
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row flex-wrap gap-3" },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": { "action": "primary", "size": "sm", "data-testid": "open-stacked-1-btn" },
+                    "actions": [{ "action": "openStackedAlert1" }],
+                    "children": [
+                      { "type": "NavIcon", "props": { "icon": "Upload", "size": 14 } },
+                      { "type": "ButtonText", "text": "File uploaded" }
+                    ]
+                  },
+                  {
+                    "type": "Button",
+                    "props": { "action": "primary", "size": "sm", "data-testid": "open-stacked-2-btn" },
+                    "actions": [{ "action": "openStackedAlert2" }],
+                    "children": [
+                      { "type": "NavIcon", "props": { "icon": "MessageCircle", "size": 14 } },
+                      { "type": "ButtonText", "text": "New message" }
+                    ]
+                  },
+                  {
+                    "type": "Button",
+                    "props": { "action": "primary", "size": "sm", "data-testid": "open-stacked-3-btn" },
+                    "actions": [{ "action": "openStackedAlert3" }],
+                    "children": [
+                      { "type": "NavIcon", "props": { "icon": "CreditCard", "size": 14 } },
+                      { "type": "ButtonText", "text": "Payment received" }
+                    ]
+                  },
+                  {
+                    "type": "Button",
+                    "props": { "action": "outline", "size": "sm" },
+                    "actions": [{ "action": "closeAllTestPopups" }],
+                    "children": [
+                      { "type": "NavIcon", "props": { "icon": "X", "size": 14 } },
+                      { "type": "ButtonText", "text": "Clear stack" }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 flex flex-col gap-2" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide" }, "text": "Try it" },
+                  { "type": "Text", "props": { "className": "text-xs text-blue-600 dark:text-blue-400 leading-relaxed" }, "text": "Click any button above multiple times — each click pushes a new card onto the stack. Open the popup in the builder and edit the Backdrop Box to change gap, reverse order, or move the stack to a different corner." }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex flex-row items-center gap-2" },
+            "children": [
               { "type": "NavIcon", "props": { "icon": "Clock", "size": 15, "color": "#6366f1" } },
               { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white" }, "text": "Wait Close Event" }
             ]

@@ -23,7 +23,7 @@ import React, {
   useEffect, useLayoutEffect, useRef, useState, useMemo, useId, useCallback,
   type CSSProperties,
 } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -226,6 +226,8 @@ export interface MorphShapeConfig {
   enabled?: boolean;
   from?: string;
   to?: string;
+  /** Multi-step morph: array of border-radius strings to cycle through in sequence */
+  steps?: string[];
   duration?: number;
   easing?: string;
   loop?: boolean;
@@ -400,6 +402,7 @@ export interface GestureConfig {
   onSwipeDownAction?: string;
   animationDuration?: number;
   dragFeedback?: boolean;
+  loop?: boolean;
 }
 
 export interface TimelineStep {
@@ -644,7 +647,9 @@ function parseCSSProps(cssProps: Record<string, string>): {
     } else if (prop === 'background' || prop === 'backgroundColor') {
       result.backgroundColor = value;
     } else if (prop === 'borderRadius') {
-      result.borderRadius = parseFloat(value);
+      const n = parseFloat(value);
+      // CSS rem → px (1rem = 16px), px → use as-is
+      result.borderRadius = value.includes('rem') ? n * 16 : n;
     } else if (prop === 'width') {
       const n = parseFloat(value);
       if (!isNaN(n)) result.width = n;
@@ -678,6 +683,27 @@ function clamp(v: number, lo?: number | null, hi?: number | null) {
   if (lo != null) v = Math.max(lo, v);
   if (hi != null) v = Math.min(hi, v);
   return v;
+}
+
+// ─── Border-radius helper for shimmer overlay ─────────────────────────────────
+// Ordered most-specific first so 'rounded-xl' is matched before 'rounded'
+const ROUNDED_TOKENS: [string, number][] = [
+  ['rounded-full', 9999],
+  ['rounded-3xl', 24],
+  ['rounded-2xl', 16],
+  ['rounded-xl', 12],
+  ['rounded-lg', 8],
+  ['rounded-md', 6],
+  ['rounded-sm', 2],
+  ['rounded', 4],
+];
+function pickBorderRadius(className?: string): number | undefined {
+  if (!className) return undefined;
+  for (const [token, value] of ROUNDED_TOKENS) {
+    // Match whole word only (surrounded by space or string boundary)
+    if (new RegExp(`(^|\\s)${token}(\\s|$)`).test(className)) return value;
+  }
+  return undefined;
 }
 
 // ─── AnimatedNode ─────────────────────────────────────────────────────────────
@@ -746,8 +772,16 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   const dragY = useSharedValue(0);
 
   // Gesture / swipe dragFeedback + statesMachine
-  const gestureTranslateX = useSharedValue(0);
-  const lastSmTransform   = useSharedValue(0);
+  const gestureTranslateX  = useSharedValue(0);
+  const lastSmTransform    = useSharedValue(0);
+  // Width of the Animated.View — needed to convert percentage translateX to pixels
+  const containerWidthSv   = useSharedValue(0);
+  // Number of slides — set from DOM on mount; used for loop jump calculation
+  const numSlidesSv        = useSharedValue(0);
+  // Tracks whether the Pan gesture is actively dragging (JS thread accessible)
+  const isDraggingRef      = useRef(false);
+  // Prevents addListener from clearing individual slide transforms during loop animation
+  const isLoopAnimatingRef = useRef(false);
 
   // Timeline
   const timelineOpacity = useSharedValue(1);
@@ -761,18 +795,26 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   const smWidth       = useSharedValue<number | undefined>(undefined);
   const smHeight      = useSharedValue<number | undefined>(undefined);
   const smBorderRadius= useSharedValue<number | undefined>(undefined);
-  const smBgColorProg = useSharedValue(0);
-  const smFromColor   = useRef('#000000');
-  const smToColor     = useRef('#000000');
+  const smBgColorProg  = useSharedValue(0);
+  const smFromColor    = useRef('#000000');
+  const smToColor      = useRef('#000000');
+  const smPrevWatchVar = useRef<string | undefined>(undefined);
 
   // Color animation
   const colorProgress = useSharedValue(0);
   const colorFrom     = useRef('#000000');
   const colorTo       = useRef('#000000');
 
-  // Morph shape
+  // Morph shape — single-value fallback (numeric border-radius)
   const morphBorderRadius = useSharedValue(0);
   const morphLoop         = useSharedValue(0);
+  // Morph shape — per-corner blob animation (percentage border-radius)
+  const morphTL           = useSharedValue(0); // borderTopLeftRadius
+  const morphTR           = useSharedValue(0); // borderTopRightRadius
+  const morphBR           = useSharedValue(0); // borderBottomRightRadius
+  const morphBL           = useSharedValue(0); // borderBottomLeftRadius
+  // 1 = blob/percent mode active, 0 = inactive (avoids ref inside worklet)
+  const morphBlob         = useSharedValue(0);
 
   // Flip
   const flipRotateY = useSharedValue(0);
@@ -794,8 +836,9 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   const parallaxOffset = useSharedValue(0);
 
   // Tilt — cross-platform via Gesture.Hover()
-  const tiltRotX = useSharedValue(0);
-  const tiltRotY = useSharedValue(0);
+  const tiltRotX    = useSharedValue(0);
+  const tiltRotY    = useSharedValue(0);
+  const tiltScaleSv = useSharedValue(1);
 
   // MouseParallax — cross-platform via Gesture.Hover()
   const mouseParallaxX = useSharedValue(0);
@@ -1066,7 +1109,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   useEffect(() => {
     const triggerVal = imperativeTrigger?.watchVar;
     const type = imperativeTrigger?.type;
-    if (!type || type === 'none') return;
+    if (!type || type === 'none' || builderMode) return;
     if (prevTriggerVal.current === undefined) { prevTriggerVal.current = triggerVal; return; }
     if (triggerVal === prevTriggerVal.current) return;
     prevTriggerVal.current = triggerVal;
@@ -1194,24 +1237,109 @@ export const AnimatedNode = React.memo(function AnimatedNode({
       ?? (statesMachine.defaultState ? statesMachine.states[statesMachine.defaultState] : undefined);
     if (!stateStyles) return;
     const parsedInit = parseCSSProps(stateStyles);
-    const bg = parsedInit.backgroundColor;
-    if (!bg) return;
-    // Seed Reanimated so the animated style immediately shows the correct color
-    smFromColor.current = bg;
-    smToColor.current   = bg;
-    smBgColorProg.value = 1; // interpolateColor(1, [0,1], [bg, bg]) = bg
+    // Seed all shared values to initial state so there's no flash on first frame
+    if (parsedInit.backgroundColor) {
+      smFromColor.current = parsedInit.backgroundColor;
+      smToColor.current   = parsedInit.backgroundColor;
+      smBgColorProg.value = 1;
+    }
+    if (parsedInit.borderRadius != null) smBorderRadius.value = parsedInit.borderRadius;
+    if (parsedInit.width        != null) smWidth.value        = parsedInit.width;
+    if (parsedInit.height       != null) smHeight.value       = parsedInit.height;
+    if (parsedInit.opacity      != null) smOpacity.value      = parsedInit.opacity;
+    if (parsedInit.scale        != null) smScale.value        = parsedInit.scale;
     // Also set DOM directly for instant visibility before Reanimated's first frame
     if (typeof document !== 'undefined') {
       const el = animatedRef.current as unknown as HTMLElement | null;
-      if (el) el.style.background = bg;
+      if (el) {
+        if (parsedInit.backgroundColor) el.style.background = parsedInit.backgroundColor;
+        if (parsedInit.borderRadius != null) el.style.borderRadius = `${parsedInit.borderRadius}px`;
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── dragFeedback container width — web only ────────────────────────────────
+  // Read the Animated.View's rendered width after mount so the statesMachine can
+  // convert percentage-based transforms (e.g. "translateX(-100%)") to pixels for
+  // Reanimated-driven drag feedback.
+  useLayoutEffect(() => {
+    if (Platform.OS !== 'web' || !gesture?.dragFeedback) return;
+    const el = animatedRef.current as unknown as HTMLElement | null;
+    if (!el) return;
+    const w = el.getBoundingClientRect().width;
+    if (w > 0) containerWidthSv.value = w;
+    // Capture slide count for loop jump calculation
+    const innerEl = el.firstElementChild as HTMLElement | null;
+    if (innerEl && innerEl.children.length > 0) numSlidesSv.value = innerEl.children.length;
+    const ro = new ResizeObserver(([entry]) => {
+      const bw = entry.contentRect.width;
+      if (bw > 0) containerWidthSv.value = bw;
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gesture?.dragFeedback]);
+
+  // ── dragFeedback inner-child transform — web only ──────────────────────────
+  // When dragFeedback is active, the carousel TRACK must slide while the outer
+  // Animated.View stays fixed at position 0 inside the viewport.  If we apply
+  // gestureTranslateX to the Animated.View itself it gets translated outside the
+  // viewport's overflow:hidden clipping area, making pointer events stop reaching
+  // it — so the Pan gesture dies after the first slide.
+  //
+  // Fix: keep the Animated.View at x=0 (no gestureTranslateX in animatedStyle for
+  // this case) and instead write gestureTranslateX to the FIRST CHILD element
+  // (the sliding track box) via an addListener subscription.
+  const dragFeedbackActiveRef = useRef(false);
+  dragFeedbackActiveRef.current = gesture?.dragFeedback ?? false;
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !gesture?.dragFeedback) return;
+    const listenerId = 1; // safe: each AnimatedNode has its own gestureTranslateX instance
+    gestureTranslateX.addListener(listenerId, (val: number) => {
+      const outerEl = animatedRef.current as unknown as HTMLElement | null;
+      const innerEl = outerEl?.firstElementChild as HTMLElement | null;
+      if (!innerEl) return;
+
+      // ── Loop drag preview ───────────────────────────────────────────────────
+      // When actively dragging and loop is enabled, temporarily reposition the
+      // edge slide so the user sees the opposite-end slide instead of white space.
+      if (isDraggingRef.current && gesture?.loop && containerWidthSv.value > 0) {
+        const cw = containerWidthSv.value;
+        const n = numSlidesSv.value || innerEl.children.length;
+        const totalWidth = n * cw;
+        const maxNeg = -(n - 1) * cw;
+        const slides = Array.from(innerEl.children) as HTMLElement[];
+        // Always reset all individual slide transforms before applying the new one
+        slides.forEach(s => { s.style.transform = ''; });
+        if (lastSmTransform.value === 0 && val > 0) {
+          // Dragging right from first slide — show last slide to the left
+          slides[n - 1].style.transform = `translateX(${-totalWidth}px)`;
+        } else if (lastSmTransform.value <= maxNeg && val < maxNeg) {
+          // Dragging left from last slide — show first slide to the right
+          slides[0].style.transform = `translateX(${totalWidth}px)`;
+        }
+      } else if (!isDraggingRef.current && !isLoopAnimatingRef.current) {
+        // Gesture ended and no loop animation running: clear all individual slide transforms
+        const slides = Array.from(innerEl.children) as HTMLElement[];
+        slides.forEach(s => { s.style.transform = ''; });
+      }
+
+      innerEl.style.transform = val !== 0 ? `translateX(${val}px)` : '';
+    });
+    return () => gestureTranslateX.removeListener(listenerId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gesture?.dragFeedback]);
 
   // ── statesMachine — cross-platform: Reanimated shared values ───────────────
   useEffect(() => {
     if (!statesMachine) return;
     const currentState = String(statesMachine.watchVar ?? '');
+    // The renderer always creates a new statesMachine object, so this effect fires
+    // on every render. Guard with a ref so we only animate when the state actually changes.
+    if (currentState === smPrevWatchVar.current) return;
+    smPrevWatchVar.current = currentState;
     const stateStyles  = statesMachine.states[currentState]
       ?? (statesMachine.defaultState ? statesMachine.states[statesMachine.defaultState] : undefined);
     if (!stateStyles) return;
@@ -1223,7 +1351,91 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     const rawTransform = (stateStyles as Record<string, string>).transform;
     if (rawTransform && typeof document !== 'undefined') {
       const el = animatedRef.current as unknown as HTMLElement | null;
-      if (el) {
+      // When dragFeedback is active and the transform is percentage-based (e.g. carousel
+      // "translateX(-100%)"), convert to pixels and drive via Reanimated so that the
+      // live drag offset (gestureTranslateX) and slide position don't fight over
+      // el.style.transform. Reanimated always wins the inline style race.
+      const pctMatch = rawTransform.match(/translateX\(([-\d.]+)%\)/);
+      if (pctMatch && gesture?.dragFeedback && containerWidthSv.value > 0) {
+        const cw = containerWidthSv.value;
+        const pixelTarget = (parseFloat(pctMatch[1]) / 100) * cw;
+
+        // ── Loop transition ────────────────────────────────────────────────────
+        // When the carousel loops (slide0→last via prev, or last→slide0 via next),
+        // the pixelTarget is far from the current position.
+        //
+        // Strategy: keep the individual slide repositioning transform (set during
+        // drag preview, or applied here for button-click loops) active while
+        // animating to a "loop target" that is exactly 1 slide-width away. Both
+        // the entering and exiting slides remain visible throughout — no white gap.
+        // After the animation completes, clear the individual transform and
+        // invisibly snap to the real pixelTarget (same visual, different coords).
+        //
+        //   Loop prev (0→n-1): animate inner track from currentPos → +cw
+        //                      (slide n-1 with transform=-totalWidth enters from left)
+        //   Loop next (n-1→0): animate inner track from currentPos → -totalWidth
+        //                      (slide 0 with transform=+totalWidth enters from right)
+        let loopHandled = false;
+        if (gesture.loop && numSlidesSv.value > 0) {
+          const n = numSlidesSv.value;
+          const totalWidth = n * cw;
+          const currentPos = gestureTranslateX.value;
+          if (Math.abs(pixelTarget - currentPos) > cw * 1.5) {
+            loopHandled = true;
+            const isLoopNext = pixelTarget > currentPos; // going to slide 0 from slide n-1
+            const loopSlideIdx  = isLoopNext ? 0 : n - 1;
+            const loopTarget    = isLoopNext ? -totalWidth : cw;
+            const loopTransform = isLoopNext ? `translateX(${totalWidth}px)` : `translateX(${-totalWidth}px)`;
+
+            // Ensure the entering slide has its repositioning transform
+            // (already set if coming from a drag; needed for button-click loops)
+            const innerEl = el?.firstElementChild as HTMLElement | null;
+            if (innerEl && loopSlideIdx < innerEl.children.length) {
+              const loopSlide = innerEl.children[loopSlideIdx] as HTMLElement;
+              if (!loopSlide.style.transform) loopSlide.style.transform = loopTransform;
+            }
+
+            lastSmTransform.value = pixelTarget;
+            isLoopAnimatingRef.current = true;
+
+            // Capture for callback (closures over these consts stay valid)
+            const snapTarget   = pixelTarget;
+            const snapSlideIdx = loopSlideIdx;
+
+            gestureTranslateX.value = withTiming(
+              loopTarget,
+              { duration: dur, easing: rnEase(statesMachine.easing ?? 'easeInOut') },
+              (finished) => {
+                'worklet';
+                if (!finished) return;
+                // Run on JS thread: clear individual transform + snap to real position
+                runOnJS((target: number, idx: number) => {
+                  isLoopAnimatingRef.current = false;
+                  const outerEl = animatedRef.current as unknown as HTMLElement | null;
+                  const trackEl = outerEl?.firstElementChild as HTMLElement | null;
+                  if (trackEl) {
+                    const slide = trackEl.children[idx] as HTMLElement | undefined;
+                    if (slide) slide.style.transform = '';
+                  }
+                  // Instant snap — visually identical since slide is at same position
+                  gestureTranslateX.value = target;
+                })(snapTarget, snapSlideIdx);
+              },
+            );
+            if (el) el.style.transform = 'none';
+          }
+        }
+
+        if (!loopHandled) {
+          lastSmTransform.value = pixelTarget;
+          gestureTranslateX.value = withTiming(pixelTarget, {
+            duration: dur,
+            easing: rnEase(statesMachine.easing ?? 'easeInOut'),
+          });
+          // Clear the CSS transform so it doesn't override Reanimated
+          if (el) el.style.transform = 'none';
+        }
+      } else if (el) {
         el.style.transition = cssTransition;
         el.style.transform  = rawTransform;
       }
@@ -1281,19 +1493,91 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   }, [color?.enabled, color?.from, color?.to, color?.duration, color?.easing, color?.loop]);
 
   // ── MorphShape ─────────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!morphShape?.enabled || !morphShape.from || !morphShape.to) return;
-    const fromRad = parseFloat(morphShape.from);
-    const toRad   = parseFloat(morphShape.to);
-    if (isNaN(fromRad) || isNaN(toRad)) return;
+  // useLayoutEffect so the starting corner values are applied before first paint —
+  // avoids the sharp-square flash that would appear with useEffect.
+  useLayoutEffect(() => {
+    if (!morphShape?.enabled || builderMode) return;
+
     const dur    = morphShape.duration ?? (morphShape.loop ? 3000 : 600);
     const easing = rnEase(morphShape.easing ?? 'easeInOut');
+
+    // Parse a CSS border-radius string into 4 corner values [TL, TR, BR, BL].
+    // Ignores the "/" vertical-radii side — uses horizontal values only.
+    // Works for pixel ("30") and percentage ("60% 40% 70% 30% / ...") formats.
+    const parseCorners = (val: string): { values: number[]; isPercent: boolean } => {
+      const isPercent = val.includes('%');
+      const parts = val.split('/')[0].trim().split(/\s+/).map(v => parseFloat(v));
+      if (parts.length === 1) return { values: [parts[0], parts[0], parts[0], parts[0]], isPercent };
+      if (parts.length === 2) return { values: [parts[0], parts[1], parts[0], parts[1]], isPercent };
+      if (parts.length === 3) return { values: [parts[0], parts[1], parts[2], parts[1]], isPercent };
+      return { values: parts.slice(0, 4), isPercent };
+    };
+
+    // Collect all keyframe strings: prefer `steps[]`, fall back to from/to pair
+    const rawSteps: string[] = morphShape.steps?.length
+      ? morphShape.steps
+      : (morphShape.from && morphShape.to ? [morphShape.from, morphShape.to] : []);
+
+    if (rawSteps.length < 2) return;
+
+    const parsed   = rawSteps.map(parseCorners);
+    const isBlob   = parsed.some(p => p.isPercent || p.values.length > 1);
+
+    if (parsed.some(p => p.values.some(isNaN))) return;
+
+    if (isBlob) {
+      // Per-corner Reanimated blob animation
+      morphBlob.value         = 1;
+      morphBorderRadius.value = 0;
+
+      // Snap to the first keyframe before paint
+      morphTL.value = parsed[0].values[0];
+      morphTR.value = parsed[0].values[1];
+      morphBR.value = parsed[0].values[2];
+      morphBL.value = parsed[0].values[3];
+
+      // Build per-corner withSequence chains through all keyframes
+      const stepDur = dur / (parsed.length - 1);
+      const buildSeq = (idx: 0 | 1 | 2 | 3) => {
+        const frames = parsed.slice(1).map(p =>
+          withTiming(p.values[idx], { duration: stepDur, easing })
+        ) as Parameters<typeof withSequence>;
+        return withSequence(...frames);
+      };
+
+      if (morphShape.loop) {
+        morphTL.value = withRepeat(buildSeq(0), -1, false) as unknown as number;
+        morphTR.value = withRepeat(buildSeq(1), -1, false) as unknown as number;
+        morphBR.value = withRepeat(buildSeq(2), -1, false) as unknown as number;
+        morphBL.value = withRepeat(buildSeq(3), -1, false) as unknown as number;
+      } else {
+        morphTL.value = buildSeq(0) as unknown as number;
+        morphTR.value = buildSeq(1) as unknown as number;
+        morphBR.value = buildSeq(2) as unknown as number;
+        morphBL.value = buildSeq(3) as unknown as number;
+      }
+
+      return () => {
+        cancelAnimation(morphTL);
+        cancelAnimation(morphTR);
+        cancelAnimation(morphBR);
+        cancelAnimation(morphBL);
+        morphBlob.value = 0;
+      };
+    }
+
+    // Simple single numeric border-radius (e.g. "30" → "60")
+    const fromRad = parsed[0].values[0];
+    const toRad   = parsed[parsed.length - 1].values[0];
     morphBorderRadius.value = fromRad;
     morphBorderRadius.value = morphShape.loop
       ? withRepeat(withTiming(toRad, { duration: dur, easing }), -1, true)
       : withTiming(toRad, { duration: dur, easing });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [morphShape?.enabled, morphShape?.from, morphShape?.to, morphShape?.duration, morphShape?.easing, morphShape?.loop]);
+  }, [morphShape?.enabled, morphShape?.from, morphShape?.to,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      JSON.stringify(morphShape?.steps),
+      morphShape?.duration, morphShape?.easing, morphShape?.loop, builderMode]);
 
   // ── Shimmer animation ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -1321,7 +1605,10 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gradientAnimation?.enabled, gradientAnimation?.animateAngle, gradientAnimation?.angle, gradientAnimation?.duration]);
 
-  // ── Radial/Conic gradient — CSS injection on DOM element (web-only) ─────────
+  // ── Gradient CSS animation — web-only ────────────────────────────────────────
+  // linear+animateColors: cycles background-position on an oversized gradient
+  // radial+animateColors: pulses background-size (breathing glow effect)
+  // conic+animateAngle: animates conic-gradient angle via CSS @property (no element rotation)
   useEffect(() => {
     if (!gradientAnimation?.enabled || typeof document === 'undefined') return;
     const el = animatedRef.current as unknown as HTMLElement | null;
@@ -1330,42 +1617,99 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     const dur = gradientAnimation.duration ?? 4000;
     const type = (gradientAnimation as { type?: string }).type;
 
-    if (type === 'radial') {
-      el.style.backgroundImage = `radial-gradient(circle, ${colors.join(', ')})`;
-      el.style.backgroundSize = '200% 200%';
-    } else if (type === 'conic') {
-      // Inject keyframe for conic rotation
-      const animName = `an-conic-${noiseId}`;
-      if (!document.getElementById(animName)) {
-        const style = document.createElement('style');
-        style.id = animName;
-        style.textContent = `@keyframes ${animName} { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`;
-        document.head.appendChild(style);
+    const injectKeyframes = (id: string, css: string) => {
+      if (!document.getElementById(id)) {
+        const s = document.createElement('style');
+        s.id = id;
+        s.textContent = css;
+        document.head.appendChild(s);
       }
-      el.style.backgroundImage = `conic-gradient(${colors.join(', ')})`;
+    };
+
+    if (type === 'linear' && gradientAnimation.animateColors) {
+      const animName = `an-linear-${noiseId}`;
+      injectKeyframes(animName,
+        `@keyframes ${animName}{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}`);
+      el.style.backgroundImage = `linear-gradient(${gradientAnimation.angle ?? 135}deg, ${colors.join(', ')})`;
+      el.style.backgroundSize = '300% 300%';
+      el.style.animation = `${animName} ${dur}ms ease infinite`;
+    } else if (type === 'radial') {
+      const animName = `an-radial-${noiseId}`;
+      if (gradientAnimation.animateColors) {
+        injectKeyframes(animName,
+          `@keyframes ${animName}{0%,100%{background-size:150% 150%}50%{background-size:280% 280%}}`);
+      }
+      el.style.backgroundImage = `radial-gradient(circle at center, ${colors.join(', ')})`;
+      el.style.backgroundSize = '150% 150%';
+      el.style.backgroundPosition = 'center';
+      if (gradientAnimation.animateColors) {
+        el.style.animation = `${animName} ${dur}ms ease-in-out infinite`;
+      }
+    } else if (type === 'conic') {
+      // Animate only the conic gradient angle via CSS @property — element stays still
+      const propName = `--an-conic-${noiseId}`;
+      const animName = `an-conic-${noiseId}`;
+      injectKeyframes(animName,
+        `@property ${propName}{syntax:'<angle>';inherits:false;initial-value:0deg}` +
+        `@keyframes ${animName}{to{${propName}:360deg}}`);
+      el.style.backgroundImage = `conic-gradient(from var(${propName}), ${colors.join(', ')})`;
       el.style.animation = `${animName} ${dur}ms linear infinite`;
     }
-    // Linear type handled by LinearGradient child component + backgroundSize in mergedStyle
+
     return () => {
-      if (el && (type === 'conic' || type === 'radial')) {
-        el.style.backgroundImage = '';
-        el.style.backgroundSize = '';
-        if (type === 'conic') el.style.animation = '';
-      }
+      if (!el) return;
+      el.style.backgroundImage = '';
+      el.style.backgroundSize = '';
+      el.style.backgroundPosition = '';
+      el.style.animation = '';
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gradientAnimation?.enabled, gradientAnimation?.colors, gradientAnimation?.duration, noiseId]);
 
-  // ── SVG stroke draw animation — Reanimated (cross-platform) ───────────────
+  // ── SVG stroke draw animation — DOM CSS transition (web) ──────────────────
+  // Finds all stroke-able SVG child elements, measures their path length, sets
+  // strokeDasharray/strokeDashoffset to fully hide them, then transitions to 0.
   useEffect(() => {
     if (!svgStroke?.enabled) return;
-    const delay = svgStroke.delay ?? 0;
-    const dur   = svgStroke.duration ?? 1500;
-    const easing = rnEase(svgStroke.easing ?? 'easeInOut');
-    strokeProgress.value = 0;
-    strokeProgress.value = withDelay(delay, withTiming(1, { duration: dur, easing }));
+    if (typeof document === 'undefined') return;
+    const container = animatedRef.current as unknown as HTMLElement | null;
+    if (!container) return;
+
+    const delay  = svgStroke.delay ?? 0;
+    const dur    = svgStroke.duration ?? 1500;
+    const easing = cssEase(svgStroke.easing ?? 'easeInOut');
+
+    const targets = Array.from(
+      container.querySelectorAll<SVGGeometryElement>('path, line, polyline, polygon, circle, rect, ellipse')
+    );
+
+    // Hide all strokes immediately (before paint)
+    targets.forEach(el => {
+      let len = svgStroke.length ?? 0;
+      if (!len) { try { len = el.getTotalLength(); } catch { len = 400; } }
+      el.style.strokeDasharray  = String(len);
+      el.style.strokeDashoffset = String(len);
+      el.style.transition = 'none';
+    });
+
+    // Trigger the draw transition after delay
+    const t = setTimeout(() => {
+      targets.forEach(el => {
+        el.style.transition      = `stroke-dashoffset ${dur}ms ${easing}`;
+        el.style.strokeDashoffset = '0';
+      });
+    }, delay + 16); // +16ms so the browser paints the hidden state first
+
+    return () => {
+      clearTimeout(t);
+      targets.forEach(el => {
+        el.style.strokeDasharray  = '';
+        el.style.strokeDashoffset = '';
+        el.style.transition       = '';
+      });
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [svgStroke?.enabled, svgStroke?.duration, svgStroke?.delay, svgStroke?.easing]);
+  }, [svgStroke?.enabled, svgStroke?.duration, svgStroke?.delay, svgStroke?.easing, svgStroke?.length]);
 
   // ── Declarative timeline — cross-platform (Reanimated) ─────────────────────
   useEffect(() => {
@@ -1570,13 +1914,115 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // MouseParallax is handled cross-platform via Gesture.Hover() at the gesture
   // composition step below — no separate window.mousemove listener needed.
 
-  // ── Flip animation ─────────────────────────────────────────────────────────
+  // ── Flip animation (click / native-hover) ─────────────────────────────────
   useEffect(() => {
     const dur    = flip?.duration ?? 500;
     const target = isFlipped ? 180 : 0;
     flipRotateY.value = withTiming(target, { duration: dur, easing: ReanimatedEasing.inOut(ReanimatedEasing.quad) });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFlipped, flip?.duration]);
+
+  // ── Hover-flip via native DOM mouseover/mouseout on animatedRef (web only) ──
+  //
+  // We attach directly to animatedRef.current (the Animated.View DOM element,
+  // 200×220 px) rather than a wrapper div.  A wrapper div is a block element
+  // that expands to full parent width — meaning events would fire across the
+  // whole row of cards, not just the 200 px card.
+  //
+  // Why mouseover/mouseout (not mouseenter/mouseleave):
+  //   mouseenter/mouseleave are NOT bubbling and fire per-element. With CSS
+  //   preserve-3d the browser re-hitTests between the front and back faces as the
+  //   card rotates, causing mouseleave on the Animated.View to fire even when
+  //   the pointer never crossed the card's 2D boundary → infinite flip loop.
+  //
+  //   mouseover/mouseout DO bubble and carry a relatedTarget. We can tell:
+  //     relatedTarget is a descendant → pointer moved between 3D faces → ignore
+  //     relatedTarget is outside      → pointer truly entered/left the card
+  //
+  // We use requestAnimationFrame retry so the Reanimated ref is always populated
+  // before we try to read it (animatedRef is set during commit, but can
+  // occasionally be null on the very first effect run after SSR hydration).
+  //
+  // We update flipRotateY.value directly (no setState → no React re-render →
+  // GestureDetector never reinstalls its handlers → no worklet warnings).
+  useEffect(() => {
+    const isHoverTrigger = flip && (flip.trigger === 'hover' || !flip.trigger);
+    if (!isHoverTrigger || typeof document === 'undefined') return;
+
+    const dur  = flip.duration ?? 500;
+    const ease = ReanimatedEasing.inOut(ReanimatedEasing.quad);
+    let rafId = 0;
+    let cleanup: (() => void) | undefined;
+
+    const attach = () => {
+      const el = animatedRef.current as unknown as HTMLElement | null;
+      if (!el) {
+        rafId = requestAnimationFrame(attach);
+        return;
+      }
+
+      // Track hover by comparing pointer position against a cached bounding rect.
+      //
+      // Why not element events (mouseenter/mouseleave/mouseover/mouseout):
+      //   All of these rely on the browser's 3D hit-testing. With `perspective() rotateY()`
+      //   on the Animated.View, the element's projected 2D hit area shrinks during rotation
+      //   (~0 px wide at 90°). This causes spurious leave events while the pointer is
+      //   stationary inside the card, AND Chrome sometimes fires `mouseleave` with the
+      //   last-INSIDE position when the pointer exits quickly — making it impossible to
+      //   distinguish a genuine exit from a 3D hit-area glitch.
+      //
+      // Solution: listen for `pointermove` on the document and compare the raw pointer
+      //   coordinates against the element's bounding rect. No element hit-testing
+      //   involved at all — completely immune to 3D transforms.
+      //
+      // Rect is refreshed on scroll/resize so the card can be scrolled or the window
+      // resized while the user is hovering without getting stuck.
+      let rect = el.getBoundingClientRect();
+      const inBounds = (x: number, y: number) =>
+        x >= rect.left && x < rect.right && y >= rect.top && y < rect.bottom;
+
+      let flipped = false;
+      let lastX = 0, lastY = 0;
+
+      const onPointerMove = (e: PointerEvent) => {
+        lastX = e.clientX; lastY = e.clientY;
+        const inside = inBounds(lastX, lastY);
+        if (inside && !flipped) {
+          flipped = true;
+          flipRotateY.value = withTiming(180, { duration: dur, easing: ease });
+        } else if (!inside && flipped) {
+          flipped = false;
+          flipRotateY.value = withTiming(0, { duration: dur, easing: ease });
+        }
+      };
+
+      const onScrollResize = () => {
+        rect = el.getBoundingClientRect();
+        // Re-check with last known pointer position in case card scrolled out from under pointer
+        const inside = inBounds(lastX, lastY);
+        if (!inside && flipped) {
+          flipped = false;
+          flipRotateY.value = withTiming(0, { duration: dur, easing: ease });
+        }
+      };
+
+      document.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('scroll', onScrollResize, { passive: true, capture: true });
+      window.addEventListener('resize', onScrollResize, { passive: true });
+      cleanup = () => {
+        document.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('scroll', onScrollResize, true);
+        window.removeEventListener('resize', onScrollResize);
+      };
+    };
+
+    rafId = requestAnimationFrame(attach);
+    return () => {
+      cancelAnimationFrame(rafId);
+      cleanup?.();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flip?.trigger, flip?.duration]);
 
   // ── Pseudo-element hover progress — driven by hovering state ──────────────
   const [hovering, setHovering] = useState(false);
@@ -1602,6 +2048,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   const handleLayout = useCallback((e: { nativeEvent: { layout: { width: number; height: number } } }) => {
     const { width, height } = e.nativeEvent.layout;
     nodeSizeRef.current = { width, height };
+    if (gesture?.dragFeedback && width > 0) containerWidthSv.value = width;
     if (!layout?.enabled || Platform.OS === 'web') return;
     const prevH = prevLayoutHeight.current;
     if (prevH === null) {
@@ -1671,9 +2118,11 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     return Gesture.Pan()
       .onUpdate((e: GestureUpdateEvent<PanGestureHandlerEventPayload>) => {
         if (!gesture.dragFeedback) return;
+        isDraggingRef.current = true;
         gestureTranslateX.value = lastSmTransform.value + e.translationX;
       })
       .onEnd((e: GestureStateChangeEvent<PanGestureHandlerEventPayload>) => {
+        isDraggingRef.current = false;
         const dx   = e.translationX;
         const dy   = e.translationY;
         const dist = Math.sqrt(dx*dx + dy*dy);
@@ -1694,10 +2143,9 @@ export const AnimatedNode = React.memo(function AnimatedNode({
           actionName = dy < 0 ? gesture.onSwipeUpAction    : gesture.onSwipeDownAction;
         }
 
-        if (gesture.dragFeedback) {
-          gestureTranslateX.value = withTiming(lastSmTransform.value, { duration: 0 });
-        }
-
+        // dragFeedback: don't reset gestureTranslateX — the statesMachine will
+        // animate it to the new slide position when the action fires and the
+        // watchVar changes. Resetting here would cause a visible snap-back.
         if (actionName) runOnJS(safeRunAction)([{ action: actionName }]);
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1748,10 +2196,22 @@ export const AnimatedNode = React.memo(function AnimatedNode({
           hoverOpacity.value = withTiming(targetOpacity, { duration: dur });
           hoverTransY.value  = withTiming(targetY,       { duration: dur });
         }
+        // flip hover is handled via DOM mouseenter/mouseleave on web to avoid
+        // preserve-3d child-pointer flicker; Gesture.Hover handles native only
         if (flip && (flip.trigger === 'hover' || !flip.trigger)) {
-          runOnJS(setIsFlipped)(true);
+          if (typeof document === 'undefined') {
+            runOnJS(setIsFlipped)(true);
+          }
         }
-        runOnJS(setHovering)(true);
+        // Only update React state when a pseudo-element hover effect actually needs it.
+        // Calling runOnJS(setHovering) unconditionally causes React re-renders on every
+        // Gesture.Hover event → GestureDetector reinstalls handlers → onEnd fires →
+        // setHovering(false) → re-render → infinite loop and "None of callbacks are
+        // worklets" warning on every hover. Gate it on pseudoElCfg so flip cards (and
+        // any other node without pseudo-hover) never trigger this re-render cycle.
+        if (pseudoElCfg?.enabled && pseudoElCfg?.trigger === 'hover') {
+          runOnJS(setHovering)(true);
+        }
       })
       .onEnd(() => {
         if (hover) {
@@ -1760,36 +2220,50 @@ export const AnimatedNode = React.memo(function AnimatedNode({
           hoverTransY.value  = withTiming(0, { duration: dur });
         }
         if (flip && (flip.trigger === 'hover' || !flip.trigger)) {
-          runOnJS(setIsFlipped)(false);
+          if (typeof document === 'undefined') {
+            runOnJS(setIsFlipped)(false);
+          }
         }
-        runOnJS(setHovering)(false);
+        if (pseudoElCfg?.enabled && pseudoElCfg?.trigger === 'hover') {
+          runOnJS(setHovering)(false);
+        }
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hover?.scale, hover?.opacity, hover?.y, hover?.duration, flip?.trigger, pseudoElCfg?.enabled]);
+  }, [hover?.scale, hover?.opacity, hover?.y, hover?.duration, flip?.trigger, pseudoElCfg?.enabled, pseudoElCfg?.trigger]);
 
   // ── Tilt gesture — Gesture.Hover() cross-platform ─────────────────────────
   const tiltGesture = useMemo(() => {
     if (!tilt?.enabled) return Gesture.Hover().enabled(false);
-    const maxX = tilt.maxX ?? 15;
-    const maxY = tilt.maxY ?? 15;
-    const dur  = tilt.duration ?? 200;
+    const maxX      = tilt.maxX ?? 15;
+    const maxY      = tilt.maxY ?? 15;
+    const resetDur  = tilt.duration ?? 200; // duration used only for the reset-on-leave
+    const scale     = tilt.scale ?? 1;
     return Gesture.Hover()
+      .onBegin(() => {
+        if (scale !== 1) tiltScaleSv.value = withSpring(scale, { damping: 15, stiffness: 250 });
+      })
       .onChange((e: { x: number; y: number }) => {
         const { width, height } = nodeSizeRef.current;
         if (!width || !height) return;
         const rx = -((e.y - height / 2) / (height / 2)) * maxX;
         const ry =  ((e.x - width  / 2) / (width  / 2)) * maxY;
-        tiltRotX.value = withTiming(rx, { duration: dur });
-        tiltRotY.value = withTiming(ry, { duration: dur });
+        // Direct assignment — mouse events already fire at 60fps so no animation needed.
+        // withTiming/withSpring on onChange causes stutter because each event cancels the
+        // previous animation before it finishes. Direct set = perfectly smooth tracking.
+        tiltRotX.value = rx;
+        tiltRotY.value = ry;
       })
       .onEnd(() => {
         if (tilt.reset !== false) {
-          tiltRotX.value = withTiming(0, { duration: tilt.duration ?? 200 });
-          tiltRotY.value = withTiming(0, { duration: tilt.duration ?? 200 });
+          // Spring back to flat on mouse-leave for a natural feel
+          void resetDur; // resetDur drives spring feel via stiffness/damping instead
+          tiltRotX.value = withSpring(0, { damping: 15, stiffness: 200 });
+          tiltRotY.value = withSpring(0, { damping: 15, stiffness: 200 });
         }
+        if (scale !== 1) tiltScaleSv.value = withSpring(1, { damping: 15, stiffness: 200 });
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tilt?.enabled, tilt?.maxX, tilt?.maxY, tilt?.duration, tilt?.reset]);
+  }, [tilt?.enabled, tilt?.maxX, tilt?.maxY, tilt?.duration, tilt?.reset, tilt?.scale]);
 
   // ── MouseParallax gesture — Gesture.Hover() cross-platform ────────────────
   const mouseParallaxGesture = useMemo(() => {
@@ -1852,8 +2326,13 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     if (dragX.value !== 0) transforms.push({ translateX: dragX.value });
     if (dragY.value !== 0) transforms.push({ translateY: dragY.value });
 
-    // Swipe gesture dragFeedback
-    if (gestureTranslateX.value !== 0) transforms.push({ translateX: gestureTranslateX.value });
+    // Swipe gesture dragFeedback — on web, gestureTranslateX is applied to the
+    // INNER CHILD element via addListener so the outer Animated.View stays at
+    // position 0 and continues to receive pointer events (overflow:hidden clips
+    // events for elements translated outside the viewport).
+    if (gestureTranslateX.value !== 0 && !(Platform.OS === 'web' && dragFeedbackActiveRef.current)) {
+      transforms.push({ translateX: gestureTranslateX.value });
+    }
 
     // statesMachine
     if (smScale.value !== 1)      transforms.push({ scale: smScale.value });
@@ -1870,8 +2349,13 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     if (flipRotateY.value !== 0) transforms.push({ rotateY: `${flipRotateY.value}deg` });
 
     // Tilt (cross-platform — Gesture.Hover)
-    if (tiltRotX.value !== 0) transforms.push({ rotateX: `${tiltRotX.value}deg` });
-    if (tiltRotY.value !== 0) transforms.push({ rotateY: `${tiltRotY.value}deg` });
+    // perspective must precede rotateX/Y for correct 3D projection
+    if (tiltRotX.value !== 0 || tiltRotY.value !== 0) {
+      transforms.push({ perspective: (tilt?.perspective ?? 600) as number });
+    }
+    if (tiltRotX.value !== 0)    transforms.push({ rotateX: `${tiltRotX.value}deg` });
+    if (tiltRotY.value !== 0)    transforms.push({ rotateY: `${tiltRotY.value}deg` });
+    if (tiltScaleSv.value !== 1) transforms.push({ scale: tiltScaleSv.value });
 
     // MouseParallax (cross-platform — Gesture.Hover)
     if (mouseParallaxX.value !== 0) transforms.push({ translateX: mouseParallaxX.value });
@@ -1897,7 +2381,19 @@ export const AnimatedNode = React.memo(function AnimatedNode({
       ...(smBorderRadius.value !== undefined ? { borderRadius: smBorderRadius.value } : {}),
       ...(smWidth.value  !== undefined ? { width:  smWidth.value  } : {}),
       ...(smHeight.value !== undefined ? { height: smHeight.value } : {}),
-      ...(morphBorderRadius.value ? { borderRadius: morphBorderRadius.value } : {}),
+      ...(morphBlob.value
+        // Per-corner blob: use % strings — RN + web support percentage borderRadius at
+        // runtime; cast to object because Reanimated's DefaultStyle types only allow number.
+        ? ({
+            borderTopLeftRadius:     `${morphTL.value}%`,
+            borderTopRightRadius:    `${morphTR.value}%`,
+            borderBottomRightRadius: `${morphBR.value}%`,
+            borderBottomLeftRadius:  `${morphBL.value}%`,
+          } as object)
+        : morphBorderRadius.value
+          ? { borderRadius: morphBorderRadius.value }
+          : {}
+      ),
       ...(scrollVisProgress.value < 1 ? { opacity: scrollVisProgress.value } : {}),
       ...(layoutHeightSv.value !== undefined ? { height: layoutHeightSv.value, overflow: 'hidden' } : {}),
       // Loop shadow — glowPulse (pulsing halo) and ripple (expanding ring).
@@ -1942,12 +2438,12 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     smOpacity, smScale, smTranslateX, smTranslateY, smWidth, smHeight, smBorderRadius, smBgColorProg,
     timelineOpacity, timelineScale,
     colorProgress,
-    morphBorderRadius,
+    morphBorderRadius, morphBlob, morphTL, morphTR, morphBR, morphBL,
     flipRotateY,
     parallaxOffset,
     scrollVisProgress,
     layoutHeightSv,
-    tiltRotX, tiltRotY,
+    tiltRotX, tiltRotY, tiltScaleSv,
     mouseParallaxX, mouseParallaxY,
     isFocusedSv,
   ]);
@@ -2043,7 +2539,14 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     // Gradient: keep background-size hint on wrapper so tests/CSS inspectors detect it
     ...(gradientAnimation?.enabled ? { backgroundSize: '200% 200%' } as object : {}),
     position: parallax?.enabled || drag?.enabled || noise || particles ? 'relative' : scrollProgress?.pin ? 'sticky' : undefined,
-    overflow: noise || particles ? 'hidden' : undefined,
+    // morphShape clips the inner content via border-radius; overflow:hidden is required
+    // so the child's background (gradient, image) is clipped by the animated corner radii.
+    overflow: noise || particles || morphShape?.enabled || pseudoElCfg?.enabled ? 'hidden' : undefined,
+    // GestureDetector on web adds a display:contents wrapper div, making the Animated.View a
+    // direct flex item of the viewport. RNW's base style sets flex:0 0 auto (no grow) which
+    // overrides h-full from outerClassName. When h-full is requested, use flex:1 as an inline
+    // style (higher specificity than CSS class) so the Animated.View fills available height.
+    ...(gesture?.enabled && (outerClassName ?? '').includes('h-full') ? { flex: 1 } as object : {}),
     top:      scrollProgress?.pin ? 0 : undefined,
     // cursor/userSelect/outline are CSS-only — guard so native RN doesn't warn about unknown props
     ...(Platform.OS === 'web' && drag?.enabled ? { cursor: 'grab', userSelect: 'none' } as CSSProperties : {}),
@@ -2052,40 +2555,43 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     ...(statesMachine?.defaultState && !statesMachine.watchVar ? statesMachine.states[statesMachine.defaultState] ?? {} : {}),
   }), [scrollCssStyle, scrollProgressCssStyle, filterStyle, clipPathStyle, maskCssStyle,
        parallax?.enabled, drag?.enabled, noise, particles, scrollProgress?.pin, focus?.enabled,
-       flip, statesMachine]);
+       flip, statesMachine, morphShape?.enabled, gesture?.enabled, outerClassName]);
 
   // ── Pseudo-element animated styles (cross-platform Reanimated) ────────────
   const pseudoBeforeStyle = useAnimatedStyle(() => {
     if (!pseudoElCfg?.enabled || pseudoElCfg.target === '::after') return {};
     const progress = pseudoElCfg.trigger === 'hover' ? pseudoHoverProgress.value : 1;
-    const baseW  = parseFloat(pseudoElCfg.width  ?? '100') || 100;
-    const hoverW = parseFloat(pseudoElCfg.hoverWidth ?? String(baseW)) || baseW;
-    const hoverOp = pseudoElCfg.hoverOpacity ?? 1;
-    const width   = pseudoElCfg.trigger === 'hover' ? baseW + (hoverW - baseW) * progress : baseW;
-    const opacity = pseudoElCfg.trigger === 'always' || pseudoElCfg.trigger === 'enter' ? 1
-      : pseudoElCfg.trigger === 'hover' ? hoverOp * progress : progress;
-    return { width: `${width}%`, opacity };
+    const baseW  = pseudoElCfg.width     != null ? parseFloat(pseudoElCfg.width)     : 100;
+    const hoverW = pseudoElCfg.hoverWidth != null ? parseFloat(pseudoElCfg.hoverWidth) : baseW;
+    const width  = pseudoElCfg.trigger === 'hover' ? baseW + (hoverW - baseW) * progress : baseW;
+    // Width-based reveal: opacity stays 1 (a 0-width element is already invisible)
+    return { width: `${width}%` };
   }, [pseudoHoverProgress]);
 
   const pseudoAfterStyle = useAnimatedStyle(() => {
     if (!pseudoElCfg?.enabled || pseudoElCfg.target !== '::after') return {};
     const progress = pseudoElCfg.trigger === 'hover' ? pseudoHoverProgress.value : 1;
-    const hoverOp = pseudoElCfg.hoverOpacity ?? 1;
-    const opacity = pseudoElCfg.trigger === 'always' || pseudoElCfg.trigger === 'enter' ? 1
-      : pseudoElCfg.trigger === 'hover' ? hoverOp * progress : progress;
-    return { opacity };
+    const baseW  = pseudoElCfg.width     != null ? parseFloat(pseudoElCfg.width)     : 100;
+    const hoverW = pseudoElCfg.hoverWidth != null ? parseFloat(pseudoElCfg.hoverWidth) : baseW;
+    const width  = pseudoElCfg.trigger === 'hover' ? baseW + (hoverW - baseW) * progress : baseW;
+    // Width-based reveal: opacity stays 1 (a 0-width element is already invisible)
+    return { width: `${width}%` };
   }, [pseudoHoverProgress]);
+
+  // Keeps "%" strings intact (for RN/web percentage layout); parses plain numbers otherwise
+  const parseCssLength = (val: string | undefined, fallback: number): string | number =>
+    val?.includes('%') ? val : parseFloat(val ?? String(fallback));
 
   const pseudoBeforeView = pseudoElCfg?.enabled && pseudoElCfg.target !== '::after' ? (
     <Animated.View
       style={[{
         position: 'absolute',
-        bottom: parseFloat(pseudoElCfg.bottom ?? '0'),
-        left:   parseFloat(pseudoElCfg.left   ?? '0'),
-        height: parseFloat(pseudoElCfg.height ?? '2'),
+        bottom: parseCssLength(pseudoElCfg.bottom, 0),
+        left:   parseCssLength(pseudoElCfg.left,   0),
+        height: parseCssLength(pseudoElCfg.height, 2),
         backgroundColor: pseudoElCfg.background ?? 'currentColor',
         pointerEvents: 'none',
-      }, pseudoBeforeStyle]}
+      } as object, pseudoBeforeStyle]}
     />
   ) : null;
 
@@ -2093,11 +2599,12 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     <Animated.View
       style={[{
         position: 'absolute',
-        bottom: 0, left: 0, right: 0,
-        height: parseFloat(pseudoElCfg.height ?? '2'),
+        bottom: parseCssLength(pseudoElCfg.bottom, 0),
+        left:   parseCssLength(pseudoElCfg.left,   0),
+        height: parseCssLength(pseudoElCfg.height, 2),
         backgroundColor: pseudoElCfg.background ?? 'currentColor',
         pointerEvents: 'none',
-      }, pseudoAfterStyle]}
+      } as object, pseudoAfterStyle] as object}
     />
   ) : null;
 
@@ -2136,7 +2643,8 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   };
 
   // ── Content: splitText or flip or children ─────────────────────────────────
-  const innerContent = splitText?.text
+  // splitText is suppressed in builder mode so edits don't re-trigger the animation
+  const innerContent = !builderMode && splitText?.text
     ? <SplitTextNative
         units={splitText.split === 'word' ? splitText.text.split(/(\s+)/) : splitText.split === 'line' ? splitText.text.split(/\n/) : splitText.text.split('')}
         config={splitText}
@@ -2172,7 +2680,13 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   ) : null;
 
   // ── Gradient overlay — LinearGradient cross-platform ──────────────────────
-  const gradientOverlay = gradientAnimation?.enabled ? (
+  // Only render the static LinearGradient overlay for linear type without animateColors.
+  // All animated cases (linear+animateColors, radial, conic) use CSS backgroundImage on the
+  // element itself — rendering the overlay on top would double the gradient.
+  const gradientType = (gradientAnimation as { type?: string } | undefined)?.type;
+  const gradientOverlay = gradientAnimation?.enabled &&
+      (!gradientType || gradientType === 'linear') &&
+      !gradientAnimation.animateColors ? (
     <Animated.View
       style={[
         StyleSheet.absoluteFill,
@@ -2195,9 +2709,25 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     transform: [{ translateX: shimmerX.value * 400 }],
   }), [shimmerX]);
 
+  // Extract border-radius from outerClassName (e.g. "rounded-lg") so the shimmer
+  // overlay clips to rounded corners without relying on CSS overflow cascade.
+  const shimmerBorderRadius = pickBorderRadius(outerClassName);
+
   const shimmerOverlay = shimmer ? (
     <Animated.View
-      style={[StyleSheet.absoluteFill, { overflow: 'hidden', pointerEvents: 'none', zIndex: 1 }]}
+      style={[
+        StyleSheet.absoluteFill,
+        {
+          overflow: 'hidden',
+          pointerEvents: 'none',
+          zIndex: 1,
+          // baseColor fills the gaps at start/end of each sweep so the loop
+          // reset never flashes black (gradient is off-screen at those frames)
+          backgroundColor: shimmer.baseColor ?? '#e2e8f0',
+          // Match the element's own border-radius so shimmer clips to rounded corners
+          ...(shimmerBorderRadius != null ? { borderRadius: shimmerBorderRadius } : {}),
+        },
+      ]}
       pointerEvents="none"
     >
       <Animated.View style={[StyleSheet.absoluteFill, shimmerAnimStyle]}>
@@ -2221,7 +2751,10 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // is true) so Animated.View provides no benefit. Using a plain View means direct
   // el.style.height DOM writes during canvas drag-resize are never overwritten by
   // Reanimated's createAnimatedComponent style reconciliation — live drag works correctly.
-  return (
+  // For hover-flip on web, wrap the entire GestureDetector in a plain div so
+  // mouseenter/mouseleave fire at the outer card boundary — not on the Reanimated
+  // Animated.View which may have timing issues, and not on a 3D-transformed child.
+  const gestureContent = (
     <GestureDetector gesture={composedGesture}>
       {builderMode && nodeId && Platform.OS === 'web' ? (
         <View
@@ -2249,7 +2782,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
         <Animated.View
           ref={animatedRef}
           className={outerClassName ?? undefined}
-          style={[animatedStyle, mergedStyle as object, outerStyle as object]}
+          style={[animatedStyle, mergedStyle as object, outerStyle as object, shimmer ? { overflow: 'hidden' } : undefined]}
           onLayout={handleLayout}
           exiting={exitingAnimation ?? undefined}
           {...(focus?.enabled ? { tabIndex: 0 } : {})}
@@ -2273,69 +2806,114 @@ export const AnimatedNode = React.memo(function AnimatedNode({
       )}
     </GestureDetector>
   );
+
+  return gestureContent;
 });
 
 // ─── SplitTextNative — renders animated chars/words/lines cross-platform ─────
+//
+// KEY DESIGN RULE — no hooks-in-loops:
+//   The old pattern `useRef(units.map(() => useSharedValue(0)))` called a React
+//   hook inside a loop. When the text length changed, the hook count changed →
+//   "change in order of Hooks" crash. Fix: each SplitTextUnit owns its own
+//   useSharedValue. SplitTextNative only calls a fixed set of hooks regardless
+//   of how many units there are.
 
 function SplitTextNative({ units, config }: { units: string[]; config: SplitTextConfig }) {
-  const sharedValues = useRef(units.map(() => useSharedValueFactory(0))).current;
+  const isTypewriter = config.type === 'typewriter' || config.type === 'typeIn';
 
+  // Typewriter: reveal characters one at a time via setTimeout so untyped chars
+  // are never in the DOM — eliminating the layout gap caused by opacity:0 spans.
+  const [typedCount, setTypedCount] = useState(0);
   useEffect(() => {
+    if (!isTypewriter) return;
+    setTypedCount(0);
+    const timers: ReturnType<typeof setTimeout>[] = [];
     units.forEach((_, i) => {
-      const delay    = (config.delay ?? 0) + i * (config.stagger ?? 40);
-      const duration = config.duration ?? 400;
-      const easing   = rnEase(config.easing ?? 'easeOut');
-      sharedValues[i].value = withDelay(delay, withTiming(1, { duration, easing }));
+      const ms = (config.delay ?? 0) + i * (config.stagger ?? 60);
+      timers.push(setTimeout(() => setTypedCount(i + 1), ms));
     });
+    return () => timers.forEach(clearTimeout);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(units)]);
+  }, [JSON.stringify(units), isTypewriter, config.delay, config.stagger]);
 
+  // Typewriter path: render only the characters typed so far — no invisible
+  // chars, no gap, correct left-to-right appearance.
+  if (isTypewriter) {
+    const unitClass = config.unitClass ?? config.className;
+    return (
+      <Text className={unitClass ?? undefined} data-testid={config.testId ?? undefined}>
+        {units.slice(0, typedCount).join('')}
+      </Text>
+    );
+  }
+
+  // Non-typewriter: each SplitTextUnit owns its own useSharedValue — see below.
+  const unitEls = units.map((unit, i) => (
+    <SplitTextUnit
+      key={i}
+      unit={unit}
+      config={config}
+      delay={(config.delay ?? 0) + i * (config.stagger ?? 40)}
+    />
+  ));
+
+  if (config.split === 'line') {
+    return <View style={{ flexDirection: 'column' }}>{unitEls}</View>;
+  }
+
+  // Chars / words: flow inline via flex-row + wrap.
+  // overflow:visible ensures translateY-animated units are not clipped while
+  // animating outside their resting position.
   return (
-    <>
-      {units.map((unit, i) => (
-        <SplitTextUnit key={i} sv={sharedValues[i]} unit={unit} config={config} delay={(config.delay ?? 0) + i * (config.stagger ?? 40)} />
-      ))}
-    </>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', overflow: 'visible' as const }}>
+      {unitEls}
+    </View>
   );
 }
 
-function useSharedValueFactory(initial: number) {
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useSharedValue(initial);
-}
-
-function SplitTextUnit({ sv, unit, config, delay }: { sv: ReturnType<typeof useSharedValue<number>>; unit: string; config: SplitTextConfig; delay: number }) {
+// SplitTextUnit owns its own useSharedValue — one hook call per component
+// instance, never inside a loop. The parent (SplitTextNative) renders N of
+// these as child components; React tracks each component's hooks independently.
+function SplitTextUnit({ unit, config, delay }: { unit: string; config: SplitTextConfig; delay: number }) {
   const ref = useAnimatedRef<Animated.Text>();
+  // Own shared value — safe, no hooks-in-loops
+  const sv = useSharedValue(0);
   const from = ENTER_FROM[config.type ?? 'fadeIn'] ?? { opacity: 0 };
+
   const style = useAnimatedStyle(() => ({
     opacity: from.opacity != null ? from.opacity + (1 - from.opacity) * sv.value : 1,
     transform: [
       ...(from.translateY != null ? [{ translateY: from.translateY * (1 - sv.value) }] : []),
+      ...(from.translateX != null ? [{ translateX: from.translateX * (1 - sv.value) }] : []),
       ...(from.scale      != null ? [{ scale: from.scale + (1 - from.scale) * sv.value }] : []),
     ],
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [sv]);
 
-  // Set data-split-unit attribute and typewriter CSS animation on DOM element
   useEffect(() => {
     const el = ref.current as unknown as HTMLElement | null;
-    if (!el || typeof el.setAttribute !== 'function') return;
-    el.setAttribute('data-split-unit', '');
-    if ((config.type === 'typewriter' || config.type === 'typeIn') && typeof document !== 'undefined') {
-      const animName = 'an-typewriter';
-      if (!document.getElementById(`__kf_${animName}`)) {
-        const s = document.createElement('style');
-        s.id = `__kf_${animName}`;
-        s.textContent = `@keyframes ${animName} { from { opacity: 0 } to { opacity: 1 } }`;
-        document.head.appendChild(s);
-      }
-      const dur = config.duration ?? 400;
-      el.style.animation = `${animName} ${dur}ms step-end ${delay}ms both`;
+    if (el && typeof el.setAttribute === 'function') {
+      el.setAttribute('data-split-unit', '');
     }
+    const duration = config.duration ?? 400;
+    const easing   = rnEase(config.easing ?? 'easeOut');
+    sv.value = withDelay(delay, withTiming(1, { duration, easing }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config.type, delay]);
+  }, [delay, config.duration, config.easing]);
+
+  // config.className carries the parent Text node's className (injected by renderer).
+  // On web: text styles cascade from the parent div, so className is redundant but harmless.
+  // On native: explicit className is required since RN does not cascade text styles.
+  const unitClass = config.unitClass ?? config.className;
 
   return (
-    <Animated.Text ref={ref} style={style}>
+    <Animated.Text
+      ref={ref}
+      className={unitClass ?? undefined}
+      style={style}
+      data-split-unit=""
+    >
       {unit || '\u00A0'}
     </Animated.Text>
   );
@@ -2345,7 +2923,8 @@ function SplitTextUnit({ sv, unit, config, delay }: { sv: ReturnType<typeof useS
 
 function Canvas2DParticles({ particles }: { particles: ParticlesConfig }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { count = 80, color: pColor = '#6366f1', background = 'transparent', speed = 0.5, maxRadius = 3, connectDistance = 120 } = particles;
+  const mouseRef  = useRef<{ x: number; y: number } | null>(null);
+  const { count = 80, color: pColor = '#6366f1', background = 'transparent', speed = 0.5, maxRadius = 3, connectDistance = 120, interactive = false } = particles;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -2359,12 +2938,28 @@ function Canvas2DParticles({ particles }: { particles: ParticlesConfig }) {
       canvas.height = parent?.clientHeight ?? 200;
     };
     resize();
+    const ro = new ResizeObserver(resize);
+    if (canvas.parentElement) ro.observe(canvas.parentElement);
 
     const pts = Array.from({ length: count }, () => ({
       x: Math.random() * canvas.width, y: Math.random() * canvas.height,
       vx: (Math.random() - 0.5) * speed * 2, vy: (Math.random() - 0.5) * speed * 2,
       r: Math.random() * maxRadius + 1,
     }));
+
+    // Mouse tracking — listen on the parent so pointer-events:none on canvas doesn't block it
+    const REPEL_RADIUS = 80;
+    const REPEL_FORCE  = 3;
+    const onMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    };
+    const onMouseLeave = () => { mouseRef.current = null; };
+    const target = canvas.parentElement ?? canvas;
+    if (interactive) {
+      target.addEventListener('mousemove', onMouseMove as EventListener);
+      target.addEventListener('mouseleave', onMouseLeave);
+    }
 
     let raf = 0;
     const tick = () => {
@@ -2374,15 +2969,37 @@ function Canvas2DParticles({ particles }: { particles: ParticlesConfig }) {
         ctx.fillStyle = background;
         ctx.fillRect(0, 0, w, h);
       }
+
+      const mouse = mouseRef.current;
       for (const p of pts) {
+        // Repel from mouse cursor
+        if (mouse) {
+          const dx = p.x - mouse.x; const dy = p.y - mouse.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < REPEL_RADIUS && dist > 0) {
+            const force = (REPEL_RADIUS - dist) / REPEL_RADIUS * REPEL_FORCE;
+            p.vx += (dx / dist) * force;
+            p.vy += (dy / dist) * force;
+          }
+        }
+        // Dampen velocity back toward base speed
+        const maxSpd = speed * 6;
+        p.vx *= 0.95; p.vy *= 0.95;
+        if (Math.abs(p.vx) < speed * 0.5) p.vx += (Math.random() - 0.5) * speed * 0.2;
+        if (Math.abs(p.vy) < speed * 0.5) p.vy += (Math.random() - 0.5) * speed * 0.2;
+        p.vx = Math.max(-maxSpd, Math.min(maxSpd, p.vx));
+        p.vy = Math.max(-maxSpd, Math.min(maxSpd, p.vy));
+
         p.x += p.vx; p.y += p.vy;
         if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
         if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
+
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
         ctx.fillStyle = pColor;
         ctx.fill();
       }
+
       // Connect nearby particles
       const cd2 = connectDistance * connectDistance;
       for (let i = 0; i < pts.length; i++) {
@@ -2402,9 +3019,17 @@ function Canvas2DParticles({ particles }: { particles: ParticlesConfig }) {
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      if (interactive) {
+        target.removeEventListener('mousemove', onMouseMove as EventListener);
+        target.removeEventListener('mouseleave', onMouseLeave);
+      }
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [count, pColor, background, speed, maxRadius, connectDistance]);
+  }, [count, pColor, background, speed, maxRadius, connectDistance, interactive]);
 
   return (
     <canvas

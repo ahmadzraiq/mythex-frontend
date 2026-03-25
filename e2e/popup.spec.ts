@@ -478,6 +478,118 @@ test.describe('Runtime', () => {
     await page.locator('[data-testid="close-all-btn"]').click();
   });
 
+  // PU-21 ─────────────────────────────────────────────────────────────────────
+
+  test('PU-21: Clicking stacked-alert button 3 times shows 3 toast cards', async () => {
+    const page = runtimePage;
+
+    // Clear any open popups
+    await page.locator('[data-testid="close-all-btn"]').click();
+    await page.waitForTimeout(300);
+
+    // The stacked section may be below the fold — scroll into view first
+    const btn = page.locator('[data-testid="open-stacked-1-btn"]');
+    await btn.scrollIntoViewIfNeeded();
+    await expect(btn).toBeVisible({ timeout: 5_000 });
+
+    // Open 3 stacked toasts (autoCloseToast fires after 4s — well within test window)
+    await btn.click();
+    await page.waitForTimeout(150);
+    await btn.click();
+    await page.waitForTimeout(150);
+    await btn.click();
+    await page.waitForTimeout(400);
+
+    // popup-test-stacked model → card testid is "popup-stacked-card"
+    const cards = page.locator('[data-testid="popup-stacked-card"]');
+    await expect(cards).toHaveCount(3, { timeout: 5_000 });
+
+    // All 3 should be visible
+    for (let i = 0; i < 3; i++) {
+      await expect(cards.nth(i)).toBeVisible({ timeout: 3_000 });
+    }
+
+    // The shared stack container should be in the DOM
+    await expect(page.locator('[data-testid="popup-toast-stack"]')).toBeVisible({ timeout: 3_000 });
+  });
+
+  // PU-22 ─────────────────────────────────────────────────────────────────────
+
+  test('PU-22: Stacked toast cards have a visible gap between them (gap > 0px)', async () => {
+    const page = runtimePage;
+
+    // Should still have cards from PU-21 (autoClose is 4s)
+    const cards = page.locator('[data-testid="popup-stacked-card"]');
+    const count = await cards.count();
+    if (count < 2) {
+      // Reopen if needed
+      const btn = page.locator('[data-testid="open-stacked-1-btn"]');
+      await btn.scrollIntoViewIfNeeded();
+      await btn.click();
+      await page.waitForTimeout(150);
+      await btn.click();
+      await page.waitForTimeout(300);
+    }
+
+    const card1 = cards.nth(0);
+    const card2 = cards.nth(1);
+    await expect(card1).toBeVisible({ timeout: 3_000 });
+    await expect(card2).toBeVisible({ timeout: 3_000 });
+
+    const box1 = await card1.boundingBox();
+    const box2 = await card2.boundingBox();
+
+    expect(box1).not.toBeNull();
+    expect(box2).not.toBeNull();
+
+    if (box1 && box2) {
+      // Cards should be vertically stacked with gap-2 (8px) between them
+      const gap = box2.y - (box1.y + box1.height);
+      console.log('[PU-22] card1:', box1, 'card2:', box2, 'gap:', gap);
+      // gap-2 = 8px — allow small tolerance for rounding
+      expect(gap).toBeGreaterThanOrEqual(4);
+    }
+
+    await page.locator('[data-testid="close-all-btn"]').click();
+    await page.waitForTimeout(300);
+  });
+
+  // PU-23 ─────────────────────────────────────────────────────────────────────
+
+  test('PU-23: Page remains interactive while toasts are open (backdrop does not block clicks)', async () => {
+    const page = runtimePage;
+
+    await page.locator('[data-testid="close-all-btn"]').click();
+    await page.waitForTimeout(200);
+
+    // Open one toast
+    const stackBtn = page.locator('[data-testid="open-stacked-1-btn"]');
+    await stackBtn.scrollIntoViewIfNeeded();
+    await stackBtn.click();
+    await page.waitForTimeout(300);
+
+    const card = page.locator('[data-testid="popup-stacked-card"]').first();
+    await expect(card).toBeVisible({ timeout: 3_000 });
+
+    // The page's Open Modal button should still be clickable — backdrop has pointer-events:none
+    const modalBtn = page.locator('[data-testid="open-modal-btn"]');
+    await expect(modalBtn).toBeVisible();
+    await modalBtn.click();
+
+    // Modal overlay must open — page was NOT blocked by toast backdrop
+    const overlay = page.locator('[data-testid="popup-overlay"]').first();
+    await expect(overlay).toBeVisible({ timeout: 5_000 });
+
+    // Toast should still be visible alongside the modal
+    await expect(card).toBeVisible({ timeout: 3_000 });
+
+    // Close the modal (backdrop covers close-all-btn, so use Escape first)
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    await page.locator('[data-testid="close-all-btn"]').click({ timeout: 5_000 });
+    await page.waitForTimeout(300);
+  });
+
   // PU-20 ─────────────────────────────────────────────────────────────────────
 
   test('PU-20: Popup instance appears in builder Popups tab live instances list', async () => {

@@ -3,10 +3,7 @@
     "type": "workflowSteps",
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "anim-0000-0000-0000-000000000005", "value": true } },
-      { "id": "s2", "type": "timeDelay", "config": { "ms": 270 } },
-      { "id": "s3", "type": "changeVariableValue", "config": { "variableName": "anim-0000-0000-0000-000000000001", "value": false } },
-      { "id": "s4", "type": "changeVariableValue", "config": { "variableName": "anim-0000-0000-0000-000000000005", "value": false } }
+      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "anim-0000-0000-0000-000000000001", "value": false } }
     ]
   },
   "animShow": {

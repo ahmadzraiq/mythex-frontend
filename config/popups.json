@@ -195,131 +195,107 @@
       "type": "Box",
       "id": "popup-test-alert-backdrop",
       "name": "Backdrop",
-      "animation": {
-        "enter": {
-          "type": "fade",
-          "duration": 150
-        },
-        "exit": {
-          "type": "fade",
-          "duration": 180
-        }
-      },
-      "actions": [
-        {
-          "action": "closeAllPopups"
-        }
-      ],
       "props": {
-        "className": "w-full h-screen flex items-center justify-center p-5 bg-black/50"
+        "className": "w-full h-screen flex flex-col items-end justify-end p-4 pointer-events-none"
       },
       "children": [
+        {
+          "type": "Box",
+          "id": "popup-test-alert-stack",
+          "name": "StackContainer",
+          "props": {
+            "className": "flex flex-col gap-2 pointer-events-none"
+          },
+          "children": [
         {
           "type": "Box",
           "id": "popup-test-alert-card",
           "name": "Alert",
           "animation": {
             "enter": {
-              "type": "zoomIn",
+              "type": "slideInRight",
               "duration": 200
             },
             "exit": {
-              "type": "zoomOut",
+              "type": "slideOutRight",
               "duration": 180
             }
           },
-          "actions": [
-            {
-              "stopPropagation": true
-            }
-          ],
+          "actions": [{ "action": "autoCloseToast" }],
           "props": {
-            "className": "w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-xl overflow-hidden flex flex-col",
+            "className": "pointer-events-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg px-4 py-3 flex flex-row items-start gap-3 min-w-72 max-w-sm border border-gray-100 dark:border-gray-700",
             "data-testid": "popup-alert-content"
           },
           "children": [
             {
               "type": "Box",
-              "id": "alert-content-box",
+              "id": "alert-icon-box",
               "props": {
-                "className": "px-6 pt-6 pb-4 flex flex-row items-start gap-4"
+                "className": "w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 items-center justify-center flex shrink-0 mt-0.5"
               },
               "children": [
                 {
-                  "type": "Box",
-                  "id": "alert-icon-box",
+                  "type": "NavIcon",
+                  "id": "alert-icon",
                   "props": {
-                    "className": "w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 items-center justify-center flex shrink-0"
-                  },
-                  "children": [
-                    {
-                      "type": "NavIcon",
-                      "id": "alert-icon",
-                      "props": {
-                        "icon": "AlertTriangle",
-                        "size": 20,
-                        "color": "#f59e0b"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "Box",
-                  "id": "alert-text-box",
-                  "props": {
-                    "className": "flex-1 flex flex-col gap-1 pt-1"
-                  },
-                  "children": [
-                    {
-                      "type": "Text",
-                      "id": "alert-title-text",
-                      "props": {
-                        "className": "text-sm font-semibold text-gray-900 dark:text-white"
-                      },
-                      "text": "Alert title"
-                    },
-                    {
-                      "type": "Text",
-                      "id": "alert-message-text",
-                      "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400 leading-relaxed"
-                      },
-                      "text": "Alert message goes here."
-                    }
-                  ]
+                    "icon": "AlertTriangle",
+                    "size": 16,
+                    "color": "#f59e0b"
+                  }
                 }
               ]
             },
             {
               "type": "Box",
-              "id": "alert-footer-box",
+              "id": "alert-text-box",
               "props": {
-                "className": "px-6 py-4 flex flex-row justify-end border-t border-gray-100 dark:border-gray-800"
+                "className": "flex-1 flex flex-col gap-0.5"
               },
               "children": [
                 {
-                  "type": "Button",
-                  "id": "alert-ok-btn",
-                  "actions": [
-                    {
-                      "action": "closeAllPopups"
-                    }
-                  ],
+                  "type": "Text",
+                  "id": "alert-title-text",
                   "props": {
-                    "action": "primary",
-                    "size": "sm",
-                    "data-testid": "popup-alert-ok-btn"
+                    "className": "text-sm font-semibold text-gray-900 dark:text-white"
                   },
-                  "children": [
-                    {
-                      "type": "ButtonText",
-                      "id": "alert-ok-text",
-                      "text": "Got it"
-                    }
-                  ]
+                  "text": "Alert title"
+                },
+                {
+                  "type": "Text",
+                  "id": "alert-message-text",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400 leading-relaxed"
+                  },
+                  "text": "Alert message goes here."
+                }
+              ]
+            },
+            {
+          "type": "Pressable",
+          "id": "alert-close-btn",
+          "actions": [
+            {
+              "action": "closePopup"
+            }
+          ],
+          "props": {
+            "className": "shrink-0 mt-0.5 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700",
+            "data-testid": "popup-alert-ok-btn"
+          },
+              "children": [
+                {
+                  "type": "NavIcon",
+                  "id": "alert-close-icon",
+                  "props": {
+                    "icon": "X",
+                    "size": 14,
+                    "color": "#9ca3af"
+                  }
                 }
               ]
             }
+          ]
+        }
           ]
         }
       ]
@@ -515,6 +491,123 @@
       ]
     }
   },
+  "popup-test-stacked": {
+    "id": "popup-test-stacked",
+    "name": "Test Stacked Alert",
+    "type": "StackedAlert",
+    "allowStacking": true,
+    "properties": [
+      {
+        "id": "title",
+        "name": "title",
+        "type": "string",
+        "defaultValue": "Notification"
+      },
+      {
+        "id": "message",
+        "name": "message",
+        "type": "string",
+        "defaultValue": "Something happened."
+      },
+      {
+        "id": "icon",
+        "name": "icon",
+        "type": "string",
+        "defaultValue": "Bell"
+      },
+      {
+        "id": "color",
+        "name": "color",
+        "type": "string",
+        "defaultValue": "#3b82f6"
+      }
+    ],
+    "content": {
+      "type": "Box",
+      "id": "popup-test-stacked-backdrop",
+      "name": "Backdrop",
+      "props": {
+        "className": "w-full h-screen flex flex-col items-end justify-end p-4 pointer-events-none"
+      },
+      "children": [
+        {
+          "type": "Box",
+          "id": "popup-test-stacked-stack",
+          "name": "StackContainer",
+          "props": {
+            "className": "flex flex-col gap-2 pointer-events-none"
+          },
+          "children": [
+        {
+          "type": "Box",
+          "id": "popup-test-stacked-card",
+          "name": "Toast",
+          "animation": {
+            "enter": { "type": "slideInRight", "duration": 200 },
+            "exit": { "type": "slideOutRight", "duration": 180 }
+          },
+          "actions": [{ "action": "autoCloseToast" }],
+          "props": {
+            "className": "pointer-events-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg px-4 py-3 flex flex-row items-start gap-3 min-w-72 max-w-sm border border-gray-100 dark:border-gray-700",
+            "data-testid": "popup-stacked-card"
+          },
+          "children": [
+            {
+              "type": "Box",
+              "id": "stacked-icon-box",
+              "props": {
+                "className": "w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 items-center justify-center flex shrink-0 mt-0.5"
+              },
+              "children": [
+                {
+                  "type": "NavIcon",
+                  "id": "stacked-icon",
+                  "props": { "icon": "Bell", "size": 16, "color": "#3b82f6" }
+                }
+              ]
+            },
+            {
+              "type": "Box",
+              "id": "stacked-text-box",
+              "props": { "className": "flex-1 flex flex-col gap-0.5" },
+              "children": [
+                {
+                  "type": "Text",
+                  "id": "stacked-title",
+                  "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white" },
+                  "text": { "expr": "context.component?.props?.['title'] || 'Notification'" }
+                },
+                {
+                  "type": "Text",
+                  "id": "stacked-message",
+                  "props": { "className": "text-xs text-gray-500 dark:text-gray-400 leading-relaxed" },
+                  "text": { "expr": "context.component?.props?.['message'] || 'Something happened.'" }
+                }
+              ]
+            },
+            {
+              "type": "Pressable",
+              "id": "stacked-close-btn",
+              "actions": [{ "action": "closePopup" }],
+              "props": {
+                "className": "shrink-0 mt-0.5 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+              },
+              "children": [
+                {
+                  "type": "NavIcon",
+                  "id": "stacked-close-icon",
+                  "props": { "icon": "X", "size": 14, "color": "#9ca3af" }
+                }
+              ]
+            }
+          ]
+        }
+          ]
+        }
+      ]
+    }
+  },
+
   "popup-test-sheet": {
     "id": "popup-test-sheet",
     "name": "Test Sheet",

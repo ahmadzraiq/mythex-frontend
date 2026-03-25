@@ -44,6 +44,60 @@
       }
     ]
   },
+  "openStackedAlert1": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "openPopup",
+        "config": {
+          "popupId": "popup-test-stacked",
+          "props": {
+            "title": "File uploaded",
+            "message": "report-q4-2025.pdf was uploaded successfully."
+          },
+          "waitClose": false
+        }
+      }
+    ]
+  },
+  "openStackedAlert2": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "openPopup",
+        "config": {
+          "popupId": "popup-test-stacked",
+          "props": {
+            "title": "New message",
+            "message": "You have a new message from Ahmad."
+          },
+          "waitClose": false
+        }
+      }
+    ]
+  },
+  "openStackedAlert3": {
+    "type": "workflowSteps",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "openPopup",
+        "config": {
+          "popupId": "popup-test-stacked",
+          "props": {
+            "title": "Payment received",
+            "message": "$149.00 from Stripe was processed."
+          },
+          "waitClose": false
+        }
+      }
+    ]
+  },
   "closeAllTestPopups": {
     "type": "workflowSteps",
     "trigger": "click",

@@ -883,19 +883,38 @@ test('AN-P4-02: splitText word — word spans are visible after stagger complete
   expect(count).toBeGreaterThanOrEqual(4);
 });
 
-// ─── AN-P4-03: SplitText typewriter — animation applied on char spans ─────────
+// ─── AN-P4-03: SplitText typewriter — text appears progressively, fully visible ──
+//
+// Implementation: typewriter uses setTimeout-based progressive reveal.
+// Characters are added to a single <Text> element one by one; there are no
+// [data-split-unit] spans and no invisible chars creating layout gaps.
+// "Type writer effect" = 18 chars, delay=400ms, stagger=60ms
+//   → last char appears at 400 + 17×60 = 1420ms
 
-test('AN-P4-03: splitText typewriter — animation property set on char spans', async () => {
+test('AN-P4-03: splitText typewriter — full text visible after animation completes', async () => {
   const page = sharedPage;
   const container = page.locator('[data-testid="p4-split-typewriter"]');
   await container.scrollIntoViewIfNeeded();
-  await page.waitForTimeout(500);
-  await expect(container).toBeVisible({ timeout: 3_000 });
 
-  // Check that at least one unit has an animation style
-  const firstUnit = container.locator('[data-split-unit]').first();
-  const anim = await firstUnit.evaluate(e => (e as HTMLElement).style.animation);
-  expect(anim.length).toBeGreaterThan(0);
+  // Confirm element is present
+  await expect(container).toBeVisible({ timeout: 5_000 });
+
+  // Mid-animation: text should be partially filled (some chars typed)
+  // delay=400ms so at t≈600ms at least "Ty" should be visible
+  await page.waitForTimeout(600);
+  const partialText = await container.textContent();
+  expect((partialText ?? '').length).toBeGreaterThan(0);
+
+  // After animation completes (≥1420ms total from page load, add buffer)
+  await page.waitForTimeout(1200);
+  const fullText = await container.textContent();
+  // All 18 characters of "Type writer effect" should now be visible
+  expect(fullText?.trim()).toBe('Type writer effect');
+
+  // No layout-gap: the element must not contain any [data-split-unit] spans
+  // (the new implementation renders plain text, not per-char spans)
+  const spanCount = await container.locator('[data-split-unit]').count();
+  expect(spanCount).toBe(0);
 });
 
 // ─── AN-22: Imperative trigger — shake animation actually fires ───────────────
@@ -1082,6 +1101,54 @@ test('AN-P9-02: FlipCard renders front face text', async () => {
   await card.scrollIntoViewIfNeeded();
   await expect(card).toBeVisible({ timeout: 5_000 });
   await expect(card.getByText('Hover to flip!')).toBeAttached();
+});
+
+
+test('AN-P9-02c: FlipCard hover — flips to 180deg on enter, returns to 0 on leave', async () => {
+  const page = sharedPage;
+  // Move mouse completely away first and wait for any in-flight flip to settle
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(800);
+  const card = page.locator('[data-testid="p9-flip-card"]');
+  await card.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(300);
+
+  // [1] is the Animated.View (animatedRef target) — that's what we attach listeners to
+  const getRotateY = () => card.evaluate((el) => {
+    const animatedView = el.parentElement as HTMLElement | null;
+    const t = animatedView?.style?.transform ?? '';
+    const m = t.match(/rotateY\(([^)]+)\)/);
+    return m ? parseFloat(m[1]) : 0;
+  });
+
+  const box = await card.boundingBox();
+  if (!box) { expect(box).toBeTruthy(); return; }
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+
+  // 1. Move away so card is at 0
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(200);
+  const rotateYBefore = await getRotateY();
+  expect(rotateYBefore).toBe(0);
+
+  // 2. Hover over the card — should flip to 180
+  await page.mouse.move(cx, cy);
+  await page.waitForTimeout(700); // wait for 500ms flip animation + buffer
+
+  const rotateYDuring = await getRotateY();
+  expect(rotateYDuring).toBeCloseTo(180, 0);
+
+  // 3. Stay hovered for 600ms more — must NOT flip back (no loop)
+  await page.waitForTimeout(600);
+  const rotateYStill = await getRotateY();
+  expect(rotateYStill).toBeCloseTo(180, 0);
+
+  // 4. Move mouse away — should return to 0
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(700);
+  const rotateYAfter = await getRotateY();
+  expect(rotateYAfter).toBeCloseTo(0, 0);
 });
 
 test('AN-P9-03: FlipCard click variant toggles on click', async () => {
