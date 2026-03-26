@@ -31,7 +31,7 @@ import {
   hasFormContainerAncestor,
   clone, removeNodesByIds,
   _applyLightOverrides, _applyDarkOverrides, hexToRgbTriplet, _getManagedStyle,
-  GLUESTACK_PRIMARY_BRIDGE,
+  GLUESTACK_PRIMARY_BRIDGE, injectFontsFromOverrides,
 } from './_store-node-helpers';
 
 export {
@@ -1736,6 +1736,17 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
             if (saved?.themeDarkOverrides) next.themeDarkOverrides = saved.themeDarkOverrides as typeof s.themeDarkOverrides;
             return next;
           });
+
+          // Apply saved theme overrides to the DOM — initTheme() ran at mount time before
+          // loadFromConfig completed, so the CSS vars need a second pass here.
+          if (saved?.themeOverrides && typeof saved.themeOverrides === 'object') {
+            const lightOv = saved.themeOverrides as Record<string, string>;
+            _applyLightOverrides(lightOv);
+            injectFontsFromOverrides(lightOv);
+          }
+          if (saved?.themeDarkOverrides && typeof saved.themeDarkOverrides === 'object') {
+            _applyDarkOverrides(saved.themeDarkOverrides as Record<string, string>);
+          }
         } else {
           // ── Brand new project (no pages) — seed a default Home page ──────────
           const homeId = crypto.randomUUID();
@@ -1929,6 +1940,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     };
     _applyLightOverrides(fullLight);
     _applyDarkOverrides(dark);
+    injectFontsFromOverrides(fullLight);
     set({ themeOverrides: fullLight, themeDarkOverrides: dark });
   },
 

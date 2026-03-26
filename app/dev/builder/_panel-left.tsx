@@ -37,6 +37,7 @@ import { Chevron, NodeIcon, ContextMenu, LayerRow, LayerTree, type LayerRowProps
 import { PRIMITIVE_COMPONENTS, SectionHeader, DraggablePrimitive, ComponentsTab } from './_components-tab';
 import { CustomVarsSection, VarsWorkflowsSection, VarsFormulasSection, VarsPanel } from './_vars-panel';
 import { PopupsTab } from './_popups-tab';
+import { AssetsTab } from './_assets-tab';
 
 
 // ─── Pages Tab ────────────────────────────────────────────────────────────────
@@ -808,7 +809,7 @@ export default function PanelLeft({
   onOpenPageConfig,
   onWidthChange,
 }: PanelLeftProps) {
-  const [tab, setTab] = useState<'layers' | 'components' | 'data' | 'logic' | 'popups'>('components');
+  const [tab, setTab] = useState<'layers' | 'components' | 'data' | 'logic' | 'popups' | 'assets'>('components');
   const [search, setSearch] = useState('');
   const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [layerDrag, setLayerDrag] = useState<LayerDragState>({ dragId: null, dropTargetId: null, dropPosition: 'above' });
@@ -951,7 +952,7 @@ export default function PanelLeft({
       )}
       {/* Tab bar */}
       <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-        {(['layers', 'components', 'data', 'logic', 'popups'] as const).map(t => (
+        {(['layers', 'components', 'data', 'logic', 'popups', 'assets'] as const).map(t => (
           <button
             key={t}
             data-testid={`tab-${t}`}
@@ -1026,6 +1027,8 @@ export default function PanelLeft({
       {tab === 'logic' && <LogicTab onSetSlide={onSetLogicSlide} />}
 
       {tab === 'popups' && <PopupsTab />}
+
+      {tab === 'assets' && <AssetsTab />}
 
       {/* Context menu */}
       {contextMenu && (

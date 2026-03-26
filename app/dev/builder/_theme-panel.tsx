@@ -38,18 +38,34 @@ interface FontOption {
 }
 
 const FONT_OPTIONS: FontOption[] = [
-  { label: 'System UI',      value: 'system-ui, sans-serif' },
-  { label: 'Geist',          value: "'Geist', sans-serif" },
-  { label: 'Inter',          value: "'Inter', sans-serif",           googleUrl: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap' },
-  { label: 'DM Sans',        value: "'DM Sans', sans-serif",         googleUrl: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap' },
-  { label: 'Space Grotesk',  value: "'Space Grotesk', sans-serif",   googleUrl: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap' },
-  { label: 'Nunito',         value: "'Nunito', sans-serif",          googleUrl: 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap' },
-  { label: 'Poppins',        value: "'Poppins', sans-serif",         googleUrl: 'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap' },
-  { label: 'Playfair',       value: "'Playfair Display', serif",     googleUrl: 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap' },
-  { label: 'Lora',           value: "'Lora', serif",                 googleUrl: 'https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&display=swap' },
-  { label: 'Merriweather',   value: "'Merriweather', serif",         googleUrl: 'https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap' },
-  { label: 'Roboto Mono',    value: "'Roboto Mono', monospace",      googleUrl: 'https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap' },
+  { label: 'System UI',          value: 'system-ui, sans-serif' },
+  { label: 'Geist',              value: "'Geist', sans-serif" },
+  { label: 'Inter',              value: "'Inter', sans-serif",              googleUrl: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap' },
+  { label: 'DM Sans',            value: "'DM Sans', sans-serif",            googleUrl: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap' },
+  { label: 'Space Grotesk',      value: "'Space Grotesk', sans-serif",      googleUrl: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap' },
+  { label: 'Nunito',             value: "'Nunito', sans-serif",             googleUrl: 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap' },
+  { label: 'Poppins',            value: "'Poppins', sans-serif",            googleUrl: 'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap' },
+  { label: 'Montserrat',         value: "'Montserrat', sans-serif",         googleUrl: 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap' },
+  { label: 'Raleway',            value: "'Raleway', sans-serif",            googleUrl: 'https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap' },
+  { label: 'Josefin Sans',       value: "'Josefin Sans', sans-serif",       googleUrl: 'https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;500;600;700&display=swap' },
+  { label: 'Jost',               value: "'Jost', sans-serif",               googleUrl: 'https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&display=swap' },
+  { label: 'Open Sans',          value: "'Open Sans', sans-serif",          googleUrl: 'https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap' },
+  { label: 'Roboto',             value: "'Roboto', sans-serif",             googleUrl: 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap' },
+  { label: 'Comfortaa',          value: "'Comfortaa', cursive",             googleUrl: 'https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&display=swap' },
+  { label: 'Playfair Display',   value: "'Playfair Display', serif",        googleUrl: 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap' },
+  { label: 'Lora',               value: "'Lora', serif",                    googleUrl: 'https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&display=swap' },
+  { label: 'Merriweather',       value: "'Merriweather', serif",            googleUrl: 'https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap' },
+  { label: 'Fraunces',           value: "'Fraunces', serif",                googleUrl: 'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&display=swap' },
+  { label: 'Cormorant Garamond', value: "'Cormorant Garamond', serif",      googleUrl: 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&display=swap' },
+  { label: 'Crimson Text',       value: "'Crimson Text', serif",            googleUrl: 'https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600;700&display=swap' },
+  { label: 'Source Sans 3',      value: "'Source Sans 3', sans-serif",      googleUrl: 'https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap' },
+  { label: 'Roboto Mono',        value: "'Roboto Mono', monospace",         googleUrl: 'https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap' },
 ];
+
+/** Exported so _store.ts can inject fonts when loading saved theme overrides */
+export const FONT_GOOGLE_URL_MAP: Record<string, string> = Object.fromEntries(
+  FONT_OPTIONS.filter(f => f.googleUrl).map(f => [f.value, f.googleUrl!])
+);
 
 const RADIUS_OPTIONS = [
   { label: 'None',   value: '0' },
@@ -136,6 +152,7 @@ function FontSelect({
     <div style={{ marginBottom: 8 }}>
       <div style={{ fontSize: 9, color: '#6b7280', marginBottom: 4 }}>{label}</div>
       <select
+        data-testid={`select-${cssVar}`}
         value={current}
         onChange={e => {
           const opt = FONT_OPTIONS.find(f => f.value === e.target.value);
@@ -536,6 +553,7 @@ export function ThemePanel() {
       {/* ── Typography ── */}
       <div style={SECTION}>
         <button
+          data-testid="typography-section-toggle"
           onClick={() => toggle('typography')}
           style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 0, marginBottom: openSection === 'typography' ? 8 : 0 }}
         >

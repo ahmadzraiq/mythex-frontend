@@ -46,22 +46,75 @@ function hexToRgbTriplet(hex: string): string {
   return `${parseInt(full.slice(0, 2), 16)} ${parseInt(full.slice(2, 4), 16)} ${parseInt(full.slice(4, 6), 16)}`;
 }
 
+const LIVE_FONT_URLS: Record<string, string> = {
+  "'Inter', sans-serif":              'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+  "'DM Sans', sans-serif":            'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap',
+  "'Space Grotesk', sans-serif":      'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap',
+  "'Nunito', sans-serif":             'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap',
+  "'Poppins', sans-serif":            'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap',
+  "'Montserrat', sans-serif":         'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap',
+  "'Raleway', sans-serif":            'https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap',
+  "'Josefin Sans', sans-serif":       'https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;500;600;700&display=swap',
+  "'Jost', sans-serif":               'https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&display=swap',
+  "'Open Sans', sans-serif":          'https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap',
+  "'Roboto', sans-serif":             'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap',
+  "'Comfortaa', cursive":             'https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&display=swap',
+  "'Playfair Display', serif":        'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap',
+  "'Lora', serif":                    'https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&display=swap',
+  "'Merriweather', serif":            'https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap',
+  "'Fraunces', serif":                'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&display=swap',
+  "'Cormorant Garamond', serif":      'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&display=swap',
+  "'Crimson Text', serif":            'https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600;700&display=swap',
+  "'Source Sans 3', sans-serif":      'https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap',
+  "'Roboto Mono', monospace":         'https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap',
+};
+
+function injectLiveFontIfNeeded(fontValue: string): void {
+  const url = LIVE_FONT_URLS[fontValue.trim()];
+  if (!url) return;
+  const linkId = `gf-${btoa(url).replace(/[^a-z0-9]/gi, '').slice(0, 24)}`;
+  if (document.getElementById(linkId)) return;
+  const link = document.createElement('link');
+  link.id   = linkId;
+  link.rel  = 'stylesheet';
+  link.href = url;
+  document.head.appendChild(link);
+}
+
 function applyBuilderTheme(light: Record<string, string>, dark: Record<string, string>) {
   const getOrCreate = (id: string) => {
     let el = document.getElementById(id) as HTMLStyleElement | null;
-    if (!el) { el = document.createElement('style'); el.id = id; document.head.appendChild(el); }
+    if (!el) {
+      el = document.createElement('style');
+      el.id = id;
+      // Append to body so we come after ThemeStyles in document order (same fix
+      // as _store-node-helpers.ts — ThemeStyles renders at the start of <body>).
+      (document.body ?? document.head).appendChild(el);
+    }
     return el;
   };
-  const lightLines: string[] = [];
+
   const colorLines: string[] = [];
+  const fontLines:  string[] = [];
+  const baseLines:  string[] = [];
+
   for (const [k, v] of Object.entries(light)) {
-    if (v.startsWith('#')) colorLines.push(`  --${k}: ${hexToRgbTriplet(v)};`);
-    else lightLines.push(`  --${k}: ${v};`);
+    if (v.startsWith('#')) {
+      colorLines.push(`  --${k}: ${hexToRgbTriplet(v)};`);
+    } else if (k === 'font-heading' || k === 'font-body') {
+      fontLines.push(`  --${k}: ${v};`);
+      injectLiveFontIfNeeded(v);
+    } else {
+      baseLines.push(`  --${k}: ${v};`);
+    }
   }
+
   const parts: string[] = [];
-  if (lightLines.length) parts.push(`:root {\n${lightLines.join('\n')}\n}`);
+  if (baseLines.length) parts.push(`:root {\n${baseLines.join('\n')}\n}`);
+  if (fontLines.length) parts.push(`body {\n${fontLines.join('\n')}\n}`);
   if (colorLines.length) parts.push(`html:not(.dark) {\n${colorLines.join('\n')}\n}`);
   getOrCreate('builder-live-light').textContent = parts.join('\n\n');
+
   const darkVars = Object.entries(dark).map(([k, v]) => `  --${k}: ${hexToRgbTriplet(v)};`).join('\n');
   getOrCreate('builder-live-dark').textContent = darkVars ? `html.dark {\n${darkVars}\n}` : '';
 }

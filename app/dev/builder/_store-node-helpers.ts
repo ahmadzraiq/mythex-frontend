@@ -143,7 +143,12 @@ export function _getManagedStyle(id: string): HTMLStyleElement {
   if (!el) {
     el = document.createElement('style');
     el.id = id;
-    document.head.appendChild(el);
+    // Append to document.body (not document.head) so our overrides come AFTER
+    // the ThemeStyles <style> tag which React renders at the start of <body>.
+    // CSS cascade: same specificity → last declaration in document order wins.
+    // ThemeStyles sets `body { --font-heading: var(--font-space-grotesk) }` and
+    // we need our `body { --font-heading: 'Lora', serif }` to beat it.
+    (document.body ?? document.head).appendChild(el);
   }
   return el;
 }
@@ -176,20 +181,27 @@ export function _applyLightOverrides(overrides: Record<string, string>) {
   const el = _getManagedStyle('builder-light-overrides');
 
   const colorLines: string[] = [];
+  const fontLines: string[]  = [];
   const baseLines: string[]  = [];
 
   for (const [k, v] of Object.entries(overrides)) {
     if (v.startsWith('#')) {
       // hex color → convert to RGB triplet, scope to light mode only
       colorLines.push(`  --${k}: ${hexToRgbTriplet(v)};`);
+    } else if (k === 'font-heading' || k === 'font-body') {
+      // Font vars MUST go on body{} — ThemeStyles sets them there too, and a body{}
+      // value shadows any :root{} value for all descendants. DOM order makes our
+      // style tag win over ThemeStyles (we're appended later in <head>).
+      fontLines.push(`  --${k}: ${v};`);
     } else {
-      // font family string, rem value, etc. → applies in both modes
+      // radius, spacing, etc. → applies in both modes
       baseLines.push(`  --${k}: ${v};`);
     }
   }
 
   const parts: string[] = [];
   if (baseLines.length) parts.push(`:root {\n${baseLines.join('\n')}\n}`);
+  if (fontLines.length) parts.push(`body {\n${fontLines.join('\n')}\n}`);
   // Always include the bridge so Gluestack components follow the active --primary
   parts.push(`html:not(.dark) {\n${colorLines.join('\n')}${colorLines.length ? '\n' : ''}${GLUESTACK_PRIMARY_BRIDGE}\n}`);
   el.textContent = parts.join('\n\n');
@@ -206,6 +218,50 @@ export function _applyDarkOverrides(overrides: Record<string, string>) {
     .map(([k, v]) => `  --${k}: ${hexToRgbTriplet(v)};`)
     .join('\n');
   el.textContent = `html.dark {\n${vars ? vars + '\n' : ''}${GLUESTACK_PRIMARY_BRIDGE}\n}`;
+}
+
+/**
+ * Inject Google Font <link> tags for any font-heading / font-body values in the
+ * given overrides map. Called after applying theme overrides from saved config so
+ * the browser loads the font even before the user opens the Theme panel.
+ */
+export function injectFontsFromOverrides(overrides: Record<string, string>): void {
+  if (typeof document === 'undefined') return;
+  const FONT_GOOGLE_URLS: Record<string, string> = {
+    "'Inter', sans-serif":              'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+    "'DM Sans', sans-serif":            'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap',
+    "'Space Grotesk', sans-serif":      'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap',
+    "'Nunito', sans-serif":             'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap',
+    "'Poppins', sans-serif":            'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap',
+    "'Montserrat', sans-serif":         'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap',
+    "'Raleway', sans-serif":            'https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap',
+    "'Josefin Sans', sans-serif":       'https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;500;600;700&display=swap',
+    "'Jost', sans-serif":               'https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&display=swap',
+    "'Open Sans', sans-serif":          'https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap',
+    "'Roboto', sans-serif":             'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap',
+    "'Comfortaa', cursive":             'https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&display=swap',
+    "'Playfair Display', serif":        'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap',
+    "'Lora', serif":                    'https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&display=swap',
+    "'Merriweather', serif":            'https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap',
+    "'Fraunces', serif":                'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&display=swap',
+    "'Cormorant Garamond', serif":      'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&display=swap',
+    "'Crimson Text', serif":            'https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600;700&display=swap',
+    "'Source Sans 3', sans-serif":      'https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap',
+    "'Roboto Mono', monospace":         'https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap',
+  };
+
+  const fontVars = ['font-heading', 'font-body'];
+  for (const varName of fontVars) {
+    const val = overrides[varName];
+    if (!val) continue;
+    const url = FONT_GOOGLE_URLS[val];
+    if (url && !document.querySelector(`link[href="${url}"]`)) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = url;
+      document.head.appendChild(link);
+    }
+  }
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

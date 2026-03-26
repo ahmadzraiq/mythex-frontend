@@ -150,7 +150,7 @@ export const InactivePagesGrid = memo(function InactivePagesGrid({
                 top: 0,
                 width: vpWidth,
                 minHeight: VIEWPORT_H,
-                background: '#ffffff',
+                background: 'rgb(var(--background, 255 255 255))',
                 overflow: 'hidden',
                 boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
                 transform: 'translateZ(0)',

@@ -26,6 +26,15 @@ export interface ColorPalette {
   bg: string;
   textPrimary: string;
   textSecondary: string;
+  /** Optional explicit dark-mode variant. If absent, use deriveDarkPalette(). */
+  dark?: {
+    bg: string;
+    primary?: string;
+    secondary?: string;
+    accent?: string;
+    textPrimary: string;
+    textSecondary: string;
+  };
 }
 
 export interface FontPair {
@@ -328,36 +337,87 @@ export const DEFAULT_PAGES: SuggestedPage[] = [
 
 // ── Predefined business description chips ─────────────────────────────────────
 
-export const DESCRIPTION_CHIPS: string[] = [
-  'Coffee Shop',
-  'Tech Startup',
-  'Fashion Boutique',
-  'Fitness Studio',
-  'Restaurant',
-  'Consulting Firm',
-  'Creative Agency',
-  'Healthcare Practice',
-  'Law Firm',
-  'Real Estate Agency',
-  'Dental Clinic',
-  'E-commerce Lifestyle Brand',
-  'SaaS Product',
-  'Personal Coach',
-  'Nonprofit / NGO',
-  'Interior Design Studio',
-  'Photography Portfolio',
-  'Luxury Hotel',
-  'Craft Brewery',
-  'Online Course / EdTech',
-  'Event Venue / Conference',
-  'Pet Care / Veterinary Clinic',
-  'Landscaping & Garden Design',
-  'Construction / Contractor',
-  'Mobile App Landing',
-  'Cybersecurity Company',
-  'Fintech / Neobank',
-  'Travel Agency / Tour Operator',
+export interface DescriptionChip {
+  label: string;
+  prompt: string;
+}
+
+export const DESCRIPTION_CHIPS: DescriptionChip[] = [
+  { label: 'Coffee Shop', prompt: 'A specialty coffee shop in a vibrant urban neighborhood, serving single-origin espresso, filter brews, and fresh pastries baked daily. We welcome commuters and remote workers with reliable Wi-Fi, plenty of outlets, and friendly baristas. Our focus is ethically sourced beans, zero-waste practices, and a comfortable space for meetups, small events, and weekend cuppings. Pre-order, whole-bean subscriptions, and gift cards available.' },
+  { label: 'Tech Startup', prompt: 'An early-stage B2B SaaS startup building an AI-powered workflow automation platform for operations teams at mid-size companies. Our product eliminates repetitive manual tasks, connects existing tools via integrations, and surfaces real-time insights through a clean dashboard. We are a remote-first team of 12, backed by seed funding, and focused on fast onboarding, transparent pricing, and white-glove customer success for our first 100 customers.' },
+  { label: 'Fashion Boutique', prompt: 'A premium fashion boutique curating minimalist, high-quality clothing and accessories for conscious consumers who value craftsmanship and timeless style over fast fashion. We carry independent European and local designers, offer personal styling sessions, and ship worldwide. Our brand values sustainability, slow fashion, and thoughtful packaging. We run seasonal collection drops, loyalty rewards, and an invite-only early access program for our top customers.' },
+  { label: 'Fitness Studio', prompt: 'A boutique fitness studio offering small-group classes in yoga, pilates, HIIT, and functional training designed for busy professionals who want results without the big-box gym experience. We limit class sizes to 12 people for a personalized, high-energy atmosphere. Members get app-based booking, progress tracking, nutrition guidance, and access to an exclusive community of like-minded people committed to sustainable fitness habits.' },
+  { label: 'Restaurant', prompt: 'A modern farm-to-table restaurant celebrating local, seasonal ingredients with a daily-changing menu, open kitchen, and natural wine selection. We seat 60 guests in a warm, candlelit dining room and offer weekend brunch, private dining for up to 20, and a takeout menu for weeknight convenience. Our chef partners with local farmers and foragers, and we donate 5% of profits to regional food banks every month.' },
+  { label: 'Consulting Firm', prompt: 'A boutique management consulting firm specializing in organizational strategy, digital transformation, and operational excellence for mid-market companies in healthcare and manufacturing. Our team of 25 senior consultants delivers 90-day engagements with measurable outcomes, transparent deliverables, and hands-on implementation support. We do not just write reports — we work alongside your team to execute change and build internal capability that outlasts our engagement.' },
+  { label: 'Creative Agency', prompt: 'A full-service creative agency helping purpose-driven brands build bold visual identities, compelling digital experiences, and culturally resonant marketing campaigns. Our multidisciplinary team covers branding, web design, motion, social content, and brand strategy. We work with startups, nonprofits, and consumer brands on 8-week brand sprints and ongoing retainer partnerships. Portfolio available on request. New inquiries open for Q3.' },
+  { label: 'Healthcare Practice', prompt: 'A modern multi-specialty healthcare practice offering primary care, dermatology, and mental health services under one roof. We accept most major insurance plans and offer same-day appointments, telehealth visits, and an integrated patient portal for records, prescriptions, and messaging. Our patient-first approach means no rushed consultations — every visit is at least 30 minutes. We serve adults and adolescents across three clinic locations.' },
+  { label: 'Law Firm', prompt: 'A client-focused law firm specializing in employment law, business contracts, and intellectual property for entrepreneurs, creators, and growing companies. We offer flat-fee packages for standard contracts, trademark filings, and employment agreements, as well as hourly representation for disputes and negotiations. Our attorneys respond within 24 hours, provide plain-English explanations, and work remotely with clients across the country via secure video consultations.' },
+  { label: 'Real Estate Agency', prompt: 'A boutique real estate agency focused on luxury residential properties and new developments in the greater metro area. Our agents average 14 years of experience, and we handle every step from market valuation and staging to negotiation and closing. We offer buyers exclusive off-market listings, 3D virtual tours, and a concierge relocation service. Sellers get professional photography, drone video, targeted digital advertising, and a dedicated transaction coordinator.' },
+  { label: 'Dental Clinic', prompt: 'A family dental clinic offering comprehensive preventive, cosmetic, and restorative dentistry for patients of all ages. We use digital X-rays, same-day crowns, and painless injection techniques to make every visit comfortable. Services include cleanings, whitening, Invisalign, implants, and emergency care with next-day availability. We accept most dental insurance plans and offer flexible 0% financing for major treatments. Online booking, text reminders, and a kids-friendly waiting area.' },
+  { label: 'E-commerce Lifestyle Brand', prompt: 'A direct-to-consumer lifestyle brand selling premium home goods, candles, skincare, and wellness accessories designed for modern, mindful living. All products are made with natural materials, cruelty-free ingredients, and sustainable packaging. We sell exclusively through our website, with free shipping on orders over $75, a 30-day hassle-free returns policy, and a subscription box program that ships curated seasonal bundles every quarter.' },
+  { label: 'SaaS Product', prompt: 'A project management and team collaboration SaaS platform built for creative agencies and design studios that need more flexibility than traditional tools. Features include Kanban and timeline views, client approval portals, asset storage, time tracking, and automated invoicing. We offer a 14-day free trial, monthly or annual plans, and dedicated onboarding for teams of five or more. Integrates with Figma, Slack, Notion, and Google Workspace.' },
+  { label: 'Personal Coach', prompt: 'A certified life and career coach helping high-achieving professionals in their 30s and 40s navigate career transitions, overcome burnout, and design a life aligned with their values. I offer 1-on-1 coaching via 60-minute video sessions, a 12-week intensive program, and group workshops on clarity, boundaries, and mindset. My approach combines evidence-based frameworks, somatic techniques, and practical action plans. First session is a complimentary 30-minute discovery call.' },
+  { label: 'Nonprofit / NGO', prompt: 'A nonprofit organization providing free vocational training, mentorship, and job placement support to underserved young adults aged 18 to 26 in urban communities. We run 16-week cohort programs in software development, healthcare administration, and skilled trades, with 78% of graduates employed within 90 days. Funded by corporate partners and individual donors, we have trained over 2,400 young people since 2015. Donations are tax-deductible and 89 cents of every dollar goes directly to program delivery.' },
+  { label: 'Interior Design Studio', prompt: 'A residential interior design studio creating timeless, livable spaces that reflect each client\'s personality while maximizing function and flow. We specialize in full-room renovations, kitchen and bathroom redesigns, and new construction consultations. Our process includes an in-home discovery session, 3D renderings, material sourcing, and contractor coordination. We work with homes ranging from 800 to 8,000 sq ft and offer virtual design packages for clients outside our local area.' },
+  { label: 'Photography Portfolio', prompt: 'A professional photographer specializing in editorial portraiture, brand identity photography, and intimate wedding coverage. My work has appeared in Vogue, The New York Times, and campaigns for global consumer brands. I shoot on film and digital, offer full print and licensing rights, and deliver final galleries within 3 weeks. Based in New York, available to travel worldwide. Currently booking portrait sessions 6 weeks out and weddings through 2026.' },
+  { label: 'Luxury Hotel', prompt: 'A boutique luxury hotel with 32 individually designed suites nestled in a restored 19th-century villa overlooking the Mediterranean. Amenities include a Michelin-starred restaurant, a rooftop infinity pool, a spa, private beach access, and a personalized butler service for every guest. We cater to couples, solo travelers, and small incentive groups seeking a refined, discreet experience. Minimum two-night stay. Direct bookings receive complimentary breakfast and a welcome amenity.' },
+  { label: 'Craft Brewery', prompt: 'An independent craft brewery and taproom producing small-batch ales, IPAs, sours, and seasonal lagers with locally sourced grain and hops. We release four to six new brews per month, available on draft and in limited canned releases shipped nationwide through our beer club subscription. Our taproom hosts trivia nights, live music, and brewery tours every Saturday. Dog-friendly patio, food trucks on weekends, and private event space for up to 80 guests.' },
+  { label: 'Online Course / EdTech', prompt: 'An online learning platform offering expert-led courses in UX design, data analytics, digital marketing, and coding for working adults who want to upskill without pausing their careers. Courses are self-paced with live weekly Q&A sessions, community forums, and project-based assessments reviewed by industry mentors. Learners earn verifiable certificates upon completion. We partner with hiring companies who offer priority interviews to top graduates. Monthly subscription or pay-per-course options available.' },
+  { label: 'Event Venue / Conference', prompt: 'A modern event venue and conference center offering flexible spaces for corporate retreats, product launches, award ceremonies, and private celebrations. Our facility includes a 500-seat auditorium, eight breakout rooms, a rooftop terrace, and a full catering kitchen. We provide AV production, lighting, event coordination, and valet parking as part of our all-inclusive packages. Day-hire and multi-day event bookings available with dedicated on-site support from our events team.' },
+  { label: 'Pet Care / Veterinary Clinic', prompt: 'A full-service veterinary clinic and pet care center offering wellness exams, vaccinations, dental cleanings, urgent care, and surgical procedures for dogs, cats, and small animals. We also run an on-site grooming salon, doggy daycare, and a boutique pet supply shop. Our team of four licensed vets and certified technicians focuses on fear-free handling and transparent treatment plans. Online appointment booking, same-day sick visits, and payment plans available.' },
+  { label: 'Landscaping & Garden Design', prompt: 'A residential and commercial landscaping company offering custom garden design, lawn maintenance, seasonal planting, hardscaping, and irrigation system installation. We serve homeowners, HOAs, and commercial properties across the region. Our design team creates detailed 3D plans before a single plant goes in the ground, and our maintenance crews visit weekly or bi-weekly depending on the package. Fully licensed, insured, and eco-conscious with water-smart planting solutions.' },
+  { label: 'Construction / Contractor', prompt: 'A licensed general contractor specializing in full home renovations, room additions, kitchen and bathroom remodels, and custom new builds for residential clients. We handle everything from permitting and structural work to finish carpentry and final inspection. Our team of 30 skilled tradespeople operates with fixed-price contracts, a dedicated project manager for every job, and a client portal for real-time progress updates and photo documentation. Licensed in three states with over 400 completed projects.' },
+  { label: 'Mobile App Landing', prompt: 'A productivity app that helps people build consistent daily habits through science-based streaks, micro-habit stacking, and a supportive accountability community. Available on iOS and Android, the app offers personalized habit plans, weekly progress reports, and AI-powered check-ins. Used by over 200,000 people in 45 countries, rated 4.8 stars, and featured in the App Store\'s "Apps We Love" collection. Free with a premium subscription for advanced analytics and coaching features.' },
+  { label: 'Cybersecurity Company', prompt: 'A cybersecurity firm providing managed detection and response, penetration testing, compliance consulting, and employee security awareness training for businesses with 50 to 500 employees. We monitor client environments 24/7, respond to incidents within 15 minutes, and produce monthly executive-level risk reports. Our team holds CISSP, CEH, and SOC 2 certifications, and we specialize in helping companies achieve HIPAA, SOC 2, and ISO 27001 compliance on accelerated timelines.' },
+  { label: 'Fintech / Neobank', prompt: 'A mobile-first neobank built for freelancers and self-employed professionals who need smarter banking, automatic tax savings, instant invoicing, and real-time expense categorization in one app. No monthly fees, no minimum balance, and a Visa debit card with 2% cashback on business purchases. We offer FDIC-insured accounts, instant ACH transfers, and integrations with QuickBooks, FreshBooks, and Stripe. Over 80,000 active users and growing 40% month over month.' },
+  { label: 'Travel Agency / Tour Operator', prompt: 'A boutique travel agency specializing in small-group adventure tours and tailor-made itineraries across Southeast Asia, Patagonia, East Africa, and Central Asia. Maximum group size of 12 ensures an intimate, unhurried experience with deep local connections. Every trip includes expert local guides, handpicked accommodations, and immersive cultural experiences beyond the typical tourist trail. We handle all logistics from visa support to emergency assistance. Trips depart monthly with guaranteed departures.' },
 ];
+
+// ── Color helpers ─────────────────────────────────────────────────────────────
+
+function hexToRgb(hex: string): [number, number, number] {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return [r, g, b];
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  return '#' + [r, g, b]
+    .map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function mixHex(hex1: string, hex2: string, ratio: number): string {
+  if (!hex1.startsWith('#') || !hex2.startsWith('#')) return hex1;
+  const [r1, g1, b1] = hexToRgb(hex1);
+  const [r2, g2, b2] = hexToRgb(hex2);
+  return rgbToHex(r1 * (1 - ratio) + r2 * ratio, g1 * (1 - ratio) + g2 * ratio, b1 * (1 - ratio) + b2 * ratio);
+}
+
+/**
+ * Auto-derive a dark-mode color set from a light palette.
+ * Darkens the background to near-black and lightens text toward white.
+ */
+export function deriveDarkPalette(p: ColorPalette): NonNullable<ColorPalette['dark']> {
+  if (p.dark) return p.dark;
+  const darkBg = p.bg.startsWith('linear') ? '#0d0d0d' : mixHex(p.bg, '#080808', 0.88);
+  const darkTextPrimary = p.textPrimary.startsWith('#') ? mixHex(p.textPrimary, '#f3f4f6', 0.75) : '#f3f4f6';
+  const darkTextSecondary = p.textSecondary.startsWith('#') ? mixHex(p.textSecondary, '#d1d5db', 0.55) : '#9ca3af';
+  const darkPrimary = p.primary.startsWith('#') ? mixHex(p.primary, '#ffffff', 0.15) : p.primary;
+  const darkSecondary = p.secondary.startsWith('#') ? mixHex(p.secondary, '#ffffff', 0.1) : p.secondary;
+  return { bg: darkBg, primary: darkPrimary, secondary: darkSecondary, accent: p.accent, textPrimary: darkTextPrimary, textSecondary: darkTextSecondary };
+}
+
+/**
+ * Convert a hex color to the space-separated RGB triple used by Tailwind CSS vars
+ * e.g. "#1e40af" → "30 64 175"
+ */
+export function hexToRgbTriple(hex: string): string {
+  if (!hex.startsWith('#')) return '0 0 0';
+  const [r, g, b] = hexToRgb(hex);
+  return `${r} ${g} ${b}`;
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -391,6 +451,42 @@ export function guessCategoryFromDescription(desc: string): string {
   if (d.includes('education') || d.includes('course') || d.includes('school')) return 'education';
   return 'general-ecommerce';
 }
+
+// ── Shared page sections (same on every page) ─────────────────────────────────
+
+export interface AiSectionDesignHints {
+  components?: string[];
+  tone?: string;
+  layout?: string;
+}
+
+export interface SharedSection {
+  name: string;
+  description: string;
+  designHints: AiSectionDesignHints;
+}
+
+export const SHARED_NAV_SECTION: SharedSection = {
+  name: 'Navigation',
+  description: 'Site-wide navigation bar with logo, primary menu links, optional secondary actions (search, CTA button), and a responsive mobile hamburger menu.',
+  designHints: {
+    components: ['Box', 'HStack', 'Link', 'Btn Solid', 'Icon Btn', 'Image'],
+    tone: 'clean, accessible, branded',
+    layout: 'full-width sticky bar: logo left, nav links center, CTA right — collapses to hamburger on mobile',
+  },
+};
+
+export const SHARED_FOOTER_SECTION: SharedSection = {
+  name: 'Footer',
+  description: 'Site-wide footer with brand logo, grouped navigation links, social media icons, contact info, and copyright notice.',
+  designHints: {
+    components: ['Box', 'Grid', 'VStack', 'Link', 'Icon', 'Text', 'Divider'],
+    tone: 'subdued, structured, trustworthy',
+    layout: '4-column grid with logo + tagline, link groups, social icons, and full-width copyright bar below',
+  },
+};
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
 
 /** Guess the most relevant mood id from a category */
 export function guessMoodFromCategory(categoryId: string): string {

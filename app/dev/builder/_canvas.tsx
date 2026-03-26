@@ -1656,7 +1656,9 @@ export default function BuilderCanvas() {
             top: 0,
             width: vpWidth,
             minHeight: VIEWPORT_H,
-            background: '#ffffff',
+            // Use the theme background CSS variable so the canvas reflects the
+            // user's chosen palette. Falls back to white when the variable is unset.
+            background: 'rgb(var(--background, 255 255 255))',
             overflow: 'hidden',
             boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
             // Own transform context so position:fixed children (navbar, drawers)
