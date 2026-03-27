@@ -177,11 +177,11 @@ export function ColorInput({ label, value, onChange, testId }: { label: string; 
 
 // ─── ToggleBtn ────────────────────────────────────────────────────────────────
 
-export function ToggleBtn({ active, onClick, title, children, 'data-testid': testId }: { active?: boolean; onClick: () => void; title?: string; children: React.ReactNode; 'data-testid'?: string }) {
+export function ToggleBtn({ active, onClick, title, children, 'data-testid': testId, style: extraStyle }: { active?: boolean; onClick: () => void; title?: string; children: React.ReactNode; 'data-testid'?: string; style?: React.CSSProperties }) {
   return (
     <button
       onClick={onClick} title={title} data-testid={testId} data-active={String(!!active)}
-      style={{ padding: '3px 7px', fontSize: 11, background: active ? '#3b82f6' : '#1f2937', border: `1px solid ${active ? '#3b82f6' : '#374151'}`, color: active ? '#fff' : '#9ca3af', borderRadius: 4, cursor: 'pointer', lineHeight: 1 }}
+      style={{ padding: '3px 7px', fontSize: 11, background: active ? '#3b82f6' : '#1f2937', border: `1px solid ${active ? '#3b82f6' : '#374151'}`, color: active ? '#fff' : '#9ca3af', borderRadius: 4, cursor: 'pointer', lineHeight: 1, ...extraStyle }}
     >
       {children}
     </button>

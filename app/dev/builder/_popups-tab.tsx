@@ -152,7 +152,7 @@ const STARTER_CONTENT: Record<string, Record<string, unknown>> = {
           props: { className: 'px-4 py-4 flex flex-row items-center justify-between border-b border-gray-100 dark:border-gray-800' },
           children: [
             { type: 'Text', props: { className: 'text-base font-semibold text-gray-900 dark:text-white' }, text: 'Sheet title' },
-            { type: 'Button', actions: [{ action: 'closeAllPopups' }], props: { action: 'link', size: 'sm' }, children: [{ type: 'NavIcon', props: { icon: 'X', size: 18, color: '#6b7280' } }] },
+            { type: 'Button', actions: [{ action: 'closeAllPopups' }], props: { action: 'link', size: 'sm' }, children: [{ type: 'Icon', props: { icon: 'lucide:x', size: 18, color: '#6b7280' } }] },
           ],
         },
         { type: 'Box', props: { className: 'flex-1 px-4 py-6' }, children: [] },
@@ -187,7 +187,7 @@ const STARTER_CONTENT: Record<string, Record<string, unknown>> = {
           {
             type: 'Box',
             props: { className: 'w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 items-center justify-center flex shrink-0 mt-0.5' },
-            children: [{ type: 'NavIcon', props: { icon: 'AlertTriangle', size: 16, color: '#f59e0b' } }],
+            children: [{ type: 'Icon', props: { icon: 'lucide:alert-triangle', size: 16, color: '#f59e0b' } }],
           },
           {
             type: 'Box',
@@ -201,7 +201,7 @@ const STARTER_CONTENT: Record<string, Record<string, unknown>> = {
             type: 'Pressable',
             actions: [{ action: 'closePopup' }],
             props: { className: 'shrink-0 mt-0.5 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700' },
-            children: [{ type: 'NavIcon', props: { icon: 'X', size: 14, color: '#9ca3af' } }],
+            children: [{ type: 'Icon', props: { icon: 'lucide:x', size: 14, color: '#9ca3af' } }],
           },
         ],
       }],
@@ -225,7 +225,7 @@ const STARTER_CONTENT: Record<string, Record<string, unknown>> = {
           {
             type: 'Box',
             props: { className: 'w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 items-center justify-center flex shrink-0 mt-0.5' },
-            children: [{ type: 'NavIcon', props: { icon: 'Bell', size: 16, color: '#3b82f6' } }],
+            children: [{ type: 'Icon', props: { icon: 'lucide:bell', size: 16, color: '#3b82f6' } }],
           },
           {
             type: 'Box',
@@ -239,7 +239,7 @@ const STARTER_CONTENT: Record<string, Record<string, unknown>> = {
             type: 'Pressable',
             actions: [{ action: 'closePopup' }],
             props: { className: 'shrink-0 mt-0.5 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700' },
-            children: [{ type: 'NavIcon', props: { icon: 'X', size: 14, color: '#9ca3af' } }],
+            children: [{ type: 'Icon', props: { icon: 'lucide:x', size: 14, color: '#9ca3af' } }],
           },
         ],
       }],

@@ -394,7 +394,7 @@ function SectionRow({ section, idx, total, onMoveUp, onMoveDown, onDelete }: {
     >
       <div
         onClick={() => setExpanded(e => !e)}
-        style={{
+              style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '4px 10px',
           background: expanded ? 'rgba(255,255,255,0.04)' : hovered ? 'rgba(255,255,255,0.025)' : 'transparent',
@@ -436,14 +436,14 @@ function SectionRow({ section, idx, total, onMoveUp, onMoveDown, onDelete }: {
           >
             <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
           </svg>
+            </div>
         </div>
-      </div>
 
       {/* Expanded panel — description only */}
       {expanded && section.description && (
         <div style={{ padding: '5px 10px 8px', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
           <p style={{ fontSize: 10, color: TEXT_DIM, lineHeight: 1.55, margin: 0 }}>{section.description}</p>
-        </div>
+      </div>
       )}
     </div>
   );
@@ -496,8 +496,8 @@ function PageCard({ page, selected, sectionsLoading, onToggle, onSectionsChange 
         </div>
         <div style={{ width: 15, height: 15, borderRadius: '50%', border: selected ? '2px solid #3b82f6' : '2px solid #374151', background: selected ? '#2563eb' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginLeft: 6 }}>
           {selected && <span style={{ color: '#fff', fontSize: 9, lineHeight: 1 }}>✓</span>}
-        </div>
       </div>
+          </div>
 
       {/* Section list or skeleton */}
       <div>
@@ -831,12 +831,13 @@ export default function CreateAiProjectWizard({
         if (font.bodyFont)    themeOverrides['font-body']    = toCssFontFamily(font.bodyFont);
       }
 
-      const pages = selectedPages.map(p => ({
-        id: crypto.randomUUID(),
-        name: p.name,
-        route: p.route ?? '/',
-        nodes: [],
-      }));
+      // Build page stubs with stable IDs — we'll match them in the builder by route/name
+      const pageIdMap: Record<string, string> = {};
+      const pages = selectedPages.map(p => {
+        const id = crypto.randomUUID();
+        pageIdMap[p.id] = id;
+        return { id, name: p.name, route: p.route ?? '/', nodes: [] };
+      });
 
       const selectedPagesFlat = selectedPages.map(p => ({
         ...p,
@@ -865,7 +866,25 @@ export default function CreateAiProjectWizard({
         }),
       });
 
-      router.push(`/builder/${project.id}`);
+      // Save full wizard result to localStorage so the builder can run AI generation
+      const wizardResult = {
+        appName: state.appName,
+        businessDescription: state.businessDescription,
+        category: state.category,
+        mood: state.mood,
+        animationLevel: state.animationLevel,
+        layoutStructure: state.layoutStructure,
+        selectedPalette: palette,
+        selectedFont: font,
+        // Use full AiSectionWithHints objects (not flattened) for the AI generator
+        selectedPages: selectedPages.map(p => ({
+          ...p,
+          id: pageIdMap[p.id] ?? p.id, // map to builder page ID
+        })),
+      };
+      localStorage.setItem(`ai_wizard_result_${project.id}`, JSON.stringify(wizardResult));
+
+      router.push(`/builder/${project.id}?ai=build`);
     } catch {
       update({ generating: false, generateError: 'Something went wrong. Please try again.' });
     }

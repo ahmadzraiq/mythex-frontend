@@ -420,6 +420,23 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
         delete (cleanProps as Record<string, unknown>).style;
       }
     }
+    // Forward size-critical classes from the inner node to the outer wrapper.
+    // React Native Web's base View style includes align-self: flex-start, which causes
+    // the outer Animated.View/View wrapper to collapse to content-width/height when it
+    // is a flex item. The inner node's w-full/flex-1 are percentages of the wrapper,
+    // not the grandparent — so the wrapper itself must also carry the sizing.
+    // Note: explicit outerStyle properties take precedence (spread after sizeOverride).
+    if (nodeClassName) {
+      const sizeOverride: Record<string, unknown> = {};
+      if (/\bw-full\b/.test(nodeClassName)) sizeOverride.width = '100%';
+      if (/\bflex-1\b/.test(nodeClassName)) sizeOverride.flex = 1;
+      if (Object.keys(sizeOverride).length > 0) {
+        resolvedAnimCfg = {
+          ...resolvedAnimCfg,
+          outerStyle: { ...sizeOverride, ...(resolvedAnimCfg.outerStyle as object ?? {}) },
+        };
+      }
+    }
     return (
       <AnimatedNode
         key={node.key}

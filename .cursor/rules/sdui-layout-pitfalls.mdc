@@ -105,6 +105,28 @@ Or use `bg-transparent` if the parent already has the correct background. The `!
 
 ---
 
+## Formula Functions — Use SDUI Functions, Not JavaScript Globals
+
+**Problem:** The formula evaluator rewrites known function names (e.g. `max(`) to `__fns__['max'](`. Originally, if you wrote `Math.max(`, the processor rewrites only the `max(` part, leaving `Math.__fns__['max'](` — invalid JavaScript that throws a `TypeError`, silently caught, returning `undefined`.
+
+**Evaluator fix (negative-lookbehind):** `lib/sdui/formula-evaluator.ts` now has a negative-lookbehind guard `(?<![.\w])` so `Math.max(` is NOT rewritten and passes through as native JavaScript. At runtime, `Math.max` works correctly. However, prefer the SDUI formula functions for consistency with the formula editor UI.
+
+**AI tool validator (enforcement):** `lib/ai/tool-executor.ts` `create_workflow` validates all `changeVariableValue` formula strings before storing them. If a formula contains `Math.*` usage, the tool returns `{ success: false, error: "..." }` — the AI receives the error and must self-correct. This replaces fragile "NEVER" prompt instructions.
+
+```json
+// ❌ Rejected by tool validator — AI receives error and retries
+"formula": "Math.max(0, variables['UUID'] - 1)"
+
+// ✅ Accepted — use SDUI formula functions directly
+"formula": "max(0, variables['UUID'] - 1)"
+```
+
+**Available math formula functions (from `FORMULA_FNS`):** `abs`, `ceil`, `clamp`, `floor`, `max`, `min`, `mod`, `pow`, `round`, `sqrt`, `sum`
+
+**Full function reference:** `lib/sdui/formula-functions.ts` is the canonical registry. The builder's formula editor (`app/dev/builder/_formula-editor-dom.ts` `FUNCTION_LIBRARY`) is the canonical UI reference with signatures — both are kept in sync manually.
+
+**`|| 0` pattern:** Writing `(variables['UUID'] || 0) + 1` is only needed when the variable might be undefined (no `initialValue`). When using `add_variable`, an `initialValue` is always set, making `|| 0` redundant. The AI knowledge base no longer teaches this pattern as a default.
+
 ## path.split is not a function
 
 **Problem:** `getNestedValue` or similar receives a non-string path (undefined, array, etc.) from JSON logic conditions.
@@ -247,7 +269,7 @@ for (const [key, val] of Object.entries(vs)) {
       "type": "InputSlot",
       "props": { "className": "pl-3 pointer-events-none" },
       "children": [
-        { "type": "NavIcon", "props": { "icon": "Search", "size": 16, "className": "!text-gray-400" } }
+        { "type": "Icon", "props": { "icon": "lucide:search", "size": 16, "color": "#9ca3af" } }
       ]
     },
     {
@@ -369,20 +391,20 @@ const next = Math.max(minVal, (Number(current) || 0) - amount);
 
 ---
 
-## NavIcon — Always Use Lucide Directly, Never Gluestack Icon Wrapper
+## Icon — Always Use `type: "Icon"` with Iconify Format
 
-**Problem:** Gluestack's `Icon` wrapper applies `text-typography-950` (unresolved token) and `fill-none` as base classes. Icons wrapped with `<Icon as={LucideIcon} />` get no visible color and no fill — they appear invisible.
+**Problem:** Gluestack's legacy `Icon` wrapper applies `text-typography-950` (unresolved token) and `fill-none` as base classes — icons appear invisible.
 
-**Fix:** `NavIcon` renders Lucide icons directly without Gluestack's `Icon` wrapper:
-```tsx
-return <IconComponent size={numericSize} color={color} className={className} {...rest} />;
+**Fix:** Use `type: "Icon"` with Iconify `set:name` format:
+```json
+{ "type": "Icon", "props": { "icon": "lucide:search", "size": 16, "color": "#9ca3af" } }
 ```
 
 **Rules:**
-- All icons in `NAV_ICONS` must be from `lucide-react-native` — never mix with Gluestack icon components
-- `NavIcon` accepts `size` as a number OR named string (`'sm'` = 16, `'md'` = 18, etc.) — converted to numeric before passing to Lucide
-- Use `color` prop (hex string) for icon color — Lucide forwards it directly to the SVG stroke
-- Never use `<Icon as={...} />` for icons that need a specific color — always render Lucide components directly
+- Always use Iconify `set:name` format (e.g. `"lucide:arrow-right"`, `"heroicons:star"`) — never PascalCase Lucide names
+- Use `color` prop (hex string or `"currentColor"`) for icon color
+- Use `size` prop as a number (pixels)
+- Never use `<Icon as={...} />` Gluestack pattern — it is invisible due to unresolved tokens
 
 ---
 
@@ -587,7 +609,6 @@ if (SUBMIT_BUTTON_TYPES.has(node.type) && cleanProps.type === 'submit' && formCt
 
 // submitSignIn workflow in config/actions/auth.json:
 {
-  "type": "workflowSteps",
   "trigger": "submit",
   "steps": [{ "id": "step-1", "action": "49c32a35-..." }]
 }
@@ -624,7 +645,6 @@ If you have an output display variable that shows the validation error (set by t
 ```json
 // submit trigger workflow — step 1 sets result, step 2 clears the error output
 "waFormSubmit": {
-  "type": "workflowSteps",
   "trigger": "submit",
   "steps": [
     { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "UUID-result", "value": { "formula": "..." } } },
@@ -700,7 +720,6 @@ The `condition` is truthy when `isValid` is a non-empty error string, falsy when
 ```json
 // ✅ resetForm is self-sufficient — no extra changeVariableValue for input variables
 "waResetForm": {
-  "type": "workflowSteps",
   "trigger": "click",
   "steps": [
     { "id": "s1", "type": "resetForm", "config": {} },
@@ -727,7 +746,6 @@ Steps s2 and s3 reset **output display variables** (submit result, validation er
 ```json
 // ✅ Pre-fill workflow — changeVariableValue alone is enough
 "waPreFillForm": {
-  "type": "workflowSteps",
   "trigger": "click",
   "steps": [
     { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "UUID-email", "value": "prefilled@example.com" } },
@@ -760,7 +778,7 @@ After the engine fix:
 
 **Problem:** Unsupported step types (anything not in the supported list in `build-guide.mdc`) and `screens.*` paths are not rendered in the workflow canvas.
 
-### Rule 1 — Only use supported step types in workflowSteps
+### Rule 1 — Only use supported step types in workflows
 
 Always use `changeVariableValue` (for global variables) or `setVar` (for arbitrary variable store paths such as form pre-population).
 
@@ -887,7 +905,7 @@ Before using any UUID in `changeVariableValue` or a condition like `variables['U
 
 ## forEach `listPath` vs `list` — Use the Right Config Key
 
-**Problem:** The `forEach` step in a `workflowSteps` workflow supports two list sources:
+**Problem:** The `forEach` step in a workflow supports two list sources:
 - `listPath` (or `itemsPath`): a variable UUID or state path to read the array from at runtime
 - `list`: an inline hardcoded array of values
 
@@ -943,7 +961,6 @@ Inside the loop body, access the current item via:
 
 ```json
 "waFormSubmit": {
-  "type": "workflowSteps",
   "trigger": "submit",
   "steps": [
     { "id": "s1", "type": "setFormState", "config": { "isSubmitting": true } },

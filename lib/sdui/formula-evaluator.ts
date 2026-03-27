@@ -68,10 +68,12 @@ export function evaluateFormula(formula: string | object, context: Record<string
 
   // Rewrite function calls: sum( → __fns__['sum'](
   // Using bracket notation handles reserved keywords like 'if', 'switch'
+  // Negative lookbehind (?<![.\w]) prevents matching method calls like Math.max(
+  // so "Math.max(0, x)" is NOT rewritten to "Math.__fns__['max'](0, x)" (invalid)
   let processed = resolved;
   for (const name of Object.keys(FORMULA_FNS)) {
     processed = processed.replace(
-      new RegExp(`\\b${name}\\s*\\(`, 'g'),
+      new RegExp(`(?<![.\\w])\\b${name}\\s*\\(`, 'g'),
       `__fns__['${name}'](`
     );
   }

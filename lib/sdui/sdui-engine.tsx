@@ -382,7 +382,7 @@ export function SDUIEngine({
           return resultRef.current !== undefined ? resultRef.current : handlerResult;
         }
         // Canvas step type fallback: if actionDef.type has no registered handler, treat it
-        // as a single-step workflow so workflowStepsHandler can convert canvas types like
+        // as a single-step workflow so the step converter can handle canvas types like
         // navigateTo, changeVariableValue, etc. (backward compat with flat element workflows).
         // Guard: skip if this is already a fallback-wrapped step (prevents infinite loop when
         // stepToSdui returns the same type and no handler exists, e.g. openPopup, closeAllPopups).
@@ -390,7 +390,6 @@ export function SDUIEngine({
         const alreadyWrapped = actionDef != null && !!(actionDef as Record<string, unknown>).__fallbackWrapped;
         if (fbType && typeof fbType === 'string' && !alreadyWrapped) {
           const singleStep: import('./actions/handlers/types').ActionDef = {
-            type: 'workflowSteps',
             steps: [{ id: '__auto', __fallbackWrapped: true, ...actionDef }],
           };
           await dispatchToHandler(singleStep, handlerCtx);

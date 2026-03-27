@@ -318,6 +318,20 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   // Subscribe to live Zustand data so context stays fresh
   const zustandData = useSduiStore(s => s.data);
 
+  // Subscribe to the global variable store so the context memo re-runs when
+  // new variables are seeded (e.g. after addCustomVar) and formula evaluation
+  // reflects the latest values without needing to reopen the editor.
+  const [vsData, setVsData] = useState<Record<string, unknown>>(() =>
+    getGlobalVariableStore().getState().getFullState() as Record<string, unknown>
+  );
+  useEffect(() => {
+    const store = getGlobalVariableStore();
+    const unsub = store.subscribe(() => {
+      setVsData(store.getState().getFullState() as Record<string, unknown>);
+    });
+    return unsub;
+  }, []);
+
   // Derive initial formula string from stored value
   const initialFormula = useMemo(() => {
     const raw = storedValueToFormula(value);
@@ -595,7 +609,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
 
   // Build context for evaluation — includes context.item from repeat ancestor, globalContext, pages, theme
   const context = useMemo(() => {
-    const vs = getGlobalVariableStore().getState().getFullState() as Record<string, unknown>;
+    const vs = vsData;
     // Reconstruct collections map: flat "collections.UUID" keys → nested { UUID: data }.
     const COLL_PREFIX = 'collections.';
     let collStaging: Record<string, unknown> = {};
@@ -732,7 +746,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       pages,
       theme,
     };
-  }, [zustandData, selectedIds, pageNodes, currentWorkflowTestResults, editingPopupId]);
+  }, [vsData, zustandData, selectedIds, pageNodes, currentWorkflowTestResults, editingPopupId]);
 
   // When a workflowTrigger is set, inject the trigger's event shape as preview context
   const contextWithEvent = useMemo(() => {

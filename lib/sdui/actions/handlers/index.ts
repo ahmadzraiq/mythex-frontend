@@ -69,12 +69,25 @@ export const ACTION_HANDLERS: Record<string, HandlerFactory> = {
  * Dispatches an action to the registered handler if one exists.
  * Returns the handler's result, or `false` if no handler is registered.
  */
+/** Returns true when an action definition is a workflow (has a steps array). */
+export function isWorkflowDef(def: unknown): boolean {
+  return !!def && typeof def === 'object' && Array.isArray((def as Record<string, unknown>).steps);
+}
+
 export async function dispatchToHandler(
   actionDef: ActionDef,
   ctx: ActionHandlerContext
 ): Promise<unknown> {
   if (!actionDef) return false;
   const type = actionDef.type;
+
+  // Auto-detect: if the def has a steps array, treat it as a workflow even when
+  // type is absent or unregistered. This means config actions no longer need
+  // an explicit type field — having a steps array is sufficient.
+  if (Array.isArray((actionDef as Record<string, unknown>).steps)) {
+    return await workflowStepsHandler(ctx)(actionDef);
+  }
+
   if (!type || typeof type !== 'string') return false;
 
   const factory = ACTION_HANDLERS[type];

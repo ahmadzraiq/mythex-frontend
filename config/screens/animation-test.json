@@ -3715,9 +3715,9 @@
                             },
                             "children": [
                               {
-                                "type": "NavIcon",
+                                "type": "Icon",
                                 "props": {
-                                  "icon": "Rocket",
+                                  "icon": "lucide:rocket",
                                   "size": 32,
                                   "color": "#fff"
                                 }
@@ -3756,9 +3756,9 @@
                             },
                             "children": [
                               {
-                                "type": "NavIcon",
+                                "type": "Icon",
                                 "props": {
-                                  "icon": "Zap",
+                                  "icon": "lucide:zap",
                                   "size": 32,
                                   "color": "#fff"
                                 }
@@ -3797,9 +3797,9 @@
                             },
                             "children": [
                               {
-                                "type": "NavIcon",
+                                "type": "Icon",
                                 "props": {
-                                  "icon": "Layers",
+                                  "icon": "lucide:layers",
                                   "size": 32,
                                   "color": "#fff"
                                 }
@@ -3838,9 +3838,9 @@
                             },
                             "children": [
                               {
-                                "type": "NavIcon",
+                                "type": "Icon",
                                 "props": {
-                                  "icon": "Star",
+                                  "icon": "lucide:star",
                                   "size": 32,
                                   "color": "#fff"
                                 }
@@ -3886,9 +3886,9 @@
                     ],
                     "children": [
                       {
-                        "type": "NavIcon",
+                        "type": "Icon",
                         "props": {
-                          "icon": "ChevronLeft",
+                          "icon": "lucide:chevron-left",
                           "size": 20,
                           "color": "#6b7280"
                         }
@@ -4017,9 +4017,9 @@
                     ],
                     "children": [
                       {
-                        "type": "NavIcon",
+                        "type": "Icon",
                         "props": {
-                          "icon": "ChevronRight",
+                          "icon": "lucide:chevron-right",
                           "size": 20,
                           "color": "#6b7280"
                         }

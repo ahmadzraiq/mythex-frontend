@@ -1,6 +1,5 @@
 {
   "openTestModal": {
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -15,7 +14,6 @@
     ]
   },
   "openTestSheet": {
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -30,7 +28,6 @@
     ]
   },
   "openTestAlert": {
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -45,7 +42,6 @@
     ]
   },
   "openStackedAlert1": {
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -63,7 +59,6 @@
     ]
   },
   "openStackedAlert2": {
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -81,7 +76,6 @@
     ]
   },
   "openStackedAlert3": {
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -99,7 +93,6 @@
     ]
   },
   "closeAllTestPopups": {
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -110,7 +103,6 @@
     ]
   },
   "openAndWaitClose": {
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {

@@ -3081,7 +3081,7 @@
                         "props": { "data-testid": "evt-select-trigger" },
                         "children": [
                           { "type": "SelectInput", "props": { "placeholder": "Pick an option…" } },
-                          { "type": "SelectIcon", "children": [{ "type": "NavIcon", "props": { "icon": "ChevronDown", "size": 14 } }] }
+                          { "type": "SelectIcon", "children": [{ "type": "Icon", "props": { "icon": "lucide:chevron-down", "size": 14 } }] }
                         ]
                       },
                       {

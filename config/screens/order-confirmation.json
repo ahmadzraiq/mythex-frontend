@@ -46,9 +46,9 @@
                 },
                 "children": [
                   {
-                    "type": "NavIcon",
+                    "type": "Icon",
                     "props": {
-                      "icon": "CheckCircle2",
+                      "icon": "lucide:check-circle2",
                       "size": 64,
                       "className": "!text-green-500"
                     }
@@ -136,7 +136,7 @@
                             "condition": "context?.item?.data?.productVariant?.product?.featuredAsset?.preview",
                             "children": [
                               {
-                                "type": "NextImage",
+                                "type": "Image",
                                 "props": {
                                   "src": "{{context.item.data.productVariant.product.featuredAsset.preview}}",
                                   "alt": "{{context.item.data.productVariant.product.name}}",

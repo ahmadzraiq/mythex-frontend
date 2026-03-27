@@ -73,7 +73,7 @@ export function CanvasContextMenu({ x, y, nodeId, onClose }: CanvasCtxMenuProps)
     { label: 'Move Down',    action: () => store.moveNodeDown(nodeId) },
     { label: 'Select Parent',action: () => store.selectParent(nodeId) },
     null,
-    { label: 'Delete', action: () => store.deleteNodes([nodeId]), danger: true },
+    { label: 'Delete', action: () => store.deleteNodes(store.selectedIds.includes(nodeId) ? store.selectedIds : [nodeId]), danger: true },
   ] : [
     { label: 'Select All',    action: () => store.selectAll() },
     { label: 'Paste',         action: () => store.pasteFromClipboard() },

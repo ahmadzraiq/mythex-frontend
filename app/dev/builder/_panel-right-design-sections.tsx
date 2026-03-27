@@ -559,7 +559,7 @@ export function PropsTab({ node }: { node: SDUINode }) {
   const nodeId = (node as { id?: string }).id ?? '';
   const props = (node.props ?? {}) as Record<string, unknown>;
   const [localProps, setLocalProps] = useState<Record<string, string>>({});
-  const isImageNode = node.type === 'NextImage' || node.type === 'Image';
+  const isImageNode = node.type === 'Image' || node.type === 'Image';
 
   useEffect(() => {
     const flat: Record<string, string> = {};

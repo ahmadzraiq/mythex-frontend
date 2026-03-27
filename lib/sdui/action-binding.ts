@@ -158,7 +158,7 @@ export function bindActionsToProps(
       const workflowDef = workflowName ? actionsConfig?.[workflowName] as Record<string, unknown> | undefined : undefined;
       // Resolve trigger: named workflow def > item's own trigger field > default 'click'
       // The item's own trigger field is set by the workflow canvas for element workflows
-      // (format: { type: 'workflowSteps', trigger: 'click', steps: [...] })
+      // (format: { trigger: 'click', steps: [...] })
       const trigger = (typeof workflowDef?.trigger === 'string' ? workflowDef.trigger : null)
         ?? (typeof actionRef.trigger === 'string' ? actionRef.trigger : null)
         ?? 'click';

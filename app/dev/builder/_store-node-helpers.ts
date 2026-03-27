@@ -81,7 +81,7 @@ export const REQUIRED_PARENT: Record<string, string> = {
  * Exported so _canvas.tsx can pre-check before routing a drag "inside".
  */
 export const ALLOWED_CHILDREN: Record<string, Set<string>> = {
-  Button:        new Set(['ButtonText', 'NavIcon']),
+  Button:        new Set(['ButtonText', 'Icon']),
   Input:         new Set(['InputField', 'InputSlot', 'InputIcon']),
   Checkbox:      new Set(['CheckboxIndicator', 'CheckboxIcon', 'CheckboxLabel']),
   Radio:         new Set(['RadioIndicator', 'RadioLabel', 'RadioIcon']),
@@ -89,12 +89,12 @@ export const ALLOWED_CHILDREN: Record<string, Set<string>> = {
   Accordion:     new Set(['AccordionItem', 'AccordionTrigger', 'AccordionContent', 'AccordionHeader']),
   Slider:        new Set(['SliderTrack', 'SliderThumb', 'SliderFilledTrack']),
   Badge:         new Set(['BadgeText', 'BadgeIcon']),
-  Fab:           new Set(['FabLabel', 'FabIcon', 'NavIcon', 'Text']),
+  Fab:           new Set(['FabLabel', 'FabIcon', 'Icon', 'Text']),
   Avatar:        new Set(['AvatarImage', 'AvatarFallbackText']),
   Progress:      new Set(['ProgressFilledTrack']),
   Textarea:      new Set(['TextareaInput']),
   Skeleton:      new Set(['SkeletonText']),
-  Alert:         new Set(['AlertIcon', 'AlertText', 'NavIcon']),
+  Alert:         new Set(['AlertIcon', 'AlertText', 'Icon']),
   Link:          new Set(['LinkText']),
   RadioGroup:    new Set(['Radio']),
   CheckboxGroup: new Set(['Checkbox']),
@@ -186,8 +186,11 @@ export function _applyLightOverrides(overrides: Record<string, string>) {
 
   for (const [k, v] of Object.entries(overrides)) {
     if (v.startsWith('#')) {
-      // hex color → convert to RGB triplet, scope to light mode only
+      // hex color → convert to RGB triplet for the design-system var, scope to light mode only
       colorLines.push(`  --${k}: ${hexToRgbTriplet(v)};`);
+      // Also keep --theme-${k} (hex) in sync so component defaultNodes using
+      // var(--theme-foreground) etc. reflect the live theme, not the stale config/theme.json value.
+      colorLines.push(`  --theme-${k}: ${v};`);
     } else if (k === 'font-heading' || k === 'font-body') {
       // Font vars MUST go on body{} — ThemeStyles sets them there too, and a body{}
       // value shadows any :root{} value for all descendants. DOM order makes our
@@ -205,6 +208,12 @@ export function _applyLightOverrides(overrides: Record<string, string>) {
   // Always include the bridge so Gluestack components follow the active --primary
   parts.push(`html:not(.dark) {\n${colorLines.join('\n')}${colorLines.length ? '\n' : ''}${GLUESTACK_PRIMARY_BRIDGE}\n}`);
   el.textContent = parts.join('\n\n');
+  // Notify components that subscribe to CSS variable changes (e.g. IconifyIcon).
+  // We can't use a MutationObserver on :root for this because the vars are set via
+  // a <style> tag's textContent, not via element.style.setProperty().
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('builder:css-vars-updated'));
+  }
 }
 
 /**
@@ -215,9 +224,18 @@ export function _applyLightOverrides(overrides: Record<string, string>) {
 export function _applyDarkOverrides(overrides: Record<string, string>) {
   const el = _getManagedStyle('builder-dark-overrides');
   const vars = Object.entries(overrides)
-    .map(([k, v]) => `  --${k}: ${hexToRgbTriplet(v)};`)
+    .map(([k, v]) => {
+      const isHex = v.startsWith('#');
+      const rgbLine = `  --${k}: ${isHex ? hexToRgbTriplet(v) : v};`;
+      // Also sync --theme-${k} (hex) so var(--theme-*) component classes follow live dark theme
+      const themeLine = isHex ? `\n  --theme-${k}: ${v};` : '';
+      return rgbLine + themeLine;
+    })
     .join('\n');
   el.textContent = `html.dark {\n${vars ? vars + '\n' : ''}${GLUESTACK_PRIMARY_BRIDGE}\n}`;
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('builder:css-vars-updated'));
+  }
 }
 
 /**

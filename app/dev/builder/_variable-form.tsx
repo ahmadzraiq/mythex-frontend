@@ -86,11 +86,14 @@ export function VariableSlideContent({ initial, onSave, onClose }: VarSlidePanel
   const isJsonType = varType === 'object' || varType === 'array';
   const canSave = varName.trim().length > 0 && !(isJsonType && jsonErr);
 
-  // Read current live value from variable store
+  // Read current live value from variable store.
+  // Variables are keyed by UUID (initial.id), not by their human name.
   const currentValue = (() => {
     try {
+      const lookupKey = initial.id ?? varName.trim();
+      if (!lookupKey) return null;
       const vs = getGlobalVariableStore().getState().getFullState() as Record<string, unknown>;
-      const v = vs[varName.trim()];
+      const v = vs[lookupKey];
       if (v === undefined) return null;
       return typeof v === 'object' ? JSON.stringify(v, null, 2) : String(v);
     } catch { return null; }

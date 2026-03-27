@@ -11,14 +11,16 @@ import {
 import { H3 } from '@expo/html-elements';
 import { cssInterop } from 'nativewind';
 import { PrimitiveIcon, UIIcon } from '@gluestack-ui/core/icon/creator';
-import { ChevronDown } from 'lucide-react-native';
-
-/** Chevron icon for accordion - Lucide directly (Gluestack Icon wrapper makes icons invisible) */
+/** Chevron icon for accordion — inline SVG (no external icon library needed) */
 const AccordionChevronIcon = React.forwardRef<
-  React.ComponentRef<typeof ChevronDown>,
-  React.ComponentProps<typeof ChevronDown>
->(({ className, ...props }, ref) => (
-  <ChevronDown ref={ref} size={16} color="#6b7280" className={className} {...props} />
+  HTMLSpanElement,
+  { className?: string; size?: number; color?: string }
+>(({ className, size = 16, color = '#6b7280' }, ref) => (
+  <span ref={ref} className={className} style={{ display: 'inline-flex', alignItems: 'center' }}>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 9 12 15 18 9"/>
+    </svg>
+  </span>
 ));
 
 const SCOPE = 'ACCORDION';

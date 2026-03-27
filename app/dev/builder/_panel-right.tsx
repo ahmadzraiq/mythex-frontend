@@ -5,7 +5,7 @@
  *
  * Design tab sections (in render order):
  *   1.  Position & Size     — X/Y (DOM read-only), W/H (inline style.width/height + minWidth/minHeight:0)
- *   2.  Dimensions          — W/H mode: Hug (w-fit/h-fit) | Fill (w-full/h-full) | Fixed (removes fit/full)
+ *   2.  Dimensions          — W/H mode: Hug (w-fit/h-fit) | Fill (w-full/flex-1) | Screen (w-screen/h-screen) | Fixed (px/vh/vw)
  *   3.  Self Alignment      — self-auto/start/center/end/stretch/baseline (positioning within parent flex)
  *   4.  Transform           — Rotation (inline style.transform), Flip H/V (-scale-x/y-100 class)
  *   5.  Alignment           — 9-cell grid → items-* + justify-* (containers only)
@@ -49,6 +49,7 @@ import { updatePopup as updatePopupData } from '@/lib/builder/popup-data';
 import { usePopupStore } from '@/lib/sdui/popup-store';
 import { WorkflowBindButton, toHumanName } from './_workflow-canvas'; // used only for unbound slot picker
 import { ThemePanel } from './_theme-panel';
+import { AiChatPanel } from './_ai-chat-panel';
 import { PathPicker } from './_path-picker';
 import { ExprBuilder } from './_expr-builder';
 import { FieldWithBinding, BindingIcon, isBoundValue, type FormulaValue, closeAllEditors, registerEditorClose } from './_formula-panel';
@@ -133,6 +134,23 @@ function DesignTab({ node }: { node: SDUINode }) {
     () => (node.props as { style?: Record<string, string> })?.style ?? {},
     [node]
   );
+
+  // Derive current unit from inline style (px / vh / vw).
+  // Only relevant when the dimension is in Fixed mode (controlled by inline style).
+  const wUnit: 'px' | 'vh' | 'vw' = String(nodeStyle.width ?? '').endsWith('vh') ? 'vh' : String(nodeStyle.width ?? '').endsWith('vw') ? 'vw' : 'px';
+  const hUnit: 'px' | 'vh' | 'vw' = String(nodeStyle.height ?? '').endsWith('vh') ? 'vh' : String(nodeStyle.height ?? '').endsWith('vw') ? 'vw' : 'px';
+
+  // Remove height-mode tokens (h-fit, h-screen, any h-* class) AND flex-1 from a className.
+  // Used when switching between H modes so old mode tokens don't linger.
+  const clearHMode = (c: string) => removeTwToken(removeTwToken(c, 'h-'), 'flex-1');
+  // Remove only the discrete H-mode tokens (not arbitrary h-[N] classes) — used when
+  // setting a fixed pixel/vh/vw size via the number input so h-16 etc. are preserved.
+  const clearHModeTokens = (c: string) =>
+    removeTwToken(removeTwToken(removeTwToken(c, 'h-fit'), 'h-screen'), 'flex-1');
+  // Same helpers for W axis.
+  const clearWMode = (c: string) => removeTwToken(c, 'w-');
+  const clearWModeTokens = (c: string) =>
+    removeTwToken(removeTwToken(removeTwToken(c, 'w-fit'), 'w-full'), 'w-screen');
   const pendingStyleRef   = useRef<Record<string, string>>({});
   const pendingNodeIdRef  = useRef<string>(nodeId);
   const rafSyncRef        = useRef<number | null>(null);
@@ -497,8 +515,6 @@ function DesignTab({ node }: { node: SDUINode }) {
   const isContainer  = ['Box', 'VStack', 'HStack', 'Center', 'Grid', 'GridItem', 'Card', 'Pressable', 'Checkbox', 'CheckboxGroup', 'Radio', 'RadioGroup', 'Badge', 'Avatar', 'Fab', 'Skeleton', 'Alert', 'Link', 'Modal', 'ModalContent', 'ModalHeader', 'ModalBody', 'ModalFooter', 'Tooltip', 'AlertDialog', 'AlertDialogContent', 'AlertDialogHeader', 'AlertDialogBody', 'AlertDialogFooter', 'FormContainer'].includes(node.type);
   // CheckboxLabel / RadioLabel etc. are text nodes — show Typography section when selected
   const isTextNode   = ['Text', 'Heading', 'ButtonText', 'CheckboxLabel', 'RadioLabel', 'BadgeText', 'FabLabel', 'AvatarFallbackText', 'SkeletonText', 'AlertText', 'LinkText', 'TooltipText', 'ModalCloseButton'].includes(node.type);
-  // Leaf widgets: Gluestack components with no SDUI children — no Auto Layout / Alignment.
-  const isLeafWidget = ['Input', 'NavIcon', 'Image', 'NextImage', 'Textarea', 'Select', 'Slider', 'Progress', 'Spinner', 'DatePicker', 'TimePicker', 'DateTimePicker', 'ColorPicker', 'FileUpload', 'Iframe', 'SvgViewer', 'JsonViewer', 'Chart', 'QRCodeWidget', 'MarkdownViewer', 'GoogleMap', 'GoogleMapPlaces'].includes(node.type);
   // Padding/border-radius make sense for containers + button-like widgets, not raw text
   const showPadding  = !isTextNode;
   // Auto Layout (flex dir, gap) and Alignment only make sense for flex containers
@@ -702,29 +718,51 @@ function DesignTab({ node }: { node: SDUINode }) {
           <NumberInput label="Y" testId="input-pos-y" value={domMetrics.y} onChange={() => {}} />
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
-          <FieldWithBinding label="width" displayLabel="W" hint="e.g. 200px, 50%, auto" value={(nodeStyle.width ?? '') as FormulaValue} onChange={v => bindOrPatch('width', v, { minWidth: '0' })}>
-            <NumberInput label="W" testId="input-pos-w" value={(() => {
-              const clsW = parseTwArbitrary(cls, 'w-');
-              if (clsW !== null) return clsW;
-              const styleW = nodeStyle.width;
-              if (styleW) return parseInt(styleW) || domMetrics.w;
-              return domMetrics.w;
-            })()} onChange={px => {
-              patchStyle({ width: `${px}px`, minWidth: '0' });
-              patchCls(removeTwToken(removeTwToken(cls, 'w-fit'), 'w-full'));
-            }} />
+          <FieldWithBinding label="width" displayLabel="W" hint="e.g. 200px, 50vh, auto" value={(nodeStyle.width ?? '') as FormulaValue} onChange={v => bindOrPatch('width', v, { minWidth: '0' })}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <NumberInput label="W" testId="input-pos-w" value={(() => {
+                const clsW = parseTwArbitrary(cls, 'w-');
+                if (clsW !== null) return clsW;
+                const styleW = nodeStyle.width;
+                if (styleW) return parseInt(styleW) || domMetrics.w;
+                return domMetrics.w;
+              })()} onChange={px => {
+                patchStyle({ width: `${px}${wUnit}`, minWidth: '0' });
+                patchCls(clearWModeTokens(cls));
+              }} />
+              <div style={{ display: 'flex', gap: 2 }}>
+                {(['px', 'vh', 'vw'] as const).map(u => (
+                  <ToggleBtn key={u} active={wUnit === u} onClick={() => {
+                    const cur = parseInt(nodeStyle.width ?? '0') || domMetrics.w;
+                    patchStyle({ width: `${cur}${u}`, minWidth: '0' });
+                    patchCls(clearWModeTokens(cls));
+                  }} style={{ fontSize: 9, padding: '1px 5px', minWidth: 0 }}>{u}</ToggleBtn>
+                ))}
+              </div>
+            </div>
           </FieldWithBinding>
           <FieldWithBinding label="height" displayLabel="H" hint="e.g. 100px, 50vh, auto" value={(nodeStyle.height ?? '') as FormulaValue} onChange={v => bindOrPatch('height', v, { minHeight: '0' })}>
-            <NumberInput label="H" testId="input-pos-h" value={(() => {
-              const clsH = parseTwArbitrary(cls, 'h-');
-              if (clsH !== null) return clsH;
-              const styleH = nodeStyle.height;
-              if (styleH) return parseInt(styleH) || domMetrics.h;
-              return domMetrics.h;
-            })()} onChange={px => {
-              patchStyle({ height: `${px}px`, minHeight: '0' });
-              patchCls(removeTwToken(removeTwToken(cls, 'h-fit'), 'h-full'));
-            }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <NumberInput label="H" testId="input-pos-h" value={(() => {
+                const clsH = parseTwArbitrary(cls, 'h-');
+                if (clsH !== null) return clsH;
+                const styleH = nodeStyle.height;
+                if (styleH) return parseInt(styleH) || domMetrics.h;
+                return domMetrics.h;
+              })()} onChange={px => {
+                patchStyle({ height: `${px}${hUnit}`, minHeight: '0' });
+                patchCls(clearHModeTokens(cls));
+              }} />
+              <div style={{ display: 'flex', gap: 2 }}>
+                {(['px', 'vh', 'vw'] as const).map(u => (
+                  <ToggleBtn key={u} active={hUnit === u} onClick={() => {
+                    const cur = parseInt(nodeStyle.height ?? '0') || domMetrics.h;
+                    patchStyle({ height: `${cur}${u}`, minHeight: '0' });
+                    patchCls(clearHModeTokens(cls));
+                  }} style={{ fontSize: 9, padding: '1px 5px', minWidth: 0 }}>{u}</ToggleBtn>
+                ))}
+              </div>
+            </div>
           </FieldWithBinding>
         </div>
 
@@ -753,23 +791,24 @@ function DesignTab({ node }: { node: SDUINode }) {
       {/* ── W/H Resize modes ── */}
       <div style={SECTION_STYLE}>
         <SectionHeader title="Dimensions" />
-        <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
           {/* W mode — headerTitle puts bind icon beside "W" label */}
-          <FieldWithBinding label="wMode" hint="hug=w-fit, fill=w-full, fixed=''" headerTitle="W" value={(classFormulas?.['wMode'] as FormulaValue) ?? (cls.includes('w-fit') ? 'w-fit' : cls.includes('w-full') ? 'w-full' : '')} onChange={v => bindOrPatchCls('wMode', evaluated => {
-            if (evaluated === 'w-fit') { patchCls(replaceTwToken(removeTwToken(cls, 'w-'), 'w-', 'w-fit')); patchStyle({ width: '', minWidth: '' }); }
-            else if (evaluated === 'w-full') { patchCls(replaceTwToken(removeTwToken(cls, 'w-'), 'w-', 'w-full')); patchStyle({ width: '', minWidth: '' }); }
-            else { patchCls(removeTwToken(removeTwToken(cls, 'w-fit'), 'w-full')); }
+          <FieldWithBinding label="wMode" hint="hug=w-fit, fill=w-full, screen=w-screen, fixed=''" headerTitle="W" value={(classFormulas?.['wMode'] as FormulaValue) ?? (cls.includes('w-fit') ? 'w-fit' : cls.includes('w-screen') ? 'w-screen' : cls.includes('w-full') ? 'w-full' : '')} onChange={v => bindOrPatchCls('wMode', evaluated => {
+            if (evaluated === 'w-fit')    { patchCls(replaceTwToken(clearWMode(cls), 'w-', 'w-fit'));    patchStyle({ width: '', minWidth: '' }); }
+            else if (evaluated === 'w-full')   { patchCls(replaceTwToken(clearWMode(cls), 'w-', 'w-full'));   patchStyle({ width: '', minWidth: '' }); }
+            else if (evaluated === 'w-screen') { patchCls(replaceTwToken(clearWMode(cls), 'w-', 'w-screen')); patchStyle({ width: '', minWidth: '' }); }
+            else { patchCls(clearWModeTokens(cls)); }
           }, v)} expectedType="string">
-            <div style={{ display: 'flex', gap: 2 }}>
-              {([['Hug', 'w-fit'], ['Fill', 'w-full'], ['Fixed', '']] as const).map(([label, token]) => {
-                const active = token ? cls.includes(token) : (!cls.includes('w-fit') && !cls.includes('w-full'));
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+              {([['Hug', 'w-fit', 'Shrink to content (w-fit)'], ['Fill', 'w-full', 'Fill parent width (w-full)'], ['Screen', 'w-screen', 'Full viewport width (w-screen / 100vw)'], ['Fixed', '', 'Exact pixel / vh / vw size']] as const).map(([label, token, tooltip]) => {
+                const active = token ? cls.includes(token) : (!cls.includes('w-fit') && !cls.includes('w-full') && !cls.includes('w-screen'));
                 return (
-                  <ToggleBtn key={label} data-testid={`dim-w-${label.toLowerCase()}`} active={active} onClick={() => {
+                  <ToggleBtn key={label} data-testid={`dim-w-${label.toLowerCase()}`} active={active} title={tooltip} style={{ textAlign: 'center' }} onClick={() => {
                     if (token) {
-                      patchCls(replaceTwToken(removeTwToken(cls, 'w-'), 'w-', token));
+                      patchCls(replaceTwToken(clearWMode(cls), 'w-', token));
                       patchStyle({ width: '', minWidth: '' });
                     } else {
-                      patchCls(removeTwToken(removeTwToken(cls, 'w-fit'), 'w-full'));
+                      patchCls(clearWModeTokens(cls));
                     }
                   }}>
                     {label}
@@ -779,21 +818,29 @@ function DesignTab({ node }: { node: SDUINode }) {
             </div>
           </FieldWithBinding>
           {/* H mode — headerTitle puts bind icon beside "H" label */}
-          <FieldWithBinding label="hMode" hint="hug=h-fit, fill=h-full, fixed=''" headerTitle="H" value={(classFormulas?.['hMode'] as FormulaValue) ?? (cls.includes('h-fit') ? 'h-fit' : cls.includes('h-full') ? 'h-full' : '')} onChange={v => bindOrPatchCls('hMode', evaluated => {
-            if (evaluated === 'h-fit') { patchCls(replaceTwToken(removeTwToken(cls, 'h-'), 'h-', 'h-fit')); patchStyle({ height: '', minHeight: '' }); }
-            else if (evaluated === 'h-full') { patchCls(replaceTwToken(removeTwToken(cls, 'h-'), 'h-', 'h-full')); patchStyle({ height: '', minHeight: '' }); }
-            else { patchCls(removeTwToken(removeTwToken(cls, 'h-fit'), 'h-full')); }
+          {/* Fill = flex-1 (grow in flex parent, matches Figma behaviour)       */}
+          {/* Screen = h-screen (100vh, always resolves regardless of parent)    */}
+          <FieldWithBinding label="hMode" hint="hug=h-fit, fill=flex-1, screen=h-screen, fixed=''" headerTitle="H" value={(classFormulas?.['hMode'] as FormulaValue) ?? (cls.includes('h-fit') ? 'h-fit' : cls.includes('h-screen') ? 'h-screen' : cls.includes('flex-1') ? 'flex-1' : '')} onChange={v => bindOrPatchCls('hMode', evaluated => {
+            if (evaluated === 'h-fit')    { patchCls(replaceTwToken(clearHMode(cls), 'h-', 'h-fit'));    patchStyle({ height: '', minHeight: '' }); }
+            else if (evaluated === 'flex-1')   { patchCls(`${clearHMode(cls)} flex-1`.trim());                patchStyle({ height: '', minHeight: '' }); }
+            else if (evaluated === 'h-screen') { patchCls(replaceTwToken(clearHMode(cls), 'h-', 'h-screen')); patchStyle({ height: '', minHeight: '' }); }
+            else { patchCls(clearHModeTokens(cls)); }
           }, v)} expectedType="string">
-            <div style={{ display: 'flex', gap: 2 }}>
-              {([['Hug', 'h-fit'], ['Fill', 'h-full'], ['Fixed', '']] as const).map(([label, token]) => {
-                const active = token ? cls.includes(token) : (!cls.includes('h-fit') && !cls.includes('h-full'));
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+              {([['Hug', 'h-fit', 'Shrink to content (h-fit)'], ['Fill', 'flex-1', 'Fill parent flex space (flex-1) — like Figma Fill'], ['Screen', 'h-screen', 'Full viewport height (h-screen / 100vh)'], ['Fixed', '', 'Exact pixel / vh / vw size']] as const).map(([label, token, tooltip]) => {
+                const active = token
+                  ? (token === 'flex-1' ? cls.includes('flex-1') : cls.includes(token))
+                  : (!cls.includes('h-fit') && !cls.includes('h-screen') && !cls.includes('flex-1'));
                 return (
-                  <ToggleBtn key={label} data-testid={`dim-h-${label.toLowerCase()}`} active={active} onClick={() => {
-                    if (token) {
-                      patchCls(replaceTwToken(removeTwToken(cls, 'h-'), 'h-', token));
+                  <ToggleBtn key={label} data-testid={`dim-h-${label.toLowerCase()}`} active={active} title={tooltip} style={{ textAlign: 'center' }} onClick={() => {
+                    if (token === 'flex-1') {
+                      patchCls(`${clearHMode(cls)} flex-1`.trim());
+                      patchStyle({ height: '', minHeight: '' });
+                    } else if (token) {
+                      patchCls(replaceTwToken(clearHMode(cls), 'h-', token));
                       patchStyle({ height: '', minHeight: '' });
                     } else {
-                      patchCls(removeTwToken(removeTwToken(cls, 'h-fit'), 'h-full'));
+                      patchCls(clearHModeTokens(cls));
                     }
                   }}>
                     {label}
@@ -1710,8 +1757,9 @@ function PopupPropertiesSection({
 // ─── Main Panel ───────────────────────────────────────────────────────────────
 
 export default function PanelRight() {
-  const [tab, setTab] = useState<'design' | 'settings' | 'theme' | 'workflows' | 'json'>('design');
-  const { selectedIds, pageNodes, activePreviewStates, editingPopupId, editingPopupContent, editingPopupModel, exitPopupEdit } = useBuilderStore();
+  const [tab, setTab] = useState<'design' | 'theme' | 'workflows' | 'json'>('design');
+  const { selectedIds, pageNodes, activePreviewStates, editingPopupId, editingPopupContent, editingPopupModel, exitPopupEdit, aiMode } = useBuilderStore();
+
   const activePreviewState = activePreviewStates?.[0] ?? 'normal';
 
   // pageNodes is always the source of truth — popup content is swapped into
@@ -1746,22 +1794,13 @@ export default function PanelRight() {
     return findNode(searchNodes, selectedIds[0]);
   }, [selectedIds, searchNodes]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const TABS: Array<{ id: 'design' | 'settings' | 'theme' | 'workflows' | 'json'; label: string; icon: React.ReactNode }> = [
+  const TABS: Array<{ id: 'design' | 'theme' | 'workflows' | 'json'; label: string; icon: React.ReactNode }> = [
     {
       id: 'design',
       label: 'Design',
       icon: (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-        </svg>
-      ),
-    },
-    {
-      id: 'settings',
-      label: 'Settings',
-      icon: (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
         </svg>
       ),
     },
@@ -1807,6 +1846,11 @@ export default function PanelRight() {
     setPopupAllowStacking(popupModel?.allowStacking ?? false);
     setPopupProperties(popupModel?.properties ?? []);
   }, [editingPopupId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // All hooks are above — safe to early-return here
+  if (aiMode) {
+    return <AiChatPanel />;
+  }
 
   const patchPopupModel = (patch: Partial<typeof popupModel>) => {
     if (!popupModel) return;
@@ -1901,6 +1945,11 @@ export default function PanelRight() {
             </div>
           )}
 
+          {/* Specific section — component-specific settings at the top of the Design tab */}
+          {selectedNode && selectedIds.length === 1 && (
+            <SettingsTab node={selectedNode} pageNodes={searchNodes} />
+          )}
+
           {/* Design panel — selected node, OR popup root when nothing is explicitly selected */}
           {(() => {
             let designNode = selectedNode as SDUINode | null;
@@ -1914,17 +1963,6 @@ export default function PanelRight() {
             return <DesignTab node={designNode} />;
           })()}
         </div>
-      )}
-
-      {tab === 'settings' && (
-        <>
-          {!selectedNode && selectedIds.length <= 1 && !editingPopupId && (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4b5563', fontSize: 12, textAlign: 'center', padding: 16 }}>
-              Select a node to edit its settings
-            </div>
-          )}
-          {selectedNode && <SettingsTab node={selectedNode} pageNodes={searchNodes} />}
-        </>
       )}
 
       {tab === 'json' && (

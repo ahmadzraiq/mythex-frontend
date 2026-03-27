@@ -50,12 +50,9 @@ import { Avatar, AvatarImage, AvatarFallbackText } from '@/components/ui/avatar'
 import { ScrollView } from '@/components/ui/scroll-view';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 
-// Image
-import { Image as UIImage } from '@/components/ui/image';
-import { Icon } from '@/components/ui/icon';
 import { View } from '@/components/ui/view';
-import { NavIcon } from './icons';
 import { NextImage, HtmlContent, InputWithField } from './components';
+import IconifyIcon from './components/IconifyIcon';
 import LottiePlayer from './components/LottiePlayer';
 import Video from './components/Video';
 
@@ -156,8 +153,7 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   Button,
   ButtonText,
   ButtonSpinner,
-  NextImage,
-  Image: UIImage,
+  Image: NextImage,
   HtmlContent,
   SocialIcon,
   Link,
@@ -203,8 +199,7 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   SafeAreaView,
   // Additional components
   View,
-  Icon,
-  NavIcon,
+  Icon: IconifyIcon,
   LottiePlayer,
   Video,
   // SVG primitives — compose any SVG via JSON nodes

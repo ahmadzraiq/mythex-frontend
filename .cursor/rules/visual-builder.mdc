@@ -14,7 +14,7 @@ A Figma-like visual page builder that renders SDUI components directly in the sa
 | File | Purpose |
 |---|---|
 | `page.tsx` | Top-level layout: left panel + canvas + right panel. |
-| `_store.ts` | Zustand store: `pageNodes`, `selectedIds`, `hoveredId`, history (undo/redo), clipboard, locked/hidden sets. Exposes `window.__builderStore` for Playwright. Also exports `findNode`, `findParentNode`, `REQUIRED_PARENT`, `ALLOWED_CHILDREN`. Includes `directActionsMap` (non-workflowSteps actions from config, used by workflow canvas to resolve ActionRefs). |
+| `_store.ts` | Zustand store: `pageNodes`, `selectedIds`, `hoveredId`, history (undo/redo), clipboard, locked/hidden sets. Exposes `window.__builderStore` for Playwright. Also exports `findNode`, `findParentNode`, `REQUIRED_PARENT`, `ALLOWED_CHILDREN`. Includes `directActionsMap` (direct actions from config, used by workflow canvas to resolve ActionRefs). |
 | `_store-types.ts` | All TypeScript interfaces/types extracted from `_store.ts`: `GridOverlayConfig`, `ViewportSize`, `DataSourceConfig`, `PageMeta`, `BuilderPage`, `WorkflowMeta`, `WorkflowCanvasTarget`, `BuilderStore`. Import from here, not `_store.ts`, when only types are needed. |
 | `_store-helpers.ts` | Tree helpers extracted from `_store.ts`: `ALLOWED_CHILDREN`, `REQUIRED_PARENT`, `findNode`, `findParentNode`, `hasFormContainerAncestor`, and all node-path utilities. |
 | `_canvas.tsx` | Renders the page frame and SDUI node tree in `builderMode`. Handles drop targets, drag-and-drop reordering, click-to-select. |
@@ -32,7 +32,7 @@ A Figma-like visual page builder that renders SDUI components directly in the sa
 | `e2e/panel-interactive.spec.ts` | Exhaustive right-panel tests for Pressable-based buttons (BP-00 to BP-44+) and Content section (PI-01..03). Supersedes deleted `button-panel.spec.ts`. |
 | `e2e/panel-form.spec.ts` | Right-panel tests for Input, Textarea, Checkbox, Toggle, Switch, DatePicker, TimePicker, DateTimePicker, ColorPicker, FileUpload (PF-01..31). |
 | `e2e/panel-display.spec.ts` | Right-panel tests for Heading, Badge, Avatar, Chip, StarRating, Breadcrumbs, Tabs, Stepper, Pagination, Accordion, JsonViewer (PD-01..26). |
-| `e2e/panel-media.spec.ts` | Right-panel tests for NextImage and NavIcon/Icon Tap (PM-01..10). |
+| `e2e/panel-media.spec.ts` | Right-panel tests for Image and Icon/Icon Tap (PM-01..10). |
 | `e2e/panel-layout.spec.ts` | Right-panel tests for Card, Center, Grid, Link, ScrollView, Table, Iframe, SvgViewer, Chart, MarkdownViewer, QRCode, GoogleMap (PL-01..23). |
 | `e2e/panel-overlays.spec.ts` | Right-panel tests for Modal, Tooltip, AlertDialog — isContainer + REQUIRED_PARENT guards (PO-01..09). |
 | `e2e/panel-charts.spec.ts` | Chart (bar/line/pie), QRCodeWidget, MarkdownViewer, GoogleMap, GoogleMapPlaces — isLeafWidget + render checks (PC-01..14). |
@@ -67,7 +67,7 @@ Components render directly in the React tree. The canvas uses a `data-builder-pa
 
 ## Palette — Primitive Components (`_panel-left.tsx`)
 
-All components in the palette are **primitives**: they use `Box`, `Text`, `Pressable`, and `NavIcon` as building blocks, giving users full `className`-based control over styling. Gluestack compound components (Slider, Select, etc.) are used when no plain-primitive equivalent exists.
+All components in the palette are **primitives**: they use `Box`, `Text`, `Pressable`, and `Icon` as building blocks, giving users full `className`-based control over styling. Gluestack compound components (Slider, Select, etc.) are used when no plain-primitive equivalent exists.
 
 **Groups and key `defaultNode` patterns:**
 
@@ -90,11 +90,11 @@ All components in the palette are **primitives**: they use `Box`, `Text`, `Press
 | Buttons | Btn Destructive | `Pressable` + `Text` child | `bg-destructive text-destructive-foreground` |
 | Buttons | Btn Outline | `Pressable` + `Text` child | `border border-primary` |
 | Buttons | Btn Ghost | `Pressable` + `Text` child | No bg, no border |
-| Buttons | Btn + Icon L | `Pressable` + `NavIcon` + `Text` | Icon left of label |
-| Buttons | Btn + Icon R | `Pressable` + `Text` + `NavIcon` | Icon right of label |
-| Buttons | Icon Btn | `Pressable` + `NavIcon` | Square icon button |
-| Buttons | Icon Btn Round | `Pressable` + `NavIcon` | Circular icon button |
-| Buttons | Link Btn | `Pressable` + `Text` + `NavIcon` | Underlined link-style |
+| Buttons | Btn + Icon L | `Pressable` + `Icon` + `Text` | Icon left of label |
+| Buttons | Btn + Icon R | `Pressable` + `Text` + `Icon` | Icon right of label |
+| Buttons | Icon Btn | `Pressable` + `Icon` | Square icon button |
+| Buttons | Icon Btn Round | `Pressable` + `Icon` | Circular icon button |
+| Buttons | Link Btn | `Pressable` + `Text` + `Icon` | Underlined link-style |
 | Buttons | Pressable | `Pressable` | Bare interactive container |
 | Buttons | FAB | `Fab` + `FabIcon` + `FabLabel` | Floating action button; `isContainer` |
 | Form | Input | `Input` | `InputWithField` composite; supports `forwardRef`; `isLeafWidget` |
@@ -107,14 +107,14 @@ All components in the palette are **primitives**: they use `Box`, `Text`, `Press
 | Form | Progress | `Progress` + `ProgressFilledTrack` | Progress bar; `isLeafWidget` |
 | Form | Toggle | `Pressable` + `Box` thumb | Primitive toggle (track + thumb); `isContainer` |
 | Form | Checkbox | `Checkbox` + `CheckboxIndicator` + `CheckboxLabel` | Checkbox; `isContainer` |
-| Media | Image | `NextImage` | Custom `img` wrapper; `isLeafWidget` |
-| Media | Icon | `NavIcon` | Lucide icon; `forwardRef` via `span`; `isLeafWidget` |
-| Media | Icon Tap | `Pressable` + `NavIcon` | Icon in a circle |
+| Media | Image | `Image` | Custom `img` wrapper; `isLeafWidget` |
+| Media | Icon | `Icon` | Iconify icon; `forwardRef` via `span`; `isLeafWidget` |
+| Media | Icon Tap | `Pressable` + `Icon` | Icon in a circle |
 | Display | Badge | `Badge` + `BadgeText` child | `isContainer` |
 | Display | Avatar | `Avatar` + `AvatarFallbackText` child | `isContainer` |
 | Display | Spinner | `Spinner` | Animated loading indicator; `isLeafWidget` |
 | Display | Skeleton | `Skeleton` + `SkeletonText` | Loading placeholder; `isContainer` |
-| Display | Alert | `Alert` + `NavIcon` + `AlertText` | Informational callout; `isContainer` |
+| Display | Alert | `Alert` + `Icon` + `AlertText` | Informational callout; `isContainer` |
 | Form | Switch | `Pressable` (track) + `Box` (thumb) | Primitive toggle; fully styleable sub-parts; `isContainer` |
 | Form | Switch On | `Pressable` + `Box` (right) | Same but active state |
 | Form | DatePicker | `DatePicker` | Native `<input type="date">`; `isLeafWidget` |
@@ -124,16 +124,16 @@ All components in the palette are **primitives**: they use `Box`, `Text`, `Press
 | Form | File Upload | `FileUpload` | Dashed drop zone + hidden file input; `isLeafWidget` |
 | Form | Autocomplete | `Box` + `Input` + dropdown `Box` | Primitive search-with-dropdown; `isContainer` |
 | Layout | ScrollView | `Box` `overflow-auto` | Scrollable container; `isContainer` |
-| Composite | Chip | `Pressable` + `Text` + `NavIcon X` | Removable tag; `isContainer` |
+| Composite | Chip | `Pressable` + `Text` + `Icon X` | Removable tag; `isContainer` |
 | Composite | Tag | `Box` `rounded-full` + `Text` | Static tag; `isContainer` |
 | Composite | Tabs | `Box` + tab bar + content | `isContainer` |
 | Composite | Stepper | `Box` + circle nodes + connectors | Step progress; `isContainer` |
 | Composite | Pagination | `Box` + Prev/Next + pages | Page nav bar; `isContainer` |
-| Composite | Star Rating | `Box` + 5× `NavIcon Star` | Rating display; `isContainer` |
+| Composite | Star Rating | `Box` + 5× `Icon Star` | Rating display; `isContainer` |
 | Composite | Breadcrumbs | `Box` + `Text` + separators | Nav path; `isContainer` |
 | Composite | Accordion | `Box` + `Pressable` header + body | Collapsible section; `isContainer` |
 | Composite | Table | `Box` + header row + data rows | Flex-based table; `isContainer` |
-| Composite | Snackbar | `Box` + `NavIcon` + `Text` | Bottom notification bar; `isContainer` |
+| Composite | Snackbar | `Box` + `Icon` + `Text` | Bottom notification bar; `isContainer` |
 | Overlays | Modal | `Modal` (`isOpen: true`) + backdrop + content | Gluestack portal dialog; `isContainer` |
 | Overlays | Tooltip | `Tooltip` (`isOpen: true`) + trigger + content | Hover popup; `isContainer` |
 | Overlays | Alert Dialog | `AlertDialog` (`isOpen: true`) + backdrop + content | Confirmation dialog; `isContainer` |
@@ -146,9 +146,9 @@ All components in the palette are **primitives**: they use `Box`, `Text`, `Press
 | Data & Media | Google Map | `GoogleMap` | Embedded map; placeholder without `apiKey`; `isLeafWidget` |
 | Data & Media | Places Search | `GoogleMapPlaces` | Places search input; `isLeafWidget` |
 
-**Primitive-first rule:** Every component that CAN be composed from `Box`, `Pressable`, `Text`, `NavIcon` MUST be. Exceptions: Gluestack overlay compounds (Modal, Tooltip, AlertDialog) manage DOM portals; HTML input wrappers (DatePicker, ColorPicker, etc.) wrap native elements for semantic/accessibility reasons.
+**Primitive-first rule:** Every component that CAN be composed from `Box`, `Pressable`, `Text`, `Icon` MUST be. Exceptions: Gluestack overlay compounds (Modal, Tooltip, AlertDialog) manage DOM portals; HTML input wrappers (DatePicker, ColorPicker, etc.) wrap native elements for semantic/accessibility reasons.
 
-**Rule:** When adding a new palette entry, prefer `Pressable`/`Box`/`Text`/`NavIcon` primitives. Use Gluestack compound components only when no primitive equivalent exists. All new Gluestack compound sub-components need `REQUIRED_PARENT` / `ALLOWED_CHILDREN` entries in `_store.ts`.
+**Rule:** When adding a new palette entry, prefer `Pressable`/`Box`/`Text`/`Icon` primitives. Use Gluestack compound components only when no primitive equivalent exists. All new Gluestack compound sub-components need `REQUIRED_PARENT` / `ALLOWED_CHILDREN` entries in `_store.ts`.
 
 ---
 
@@ -173,7 +173,7 @@ Three booleans control which design sections are shown:
 |---|---|---|
 | `isContainer` | `Box`, `VStack`, `HStack`, `Center`, `Grid`, `GridItem`, `Card`, `Pressable`, `Checkbox`, `Radio`, `RadioGroup`, `Badge`, `Avatar`, `Fab`, `Skeleton`, `Alert`, `Link` | Alignment grid, Auto Layout section |
 | `isTextNode` | `Text`, `Heading`, `ButtonText`, `BadgeText`, `AvatarFallbackText`, `CheckboxLabel`, `RadioLabel`, `FabLabel`, `SkeletonText`, `AlertText`, `LinkText` | Typography section |
-| `isLeafWidget` | `Input`, `NavIcon`, `Image`, `NextImage`, `Textarea`, `Select`, `Slider`, `Progress`, `Spinner` | Hides Auto Layout + Alignment |
+| `isLeafWidget` | `Input`, `Icon`, `Image`, `Textarea`, `Select`, `Slider`, `Progress`, `Spinner` | Hides Auto Layout + Alignment |
 
 **Content section:** shown for `isTextNode` nodes (edits `node.text`) and for `isContainer` nodes that have a `Text` or `Heading` child (edits the first such child's `text`).
 
@@ -190,27 +190,15 @@ Wraps a plain `<img>` tag (NOT `next/image`) inside a `div`, using `React.forwar
 - **Fill mode** — wraps in `position: relative; width: 100%; height: 100%` div when `fill` prop is true.
 - **Default mode** — `inline-block; overflow: hidden; style={width, height}` div with `img` inside.
 
-**Rule:** Never use Gluestack's `Image` component (`UIImage`) in the builder palette — it uses `source={{ uri }}` (React Native API), applies `style={{ height: 'revert-layer' }}` conflicting with Tailwind, and cannot forward refs. Always use `NextImage`.
+**Rule:** Never use Gluestack's internal `Image` component (`UIImage`) in the builder palette — it uses `source={{ uri }}` (React Native API), applies `style={{ height: 'revert-layer' }}` conflicting with Tailwind, and cannot forward refs. Always use the `Image` type (maps to the custom `NextImage` wrapper).
 
 ---
 
-## `NavIcon` forwardRef (`lib/sdui/icons.tsx`)
+## `Icon` forwardRef (`lib/sdui/components/IconifyIcon.tsx`)
 
-`NavIcon` is wrapped in `React.forwardRef` using an `inline-flex span` as the ref target:
+`Icon` (backed by `IconifyIcon`) is wrapped in `React.forwardRef` using an `inline-flex span` as the ref target. This ensures `data-builder-id` is set on the span so icons are selectable/resizable in the builder.
 
-```tsx
-export const NavIcon = React.forwardRef<HTMLSpanElement, NavIconProps>(
-  function NavIcon(props, ref) {
-    return (
-      <span ref={ref} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-        <IconComponent ... />
-      </span>
-    );
-  }
-);
-```
-
-This ensures `data-builder-id` is set on the span so icons are selectable/resizable in the builder.
+Icons use Iconify `set:name` format (e.g. `"lucide:search"`, `"heroicons:star"`). The `size` prop is a number (pixels); `color` accepts any CSS color string or `"currentColor"`.
 
 ---
 
@@ -675,7 +663,7 @@ test.describe('History (Undo / Redo)', () => {
 - `PI-01`–`PI-03`: Content section for Pressable with Text children.
 - `PF-01`–`PF-16` (in `panel-form.spec.ts`): Input, Textarea, Checkbox, Toggle.
 - `PD-01`–`PD-11` (in `panel-display.spec.ts`): Heading, Badge, Avatar.
-- `PM-01`–`PM-10` (in `panel-media.spec.ts`): NextImage (placeholder, resize, src), NavIcon (size/color), Icon Tap.
+- `PM-01`–`PM-10` (in `panel-media.spec.ts`): Image (placeholder, resize, src), Icon (size/color), Icon Tap.
 - `T1`–`T11`: Dimension, rotate, NumberInput, moveNode, drop zone, opacity.
 - `U1`–`U14`: Alignment, flip, auto layout, gap, clip, stroke, typography, DOM visual update.
 - `V1`–`V8`: Color pickers, visibility with gap, section visibility per node type, self-alignment.
@@ -750,50 +738,49 @@ The **capture overlay** gets `pointerEvents: 'none'` while `editingId` is set, s
 
 ---
 
-### 13. Hug / Fill does nothing when node was previously resized
+### 13. Dimensions Panel — Four H/W Modes (Hug / Fill / Screen / Fixed)
 
-**Root cause:** Clicking Hug (`w-fit`) or Fill (`w-full`) only patched `className`. But if the node was resized via drag handles or the W/H number input, it has `style.width: "100px"` as an inline style. Inline styles have higher CSS specificity than any class, so `w-full` / `w-fit` were silently ignored.
+**Width modes:**
+- **Hug** → `w-fit` (shrink to content)
+- **Fill** → `w-full` (100% of parent — works because block elements expand horizontally naturally)
+- **Screen** → `w-screen` (100vw — always resolves regardless of parent)
+- **Fixed** → inline `style.width` in px/vh/vw (unit switcher: [px][vh][vw] buttons in the Position & Size section)
 
-**Fix:** Hug and Fill click handlers now call `patchStyle({ width: '', minWidth: '' })` (or `height/minHeight`) in addition to updating the className. Fixed mode intentionally does NOT clear the inline style — it preserves the user's explicit size.
+**Height modes:**
+- **Hug** → `h-fit` (shrink to content)
+- **Fill** → `flex-1` (grow to fill remaining space in flex parent — **matches Figma Fill behaviour**)
+- **Screen** → `h-screen` (100vh — always resolves regardless of parent; use for hero, modal overlay, full-page sections)
+- **Fixed** → inline `style.height` in px/vh/vw
 
-**Rule:** Any time you add a layout-mode class (`w-fit`, `w-full`, `h-fit`, `h-full`) you must also clear the corresponding inline style property. Otherwise the inline style wins.
+**Why Fill is `flex-1` not `h-full`:**
+`h-full` (height: 100%) only works when every ancestor has an explicit pixel/viewport height. `flex-1` works in any flex container (which all layout Boxes already are by default). This matches exactly how Figma's Fill works — "give me the leftover space".
 
----
-
-### 13b. Fill/Hug stays active after resizing via panel input or canvas handles
-
-**Root cause:** When the user types a new value in the W or H input (Position & Size section), or drags a canvas resize handle, the code calls `patchStyle({ width: '${px}px' })` — which sets an inline style overriding the `w-full`/`w-fit` class visually. BUT the class is NOT removed from `className`, so the Dimensions section still shows "Fill" or "Hug" as active.
-
-**Fix 1 — Right panel W/H inputs (`_panel-right.tsx`):** After calling `patchStyle`, also call `patchCls` to remove the fill/hug tokens:
+**Helpers defined near top of the Design panel render function (`_panel-right.tsx`):**
 ```tsx
-// W input
-onChange={px => {
-  patchStyle({ width: `${px}px`, minWidth: '0' });
-  patchCls(removeTwToken(removeTwToken(cls, 'w-fit'), 'w-full'));
-}}
-// H input
-onChange={px => {
-  patchStyle({ height: `${px}px`, minHeight: '0' });
-  patchCls(removeTwToken(removeTwToken(cls, 'h-fit'), 'h-full'));
-}}
+const clearHMode      = (c: string) => removeTwToken(removeTwToken(c, 'h-'), 'flex-1');
+const clearHModeTokens = (c: string) => removeTwToken(removeTwToken(removeTwToken(c, 'h-fit'), 'h-screen'), 'flex-1');
+const clearWMode      = (c: string) => removeTwToken(c, 'w-');
+const clearWModeTokens = (c: string) => removeTwToken(removeTwToken(removeTwToken(c, 'w-fit'), 'w-full'), 'w-screen');
 ```
 
-**Fix 2 — Canvas resize handles (`_canvas.tsx` `onUp`):** After committing the style, also patch className for the resized axis:
+- `clearHMode` — used when switching H modes (removes ALL h-* + flex-1 so old mode doesn't persist)
+- `clearHModeTokens` — used when setting a fixed pixel/vh/vw size (only removes mode tokens, preserves arbitrary h-[N] classes)
+- Same pattern for W axis.
+
+**Hug / Fill / Screen does nothing when previously resized:**
+Inline styles have higher CSS specificity than classes. When switching to any class-based mode, clear the inline style first:
 ```tsx
-const existingCls = (node?.props as { className?: string })?.className ?? '';
-let newCls = existingCls;
-if (handle.includes('e') || handle.includes('w')) {
-  newCls = removeTwToken(removeTwToken(newCls, 'w-fit'), 'w-full');
-}
-if (handle.includes('n') || handle.includes('s')) {
-  newCls = removeTwToken(removeTwToken(newCls, 'h-fit'), 'h-full');
-}
-if (newCls !== existingCls) {
-  useBuilderStore.getState().patchProp(id, 'props.className', newCls);
-}
+patchCls(`${clearHMode(cls)} flex-1`.trim());
+patchStyle({ height: '', minHeight: '' }); // must clear inline style
 ```
 
-**Rule:** Whenever a pixel size is explicitly set (via input or drag handle), the corresponding `w-fit`/`w-full`/`h-fit`/`h-full` class MUST be removed so the Dimensions panel reflects Fixed mode. Symmetrically, when switching to Hug/Fill, the inline style must be cleared (§13 above).
+**Fixed stays active after switching to Fill/Hug/Screen:**
+When a pixel/vh/vw size is set (via input or drag handle), remove all mode tokens so the panel reflects Fixed mode:
+- W input: `patchCls(clearWModeTokens(cls))`
+- H input: `patchCls(clearHModeTokens(cls))`
+- Canvas resize handles: also remove `flex-1` and `w-screen`/`h-screen` alongside `w-fit`/`h-fit`
+
+**Rule:** Any time you add a class-based mode (`flex-1`, `h-screen`, `h-fit`, `w-full`, etc.) you MUST also clear the inline style. Any time you set a fixed pixel/vh/vw size, you MUST also remove all mode tokens from className.
 
 ---
 
@@ -1189,7 +1176,7 @@ if (REQUIRED_PARENT[node.type]) {
   if (!newParent || newParent.type !== REQUIRED_PARENT[node.type]) return s;
 }
 // Parent only accepts specific child types
-const ALLOWED: Record<string, Set<string>> = { Button: new Set(['ButtonText', 'NavIcon']) };
+const ALLOWED: Record<string, Set<string>> = { Button: new Set(['ButtonText', 'Icon']) };
 if (newParentId) {
   const newParent = findNode(s.pageNodes, newParentId);
   if (newParent && ALLOWED[newParent.type] && !ALLOWED[newParent.type].has(node.type)) return s;
@@ -1346,7 +1333,7 @@ nodeEl.style.top  = `${liveTop}px`;
 ```ts
 const isContainer  = ['Box', 'VStack', 'HStack', 'Pressable'].includes(node.type);
 const isTextNode   = ['Text', 'Heading', 'ButtonText'].includes(node.type);
-const isLeafWidget = ['Button', 'Input', 'Switch', 'Checkbox', 'NavIcon', 'Image'].includes(node.type);
+const isLeafWidget = ['Button', 'Input', 'Switch', 'Checkbox', 'Icon', 'Image'].includes(node.type);
 const showPadding  = !isTextNode;
 const showLayout   = isContainer;  // Auto Layout + Alignment sections
 ```
@@ -2609,10 +2596,10 @@ workflowEntries = Object.entries(rawActionsObj)
 
 **Problem:** A workflow step serialized as `{ "action": "uuid" }` (ActionRef) previously always deserialized to `type: "runProjectWorkflow"` ("Call workflow") even when the UUID pointed to a direct `graphql` or `fetch` action — making the canvas show the wrong type and hiding the mutation config.
 
-**Root cause:** The config API only sent `workflowSteps` actions to the builder. `deserializeStep` had no way to know the real type of the referenced UUID.
+**Root cause:** The config API only sent named workflows to the builder. `deserializeStep` had no way to know the real type of the referenced UUID.
 
 **Fix:**
-- `GET /api/builder/config` now also returns `directActions` — a map of all non-`workflowSteps` actions keyed by UUID (graphql, fetch, navigate, etc.)
+- `GET /api/builder/config` now also returns `directActions` — a map of all direct actions keyed by UUID (graphql, fetch, navigate, etc.)
 - `_store.ts` stores this as `directActionsMap: Record<string, Record<string, unknown>>`
 - `deserializeStep(raw, id, directActionsMap?)` — when it encounters `{ "action": "uuid" }` and the UUID is in `directActionsMap`, it **inlines the action's type and config** into the step so the canvas renders it as a `graphql` step (or whichever real type it is)
 - `serializeStep` checks `step._actionRef`: if set, writes back `{ "action": "uuid" }` to keep the JSON clean
@@ -2625,7 +2612,7 @@ _actionRef?: string;
 
 **Rule:** Never assume `{ "action": "uuid" }` always means "Call workflow". After this fix, the canvas displays the step's real type. When saving, `serializeStep` preserves the compact ActionRef format.
 
-**Adding new direct action types to the API:** If you add actions to `config/actions/*.json`, import the file in `app/api/builder/config/route.ts` and include it in `allActions`. Non-`workflowSteps` entries are automatically included in `directActions`.
+**Adding new direct action types to the API:** If you add actions to `config/actions/*.json`, import the file in `app/api/builder/config/route.ts` and include it in `allActions`. Non-workflow entries (graphql, fetch, navigateTo, etc.) are automatically included in `directActions`.
 
 ---
 

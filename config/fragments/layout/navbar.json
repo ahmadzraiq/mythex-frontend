@@ -36,7 +36,7 @@
                   ],
                   "children": [
                     {
-                      "type": "NextImage",
+                      "type": "Image",
                       "id": "navbar-logo-image",
                       "props": {
                         "src": "/vendure.svg",
@@ -143,18 +143,18 @@
                           ],
                           "children": [
                             {
-                              "type": "NavIcon",
+                              "type": "Icon",
                               "props": {
-                                "icon": "Sun",
+                                "icon": "lucide:sun",
                                 "size": 18,
                                 "className": "text-[var(--theme-header-text)]"
                               },
                               "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] === 'dark'"
                             },
                             {
-                              "type": "NavIcon",
+                              "type": "Icon",
                               "props": {
-                                "icon": "Moon",
+                                "icon": "lucide:moon",
                                 "size": 18,
                                 "className": "text-[var(--theme-header-text)]"
                               },
@@ -181,9 +181,9 @@
                               ],
                               "children": [
                                 {
-                                  "type": "NavIcon",
+                                  "type": "Icon",
                                   "props": {
-                                    "icon": "Sun",
+                                    "icon": "lucide:sun",
                                     "size": 16,
                                     "className": "text-[var(--theme-header-text)]"
                                   }
@@ -217,9 +217,9 @@
                               ],
                               "children": [
                                 {
-                                  "type": "NavIcon",
+                                  "type": "Icon",
                                   "props": {
-                                    "icon": "Moon",
+                                    "icon": "lucide:moon",
                                     "size": 16,
                                     "className": "text-[var(--theme-header-text)]"
                                   }
@@ -253,9 +253,9 @@
                               ],
                               "children": [
                                 {
-                                  "type": "NavIcon",
+                                  "type": "Icon",
                                   "props": {
-                                    "icon": "Monitor",
+                                    "icon": "lucide:monitor",
                                     "size": 16,
                                     "className": "text-[var(--theme-header-text)]"
                                   }
@@ -299,9 +299,9 @@
                           ],
                           "children": [
                             {
-                              "type": "NavIcon",
+                              "type": "Icon",
                               "props": {
-                                "icon": "ShoppingBag",
+                                "icon": "lucide:shopping-bag",
                                 "size": 18,
                                 "className": "text-[var(--theme-header-text)]"
                               }
@@ -373,9 +373,9 @@
                               ],
                               "children": [
                                 {
-                                  "type": "NavIcon",
+                                  "type": "Icon",
                                   "props": {
-                                    "icon": "User",
+                                    "icon": "lucide:user",
                                     "size": 16,
                                     "className": "text-[var(--theme-header-text)]"
                                   }

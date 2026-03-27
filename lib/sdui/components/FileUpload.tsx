@@ -1,7 +1,11 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { Upload } from 'lucide-react-native';
+const UploadIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+  </svg>
+);
 
 interface FileUploadProps {
   label?: string;
@@ -42,7 +46,7 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
               : 'border-gray-300 bg-gray-50 hover:border-primary hover:bg-primary/5 dark:border-gray-600 dark:bg-gray-900'
           }`}
         >
-          <Upload size={24} color="#6b7280" />
+          <UploadIcon />
           <span className="text-sm text-gray-500 dark:text-gray-400">
             {filename ?? label}
           </span>

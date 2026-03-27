@@ -22,9 +22,9 @@
             },
             "children": [
               {
-                "type": "NavIcon",
+                "type": "Icon",
                 "props": {
-                  "icon": "Globe",
+                  "icon": "lucide:globe",
                   "className": "h-8 w-8 text-[#7c3aed]"
                 }
               }

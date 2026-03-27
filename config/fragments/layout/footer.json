@@ -160,7 +160,7 @@
                   "text": "Powered by"
                 },
                 {
-                  "type": "NextImage",
+                  "type": "Image",
                   "props": {
                     "src": "/vendure.svg",
                     "alt": "Vendure",
@@ -177,7 +177,7 @@
                   "text": "&"
                 },
                 {
-                  "type": "NextImage",
+                  "type": "Image",
                   "props": {
                     "src": "/next.svg",
                     "alt": "Next.js",

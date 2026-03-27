@@ -5,7 +5,7 @@
  * backend stores in Project.config (same format as serializeBuilderState).
  *
  * Pages     → one BuilderPage per screen in config/root.ts
- * Workflows → all workflowSteps actions from config/actions/*.json
+ * Workflows → all named workflow actions (those with a steps array) from config/actions/*.json
  * Variables → config/variables.json
  * DataSrcs  → config/datasources.json
  * Theme     → config/theme.json color overrides

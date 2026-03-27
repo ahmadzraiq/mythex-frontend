@@ -148,7 +148,7 @@
                             },
                             "children": [
                               {
-                                "type": "NextImage",
+                                "type": "Image",
                                 "props": {
                                   "src": "{{context.item.data.productAsset.preview}}",
                                   "alt": "{{context.item.data.productName}}",
@@ -241,9 +241,9 @@
                         },
                         "children": [
                           {
-                            "type": "NavIcon",
+                            "type": "Icon",
                             "props": {
-                              "icon": "Check",
+                              "icon": "lucide:check",
                               "size": "sm",
                               "className": "text-[var(--theme-foreground)]"
                             }
@@ -279,9 +279,9 @@
                         },
                         "children": [
                           {
-                            "type": "NavIcon",
+                            "type": "Icon",
                             "props": {
-                              "icon": "CircleDollarSign",
+                              "icon": "lucide:circle-dollar-sign",
                               "size": "sm",
                               "className": "text-[var(--theme-foreground)]"
                             }
@@ -317,9 +317,9 @@
                         },
                         "children": [
                           {
-                            "type": "NavIcon",
+                            "type": "Icon",
                             "props": {
-                              "icon": "Zap",
+                              "icon": "lucide:zap",
                               "size": "sm",
                               "className": "text-[var(--theme-foreground)]"
                             }

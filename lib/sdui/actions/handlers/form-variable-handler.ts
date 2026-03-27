@@ -109,7 +109,7 @@ export const resetFormHandler: (ctx: ActionHandlerContext) => (actionDef: Action
   };
 
 /** submitForm — superseded by FormContainer.doSubmit; kept as no-op for backward compat with
- * any JSON that still references "type": "submitForm" directly in a workflowSteps step. */
+ * any JSON that still references "type": "submitForm" directly in a workflow step. */
 export const submitFormHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
   (ctx) => async (actionDef) => {
     await setFormStateHandler(ctx)({ type: 'setFormState', isSubmitting: true });

@@ -16,7 +16,7 @@
       },
       "children": [
         {
-          "type": "NextImage",
+          "type": "Image",
           "props": {
             "src": "{{context.item.data.productAsset.preview}}",
             "alt": "{{context.item.data.productName}}",

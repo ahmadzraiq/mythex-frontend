@@ -19,7 +19,6 @@
   },
   "10b4a7ed-330e-4827-951f-5a0535458f2e": {
     "name": "clearFacets",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -37,7 +36,6 @@
   },
   "b7236203-c516-4e10-8ff7-b4afb84ce314": {
     "name": "toggleFacet",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -57,7 +55,6 @@
   },
   "25891c7a-a8fa-42ea-a028-d7405419f9d3": {
     "name": "closeSortMenu",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -72,7 +69,6 @@
   },
   "4d563f4b-2df1-4231-94b1-3e77b84b000a": {
     "name": "toggleSortMenu",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -86,7 +82,6 @@
   },
   "a24be295-33bc-4961-8114-a35e5f3ede70": {
     "name": "sortCollectionByNameAsc",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -128,7 +123,6 @@
   },
   "340aee01-272a-470c-8865-5500192ef4fa": {
     "name": "sortCollectionByNameDesc",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -170,7 +164,6 @@
   },
   "608a5750-a7a9-4504-bfb2-5bd165105e98": {
     "name": "sortCollectionByPriceAsc",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -212,7 +205,6 @@
   },
   "667e6b12-a953-4635-967b-7ef4e0779cbe": {
     "name": "sortCollectionByPriceDesc",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -254,7 +246,6 @@
   },
   "7b672abf-f276-4e2b-a1e1-cb32b528fe0b": {
     "name": "sortSearchByNameAsc",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -296,7 +287,6 @@
   },
   "024add72-4b6e-45d9-9133-7e31eaa13a49": {
     "name": "sortSearchByNameDesc",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -338,7 +328,6 @@
   },
   "c9de2993-25a7-4515-bfc6-d8361c1e1188": {
     "name": "sortSearchByPriceAsc",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -380,7 +369,6 @@
   },
   "767a96c7-1506-43d3-b781-f36b95f14bc1": {
     "name": "sortSearchByPriceDesc",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -422,7 +410,6 @@
   },
   "5f0b09fc-9aed-4a27-a60d-d44a3b5a37c9": {
     "name": "collectionPrevPage",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -450,7 +437,6 @@
   },
   "184bea54-8bde-4fd0-a4fd-e3f6766d99b8": {
     "name": "collectionGoToPage",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -474,7 +460,6 @@
   },
   "585677d0-57d6-4868-b6f9-f1adf2d3215e": {
     "name": "collectionNextPage",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -502,7 +487,6 @@
   },
   "e3a8111d-44c3-4461-b71c-698d1785bb52": {
     "name": "searchPrevPage",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -530,7 +514,6 @@
   },
   "182725e0-e189-4bf1-ac8f-572221061727": {
     "name": "searchGoToPage",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -558,7 +541,6 @@
   },
   "091be296-4048-45a1-a65d-8205c636215b": {
     "name": "searchNextPage",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {

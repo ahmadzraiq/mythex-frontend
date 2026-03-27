@@ -20,7 +20,6 @@
   },
   "aa100001-0000-0000-0000-000000000001": {
     "name": "submitAddToCart",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -59,7 +58,6 @@
   },
   "aa100002-0000-0000-0000-000000000002": {
     "name": "submitAddToCartFromCard",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -91,7 +89,6 @@
   },
   "aa100003-0000-0000-0000-000000000003": {
     "name": "submitRemoveFromCart",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -142,7 +139,6 @@
   },
   "aa100004-0000-0000-0000-000000000004": {
     "name": "submitDecrementCartItem",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -176,7 +172,6 @@
   },
   "aa100005-0000-0000-0000-000000000005": {
     "name": "submitIncrementCartItem",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -207,7 +202,6 @@
   },
   "aa100006-0000-0000-0000-000000000006": {
     "name": "submitApplyPromotionCode",
-    "type": "workflowSteps",
     "trigger": "submit",
     "steps": [
       {
@@ -242,7 +236,6 @@
   },
   "aa100007-0000-0000-0000-000000000007": {
     "name": "submitRemovePromotionCode",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {

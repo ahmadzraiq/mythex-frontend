@@ -221,8 +221,8 @@ export default function BuilderCanvas() {
         if (e.key === 'v') { pasteFromClipboard(); return; }
       }
 
-      if ((e.key === 'Delete' || e.key === 'Backspace') && id && !e.ctrlKey && !e.metaKey) {
-        deleteNodes([id]);
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIds.length > 0 && !e.ctrlKey && !e.metaKey) {
+        deleteNodes(selectedIds);
         return;
       }
     };
@@ -521,23 +521,22 @@ export default function BuilderCanvas() {
 
   // ── Merged actions config for the preview engine ─────────────────────────
   // pageWorkflows + globalWorkflows are defined in the builder store but NOT in
-  // app.actions. We compile them into workflowSteps-format action definitions
-  // and merge them into app.actions so the SDUI engine can execute them when
-  // the user interacts with elements in the preview (e.g. typing in an Input
-  // that has an onChange workflow bound to it).
+  // app.actions. We compile them into workflow action definitions and merge
+  // them into app.actions so the SDUI engine can execute them when the user
+  // interacts with elements in the preview (e.g. typing in an Input that has
+  // an onChange workflow bound to it).
   const previewActionsConfig = useMemo<Record<string, unknown>>(() => {
     const base = (app.actions ?? {}) as Record<string, unknown>;
     const compiled: Record<string, unknown> = {};
     for (const [uuid, steps] of Object.entries(pageWorkflows ?? {})) {
       const meta = (pageWorkflowMeta ?? {})[uuid] ?? {};
       compiled[uuid] = {
-        type: 'workflowSteps',
         trigger: (meta as Record<string, unknown>).trigger ?? 'click',
         steps,
       };
     }
     for (const [id, steps] of Object.entries(globalWorkflows ?? {})) {
-      compiled[id] = { type: 'workflowSteps', steps };
+      compiled[id] = { steps };
     }
     return { ...base, ...compiled };
   }, [pageWorkflows, pageWorkflowMeta, globalWorkflows]);
@@ -1500,15 +1499,15 @@ export default function BuilderCanvas() {
       });
 
       // When the user drags a resize handle they are explicitly setting a fixed pixel size.
-      // Remove any Hug (w-fit / h-fit) or Fill (w-full / h-full) classes for the
-      // affected dimensions so the Dimensions panel reflects Fixed mode correctly.
+      // Remove any Hug/Fill/Screen classes for the affected dimensions so the Dimensions
+      // panel reflects Fixed mode correctly.
       const existingCls = (node?.props as { className?: string })?.className ?? '';
       let newCls = existingCls;
       if (handle.includes('e') || handle.includes('w')) {
-        newCls = removeTwToken(removeTwToken(newCls, 'w-fit'), 'w-full');
+        newCls = removeTwToken(removeTwToken(removeTwToken(newCls, 'w-fit'), 'w-full'), 'w-screen');
       }
       if (handle.includes('n') || handle.includes('s')) {
-        newCls = removeTwToken(removeTwToken(newCls, 'h-fit'), 'h-full');
+        newCls = removeTwToken(removeTwToken(removeTwToken(newCls, 'h-fit'), 'h-screen'), 'flex-1');
       }
       if (newCls !== existingCls) {
         useBuilderStore.getState().patchProp(id, 'props.className', newCls);
@@ -1666,6 +1665,19 @@ export default function BuilderCanvas() {
             transform: 'translateZ(0)',
           }}
         >
+        {/* ── Viewport simulation CSS ──────────────────────────────────────────
+            Inside the builder canvas the frame is NOT a real browser viewport.
+            100vh resolves to the browser window height, not the canvas frame.
+            This style tag overrides h-screen / min-h-screen / w-screen so they
+            resolve to the canvas frame dimensions (VIEWPORT_H × vpWidth) —
+            matching what the user will see in the real browser at that device size.
+            flex-1 also works correctly once its h-screen parent is 900px tall. */}
+        <style>{`
+          [data-builder-page-frame] .h-screen   { height: ${VIEWPORT_H}px !important; }
+          [data-builder-page-frame] .min-h-screen { min-height: ${VIEWPORT_H}px !important; }
+          [data-builder-page-frame] .w-screen   { width: ${vpWidth}px !important; }
+          [data-builder-page-frame] .max-h-screen { max-height: ${VIEWPORT_H}px !important; }
+        `}</style>
         <PageEngine
           pageConfig={pageConfig}
           configName={currentPageConfigName}

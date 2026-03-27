@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 
 export interface VideoProps {
   src?: string;
@@ -35,9 +35,30 @@ const Video = React.forwardRef<HTMLVideoElement, VideoProps>(function Video(
   },
   ref
 ) {
+  const innerRef = useRef<HTMLVideoElement>(null);
+
+  // Sync ref forwarding with our internal ref
+  const setRef = useCallback((el: HTMLVideoElement | null) => {
+    (innerRef as React.MutableRefObject<HTMLVideoElement | null>).current = el;
+    if (typeof ref === 'function') ref(el);
+    else if (ref) (ref as React.MutableRefObject<HTMLVideoElement | null>).current = el;
+  }, [ref]);
+
+  // `muted` is NOT reliably updated by React after mount (browser limitation).
+  // Imperatively set it whenever the prop changes.
+  useEffect(() => {
+    const el = innerRef.current;
+    if (el && el.muted !== muted) el.muted = muted;
+  }, [muted]);
+
+  // Use a key on the <video> element so it remounts when boolean playback props
+  // change — this guarantees the browser picks up the new attribute state.
+  const videoKey = `${autoPlay ? 1 : 0}-${muted ? 1 : 0}-${controls ? 1 : 0}-${loop ? 1 : 0}-${src ?? ''}`;
+
   return (
     <video
-      ref={ref}
+      key={videoKey}
+      ref={setRef}
       src={src}
       poster={poster}
       autoPlay={autoPlay}

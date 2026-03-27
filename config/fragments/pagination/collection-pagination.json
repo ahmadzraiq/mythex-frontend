@@ -13,9 +13,9 @@
       "condition": "max(1, floor((variables['a6b7c8d9-e0f1-2345-abcd-456789012345'] || 0) / (get('collectionPageSize') || 12) + 1)) <= 1",
       "children": [
         {
-          "type": "NavIcon",
+          "type": "Icon",
           "props": {
-            "icon": "ChevronLeft",
+            "icon": "lucide:chevron-left",
             "size": 16,
             "color": "#6b7280"
           }
@@ -30,9 +30,9 @@
       "condition": "max(1, floor((variables['a6b7c8d9-e0f1-2345-abcd-456789012345'] || 0) / (get('collectionPageSize') || 12) + 1)) > 1",
       "children": [
         {
-          "type": "NavIcon",
+          "type": "Icon",
           "props": {
-            "icon": "ChevronLeft",
+            "icon": "lucide:chevron-left",
             "size": 16,
             "color": "#374151"
           }
@@ -108,9 +108,9 @@
       "condition": "max(1, floor((variables['a6b7c8d9-e0f1-2345-abcd-456789012345'] || 0) / (get('collectionPageSize') || 12) + 1)) >= max(1, ceil((collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.data?.search?.totalItems || 0) / (get('collectionPageSize') || 12)))",
       "children": [
         {
-          "type": "NavIcon",
+          "type": "Icon",
           "props": {
-            "icon": "ChevronRight",
+            "icon": "lucide:chevron-right",
             "size": 16,
             "color": "#6b7280"
           }
@@ -125,9 +125,9 @@
       "condition": "max(1, floor((variables['a6b7c8d9-e0f1-2345-abcd-456789012345'] || 0) / (get('collectionPageSize') || 12) + 1)) < max(1, ceil((collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.data?.search?.totalItems || 0) / (get('collectionPageSize') || 12)))",
       "children": [
         {
-          "type": "NavIcon",
+          "type": "Icon",
           "props": {
-            "icon": "ChevronRight",
+            "icon": "lucide:chevron-right",
             "size": 16,
             "color": "#374151"
           }

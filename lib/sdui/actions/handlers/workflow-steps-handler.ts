@@ -1,5 +1,5 @@
 /**
- * workflowSteps handler — executes an ActionStep[] array from the visual workflow builder.
+ * Workflow handler — executes an ActionStep[] array from the visual workflow builder.
  *
  * Maps each ActionStepType from the canvas to an equivalent SDUI inline action
  * and dispatches it through the existing runOne pipeline, so all registered
@@ -8,9 +8,6 @@
  * After each step, the result/error is written to context.workflow[stepId] in the
  * variable store, making it accessible via formulas like:
  *   context.workflow['step-id'].result?.login?.__typename
- *
- * Usage in JSON:
- *   "actions": { "click": { "type": "workflowSteps", "steps": [ ... ] } }
  *
  * Each step:
  *   { "id": "...", "type": "ActionStepType", "config": { ...actionParams } }

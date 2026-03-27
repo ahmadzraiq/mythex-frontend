@@ -1,20 +1,17 @@
 {
   "animHide": {
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "anim-0000-0000-0000-000000000001", "value": false } }
     ]
   },
   "animShow": {
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "anim-0000-0000-0000-000000000001", "value": true } }
     ]
   },
   "animLayoutAdd": {
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -30,7 +27,6 @@
     ]
   },
   "animLayoutRemove": {
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -46,7 +42,6 @@
     ]
   },
   "animTriggerShake": {
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -57,7 +52,6 @@
     ]
   },
   "cycleP11State": {
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -73,7 +67,6 @@
     ]
   },
   "carouselNext": {
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -89,7 +82,6 @@
     ]
   },
   "carouselPrev": {
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {

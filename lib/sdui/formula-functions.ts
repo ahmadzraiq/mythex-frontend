@@ -40,10 +40,15 @@ export const FORMULA_FNS: Record<string, (...args: unknown[]) => unknown> = {
   round: (n, p = 0) => Math.round((n as number) * Math.pow(10, p as number)) / Math.pow(10, p as number),
   sum: (...args) => (args.flat(1) as number[]).reduce((a, b) => a + b, 0),
   toNumber: (v) => Number(v),
+  abs: (n) => Math.abs(Number(n) || 0),
   ceil: (n) => Math.ceil(Number(n) || 0),
+  clamp: (n, lo, hi) => Math.min(Math.max(Number(n) || 0, Number(lo) || 0), Number(hi) || 0),
   floor: (n) => Math.floor(Number(n) || 0),
   max: (...args) => Math.max(...(args.flat(1) as number[])),
   min: (...args) => Math.min(...(args.flat(1) as number[])),
+  mod: (a, b) => (Number(a) || 0) % (Number(b) || 1),
+  pow: (base, exp) => Math.pow(Number(base) || 0, Number(exp) || 1),
+  sqrt: (n) => Math.sqrt(Number(n) || 0),
 
   // ── ARRAY ─────────────────────────────────────────────────────────────────────
   add: (arr, ...vals) => [...(arr as unknown[]), ...vals],

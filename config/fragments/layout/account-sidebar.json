@@ -35,9 +35,9 @@
               ],
               "children": [
                 {
-                  "type": "NavIcon",
+                  "type": "Icon",
                   "props": {
-                    "icon": "Share",
+                    "icon": "lucide:share",
                     "className": "h-4 w-4"
                   }
                 },
@@ -59,9 +59,9 @@
               ],
               "children": [
                 {
-                  "type": "NavIcon",
+                  "type": "Icon",
                   "props": {
-                    "icon": "Globe",
+                    "icon": "lucide:globe",
                     "className": "h-4 w-4"
                   }
                 },
@@ -83,9 +83,9 @@
               ],
               "children": [
                 {
-                  "type": "NavIcon",
+                  "type": "Icon",
                   "props": {
-                    "icon": "User",
+                    "icon": "lucide:user",
                     "className": "h-4 w-4"
                   }
                 },
@@ -113,9 +113,9 @@
               ],
               "children": [
                 {
-                  "type": "NavIcon",
+                  "type": "Icon",
                   "props": {
-                    "icon": "Menu",
+                    "icon": "lucide:menu",
                     "className": "h-4 w-4"
                   }
                 },

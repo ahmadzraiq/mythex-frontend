@@ -276,7 +276,7 @@ test.describe('Pressable Button — all right-panel controls', () => {
     await page.waitForTimeout(200);
     await assertButtonVisible(page, nodeId, 'H Fill');
     const cls = await getNodeClassName(page, nodeId);
-    expect(cls).toContain('h-full');
+    expect(cls).toContain('flex-1');
   });
 
   test('BP-10: H mode Fixed then type height — button stays visible', async ({ page }) => {
@@ -717,14 +717,14 @@ test.describe('Pressable Button — all right-panel controls', () => {
     expect(cls).toContain('h-fit');
   });
 
-  test('BP-40: H — Fill mode adds h-full class and button remains visible', async ({ page }) => {
+  test('BP-40: H — Fill mode adds flex-1 class and button remains visible', async ({ page }) => {
     const fillBtn = page.locator('[data-testid="dim-h-fill"]');
     await scrollTo(page, 'dim-h-fill');
     await fillBtn.click();
     await page.waitForTimeout(200);
     await assertButtonVisible(page, nodeId, 'H Fill');
     const cls = await getNodeClassName(page, nodeId);
-    expect(cls).toContain('h-full');
+    expect(cls).toContain('flex-1');
   });
 
   // ── Min / Max constraints ──────────────────────────────────────────────────
@@ -826,7 +826,7 @@ test.describe('Pressable Button — all right-panel controls', () => {
     await assertButtonVisible(page, nodeId, 'Hug W after resize');
   });
 
-  test('BP-47: Fill H after resize — clears inline style.height so h-full takes effect', async ({ page }) => {
+  test('BP-47: Fill H after resize — clears inline style.height so flex-1 takes effect', async ({ page }) => {
     // Set explicit height
     await scrollTo(page, 'input-pos-h');
     await page.locator('[data-testid="input-pos-h"]').fill('80');
@@ -838,7 +838,7 @@ test.describe('Pressable Button — all right-panel controls', () => {
     await page.waitForTimeout(200);
 
     const cls = await getNodeClassName(page, nodeId);
-    expect(cls).toContain('h-full');
+    expect(cls).toContain('flex-1');
 
     const style = await getNodeStyle(page, nodeId);
     expect(style.height ?? '').toBe('');

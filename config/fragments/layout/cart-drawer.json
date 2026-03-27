@@ -67,9 +67,9 @@
               "condition": "(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity || 0) === 0",
               "children": [
                 {
-                  "type": "NavIcon",
+                  "type": "Icon",
                   "props": {
-                    "icon": "ShoppingBag",
+                    "icon": "lucide:shopping-bag",
                     "className": "h-12 w-12 text-[var(--theme-muted-foreground)] mb-4"
                   }
                 },
@@ -98,7 +98,7 @@
                   },
                   "children": [
                     {
-                      "type": "NextImage",
+                      "type": "Image",
                       "props": {
                         "src": "{{context.item.data.productVariant.product.featuredAsset.preview}}",
                         "alt": "{{context.item.data.productVariant.product.name}}",

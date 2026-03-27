@@ -534,6 +534,8 @@ export default function BuilderOverlay({
   liveZoomRef,
 }: OverlayProps) {
   const showInteractionLines = useBuilderStore(s => s.showInteractionLines);
+  const aiMode               = useBuilderStore(s => s.aiMode);
+  const aiSelectedNodeIds    = useBuilderStore(s => s.aiSelectedNodeIds);
 
   // ── Event-driven RAF loop ────────────────────────────────────────────────
   //
@@ -1066,6 +1068,44 @@ export default function BuilderOverlay({
           )}
         </>
       )}
+
+      {/* AI-selected node purple rings — shown when aiMode is on */}
+      {aiMode && aiSelectedNodeIds.map(id => {
+        const r = getCanvasRect(id, canvasEl);
+        if (!r) return null;
+        return (
+          <div
+            key={`ai-sel-${id}`}
+            style={{
+              position: 'absolute',
+              left: r.x - 2,
+              top: r.y - 2,
+              width: r.w + 4,
+              height: r.h + 4,
+              boxShadow: '0 0 0 2px #7c3aed, 0 0 8px 1px rgba(124,58,237,0.4)',
+              borderRadius: 2,
+              pointerEvents: 'none',
+              boxSizing: 'border-box',
+            }}
+          >
+            <div style={{
+              position: 'absolute',
+              top: -20,
+              left: 0,
+              background: '#7c3aed',
+              color: '#fff',
+              fontSize: 9,
+              fontFamily: 'system-ui',
+              padding: '1px 5px',
+              borderRadius: 3,
+              whiteSpace: 'nowrap',
+              pointerEvents: 'none',
+            }}>
+              AI context
+            </div>
+          </div>
+        );
+      })}
 
       {/* Alt+hover distance lines */}
       {altMode && altRect && firstSel && (

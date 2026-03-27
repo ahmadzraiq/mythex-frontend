@@ -136,9 +136,9 @@
                                 "text": "{{context.item.data.code}}"
                               },
                               {
-                                "type": "NavIcon",
+                                "type": "Icon",
                                 "props": {
-                                  "icon": "Share",
+                                  "icon": "lucide:share",
                                   "className": "h-3 w-3"
                                 }
                               }

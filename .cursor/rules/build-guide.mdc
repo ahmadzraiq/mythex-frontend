@@ -20,7 +20,7 @@ When migrating an existing app (React, Next.js, etc.) to this JSON-driven SDUI s
 
 **Mapping guide:**
 - React component state → declare in `config/variables.json` with a UUID; access as `variables['UUID']` in formula expressions, `{{variables['UUID']}}` in text templates
-- `useEffect` data fetching → a `workflowSteps` workflow with `trigger: "created"` bound to the page or component
+- `useEffect` data fetching → a named workflow with `trigger: "created"` bound to the page or component
 - `onClick` / form submit → `"actions": [{ "action": "namedWorkflow" }]` — trigger comes from the workflow definition
 - React Router / Next.js `<Link>` → a named navigate workflow (e.g. `navigateToHome`, `navigateToProduct`)
 - Dynamic routes (e.g. `/product/:slug`) → a named navigate workflow with `context?.item?.data?.slug` in its step config (or `{ "var": "context.item.data.slug" }` in payload)
@@ -114,12 +114,11 @@ The `actions` field on a node is an **array of workflow references**. The trigge
 
 ### Named workflow pattern
 
-All named workflows use `"type": "workflowSteps"` with a `trigger` field:
+Named workflows have a `trigger` field and a `steps` array:
 
 ```json
 // config/actions/auth.json
 "submitSignIn": {
-  "type": "workflowSteps",
   "trigger": "submit",
   "steps": [
     { "id": "step-1", "action": "loginMutation-uuid" }
@@ -133,8 +132,8 @@ Never use `{ "action": "navigate", "payload": { "path": "/..." } }` inline on a 
 
 ```json
 // config/actions/layout.json
-"navigateToHome": { "type": "workflowSteps", "trigger": "click", "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/" } }] },
-"navigateToProduct": { "type": "workflowSteps", "trigger": "click", "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "routeConfig": "product", "slug": { "var": "context.item.data.slug" } } }] }
+"navigateToHome": { "trigger": "click", "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/" } }] },
+"navigateToProduct": { "trigger": "click", "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "routeConfig": "product", "slug": { "var": "context.item.data.slug" } } }] }
 ```
 
 Dynamic route slugs from map scope use `{ "var": "context.item.data.slug" }` — the `var` resolver uses `get()` with the full state including repeat scope.
@@ -279,7 +278,7 @@ When asked to build or add screens, layouts, modals, or features to this website
 
 3. **Add routes** in `config/routes.json` and **import** new screens in `config/app.ts`.
 
-4. **Actions** go in `config/actions/` (auth, products, layout, other). Use `type: "workflowSteps"` for all user-facing flows. Direct action types (`fetch`, `graphql`, `validate`, etc.) are used as `workflowSteps` step targets, not standalone top-level actions.
+4. **Actions** go in `config/actions/` (auth, products, layout, other). Named workflows have a `trigger` and `steps` array. Step types like `fetch`, `graphql`, `navigateTo`, `changeVariableValue`, etc. are used directly inside `steps`.
    - **fetch**: REST calls; supports `url`, `method`, `body`, `storeFullResponseIn`
    - **graphql**: GraphQL queries/mutations; supports `query`, `variables` (formula-resolvable), `endpoint` (falls back to `engineConventions.graphqlEndpoint`), `headers` (merged on top of `engineConventions.graphqlHeaders`). Handles both HTTP errors and `response.errors`. No API routes needed—calls external GraphQL endpoint directly.
    - **validate**: Form validation. Use `rules` (required, minLength, pattern, equalsField).

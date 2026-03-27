@@ -81,7 +81,7 @@ export interface ActionStep {
   action?: string;
   /**
    * When a step is deserialized from an ActionRef { "action": "uuid" } whose UUID
-   * points to a direct (non-workflowSteps) action, this field stores the original
+   * points to a direct action (graphql, fetch, navigateTo, etc.), this field stores the original
    * UUID so serializeStep can write it back as { "action": "uuid" } instead of
    * duplicating the full action config inline.
    */
@@ -415,12 +415,11 @@ export function deserializeStep(raw: unknown, id: string, directActionsMap?: Rec
   // action shows as its real type instead of always appearing as "Call workflow".
   if (typeof obj.action === 'string' && !obj.type) {
     const refDef = directActionsMap?.[obj.action as string];
-    if (refDef && refDef.type) {
-      if (refDef.type !== 'workflowSteps') {
-        // Inline the referenced action's definition as a typed step so the canvas
-        // displays (and lets the user edit) its real configuration.
-        // Put action-specific properties into step.config so NodePropsPanel can read them
-        // via `cfg = step.config ?? {}` (spreating at root is invisible to config panels).
+    if (refDef) {
+      const isWorkflow = Array.isArray(refDef.steps);
+      if (!isWorkflow && refDef.type) {
+        // Direct action (graphql, fetch, navigateTo, etc.) — inline so the canvas
+        // displays and lets the user edit its real configuration.
         const { type, name: refName, id: _refId, ...refConfig } = refDef;
         return {
           id,
@@ -430,7 +429,7 @@ export function deserializeStep(raw: unknown, id: string, directActionsMap?: Rec
           config: refConfig,
         };
       }
-      // workflowSteps reference — unwrap the single inner step so the canvas shows
+      // Workflow reference — unwrap the single inner step so the canvas shows
       // the real action type (e.g. "Navigate to") rather than "Run project workflow".
       const innerSteps = refDef.steps as unknown[] | undefined;
       if (Array.isArray(innerSteps) && innerSteps.length === 1) {
@@ -443,7 +442,7 @@ export function deserializeStep(raw: unknown, id: string, directActionsMap?: Rec
           name: (refDef.name as string | undefined) ?? (obj.action as string),
         };
       }
-      // Multi-step workflowSteps — use workflow name for display
+      // Multi-step workflow — use workflow name for display
       return {
         id,
         type: 'runProjectWorkflow',

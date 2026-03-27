@@ -1,6 +1,5 @@
 {
   "wfMsgHello": {
-    "type": "workflowSteps",
     "name": "Set Message: Hello",
     "trigger": "click",
     "steps": [
@@ -16,7 +15,6 @@
     ]
   },
   "wfMsgBye": {
-    "type": "workflowSteps",
     "name": "Set Message: Goodbye",
     "trigger": "click",
     "steps": [
@@ -32,7 +30,6 @@
     ]
   },
   "wfMsgTest": {
-    "type": "workflowSteps",
     "name": "Set Message: Test",
     "trigger": "click",
     "steps": [
@@ -48,7 +45,6 @@
     ]
   },
   "wfSetNumLow": {
-    "type": "workflowSteps",
     "name": "Set Number: Low",
     "trigger": "click",
     "steps": [
@@ -64,7 +60,6 @@
     ]
   },
   "wfSetNumHigh": {
-    "type": "workflowSteps",
     "name": "Set Number: High",
     "trigger": "click",
     "steps": [
@@ -80,7 +75,6 @@
     ]
   },
   "wfEvalBranch": {
-    "type": "workflowSteps",
     "name": "Evaluate Branch",
     "trigger": "click",
     "steps": [
@@ -117,7 +111,6 @@
     ]
   },
   "wfRunMultiple": {
-    "type": "workflowSteps",
     "name": "Run Multiple Steps",
     "trigger": "click",
     "steps": [
@@ -151,7 +144,6 @@
     ]
   },
   "wfIncrCount": {
-    "type": "workflowSteps",
     "name": "Increment Counter",
     "trigger": "click",
     "steps": [
@@ -169,7 +161,6 @@
     ]
   },
   "wfDecrCount": {
-    "type": "workflowSteps",
     "name": "Decrement Counter",
     "trigger": "click",
     "steps": [
@@ -187,7 +178,6 @@
     ]
   },
   "wfResetCount": {
-    "type": "workflowSteps",
     "name": "Reset Counter",
     "trigger": "click",
     "steps": [
@@ -203,7 +193,6 @@
     ]
   },
   "wfSetScore20": {
-    "type": "workflowSteps",
     "name": "Set Score: 20",
     "trigger": "click",
     "steps": [
@@ -219,7 +208,6 @@
     ]
   },
   "wfSetScore45": {
-    "type": "workflowSteps",
     "name": "Set Score: 45",
     "trigger": "click",
     "steps": [
@@ -235,7 +223,6 @@
     ]
   },
   "wfSetScore75": {
-    "type": "workflowSteps",
     "name": "Set Score: 75",
     "trigger": "click",
     "steps": [
@@ -251,7 +238,6 @@
     ]
   },
   "wfSetScore95": {
-    "type": "workflowSteps",
     "name": "Set Score: 95",
     "trigger": "click",
     "steps": [
@@ -267,7 +253,6 @@
     ]
   },
   "wfComplexAll": {
-    "type": "workflowSteps",
     "name": "Complex: Branch + forEach + While",
     "trigger": "click",
     "steps": [
@@ -493,7 +478,6 @@
   },
 
   "waOnCreated": {
-    "type": "workflowSteps",
     "name": "On Created",
     "trigger": "created",
     "steps": [
@@ -509,7 +493,6 @@
     ]
   },
   "waOnMounted": {
-    "type": "workflowSteps",
     "name": "On Mounted",
     "trigger": "mounted",
     "steps": [
@@ -525,7 +508,6 @@
     ]
   },
   "waOnClick": {
-    "type": "workflowSteps",
     "name": "On Click",
     "trigger": "click",
     "steps": [
@@ -541,7 +523,6 @@
     ]
   },
   "waOnDblClick": {
-    "type": "workflowSteps",
     "name": "On Double Click",
     "trigger": "doubleClick",
     "steps": [
@@ -559,7 +540,6 @@
     ]
   },
   "waOnMouseEnter": {
-    "type": "workflowSteps",
     "name": "On Mouse Enter",
     "trigger": "mouseEnter",
     "steps": [
@@ -575,7 +555,6 @@
     ]
   },
   "waOnMouseLeave": {
-    "type": "workflowSteps",
     "name": "On Mouse Leave",
     "trigger": "mouseLeave",
     "steps": [
@@ -591,7 +570,6 @@
     ]
   },
   "waOnChange": {
-    "type": "workflowSteps",
     "name": "On Change",
     "trigger": "change",
     "steps": [
@@ -609,7 +587,6 @@
     ]
   },
   "waOnEnterKey": {
-    "type": "workflowSteps",
     "name": "On Enter Key",
     "trigger": "enterKey",
     "steps": [
@@ -625,7 +602,6 @@
     ]
   },
   "waOnFocus": {
-    "type": "workflowSteps",
     "name": "On Focus",
     "trigger": "focus",
     "steps": [
@@ -641,7 +617,6 @@
     ]
   },
   "waOnBlur": {
-    "type": "workflowSteps",
     "name": "On Blur",
     "trigger": "blur",
     "steps": [
@@ -658,7 +633,6 @@
   },
 
   "waFormSubmit": {
-    "type": "workflowSteps",
     "name": "Form Submit",
     "trigger": "submit",
     "steps": [
@@ -703,7 +677,6 @@
     ]
   },
   "waFormValidationError": {
-    "type": "workflowSteps",
     "name": "Form Validation Error",
     "trigger": "submitValidationError",
     "steps": [
@@ -719,7 +692,6 @@
     ]
   },
   "waPreFillForm": {
-    "type": "workflowSteps",
     "name": "Pre-fill Form",
     "trigger": "click",
     "steps": [
@@ -744,7 +716,6 @@
     ]
   },
   "waResetForm": {
-    "type": "workflowSteps",
     "name": "Reset Form",
     "trigger": "click",
     "steps": [
@@ -776,7 +747,6 @@
   },
 
   "waEmailInputChange": {
-    "type": "workflowSteps",
     "name": "Email Input Change",
     "trigger": "change",
     "steps": [
@@ -792,7 +762,6 @@
     ]
   },
   "waNameInputChange": {
-    "type": "workflowSteps",
     "name": "Name Input Change",
     "trigger": "change",
     "steps": [
@@ -808,7 +777,6 @@
     ]
   },
   "waNavigateHome": {
-    "type": "workflowSteps",
     "name": "Navigate Home",
     "trigger": "click",
     "steps": [
@@ -823,7 +791,6 @@
     ]
   },
   "waNavigatePrev": {
-    "type": "workflowSteps",
     "name": "Navigate Previous",
     "trigger": "click",
     "steps": [
@@ -839,7 +806,6 @@
   },
 
   "waFetchRest": {
-    "type": "workflowSteps",
     "name": "Fetch REST (GET)",
     "trigger": "click",
     "steps": [
@@ -883,7 +849,6 @@
     ]
   },
   "waFetchRestPost": {
-    "type": "workflowSteps",
     "name": "Fetch REST (POST)",
     "trigger": "click",
     "steps": [
@@ -928,7 +893,6 @@
     ]
   },
   "waFetchGraphql": {
-    "type": "workflowSteps",
     "name": "Fetch GraphQL",
     "trigger": "click",
     "steps": [
@@ -964,7 +928,6 @@
   },
 
   "waFetchCollection": {
-    "type": "workflowSteps",
     "name": "Fetch Collection",
     "trigger": "click",
     "steps": [
@@ -997,7 +960,6 @@
     ]
   },
   "waFetchParallel": {
-    "type": "workflowSteps",
     "name": "Fetch Collections Parallel",
     "trigger": "click",
     "steps": [
@@ -1051,7 +1013,6 @@
     ]
   },
   "waUpdateCollection": {
-    "type": "workflowSteps",
     "name": "Update Collection",
     "trigger": "click",
     "steps": [
@@ -1076,7 +1037,6 @@
     ]
   },
   "waResetVars": {
-    "type": "workflowSteps",
     "name": "Reset Variable",
     "trigger": "click",
     "steps": [
@@ -1092,7 +1052,6 @@
     ]
   },
   "waSetResetCheck": {
-    "type": "workflowSteps",
     "name": "Set Variable: Modified",
     "trigger": "click",
     "steps": [
@@ -1109,7 +1068,6 @@
   },
 
   "waSubWorkflow": {
-    "type": "workflowSteps",
     "name": "Sub-workflow",
     "trigger": "click",
     "steps": [
@@ -1125,7 +1083,6 @@
     ]
   },
   "waRunSubWorkflow": {
-    "type": "workflowSteps",
     "name": "Run Sub-workflow",
     "trigger": "click",
     "steps": [
@@ -1140,7 +1097,6 @@
     ]
   },
   "waComponentWorkflow": {
-    "type": "workflowSteps",
     "name": "Component Action",
     "trigger": "click",
     "steps": [
@@ -1156,7 +1112,6 @@
     ]
   },
   "waExecuteComponent": {
-    "type": "workflowSteps",
     "name": "Execute Component Action",
     "trigger": "click",
     "steps": [
@@ -1172,7 +1127,6 @@
   },
 
   "waReturnHigh": {
-    "type": "workflowSteps",
     "name": "Return Value: High Score",
     "trigger": "click",
     "steps": [
@@ -1218,7 +1172,6 @@
     ]
   },
   "waReturnLow": {
-    "type": "workflowSteps",
     "name": "Return Value: Low Score",
     "trigger": "click",
     "steps": [
@@ -1265,7 +1218,6 @@
   },
 
   "waLoopControl": {
-    "type": "workflowSteps",
     "name": "Loop Control (break / continue)",
     "trigger": "click",
     "steps": [
@@ -1337,7 +1289,6 @@
   },
 
   "waPassFlagOn": {
-    "type": "workflowSteps",
     "name": "Set Pass Flag: ON",
     "trigger": "click",
     "steps": [
@@ -1353,7 +1304,6 @@
     ]
   },
   "waPassFlagOff": {
-    "type": "workflowSteps",
     "name": "Set Pass Flag: OFF",
     "trigger": "click",
     "steps": [
@@ -1369,7 +1319,6 @@
     ]
   },
   "waPassThrough": {
-    "type": "workflowSteps",
     "name": "Pass Through Condition",
     "trigger": "click",
     "steps": [
@@ -1394,7 +1343,6 @@
   },
 
   "waSetModeA": {
-    "type": "workflowSteps",
     "name": "Set Mode: A",
     "trigger": "click",
     "steps": [
@@ -1410,7 +1358,6 @@
     ]
   },
   "waSetModeB": {
-    "type": "workflowSteps",
     "name": "Set Mode: B",
     "trigger": "click",
     "steps": [
@@ -1426,7 +1373,6 @@
     ]
   },
   "waSetModeC": {
-    "type": "workflowSteps",
     "name": "Set Mode: C",
     "trigger": "click",
     "steps": [
@@ -1442,7 +1388,6 @@
     ]
   },
   "waEvalMultiOption": {
-    "type": "workflowSteps",
     "name": "Evaluate Multi-option Branch",
     "trigger": "click",
     "steps": [
@@ -1513,7 +1458,6 @@
   },
 
   "waCopyClipboard": {
-    "type": "workflowSteps",
     "name": "Copy to Clipboard",
     "trigger": "click",
     "steps": [
@@ -1537,7 +1481,6 @@
     ]
   },
   "waOuterClick": {
-    "type": "workflowSteps",
     "name": "Outer Click",
     "trigger": "click",
     "steps": [
@@ -1553,7 +1496,6 @@
     ]
   },
   "waInnerClick": {
-    "type": "workflowSteps",
     "name": "Inner Click (Stop Propagation)",
     "trigger": "click",
     "steps": [
@@ -1575,7 +1517,6 @@
     ]
   },
   "waPrintPdf": {
-    "type": "workflowSteps",
     "name": "Print PDF",
     "trigger": "click",
     "steps": [
@@ -1597,7 +1538,6 @@
     ]
   },
   "waDownloadFile": {
-    "type": "workflowSteps",
     "name": "Download File",
     "trigger": "click",
     "steps": [
@@ -1622,7 +1562,6 @@
     ]
   },
   "waCreateB64Url": {
-    "type": "workflowSteps",
     "name": "Create URL from Base64",
     "trigger": "click",
     "steps": [
@@ -1639,7 +1578,6 @@
     ]
   },
   "waEncodeBase64": {
-    "type": "workflowSteps",
     "name": "Encode File as Base64",
     "trigger": "click",
     "steps": [
@@ -1656,7 +1594,6 @@
   },
 
   "waSetScoreHigh": {
-    "type": "workflowSteps",
     "name": "Set Score: High (75)",
     "trigger": "click",
     "steps": [
@@ -1672,7 +1609,6 @@
     ]
   },
   "waSetScoreLow": {
-    "type": "workflowSteps",
     "name": "Set Score: Low (30)",
     "trigger": "click",
     "steps": [
@@ -1688,7 +1624,6 @@
     ]
   },
   "waComplexBranchLoop": {
-    "type": "workflowSteps",
     "name": "Complex: Branch + forEach Loop",
     "trigger": "click",
     "steps": [
@@ -1783,7 +1718,6 @@
   },
 
   "waSetComplexModeFast": {
-    "type": "workflowSteps",
     "name": "Set Complex Mode: Fast",
     "trigger": "click",
     "steps": [
@@ -1799,7 +1733,6 @@
     ]
   },
   "waSetComplexModeSlow": {
-    "type": "workflowSteps",
     "name": "Set Complex Mode: Slow",
     "trigger": "click",
     "steps": [
@@ -1815,7 +1748,6 @@
     ]
   },
   "waSetComplexModeSkip": {
-    "type": "workflowSteps",
     "name": "Set Complex Mode: Skip",
     "trigger": "click",
     "steps": [
@@ -1831,7 +1763,6 @@
     ]
   },
   "waComplexCombined": {
-    "type": "workflowSteps",
     "name": "Complex: Multi-option + Loops",
     "trigger": "click",
     "steps": [
@@ -2025,7 +1956,6 @@
   },
 
   "waUpdateReplaceAll": {
-    "type": "workflowSteps",
     "name": "Update Collection: Replace All",
     "trigger": "click",
     "steps": [
@@ -2052,7 +1982,6 @@
   },
 
   "waUpdateInsert": {
-    "type": "workflowSteps",
     "name": "Update Collection: Insert",
     "trigger": "click",
     "steps": [
@@ -2080,7 +2009,6 @@
   },
 
   "waUpdateItem": {
-    "type": "workflowSteps",
     "name": "Update Collection: Update Item",
     "trigger": "click",
     "steps": [
@@ -2111,7 +2039,6 @@
   },
 
   "waSyncInput1Change": {
-    "type": "workflowSteps",
     "name": "Sync: Input 1 Change",
     "trigger": "change",
     "steps": [
@@ -2127,7 +2054,6 @@
     ]
   },
   "waSyncInput2Change": {
-    "type": "workflowSteps",
     "name": "Sync: Input 2 drives Input 1",
     "trigger": "change",
     "steps": [
@@ -2143,7 +2069,6 @@
     ]
   },
   "waSyncFormSubmit": {
-    "type": "workflowSteps",
     "name": "Sync: Form Submit",
     "trigger": "submit",
     "steps": [
@@ -2179,7 +2104,6 @@
     ]
   },
   "waUpdateDelete": {
-    "type": "workflowSteps",
     "name": "Update Collection: Delete Item",
     "trigger": "click",
     "steps": [
@@ -2207,7 +2131,6 @@
     ]
   },
   "waNestedOuterSubmit": {
-    "type": "workflowSteps",
     "name": "Nested: Outer Form Submit",
     "trigger": "submit",
     "steps": [
@@ -2232,7 +2155,6 @@
     ]
   },
   "waNestedInnerSubmit": {
-    "type": "workflowSteps",
     "name": "Nested: Inner Form Submit",
     "trigger": "submit",
     "steps": [
@@ -2258,7 +2180,6 @@
   },
 
   "waApiChainSubTask": {
-    "type": "workflowSteps",
     "name": "API Chain: Sub-task (multiOptionBranch + forEach)",
     "trigger": "click",
     "steps": [
@@ -2335,7 +2256,6 @@
   },
 
   "waApiChain": {
-    "type": "workflowSteps",
     "name": "API Chain: Full Pipeline",
     "trigger": "click",
     "steps": [
@@ -2673,7 +2593,6 @@
   },
 
   "waVal2Submit": {
-    "type": "workflowSteps",
     "name": "Val2: Form Submit",
     "trigger": "submit",
     "steps": [
@@ -2718,7 +2637,6 @@
     ]
   },
   "waVal2ValidationError": {
-    "type": "workflowSteps",
     "name": "Val2: Validation Error",
     "trigger": "submitValidationError",
     "steps": [
@@ -2734,7 +2652,6 @@
     ]
   },
   "waVal2PreFill": {
-    "type": "workflowSteps",
     "name": "Val2: Pre-fill Form",
     "trigger": "click",
     "steps": [
@@ -2795,7 +2712,6 @@
     ]
   },
   "waVal2Reset": {
-    "type": "workflowSteps",
     "name": "Val2: Reset Form",
     "trigger": "click",
     "steps": [
@@ -2826,7 +2742,6 @@
     ]
   },
   "waVal2UsernameChange": {
-    "type": "workflowSteps",
     "name": "Val2: Username Change",
     "trigger": "change",
     "steps": [
@@ -2842,7 +2757,6 @@
     ]
   },
   "waVal2EmailChange": {
-    "type": "workflowSteps",
     "name": "Val2: Email Change",
     "trigger": "change",
     "steps": [
@@ -2858,7 +2772,6 @@
     ]
   },
   "waVal2PhoneChange": {
-    "type": "workflowSteps",
     "name": "Val2: Phone Change",
     "trigger": "change",
     "steps": [
@@ -2873,7 +2786,6 @@
     ]
   },
   "waVal2AgeChange": {
-    "type": "workflowSteps",
     "name": "Val2: Age Change",
     "trigger": "change",
     "steps": [
@@ -2888,7 +2800,6 @@
     ]
   },
   "waVal2PasswordChange": {
-    "type": "workflowSteps",
     "name": "Val2: Password Change",
     "trigger": "change",
     "steps": [
@@ -2903,7 +2814,6 @@
     ]
   },
   "waVal2ConfirmChange": {
-    "type": "workflowSteps",
     "name": "Val2: Confirm Password Change",
     "trigger": "change",
     "steps": [
@@ -2919,7 +2829,6 @@
   },
 
   "waEcaSubDirect": {
-    "type": "workflowSteps",
     "name": "ECA Sub: Direct — sets direct-result var",
     "trigger": "click",
     "steps": [
@@ -2935,7 +2844,6 @@
   },
 
   "waEcaSubChain1": {
-    "type": "workflowSteps",
     "name": "ECA Sub: Chain step-1 — sets chain-step1 var",
     "trigger": "click",
     "steps": [
@@ -2951,7 +2859,6 @@
   },
 
   "waEcaSubChain2": {
-    "type": "workflowSteps",
     "name": "ECA Sub: Chain step-2 — reads step1 var and sets final",
     "trigger": "click",
     "steps": [
@@ -2967,7 +2874,6 @@
   },
 
   "waEcaSubCounter": {
-    "type": "workflowSteps",
     "name": "ECA Sub: Counter — increments loop count",
     "trigger": "click",
     "steps": [
@@ -2983,7 +2889,6 @@
   },
 
   "waEcaSubNested": {
-    "type": "workflowSteps",
     "name": "ECA Sub: Nested — calls waEcaSubDirect then reads its output",
     "trigger": "click",
     "steps": [
@@ -3005,7 +2910,6 @@
   },
 
   "waEcaDirect": {
-    "type": "workflowSteps",
     "name": "Card C: ECA Direct",
     "trigger": "click",
     "steps": [
@@ -3020,7 +2924,6 @@
   },
 
   "waEcaChain": {
-    "type": "workflowSteps",
     "name": "Card C: ECA Chain (two sequential ECAs)",
     "trigger": "click",
     "steps": [
@@ -3042,7 +2945,6 @@
   },
 
   "waEcaLoop": {
-    "type": "workflowSteps",
     "name": "Card C: ECA in forEach loop",
     "trigger": "click",
     "steps": [
@@ -3065,7 +2967,6 @@
   },
 
   "waEcaNested": {
-    "type": "workflowSteps",
     "name": "Card C: ECA Nested (ECA calls another ECA internally)",
     "trigger": "click",
     "steps": [
@@ -3081,7 +2982,6 @@
   },
 
   "waEvtChange": {
-    "type": "workflowSteps",
     "name": "Event: onChange — capture event.value",
     "trigger": "change",
     "steps": [
@@ -3097,7 +2997,6 @@
   },
 
   "waEvtClick": {
-    "type": "workflowSteps",
     "name": "Event: onClick — capture event.x / event.y / event.button",
     "trigger": "click",
     "steps": [
@@ -3113,7 +3012,6 @@
   },
 
   "waEvtEnterKey": {
-    "type": "workflowSteps",
     "name": "Event: onEnterKey — capture event.key + event.value",
     "trigger": "enterKey",
     "steps": [
@@ -3129,7 +3027,6 @@
   },
 
   "waEvtFocus": {
-    "type": "workflowSteps",
     "name": "Event: onFocus — capture event.value",
     "trigger": "focus",
     "steps": [
@@ -3145,7 +3042,6 @@
   },
 
   "waEvtBlur": {
-    "type": "workflowSteps",
     "name": "Event: onBlur — capture event.value",
     "trigger": "blur",
     "steps": [
@@ -3161,7 +3057,6 @@
   },
 
   "waEvtScroll": {
-    "type": "workflowSteps",
     "name": "Event: onScroll — capture event.scrollTop / event.scrollLeft",
     "trigger": "scroll",
     "steps": [
@@ -3177,7 +3072,6 @@
   },
 
   "waEvtValueChange": {
-    "type": "workflowSteps",
     "name": "Event: onValueChange (Select) — capture event.value",
     "trigger": "valueChange",
     "steps": [
@@ -3193,7 +3087,6 @@
   },
 
   "waEvtCheckbox": {
-    "type": "workflowSteps",
     "name": "Event: onChange (Checkbox) — capture event.value (boolean)",
     "trigger": "change",
     "steps": [

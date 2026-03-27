@@ -85,7 +85,7 @@
                     },
                     "children": [
                       {
-                        "type": "NextImage",
+                        "type": "Image",
                         "props": {
                           "src": "{{context.item.data.productVariant.product.featuredAsset.preview}}",
                           "alt": "{{context.item.data.productVariant.product.name}}",

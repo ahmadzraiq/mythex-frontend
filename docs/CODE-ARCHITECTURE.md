@@ -22,8 +22,8 @@ lib/sdui/
 ├── utils.ts             # interpolate, resolveProps, resolveText, evaluateCondition
 ├── global-variable-store.ts  # Singleton variable store instance
 ├── component-registry.tsx    # COMPONENT_REGISTRY, getComponent
-├── icons.tsx                # NavIcon, NAV_ICONS
-├── components/              # NextImage, HtmlContent, InputWithField
+├── icons.tsx                # Legacy Lucide icon map (internal use only)
+├── components/              # IconifyIcon, NextImage (Image alias), HtmlContent, InputWithField, Video
 ├── run-action-context.tsx   # RunActionProvider, useRunAction
 ├── carousel.tsx         # Carousel (custom component)
 ├── types/               # SDUINode, SDUIConfig, payloads, etc.

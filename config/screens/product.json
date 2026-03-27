@@ -177,9 +177,9 @@
                           },
                           "children": [
                             {
-                              "type": "NavIcon",
+                              "type": "Icon",
                               "props": {
-                                "icon": "Star",
+                                "icon": "lucide:star",
                                 "className": "w-6 h-6 text-[#7c3aed]"
                               }
                             }
@@ -214,9 +214,9 @@
                           },
                           "children": [
                             {
-                              "type": "NavIcon",
+                              "type": "Icon",
                               "props": {
-                                "icon": "Globe",
+                                "icon": "lucide:globe",
                                 "className": "w-6 h-6 text-[#7c3aed]"
                               }
                             }
@@ -251,9 +251,9 @@
                           },
                           "children": [
                             {
-                              "type": "NavIcon",
+                              "type": "Icon",
                               "props": {
-                                "icon": "ShieldCheck",
+                                "icon": "lucide:shield-check",
                                 "className": "w-6 h-6 text-[#7c3aed]"
                               }
                             }

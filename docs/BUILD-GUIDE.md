@@ -188,7 +188,7 @@ Use this order on every UI node for predictable AI scanning:
 
 ## 8. Adding a New Screen
 
-1. Create `config/screens/myScreen.json` with `meta`, `state`, `layout` (or omit for standalone), `content`/`ui`. On-mount data fetching is done via a `workflowSteps` workflow with `trigger: "created"`.
+1. Create `config/screens/myScreen.json` with `meta`, `state`, `layout` (or omit for standalone), `content`/`ui`. On-mount data fetching is done via a named workflow with `trigger: "created"`.
 2. Add route in `config/routes.json` with `config: "myScreen"`
 3. Import screen in `config/app.ts` and add to `rawScreens`
 

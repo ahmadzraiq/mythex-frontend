@@ -432,13 +432,12 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
       const nodeActions = node?.actions;
       const dam = store.directActionsMap;
       if (Array.isArray(nodeActions) && nodeActions.length > 0) {
-        // Wrapped format: [{ type: 'workflowSteps', trigger, steps: [...] }]
-        // This is what handleClose now saves so the engine can dispatch it.
+        // Wrapped format: [{ trigger, steps: [...] }] — single wrapper item with a steps array.
         const first = (nodeActions as unknown[])[0] as Record<string, unknown>;
-        if (first?.type === 'workflowSteps' && Array.isArray(first.steps)) {
+        if (Array.isArray(first?.steps)) {
           setTriggerValue((first.trigger as string) ?? (target.event || firstTrigger));
           initialSteps = deserializeStepArray(first.steps as unknown[], dam);
-      } else {
+        } else {
           // Legacy flat steps array (backward compat)
           initialSteps = deserializeStepArray(nodeActions as unknown[], dam);
         }
@@ -472,13 +471,12 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
   // ── Save & close ─────────────────────────────────────────────────────────────
   function handleClose() {
     if (target.kind === 'element') {
-      // Wrap steps in a workflowSteps container so the SDUI engine's workflowStepsHandler
-      // can execute canvas step types (navigateTo, changeVariableValue, etc.) at runtime.
-      // The trigger is stored here so action-binding.ts can read it directly from the item.
+      // Store as a single-item array with trigger + steps so action-binding.ts can read
+      // the trigger directly and the engine auto-detects it as a workflow via the steps array.
       const nodeId = target.nodeId;
       const serializedSteps = steps.map(serializeStep);
       const wrapped = serializedSteps.length > 0
-        ? [{ type: 'workflowSteps', trigger: triggerValue, steps: serializedSteps }]
+        ? [{ trigger: triggerValue, steps: serializedSteps }]
         : undefined;
       store.patchNodeField(nodeId, 'actions', wrapped);
     } else if (target.kind === 'globalWorkflow') {
@@ -698,8 +696,7 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
 
     try {
       const handlerCtx = buildHandlerCtx();
-      // Wrap in a workflowSteps so the existing converter maps the canvas step type
-      const wfDef = { type: 'workflowSteps', steps: [step] } as import('@/lib/sdui/actions/handlers/types').ActionDef;
+      const wfDef = { steps: [step] } as import('@/lib/sdui/actions/handlers/types').ActionDef;
       await workflowStepsHandler(handlerCtx)(wfDef);
     } catch (err) {
       // Store full error object so the formula picker can show all fields

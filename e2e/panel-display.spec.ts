@@ -72,7 +72,7 @@ const DISPLAY_NODES: Record<string, unknown> = {
     type: 'Alert',
     props: { className: 'flex flex-row items-start gap-3 p-4 rounded-md bg-amber-50 border border-amber-200', style: { width: '300px' } },
     children: [
-      { id: 'test-alert-icon', type: 'NavIcon', props: { icon: 'AlertCircle', size: 18, color: '#d97706' } },
+      { id: 'test-alert-icon', type: 'Icon', props: { icon: 'lucide:alert-circle', size: 18, color: '#d97706' } },
       { id: 'test-alert-text', type: 'AlertText', text: 'This is an alert message.', props: { className: 'text-sm text-amber-800' } },
     ],
   },
@@ -82,7 +82,7 @@ const DISPLAY_NODES: Record<string, unknown> = {
     props: { className: 'flex flex-row items-center gap-1 px-3 py-1 rounded-full bg-secondary', style: { width: '80px', height: '30px' } },
     children: [
       { id: 'test-chip-label', type: 'Text', props: { className: 'text-sm font-medium text-secondary-foreground' }, text: 'Label' },
-      { id: 'test-chip-icon', type: 'NavIcon', props: { icon: 'X', size: 12, color: '#6b7280' } },
+      { id: 'test-chip-icon', type: 'Icon', props: { icon: 'X', size: 12, color: '#6b7280' } },
     ],
   },
   StarRating: {
@@ -90,9 +90,9 @@ const DISPLAY_NODES: Record<string, unknown> = {
     type: 'Box',
     props: { className: 'flex flex-row gap-1 items-center', style: { width: '120px', height: '28px' } },
     children: [
-      { id: 'test-star-1', type: 'NavIcon', props: { icon: 'Star', size: 20, color: '#f59e0b' } },
-      { id: 'test-star-2', type: 'NavIcon', props: { icon: 'Star', size: 20, color: '#f59e0b' } },
-      { id: 'test-star-3', type: 'NavIcon', props: { icon: 'Star', size: 20, color: '#f59e0b' } },
+      { id: 'test-star-1', type: 'Icon', props: { icon: 'lucide:star', size: 20, color: '#f59e0b' } },
+      { id: 'test-star-2', type: 'Icon', props: { icon: 'lucide:star', size: 20, color: '#f59e0b' } },
+      { id: 'test-star-3', type: 'Icon', props: { icon: 'lucide:star', size: 20, color: '#f59e0b' } },
     ],
   },
   Breadcrumbs: {
@@ -101,7 +101,7 @@ const DISPLAY_NODES: Record<string, unknown> = {
     props: { className: 'flex flex-row items-center gap-1', style: { width: '240px', height: '24px' } },
     children: [
       { id: 'test-bc-home', type: 'Text', props: { className: 'text-sm text-primary' }, text: 'Home' },
-      { id: 'test-bc-sep', type: 'NavIcon', props: { icon: 'ChevronRight', size: 14, color: '#9ca3af' } },
+      { id: 'test-bc-sep', type: 'Icon', props: { icon: 'lucide:chevron-right', size: 14, color: '#9ca3af' } },
       { id: 'test-bc-page', type: 'Text', props: { className: 'text-sm text-foreground font-medium' }, text: 'Page' },
     ],
   },
@@ -137,9 +137,9 @@ const DISPLAY_NODES: Record<string, unknown> = {
     type: 'Box',
     props: { className: 'flex flex-row gap-1 items-center', style: { width: '240px', height: '36px' } },
     children: [
-      { id: 'test-pg-prev', type: 'Pressable', props: { className: 'w-8 h-8 rounded-md border border-border flex items-center justify-center' }, children: [{ id: 'test-pg-prev-icon', type: 'NavIcon', props: { icon: 'ChevronLeft', size: 14, color: '#6b7280' } }] },
+      { id: 'test-pg-prev', type: 'Pressable', props: { className: 'w-8 h-8 rounded-md border border-border flex items-center justify-center' }, children: [{ id: 'test-pg-prev-icon', type: 'Icon', props: { icon: 'lucide:chevron-left', size: 14, color: '#6b7280' } }] },
       { id: 'test-pg-1', type: 'Pressable', props: { className: 'w-8 h-8 rounded-md bg-primary flex items-center justify-center' }, children: [{ id: 'test-pg-1-text', type: 'Text', props: { className: 'text-sm font-medium text-primary-foreground' }, text: '1' }] },
-      { id: 'test-pg-next', type: 'Pressable', props: { className: 'w-8 h-8 rounded-md border border-border flex items-center justify-center' }, children: [{ id: 'test-pg-next-icon', type: 'NavIcon', props: { icon: 'ChevronRight', size: 14, color: '#6b7280' } }] },
+      { id: 'test-pg-next', type: 'Pressable', props: { className: 'w-8 h-8 rounded-md border border-border flex items-center justify-center' }, children: [{ id: 'test-pg-next-icon', type: 'Icon', props: { icon: 'lucide:chevron-right', size: 14, color: '#6b7280' } }] },
     ],
   },
   Accordion: {
@@ -153,7 +153,7 @@ const DISPLAY_NODES: Record<string, unknown> = {
         props: { className: 'flex flex-row items-center justify-between p-4 bg-background' },
         children: [
           { id: 'test-accordion-title', type: 'Text', props: { className: 'text-sm font-medium text-foreground' }, text: 'Section Title' },
-          { id: 'test-accordion-icon', type: 'NavIcon', props: { icon: 'ChevronDown', size: 16, color: '#6b7280' } },
+          { id: 'test-accordion-icon', type: 'Icon', props: { icon: 'lucide:chevron-down', size: 16, color: '#6b7280' } },
         ],
       },
       { id: 'test-accordion-body', type: 'Box', props: { className: 'p-4 bg-muted border-t border-border' }, children: [{ id: 'test-accordion-text', type: 'Text', props: { className: 'text-sm text-foreground' }, text: 'Content' }] },
@@ -622,12 +622,12 @@ test.describe('PD — Composite Components', () => {
     console.log('✅ Chip (Pressable) is container');
   });
 
-  test('PD-20: StarRating renders 3 NavIcon children', async () => {
+  test('PD-20: StarRating renders 3 Icon children', async () => {
     await injectNodes(sharedPage, [DISPLAY_NODES['StarRating'] as unknown as object]);
     await sharedPage.waitForSelector('[data-builder-id="test-star-rating"]', { timeout: 5_000 });
     const stars = sharedPage.locator('[data-builder-id^="test-star-"]');
     expect(await stars.count()).toBeGreaterThanOrEqual(3);
-    console.log('✅ StarRating renders multiple NavIcon stars');
+    console.log('✅ StarRating renders multiple Icon stars');
   });
 
   test('PD-21: Breadcrumbs → isContainer → Auto Layout shown', async () => {

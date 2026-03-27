@@ -55,6 +55,8 @@ import BuilderCanvas from './_canvas';
 import PanelLeft, { PageConfigSlidePanelContent } from './_panel-left';
 import PanelRight from './_panel-right';
 import { SlidePanel } from './_slide-panel';
+import { useAIGeneration, type WizardResult } from './_use-ai-generation';
+import { AIGeneratePanel } from './_ai-generate-panel';
 import {
   DataSlidePanelContent,
   getDataSlideTitle,
@@ -394,7 +396,7 @@ function TopBar({
   saveStatus: SaveStatus;
   projectId: string | null;
 }) {
-  const { undo, redo, historyIdx, history, selectedIds, pageNodes, viewport, setViewport, pages, currentPageId } = useBuilderStore();
+  const { undo, redo, historyIdx, history, selectedIds, pageNodes, viewport, setViewport, pages, currentPageId, aiMode, toggleAiMode } = useBuilderStore();
   const canUndo = historyIdx > 0;
   const canRedo = historyIdx < history.length - 1;
   const currentPageForPreview = pages.find(p => p.id === currentPageId);
@@ -485,6 +487,29 @@ function TopBar({
 
       {/* Dark / Light mode toggle */}
       <DarkModeToggle />
+
+      {/* AI Assistant toggle */}
+      <button
+        data-testid="btn-ai-mode"
+        onClick={toggleAiMode}
+        title={aiMode ? 'Close AI Assistant' : 'Open AI Assistant'}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          padding: '4px 10px',
+          background: aiMode ? 'linear-gradient(135deg, #7c3aed, #4f46e5)' : '#1e293b',
+          border: `1px solid ${aiMode ? '#7c3aed' : '#334155'}`,
+          borderRadius: 5,
+          color: aiMode ? '#fff' : '#94a3b8',
+          cursor: 'pointer',
+          fontSize: 11,
+          fontWeight: 600,
+          fontFamily: 'system-ui',
+          letterSpacing: '0.02em',
+          transition: 'all 0.15s',
+        }}
+      >
+        ✦ AI
+      </button>
 
       {/* Preview button — opens preview subdomain at the selected page route */}
       <button
@@ -692,6 +717,7 @@ export default function BuilderPage() {
   const store = useBuilderStore();
   const initTheme = useBuilderStore(s => s.initTheme);
   const loadFromConfig = useBuilderStore(s => s.loadFromConfig);
+  const setProjectContext = useBuilderStore(s => s.setProjectContext);
   const workflowCanvasTarget = useBuilderStore(s => s.workflowCanvasTarget);
   const closeWorkflowCanvas = useBuilderStore(s => s.closeWorkflowCanvas);
   const [leftSlide, setLeftSlide] = useState<LeftSlideState>(null);
@@ -700,6 +726,12 @@ export default function BuilderPage() {
   // True while loadFromConfig is in-flight — shows a full-screen loader so the
   // user never sees an empty canvas flash while the project config is loading.
   const [configLoading, setConfigLoading] = useState(true);
+
+  // AI generation — triggered when ?ai=build is present in URL after wizard
+  const { genState, start: startAIGeneration, cancel: cancelAIGeneration } = useAIGeneration();
+  const searchParams = useSearchParams();
+  const aiBuildMode = searchParams.get('ai') === 'build';
+  const [aiAppName, setAiAppName] = useState<string>('');
 
   // Persistent reference to the dev-preview window so we can reuse it and send
   // updated config via postMessage without reopening a new tab on every click.
@@ -725,7 +757,39 @@ export default function BuilderPage() {
         seedAutosaveBaseline(useBuilderStore.getState());
       }
       setConfigLoading(false);
+
+      // If wizard triggered AI build mode, start generation after config loads
+      if (aiBuildMode && projectId) {
+        const stored = localStorage.getItem(`ai_wizard_result_${projectId}`);
+        if (stored) {
+          try {
+            const wizardResult = JSON.parse(stored) as WizardResult;
+            setAiAppName(wizardResult.appName ?? '');
+            // Save wizard context to store so chat AI can use it for section generation
+            setProjectContext({
+              mood:           wizardResult.mood,
+              animationLevel: wizardResult.animationLevel,
+              description:    wizardResult.businessDescription,
+              appName:        wizardResult.appName,
+              category:       wizardResult.category,
+            });
+            // Small delay to let the store settle before inserting nodes
+            setTimeout(() => {
+              void startAIGeneration(wizardResult);
+              // Clean up localStorage key
+              localStorage.removeItem(`ai_wizard_result_${projectId}`);
+              // Remove ?ai=build from URL without triggering navigation
+              const url = new URL(window.location.href);
+              url.searchParams.delete('ai');
+              window.history.replaceState({}, '', url.toString());
+            }, 500);
+          } catch (e) {
+            console.error('[builder] Failed to parse wizard result:', e);
+          }
+        }
+      }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadFromConfig, projectId, seedAutosaveBaseline]);
 
   // Emergency save on tab close / refresh — uses keepalive fetch so the request
@@ -812,7 +876,7 @@ export default function BuilderPage() {
    *   static config/app.ts without any auth or backend dependency.
    */
   const openPreview = useCallback(async () => {
-    const { pageNodes, viewport, pages, currentPageId, themeOverrides, themeDarkOverrides, pageWorkflows, pageWorkflowMeta, globalWorkflows, globalWorkflowMeta } = useBuilderStore.getState();
+    const { pageNodes, viewport, pages, currentPageId, themeOverrides, themeDarkOverrides, pageWorkflows, pageWorkflowMeta, globalWorkflows, globalWorkflowMeta, customVars } = useBuilderStore.getState();
     const currentPage = pages.find(p => p.id === currentPageId);
 
     // Always save to localStorage so the standalone preview (/dev/builder/preview) still works
@@ -828,6 +892,7 @@ export default function BuilderPage() {
       globalWorkflows,
       globalWorkflowMeta,
       popupModels: getPopups(),
+      customVars,
     }));
 
     if (projectId) {
@@ -1100,6 +1165,15 @@ export default function BuilderPage() {
         <WorkflowCanvas
           target={workflowCanvasTarget}
           onClose={closeWorkflowCanvas}
+        />
+      )}
+
+      {/* AI Generation panel — slides in from the right during wizard AI build */}
+      {genState.active && (
+        <AIGeneratePanel
+          appName={aiAppName}
+          genState={genState}
+          onCancel={cancelAIGeneration}
         />
       )}
     </div>

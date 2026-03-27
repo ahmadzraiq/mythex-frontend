@@ -154,9 +154,9 @@
                                         "condition": "arrayIncludes(route?.facets || [], context?.item?.data?.facetValue?.id)",
                                         "children": [
                                           {
-                                            "type": "NavIcon",
+                                            "type": "Icon",
                                             "props": {
-                                              "icon": "Check",
+                                              "icon": "lucide:check",
                                               "size": 10,
                                               "className": "!text-white"
                                             }
@@ -251,9 +251,9 @@
                             }
                           },
                           {
-                            "type": "NavIcon",
+                            "type": "Icon",
                             "props": {
-                              "icon": "ChevronDown",
+                              "icon": "lucide:chevron-down",
                               "size": 14,
                               "color": "#6b7280"
                             }
@@ -286,9 +286,9 @@
                                 "text": "Name: A to Z"
                               },
                               {
-                                "type": "NavIcon",
+                                "type": "Icon",
                                 "props": {
-                                  "icon": "Check",
+                                  "icon": "lucide:check",
                                   "size": 14,
                                   "color": "#7c3aed"
                                 },
@@ -315,9 +315,9 @@
                                 "text": "Name: Z to A"
                               },
                               {
-                                "type": "NavIcon",
+                                "type": "Icon",
                                 "props": {
-                                  "icon": "Check",
+                                  "icon": "lucide:check",
                                   "size": 14,
                                   "color": "#7c3aed"
                                 },
@@ -344,9 +344,9 @@
                                 "text": "Price: Low to High"
                               },
                               {
-                                "type": "NavIcon",
+                                "type": "Icon",
                                 "props": {
-                                  "icon": "Check",
+                                  "icon": "lucide:check",
                                   "size": 14,
                                   "color": "#7c3aed"
                                 },
@@ -373,9 +373,9 @@
                                 "text": "Price: High to Low"
                               },
                               {
-                                "type": "NavIcon",
+                                "type": "Icon",
                                 "props": {
-                                  "icon": "Check",
+                                  "icon": "lucide:check",
                                   "size": 14,
                                   "color": "#7c3aed"
                                 },

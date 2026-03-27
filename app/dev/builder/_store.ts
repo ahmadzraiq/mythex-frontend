@@ -22,6 +22,7 @@ import root from '@/config/root';
 import { resolveScreenConfig, type ConfigRegistry } from '@/lib/sdui/config-resolver';
 import { updatePopup, getPopups } from '@/lib/builder/popup-data';
 import { getBuilderConfig } from '@/lib/builder/config-data';
+import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 
 // ─── Node-tree helpers (extracted to _store-node-helpers.ts) ────────────────
 // Single import for internal use; explicit re-exports for external consumers.
@@ -54,6 +55,7 @@ export type {
   PageMeta, BuilderPage,
   WorkflowMeta, WorkflowCanvasTarget,
   BuilderStore,
+  AiChatMessage, AiChatRole, AiToolCall,
 } from './_store-types';
 export { VIEWPORT_WIDTHS } from './_store-types';
 
@@ -510,6 +512,85 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     get()._pushHistory();
   },
 
+  // Insert a node (with freshly-assigned IDs) into a specific page by ID.
+  // Does NOT switch the active page — safe for parallel background generation.
+  insertNodeIntoPage: (pageId, node) => {
+    set(s => {
+      const assignedNode = _assignIds([node], pageId, { n: Date.now() })[0];
+      const pages = (s.pages as BuilderPage[]).map(p =>
+        p.id === pageId
+          ? { ...p, nodes: [...(p.nodes as SDUINode[]), assignedNode] }
+          : p
+      );
+      if (s.currentPageId === pageId) {
+        return { pages, pageNodes: pages.find(p => p.id === pageId)!.nodes as SDUINode[] };
+      }
+      return { pages };
+    });
+  },
+
+  // Prepend a node (Nav) at the beginning of a specific page.
+  prependNodeIntoPage: (pageId, node) => {
+    set(s => {
+      const assignedNode = _assignIds([node], `${pageId}-prepend`, { n: Date.now() })[0];
+      const pages = (s.pages as BuilderPage[]).map(p =>
+        p.id === pageId
+          ? { ...p, nodes: [assignedNode, ...(p.nodes as SDUINode[])] }
+          : p
+      );
+      if (s.currentPageId === pageId) {
+        return { pages, pageNodes: pages.find(p => p.id === pageId)!.nodes as SDUINode[] };
+      }
+      return { pages };
+    });
+  },
+
+  // Append a node (Footer) at the end of a specific page.
+  appendNodeIntoPage: (pageId, node) => {
+    set(s => {
+      const assignedNode = _assignIds([node], `${pageId}-append`, { n: Date.now() })[0];
+      const pages = (s.pages as BuilderPage[]).map(p =>
+        p.id === pageId
+          ? { ...p, nodes: [...(p.nodes as SDUINode[]), assignedNode] }
+          : p
+      );
+      if (s.currentPageId === pageId) {
+        return { pages, pageNodes: pages.find(p => p.id === pageId)!.nodes as SDUINode[] };
+      }
+      return { pages };
+    });
+  },
+
+  // Append a child node into an existing node by ID — used for progressive AI streaming.
+  // Finds the target node anywhere in the page tree and appends the child to its children array.
+  appendChildToNode: (pageId, nodeId, child) => {
+    set(s => {
+      const assignedChild = _assignIds([child], `${pageId}-child`, { n: Date.now() })[0];
+
+      const appendToNode = (nodes: SDUINode[]): SDUINode[] =>
+        nodes.map(n => {
+          if (n.id === nodeId) {
+            return { ...n, children: [...((n.children as SDUINode[]) ?? []), assignedChild] };
+          }
+          if (Array.isArray(n.children)) {
+            return { ...n, children: appendToNode(n.children as SDUINode[]) };
+          }
+          return n;
+        });
+
+      const pages = (s.pages as BuilderPage[]).map(p => {
+        if (p.id !== pageId) return p;
+        const updatedNodes = appendToNode(p.nodes as SDUINode[]);
+        return { ...p, nodes: updatedNodes };
+      });
+
+      if (s.currentPageId === pageId) {
+        return { pages, pageNodes: pages.find(p => p.id === pageId)!.nodes as SDUINode[] };
+      }
+      return { pages };
+    });
+  },
+
   moveNode: (nodeId, newParentId, atIdx) => {
     set(s => {
       const node = findNode(s.pageNodes, nodeId);
@@ -647,6 +728,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     set(s => ({
       pageNodes: removeNodesByIds(s.pageNodes, idSet),
       selectedIds: s.selectedIds.filter(id => !idSet.has(id)),
+      aiSelectedNodeIds: s.aiSelectedNodeIds.filter(id => !idSet.has(id)),
     }));
     get()._pushHistory();
   },
@@ -844,14 +926,25 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   // ── Selection ───────────────────────────────────────────────────────────────
 
   select: (id, multi = false) => {
-    if (id === null) { set({ selectedIds: [] }); return; }
+    if (id === null) { set({ selectedIds: [], aiSelectedNodeIds: [] }); return; }
     if (get().lockedIds.has(id)) return;
     set(s => {
       if (multi) {
         const already = s.selectedIds.includes(id);
-        return { selectedIds: already ? s.selectedIds.filter(sid => sid !== id) : [...s.selectedIds, id] };
+        const newSelectedIds = already
+          ? s.selectedIds.filter(sid => sid !== id)
+          : [...s.selectedIds, id];
+        // In AI mode, keep aiSelectedNodeIds in sync with multi-select
+        const newAiIds = s.aiMode
+          ? (already ? s.aiSelectedNodeIds.filter(aid => aid !== id) : [...s.aiSelectedNodeIds, id])
+          : s.aiSelectedNodeIds;
+        return { selectedIds: newSelectedIds, aiSelectedNodeIds: newAiIds };
       }
-      return { selectedIds: [id] };
+      // Single select: in AI mode, replace aiSelectedNodeIds; otherwise keep
+      return {
+        selectedIds: [id],
+        aiSelectedNodeIds: s.aiMode ? [id] : s.aiSelectedNodeIds,
+      };
     });
   },
 
@@ -1101,6 +1194,57 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   _requestRingUpdate: () => {},
   _setRingUpdateCallback: (fn) => set({ _requestRingUpdate: fn ?? (() => {}) }),
 
+  // ── AI Chat ────────────────────────────────────────────────────────────────
+  aiMode: false,
+  aiChatHistory: [],
+  aiSelectedNodeIds: [],
+  aiGenerating: false,
+  aiCurrentThreadId: null,
+  aiCurrentTool: null,
+  aiSelectedModel: 'claude-haiku-4-5' as import('./_store-types').BuilderModelId,
+
+  projectMood: '',
+  projectAnimationLevel: 2,
+  projectDescription: '',
+  projectAppName: '',
+  projectCategory: 'general',
+
+  setProjectContext: (ctx) => set(s => ({
+    projectMood:           ctx.mood           ?? s.projectMood,
+    projectAnimationLevel: ctx.animationLevel  ?? s.projectAnimationLevel,
+    projectDescription:    ctx.description    ?? s.projectDescription,
+    projectAppName:        ctx.appName        ?? s.projectAppName,
+    projectCategory:       ctx.category       ?? s.projectCategory,
+  })),
+
+  toggleAiMode: () => set(s => ({ aiMode: !s.aiMode })),
+  addAiChatMessage: (msg) => set(s => ({ aiChatHistory: [...s.aiChatHistory, msg] })),
+  updateLastAiMessage: (patch) => set(s => {
+    const history = [...s.aiChatHistory];
+    if (history.length === 0) return {};
+    history[history.length - 1] = { ...history[history.length - 1], ...patch };
+    return { aiChatHistory: history };
+  }),
+  clearAiChat: () => set({ aiChatHistory: [], aiCurrentThreadId: null }),
+  setAiSelectedNodeIds: (ids) => set({ aiSelectedNodeIds: ids }),
+  setAiGenerating: (v) => set({ aiGenerating: v }),
+  setAiCurrentThreadId: (id) => set({ aiCurrentThreadId: id }),
+  setAiCurrentTool: (name) => set({ aiCurrentTool: name }),
+  setAiSelectedModel: (id) => set({ aiSelectedModel: id }),
+  cancelEditMessage: () => {}, // no-op — edit state is now local to the panel component
+  prependAiChatMessages: (msgs) => set(s => {
+    const existingIds = new Set(s.aiChatHistory.map(m => m.id));
+    const fresh = msgs.filter(m => !existingIds.has(m.id));
+    if (fresh.length === 0) return {};
+    return { aiChatHistory: [...fresh, ...s.aiChatHistory] };
+  }),
+  truncateAiChatAt: (messageId) => set(s => {
+    const idx = s.aiChatHistory.findIndex(m => m.id === messageId);
+    if (idx < 0) return {};
+    // Keep the edited message itself; drop everything after it.
+    return { aiChatHistory: s.aiChatHistory.slice(0, idx + 1) };
+  }),
+
   _pushHistory: () => {
     set(s => {
       const snap = clone(s.pageNodes);
@@ -1140,7 +1284,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
 
   // ── Page management ──────────────────────────────────────────────────────────
 
-  addPage: (route, name) => {
+  addPage: (route, name, id?) => {
     set(s => {
       // Guard: don't add a page for a route that already exists
       const existing = s.pages.find(p => p.route === route);
@@ -1151,7 +1295,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
         p.id === s.currentPageId ? { ...p, nodes: clone(s.pageNodes) } : p
       );
       const newPage: BuilderPage = {
-        id: `page-${Date.now()}`,
+        id: id ?? `page-${Date.now()}`,
         name: name ?? route,
         route,
         nodes: [],
@@ -1642,10 +1786,35 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     };
   }),
 
-  addCustomVar: (v) =>
-    set(s => ({ customVars: [...s.customVars.filter(x => x.name !== v.name), v] })),
-  updateCustomVar: (name, patch) =>
-    set(s => ({ customVars: s.customVars.map(v => v.name === name ? { ...v, ...patch } : v) })),
+  addCustomVar: (v) => {
+    const id = v.id ?? crypto.randomUUID();
+    const varWithId: CustomVar = { ...v, id };
+    // Seed the initial value into the global variable store so formula
+    // evaluation (variables['uuid']) resolves immediately after creation.
+    const vs = getGlobalVariableStore().getState();
+    const fullState = vs.getFullState() as Record<string, unknown>;
+    if (fullState[id] === undefined) {
+      vs.setState((prev: Record<string, unknown>) => ({ ...prev, [id]: varWithId.initialValue ?? null }));
+    }
+    set(s => ({
+      customVars: [
+        ...s.customVars.filter(x => x.name !== v.name),
+        varWithId,
+      ],
+    }));
+  },
+  updateCustomVar: (name, patch) => {
+    // Sync initialValue changes to the global variable store so preview stays live
+    if ('initialValue' in patch) {
+      const current = useBuilderStore.getState().customVars.find(v => v.name === name);
+      if (current?.id) {
+        getGlobalVariableStore().getState().setState((prev: Record<string, unknown>) => ({
+          ...prev, [current.id!]: patch.initialValue ?? null,
+        }));
+      }
+    }
+    set(s => ({ customVars: s.customVars.map(v => v.name === name ? { ...v, ...patch } : v) }));
+  },
   removeCustomVar: (name) =>
     set(s => ({ customVars: s.customVars.filter(v => v.name !== name) })),
 
@@ -1734,6 +1903,14 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
             if (Array.isArray(saved?.dsFolders)) next.dsFolders = saved!.dsFolders as typeof s.dsFolders;
             if (saved?.themeOverrides) next.themeOverrides = saved.themeOverrides as typeof s.themeOverrides;
             if (saved?.themeDarkOverrides) next.themeDarkOverrides = saved.themeDarkOverrides as typeof s.themeDarkOverrides;
+            if (saved?.projectMeta && typeof saved.projectMeta === 'object') {
+              const pm = saved.projectMeta as { mood?: string; animationLevel?: number; description?: string; appName?: string; category?: string };
+              if (pm.mood)           next.projectMood           = pm.mood;
+              if (pm.animationLevel) next.projectAnimationLevel = pm.animationLevel;
+              if (pm.description)    next.projectDescription    = pm.description;
+              if (pm.appName)        next.projectAppName        = pm.appName;
+              if (pm.category)       next.projectCategory       = pm.category;
+            }
             return next;
           });
 
@@ -1746,6 +1923,24 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
           }
           if (saved?.themeDarkOverrides && typeof saved.themeDarkOverrides === 'object') {
             _applyDarkOverrides(saved.themeDarkOverrides as Record<string, string>);
+          }
+
+          // Seed loaded custom variables into the global variable store so
+          // formula evaluation (variables['uuid']) resolves immediately.
+          // The global store is only initialized from config/variables.json at
+          // module load time — project-saved variables must be seeded explicitly.
+          if (Array.isArray(saved?.customVars) && (saved!.customVars as CustomVar[]).length > 0) {
+            const vs = getGlobalVariableStore().getState();
+            const fullState = vs.getFullState() as Record<string, unknown>;
+            const patches: Record<string, unknown> = {};
+            for (const cv of saved!.customVars as CustomVar[]) {
+              if (cv.id && !(cv.id in fullState)) {
+                patches[cv.id] = cv.initialValue ?? null;
+              }
+            }
+            if (Object.keys(patches).length > 0) {
+              vs.setState((prev: Record<string, unknown>) => ({ ...prev, ...patches }));
+            }
           }
         } else {
           // ── Brand new project (no pages) — seed a default Home page ──────────

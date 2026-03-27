@@ -31,7 +31,7 @@
             "type": "Box",
             "props": { "className": "px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex flex-row items-center gap-2" },
             "children": [
-              { "type": "NavIcon", "props": { "icon": "Layers", "size": 15, "color": "#6366f1" } },
+              { "type": "Icon", "props": { "icon": "lucide:layers", "size": 15, "color": "#6366f1" } },
               { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white" }, "text": "Popup Types" }
             ]
           },
@@ -48,7 +48,7 @@
                     "props": { "action": "primary", "size": "sm", "data-testid": "open-modal-btn" },
                     "actions": [{ "action": "openTestModal" }],
                     "children": [
-                      { "type": "NavIcon", "props": { "icon": "SquareX", "size": 14 } },
+                      { "type": "Icon", "props": { "icon": "lucide:square-x", "size": 14 } },
                       { "type": "ButtonText", "text": "Open Modal" }
                     ]
                   },
@@ -57,7 +57,7 @@
                     "props": { "action": "primary", "size": "sm", "data-testid": "open-sheet-btn" },
                     "actions": [{ "action": "openTestSheet" }],
                     "children": [
-                      { "type": "NavIcon", "props": { "icon": "PanelRight", "size": 14 } },
+                      { "type": "Icon", "props": { "icon": "lucide:panel-right", "size": 14 } },
                       { "type": "ButtonText", "text": "Open Sheet" }
                     ]
                   },
@@ -66,7 +66,7 @@
                     "props": { "action": "primary", "size": "sm", "data-testid": "open-alert-btn" },
                     "actions": [{ "action": "openTestAlert" }],
                     "children": [
-                      { "type": "NavIcon", "props": { "icon": "AlertTriangle", "size": 14 } },
+                      { "type": "Icon", "props": { "icon": "lucide:alert-triangle", "size": 14 } },
                       { "type": "ButtonText", "text": "Open Alert" }
                     ]
                   },
@@ -75,7 +75,7 @@
                     "props": { "action": "outline", "size": "sm", "data-testid": "close-all-btn" },
                     "actions": [{ "action": "closeAllTestPopups" }],
                     "children": [
-                      { "type": "NavIcon", "props": { "icon": "X", "size": 14 } },
+                      { "type": "Icon", "props": { "icon": "X", "size": 14 } },
                       { "type": "ButtonText", "text": "Close All" }
                     ]
                   }
@@ -102,7 +102,7 @@
             "type": "Box",
             "props": { "className": "px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex flex-row items-center gap-2" },
             "children": [
-              { "type": "NavIcon", "props": { "icon": "BellRing", "size": 15, "color": "#3b82f6" } },
+              { "type": "Icon", "props": { "icon": "lucide:bell-ring", "size": 15, "color": "#3b82f6" } },
               { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white" }, "text": "Stacked Alerts" }
             ]
           },
@@ -124,7 +124,7 @@
                     "props": { "action": "primary", "size": "sm", "data-testid": "open-stacked-1-btn" },
                     "actions": [{ "action": "openStackedAlert1" }],
                     "children": [
-                      { "type": "NavIcon", "props": { "icon": "Upload", "size": 14 } },
+                      { "type": "Icon", "props": { "icon": "lucide:upload", "size": 14 } },
                       { "type": "ButtonText", "text": "File uploaded" }
                     ]
                   },
@@ -133,7 +133,7 @@
                     "props": { "action": "primary", "size": "sm", "data-testid": "open-stacked-2-btn" },
                     "actions": [{ "action": "openStackedAlert2" }],
                     "children": [
-                      { "type": "NavIcon", "props": { "icon": "MessageCircle", "size": 14 } },
+                      { "type": "Icon", "props": { "icon": "lucide:message-circle", "size": 14 } },
                       { "type": "ButtonText", "text": "New message" }
                     ]
                   },
@@ -142,7 +142,7 @@
                     "props": { "action": "primary", "size": "sm", "data-testid": "open-stacked-3-btn" },
                     "actions": [{ "action": "openStackedAlert3" }],
                     "children": [
-                      { "type": "NavIcon", "props": { "icon": "CreditCard", "size": 14 } },
+                      { "type": "Icon", "props": { "icon": "lucide:credit-card", "size": 14 } },
                       { "type": "ButtonText", "text": "Payment received" }
                     ]
                   },
@@ -151,7 +151,7 @@
                     "props": { "action": "outline", "size": "sm" },
                     "actions": [{ "action": "closeAllTestPopups" }],
                     "children": [
-                      { "type": "NavIcon", "props": { "icon": "X", "size": 14 } },
+                      { "type": "Icon", "props": { "icon": "X", "size": 14 } },
                       { "type": "ButtonText", "text": "Clear stack" }
                     ]
                   }
@@ -178,7 +178,7 @@
             "type": "Box",
             "props": { "className": "px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex flex-row items-center gap-2" },
             "children": [
-              { "type": "NavIcon", "props": { "icon": "Clock", "size": 15, "color": "#6366f1" } },
+              { "type": "Icon", "props": { "icon": "lucide:clock", "size": 15, "color": "#6366f1" } },
               { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white" }, "text": "Wait Close Event" }
             ]
           },
@@ -200,7 +200,7 @@
                     "props": { "action": "primary", "size": "sm", "data-testid": "open-wait-btn" },
                     "actions": [{ "action": "openAndWaitClose" }],
                     "children": [
-                      { "type": "NavIcon", "props": { "icon": "Play", "size": 14 } },
+                      { "type": "Icon", "props": { "icon": "lucide:play", "size": 14 } },
                       { "type": "ButtonText", "text": "Open & Wait" }
                     ]
                   },

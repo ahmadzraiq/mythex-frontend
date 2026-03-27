@@ -27,6 +27,7 @@ import type { SDUIConfig } from '@/lib/sdui/types';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import appConfig from '@/config/app';
 import { loadPopups } from '@/lib/builder/popup-data';
+import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const app = appConfig as any;
@@ -60,6 +61,7 @@ interface ProjectConfig {
   themeOverrides?: Record<string, string>;
   themeDarkOverrides?: Record<string, string>;
   popupModels?: Record<string, unknown>;
+  customVars?: Array<{ id?: string; type?: string; initialValue?: unknown }>;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -154,6 +156,8 @@ function applyTheme(light: Record<string, string>, dark: Record<string, string>)
   for (const [k, v] of Object.entries(light)) {
     if (v.startsWith('#')) {
       colorLines.push(`  --${k}: ${hexToRgbTriplet(v)};`);
+      // Keep --theme-${k} (hex) in sync so var(--theme-background) etc. resolve correctly
+      colorLines.push(`  --theme-${k}: ${v};`);
     } else if (k === 'font-heading' || k === 'font-body') {
       // Fonts MUST go on body{} — ThemeStyles also targets body and comes earlier
       // in the DOM (React renders it at the top of <body>). We're appended to the
@@ -172,8 +176,31 @@ function applyTheme(light: Record<string, string>, dark: Record<string, string>)
   lightEl.textContent = parts.join('\n\n');
 
   const darkEl = getOrCreateStyle('preview-dark-overrides');
-  const darkVars = Object.entries(dark).map(([k, v]) => `  --${k}: ${hexToRgbTriplet(v)};`).join('\n');
+  const darkVars = Object.entries(dark).map(([k, v]) => {
+    const isHex = v.startsWith('#');
+    const rgbLine = `  --${k}: ${isHex ? hexToRgbTriplet(v) : v};`;
+    // Keep --theme-${k} (hex) in sync for dark mode too
+    const themeLine = isHex ? `\n  --theme-${k}: ${v};` : '';
+    return rgbLine + themeLine;
+  }).join('\n');
   darkEl.textContent = `html.dark {\n${darkVars ? darkVars + '\n' : ''}${GLUESTACK_PRIMARY_BRIDGE}\n}`;
+}
+
+/** Seed UI-created custom variables into the global store so formulas resolve. */
+function seedCustomVars(cfg: ProjectConfig) {
+  const vars = cfg.customVars;
+  if (!Array.isArray(vars) || vars.length === 0) return;
+  const vs = getGlobalVariableStore().getState();
+  const fullState = vs.getFullState() as Record<string, unknown>;
+  const patches: Record<string, unknown> = {};
+  for (const v of vars) {
+    if (v.id && !(v.id in fullState)) {
+      patches[v.id] = v.initialValue ?? null;
+    }
+  }
+  if (Object.keys(patches).length > 0) {
+    vs.setState((prev: Record<string, unknown>) => ({ ...prev, ...patches }));
+  }
 }
 
 function buildActionsConfig(config: ProjectConfig): Record<string, unknown> {
@@ -186,7 +213,6 @@ function buildActionsConfig(config: ProjectConfig): Record<string, unknown> {
     if (!workflows) return;
     for (const [uuid, steps] of Object.entries(workflows)) {
       result[uuid] = {
-        type: 'workflowSteps',
         trigger: meta?.[uuid]?.trigger ?? 'click',
         steps,
       };
@@ -225,6 +251,7 @@ export default function AppPreviewPage() {
           if (cfg.themeOverrides || cfg.themeDarkOverrides) {
             applyTheme(cfg.themeOverrides ?? {}, cfg.themeDarkOverrides ?? {});
           }
+          seedCustomVars(cfg);
           setProjectConfig(cfg);
           setLoading(false);
           return;
@@ -258,6 +285,9 @@ export default function AppPreviewPage() {
       if (cfg.themeOverrides || cfg.themeDarkOverrides) {
         applyTheme(cfg.themeOverrides ?? {}, cfg.themeDarkOverrides ?? {});
       }
+
+      // Seed UI-created custom variables into the global store
+      seedCustomVars(cfg);
 
       setProjectConfig(cfg);
     } catch (err) {
@@ -329,7 +359,7 @@ export default function AppPreviewPage() {
     state: {},
     ui: {
       type: 'Box',
-      props: { className: 'flex flex-col w-full min-h-screen' },
+      props: { className: 'flex flex-col w-full min-h-screen items-start relative' },
       children: (currentPage?.nodes ?? []) as SDUINode[],
     } as SDUIConfig['ui'],
   }), [currentPage]);

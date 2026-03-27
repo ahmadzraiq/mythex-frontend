@@ -274,7 +274,7 @@ test.describe('TCN-04: Add Navigate to action and save workflow on Text node', (
     await expect(createCta).not.toBeVisible({ timeout: 2_000 });
   });
 
-  test('after closing canvas, the Text node has actions saved in wrapped workflowSteps format', async () => {
+  test('after closing canvas, the Text node has actions saved as a page-workflow reference', async () => {
     await closeCanvas(sharedPage);
 
     const result = await sharedPage.evaluate((nodeId) => {
@@ -297,26 +297,32 @@ test.describe('TCN-04: Add Navigate to action and save workflow on Text node', (
       const actions = node.actions as unknown[] | undefined;
       if (!Array.isArray(actions) || actions.length === 0) return { found: true, hasActions: false };
 
-      // New format: [{ type: 'workflowSteps', trigger: 'click', steps: [...] }]
-      const wrapper = actions[0] as Record<string, unknown>;
+      // New format: node actions are [{ action: uuid }] references into pageWorkflows.
+      const ref = actions[0] as Record<string, unknown>;
+      const workflowUuid = ref.action as string | undefined;
+      if (!workflowUuid) return { found: true, hasActions: true, hasRef: false };
+
+      const pageWorkflows = (store?.pageWorkflows as Record<string, unknown[]>) ?? {};
+      const pageWorkflowMeta = (store?.pageWorkflowMeta as Record<string, Record<string, unknown>>) ?? {};
+      const wfSteps = pageWorkflows[workflowUuid];
+      const wfMeta = pageWorkflowMeta[workflowUuid];
       return {
         found: true,
         hasActions: true,
-        isWrapped: wrapper.type === 'workflowSteps',
-        trigger: wrapper.trigger,
-        hasSteps: Array.isArray(wrapper.steps) && (wrapper.steps as unknown[]).length > 0,
+        hasRef: true,
+        hasSteps: Array.isArray(wfSteps) && wfSteps.length > 0,
+        trigger: wfMeta?.trigger as string | undefined,
       };
     }, TEXT_NODE_ID);
 
     expect(result.found).toBe(true);
     expect(result.hasActions).toBe(true);
-    // Actions must be wrapped in workflowSteps so the SDUI engine can dispatch them
-    expect(result.isWrapped).toBe(true);
-    expect(result.trigger).toBe('click');
+    expect(result.hasRef).toBe(true);
     expect(result.hasSteps).toBe(true);
+    expect(result.trigger).toBe('click');
   });
 
-  test('saved actions on Text node contain a navigate step inside the workflowSteps wrapper', async () => {
+  test('saved page-workflow for Text node contains a navigate step', async () => {
     await closeCanvas(sharedPage);
 
     const hasNavigateStep = await sharedPage.evaluate((nodeId) => {
@@ -339,9 +345,12 @@ test.describe('TCN-04: Add Navigate to action and save workflow on Text node', (
       const actions = node.actions as Array<Record<string, unknown>> | undefined;
       if (!Array.isArray(actions) || actions.length === 0) return false;
 
-      // New wrapped format: [{ type: 'workflowSteps', steps: [{ type: 'navigateTo', ... }] }]
-      const wrapper = actions[0];
-      const steps = (wrapper.steps as Array<Record<string, unknown>>) ?? [];
+      // New format: [{ action: uuid }] — steps live in pageWorkflows[uuid]
+      const ref = actions[0];
+      const workflowUuid = ref.action as string | undefined;
+      if (!workflowUuid) return false;
+      const pageWorkflows = (store?.pageWorkflows as Record<string, Array<Record<string, unknown>>>) ?? {};
+      const steps = pageWorkflows[workflowUuid] ?? [];
       return steps.some((s) => (s.type as string | undefined)?.toLowerCase().includes('navigate'));
     }, TEXT_NODE_ID);
 
@@ -360,14 +369,30 @@ test.describe('TCN-05: Re-opening saved click workflow from right panel', () => 
       const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
       if (store && typeof store.closeWorkflowCanvas === 'function') (store.closeWorkflowCanvas as () => void)();
     });
-    // Inject a Text node that already has a navigate action saved
-    await injectAndSelectNode(sharedPage, {
-      id: TEXT_NODE_ID,
-      type: 'Text',
-      props: {},
-      text: 'Go somewhere',
-      actions: [{ type: 'workflowSteps', trigger: 'click', steps: [{ id: 's1', type: 'navigateTo', config: { path: '/' } }] }],
-    });
+    // Inject a Text node with a saved page-workflow reference (new format):
+    // node.actions = [{ action: uuid }], pageWorkflows[uuid] = steps, pageWorkflowMeta[uuid] = { trigger }
+    const WF_UUID = 'tcn05-wf-uuid-nav-0000000000001';
+    await sharedPage.evaluate(({ nodeId, wfUuid }) => {
+      const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
+      if (!store) return;
+      (store._setPageNodes as (nodes: unknown[]) => void)([{
+        id: nodeId,
+        type: 'Text',
+        props: {},
+        text: 'Go somewhere',
+        actions: [{ action: wfUuid }],
+      }]);
+      (store.setPageWorkflow as (id: string, steps: unknown[]) => void)(
+        wfUuid,
+        [{ id: 's1', type: 'navigateTo', config: { path: '/' } }],
+      );
+      (store.setPageWorkflowMeta as (id: string, meta: unknown) => void)(
+        wfUuid,
+        { id: wfUuid, name: 'Go somewhere workflow', trigger: 'click' },
+      );
+      if (typeof store.select === 'function') (store.select as (id: string) => void)(nodeId);
+    }, { nodeId: TEXT_NODE_ID, wfUuid: WF_UUID });
+    await sharedPage.waitForTimeout(200);
     await sharedPage.getByTestId('tab-right-workflows').click();
     await sharedPage.waitForTimeout(200);
   });
@@ -436,7 +461,7 @@ test.describe('TCN-06: Runtime renderer wraps Text with [data-clickable] on clic
       props: {},
       text: 'Navigate home',
       actions: [
-        { type: 'workflowSteps', trigger: 'click', steps: [{ id: 's1', type: 'navigateTo', config: { path: '/' } }] },
+        { trigger: 'click', steps: [{ id: 's1', type: 'navigateTo', config: { path: '/' } }] },
       ],
     });
 
@@ -497,7 +522,7 @@ test.describe('TCN-06: Runtime renderer wraps Text with [data-clickable] on clic
       props: {},
       children: [{ type: 'ButtonText', text: 'Go home', id: 'btn-text-inner' }],
       actions: [
-        { type: 'workflowSteps', trigger: 'click', steps: [{ id: 's1', type: 'navigateTo', config: { path: '/' } }] },
+        { trigger: 'click', steps: [{ id: 's1', type: 'navigateTo', config: { path: '/' } }] },
       ],
     });
 
@@ -641,10 +666,8 @@ test.describe('TCN-07: Full workflow creation verifies click trigger consistency
     expect(storeState!.type).toBe('Text');
     expect(storeState!.hasActions).toBe(true);
 
-    // Actions must be in the wrapped workflowSteps format for the engine to dispatch them:
-    // node.actions = [{ type: 'workflowSteps', trigger: 'click', steps: [{ type: 'navigateTo', ... }] }]
+    // Actions are saved as [{ trigger: 'click', steps: [{ type: 'navigateTo', ... }] }]
     const firstAction = (storeState!.actions as Array<Record<string, unknown>>)[0];
-    expect(firstAction.type).toBe('workflowSteps');
     expect(firstAction.trigger).toBe('click');
     expect(Array.isArray(firstAction.steps)).toBe(true);
 
@@ -731,7 +754,6 @@ test.describe('TCN-08: Navigate to — external URL fix (regression)', () => {
       text: 'Visit Google',
       actions: [
         {
-          type: 'workflowSteps',
           trigger: 'click',
           steps: [
             { id: 's1', type: 'navigateTo', config: { linkType: 'external', externalUrl: 'https://www.google.com/' } },

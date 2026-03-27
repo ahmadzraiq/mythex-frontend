@@ -15,7 +15,6 @@ export type SDUIComponentType =
   | 'VStack'
   | 'View'
   | 'Image'
-  | 'NextImage'
   | 'SocialIcon'
   | 'Icon'
   | 'Button'

@@ -82,13 +82,11 @@ function buildImageNode(item: AssetItem) {
   }
   const { w, h } = clampDimensions(item.width, item.height, MAX_W, MAX_H);
   return {
-    type: 'NextImage',
+    type: 'Image',
     id: crypto.randomUUID(),
+    src: item.src,
     props: {
-      src: item.src,
       alt: item.alt || 'image',
-      width: w,
-      height: h,
       className: 'object-cover rounded-md',
       style: { width: w, height: h, maxWidth: '100%' },
     },
@@ -97,15 +95,14 @@ function buildImageNode(item: AssetItem) {
 
 function buildIconNode(prefix: string, name: string) {
   return {
-    type: 'NextImage',
+    type: 'Icon',
     id: crypto.randomUUID(),
     props: {
-      src: `${ICONIFY_API}/${prefix}/${name}.svg`,
-      alt: name,
-      width: 24,
-      height: 24,
-      className: 'w-6 h-6',
-      style: { width: 24, height: 24 },
+      icon: `${prefix}:${name}`,
+      size: 24,
+      // Use the CSS variable so the icon tracks theme changes dynamically.
+      // Falls back to currentColor when --theme-primary isn't defined.
+      color: 'var(--theme-primary, currentColor)',
     },
   };
 }
@@ -129,7 +126,7 @@ function StockGrid({
   const [hoverId, setHoverId] = useState<string | number | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const debouncedQuery = useDebounce(query, 400);
+  const debouncedQuery = useDebounce(query, 150);
 
   // Refs so IntersectionObserver closure never goes stale — no deps needed
   const pageRef = useRef(1);
@@ -207,9 +204,11 @@ function StockGrid({
 
   const handleDragStart = (e: React.DragEvent, item: AssetItem) => {
     const node = buildImageNode(item);
-    e.dataTransfer.setData('text/primitive-node', JSON.stringify(node));
+    const data = JSON.stringify(node);
+    e.dataTransfer.setData('text/primitive-node', data);
+    // Store as JSON string so the canvas onDrop CDP fallback can call JSON.parse on it
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).__primitiveDrag = node;
+    (window as any).__primitiveDrag = data;
   };
 
   return (
@@ -351,7 +350,7 @@ function IconsPanel() {
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [loadingExpand, setLoadingExpand] = useState(false);
   const [hoveredIcon, setHoveredIcon] = useState<string | null>(null);
-  const debouncedQuery = useDebounce(query, 350);
+  const debouncedQuery = useDebounce(query, 150);
 
   // Load collections on mount
   useEffect(() => {
@@ -435,9 +434,11 @@ function IconsPanel() {
 
   const handleIconDrag = (e: React.DragEvent, prefix: string, name: string) => {
     const node = buildIconNode(prefix, name);
-    e.dataTransfer.setData('text/primitive-node', JSON.stringify(node));
+    const data = JSON.stringify(node);
+    e.dataTransfer.setData('text/primitive-node', data);
+    // Store as JSON string so the canvas onDrop CDP fallback can call JSON.parse on it
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).__primitiveDrag = node;
+    (window as any).__primitiveDrag = data;
   };
 
   const iconsToRender = debouncedQuery.trim() ? searchResults : [];
@@ -447,6 +448,7 @@ function IconsPanel() {
       {/* Search */}
       <div style={{ padding: '8px 8px 4px', flexShrink: 0 }}>
         <input
+          data-testid="assets-icon-search"
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="Search icons…"
@@ -568,6 +570,7 @@ function IconCell({
   return (
     <div
       draggable
+      data-testid="assets-icon-cell"
       onDragStart={onDragStart}
       onClick={onClick}
       onMouseEnter={() => onHover(iconKey)}
@@ -597,15 +600,16 @@ function IconCell({
 // ── Main AssetsTab ─────────────────────────────────────────────────────────────
 
 export function AssetsTab() {
-  const [tab, setTab] = useState<'stock' | 'icons'>('stock');
+  const [tab, setTab] = useState<'icons' | 'stock'>('icons');
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
       {/* Tab bar */}
       <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-        {(['stock', 'icons'] as const).map(t => (
+        {(['icons', 'stock'] as const).map(t => (
           <button
             key={t}
+            data-testid={`assets-subtab-${t}`}
             onClick={() => setTab(t)}
             style={{
               flex: 1, padding: '8px 0', background: 'none', border: 'none',
@@ -619,8 +623,8 @@ export function AssetsTab() {
         ))}
       </div>
 
-      {tab === 'stock' && <StockPanel />}
       {tab === 'icons' && <IconsPanel />}
+      {tab === 'stock' && <StockPanel />}
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }

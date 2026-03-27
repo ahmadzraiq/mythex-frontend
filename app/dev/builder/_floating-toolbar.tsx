@@ -278,8 +278,10 @@ export function FloatingToolbar({ selectedRect, node, canvasContainerRef }: Floa
             title="Delete (Delete)"
             danger
             onClick={() => {
-              if (!hasChildren || window.confirm(`Delete "${nodeId}" and its ${node.children!.length} child(ren)?`)) {
-                store.deleteNodes([nodeId]);
+              const idsToDelete = store.selectedIds.includes(nodeId) ? store.selectedIds : [nodeId];
+              const multiChild = idsToDelete.some(id => { const n = findNode(store.pageNodes, id); return (n?.children?.length ?? 0) > 0; });
+              if (!multiChild || idsToDelete.length > 1 || !hasChildren || window.confirm(`Delete "${nodeId}" and its ${node.children!.length} child(ren)?`)) {
+                store.deleteNodes(idsToDelete);
               }
             }}
           />

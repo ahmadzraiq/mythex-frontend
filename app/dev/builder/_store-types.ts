@@ -13,6 +13,62 @@
 
 import type { SDUINode } from '@/lib/sdui/types/node';
 
+// ─── AI Model registry ─────────────────────────────────────────────────────────
+
+export const BUILDER_MODELS = [
+  { id: 'claude-haiku-4-5',  label: 'Haiku',  description: 'Fast & efficient', supportsThinking: false },
+  { id: 'claude-sonnet-4-5', label: 'Sonnet', description: 'Smart + reasoning',  supportsThinking: true  },
+] as const;
+
+export type BuilderModelId = typeof BUILDER_MODELS[number]['id'];
+
+// ─── AI Chat types ─────────────────────────────────────────────────────────────
+
+export interface AiToolCall {
+  name: string;
+  input: Record<string, unknown>;
+  result?: unknown;
+  status?: 'pending' | 'success' | 'error' | 'generating';
+}
+
+export type AiChatRole = 'user' | 'assistant' | 'system';
+
+export interface AiImageResult {
+  url: string;
+  alt?: string;
+  thumbUrl?: string;
+  photographer?: string;
+}
+
+export interface AiIconResult {
+  id: string;
+  name: string;
+  prefix: string;
+}
+
+export interface AiChatMessage {
+  id: string;
+  role: AiChatRole;
+  content: string;
+  toolCalls?: AiToolCall[];
+  /** ISO date string */
+  createdAt: string;
+  /** Node IDs referenced in this message */
+  selectedNodeIds?: string[];
+  /** Whether this message is currently streaming */
+  streaming?: boolean;
+  /** Whether AI is between rounds (waiting for next Anthropic response) */
+  isThinking?: boolean;
+  /** Whether this message is in edit-rewind mode (user clicked ✎) */
+  isEditing?: boolean;
+  /** Extended thinking text (Sonnet only) — streamed via thinking_delta events */
+  thinkingContent?: string;
+  /** Image search results from search_images tool */
+  imageResults?: AiImageResult[];
+  /** Icon search results from search_icons tool */
+  iconResults?: AiIconResult[];
+}
+
 // ─── Viewport ─────────────────────────────────────────────────────────────────
 
 export interface GridOverlayConfig {
@@ -230,6 +286,14 @@ export interface BuilderStore {
   // Page mutations
   addSection: (variantId: string, node: SDUINode, atIdx?: number) => void;
   addNode: (node: SDUINode, parentId?: string | null, atIdx?: number) => void;
+  /** Insert a node into a specific page without switching the active page (used for parallel AI generation). */
+  insertNodeIntoPage: (pageId: string, node: SDUINode) => void;
+  /** Prepend a node (e.g. Nav) at the start of a specific page. */
+  prependNodeIntoPage: (pageId: string, node: SDUINode) => void;
+  /** Append a node (e.g. Footer) at the end of a specific page. */
+  appendNodeIntoPage: (pageId: string, node: SDUINode) => void;
+  /** Append a child node into an existing node (found by nodeId) — used for streaming AI generation. */
+  appendChildToNode: (pageId: string, nodeId: string, child: SDUINode) => void;
   moveNode: (nodeId: string, newParentId: string | null, atIdx: number) => void;
   moveNodes: (nodeIds: string[], newParentId: string | null, atIdx: number) => void;
   deleteNodes: (ids: string[]) => void;
@@ -285,7 +349,7 @@ export interface BuilderStore {
   moveNodeFromPage: (nodeId: string, fromPageId: string, parentId: string | null, atIdx: number) => void;
 
   // Pages
-  addPage: (route: string, name?: string) => void;
+  addPage: (route: string, name?: string, id?: string) => void;
   switchPage: (pageId: string) => void;
   /** Switch to a page AND signal the canvas to pan/zoom to it. */
   navigatePage: (pageId: string) => void;
@@ -342,7 +406,7 @@ export interface BuilderStore {
   /** Metadata (name, trigger, description) for each named workflow, keyed by name */
   pageWorkflowMeta: Record<string, WorkflowMeta>;
   /**
-   * Direct (non-workflowSteps) actions from config/actions/*.json, keyed by UUID.
+   * Direct actions (graphql, fetch, navigateTo, etc.) from config/actions/*.json, keyed by UUID.
    * Used by the workflow canvas to resolve ActionRefs to their real type (e.g. graphql)
    * instead of always showing them as "Call workflow".
    */
@@ -428,6 +492,51 @@ export interface BuilderStore {
   /** Load Data Sources, Workflows, Variables, Formulas from the app config files via the API.
    *  Only runs if panels are empty (user hasn't manually edited), unless forceReload=true. */
   loadFromConfig: (projectId?: string) => Promise<void>;
+
+  // ── AI Chat ──────────────────────────────────────────────────────────────────
+  aiMode: boolean;
+  aiChatHistory: AiChatMessage[];
+  aiSelectedNodeIds: string[];
+  aiGenerating: boolean;
+  aiCurrentThreadId: string | null;
+  /** Name of the tool currently being executed (shown in typing indicator) */
+  aiCurrentTool: string | null;
+  /** Currently selected AI model — persisted across sessions */
+  aiSelectedModel: BuilderModelId;
+
+  toggleAiMode: () => void;
+  addAiChatMessage: (msg: AiChatMessage) => void;
+  updateLastAiMessage: (patch: Partial<AiChatMessage>) => void;
+  clearAiChat: () => void;
+  setAiSelectedNodeIds: (ids: string[]) => void;
+  setAiGenerating: (v: boolean) => void;
+  setAiCurrentThreadId: (id: string | null) => void;
+  setAiCurrentTool: (name: string | null) => void;
+  setAiSelectedModel: (id: BuilderModelId) => void;
+  /** Prepend older messages (for infinite scroll) at the start of aiChatHistory */
+  cancelEditMessage: () => void;
+  prependAiChatMessages: (msgs: AiChatMessage[]) => void;
+  /** Remove a message and all messages after it (for edit/re-send) */
+  truncateAiChatAt: (messageId: string) => void;
+
+  // ── AI Project Context (from wizard — used by section generator) ─────────────
+  /** Design mood selected by the user/AI in the wizard (e.g. "organic", "modern") */
+  projectMood: string;
+  /** Animation level 0-3 selected in wizard */
+  projectAnimationLevel: number;
+  /** Business description from wizard */
+  projectDescription: string;
+  /** App name from wizard */
+  projectAppName: string;
+  /** Business category id from wizard (e.g. "restaurant", "ecommerce") */
+  projectCategory: string;
+  setProjectContext: (ctx: {
+    mood?: string;
+    animationLevel?: number;
+    description?: string;
+    appName?: string;
+    category?: string;
+  }) => void;
 
   // Internal (debounce wrapper)
   _pushHistory: () => void;

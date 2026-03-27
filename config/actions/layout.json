@@ -1,7 +1,6 @@
 {
   "eff1f469-2744-4ffc-93b2-12163ff2cc01": {
     "name": "openDrawer",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -16,7 +15,6 @@
   },
   "3d865a41-2f70-4992-b8a1-b24c02a47e51": {
     "name": "closeDrawer",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -31,7 +29,6 @@
   },
   "bb24976b-f167-48bb-a683-14cd4fe86d26": {
     "name": "openCartDrawer",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -46,7 +43,6 @@
   },
   "90ca7f64-f883-45db-95b6-b2bb3c46033e": {
     "name": "closeCartDrawer",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -61,7 +57,6 @@
   },
   "7ab8940c-8483-4237-8cdb-38c0d2290df4": {
     "name": "toggleThemeMenu",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -75,7 +70,6 @@
   },
   "8a42349d-44fb-46f8-8489-4c0f52b1f380": {
     "name": "closeThemeMenu",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -90,7 +84,6 @@
   },
   "9b3dad1d-504c-4fe8-b270-52aac8b88ac2": {
     "name": "applyThemeLight",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -104,7 +97,6 @@
   },
   "74948f69-b319-4b64-805f-ea51ea6e6cd9": {
     "name": "applyThemeDark",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -118,7 +110,6 @@
   },
   "6a527b9d-4dea-4465-b126-8e1d88811f9b": {
     "name": "applyThemeSystem",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -132,7 +123,6 @@
   },
   "6e3af5bc-85bf-491e-984e-55faa5e975f9": {
     "name": "setThemeLight",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -147,7 +137,6 @@
   },
   "36658639-6572-46b6-b296-8a92ab9592b2": {
     "name": "setThemeDark",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -162,7 +151,6 @@
   },
   "05784685-1412-4e52-81d7-026aa7a40663": {
     "name": "setThemeSystem",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -177,7 +165,6 @@
   },
   "9e33ef0a-706f-4555-b2ee-60fd95ebf416": {
     "name": "navigateToHome",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -192,7 +179,6 @@
   },
   "13a93f84-964f-4116-84da-d2af7cc3bc81": {
     "name": "navigateToCheckout",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -207,7 +193,6 @@
   },
   "3517ed88-9e35-42fd-8d44-650cb590d210": {
     "name": "navigateToSignIn",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -222,7 +207,6 @@
   },
   "765e9a1e-6248-4449-9b88-6d454fbfda1a": {
     "name": "navigateToForgotPassword",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -237,7 +221,6 @@
   },
   "f72de6d3-1e5c-4632-80b2-a2785dc4b0ee": {
     "name": "navigateToRegister",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -252,7 +235,6 @@
   },
   "d5d15a7d-ea78-467a-a181-2e801e93ce0f": {
     "name": "navigateToOrders",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -267,7 +249,6 @@
   },
   "08b2f4a8-16d3-4e61-bcce-e17a2097b8da": {
     "name": "navigateToAccountAddresses",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -282,7 +263,6 @@
   },
   "72ba89df-9230-4ca9-85dc-9294fa2062fb": {
     "name": "navigateToAccountProfile",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -297,7 +277,6 @@
   },
   "2283a150-1c0a-46a8-bee0-bf9ba12033c7": {
     "name": "navigateToSearchPage",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -312,7 +291,6 @@
   },
   "d0c34073-30be-448f-bb74-442b32bfebd1": {
     "name": "navigateToVerifyPending",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -327,7 +305,6 @@
   },
   "f867ff1e-dc6b-4694-8dca-44d6e1a23756": {
     "name": "navigateToCheckoutConfirmation",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -344,7 +321,6 @@
   },
   "f6046c33-0164-45b5-86aa-0710fc408247": {
     "name": "navigateToProduct",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -359,7 +335,6 @@
   },
   "85a454be-bb92-4878-a266-b54e35d2d4d5": {
     "name": "navigateToProductFromCart",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -374,7 +349,6 @@
   },
   "476b28a3-7e9c-44f9-8913-a6f8c4904630": {
     "name": "navigateToOrderDetail",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -389,7 +363,6 @@
   },
   "7ae5e4b1-51c4-4266-b001-971a30296623": {
     "name": "navigateToCollection",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -404,7 +377,6 @@
   },
   "e274e7f2-6c19-4697-9504-9c6ca450a5bd": {
     "name": "navigateToSearch",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -419,7 +391,6 @@
   },
   "9b2e0d51-893e-4a63-834c-f669440fb548": {
     "name": "submitSearch",
-    "type": "workflowSteps",
     "trigger": "change",
     "steps": [
       {
@@ -434,7 +405,6 @@
   },
   "398b94ec-901a-49c6-b19d-198854cefd07": {
     "name": "goToCart",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -453,7 +423,6 @@
   },
   "6f7a8b9c-0d1e-2f3a-4b5c-d6e7f8a9b0c1": {
     "name": "submitChangePassword",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -472,7 +441,6 @@
   },
   "7a8b9c0d-1e2f-3a4b-5c6d-e7f8a9b0c1d2": {
     "name": "submitRequestEmailUpdate",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -491,7 +459,6 @@
   },
   "82e7ed48-3f76-4130-af0d-8ecb1d2ae52a": {
     "name": "syncCheckoutStep",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -508,7 +475,6 @@
   },
   "5a65813b-1ea8-4680-b22b-2097c4ac32e1": {
     "name": "populateCheckoutForm",
-    "type": "workflowSteps",
     "trigger": "created",
     "steps": [
       {
@@ -619,7 +585,6 @@
   },
   "3dad612a-930c-4798-8219-3221363ea500": {
     "name": "fetchCheckoutDependentData",
-    "type": "workflowSteps",
     "trigger": "created",
     "steps": [
       {
@@ -654,7 +619,6 @@
   },
   "be1e38dd-eb02-41af-9e6d-d91b2130bb48": {
     "name": "clearCartAfterOrder",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -681,7 +645,6 @@
   },
   "eb7ad905-c8aa-41fb-8153-139882d25eea": {
     "name": "clearCheckoutSessionAndNavigate",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -700,7 +663,6 @@
   },
   "6d3e7961-7a06-4841-a1c9-0a16b7827bd3": {
     "name": "navigateToOrderConfirmation",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -715,7 +677,6 @@
   },
   "b1d69f5b-5a86-4987-a1ac-ce84880554ad": {
     "name": "goToCheckoutStep",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -730,7 +691,6 @@
   },
   "a1b2ce90-4498-47d2-b42f-e50f0a6972a7": {
     "name": "selectProductOption",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -746,7 +706,6 @@
   },
   "84c5de07-4f71-44a3-904a-020758146a5f": {
     "name": "prevProductImage",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -762,7 +721,6 @@
   },
   "b5760629-bb22-4ace-a567-406e1afe14d1": {
     "name": "nextProductImage",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -778,7 +736,6 @@
   },
   "59bc7c99-d110-4e01-8563-de6371d2147e": {
     "name": "selectProductImage",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -793,7 +750,6 @@
   },
   "c1d2e3f4-a5b6-7890-cdef-123456789012": {
     "name": "navigateToCart",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -807,7 +763,6 @@
   },
   "closeAllPopups": {
     "name": "closeAllPopups",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       { "id": "s1", "type": "closeAllPopups", "config": {} }
@@ -815,7 +770,6 @@
   },
   "closePopup": {
     "name": "closePopup",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       { "id": "s1", "type": "closePopup", "config": {} }
@@ -823,7 +777,6 @@
   },
   "autoCloseToast": {
     "name": "autoCloseToast",
-    "type": "workflowSteps",
     "trigger": "created",
     "steps": [
       { "id": "s1", "type": "timeDelay", "config": { "time": 4000 } },

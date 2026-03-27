@@ -37,6 +37,7 @@ interface BuilderLiveConfig {
   globalWorkflowMeta?: Record<string, Record<string, unknown>>;
   themeOverrides?: Record<string, string>;
   themeDarkOverrides?: Record<string, string>;
+  customVars?: Array<{ id?: string; type?: string; initialValue?: unknown }>;
 }
 
 function hexToRgbTriplet(hex: string): string {
@@ -124,7 +125,7 @@ function buildLiveActionsConfig(cfg: BuilderLiveConfig): ActionsConfig {
   const add = (wfs?: Record<string, unknown[]>, meta?: Record<string, Record<string, unknown>>) => {
     if (!wfs) return;
     for (const [uuid, steps] of Object.entries(wfs)) {
-      result[uuid] = { type: 'workflowSteps', trigger: meta?.[uuid]?.trigger ?? 'click', steps };
+      result[uuid] = { trigger: meta?.[uuid]?.trigger ?? 'click', steps };
     }
   };
   add(cfg.pageWorkflows, cfg.pageWorkflowMeta);
@@ -157,6 +158,21 @@ export default function DynamicRoutePage() {
       setBuilderLive(cfg);
       if (cfg.themeOverrides || cfg.themeDarkOverrides) {
         applyBuilderTheme(cfg.themeOverrides ?? {}, cfg.themeDarkOverrides ?? {});
+      }
+      // Seed UI-created custom variables into the global store so
+      // formulas like variables['uuid'] resolve in the preview.
+      if (Array.isArray(cfg.customVars) && cfg.customVars.length > 0) {
+        const vs = getGlobalVariableStore().getState();
+        const fullState = vs.getFullState() as Record<string, unknown>;
+        const patches: Record<string, unknown> = {};
+        for (const v of cfg.customVars) {
+          if (v.id && !(v.id in fullState)) {
+            patches[v.id] = v.initialValue ?? null;
+          }
+        }
+        if (Object.keys(patches).length > 0) {
+          vs.setState((prev: Record<string, unknown>) => ({ ...prev, ...patches }));
+        }
       }
     };
     window.addEventListener('message', handler);
@@ -281,7 +297,7 @@ export default function DynamicRoutePage() {
         state: {},
         ui: {
           type: 'Box',
-          props: { className: 'flex flex-col w-full min-h-screen' },
+          props: { className: 'flex flex-col w-full min-h-screen items-start relative' },
           children: (builderLive.nodes ?? []) as SDUINode[],
         } as SDUIConfig['ui'],
       }

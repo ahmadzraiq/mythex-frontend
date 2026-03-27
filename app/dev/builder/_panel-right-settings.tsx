@@ -16,6 +16,7 @@ import { SECTION_STYLE, LABEL_STYLE, SectionHeader, ToggleBtn } from './_panel-p
 import { FieldWithBinding, BindingIcon, type FormulaValue, closeAllEditors, registerEditorClose } from './_formula-panel';
 import { FormulaEditor } from './_formula-editor';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
+import { FigmaColorPicker } from './_color-picker';
 
 // ─── Settings Tab ─────────────────────────────────────────────────────────────
 
@@ -82,12 +83,13 @@ function OnOffToggle({ value, onChange }: { value: boolean; onChange: (v: boolea
 }
 
 /** Small text input for settings rows */
-function SettingsTextInput({ value, onChange, placeholder, expandable = false }: { value: string; onChange: (v: string) => void; placeholder?: string; expandable?: boolean }) {
+function SettingsTextInput({ value, onChange, placeholder, expandable = false, testId }: { value: string; onChange: (v: string) => void; placeholder?: string; expandable?: boolean; testId?: string }) {
   const [draft, setDraft] = useState(value);
   useEffect(() => { setDraft(value); }, [value]);
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1, justifyContent: 'flex-end' }}>
       <input
+        data-testid={testId}
         value={draft}
         onChange={e => setDraft(e.target.value)}
         onBlur={e => onChange(e.target.value)}
@@ -174,6 +176,402 @@ const RULE_DEFAULTS: Record<ValidationRuleType, Partial<ValidationRule>> = {
   formula:     { message: 'Invalid value' },
 };
 
+const ICONIFY_API_BASE = 'https://api.iconify.design';
+
+// ── SpecificRow: SettingsRow label + FieldWithBinding bind button ────────────
+
+/** A settings row that includes a formula-binding button beside every field. */
+function SpecificRow({
+  label,
+  fieldKey,
+  value,
+  onChange,
+  hint,
+  expectedType = 'string' as const,
+  children,
+}: {
+  label: string;
+  fieldKey: string;
+  value: FormulaValue;
+  onChange: (v: FormulaValue) => void;
+  hint?: string;
+  expectedType?: 'string' | 'number' | 'boolean' | 'any';
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', padding: '3px 12px', gap: 8 }}>
+      <span style={{ fontSize: 11, color: '#d1d5db', flexShrink: 0, minWidth: 80 }}>{label}</span>
+      <FieldWithBinding label={fieldKey} value={value} onChange={onChange} hint={hint} expectedType={expectedType}>
+        {children}
+      </FieldWithBinding>
+    </div>
+  );
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Resolve a CSS color value to hex for display in the FigmaColorPicker.
+ *  Handles hex strings, `var(--name)`, and `var(--name, fallback)` syntax.
+ *  Theme vars may be "R G B" triplets or plain hex strings on :root. */
+function resolveCssVarToHex(color: string): string {
+  if (!color || color === 'currentColor') return '#6b7280';
+  if (color.startsWith('#')) return color;
+  if (typeof document === 'undefined') return '#6b7280';
+  // Match both var(--name) and var(--name, fallback)
+  const match = color.match(/var\(--([\w-]+)/);
+  if (match) {
+    const val = getComputedStyle(document.documentElement).getPropertyValue(`--${match[1]}`).trim();
+    if (val) {
+      if (val.startsWith('#')) return val;
+      // "R G B" triplet → hex
+      const parts = val.split(/\s+/).map(Number);
+      if (parts.length === 3 && parts.every(n => !isNaN(n))) {
+        return `#${parts.map(n => n.toString(16).padStart(2, '0')).join('')}`;
+      }
+      return val;
+    }
+    // CSS var not defined — extract fallback from var(--name, fallback)
+    const fbMatch = color.match(/var\(--[\w-]+,\s*(.+)\)$/);
+    if (fbMatch) return resolveCssVarToHex(fbMatch[1].trim());
+  }
+  return '#6b7280';
+}
+
+// ── Icon Settings ───────────────────────────────────────────────────────
+
+function IconifySettings({ nodeId, nodeProps }: { nodeId: string; nodeProps: Record<string, unknown> }) {
+  const store = useBuilderStore();
+  const iconValue = (nodeProps.icon as string | undefined) ?? '';
+  // 'currentColor' means inherit surrounding CSS color
+  const rawColor  = (nodeProps.color as string | undefined) ?? 'currentColor';
+  // Resolve to hex for FigmaColorPicker display (it only accepts hex)
+  const resolvedHex = (rawColor === 'currentColor' || !rawColor) ? '#6b7280' : resolveCssVarToHex(rawColor);
+  // For the Iconify preview thumbnail
+  const previewColor = resolvedHex;
+
+  const [searchQuery,   setSearchQuery]   = useState('');
+  const [searchResults, setSearchResults] = useState<string[]>([]);
+  const [searching,     setSearching]     = useState(false);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** Patch a single prop key with any value (string, FormulaValue, etc.) */
+  const patchProp = (key: string, value: unknown) =>
+    store.patchNodeField(nodeId, 'props', { ...nodeProps, [key]: value });
+
+  /** Patch multiple prop keys atomically */
+  const patchProps = (patch: Record<string, unknown>) =>
+    store.patchNodeField(nodeId, 'props', { ...nodeProps, ...patch });
+
+  const doSearch = useCallback(async (q: string) => {
+    if (!q.trim()) { setSearchResults([]); return; }
+    setSearching(true);
+    try {
+      const res = await fetch(`${ICONIFY_API_BASE}/search?query=${encodeURIComponent(q)}&limit=30`);
+      if (res.ok) {
+        const data = await res.json() as { icons?: string[] };
+        setSearchResults(data.icons ?? []);
+      }
+    } catch { /* ignore */ } finally { setSearching(false); }
+  }, []);
+
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => { void doSearch(searchQuery); }, 400);
+    return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
+  }, [searchQuery, doSearch]);
+
+  const svgPreviewUrl = iconValue.includes(':')
+    ? `${ICONIFY_API_BASE}/${iconValue.split(':')[0]}/${iconValue.split(':')[1]}.svg?color=${encodeURIComponent(previewColor)}`
+    : null;
+
+  return (
+    <div style={{ borderBottom: '1px solid #1f2937', padding: '8px 0 4px' }}>
+      <div style={{ padding: '0 12px 6px', fontSize: 10, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.05em', fontWeight: 600 }}>Icon</div>
+
+      {/* Preview + icon identifier (with binding support) */}
+      <div style={{ padding: '0 12px 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ width: 32, height: 32, flexShrink: 0, borderRadius: 4, background: '#1f2937', border: '1px solid #374151', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4 }}>
+          {svgPreviewUrl
+            ? <img src={svgPreviewUrl} alt="icon" style={{ width: 20, height: 20 }} />
+            : <span style={{ fontSize: 14, color: '#4b5563' }}>◈</span>}
+        </div>
+        <FieldWithBinding
+          label="icon"
+          value={(nodeProps.icon as FormulaValue) ?? ''}
+          onChange={v => patchProp('icon', v)}
+          hint="Iconify icon identifier e.g. heroicons:star, lucide:heart"
+          expectedType="string"
+        >
+          <input
+            data-testid="specific-icon-name"
+            value={iconValue}
+            onChange={e => patchProp('icon', e.target.value)}
+            placeholder="heroicons:star"
+            style={{ flex: 1, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '4px 7px', outline: 'none', width: '100%' }}
+          />
+        </FieldWithBinding>
+      </div>
+
+      {/* Icon color — controls SVG stroke/fill; uses full theme color picker */}
+      <SpecificRow
+        label="Color"
+        fieldKey="color"
+        value={(nodeProps.color as FormulaValue) ?? 'currentColor'}
+        onChange={v => patchProp('color', v)}
+        hint="CSS color or CSS variable e.g. var(--primary), #3b82f6"
+        expectedType="string"
+      >
+        <FigmaColorPicker
+          testId="specific-icon-color"
+          value={resolvedHex}
+          onChange={(hex, cssVar) => {
+            // Store the CSS var reference when a theme swatch is picked so the icon
+            // reacts to theme changes automatically; otherwise store the raw hex.
+            patchProp('color', cssVar ? `var(--${cssVar})` : hex);
+          }}
+          onCommit={() => store._pushHistory?.()}
+        />
+      </SpecificRow>
+
+      {/* Icon search picker */}
+      <div style={{ padding: '0 12px 6px' }}>
+        <input
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          placeholder="Search icons…"
+          style={{ width: '100%', boxSizing: 'border-box' as const, background: '#111827', border: '1px solid #374151', borderRadius: 4, color: '#d1d5db', fontSize: 11, padding: '4px 7px', outline: 'none' }}
+        />
+      </div>
+
+      {(searchResults.length > 0 || searching) && (
+        <div style={{ padding: '0 12px 8px' }}>
+          {searching ? (
+            <div style={{ fontSize: 10, color: '#4b5563', textAlign: 'center' as const, padding: '4px 0' }}>Searching…</div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 3 }}>
+              {searchResults.map(name => {
+                const parts = name.split(':');
+                const url = `${ICONIFY_API_BASE}/${parts[0]}/${parts[1]}.svg?color=%23d1d5db`;
+                return (
+                  <button
+                    key={name}
+                    title={name}
+                    onClick={() => {
+                      // When picking an icon, also initialize color to primary
+                      // if it was never set (currentColor = no explicit color chosen yet).
+                      const needsColor = !nodeProps.color || nodeProps.color === 'currentColor';
+                      patchProps({ icon: name, ...(needsColor ? { color: 'var(--primary)' } : {}) });
+                    }}
+                    style={{
+                      background: name === iconValue ? '#1d4ed8' : '#1f2937',
+                      border: `1px solid ${name === iconValue ? '#3b82f6' : '#374151'}`,
+                      borderRadius: 4, padding: 4, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    <img src={url} alt={parts[1]} style={{ width: 16, height: 16 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Image Settings ─────────────────────────────────────────────────────────────
+
+function ImageSettings({ nodeId, nodeProps, nodeSrc }: { nodeId: string; nodeProps: Record<string, unknown>; nodeSrc: string }) {
+  const store = useBuilderStore();
+  const altValue  = (nodeProps.alt       as string | undefined) ?? '';
+  // objectFit is a top-level prop on NextImage (read via rest.objectFit inside the img tag)
+  const objectFit = (nodeProps.objectFit as string | undefined) ?? '';
+
+  /** Patch one prop key; also accepts FormulaValue objects for formula bindings */
+  const patchProp = (key: string, value: unknown) =>
+    store.patchNodeField(nodeId, 'props', { ...nodeProps, [key]: value });
+  const patchSrc  = (value: string) =>
+    store.patchNodeField(nodeId, 'src', value);
+
+  const SELECT_STYLE: React.CSSProperties = {
+    background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
+    color: '#f3f4f6', fontSize: 11, padding: '3px 6px', outline: 'none', width: '100%',
+  };
+
+  return (
+    <div style={{ borderBottom: '1px solid #1f2937', padding: '8px 0 4px' }}>
+      <div style={{ padding: '0 12px 6px', fontSize: 10, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.05em', fontWeight: 600 }}>Image</div>
+
+      {/* Source URL — with binding support */}
+      <SpecificRow
+        label="Source URL"
+        fieldKey="src"
+        value={nodeSrc as FormulaValue}
+        onChange={v => patchSrc(typeof v === 'string' ? v : '')}
+        hint="Image URL e.g. https://example.com/photo.jpg"
+        expectedType="string"
+      >
+        <SettingsTextInput value={nodeSrc} onChange={patchSrc} placeholder="https://..." testId="specific-image-src" />
+      </SpecificRow>
+
+      {/* Preview thumbnail */}
+      {nodeSrc && typeof nodeSrc === 'string' && (
+        <div style={{ padding: '0 12px 8px' }}>
+          <img
+            src={nodeSrc} alt="preview"
+            style={{ width: '100%', maxHeight: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid #1f2937' }}
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        </div>
+      )}
+
+      {/* Alt text — with binding support */}
+      <SpecificRow
+        label="Alt text"
+        fieldKey="alt"
+        value={(nodeProps.alt as FormulaValue) ?? ''}
+        onChange={v => patchProp('alt', v)}
+        hint="Accessible description of the image"
+        expectedType="string"
+      >
+        <SettingsTextInput value={altValue} onChange={v => patchProp('alt', v)} placeholder="Description…" />
+      </SpecificRow>
+
+      {/* Object fit — with binding support */}
+      <SpecificRow
+        label="Object fit"
+        fieldKey="objectFit"
+        value={(nodeProps.objectFit as FormulaValue) ?? ''}
+        onChange={v => patchProp('objectFit', v)}
+        hint="CSS object-fit: cover | contain | fill | none | scale-down"
+        expectedType="string"
+      >
+        <select
+          value={objectFit}
+          onChange={e => patchProp('objectFit', e.target.value || undefined)}
+          style={SELECT_STYLE}
+        >
+          <option value="">Default (cover)</option>
+          <option value="cover">Cover</option>
+          <option value="contain">Contain</option>
+          <option value="fill">Fill</option>
+          <option value="none">None</option>
+          <option value="scale-down">Scale down</option>
+        </select>
+      </SpecificRow>
+    </div>
+  );
+}
+
+// ── Video Settings ─────────────────────────────────────────────────────────────
+
+function VideoSettings({ nodeId, nodeProps, nodeSrc }: { nodeId: string; nodeProps: Record<string, unknown>; nodeSrc: string }) {
+  const store = useBuilderStore();
+  const posterVal = (nodeProps.poster   as string  | undefined) ?? '';
+  const autoPlay  = (nodeProps.autoPlay as boolean | undefined) ?? false;
+  const loop      = (nodeProps.loop     as boolean | undefined) ?? false;
+  const muted     = (nodeProps.muted    as boolean | undefined) ?? true;
+  const controls  = (nodeProps.controls as boolean | undefined) ?? false;
+  const objectFit = (nodeProps.objectFit as string | undefined) ?? '';
+
+  const patchProp = (key: string, value: unknown) =>
+    store.patchNodeField(nodeId, 'props', { ...nodeProps, [key]: value });
+  // Video nodes from assets-tab store src in props.src; write back to the same field.
+  const patchSrc  = (value: string) =>
+    store.patchNodeField(nodeId, 'props', { ...nodeProps, src: value });
+
+  const SELECT_STYLE: React.CSSProperties = {
+    background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
+    color: '#f3f4f6', fontSize: 11, padding: '3px 6px', outline: 'none', width: '100%',
+  };
+
+  const TOGGLES: { key: 'autoPlay' | 'loop' | 'muted' | 'controls'; label: string; value: boolean }[] = [
+    { key: 'autoPlay', label: 'Auto Play', value: autoPlay },
+    { key: 'loop',     label: 'Loop',      value: loop     },
+    { key: 'muted',    label: 'Muted',     value: muted    },
+    { key: 'controls', label: 'Controls',  value: controls },
+  ];
+
+  return (
+    <div style={{ borderBottom: '1px solid #1f2937', padding: '8px 0 4px' }}>
+      <div style={{ padding: '0 12px 6px', fontSize: 10, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.05em', fontWeight: 600 }}>Video</div>
+
+      {/* Source URL — with binding support */}
+      <SpecificRow
+        label="Source URL"
+        fieldKey="src"
+        value={nodeSrc as FormulaValue}
+        onChange={v => patchSrc(typeof v === 'string' ? v : '')}
+        hint="Video URL e.g. https://example.com/video.mp4"
+        expectedType="string"
+      >
+        <SettingsTextInput value={nodeSrc} onChange={patchSrc} placeholder="https://…mp4" testId="specific-video-src" />
+      </SpecificRow>
+
+      {/* Poster — with binding support */}
+      <SpecificRow
+        label="Poster"
+        fieldKey="poster"
+        value={(nodeProps.poster as FormulaValue) ?? ''}
+        onChange={v => patchProp('poster', v)}
+        hint="Thumbnail/poster image URL shown before the video plays"
+        expectedType="string"
+      >
+        <SettingsTextInput value={posterVal} onChange={v => patchProp('poster', v)} placeholder="https://…jpg" />
+      </SpecificRow>
+
+      {posterVal && typeof posterVal === 'string' && (
+        <div style={{ padding: '0 12px 8px' }}>
+          <img src={posterVal} alt="poster" style={{ width: '100%', maxHeight: 64, objectFit: 'cover', borderRadius: 4, border: '1px solid #1f2937' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+        </div>
+      )}
+
+      {/* Object fit — with binding support */}
+      <SpecificRow
+        label="Object fit"
+        fieldKey="objectFit"
+        value={(nodeProps.objectFit as FormulaValue) ?? ''}
+        onChange={v => patchProp('objectFit', v)}
+        hint="CSS object-fit: cover | contain | fill"
+        expectedType="string"
+      >
+        <select
+          value={objectFit}
+          onChange={e => patchProp('objectFit', e.target.value || undefined)}
+          style={SELECT_STYLE}
+        >
+          <option value="">Default (cover)</option>
+          <option value="cover">Cover</option>
+          <option value="contain">Contain</option>
+          <option value="fill">Fill</option>
+        </select>
+      </SpecificRow>
+
+      {/* Playback toggles — with binding support */}
+      <div style={{ padding: '6px 12px 4px', borderTop: '1px solid #111827' }}>
+        <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 4, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Playback</div>
+        {TOGGLES.map(({ key, label, value }) => (
+          <SpecificRow
+            key={key}
+            label={label}
+            fieldKey={key}
+            value={(nodeProps[key] as FormulaValue) ?? value}
+            onChange={v => patchProp(key, v)}
+            hint={`Boolean — controls video ${key} behaviour`}
+            expectedType="boolean"
+          >
+            <div data-testid={`specific-video-${key}`} style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <OnOffToggle value={value} onChange={v => patchProp(key, v)} />
+            </div>
+          </SpecificRow>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function findSubmitButtonInTree(nodes: SDUINode[]): SDUINode | null {
   for (const n of nodes) {
     const actions = (n.actions ?? {}) as Record<string, unknown>;
@@ -229,6 +627,9 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
   const nodeActions = (node.actions ?? {}) as Record<string, unknown>;
   const nodeProps = (node.props ?? {}) as Record<string, unknown>;
   const nodeExtra = node as unknown as Record<string, unknown>;
+  // Video nodes from the assets tab store src in props.src; Image nodes use node.src.
+  // Read from both, preferring the top-level node.src.
+  const nodeSrc = (nodeExtra.src as string | undefined) ?? (nodeProps.src as string | undefined) ?? '';
   const validation = nodeExtra._validation as NodeValidation | undefined;
   const debounce = nodeExtra._debounce as NodeDebounce | undefined;
 
@@ -417,7 +818,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
   const isReadOnly = !!(nodeProps.readOnly ?? nodeProps.isReadOnly);
   const autocomplete = nodeProps.autoComplete as string | undefined;
   const placeholder = (nodeProps.placeholder as string | undefined) ?? '';
-  const initValue = ((node as Record<string, unknown>)._initialValue as string | undefined) ?? '';
+  const initValue = ((node as unknown as Record<string, unknown>)._initialValue as string | undefined) ?? '';
   const debounceEnabled = debounce?.enabled ?? false;
   const debounceDelay = debounce?.delay ?? 500;
 
@@ -438,8 +839,13 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
     }
   };
 
+  // Determine if there is anything specific to show for this node type
+  const hasSpecific = nodeType === 'Icon' || nodeType === 'Image' || nodeType === 'Video'
+    || nodeType === 'Button' || nodeType === 'FormContainer'
+    || SETTINGS_INPUT_TYPES.has(nodeType);
+
   return (
-    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', borderBottom: hasSpecific ? '1px solid #374151' : undefined }}>
 
       {/* ── Name (all types; hidden when inside FormContainer — field name serves as name) ── */}
       {!formContainerAncestor && (
@@ -455,6 +861,16 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
             placeholder={`e.g. ${nodeType}`}
             style={{ width: '100%', boxSizing: 'border-box' as const, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '4px 7px', outline: 'none' }}
           />
+        </div>
+      )}
+
+      {/* ── "Specific" section header — only shown when there IS component-specific content ── */}
+      {hasSpecific && (
+        <div style={{ padding: '8px 12px 2px', fontSize: 10, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          Specific
         </div>
       )}
 
@@ -495,12 +911,21 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
       {/* ── FormContainer: registered fields inspector ───────────────────────── */}
       {nodeType === 'FormContainer' && <FormContainerFieldsPanel nodeId={nodeId} />}
 
-      {/* ── For non-input, non-button types: show nothing more ───────────────── */}
-      {!SETTINGS_INPUT_TYPES.has(nodeType) && nodeType !== 'Button' && nodeType !== 'FormContainer' && (
-        <div style={{ padding: 16, color: '#4b5563', fontSize: 11, textAlign: 'center' }}>
-          No specific settings for this element
-        </div>
+      {/* ── Icon settings ─────────────────────────────────────────────── */}
+      {nodeType === 'Icon' && (
+        <IconifySettings nodeId={nodeId} nodeProps={nodeProps} />
       )}
+
+      {/* ── Image settings ───────────────────────────────────────────────────── */}
+      {(nodeType === 'Image' || nodeType === 'Image') && (
+        <ImageSettings nodeId={nodeId} nodeProps={nodeProps} nodeSrc={nodeSrc} />
+      )}
+
+      {/* ── Video settings ───────────────────────────────────────────────────── */}
+      {nodeType === 'Video' && (
+        <VideoSettings nodeId={nodeId} nodeProps={nodeProps} nodeSrc={nodeSrc} />
+      )}
+
 
       {/* ── Form Container Section (input types only) ────────────────────────── */}
       {SETTINGS_INPUT_TYPES.has(nodeType) && nodeType !== 'Button' && formContainerAncestor && (

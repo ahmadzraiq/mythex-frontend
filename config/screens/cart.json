@@ -102,7 +102,7 @@
                         ],
                         "children": [
                           {
-                            "type": "NextImage",
+                            "type": "Image",
                             "props": {
                               "src": "{{context.item.data.productVariant.product.featuredAsset.preview}}",
                               "alt": "{{context.item.data.productVariant.name}}",
@@ -495,9 +495,9 @@
                     },
                     "children": [
                       {
-                        "type": "NavIcon",
+                        "type": "Icon",
                         "props": {
-                          "icon": "Tag",
+                          "icon": "lucide:tag",
                           "size": 20,
                           "className": "text-[var(--theme-muted-foreground)]"
                         }
@@ -546,9 +546,9 @@
                                 },
                                 "children": [
                                   {
-                                    "type": "NavIcon",
+                                    "type": "Icon",
                                     "props": {
-                                      "icon": "Tag",
+                                      "icon": "lucide:tag",
                                       "size": 16,
                                       "className": "text-green-600"
                                     }

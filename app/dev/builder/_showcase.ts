@@ -250,7 +250,7 @@ const buttonsSection = section('Buttons', [
     type: 'Pressable',
     props: { className: 'flex flex-row items-center gap-2 px-4 py-2 rounded-md bg-[rgb(var(--primary))]' },
     children: [
-      { type: 'NavIcon', props: { icon: 'Plus', size: 15, color: 'rgb(var(--primary-foreground))' } },
+      { type: 'Icon', props: { icon: 'lucide:plus', size: 15, color: 'rgb(var(--primary-foreground))' } },
       { type: 'Text', props: { className: 'text-sm font-medium text-[rgb(var(--primary-foreground))]' }, text: 'Add Item' },
     ],
   }),
@@ -259,37 +259,37 @@ const buttonsSection = section('Buttons', [
     props: { className: 'flex flex-row items-center gap-2 px-4 py-2 rounded-md bg-[rgb(var(--primary))]' },
     children: [
       { type: 'Text', props: { className: 'text-sm font-medium text-[rgb(var(--primary-foreground))]' }, text: 'Next' },
-      { type: 'NavIcon', props: { icon: 'ArrowRight', size: 15, color: 'rgb(var(--primary-foreground))' } },
+      { type: 'Icon', props: { icon: 'lucide:arrow-right', size: 15, color: 'rgb(var(--primary-foreground))' } },
     ],
   }),
   labeled('Icon Only', {
     type: 'Pressable',
     props: { className: 'flex items-center justify-center w-9 h-9 rounded-md bg-[rgb(var(--primary))]' },
-    children: [{ type: 'NavIcon', props: { icon: 'Settings', size: 18, color: 'rgb(var(--primary-foreground))' } }],
+    children: [{ type: 'Icon', props: { icon: 'lucide:settings', size: 18, color: 'rgb(var(--primary-foreground))' } }],
   }),
   labeled('Icon Round', {
     type: 'Pressable',
     props: { className: 'flex items-center justify-center w-9 h-9 rounded-full bg-[rgb(var(--primary))]' },
-    children: [{ type: 'NavIcon', props: { icon: 'Heart', size: 18, color: 'rgb(var(--primary-foreground))' } }],
+    children: [{ type: 'Icon', props: { icon: 'lucide:heart', size: 18, color: 'rgb(var(--primary-foreground))' } }],
   }),
   labeled('Icon Outline', {
     type: 'Pressable',
     props: { className: 'flex items-center justify-center w-9 h-9 rounded-md border border-[rgb(var(--border))]' },
-    children: [{ type: 'NavIcon', props: { icon: 'Share', size: 16, color: 'rgb(var(--muted-foreground))' } }],
+    children: [{ type: 'Icon', props: { icon: 'lucide:share', size: 16, color: 'rgb(var(--muted-foreground))' } }],
   }),
   labeled('Link Btn', {
     type: 'Pressable',
     props: { className: 'flex flex-row items-center gap-1' },
     children: [
       { type: 'Text', props: { className: 'text-sm font-medium text-[rgb(var(--primary))] underline' }, text: 'Learn more' },
-      { type: 'NavIcon', props: { icon: 'ArrowRight', size: 13, color: 'rgb(var(--primary))' } },
+      { type: 'Icon', props: { icon: 'lucide:arrow-right', size: 13, color: 'rgb(var(--primary))' } },
     ],
   }),
   labeled('FAB', {
     type: 'Pressable',
     props: { className: 'flex flex-row items-center gap-2 px-5 py-3 rounded-full bg-[rgb(var(--primary))] shadow-lg' },
     children: [
-      { type: 'NavIcon', props: { icon: 'Plus', size: 18, color: 'rgb(var(--primary-foreground))' } },
+      { type: 'Icon', props: { icon: 'lucide:plus', size: 18, color: 'rgb(var(--primary-foreground))' } },
       { type: 'Text', props: { className: 'text-sm font-semibold text-[rgb(var(--primary-foreground))]' }, text: 'Add' },
     ],
   }),
@@ -307,7 +307,7 @@ const formSection = section('Form', [
     type: 'Input',
     props: { variant: 'outline', size: 'md', className: 'w-full !rounded-md !border-[rgb(var(--border))] !bg-[rgb(var(--card))]' },
     children: [
-      { type: 'InputSlot', props: { className: 'pl-3 pointer-events-none' }, children: [{ type: 'NavIcon', props: { icon: 'Search', size: 15, color: 'rgb(var(--muted-foreground))' } }] },
+      { type: 'InputSlot', props: { className: 'pl-3 pointer-events-none' }, children: [{ type: 'Icon', props: { icon: 'lucide:search', size: 15, color: 'rgb(var(--muted-foreground))' } }] },
       { type: 'InputField', props: { placeholder: 'Search…', className: '!text-[rgb(var(--foreground))]' } },
     ],
   }),
@@ -316,7 +316,7 @@ const formSection = section('Form', [
     props: { variant: 'outline', size: 'md', className: 'w-full !rounded-md !border-[rgb(var(--border))] !bg-[rgb(var(--card))]' },
     children: [
       { type: 'InputField', props: { placeholder: 'Password', type: 'password', className: '!text-[rgb(var(--foreground))]' } },
-      { type: 'InputSlot', props: { className: 'pr-3 pointer-events-none' }, children: [{ type: 'NavIcon', props: { icon: 'Eye', size: 15, color: 'rgb(var(--muted-foreground))' } }] },
+      { type: 'InputSlot', props: { className: 'pr-3 pointer-events-none' }, children: [{ type: 'Icon', props: { icon: 'lucide:eye', size: 15, color: 'rgb(var(--muted-foreground))' } }] },
     ],
   }),
   labeled('Textarea', {
@@ -333,7 +333,7 @@ const formSection = section('Form', [
         props: { className: 'flex flex-row items-center justify-between px-3 py-2 rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--card))] w-full' },
         children: [
           { type: 'SelectInput', props: { placeholder: 'Choose option…', className: '!text-[rgb(var(--foreground))]' } },
-          { type: 'SelectIcon', children: [{ type: 'NavIcon', props: { icon: 'ChevronDown', size: 15, color: 'rgb(var(--muted-foreground))' } }] },
+          { type: 'SelectIcon', children: [{ type: 'Icon', props: { icon: 'lucide:chevron-down', size: 15, color: 'rgb(var(--muted-foreground))' } }] },
         ],
       },
       {
@@ -449,7 +449,7 @@ const displaySmallItems = [
     props: { className: 'flex flex-row items-center gap-1 px-3 py-1 rounded-full bg-[rgb(var(--accent))] border border-[rgb(var(--border))]' },
     children: [
       { type: 'Text', props: { className: 'text-xs font-medium text-[rgb(var(--foreground))]' }, text: 'React' },
-      { type: 'NavIcon', props: { icon: 'X', size: 11, color: 'rgb(var(--muted-foreground))' } },
+      { type: 'Icon', props: { icon: 'lucide:x', size: 11, color: 'rgb(var(--muted-foreground))' } },
     ],
   }),
   labeled('Avatar', {
@@ -474,7 +474,7 @@ const displayLargeItems = [
     type: 'Box',
     props: { className: 'flex flex-row items-start gap-3 p-3 rounded-lg bg-[rgb(var(--accent))] border border-[rgb(var(--border))] w-full' },
     children: [
-      { type: 'NavIcon', props: { icon: 'Info', size: 16, color: '#2563eb' } },
+      { type: 'Icon', props: { icon: 'lucide:info', size: 16, color: '#2563eb' } },
       { type: 'Box', props: { className: 'flex flex-col gap-0.5 flex-1' }, children: [
         { type: 'Text', props: { className: 'text-sm font-semibold text-[rgb(var(--foreground))]' }, text: 'Info' },
         { type: 'Text', props: { className: 'text-xs text-[rgb(var(--muted-foreground))]' }, text: 'This is an info alert.' },
@@ -485,7 +485,7 @@ const displayLargeItems = [
     type: 'Box',
     props: { className: 'flex flex-row items-start gap-3 p-3 rounded-lg bg-green-50 border border-green-200 w-full' },
     children: [
-      { type: 'NavIcon', props: { icon: 'CheckCircle', size: 16, color: '#16a34a' } },
+      { type: 'Icon', props: { icon: 'lucide:check-circle', size: 16, color: '#16a34a' } },
       { type: 'Box', props: { className: 'flex flex-col gap-0.5 flex-1' }, children: [
         { type: 'Text', props: { className: 'text-sm font-semibold text-green-800' }, text: 'Success' },
         { type: 'Text', props: { className: 'text-xs text-green-700' }, text: 'Your changes were saved.' },
@@ -496,7 +496,7 @@ const displayLargeItems = [
     type: 'Box',
     props: { className: 'flex flex-row items-start gap-3 p-3 rounded-lg bg-red-50 border border-red-200 w-full' },
     children: [
-      { type: 'NavIcon', props: { icon: 'AlertCircle', size: 16, color: '#dc2626' } },
+      { type: 'Icon', props: { icon: 'lucide:alert-circle', size: 16, color: '#dc2626' } },
       { type: 'Box', props: { className: 'flex flex-col gap-0.5 flex-1' }, children: [
         { type: 'Text', props: { className: 'text-sm font-semibold text-red-800' }, text: 'Error' },
         { type: 'Text', props: { className: 'text-xs text-red-700' }, text: 'Something went wrong.' },
@@ -507,7 +507,7 @@ const displayLargeItems = [
     type: 'Box',
     props: { className: 'flex flex-row items-start gap-3 p-3 rounded-lg bg-yellow-50 border border-yellow-200 w-full' },
     children: [
-      { type: 'NavIcon', props: { icon: 'AlertTriangle', size: 16, color: '#d97706' } },
+      { type: 'Icon', props: { icon: 'lucide:alert-triangle', size: 16, color: '#d97706' } },
       { type: 'Box', props: { className: 'flex flex-col gap-0.5 flex-1' }, children: [
         { type: 'Text', props: { className: 'text-sm font-semibold text-yellow-800' }, text: 'Warning' },
         { type: 'Text', props: { className: 'text-xs text-yellow-700' }, text: 'Review before saving.' },
@@ -536,7 +536,7 @@ const displayLargeItems = [
     type: 'Box',
     props: { className: 'flex flex-row items-center gap-3 px-4 py-3 rounded-lg bg-[rgb(var(--foreground))] shadow-xl w-full' },
     children: [
-      { type: 'NavIcon', props: { icon: 'CheckCircle', size: 16, color: '#4ade80' } },
+      { type: 'Icon', props: { icon: 'lucide:check-circle', size: 16, color: '#4ade80' } },
       { type: 'Text', props: { className: 'text-sm text-[rgb(var(--background))] flex-1' }, text: 'Changes saved successfully!' },
     ],
   }),
@@ -570,9 +570,9 @@ const navigationSection = section('Navigation', [
     props: { className: 'flex flex-row items-center gap-1' },
     children: [
       { type: 'Text', props: { className: 'text-sm text-[rgb(var(--primary))] hover:underline' }, text: 'Home' },
-      { type: 'NavIcon', props: { icon: 'ChevronRight', size: 13, color: 'rgb(var(--muted-foreground))' } },
+      { type: 'Icon', props: { icon: 'lucide:chevron-right', size: 13, color: 'rgb(var(--muted-foreground))' } },
       { type: 'Text', props: { className: 'text-sm text-[rgb(var(--primary))] hover:underline' }, text: 'Products' },
-      { type: 'NavIcon', props: { icon: 'ChevronRight', size: 13, color: 'rgb(var(--muted-foreground))' } },
+      { type: 'Icon', props: { icon: 'lucide:chevron-right', size: 13, color: 'rgb(var(--muted-foreground))' } },
       { type: 'Text', props: { className: 'text-sm font-medium text-[rgb(var(--foreground))]' }, text: 'Detail' },
     ],
   }),
@@ -596,7 +596,7 @@ const navigationSection = section('Navigation', [
     type: 'Box',
     props: { className: 'flex flex-row items-center w-64' },
     children: [
-      { type: 'Box', props: { className: 'flex flex-col items-center gap-1' }, children: [{ type: 'Box', props: { className: 'w-8 h-8 rounded-full bg-[rgb(var(--primary))] flex items-center justify-center' }, children: [{ type: 'NavIcon', props: { icon: 'Check', size: 14, color: 'rgb(var(--primary-foreground))' } }] }, { type: 'Text', props: { className: 'text-xs text-[rgb(var(--primary))]' }, text: 'Cart' }] },
+      { type: 'Box', props: { className: 'flex flex-col items-center gap-1' }, children: [{ type: 'Box', props: { className: 'w-8 h-8 rounded-full bg-[rgb(var(--primary))] flex items-center justify-center' }, children: [{ type: 'Icon', props: { icon: 'lucide:check', size: 14, color: 'rgb(var(--primary-foreground))' } }] }, { type: 'Text', props: { className: 'text-xs text-[rgb(var(--primary))]' }, text: 'Cart' }] },
       { type: 'Box', props: { className: 'flex-1 h-0.5 bg-[rgb(var(--primary))] mx-2' } },
       { type: 'Box', props: { className: 'flex flex-col items-center gap-1' }, children: [{ type: 'Box', props: { className: 'w-8 h-8 rounded-full bg-[rgb(var(--primary))] flex items-center justify-center' }, children: [{ type: 'Text', props: { className: 'text-sm font-bold text-[rgb(var(--primary-foreground))]' }, text: '2' }] }, { type: 'Text', props: { className: 'text-xs text-[rgb(var(--primary))]' }, text: 'Shipping' }] },
       { type: 'Box', props: { className: 'flex-1 h-0.5 bg-[rgb(var(--border))] mx-2' } },
@@ -607,24 +607,24 @@ const navigationSection = section('Navigation', [
     type: 'Box',
     props: { className: 'flex flex-row items-center gap-1' },
     children: [
-      { type: 'Pressable', props: { className: 'w-8 h-8 rounded-md border border-[rgb(var(--border))] flex items-center justify-center' }, children: [{ type: 'NavIcon', props: { icon: 'ChevronLeft', size: 13, color: 'rgb(var(--muted-foreground))' } }] },
+      { type: 'Pressable', props: { className: 'w-8 h-8 rounded-md border border-[rgb(var(--border))] flex items-center justify-center' }, children: [{ type: 'Icon', props: { icon: 'lucide:chevron-left', size: 13, color: 'rgb(var(--muted-foreground))' } }] },
       { type: 'Pressable', props: { className: 'w-8 h-8 rounded-md bg-[rgb(var(--primary))] flex items-center justify-center' }, children: [{ type: 'Text', props: { className: 'text-sm font-medium text-[rgb(var(--primary-foreground))]' }, text: '1' }] },
       { type: 'Pressable', props: { className: 'w-8 h-8 rounded-md border border-[rgb(var(--border))] flex items-center justify-center' }, children: [{ type: 'Text', props: { className: 'text-sm text-[rgb(var(--muted-foreground))]' }, text: '2' }] },
       { type: 'Pressable', props: { className: 'w-8 h-8 rounded-md border border-[rgb(var(--border))] flex items-center justify-center' }, children: [{ type: 'Text', props: { className: 'text-sm text-[rgb(var(--muted-foreground))]' }, text: '3' }] },
       { type: 'Text', props: { className: 'text-sm text-[rgb(var(--muted-foreground))] px-1' }, text: '…' },
       { type: 'Pressable', props: { className: 'w-8 h-8 rounded-md border border-[rgb(var(--border))] flex items-center justify-center' }, children: [{ type: 'Text', props: { className: 'text-sm text-[rgb(var(--muted-foreground))]' }, text: '10' }] },
-      { type: 'Pressable', props: { className: 'w-8 h-8 rounded-md border border-[rgb(var(--border))] flex items-center justify-center' }, children: [{ type: 'NavIcon', props: { icon: 'ChevronRight', size: 13, color: 'rgb(var(--muted-foreground))' } }] },
+      { type: 'Pressable', props: { className: 'w-8 h-8 rounded-md border border-[rgb(var(--border))] flex items-center justify-center' }, children: [{ type: 'Icon', props: { icon: 'lucide:chevron-right', size: 13, color: 'rgb(var(--muted-foreground))' } }] },
     ],
   }),
   labeled('Star Rating', {
     type: 'Box',
     props: { className: 'flex flex-row items-center gap-0.5' },
     children: [
-      { type: 'NavIcon', props: { icon: 'Star', size: 20, color: '#f59e0b' } },
-      { type: 'NavIcon', props: { icon: 'Star', size: 20, color: '#f59e0b' } },
-      { type: 'NavIcon', props: { icon: 'Star', size: 20, color: '#f59e0b' } },
-      { type: 'NavIcon', props: { icon: 'Star', size: 20, color: '#f59e0b' } },
-      { type: 'NavIcon', props: { icon: 'Star', size: 20, color: 'rgb(var(--border))' } },
+      { type: 'Icon', props: { icon: 'lucide:star', size: 20, color: '#f59e0b' } },
+      { type: 'Icon', props: { icon: 'lucide:star', size: 20, color: '#f59e0b' } },
+      { type: 'Icon', props: { icon: 'lucide:star', size: 20, color: '#f59e0b' } },
+      { type: 'Icon', props: { icon: 'lucide:star', size: 20, color: '#f59e0b' } },
+      { type: 'Icon', props: { icon: 'lucide:star', size: 20, color: 'rgb(var(--border))' } },
       { type: 'Text', props: { className: 'text-xs text-[rgb(var(--muted-foreground))] ml-1' }, text: '4.0 (128)' },
     ],
   }),
@@ -637,7 +637,7 @@ const navigationSection = section('Navigation', [
         props: { className: 'flex flex-row items-center justify-between px-4 py-3 bg-[rgb(var(--card))]' },
         children: [
           { type: 'Text', props: { className: 'text-sm font-medium text-[rgb(var(--foreground))]' }, text: 'What is SDUI?' },
-          { type: 'NavIcon', props: { icon: 'ChevronDown', size: 16, color: 'rgb(var(--muted-foreground))' } },
+          { type: 'Icon', props: { icon: 'lucide:chevron-down', size: 16, color: 'rgb(var(--muted-foreground))' } },
         ],
       },
       {
@@ -684,13 +684,17 @@ const navigationSection = section('Navigation', [
 
 // ─── Icon palette helper ──────────────────────────────────────────────────────
 
+function toLucideIconify(name: string): string {
+  return 'lucide:' + name.replace(/([A-Z])/g, (m: string, l: string, i: number) => (i === 0 ? '' : '-') + l.toLowerCase());
+}
+
 function iconTile(name: string, color = 'rgb(var(--foreground))'): SDUINode {
   return {
     id: uid(),
     type: 'Box',
     props: { className: 'flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-[rgb(var(--muted))] cursor-default' },
     children: [
-      { id: uid(), type: 'NavIcon', props: { icon: name, size: 22, color } },
+      { id: uid(), type: 'Icon', props: { icon: toLucideIconify(name), size: 22, color } },
       { id: uid(), type: 'Text', props: { className: 'text-[9px] text-[rgb(var(--muted-foreground))] text-center leading-tight' }, text: name },
     ],
   };
@@ -816,7 +820,7 @@ const mediaSection: SDUINode = {
               type: 'Box',
               props: { className: 'flex flex-col items-center justify-center w-40 h-28 bg-[rgb(var(--muted))] rounded-xl border border-dashed border-[rgb(var(--border))]' },
               children: [
-                { id: uid(), type: 'NavIcon', props: { icon: 'Image', size: 28, color: 'rgb(var(--muted-foreground))' } },
+                { id: uid(), type: 'Icon', props: { icon: 'lucide:image', size: 28, color: 'rgb(var(--muted-foreground))' } },
                 { id: uid(), type: 'Text', props: { className: 'text-xs text-[rgb(var(--muted-foreground))] mt-1' }, text: '320 × 224' },
               ],
             },
@@ -942,19 +946,19 @@ const patternsSection = section('Common UI Patterns', [
     type: 'Box',
     props: { className: 'flex flex-col w-44 bg-[rgb(var(--card))] rounded-2xl border border-[rgb(var(--border))] shadow-sm overflow-hidden' },
     children: [
-      { type: 'Box', props: { className: 'flex items-center justify-center w-full h-28 bg-[rgb(var(--muted))]' }, children: [{ type: 'NavIcon', props: { icon: 'Package', size: 40, color: 'rgb(var(--muted-foreground))' } }] },
+      { type: 'Box', props: { className: 'flex items-center justify-center w-full h-28 bg-[rgb(var(--muted))]' }, children: [{ type: 'Icon', props: { icon: 'lucide:package', size: 40, color: 'rgb(var(--muted-foreground))' } }] },
       { type: 'Box', props: { className: 'flex flex-col gap-2 p-3' }, children: [
         { type: 'Text', props: { className: 'text-sm font-semibold text-[rgb(var(--foreground))]' }, text: 'Wireless Headphones' },
         { type: 'Box', props: { className: 'flex flex-row items-center gap-0.5' }, children: [
-          { type: 'NavIcon', props: { icon: 'Star', size: 12, color: '#f59e0b' } },
-          { type: 'NavIcon', props: { icon: 'Star', size: 12, color: '#f59e0b' } },
-          { type: 'NavIcon', props: { icon: 'Star', size: 12, color: '#f59e0b' } },
-          { type: 'NavIcon', props: { icon: 'Star', size: 12, color: '#f59e0b' } },
-          { type: 'NavIcon', props: { icon: 'Star', size: 12, color: 'rgb(var(--border))' } },
+          { type: 'Icon', props: { icon: 'lucide:star', size: 12, color: '#f59e0b' } },
+          { type: 'Icon', props: { icon: 'lucide:star', size: 12, color: '#f59e0b' } },
+          { type: 'Icon', props: { icon: 'lucide:star', size: 12, color: '#f59e0b' } },
+          { type: 'Icon', props: { icon: 'lucide:star', size: 12, color: '#f59e0b' } },
+          { type: 'Icon', props: { icon: 'lucide:star', size: 12, color: 'rgb(var(--border))' } },
         ]},
         { type: 'Box', props: { className: 'flex flex-row items-center justify-between' }, children: [
           { type: 'Text', props: { className: 'text-sm font-bold text-[rgb(var(--foreground))]' }, text: '$79.99' },
-          { type: 'Pressable', props: { className: 'flex items-center justify-center w-8 h-8 rounded-full bg-[rgb(var(--primary))]' }, children: [{ type: 'NavIcon', props: { icon: 'Plus', size: 14, color: 'rgb(var(--primary-foreground))' } }] },
+          { type: 'Pressable', props: { className: 'flex items-center justify-center w-8 h-8 rounded-full bg-[rgb(var(--primary))]' }, children: [{ type: 'Icon', props: { icon: 'lucide:plus', size: 14, color: 'rgb(var(--primary-foreground))' } }] },
         ]},
       ]},
     ],
@@ -965,11 +969,11 @@ const patternsSection = section('Common UI Patterns', [
     children: [
       { type: 'Box', props: { className: 'flex flex-row items-center justify-between' }, children: [
         { type: 'Text', props: { className: 'text-xs font-medium text-[rgb(var(--muted-foreground))] uppercase tracking-wide' }, text: 'Total Revenue' },
-        { type: 'Box', props: { className: 'flex items-center justify-center w-8 h-8 rounded-lg bg-green-100' }, children: [{ type: 'NavIcon', props: { icon: 'TrendingUp', size: 16, color: '#16a34a' } }] },
+        { type: 'Box', props: { className: 'flex items-center justify-center w-8 h-8 rounded-lg bg-green-100' }, children: [{ type: 'Icon', props: { icon: 'lucide:trending-up', size: 16, color: '#16a34a' } }] },
       ]},
       { type: 'Text', props: { className: 'text-2xl font-bold text-[rgb(var(--foreground))]' }, text: '$24,531' },
       { type: 'Box', props: { className: 'flex flex-row items-center gap-1' }, children: [
-        { type: 'NavIcon', props: { icon: 'ArrowUp', size: 13, color: '#16a34a' } },
+        { type: 'Icon', props: { icon: 'lucide:arrow-up', size: 13, color: '#16a34a' } },
         { type: 'Text', props: { className: 'text-xs font-medium text-green-600' }, text: '+12.5% vs last month' },
       ]},
     ],
@@ -995,7 +999,7 @@ const patternsSection = section('Common UI Patterns', [
     type: 'Box',
     props: { className: 'flex flex-row items-start gap-3 p-4 w-72 bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] shadow-sm' },
     children: [
-      { type: 'Box', props: { className: 'flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-[rgb(var(--accent))]' }, children: [{ type: 'NavIcon', props: { icon: 'Bell', size: 18, color: 'rgb(var(--primary))' } }] },
+      { type: 'Box', props: { className: 'flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-[rgb(var(--accent))]' }, children: [{ type: 'Icon', props: { icon: 'lucide:bell', size: 18, color: 'rgb(var(--primary))' } }] },
       { type: 'Box', props: { className: 'flex flex-col gap-0.5 flex-1' }, children: [
         { type: 'Text', props: { className: 'text-sm font-semibold text-[rgb(var(--foreground))]' }, text: 'New message' },
         { type: 'Text', props: { className: 'text-xs text-[rgb(var(--muted-foreground))]' }, text: 'Alice sent you a message: "Hey, are you free tomorrow?"' },
@@ -1008,10 +1012,10 @@ const patternsSection = section('Common UI Patterns', [
     type: 'Box',
     props: { className: 'flex flex-col items-center gap-3 py-8 px-6 w-60 bg-[rgb(var(--muted))] rounded-2xl border border-dashed border-[rgb(var(--border))]' },
     children: [
-      { type: 'Box', props: { className: 'flex items-center justify-center w-16 h-16 rounded-2xl bg-[rgb(var(--card))]' }, children: [{ type: 'NavIcon', props: { icon: 'Inbox', size: 30, color: 'rgb(var(--muted-foreground))' } }] },
+      { type: 'Box', props: { className: 'flex items-center justify-center w-16 h-16 rounded-2xl bg-[rgb(var(--card))]' }, children: [{ type: 'Icon', props: { icon: 'lucide:inbox', size: 30, color: 'rgb(var(--muted-foreground))' } }] },
       { type: 'Text', props: { className: 'text-sm font-semibold text-[rgb(var(--foreground))] text-center' }, text: 'Nothing here yet' },
       { type: 'Text', props: { className: 'text-xs text-[rgb(var(--muted-foreground))] text-center' }, text: 'Create your first item to get started.' },
-      { type: 'Pressable', props: { className: 'flex flex-row items-center gap-2 px-4 py-2 rounded-lg bg-[rgb(var(--primary))]' }, children: [{ type: 'NavIcon', props: { icon: 'Plus', size: 14, color: 'rgb(var(--primary-foreground))' } }, { type: 'Text', props: { className: 'text-xs font-semibold text-[rgb(var(--primary-foreground))]' }, text: 'Create Item' }] },
+      { type: 'Pressable', props: { className: 'flex flex-row items-center gap-2 px-4 py-2 rounded-lg bg-[rgb(var(--primary))]' }, children: [{ type: 'Icon', props: { icon: 'lucide:plus', size: 14, color: 'rgb(var(--primary-foreground))' } }, { type: 'Text', props: { className: 'text-xs font-semibold text-[rgb(var(--primary-foreground))]' }, text: 'Create Item' }] },
     ],
   }),
 ], 1);

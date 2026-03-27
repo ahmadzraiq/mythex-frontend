@@ -182,7 +182,7 @@ window.__builderStore.getState().patchNodeField(id, 'props.className', newClass)
 When a workflow step is stored as `{ "action": "uuid" }` (ActionRef), `deserializeStep` looks up the UUID in `store.directActionsMap`. If found and it's a direct action (graphql/fetch/etc.), it's inlined as a typed step. On save, `serializeStep` writes it back as an ActionRef. This keeps JSON compact while showing the real type in the canvas.
 
 ### directActionsMap
-`store.directActionsMap` is populated from `GET /api/builder/config` → `directActions`. It contains all non-`workflowSteps` actions from `config/actions/*.json` keyed by UUID. Used exclusively by the workflow canvas for ActionRef resolution.
+`store.directActionsMap` is populated from `GET /api/builder/config` → `directActions`. It contains all direct actions from `config/actions/*.json` keyed by UUID (graphql, fetch, navigateTo, etc.). Used exclusively by the workflow canvas for ActionRef resolution.
 
 ### FormContainer Submit Pattern
 Gluestack `Button` renders as `<div role="button">` — clicking it does NOT fire the HTML form's `onSubmit`. The renderer (`lib/sdui/renderer.tsx`) auto-wires `onPress`/`onClick` to `formCtx.submit()` when a Button has `type="submit"` props and is inside a `FormContainer`. `formCtx.submit()` reads from the global variable store, validates `_validation` rules, writes errors, and calls `onSubmitAction` (the bound workflow).
@@ -207,6 +207,78 @@ Gluestack `Button` renders as `<div role="button">` — clicking it does NOT fir
 
 ---
 
+---
+
+## AI Chat System
+
+The builder has an AI assistant that calls semantic builder actions via Anthropic's `tool_use` API. It operates client-side — the server streams tool calls, the browser executes them against the Zustand store.
+
+### File Map
+
+| File | Purpose |
+|---|---|
+| `app/api/ai/builder-chat/route.ts` | POST endpoint — builds system prompt with live theme palette + project context, runs the Anthropic multi-round tool loop, streams SSE events |
+| `lib/ai/builder-knowledge.ts` | `buildChatSystemPrompt()` — the full system prompt. Accepts `paletteSnapshot`, `mood`, `appName`, `description`. Auto-generates formula function reference from `FUNCTION_LIBRARY`. |
+| `lib/ai/builder-tools.ts` | `ALL_BUILDER_TOOLS` — all Anthropic `tool_use` tool definitions (add_component, create_workflow, set_text, etc.) |
+| `lib/ai/tool-executor.ts` | `executeTool()` — maps AI tool calls to Zustand store mutations client-side. Contains `validateFormula()` for formula linting. |
+| `lib/ai/sdui-component-schema.ts` | Maps component labels to default JSON node templates |
+| `app/dev/builder/_use-ai-chat.ts` | React hook — sends messages to `/api/ai/builder-chat`, streams SSE, executes client-side tools |
+
+### Design Principles
+
+**Semantic actions, never raw JSON.** The AI calls `add_component("Card")`, `set_text(id, "Hello")`, `create_workflow(...)` — tools map these to Zustand mutations. The AI never writes node JSON directly, and never manipulates raw Tailwind class strings.
+
+**Semantic design tools, not free-form class manipulation.** There are no `set_class`, `add_class`, `remove_class`, `swap_class`, or `set_prop` tools. Every design property is controlled via a dedicated semantic tool that mirrors the builder's right-panel UI controls:
+- `set_background(nodeId, {bg})` — background color or image
+- `set_text_color(nodeId, {color})` — text/foreground color
+- `set_typography(nodeId, {size, weight, align, …})` — font styling
+- `set_border(nodeId, {width, radius, color, …})` — border properties
+- `set_shadow / set_opacity / set_spacing / set_size / set_position / set_transform / set_display` — mirror each design panel section
+- `set_submit / set_input_props` — component-specific controls
+
+**Tool validation, not prompt rules.** Constraints are enforced by tools returning errors, not by "NEVER do X" instructions in the prompt. Example: `create_workflow` calls `validateFormula()` before storing; if a formula uses `Math.max`, the tool returns `{ success: false, error: "..." }` and the AI self-corrects on the next attempt.
+
+**Live context, not static examples.** The system prompt includes:
+- The actual theme palette with hex values (built from `themeOverrides` sent by the client in `buildPaletteSnapshot()` — no static fallback to `config/theme.json`)
+- Project mood, app name, description (sent from `store.projectMood` etc. in `_use-ai-chat.ts`)
+- Full formula function signatures (auto-generated from `FUNCTION_LIBRARY` in `_formula-editor-dom.ts`)
+- Component structure reference (from `aiRef` on each `PrimitiveComponent` in `primitive-components.ts`)
+
+**Full CRUD for variables, workflows, and data sources.**
+- Variables: `add_variable`, `update_variable`, `delete_variable`
+- Workflows: `create_workflow`, `delete_workflow`, plus `bind_action` (append-only) and `unbind_action`
+- Data sources: `add_data_source`, `delete_data_source`
+- Pages: `add_page`, `rename_page`, `remove_page`, `set_page_config` (SEO + on-mount workflow)
+- Structure: `move_node` (cross-container reparenting)
+
+### Formula Validator
+
+`validateFormula(expr: string): string | null` in `tool-executor.ts`:
+- Detects `Math.*` usage → returns an error describing the correct SDUI formula function to use
+- Returns `null` when valid
+
+`validateWorkflowFormulas(steps)` iterates all `changeVariableValue` steps and runs the validator. Called in `create_workflow` before storing — failure returns `{ success: false, error: "Step X: ..." }`.
+
+### Theme Palette Injection
+
+`buildPaletteSnapshot(themeOverrides)` in `route.ts`:
+- Reads **only** from the `themeOverrides` object sent by the client — **no static fallback** to `config/theme.json`
+- Maps CSS variable names (e.g. `--primary`) to the `--theme-*` format the AI uses in `className` values
+- Produces a formatted string: `var(--theme-primary) = #00b4d8  (brand accent)`
+- Passed to `buildChatSystemPrompt` as `paletteSnapshot`
+- The prompt renders this as the live "Current Theme Palette" section so the AI makes informed color choices using actual project values
+
+### Adding a New Tool
+
+1. Add the Anthropic tool definition to the appropriate array in `lib/ai/builder-tools.ts` (e.g. `semanticDesignTools`, `logicTools`, `variableTools`, `dataTools`, `pageTools`)
+2. Add the executor handler to `handlers` in `lib/ai/tool-executor.ts`
+3. Add the tool name to `CLIENT_SIDE_TOOLS` set in `tool-executor.ts` (all tools that need Zustand store access are client-side)
+4. If server-side only (generation, search), handle it in the SSE loop in `route.ts`
+5. Update the "Semantic Design Tool Reference" table in `buildChatSystemPrompt` in `lib/ai/builder-knowledge.ts`
+6. If the new tool controls a design property, consider pairing it with a builder UI panel section — the tool should mirror what the right panel already exposes
+
+---
+
 ## Cursor AI Tips
 
 When working on a specific area, read ONLY the relevant file:
@@ -225,3 +297,4 @@ When working on a specific area, read ONLY the relevant file:
 | Work on StateBar / state preview | `_state-bar.tsx`, `lib/sdui/builder-preview.ts`, `_canvas-helpers.tsx` |
 | Work on inactive page rendering | `_canvas-helpers.tsx` (`InactivePageEngine`, `InactivePagesGrid`) |
 | Add / modify `_stateTag` behaviour | `lib/sdui/builder-preview.ts` (`applyStateTagOverrides`), `_panel-right-design-sections.tsx` (StateTagPicker), `_layers-panel.tsx` (badges) |
+| Work on AI chat / tools | `lib/ai/tool-executor.ts`, `lib/ai/builder-knowledge.ts`, `lib/ai/builder-tools.ts`, `app/api/ai/builder-chat/route.ts` |

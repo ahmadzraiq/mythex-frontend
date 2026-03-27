@@ -136,8 +136,9 @@ export function getBuilderConfig() {
     ...(popupTestActions as Record<string, Record<string, unknown>>),
   };
 
+  // A workflow def has a steps array. A direct action has a specific type (graphql, fetch, etc.)
   const workflows = Object.entries(allActions)
-    .filter(([, def]) => def.type === 'workflowSteps')
+    .filter(([, def]) => Array.isArray(def.steps))
     .map(([id, def]) => ({
       id,
       name: (def.name as string) ?? id,
@@ -147,7 +148,7 @@ export function getBuilderConfig() {
     }));
 
   const directActions = Object.fromEntries(
-    Object.entries(allActions).filter(([, def]) => def.type && def.type !== 'workflowSteps')
+    Object.entries(allActions).filter(([, def]) => def.type && !Array.isArray(def.steps))
   );
 
   const dsActionsMap: Record<string, string> = {};

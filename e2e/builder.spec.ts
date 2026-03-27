@@ -1127,7 +1127,7 @@ test.describe('Group I — Right Panel: W/H Resize Modes', () => {
     expect(cls).toContain('w-fit');
   });
 
-  test('I3. Clicking H "Fill" adds h-full to className', async () => {
+  test('I3. Clicking H "Fill" adds flex-1 to className', async () => {
     await dropComponent(sharedPage, 'Box');
     await selectFirstRootNode(sharedPage);
     const nodeId = await getFirstRootNodeId(sharedPage);
@@ -1136,7 +1136,7 @@ test.describe('Group I — Right Panel: W/H Resize Modes', () => {
     await sharedPage.waitForTimeout(300);
 
     const cls = await getNodeClassName(sharedPage, nodeId);
-    expect(cls).toContain('h-full');
+    expect(cls).toContain('flex-1');
   });
 
   test('I4. Clicking H "Hug" adds h-fit to className', async () => {

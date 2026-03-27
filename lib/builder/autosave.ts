@@ -34,9 +34,22 @@ export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 const DEBOUNCE_MS = 1000;
 
+/** Build the projectMeta block (wizard context) from the store. */
+function serializeProjectMeta(store: BuilderStore): Record<string, unknown> | undefined {
+  // Only include if at least one field is non-default
+  if (!store.projectMood && !store.projectDescription && !store.projectAppName) return undefined;
+  return {
+    mood:           store.projectMood,
+    animationLevel: store.projectAnimationLevel,
+    description:    store.projectDescription,
+    appName:        store.projectAppName,
+    category:       store.projectCategory,
+  };
+}
+
 /** Extract the saveable subset of the builder store (for the legacy full-blob endpoint). */
 export function serializeBuilderState(store: BuilderStore): Record<string, unknown> {
-  return {
+  const result: Record<string, unknown> = {
     pages: store.pages,
     pageWorkflows: store.pageWorkflows,
     pageWorkflowMeta: store.pageWorkflowMeta,
@@ -49,11 +62,14 @@ export function serializeBuilderState(store: BuilderStore): Record<string, unkno
     themeOverrides: store.themeOverrides,
     themeDarkOverrides: store.themeDarkOverrides,
   };
+  const pm = serializeProjectMeta(store);
+  if (pm) result.projectMeta = pm;
+  return result;
 }
 
 /** Serialise only the non-page metadata fields. */
 function serializeMeta(store: BuilderStore): Record<string, unknown> {
-  return {
+  const result: Record<string, unknown> = {
     pageWorkflows: store.pageWorkflows,
     pageWorkflowMeta: store.pageWorkflowMeta,
     globalWorkflows: store.globalWorkflows,
@@ -67,6 +83,9 @@ function serializeMeta(store: BuilderStore): Record<string, unknown> {
     // Include a thin page list (id/name/route) so the backend knows the ordering
     pages: store.pages.map(({ id, name, route }) => ({ id, name, route })),
   };
+  const pm = serializeProjectMeta(store);
+  if (pm) result.projectMeta = pm;
+  return result;
 }
 
 /**

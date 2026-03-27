@@ -54,7 +54,7 @@ export function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps) {
     { label: 'Paste',     action: () => store.pasteFromClipboard() },
     { label: 'Group',     action: () => store.groupNodes(store.selectedIds.includes(nodeId) ? store.selectedIds : [nodeId]) },
     null, // divider
-    { label: 'Delete',    action: () => store.deleteNodes([nodeId]), danger: true },
+    { label: 'Delete',    action: () => store.deleteNodes(store.selectedIds.includes(nodeId) ? store.selectedIds : [nodeId]), danger: true },
   ];
 
   useEffect(() => {

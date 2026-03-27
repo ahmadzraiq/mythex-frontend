@@ -28,7 +28,6 @@
   },
   "1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6": {
     "name": "submitShippingAddress",
-    "type": "workflowSteps",
     "trigger": "submit",
     "steps": [
       {
@@ -62,7 +61,6 @@
   },
   "2b3c4d5e-6f7a-8b9c-0d1e-f2a3b4c5d6e7": {
     "name": "submitShippingMethod",
-    "type": "workflowSteps",
     "trigger": "submit",
     "steps": [
       {
@@ -110,7 +108,6 @@
   },
   "42e0738d-1f45-4424-8f96-7ecbb017ce42": {
     "name": "goToShipping",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -125,7 +122,6 @@
   },
   "8289418c-8066-45cd-ad60-212a0c45faef": {
     "name": "goToDelivery",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -150,7 +146,6 @@
   },
   "dfd32ed5-dbac-41bd-b18b-ec7a17cd5549": {
     "name": "goToPayment",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -173,7 +168,6 @@
   },
   "d5ca8a52-a828-47d6-b647-50f0ff204985": {
     "name": "goToReview",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -199,7 +193,6 @@
   },
   "3c4d5e6f-7a8b-9c0d-1e2f-a3b4c5d6e7f8": {
     "name": "submitPlaceOrder",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -245,7 +238,6 @@
   },
   "e89bedc2-a39c-4c83-861b-7fd20bcc63cd": {
     "name": "goToContact",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -260,7 +252,6 @@
   },
   "474818f4-095e-4f42-ae78-08e613b0f40b": {
     "name": "selectShippingMethod",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -283,7 +274,6 @@
   },
   "802712ca-2a5b-4042-abbe-7de79f91806f": {
     "name": "selectPaymentMethod",
-    "type": "workflowSteps",
     "trigger": "click",
     "steps": [
       {
@@ -306,7 +296,6 @@
   },
   "5c58aa71-3ce1-41d2-bb5a-843420fd1f64": {
     "name": "changeContactEmail",
-    "type": "workflowSteps",
     "trigger": "change",
     "steps": [
       {
@@ -321,7 +310,6 @@
   },
   "c0a77baf-974c-4d07-b006-4f4b4f5a6a15": {
     "name": "changeContactFirstName",
-    "type": "workflowSteps",
     "trigger": "change",
     "steps": [
       {
@@ -336,7 +324,6 @@
   },
   "a6836452-b059-47c2-932c-c60504eef105": {
     "name": "changeContactLastName",
-    "type": "workflowSteps",
     "trigger": "change",
     "steps": [
       {
@@ -351,7 +338,6 @@
   },
   "26539321-c80d-450d-b20b-14b4692d412e": {
     "name": "changeShippingStreetLine1",
-    "type": "workflowSteps",
     "trigger": "change",
     "steps": [
       {
@@ -366,7 +352,6 @@
   },
   "20fabfae-065c-4391-8b6d-93e530a608e8": {
     "name": "changeShippingCountry",
-    "type": "workflowSteps",
     "trigger": "change",
     "steps": [
       {
@@ -381,7 +366,6 @@
   },
   "1533ffdf-3a02-472f-b539-7c5bd9a6d1d3": {
     "name": "toggleBillingCheckbox",
-    "type": "workflowSteps",
     "trigger": "valueChange",
     "steps": [
       {

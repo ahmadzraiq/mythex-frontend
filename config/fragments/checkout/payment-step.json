@@ -27,9 +27,9 @@
               },
               "children": [
                 {
-                  "type": "NavIcon",
+                  "type": "Icon",
                   "props": {
-                    "icon": "Check",
+                    "icon": "lucide:check",
                     "size": 16,
                     "className": "!text-white"
                   },
@@ -69,18 +69,18 @@
           },
           "children": [
             {
-              "type": "NavIcon",
+              "type": "Icon",
               "props": {
-                "icon": "ChevronUp",
+                "icon": "lucide:chevron-up",
                 "size": 16,
                 "className": "!text-[var(--theme-muted-foreground)]"
               },
               "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'payment'"
             },
             {
-              "type": "NavIcon",
+              "type": "Icon",
               "props": {
-                "icon": "ChevronDown",
+                "icon": "lucide:chevron-down",
                 "size": 16,
                 "className": "!text-[var(--theme-muted-foreground)]"
               },
@@ -139,9 +139,9 @@
                   ]
                 },
                 {
-                  "type": "NavIcon",
+                  "type": "Icon",
                   "props": {
-                    "icon": "CircleDollarSign",
+                    "icon": "lucide:circle-dollar-sign",
                     "size": 20,
                     "className": "!text-[var(--theme-muted-foreground)] shrink-0"
                   }

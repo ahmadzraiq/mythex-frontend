@@ -5,18 +5,18 @@ alwaysApply: true
 
 # NativeWind/Gluestack SDUI JSON Rules
 
-## 1. Icons — Use `NavIcon`, Never `Icon` with string `as`
+## 1. Icons — Use `Icon` (Iconify), Never Gluestack `Icon` with string `as`
 
-**Problem:** `"type": "Icon"` with `"props": { "as": "SearchIcon" }` passes a string to React, which treats it as an unknown HTML element. Causes "incorrect casing" warnings and renders nothing.
+**Problem:** Gluestack's `"type": "Icon"` with `"props": { "as": "SearchIcon" }` passes a string to React, which treats it as an unknown HTML element. Causes "incorrect casing" warnings and renders nothing.
 
-**Fix:** Use `"type": "NavIcon"` with `"props": { "icon": "Search" }`.
+**Fix:** Use `"type": "Icon"` with `"props": { "icon": "lucide:search" }` (Iconify `set:name` format).
 
 ```json
-// ❌ BAD
+// ❌ BAD — Gluestack Icon with string as
 { "type": "Icon", "props": { "as": "SearchIcon", "className": "h-5 w-5" } }
 
-// ✅ GOOD
-{ "type": "NavIcon", "props": { "icon": "Search", "size": "sm" } }
+// ✅ GOOD — Iconify Icon
+{ "type": "Icon", "props": { "icon": "lucide:search", "size": 16, "color": "currentColor" } }
 ```
 
 ---
@@ -35,7 +35,7 @@ alwaysApply: true
   "children": [
     { "type": "SelectTrigger", "children": [
       { "type": "SelectInput", "props": { "placeholder": "Select..." } },
-      { "type": "SelectIcon", "children": [{ "type": "NavIcon", "props": { "icon": "ChevronDown", "size": 16 } }] }
+      { "type": "SelectIcon", "children": [{ "type": "Icon", "props": { "icon": "lucide:chevron-down", "size": 16 } }] }
     ]},
     { "type": "SelectPortal", "children": [
       { "type": "SelectBackdrop" },
@@ -150,7 +150,7 @@ useEffect(() => {
 
 **Fix:**
 - Extract any data needed by layout-level UI (navbar, footer, sidebar) into a dedicated action (e.g. `fetchNavData`)
-- Create a `workflowSteps` workflow with `trigger: "created"` bound to the layout or page root component
+- Create a named workflow with `trigger: "created"` bound to the layout or page root component
 - This ensures shared data is always populated regardless of which page the user lands on
 
 ---

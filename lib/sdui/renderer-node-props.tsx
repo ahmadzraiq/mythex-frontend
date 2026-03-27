@@ -54,8 +54,8 @@ export function DataSourceWrapper({
 
 /**
  * Returns true if any workflow in `actions` contains a step of `stepType`.
- * Checks both inline workflowSteps wrappers (element workflows) and named
- * action references resolved via actionsConfig (page/global workflows).
+ * Checks both inline element-workflow items (which have a steps array) and
+ * named action references resolved via actionsConfig (page/global workflows).
  */
 function detectWorkflowStepType(
   stepType: string,
@@ -66,10 +66,11 @@ function detectWorkflowStepType(
   const has = (steps: unknown[]) =>
     (steps as Array<{ type?: string }>).some(s => s.type === stepType);
   for (const item of actions as Array<Record<string, unknown>>) {
-    if (item.type === 'workflowSteps' && Array.isArray(item.steps) && has(item.steps)) return true;
+    // Inline element-workflow: item has a steps array directly
+    if (Array.isArray(item.steps) && has(item.steps)) return true;
     if (typeof item.action === 'string' && item.action) {
       const def = actionsConfig?.[item.action] as Record<string, unknown> | undefined;
-      if (def?.type === 'workflowSteps' && Array.isArray(def.steps) && has(def.steps as unknown[])) return true;
+      if (Array.isArray(def?.steps) && has(def!.steps as unknown[])) return true;
     }
   }
   return false;

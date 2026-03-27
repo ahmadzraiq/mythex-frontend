@@ -1,8 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 import { BUSINESS_CATEGORIES, DESIGN_MOODS, SHARED_NAV_SECTION, SHARED_FOOTER_SECTION } from '@/lib/builder/wizard-data';
-import { SDUI_COMPONENT_LABELS } from '@/lib/builder/sdui-component-labels';
+import { ALL_PRIMITIVES } from '@/lib/builder/primitive-components';
 
+const SDUI_COMPONENT_LABELS = ALL_PRIMITIVES.map(c => c.label);
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export interface AiSectionWithHints {
@@ -27,12 +28,7 @@ export async function POST(req: NextRequest) {
     const isHomepage = route === '/';
     const sectionCount = isHomepage ? '6-9' : '4-6';
 
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5',
-      max_tokens: 1200,
-      messages: [{
-        role: 'user',
-        content: `You are a web design strategist. Generate sections for a specific page of a website.
+    const prompt = `You are a web design strategist. Generate sections for a specific page of a website.
 
 Business: "${description}"
 Category: ${categoryInfo?.label ?? category}
@@ -62,17 +58,21 @@ Respond with ONLY valid JSON — one object per section, name + description + de
       }
     },
     {
-      "name": "Features — Three Pillars",
-      "description": "Three key value propositions with icons and brief descriptions.",
+      "name": "Testimonials — Customer Stories",
+      "description": "Grid of customer quote cards with avatars and star ratings.",
       "designHints": {
-        "components": ["Grid", "Card", "Icon", "Heading", "Text"],
-        "tone": "clean, structured",
-        "layout": "3-column icon card grid"
+        "components": ["Grid", "Card", "Avatar", "Text", "Star Rating"],
+        "tone": "warm, authentic",
+        "layout": "3-column card grid with avatar and quote"
       }
     }
   ]
-}`,
-      }],
+}`;
+
+    const message = await client.messages.create({
+      model: 'claude-haiku-4-5',
+      max_tokens: 1400,
+      messages: [{ role: 'user', content: prompt }],
     });
 
     const text = message.content[0].type === 'text' ? message.content[0].text.trim() : '';
@@ -111,9 +111,8 @@ Respond with ONLY valid JSON — one object per section, name + description + de
         !curr.description && !curr.designHints &&
         next && next.name === 'Section' && (next.description || next.designHints)
       ) {
-        // Merge: use curr's descriptive name + next's description/designHints
         contentSections.push({ name: curr.name, description: next.description, designHints: next.designHints });
-        i++; // skip the consumed "Section" entry
+        i++;
       } else {
         contentSections.push(curr);
       }
@@ -122,7 +121,7 @@ Respond with ONLY valid JSON — one object per section, name + description + de
     // Always wrap with the shared Navigation and Footer (same object across all pages)
     const sections: AiSectionWithHints[] = [SHARED_NAV_SECTION, ...contentSections, SHARED_FOOTER_SECTION];
 
-    void pageId; // used for logging by caller
+    void pageId;
 
     return NextResponse.json({ sections });
   } catch (err) {

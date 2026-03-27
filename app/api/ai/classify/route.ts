@@ -67,7 +67,7 @@ Respond with ONLY valid JSON — no markdown, no explanation:
   } catch (err) {
     console.error('[AI classify]', err);
     return NextResponse.json(
-      { category: 'general-ecommerce', mood: 'professional', animationLevel: 2, layoutStructure: 0 },
+      { category: 'general', mood: 'professional', animationLevel: 2, layoutStructure: 0 },
       { status: 200 },
     );
   }
