@@ -26,7 +26,7 @@ export function SDUIWithAuth({
   if (requireAuth && !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-[var(--theme-content-textMuted)]">Redirecting...</p>
+        <p className="text-[var(--theme-muted-foreground)]">Redirecting...</p>
       </div>
     );
   }

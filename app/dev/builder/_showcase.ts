@@ -222,32 +222,32 @@ const layoutSection = section('Layout', [
 
 const buttonsSection = section('Buttons', [
   labeled('Solid', {
-    type: 'Pressable',
+    type: 'Box',
     props: { className: 'flex flex-row items-center justify-center px-4 py-2 rounded-md bg-[rgb(var(--primary))]' },
     children: [{ type: 'Text', props: { className: 'text-sm font-medium text-[rgb(var(--primary-foreground))]' }, text: 'Button' }],
   }),
   labeled('Destructive', {
-    type: 'Pressable',
+    type: 'Box',
     props: { className: 'flex flex-row items-center justify-center px-4 py-2 rounded-md bg-[rgb(var(--destructive))]' },
     children: [{ type: 'Text', props: { className: 'text-sm font-medium text-white' }, text: 'Delete' }],
   }),
   labeled('Outline', {
-    type: 'Pressable',
+    type: 'Box',
     props: { className: 'flex flex-row items-center justify-center px-4 py-2 rounded-md border border-[rgb(var(--primary))]' },
     children: [{ type: 'Text', props: { className: 'text-sm font-medium text-[rgb(var(--primary))]' }, text: 'Button' }],
   }),
   labeled('Ghost', {
-    type: 'Pressable',
+    type: 'Box',
     props: { className: 'flex flex-row items-center justify-center px-4 py-2 rounded-md hover:bg-[rgb(var(--muted))]' },
     children: [{ type: 'Text', props: { className: 'text-sm font-medium text-[rgb(var(--foreground))]' }, text: 'Button' }],
   }),
   labeled('Secondary', {
-    type: 'Pressable',
+    type: 'Box',
     props: { className: 'flex flex-row items-center justify-center px-4 py-2 rounded-md bg-[rgb(var(--secondary))]' },
     children: [{ type: 'Text', props: { className: 'text-sm font-medium text-[rgb(var(--secondary-foreground))]' }, text: 'Button' }],
   }),
   labeled('Icon + Text', {
-    type: 'Pressable',
+    type: 'Box',
     props: { className: 'flex flex-row items-center gap-2 px-4 py-2 rounded-md bg-[rgb(var(--primary))]' },
     children: [
       { type: 'Icon', props: { icon: 'lucide:plus', size: 15, color: 'rgb(var(--primary-foreground))' } },
@@ -255,7 +255,7 @@ const buttonsSection = section('Buttons', [
     ],
   }),
   labeled('Text + Icon', {
-    type: 'Pressable',
+    type: 'Box',
     props: { className: 'flex flex-row items-center gap-2 px-4 py-2 rounded-md bg-[rgb(var(--primary))]' },
     children: [
       { type: 'Text', props: { className: 'text-sm font-medium text-[rgb(var(--primary-foreground))]' }, text: 'Next' },
@@ -263,22 +263,22 @@ const buttonsSection = section('Buttons', [
     ],
   }),
   labeled('Icon Only', {
-    type: 'Pressable',
+    type: 'Box',
     props: { className: 'flex items-center justify-center w-9 h-9 rounded-md bg-[rgb(var(--primary))]' },
     children: [{ type: 'Icon', props: { icon: 'lucide:settings', size: 18, color: 'rgb(var(--primary-foreground))' } }],
   }),
   labeled('Icon Round', {
-    type: 'Pressable',
+    type: 'Box',
     props: { className: 'flex items-center justify-center w-9 h-9 rounded-full bg-[rgb(var(--primary))]' },
     children: [{ type: 'Icon', props: { icon: 'lucide:heart', size: 18, color: 'rgb(var(--primary-foreground))' } }],
   }),
   labeled('Icon Outline', {
-    type: 'Pressable',
+    type: 'Box',
     props: { className: 'flex items-center justify-center w-9 h-9 rounded-md border border-[rgb(var(--border))]' },
     children: [{ type: 'Icon', props: { icon: 'lucide:share', size: 16, color: 'rgb(var(--muted-foreground))' } }],
   }),
   labeled('Link Btn', {
-    type: 'Pressable',
+    type: 'Box',
     props: { className: 'flex flex-row items-center gap-1' },
     children: [
       { type: 'Text', props: { className: 'text-sm font-medium text-[rgb(var(--primary))] underline' }, text: 'Learn more' },
@@ -286,7 +286,7 @@ const buttonsSection = section('Buttons', [
     ],
   }),
   labeled('FAB', {
-    type: 'Pressable',
+    type: 'Box',
     props: { className: 'flex flex-row items-center gap-2 px-5 py-3 rounded-full bg-[rgb(var(--primary))] shadow-lg' },
     children: [
       { type: 'Icon', props: { icon: 'lucide:plus', size: 18, color: 'rgb(var(--primary-foreground))' } },
@@ -386,12 +386,12 @@ const formSection = section('Form', [
     ],
   }),
   labeled('Switch Off', {
-    type: 'Pressable',
+    type: 'Box',
     props: { className: 'relative w-12 h-6 rounded-full bg-[rgb(var(--muted))] justify-center' },
     children: [{ type: 'Box', props: { className: 'absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-[rgb(var(--background))] shadow-sm' } }],
   }),
   labeled('Switch On', {
-    type: 'Pressable',
+    type: 'Box',
     props: { className: 'relative w-12 h-6 rounded-full bg-[rgb(var(--primary))] justify-center' },
     children: [{ type: 'Box', props: { className: 'absolute right-0.5 top-0.5 w-5 h-5 rounded-full bg-[rgb(var(--primary-foreground))] shadow-sm' } }],
   }),
@@ -445,7 +445,7 @@ const displaySmallItems = [
     children: [{ type: 'Text', props: { className: 'text-xs text-[rgb(var(--muted-foreground))]' }, text: 'Design' }],
   }),
   labeled('Chip', {
-    type: 'Pressable',
+    type: 'Box',
     props: { className: 'flex flex-row items-center gap-1 px-3 py-1 rounded-full bg-[rgb(var(--accent))] border border-[rgb(var(--border))]' },
     children: [
       { type: 'Text', props: { className: 'text-xs font-medium text-[rgb(var(--foreground))]' }, text: 'React' },
@@ -584,9 +584,9 @@ const navigationSection = section('Navigation', [
         type: 'Box',
         props: { className: 'flex flex-row border-b border-[rgb(var(--border))]' },
         children: [
-          { type: 'Pressable', props: { className: 'px-4 py-2 border-b-2 border-[rgb(var(--primary))]' }, children: [{ type: 'Text', props: { className: 'text-sm font-medium text-[rgb(var(--primary))]' }, text: 'Overview' }] },
-          { type: 'Pressable', props: { className: 'px-4 py-2 border-b-2 border-transparent' }, children: [{ type: 'Text', props: { className: 'text-sm text-[rgb(var(--muted-foreground))]' }, text: 'Details' }] },
-          { type: 'Pressable', props: { className: 'px-4 py-2 border-b-2 border-transparent' }, children: [{ type: 'Text', props: { className: 'text-sm text-[rgb(var(--muted-foreground))]' }, text: 'Reviews' }] },
+          { type: 'Box', props: { className: 'px-4 py-2 border-b-2 border-[rgb(var(--primary))]' }, children: [{ type: 'Text', props: { className: 'text-sm font-medium text-[rgb(var(--primary))]' }, text: 'Overview' }] },
+          { type: 'Box', props: { className: 'px-4 py-2 border-b-2 border-transparent' }, children: [{ type: 'Text', props: { className: 'text-sm text-[rgb(var(--muted-foreground))]' }, text: 'Details' }] },
+          { type: 'Box', props: { className: 'px-4 py-2 border-b-2 border-transparent' }, children: [{ type: 'Text', props: { className: 'text-sm text-[rgb(var(--muted-foreground))]' }, text: 'Reviews' }] },
         ],
       },
       { type: 'Box', props: { className: 'p-4 bg-[rgb(var(--card))]' }, children: [{ type: 'Text', props: { className: 'text-xs text-[rgb(var(--muted-foreground))]' }, text: 'Tab content area' }] },
@@ -607,13 +607,13 @@ const navigationSection = section('Navigation', [
     type: 'Box',
     props: { className: 'flex flex-row items-center gap-1' },
     children: [
-      { type: 'Pressable', props: { className: 'w-8 h-8 rounded-md border border-[rgb(var(--border))] flex items-center justify-center' }, children: [{ type: 'Icon', props: { icon: 'lucide:chevron-left', size: 13, color: 'rgb(var(--muted-foreground))' } }] },
-      { type: 'Pressable', props: { className: 'w-8 h-8 rounded-md bg-[rgb(var(--primary))] flex items-center justify-center' }, children: [{ type: 'Text', props: { className: 'text-sm font-medium text-[rgb(var(--primary-foreground))]' }, text: '1' }] },
-      { type: 'Pressable', props: { className: 'w-8 h-8 rounded-md border border-[rgb(var(--border))] flex items-center justify-center' }, children: [{ type: 'Text', props: { className: 'text-sm text-[rgb(var(--muted-foreground))]' }, text: '2' }] },
-      { type: 'Pressable', props: { className: 'w-8 h-8 rounded-md border border-[rgb(var(--border))] flex items-center justify-center' }, children: [{ type: 'Text', props: { className: 'text-sm text-[rgb(var(--muted-foreground))]' }, text: '3' }] },
+      { type: 'Box', props: { className: 'w-8 h-8 rounded-md border border-[rgb(var(--border))] flex items-center justify-center' }, children: [{ type: 'Icon', props: { icon: 'lucide:chevron-left', size: 13, color: 'rgb(var(--muted-foreground))' } }] },
+      { type: 'Box', props: { className: 'w-8 h-8 rounded-md bg-[rgb(var(--primary))] flex items-center justify-center' }, children: [{ type: 'Text', props: { className: 'text-sm font-medium text-[rgb(var(--primary-foreground))]' }, text: '1' }] },
+      { type: 'Box', props: { className: 'w-8 h-8 rounded-md border border-[rgb(var(--border))] flex items-center justify-center' }, children: [{ type: 'Text', props: { className: 'text-sm text-[rgb(var(--muted-foreground))]' }, text: '2' }] },
+      { type: 'Box', props: { className: 'w-8 h-8 rounded-md border border-[rgb(var(--border))] flex items-center justify-center' }, children: [{ type: 'Text', props: { className: 'text-sm text-[rgb(var(--muted-foreground))]' }, text: '3' }] },
       { type: 'Text', props: { className: 'text-sm text-[rgb(var(--muted-foreground))] px-1' }, text: '…' },
-      { type: 'Pressable', props: { className: 'w-8 h-8 rounded-md border border-[rgb(var(--border))] flex items-center justify-center' }, children: [{ type: 'Text', props: { className: 'text-sm text-[rgb(var(--muted-foreground))]' }, text: '10' }] },
-      { type: 'Pressable', props: { className: 'w-8 h-8 rounded-md border border-[rgb(var(--border))] flex items-center justify-center' }, children: [{ type: 'Icon', props: { icon: 'lucide:chevron-right', size: 13, color: 'rgb(var(--muted-foreground))' } }] },
+      { type: 'Box', props: { className: 'w-8 h-8 rounded-md border border-[rgb(var(--border))] flex items-center justify-center' }, children: [{ type: 'Text', props: { className: 'text-sm text-[rgb(var(--muted-foreground))]' }, text: '10' }] },
+      { type: 'Box', props: { className: 'w-8 h-8 rounded-md border border-[rgb(var(--border))] flex items-center justify-center' }, children: [{ type: 'Icon', props: { icon: 'lucide:chevron-right', size: 13, color: 'rgb(var(--muted-foreground))' } }] },
     ],
   }),
   labeled('Star Rating', {
@@ -633,7 +633,7 @@ const navigationSection = section('Navigation', [
     props: { className: 'w-64 border border-[rgb(var(--border))] rounded-lg overflow-hidden' },
     children: [
       {
-        type: 'Pressable',
+        type: 'Box',
         props: { className: 'flex flex-row items-center justify-between px-4 py-3 bg-[rgb(var(--card))]' },
         children: [
           { type: 'Text', props: { className: 'text-sm font-medium text-[rgb(var(--foreground))]' }, text: 'What is SDUI?' },
@@ -937,8 +937,8 @@ const patternsSection = section('Common UI Patterns', [
         { type: 'Text', props: { className: 'text-xs text-[rgb(var(--muted-foreground))]' }, text: 'Product Designer' },
       ]},
       { type: 'Box', props: { className: 'flex flex-row gap-3' }, children: [
-        { type: 'Pressable', props: { className: 'flex flex-row items-center gap-1.5 px-4 py-1.5 rounded-full bg-[rgb(var(--primary))]' }, children: [{ type: 'Text', props: { className: 'text-xs font-medium text-[rgb(var(--primary-foreground))]' }, text: 'Follow' }] },
-        { type: 'Pressable', props: { className: 'flex flex-row items-center gap-1.5 px-4 py-1.5 rounded-full border border-[rgb(var(--border))]' }, children: [{ type: 'Text', props: { className: 'text-xs font-medium text-[rgb(var(--foreground))]' }, text: 'Message' }] },
+        { type: 'Box', props: { className: 'flex flex-row items-center gap-1.5 px-4 py-1.5 rounded-full bg-[rgb(var(--primary))]' }, children: [{ type: 'Text', props: { className: 'text-xs font-medium text-[rgb(var(--primary-foreground))]' }, text: 'Follow' }] },
+        { type: 'Box', props: { className: 'flex flex-row items-center gap-1.5 px-4 py-1.5 rounded-full border border-[rgb(var(--border))]' }, children: [{ type: 'Text', props: { className: 'text-xs font-medium text-[rgb(var(--foreground))]' }, text: 'Message' }] },
       ]},
     ],
   }),
@@ -958,7 +958,7 @@ const patternsSection = section('Common UI Patterns', [
         ]},
         { type: 'Box', props: { className: 'flex flex-row items-center justify-between' }, children: [
           { type: 'Text', props: { className: 'text-sm font-bold text-[rgb(var(--foreground))]' }, text: '$79.99' },
-          { type: 'Pressable', props: { className: 'flex items-center justify-center w-8 h-8 rounded-full bg-[rgb(var(--primary))]' }, children: [{ type: 'Icon', props: { icon: 'lucide:plus', size: 14, color: 'rgb(var(--primary-foreground))' } }] },
+          { type: 'Box', props: { className: 'flex items-center justify-center w-8 h-8 rounded-full bg-[rgb(var(--primary))]' }, children: [{ type: 'Icon', props: { icon: 'lucide:plus', size: 14, color: 'rgb(var(--primary-foreground))' } }] },
         ]},
       ]},
     ],
@@ -992,7 +992,7 @@ const patternsSection = section('Common UI Patterns', [
         { type: 'Text', props: { className: 'text-xs font-medium text-[rgb(var(--foreground))]' }, text: 'Password' },
         { type: 'Input', props: { variant: 'outline', className: 'w-full !rounded-lg !border-[rgb(var(--border))] !bg-[rgb(var(--card))]' }, children: [{ type: 'InputField', props: { placeholder: '••••••••', type: 'password', className: '!text-[rgb(var(--foreground))]' } }] },
       ]},
-      { type: 'Pressable', props: { className: 'flex items-center justify-center py-2.5 rounded-lg bg-[rgb(var(--primary))] w-full' }, children: [{ type: 'Text', props: { className: 'text-sm font-semibold text-[rgb(var(--primary-foreground))]' }, text: 'Sign in' }] },
+      { type: 'Box', props: { className: 'flex items-center justify-center py-2.5 rounded-lg bg-[rgb(var(--primary))] w-full' }, children: [{ type: 'Text', props: { className: 'text-sm font-semibold text-[rgb(var(--primary-foreground))]' }, text: 'Sign in' }] },
     ],
   }),
   labeled('Notification', {
@@ -1015,7 +1015,7 @@ const patternsSection = section('Common UI Patterns', [
       { type: 'Box', props: { className: 'flex items-center justify-center w-16 h-16 rounded-2xl bg-[rgb(var(--card))]' }, children: [{ type: 'Icon', props: { icon: 'lucide:inbox', size: 30, color: 'rgb(var(--muted-foreground))' } }] },
       { type: 'Text', props: { className: 'text-sm font-semibold text-[rgb(var(--foreground))] text-center' }, text: 'Nothing here yet' },
       { type: 'Text', props: { className: 'text-xs text-[rgb(var(--muted-foreground))] text-center' }, text: 'Create your first item to get started.' },
-      { type: 'Pressable', props: { className: 'flex flex-row items-center gap-2 px-4 py-2 rounded-lg bg-[rgb(var(--primary))]' }, children: [{ type: 'Icon', props: { icon: 'lucide:plus', size: 14, color: 'rgb(var(--primary-foreground))' } }, { type: 'Text', props: { className: 'text-xs font-semibold text-[rgb(var(--primary-foreground))]' }, text: 'Create Item' }] },
+      { type: 'Box', props: { className: 'flex flex-row items-center gap-2 px-4 py-2 rounded-lg bg-[rgb(var(--primary))]' }, children: [{ type: 'Icon', props: { icon: 'lucide:plus', size: 14, color: 'rgb(var(--primary-foreground))' } }, { type: 'Text', props: { className: 'text-xs font-semibold text-[rgb(var(--primary-foreground))]' }, text: 'Create Item' }] },
     ],
   }),
 ], 1);

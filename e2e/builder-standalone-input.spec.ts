@@ -1,7 +1,7 @@
 /**
  * Builder — Standalone Input live-watch tests (WeWeb-style variables['{id}'])
  *
- * SI-01  Input (with InputField child) registers variables['{id}'] on mount
+ * SI-01  Input registers variables['{id}'] on mount
  * SI-02  Typing in a standalone Input updates variables['{id}']
  * SI-03  Text node with formula variables['{id}'] reflects typed value in real time
  * SI-04  Input inside FormContainer — variables['{id}'] still updates when typing
@@ -62,19 +62,12 @@ async function getNodeText(page: Page, nodeId: string): Promise<string> {
   return (await el.textContent() ?? '').trim();
 }
 
-/** Real canvas default: Input wrapper with explicit InputField child */
-function makeInputNode(inputId: string, fieldId: string) {
+/** Input node without an explicit InputField child (new flat pattern) */
+function makeInputNode(inputId: string, _fieldId: string) {
   return {
     type: 'Input',
     id: inputId,
-    props: { variant: 'outline', size: 'md', className: 'w-full', style: {} },
-    children: [
-      {
-        type: 'InputField',
-        id: fieldId,
-        props: { placeholder: 'Enter text…', className: '', style: {} },
-      },
-    ],
+    props: { variant: 'outline', size: 'md', className: 'w-full', placeholder: 'Enter text…', style: {} },
   };
 }
 

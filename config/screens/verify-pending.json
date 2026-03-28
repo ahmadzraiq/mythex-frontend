@@ -18,7 +18,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-16 h-16 mx-auto rounded-full bg-[var(--theme-shop-button)]/10 flex items-center justify-center"
+              "className": "w-16 h-16 mx-auto rounded-full bg-[var(--theme-primary)]/10 flex items-center justify-center"
             },
             "children": [
               {
@@ -45,9 +45,9 @@
             "text": "We've sent a verification link to your email address. Please click the link to verify your account."
           },
           {
-            "type": "Pressable",
+            "type": "Box",
             "props": {
-              "className": "bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] px-8 flex flex-row items-center justify-center py-3 rounded-md"
+              "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] px-8 flex flex-row items-center justify-center py-3 rounded-md"
             },
             "children": [
               {

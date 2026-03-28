@@ -1202,6 +1202,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   aiCurrentThreadId: null,
   aiCurrentTool: null,
   aiSelectedModel: 'claude-haiku-4-5' as import('./_store-types').BuilderModelId,
+  aiPendingMessage: null,
 
   projectMood: '',
   projectAnimationLevel: 2,
@@ -1218,6 +1219,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   })),
 
   toggleAiMode: () => set(s => ({ aiMode: !s.aiMode })),
+  setAiPendingMessage: (msg) => set({ aiPendingMessage: msg }),
   addAiChatMessage: (msg) => set(s => ({ aiChatHistory: [...s.aiChatHistory, msg] })),
   updateLastAiMessage: (patch) => set(s => {
     const history = [...s.aiChatHistory];

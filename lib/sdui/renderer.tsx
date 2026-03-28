@@ -38,6 +38,85 @@ import {
 /** Stable empty object for useSyncExternalStore fallback — avoids infinite loop from new {} each call */
 const STABLE_EMPTY_OBJECT: Record<string, unknown> = {};
 
+/**
+ * Extract arbitrary-value Tailwind classes (e.g. `w-[1228px]`, `pt-[120px]`, `gap-[32px]`)
+ * into equivalent inline style properties.
+ *
+ * Tailwind's JIT can only compile classes found in scanned source files. Classes that come
+ * from JSON config at runtime are never compiled, so they would have no visual effect without
+ * this fallback. Only numeric values (px, vh, vw, %) are extracted — color and CSS-variable
+ * classes (bg-[#hex], text-[var(--x)]) are left to NativeWind to handle.
+ *
+ * The JSON remains class-only; this is purely a render-time enrichment.
+ */
+function classToInlineStyle(className: string | undefined): Record<string, string> {
+  if (!className) return {};
+  const style: Record<string, string> = {};
+
+  for (const token of className.split(/\s+/)) {
+    // Strip the ! importance prefix so "!bg-[#0f172a]" is handled the same as "bg-[#0f172a]"
+    const clean = token.startsWith('!') ? token.slice(1) : token;
+    const m = clean.match(/^([\w-]+)-\[(.+)\]$/);
+    if (!m) continue;
+    const [, prefix, value] = m;
+
+    // Determine value category so we can apply the right CSS property below.
+    const isNumeric  = /^-?\d/.test(value);           // 96px, 900px, 80vh, -10px
+    const isHexColor = /^#[0-9a-fA-F]/.test(value);  // #0f172a, #cbd5e1
+    const isCssFn    = /^\w[\w-]*\(/.test(value);     // rgb(...), rgba(...), hsl(...), var(--)
+
+    switch (prefix) {
+      // ── Numeric layout ────────────────────────────────────────────────────────
+      case 'w':       if (isNumeric) { style.width        = value; } break;
+      case 'h':       if (isNumeric) { style.height       = value; } break;
+      case 'min-w':   if (isNumeric) { style.minWidth     = value; } break;
+      case 'max-w':   if (isNumeric) { style.maxWidth     = value; } break;
+      case 'min-h':   if (isNumeric) { style.minHeight    = value; } break;
+      case 'max-h':   if (isNumeric) { style.maxHeight    = value; } break;
+      case 'p':       if (isNumeric) { style.paddingTop = style.paddingRight = style.paddingBottom = style.paddingLeft = value; } break;
+      case 'pt':      if (isNumeric) { style.paddingTop    = value; } break;
+      case 'pr':      if (isNumeric) { style.paddingRight  = value; } break;
+      case 'pb':      if (isNumeric) { style.paddingBottom = value; } break;
+      case 'pl':      if (isNumeric) { style.paddingLeft   = value; } break;
+      case 'px':      if (isNumeric) { style.paddingLeft   = style.paddingRight = value; } break;
+      case 'py':      if (isNumeric) { style.paddingTop    = style.paddingBottom = value; } break;
+      case 'm':       if (isNumeric) { style.marginTop = style.marginRight = style.marginBottom = style.marginLeft = value; } break;
+      case 'mt':      if (isNumeric) { style.marginTop     = value; } break;
+      case 'mr':      if (isNumeric) { style.marginRight   = value; } break;
+      case 'mb':      if (isNumeric) { style.marginBottom  = value; } break;
+      case 'ml':      if (isNumeric) { style.marginLeft    = value; } break;
+      case 'mx':      if (isNumeric) { style.marginLeft    = style.marginRight = value; } break;
+      case 'my':      if (isNumeric) { style.marginTop     = style.marginBottom = value; } break;
+      case 'gap':     if (isNumeric) { style.gap           = value; } break;
+      case 'gap-x':   if (isNumeric) { style.columnGap     = value; } break;
+      case 'gap-y':   if (isNumeric) { style.rowGap        = value; } break;
+      case 'top':     if (isNumeric) { style.top           = value; } break;
+      case 'right':   if (isNumeric) { style.right         = value; } break;
+      case 'bottom':  if (isNumeric) { style.bottom        = value; } break;
+      case 'left':    if (isNumeric) { style.left          = value; } break;
+      case 'opacity': if (isNumeric) { style.opacity       = value; } break;
+
+      // ── Colors — hex, rgb(...), var(--...), etc. ─────────────────────────────
+      // bg-[#hex], bg-[rgb(...)], bg-[var(--theme-...)]
+      case 'bg':
+        if (isHexColor || isCssFn) style.backgroundColor = value;
+        break;
+      // text-[#hex] / text-[var(...)] → color; text-[16px] → fontSize
+      case 'text':
+        if (isHexColor || isCssFn) style.color = value;
+        else if (isNumeric) style.fontSize = value;
+        break;
+      // border-[#hex] / border-[var(...)] → borderColor; border-[2px] → borderWidth
+      case 'border':
+        if (isHexColor || isCssFn) style.borderColor = value;
+        else if (isNumeric) style.borderWidth = value;
+        break;
+    }
+  }
+
+  return style;
+}
+
 /** No-op subscribe — used by useSyncExternalStore when we don't need a subscription */
 const NOOP_SUBSCRIBE_FN = (_cb: () => void) => () => {};
 
@@ -287,9 +366,9 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
     Object.entries(resolvedProps).filter(([k]) => !k.startsWith('$') && k !== '_meta' && k !== 'animation')
   ) as Record<string, unknown>;
 
-  // Map data-testid → testID so Gluestack Button/Pressable surfaces it in the DOM.
+  // Map data-testid → testID so Gluestack Button surfaces it in the DOM.
   // React Native uses testID (rendered as data-testid by RN-Web); plain HTML elements
-  // (e.g. Text → span) forward data-* directly, but Pressable-based components do not.
+  // (e.g. Text → span) forward data-* directly, but Gluestack compound components may not.
   if ('data-testid' in cleanProps && !('testID' in cleanProps)) {
     cleanProps.testID = cleanProps['data-testid'];
   }
@@ -329,7 +408,11 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
       if (child == null) return null;
       const childKey = child.key;
       const isScopeVar = childKey === '$index' || childKey === '$item';
-      const key = childKey && !isScopeVar ? childKey : `child-${i}`;
+      // Use the SDUI node's stable id as the React key when available.
+      // This prevents React from reusing DOM elements when siblings are reordered
+      // (e.g. inserting a node before an existing one in the builder), which would
+      // otherwise cause imperatively-applied inline styles to bleed onto the wrong node.
+      const key = child.id ?? (childKey && !isScopeVar ? childKey : `child-${i}`);
       return <SDURendererInner key={key} node={child} context={context} scope={scope} builderPath={`${builderPath}-${i}`} />;
     });
     // Provide parent Input ID to descendant InputField nodes so they can write to
@@ -347,6 +430,15 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
   // onPress accidentally ends up in cleanProps (e.g. from node.props JSON or any other path).
   if (!PRESS_ONLY_TYPES.has(node.type as string)) {
     delete cleanProps.onPress;
+  }
+
+  // Apply inline style fallback for arbitrary-value classes (e.g. w-[1228px], pt-[120px]).
+  // Tailwind JIT only compiles classes from scanned source files, not from JSON config —
+  // so arbitrary values from the SDUI config need an inline style equivalent to render correctly.
+  // props.style wins over the extracted values (e.g. transform stays intact).
+  const arbStyles = classToInlineStyle(cleanProps.className as string | undefined);
+  if (Object.keys(arbStyles).length > 0) {
+    cleanProps.style = { ...arbStyles, ...(cleanProps.style as Record<string, unknown> ?? {}) };
   }
 
   const element = React.createElement(Component, { ...cleanProps, key: node.key }, children);
@@ -428,8 +520,12 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
     // Note: explicit outerStyle properties take precedence (spread after sizeOverride).
     if (nodeClassName) {
       const sizeOverride: Record<string, unknown> = {};
-      if (/\bw-full\b/.test(nodeClassName)) sizeOverride.width = '100%';
+      if (/\bw-full\b/.test(nodeClassName)) {
+        sizeOverride.width = '100%';
+        sizeOverride.flexShrink = 1; // RNW Animated.View defaults flex-shrink:0; restore CSS default
+      }
       if (/\bflex-1\b/.test(nodeClassName)) sizeOverride.flex = 1;
+      if (/\bmin-w-0\b/.test(nodeClassName)) sizeOverride.minWidth = 0;
       if (Object.keys(sizeOverride).length > 0) {
         resolvedAnimCfg = {
           ...resolvedAnimCfg,

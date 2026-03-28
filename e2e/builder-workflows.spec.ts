@@ -1415,7 +1415,7 @@ test.describe('WorkflowCanvas — panel ⋮ menu', () => {
 
 type BuilderStore = { getState: () => Record<string, unknown> };
 
-/** Inject a FormContainer with an InputField child and return both IDs. */
+/** Inject a FormContainer with a flat Input child and return both IDs. */
 async function injectFormWithInput(page: Page): Promise<{ formId: string; inputId: string }> {
   const formId = 'fc-form-' + Date.now();
   const inputId = 'fc-input-' + Date.now();
@@ -1427,7 +1427,7 @@ async function injectFormWithInput(page: Page): Promise<{ formId: string; inputI
       name: 'my_form',
       props: {},
       children: [
-        { id: iId, type: 'InputField', name: 'email', props: {}, children: [] },
+        { id: iId, type: 'Input', props: { name: 'email', placeholder: 'Email' }, children: [] },
       ],
     }, null);
   }, { fId: formId, iId: inputId });
@@ -1594,16 +1594,15 @@ test.describe('Form workflow context — form-specific action types', () => {
         props: {},
         children: [{
           id: iId,
-          type: 'InputField',
-          name: 'email',
-          props: { name: 'email' },
+          type: 'Input',
+          props: { name: 'email', placeholder: 'Email' },
           children: [],
         }],
       }, null);
     }, { fId: formId, iId: inputId });
     await sharedFormPage.waitForTimeout(300);
 
-    // Select the InputField
+    // Select the Input
     await sharedFormPage.evaluate((id) => {
       (window as unknown as Record<string, BuilderStore>).__builderStore?.getState().select?.(id);
     }, inputId);

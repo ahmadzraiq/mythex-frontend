@@ -60,7 +60,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 9 \u2014 Flip Cards"
+                "text": "Phase 9 — Flip Cards"
               },
               {
                 "type": "Text",
@@ -238,14 +238,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 3 \u2014 Stagger"
+                "text": "Card 3 — Stagger"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Items fan in sequentially \u2014 each delayed 100ms after the previous."
+                "text": "Items fan in sequentially — each delayed 100ms after the previous."
               }
             ]
           },
@@ -321,7 +321,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 5 \u2014 SVG Stroke Draw + LottiePlayer"
+                "text": "Phase 5 — SVG Stroke Draw + LottiePlayer"
               },
               {
                 "type": "Text",
@@ -460,7 +460,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 4 \u2014 Split-Text (char / word / line)"
+                "text": "Phase 4 — Split-Text (char / word / line)"
               },
               {
                 "type": "Text",
@@ -553,14 +553,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 12 \u2014 Spring Physics"
+                "text": "Card 12 — Spring Physics"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Three boxes with different spring configurations \u2014 snappy, wobbly, and heavy."
+                "text": "Three boxes with different spring configurations — snappy, wobbly, and heavy."
               }
             ]
           },
@@ -668,7 +668,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 1 \u2014 New Enter Keyframes"
+                "text": "Phase 1 — New Enter Keyframes"
               },
               {
                 "type": "Text",
@@ -894,7 +894,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 1 \u2014 New Loop Keyframes"
+                "text": "Phase 1 — New Loop Keyframes"
               },
               {
                 "type": "Text",
@@ -1088,7 +1088,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 2 \u2014 Filter, Tilt, Mouse Parallax, Morph Shape"
+                "text": "Phase 2 — Filter, Tilt, Mouse Parallax, Morph Shape"
               },
               {
                 "type": "Text",
@@ -1232,14 +1232,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 3 \u2014 Scroll Progress"
+                "text": "Phase 3 — Scroll Progress"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Scroll down \u2014 the box below fades in (opacity 0\u21921) linked to scroll progress through the viewport."
+                "text": "Scroll down — the box below fades in (opacity 0→1) linked to scroll progress through the viewport."
               }
             ]
           },
@@ -1287,7 +1287,7 @@
                 "props": {
                   "className": "text-white font-semibold"
                 },
-                "text": "translateY 60px \u2192 0 on scroll"
+                "text": "translateY 60px → 0 on scroll"
               }
             ]
           }
@@ -1312,7 +1312,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 1 \u2014 Enter Animations"
+                "text": "Card 1 — Enter Animations"
               },
               {
                 "type": "Text",
@@ -1582,7 +1582,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 2 \u2014 Exit Animations"
+                "text": "Card 2 — Exit Animations"
               },
               {
                 "type": "Text",
@@ -1600,11 +1600,10 @@
             },
             "children": [
               {
-                "type": "Button",
+                "type": "Box",
                 "props": {
-                  "action": "primary",
-                  "size": "sm",
-                  "data-testid": "btn-exit-hide"
+                  "data-testid": "btn-exit-hide",
+                  "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 active:opacity-80 px-4 py-2 rounded-md"
                 },
                 "actions": [
                   {
@@ -1613,17 +1612,19 @@
                 ],
                 "children": [
                   {
-                    "type": "ButtonText",
-                    "text": "Hide"
+                    "type": "Text",
+                    "text": "Hide",
+                    "props": {
+                      "className": "text-sm text-[var(--theme-background)] font-medium"
+                    }
                   }
                 ]
               },
               {
-                "type": "Button",
+                "type": "Box",
                 "props": {
-                  "action": "secondary",
-                  "size": "sm",
-                  "data-testid": "btn-exit-show"
+                  "data-testid": "btn-exit-show",
+                  "className": "flex flex-row items-center justify-center cursor-pointer border border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-4 py-2 rounded-md"
                 },
                 "actions": [
                   {
@@ -1632,8 +1633,11 @@
                 ],
                 "children": [
                   {
-                    "type": "ButtonText",
-                    "text": "Show"
+                    "type": "Text",
+                    "text": "Show",
+                    "props": {
+                      "className": "text-sm text-[var(--theme-foreground)] font-medium"
+                    }
                   }
                 ]
               }
@@ -1688,14 +1692,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 3 \u2014 Loop Animations"
+                "text": "Card 3 — Loop Animations"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Continuous animations \u2014 all running simultaneously."
+                "text": "Continuous animations — all running simultaneously."
               }
             ]
           },
@@ -1913,19 +1917,19 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 4 \u2014 Press Animation"
+                "text": "Card 4 — Press Animation"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Press and hold the box \u2014 it scales down and becomes semi-transparent."
+                "text": "Press and hold the box — it scales down and becomes semi-transparent."
               }
             ]
           },
           {
-            "type": "Pressable",
+            "type": "Box",
             "props": {
               "className": "w-full h-24 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center",
               "data-testid": "press-target",
@@ -1968,14 +1972,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 5 \u2014 Hover Animation"
+                "text": "Card 5 — Hover Animation"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Move your mouse over the box \u2014 it lifts and scales up."
+                "text": "Move your mouse over the box — it lifts and scales up."
               }
             ]
           },
@@ -2024,7 +2028,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 6 \u2014 Scroll Trigger"
+                "text": "Card 6 — Scroll Trigger"
               },
               {
                 "type": "Text",
@@ -2081,14 +2085,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 7 \u2014 Parallax"
+                "text": "Card 7 — Parallax"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Scroll the page \u2014 the gradient box moves at 40% of scroll speed."
+                "text": "Scroll the page — the gradient box moves at 40% of scroll speed."
               }
             ]
           },
@@ -2112,7 +2116,7 @@
                 "props": {
                   "className": "text-white font-semibold"
                 },
-                "text": "Parallax \u2014 speed 0.4"
+                "text": "Parallax — speed 0.4"
               }
             ]
           }
@@ -2137,14 +2141,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 8 \u2014 Drag"
+                "text": "Card 8 — Drag"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Drag the box anywhere on both axes \u2014 it springs back when released."
+                "text": "Drag the box anywhere on both axes — it springs back when released."
               }
             ]
           },
@@ -2193,14 +2197,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 9 \u2014 Color Transition"
+                "text": "Card 9 — Color Transition"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Background color cycles blue \u2192 red \u2192 blue continuously."
+                "text": "Background color cycles blue → red → blue continuously."
               }
             ]
           },
@@ -2226,7 +2230,7 @@
                 "props": {
                   "className": "text-white font-semibold"
                 },
-                "text": "Blue \u2192 Red color loop"
+                "text": "Blue → Red color loop"
               }
             ]
           }
@@ -2251,14 +2255,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 10 \u2014 Layout Animation"
+                "text": "Card 10 — Layout Animation"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Add/remove items \u2014 the list reflows with a spring animation."
+                "text": "Add/remove items — the list reflows with a spring animation."
               }
             ]
           },
@@ -2269,11 +2273,10 @@
             },
             "children": [
               {
-                "type": "Button",
+                "type": "Box",
                 "props": {
-                  "action": "primary",
-                  "size": "sm",
-                  "data-testid": "btn-layout-add"
+                  "data-testid": "btn-layout-add",
+                  "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 active:opacity-80 px-4 py-2 rounded-md"
                 },
                 "actions": [
                   {
@@ -2282,17 +2285,19 @@
                 ],
                 "children": [
                   {
-                    "type": "ButtonText",
-                    "text": "+ Add item"
+                    "type": "Text",
+                    "text": "+ Add item",
+                    "props": {
+                      "className": "text-sm text-[var(--theme-background)] font-medium"
+                    }
                   }
                 ]
               },
               {
-                "type": "Button",
+                "type": "Box",
                 "props": {
-                  "action": "secondary",
-                  "size": "sm",
-                  "data-testid": "btn-layout-remove"
+                  "data-testid": "btn-layout-remove",
+                  "className": "flex flex-row items-center justify-center cursor-pointer border border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-4 py-2 rounded-md"
                 },
                 "actions": [
                   {
@@ -2301,8 +2306,11 @@
                 ],
                 "children": [
                   {
-                    "type": "ButtonText",
-                    "text": "\u2212 Remove last"
+                    "type": "Text",
+                    "text": "− Remove last",
+                    "props": {
+                      "className": "text-sm text-[var(--theme-foreground)] font-medium"
+                    }
                   }
                 ]
               }
@@ -2383,7 +2391,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Card 13 \u2014 Imperative Trigger"
+                "text": "Card 13 — Imperative Trigger"
               },
               {
                 "type": "Text",
@@ -2395,11 +2403,10 @@
             ]
           },
           {
-            "type": "Button",
+            "type": "Box",
             "props": {
-              "action": "primary",
-              "size": "sm",
-              "data-testid": "btn-sequence-run"
+              "data-testid": "btn-sequence-run",
+              "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 active:opacity-80 px-4 py-2 rounded-md"
             },
             "actions": [
               {
@@ -2408,8 +2415,11 @@
             ],
             "children": [
               {
-                "type": "ButtonText",
-                "text": "Shake it!"
+                "type": "Text",
+                "text": "Shake it!",
+                "props": {
+                  "className": "text-sm text-[var(--theme-background)] font-medium"
+                }
               }
             ]
           },
@@ -2461,7 +2471,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 6 \u2014 Canvas Particles + Noise Background"
+                "text": "Phase 6 — Canvas Particles + Noise Background"
               },
               {
                 "type": "Text",
@@ -2551,14 +2561,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 7 \u2014 Video"
+                "text": "Phase 7 — Video"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "HTML5 Video element as background. Use a Box with position:relative + Video + absolute overlay Boxes for hero sections \u2014 all composable from JSON in the builder."
+                "text": "HTML5 Video element as background. Use a Box with position:relative + Video + absolute overlay Boxes for hero sections — all composable from JSON in the builder."
               }
             ]
           },
@@ -2645,7 +2655,7 @@
                         "props": {
                           "className": "text-white/80 text-sm"
                         },
-                        "text": "Video + overlay Box + gradient Box + content Box \u2014 all JSON config"
+                        "text": "Video + overlay Box + gradient Box + content Box — all JSON config"
                       }
                     ]
                   }
@@ -2674,7 +2684,7 @@
                   "size": "lg",
                   "className": "font-semibold text-white"
                 },
-                "text": "Phase 10 \u2014 Frosted Glass + Skeleton + Timeline"
+                "text": "Phase 10 — Frosted Glass + Skeleton + Timeline"
               },
               {
                 "type": "Text",
@@ -3023,14 +3033,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 11 \u2014 State-Machine Animations"
+                "text": "Phase 11 — State-Machine Animations"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "Declarative `states` config drives CSS transitions as a state machine: idle \u2192 loading \u2192 success \u2192 error."
+                "text": "Declarative `states` config drives CSS transitions as a state machine: idle → loading → success → error."
               }
             ]
           },
@@ -3129,7 +3139,7 @@
                 ]
               },
               {
-                "type": "Pressable",
+                "type": "Box",
                 "props": {
                   "className": "px-5 py-2.5 rounded-lg bg-gray-700 hover:bg-gray-600",
                   "data-testid": "p11-state-machine-next"
@@ -3145,7 +3155,7 @@
                     "props": {
                       "className": "text-white font-medium text-sm"
                     },
-                    "text": "Cycle State \u2192"
+                    "text": "Cycle State →"
                   }
                 ]
               }
@@ -3172,7 +3182,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 12 \u2014 Gradient Animation"
+                "text": "Phase 12 — Gradient Animation"
               },
               {
                 "type": "Text",
@@ -3319,7 +3329,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 13 \u2014 Clip-Path & Mask Animation"
+                "text": "Phase 13 — Clip-Path & Mask Animation"
               },
               {
                 "type": "Text",
@@ -3362,7 +3372,7 @@
                     "props": {
                       "className": "text-white font-semibold text-sm"
                     },
-                    "text": "Hover to reveal \u2192"
+                    "text": "Hover to reveal →"
                   }
                 ]
               },
@@ -3418,14 +3428,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 14 \u2014 SVG Morphing"
+                "text": "Phase 14 — SVG Morphing"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "SVG path morphing via SMIL animate \u2014 compose any SVG from json svg/path/animate nodes in the builder."
+                "text": "SVG path morphing via SMIL animate — compose any SVG from json svg/path/animate nodes in the builder."
               }
             ]
           },
@@ -3529,14 +3539,14 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 15 \u2014 Pseudo-Element Effects"
+                "text": "Phase 15 — Pseudo-Element Effects"
               },
               {
                 "type": "Text",
                 "props": {
                   "className": "text-sm text-gray-500 dark:text-gray-400"
                 },
-                "text": "::before/::after driven by injected scoped <style> tags \u2014 animated underline, highlight overlay."
+                "text": "::before/::after driven by injected scoped <style> tags — animated underline, highlight overlay."
               }
             ]
           },
@@ -3629,7 +3639,7 @@
                   "size": "lg",
                   "className": "font-semibold text-gray-800 dark:text-gray-100"
                 },
-                "text": "Phase 17 \u2014 Swipe Carousel"
+                "text": "Phase 17 — Swipe Carousel"
               },
               {
                 "type": "Text",
@@ -3736,7 +3746,7 @@
                             "props": {
                               "className": "text-white/70 text-sm text-center px-8"
                             },
-                            "text": "Swipe left to explore \u2192"
+                            "text": "Swipe left to explore →"
                           }
                         ]
                       },
@@ -3859,7 +3869,7 @@
                             "props": {
                               "className": "text-white/70 text-sm text-center px-8"
                             },
-                            "text": "Swipe right to go back \u2190"
+                            "text": "Swipe right to go back ←"
                           }
                         ]
                       }
@@ -3874,7 +3884,7 @@
                 },
                 "children": [
                   {
-                    "type": "Pressable",
+                    "type": "Box",
                     "props": {
                       "className": "w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700",
                       "data-testid": "p17-prev"
@@ -4005,7 +4015,7 @@
                     ]
                   },
                   {
-                    "type": "Pressable",
+                    "type": "Box",
                     "props": {
                       "className": "w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700",
                       "data-testid": "p17-next"
@@ -4027,6 +4037,269 @@
                     ]
                   }
                 ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-6",
+          "data-testid": "card-p18"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Phase 18 — Flex-Row Width Fill with Animation"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Both columns are w-full inside flex-row. Left has an enter animation (AnimatedNode wrapper). Both columns must be roughly equal width — the animated column must not collapse its sibling."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "w-full flex flex-row gap-4"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-full rounded-xl bg-blue-100 dark:bg-blue-900 p-4 flex flex-col gap-2",
+                  "data-testid": "p18-col-left",
+                  "animation": {
+                    "enter": {
+                      "type": "fadeIn",
+                      "duration": 400
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-blue-800 dark:text-blue-200"
+                    },
+                    "text": "Left (animated)"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs text-blue-600 dark:text-blue-400"
+                    },
+                    "text": "Has enter animation + w-full"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-full rounded-xl bg-green-100 dark:bg-green-900 p-4 flex flex-col gap-2",
+                  "data-testid": "p18-col-right"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-green-800 dark:text-green-200"
+                    },
+                    "text": "Right (no animation)"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs text-green-600 dark:text-green-400"
+                    },
+                    "text": "No animation + w-full"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-6",
+          "data-testid": "card-p19"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-1"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "lg",
+                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "Phase 19 — Real-World Hero Layout (AI-Generated)"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "Exact replica of the AI builder hero. Left column has no animation but animated children; right column has enter animation on the container itself. Both must be roughly equal width."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row items-center gap-[64px] w-full",
+              "data-testid": "p19-hero-inner"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-start gap-[24px] w-full h-fit",
+                  "data-testid": "p19-col-content"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-fit inline-flex flex-row items-center px-2.5 py-0.5 rounded-full bg-gray-800"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-xs font-medium text-white"
+                        },
+                        "text": "Productivity Reimagined"
+                      }
+                    ],
+                    "animation": {
+                      "enter": {
+                        "type": "slideInDown",
+                        "duration": 600
+                      }
+                    }
+                  },
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "className": "text-3xl font-bold leading-tight text-gray-900 dark:text-gray-100"
+                    },
+                    "text": "Work flows like water.",
+                    "animation": {
+                      "enter": {
+                        "type": "slideInUp",
+                        "duration": 700
+                      }
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-base leading-relaxed text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "Manage projects, collaborate with teams, and ship faster.",
+                    "animation": {
+                      "enter": {
+                        "type": "slideInUp",
+                        "duration": 800
+                      }
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-row w-full items-center gap-[16px]"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-5 py-2.5 rounded-md bg-gray-900"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-sm font-medium text-white"
+                            },
+                            "text": "Start Free Trial"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-5 py-2.5 rounded-md border border-gray-700"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-sm font-medium text-gray-800 dark:text-gray-200"
+                            },
+                            "text": "Watch Demo"
+                          }
+                        ]
+                      }
+                    ],
+                    "animation": {
+                      "enter": {
+                        "type": "slideInUp",
+                        "duration": 900
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col p-4 gap-4 w-full h-fit border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden shadow-lg",
+                  "data-testid": "p19-col-image"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-full rounded-xl h-[160px] bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-white font-semibold"
+                        },
+                        "text": "Hero Image Placeholder"
+                      }
+                    ]
+                  }
+                ],
+                "animation": {
+                  "enter": {
+                    "type": "zoomIn",
+                    "duration": 800
+                  }
+                }
               }
             ]
           }

@@ -76,7 +76,7 @@
                   "text": "Modal title"
                 },
                 {
-                  "type": "Pressable",
+                  "type": "Box",
                   "id": "3b4eb9cc-e3f8-4031-8e4e-956ad1854afb",
                   "actions": [
                     {
@@ -126,7 +126,7 @@
               },
               "children": [
                 {
-                  "type": "Button",
+                  "type": "Box",
                   "id": "cea4c3e3-b0c5-459e-a7c6-8ba5a55339eb",
                   "actions": [
                     {
@@ -134,19 +134,21 @@
                     }
                   ],
                   "props": {
-                    "action": "outline",
-                    "size": "sm"
+                    "className": "flex flex-row items-center justify-center cursor-pointer hover:bg-[var(--theme-foreground)]/10 px-4 py-2 rounded-md"
                   },
                   "children": [
                     {
-                      "type": "ButtonText",
+                      "type": "Text",
                       "id": "1244a9a4-02fc-41c1-b435-19aad5c8eb13",
-                      "text": "Cancel"
+                      "text": "Cancel",
+                      "props": {
+                        "className": "text-sm text-[var(--theme-foreground)] font-medium"
+                      }
                     }
                   ]
                 },
                 {
-                  "type": "Button",
+                  "type": "Box",
                   "id": "5a080f59-e35c-4595-b029-2fe97cf7cd99",
                   "actions": [
                     {
@@ -154,14 +156,16 @@
                     }
                   ],
                   "props": {
-                    "action": "primary",
-                    "size": "sm"
+                    "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 active:opacity-80 px-4 py-2 rounded-md"
                   },
                   "children": [
                     {
-                      "type": "ButtonText",
+                      "type": "Text",
                       "id": "bab5b578-56b6-45bc-9b0c-01d7801401c2",
-                      "text": "Confirm"
+                      "text": "Confirm",
+                      "props": {
+                        "className": "text-sm text-[var(--theme-background)] font-medium"
+                      }
                     }
                   ]
                 }
@@ -175,7 +179,7 @@
   "popup-test-alert": {
     "id": "popup-test-alert",
     "name": "Test Alert",
-    "type": "Alert",
+    "type": "Box",
     "allowStacking": false,
     "properties": [
       {
@@ -207,95 +211,99 @@
             "className": "flex flex-col gap-2 pointer-events-none"
           },
           "children": [
-        {
-          "type": "Box",
-          "id": "popup-test-alert-card",
-          "name": "Alert",
-          "animation": {
-            "enter": {
-              "type": "slideInRight",
-              "duration": 200
-            },
-            "exit": {
-              "type": "slideOutRight",
-              "duration": 180
-            }
-          },
-          "actions": [{ "action": "autoCloseToast" }],
-          "props": {
-            "className": "pointer-events-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg px-4 py-3 flex flex-row items-start gap-3 min-w-72 max-w-sm border border-gray-100 dark:border-gray-700",
-            "data-testid": "popup-alert-content"
-          },
-          "children": [
             {
               "type": "Box",
-              "id": "alert-icon-box",
-              "props": {
-                "className": "w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 items-center justify-center flex shrink-0 mt-0.5"
-              },
-              "children": [
-                {
-                  "type": "Icon",
-                  "id": "alert-icon",
-                  "props": {
-                    "icon": "lucide:alert-triangle",
-                    "size": 16,
-                    "color": "#f59e0b"
-                  }
+              "id": "popup-test-alert-card",
+              "name": "Alert",
+              "animation": {
+                "enter": {
+                  "type": "slideInRight",
+                  "duration": 200
+                },
+                "exit": {
+                  "type": "slideOutRight",
+                  "duration": 180
                 }
-              ]
-            },
-            {
-              "type": "Box",
-              "id": "alert-text-box",
+              },
+              "actions": [
+                {
+                  "action": "autoCloseToast"
+                }
+              ],
               "props": {
-                "className": "flex-1 flex flex-col gap-0.5"
+                "className": "pointer-events-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg px-4 py-3 flex flex-row items-start gap-3 min-w-72 max-w-sm border border-gray-100 dark:border-gray-700",
+                "data-testid": "popup-alert-content"
               },
               "children": [
                 {
-                  "type": "Text",
-                  "id": "alert-title-text",
+                  "type": "Box",
+                  "id": "alert-icon-box",
                   "props": {
-                    "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                    "className": "w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 items-center justify-center flex shrink-0 mt-0.5"
                   },
-                  "text": "Alert title"
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "id": "alert-icon",
+                      "props": {
+                        "icon": "lucide:alert-triangle",
+                        "size": 16,
+                        "color": "#f59e0b"
+                      }
+                    }
+                  ]
                 },
                 {
-                  "type": "Text",
-                  "id": "alert-message-text",
+                  "type": "Box",
+                  "id": "alert-text-box",
                   "props": {
-                    "className": "text-xs text-gray-500 dark:text-gray-400 leading-relaxed"
+                    "className": "flex-1 flex flex-col gap-0.5"
                   },
-                  "text": "Alert message goes here."
-                }
-              ]
-            },
-            {
-          "type": "Pressable",
-          "id": "alert-close-btn",
-          "actions": [
-            {
-              "action": "closePopup"
-            }
-          ],
-          "props": {
-            "className": "shrink-0 mt-0.5 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700",
-            "data-testid": "popup-alert-ok-btn"
-          },
-              "children": [
+                  "children": [
+                    {
+                      "type": "Text",
+                      "id": "alert-title-text",
+                      "props": {
+                        "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                      },
+                      "text": "Alert title"
+                    },
+                    {
+                      "type": "Text",
+                      "id": "alert-message-text",
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400 leading-relaxed"
+                      },
+                      "text": "Alert message goes here."
+                    }
+                  ]
+                },
                 {
-                  "type": "Icon",
-                  "id": "alert-close-icon",
+                  "type": "Box",
+                  "id": "alert-close-btn",
+                  "actions": [
+                    {
+                      "action": "closePopup"
+                    }
+                  ],
                   "props": {
-                    "icon": "X",
-                    "size": 14,
-                    "color": "#9ca3af"
-                  }
+                    "className": "shrink-0 mt-0.5 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700",
+                    "data-testid": "popup-alert-ok-btn"
+                  },
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "id": "alert-close-icon",
+                      "props": {
+                        "icon": "X",
+                        "size": 14,
+                        "color": "#9ca3af"
+                      }
+                    }
+                  ]
                 }
               ]
             }
-          ]
-        }
           ]
         }
       ]
@@ -388,7 +396,7 @@
                   ]
                 },
                 {
-                  "type": "Pressable",
+                  "type": "Box",
                   "id": "wait-close-btn",
                   "actions": [
                     {
@@ -464,7 +472,7 @@
               },
               "children": [
                 {
-                  "type": "Button",
+                  "type": "Box",
                   "id": "wait-close-btn-footer",
                   "actions": [
                     {
@@ -472,15 +480,16 @@
                     }
                   ],
                   "props": {
-                    "action": "primary",
-                    "size": "sm",
-                    "className": "w-full"
+                    "className": "flex flex-row items-center justify-center cursor-pointer px-4 py-2 rounded-md w-full"
                   },
                   "children": [
                     {
-                      "type": "ButtonText",
+                      "type": "Text",
                       "id": "wait-close-text",
-                      "text": "Close & Resume Workflow"
+                      "text": "Close & Resume Workflow",
+                      "props": {
+                        "className": "text-sm text-[var(--theme-background)] font-medium"
+                      }
                     }
                   ]
                 }
@@ -538,76 +547,107 @@
             "className": "flex flex-col gap-2 pointer-events-none"
           },
           "children": [
-        {
-          "type": "Box",
-          "id": "popup-test-stacked-card",
-          "name": "Toast",
-          "animation": {
-            "enter": { "type": "slideInRight", "duration": 200 },
-            "exit": { "type": "slideOutRight", "duration": 180 }
-          },
-          "actions": [{ "action": "autoCloseToast" }],
-          "props": {
-            "className": "pointer-events-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg px-4 py-3 flex flex-row items-start gap-3 min-w-72 max-w-sm border border-gray-100 dark:border-gray-700",
-            "data-testid": "popup-stacked-card"
-          },
-          "children": [
             {
               "type": "Box",
-              "id": "stacked-icon-box",
+              "id": "popup-test-stacked-card",
+              "name": "Toast",
+              "animation": {
+                "enter": {
+                  "type": "slideInRight",
+                  "duration": 200
+                },
+                "exit": {
+                  "type": "slideOutRight",
+                  "duration": 180
+                }
+              },
+              "actions": [
+                {
+                  "action": "autoCloseToast"
+                }
+              ],
               "props": {
-                "className": "w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 items-center justify-center flex shrink-0 mt-0.5"
+                "className": "pointer-events-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg px-4 py-3 flex flex-row items-start gap-3 min-w-72 max-w-sm border border-gray-100 dark:border-gray-700",
+                "data-testid": "popup-stacked-card"
               },
               "children": [
                 {
-                  "type": "Icon",
-                  "id": "stacked-icon",
-                  "props": { "icon": "lucide:bell", "size": 16, "color": "#3b82f6" }
-                }
-              ]
-            },
-            {
-              "type": "Box",
-              "id": "stacked-text-box",
-              "props": { "className": "flex-1 flex flex-col gap-0.5" },
-              "children": [
-                {
-                  "type": "Text",
-                  "id": "stacked-title",
-                  "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white" },
-                  "text": { "expr": "context.component?.props?.['title'] || 'Notification'" }
+                  "type": "Box",
+                  "id": "stacked-icon-box",
+                  "props": {
+                    "className": "w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 items-center justify-center flex shrink-0 mt-0.5"
+                  },
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "id": "stacked-icon",
+                      "props": {
+                        "icon": "lucide:bell",
+                        "size": 16,
+                        "color": "#3b82f6"
+                      }
+                    }
+                  ]
                 },
                 {
-                  "type": "Text",
-                  "id": "stacked-message",
-                  "props": { "className": "text-xs text-gray-500 dark:text-gray-400 leading-relaxed" },
-                  "text": { "expr": "context.component?.props?.['message'] || 'Something happened.'" }
-                }
-              ]
-            },
-            {
-              "type": "Pressable",
-              "id": "stacked-close-btn",
-              "actions": [{ "action": "closePopup" }],
-              "props": {
-                "className": "shrink-0 mt-0.5 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-              },
-              "children": [
+                  "type": "Box",
+                  "id": "stacked-text-box",
+                  "props": {
+                    "className": "flex-1 flex flex-col gap-0.5"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "id": "stacked-title",
+                      "props": {
+                        "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                      },
+                      "text": {
+                        "expr": "context.component?.props?.['title'] || 'Notification'"
+                      }
+                    },
+                    {
+                      "type": "Text",
+                      "id": "stacked-message",
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400 leading-relaxed"
+                      },
+                      "text": {
+                        "expr": "context.component?.props?.['message'] || 'Something happened.'"
+                      }
+                    }
+                  ]
+                },
                 {
-                  "type": "Icon",
-                  "id": "stacked-close-icon",
-                  "props": { "icon": "X", "size": 14, "color": "#9ca3af" }
+                  "type": "Box",
+                  "id": "stacked-close-btn",
+                  "actions": [
+                    {
+                      "action": "closePopup"
+                    }
+                  ],
+                  "props": {
+                    "className": "shrink-0 mt-0.5 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                  },
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "id": "stacked-close-icon",
+                      "props": {
+                        "icon": "X",
+                        "size": 14,
+                        "color": "#9ca3af"
+                      }
+                    }
+                  ]
                 }
               ]
             }
           ]
         }
-          ]
-        }
       ]
     }
   },
-
   "popup-test-sheet": {
     "id": "popup-test-sheet",
     "name": "Test Sheet",
@@ -676,7 +716,7 @@
                   "text": "Details Panel"
                 },
                 {
-                  "type": "Button",
+                  "type": "Box",
                   "id": "popup-test-sheet-close",
                   "actions": [
                     {
@@ -684,8 +724,7 @@
                     }
                   ],
                   "props": {
-                    "action": "link",
-                    "size": "sm"
+                    "className": "flex flex-row items-center justify-center cursor-pointer hover:bg-[var(--theme-foreground)]/10 px-4 py-2 rounded-md"
                   },
                   "children": [
                     {

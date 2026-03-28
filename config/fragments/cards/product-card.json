@@ -1,7 +1,7 @@
 {
-  "type": "Pressable",
+  "type": "Box",
   "props": {
-    "className": "group block bg-[var(--theme-content-bg)] rounded-lg overflow-hidden border border-[var(--border)] hover:shadow-lg transition-shadow"
+    "className": "group block bg-[var(--theme-card)] rounded-lg overflow-hidden border border-[var(--border)] hover:shadow-lg transition-shadow"
   },
   "actions": [
     {
@@ -12,7 +12,7 @@
     {
       "type": "Box",
       "props": {
-        "className": "aspect-square relative bg-[var(--theme-hero-bg)]"
+        "className": "aspect-square relative bg-[var(--theme-muted)]"
       },
       "children": [
         {
@@ -28,7 +28,7 @@
         {
           "type": "Box",
           "props": {
-            "className": "w-full h-full flex items-center justify-center text-[var(--theme-content-textMuted)]"
+            "className": "w-full h-full flex items-center justify-center text-[var(--theme-muted-foreground)]"
           },
           "condition": "!context?.item?.data?.productAsset",
           "children": [
@@ -49,14 +49,14 @@
         {
           "type": "Text",
           "props": {
-            "className": "font-medium line-clamp-2 group-hover:opacity-80 transition-colors text-[var(--theme-content-text)]"
+            "className": "font-medium line-clamp-2 group-hover:opacity-80 transition-colors text-[var(--theme-card-foreground)]"
           },
           "text": "{{context.item.data.productName}}"
         },
         {
           "type": "Text",
           "props": {
-            "className": "text-lg font-bold text-[var(--theme-content-text)]"
+            "className": "text-lg font-bold text-[var(--theme-card-foreground)]"
           },
           "text": {
             "expr": "context?.item?.data?.priceWithTax?.__typename === 'SinglePrice' ? formatCurrency(context?.item?.data?.priceWithTax?.value / 100, context?.item?.data?.currencyCode || 'USD') : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min / 100, context?.item?.data?.currencyCode || 'USD')"

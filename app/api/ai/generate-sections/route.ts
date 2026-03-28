@@ -1,20 +1,12 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 import { BUSINESS_CATEGORIES, DESIGN_MOODS, SHARED_NAV_SECTION, SHARED_FOOTER_SECTION } from '@/lib/builder/wizard-data';
-import { ALL_PRIMITIVES } from '@/lib/builder/primitive-components';
 
-const SDUI_COMPONENT_LABELS = ALL_PRIMITIVES.map(c => c.label);
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export interface AiSectionWithHints {
   name: string;
   description?: string;
-  designHints?: {
-    /** Labels from PRIMITIVE_COMPONENTS in _components-tab.tsx (e.g. "Grid", "Card", "Btn Solid") */
-    components?: string[];
-    tone?: string;
-    layout?: string;
-  };
 }
 
 export async function POST(req: NextRequest) {
@@ -23,7 +15,6 @@ export async function POST(req: NextRequest) {
 
     const categoryInfo = BUSINESS_CATEGORIES.find(c => c.id === category);
     const moodInfo = DESIGN_MOODS.find(m => m.id === mood);
-    const componentList = SDUI_COMPONENT_LABELS.join(', ');
 
     const isHomepage = route === '/';
     const sectionCount = isHomepage ? '6-9' : '4-6';
@@ -37,41 +28,22 @@ Page: "${pageName}" (route: ${route})
 
 Rules:
 - Generate ${sectionCount} content sections for this page (do NOT include Navigation or Footer — those are added automatically)
-- CRITICAL: each section is ONE object with the section name AND its details combined — never output a name-only object followed by a separate details object
 - Section names must be specific and descriptive (e.g. "Hero — Product Showcase", not just "Hero")
-- Every section MUST include description and designHints IN THE SAME object as the name:
-  * description: 1-2 sentences explaining purpose and content
-  * designHints.components: 3-6 labels from this exact list only: ${componentList}
-  * designHints.tone: 2-4 words describing visual tone
-  * designHints.layout: brief layout description (e.g. "3-column card grid", "full-width banner with overlay text")
+- Every section MUST have a description: 1-2 sentences explaining its purpose and content
 
-Respond with ONLY valid JSON — one object per section, name + description + designHints always together:
+Respond with ONLY valid JSON:
 {
   "sections": [
     {
       "name": "Hero — Welcome",
-      "description": "Full-screen hero with bold headline and primary CTA.",
-      "designHints": {
-        "components": ["Box", "Image", "Heading", "Text", "Btn Solid"],
-        "tone": "bold, impactful",
-        "layout": "full-width image background with centered overlay text"
-      }
-    },
-    {
-      "name": "Testimonials — Customer Stories",
-      "description": "Grid of customer quote cards with avatars and star ratings.",
-      "designHints": {
-        "components": ["Grid", "Card", "Avatar", "Text", "Star Rating"],
-        "tone": "warm, authentic",
-        "layout": "3-column card grid with avatar and quote"
-      }
+      "description": "Full-screen hero with bold headline and primary CTA."
     }
   ]
 }`;
 
     const message = await client.messages.create({
       model: 'claude-haiku-4-5',
-      max_tokens: 1400,
+      max_tokens: 800,
       messages: [{ role: 'user', content: prompt }],
     });
 
@@ -81,24 +53,10 @@ Respond with ONLY valid JSON — one object per section, name + description + de
 
     const result = JSON.parse(jsonMatch[0]);
 
-    const validLabels = new Set(SDUI_COMPONENT_LABELS);
-    const rawSections: AiSectionWithHints[] = (result.sections ?? []).map((s: Record<string, unknown>) => {
-      const sec: AiSectionWithHints = {
-        name: String(s.name ?? 'Section'),
-        description: s.description ? String(s.description) : undefined,
-      };
-      if (s.designHints && typeof s.designHints === 'object') {
-        const dh = s.designHints as Record<string, unknown>;
-        sec.designHints = {
-          components: Array.isArray(dh.components)
-            ? (dh.components as unknown[]).map(String).filter(c => validLabels.has(c))
-            : undefined,
-          tone: dh.tone ? String(dh.tone) : undefined,
-          layout: dh.layout ? String(dh.layout) : undefined,
-        };
-      }
-      return sec;
-    });
+    const rawSections: AiSectionWithHints[] = (result.sections ?? []).map((s: Record<string, unknown>) => ({
+      name: String(s.name ?? 'Section'),
+      description: s.description ? String(s.description) : undefined,
+    }));
 
     // Merge pairs where AI still emits a name-only entry followed by a generic "Section" entry with details
     const contentSections: AiSectionWithHints[] = [];
@@ -107,11 +65,8 @@ Respond with ONLY valid JSON — one object per section, name + description + de
       const next = rawSections[i + 1];
       // Skip if AI accidentally included Navigation or Footer
       if (curr.name === 'Navigation' || curr.name === 'Footer') continue;
-      if (
-        !curr.description && !curr.designHints &&
-        next && next.name === 'Section' && (next.description || next.designHints)
-      ) {
-        contentSections.push({ name: curr.name, description: next.description, designHints: next.designHints });
+      if (!curr.description && next && next.name === 'Section' && next.description) {
+        contentSections.push({ name: curr.name, description: next.description });
         i++;
       } else {
         contentSections.push(curr);
@@ -132,17 +87,14 @@ Respond with ONLY valid JSON — one object per section, name + description + de
         {
           name: 'Hero — Welcome',
           description: 'Full-screen hero section with a bold headline and primary call-to-action button.',
-          designHints: { components: ['Box', 'Image', 'Heading', 'Text', 'Btn Solid'], tone: 'bold, inviting', layout: 'full-width banner with overlay text' },
         },
         {
           name: 'Features Overview',
           description: 'Key offerings presented in a clean card grid layout.',
-          designHints: { components: ['Grid', 'Card', 'Icon', 'Heading', 'Caption'], tone: 'clean, structured', layout: '3-column icon card grid' },
         },
         {
           name: 'Contact CTA',
           description: 'A clear call-to-action section encouraging visitors to get in touch.',
-          designHints: { components: ['VStack', 'Heading', 'Text', 'Btn Solid', 'Btn Outline'], tone: 'direct, friendly', layout: 'centered column with CTA buttons' },
         },
         SHARED_FOOTER_SECTION,
       ] as AiSectionWithHints[],

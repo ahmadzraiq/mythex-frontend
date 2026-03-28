@@ -1,12 +1,12 @@
 {
   "type": "Box",
   "props": {
-    "className": "border rounded-lg px-6 bg-[var(--theme-content-bg)]"
+    "className": "border rounded-lg px-6 bg-[var(--theme-card)]"
   },
   "condition": "auth?.user === null",
   "children": [
     {
-      "type": "Pressable",
+      "type": "Box",
       "props": {
         "className": "flex flex-row items-center justify-between w-full py-4"
       },
@@ -26,7 +26,7 @@
               "type": "Box",
               "props": {
                 "className": {
-                  "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + ((auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) ? 'bg-green-500 !text-white' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]'))"
+                  "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + ((auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) ? 'bg-green-500 !text-white' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact' ? 'bg-[var(--theme-primary)] !text-white' : 'bg-[var(--theme-muted)] !text-[var(--theme-muted-foreground)]'))"
                 }
               },
               "children": [
@@ -121,14 +121,14 @@
                   "text": "Already have an account? "
                 },
                 {
-                  "type": "Link",
+                  "type": "Box",
                   "props": {
                     "href": "/sign-in",
                     "className": "text-blue-600 hover:underline font-medium"
                   },
                   "children": [
                     {
-                      "type": "LinkText",
+                      "type": "Text",
                       "text": "Sign in"
                     }
                   ]
@@ -151,19 +151,14 @@
                 {
                   "type": "Input",
                   "id": "b95d1c1c-ee10-486d-87a6-7a0377f89c3c",
-                  "children": [
+                  "props": {
+                    "type": "email",
+                    "placeholder": "you@example.com",
+                    "value": "{{local.data.form.formData.emailAddress}}"
+                  },
+                  "actions": [
                     {
-                      "type": "InputField",
-                      "props": {
-                        "type": "email",
-                        "placeholder": "you@example.com",
-                        "value": "{{local.data.form.formData.emailAddress}}"
-                      },
-                      "actions": [
-                        {
-                          "action": "5c58aa71-3ce1-41d2-bb5a-843420fd1f64"
-                        }
-                      ]
+                      "action": "5c58aa71-3ce1-41d2-bb5a-843420fd1f64"
                     }
                   ]
                 },
@@ -207,18 +202,13 @@
                     {
                       "type": "Input",
                       "id": "f8b58a4e-cc33-4251-b011-03d9cbd2731f",
-                      "children": [
+                      "props": {
+                        "placeholder": "Jane",
+                        "value": "{{local.data.form.formData.firstName}}"
+                      },
+                      "actions": [
                         {
-                          "type": "InputField",
-                          "props": {
-                            "placeholder": "Jane",
-                            "value": "{{local.data.form.formData.firstName}}"
-                          },
-                          "actions": [
-                            {
-                              "action": "c0a77baf-974c-4d07-b006-4f4b4f5a6a15"
-                            }
-                          ]
+                          "action": "c0a77baf-974c-4d07-b006-4f4b4f5a6a15"
                         }
                       ]
                     },
@@ -256,18 +246,13 @@
                     {
                       "type": "Input",
                       "id": "b98e947e-6d8b-4bf4-8c1b-50150981624b",
-                      "children": [
+                      "props": {
+                        "placeholder": "Doe",
+                        "value": "{{local.data.form.formData.lastName}}"
+                      },
+                      "actions": [
                         {
-                          "type": "InputField",
-                          "props": {
-                            "placeholder": "Doe",
-                            "value": "{{local.data.form.formData.lastName}}"
-                          },
-                          "actions": [
-                            {
-                              "action": "a6836452-b059-47c2-932c-c60504eef105"
-                            }
-                          ]
+                          "action": "a6836452-b059-47c2-932c-c60504eef105"
                         }
                       ]
                     },
@@ -292,9 +277,9 @@
               ]
             },
             {
-              "type": "Pressable",
+              "type": "Box",
               "props": {
-                "className": "bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
+                "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
               },
               "children": [
                 {

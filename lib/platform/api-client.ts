@@ -168,4 +168,10 @@ export const projects = {
       method: 'PATCH',
       body: JSON.stringify(config),
     }),
+
+  updateMeta: (id: string, meta: Record<string, unknown>) =>
+    apiFetch<{ ok: boolean }>(`/api/projects/${id}/config/meta`, {
+      method: 'PATCH',
+      body: JSON.stringify(meta),
+    }),
 };

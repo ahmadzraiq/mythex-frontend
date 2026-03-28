@@ -503,8 +503,11 @@ export interface BuilderStore {
   aiCurrentTool: string | null;
   /** Currently selected AI model — persisted across sessions */
   aiSelectedModel: BuilderModelId;
+  /** Message queued to be auto-sent when the chat panel opens (e.g. from wizard) */
+  aiPendingMessage: string | null;
 
   toggleAiMode: () => void;
+  setAiPendingMessage: (msg: string | null) => void;
   addAiChatMessage: (msg: AiChatMessage) => void;
   updateLastAiMessage: (patch: Partial<AiChatMessage>) => void;
   clearAiChat: () => void;

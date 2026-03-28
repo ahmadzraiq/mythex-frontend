@@ -165,10 +165,10 @@ test.describe('Builder settings tab', () => {
     }
   }
 
-  async function selectInputFieldNode(page: Page) {
-    // Find an InputField layer row and click it
+  async function selectInputNode(page: Page) {
+    // Find an Input layer row and click it
     const layerRows = page.locator('[data-testid="layer-row"]');
-    const inputRow = layerRows.filter({ hasText: 'InputField' }).first();
+    const inputRow = layerRows.filter({ hasText: 'Input' }).first();
     if (await inputRow.isVisible({ timeout: 3000 })) {
       await inputRow.click();
     }
@@ -179,14 +179,14 @@ test.describe('Builder settings tab', () => {
     if (await settingsTab.isVisible()) await settingsTab.click();
   }
 
-  test('FV-11 rules list renders when InputField is selected', async ({ page }) => {
+  test('FV-11 rules list renders when Input is selected', async ({ page }) => {
     await openBuilder(page);
     await dropFormContainer(page);
     await page.locator('[data-testid="tab-layers"]').click();
-    // Expand tree to find InputField
+    // Expand tree to find Input
     const chevrons = page.locator('[data-layer-row]').filter({ hasText: 'FormContainer' });
     if (await chevrons.count() > 0) await chevrons.first().click();
-    await selectInputFieldNode(page);
+    await selectInputNode(page);
     await openSettingsTab(page);
     await expect(page.getByText('Rules')).toBeVisible();
     await expect(page.getByText('+ Add rule')).toBeVisible();
@@ -198,7 +198,7 @@ test.describe('Builder settings tab', () => {
     await page.locator('[data-testid="tab-layers"]').click();
     const chevrons = page.locator('[data-layer-row]').filter({ hasText: 'FormContainer' });
     if (await chevrons.count() > 0) await chevrons.first().click();
-    await selectInputFieldNode(page);
+    await selectInputNode(page);
     await openSettingsTab(page);
     await page.getByText('+ Add rule').click();
     await page.waitForTimeout(200);
@@ -213,7 +213,7 @@ test.describe('Builder settings tab', () => {
     await page.locator('[data-testid="tab-layers"]').click();
     const chevrons = page.locator('[data-layer-row]').filter({ hasText: 'FormContainer' });
     if (await chevrons.count() > 0) await chevrons.first().click();
-    await selectInputFieldNode(page);
+    await selectInputNode(page);
     await openSettingsTab(page);
     await page.getByText('+ Add rule').click();
     await page.waitForTimeout(200);
@@ -231,7 +231,7 @@ test.describe('Builder settings tab', () => {
     await page.locator('[data-testid="tab-layers"]').click();
     const chevrons = page.locator('[data-layer-row]').filter({ hasText: 'FormContainer' });
     if (await chevrons.count() > 0) await chevrons.first().click();
-    await selectInputFieldNode(page);
+    await selectInputNode(page);
     await openSettingsTab(page);
     await page.getByText('+ Add rule').click();
     await page.waitForTimeout(200);
@@ -248,7 +248,7 @@ test.describe('Builder settings tab', () => {
     await page.locator('[data-testid="tab-layers"]').click();
     const chevrons = page.locator('[data-layer-row]').filter({ hasText: 'FormContainer' });
     if (await chevrons.count() > 0) await chevrons.first().click();
-    await selectInputFieldNode(page);
+    await selectInputNode(page);
     await openSettingsTab(page);
     // Find Read only row and click On
     const readOnlySection = page.locator('text=Read only').locator('..');
@@ -268,7 +268,7 @@ test.describe('Builder settings tab', () => {
     await page.locator('[data-testid="tab-layers"]').click();
     const chevrons = page.locator('[data-layer-row]').filter({ hasText: 'FormContainer' });
     if (await chevrons.count() > 0) await chevrons.first().click();
-    await selectInputFieldNode(page);
+    await selectInputNode(page);
     await openSettingsTab(page);
     const autoRow = page.locator('text=Autocomplete').locator('..');
     const offBtn = autoRow.locator('button', { hasText: 'Off' }).first();
@@ -285,7 +285,7 @@ test.describe('Builder settings tab', () => {
     await page.locator('[data-testid="tab-layers"]').click();
     const chevrons = page.locator('[data-layer-row]').filter({ hasText: 'FormContainer' });
     if (await chevrons.count() > 0) await chevrons.first().click();
-    await selectInputFieldNode(page);
+    await selectInputNode(page);
     await openSettingsTab(page);
     const debounceRow = page.locator('text=Debounce').locator('..');
     const onBtn = debounceRow.locator('button', { hasText: 'On' }).first();

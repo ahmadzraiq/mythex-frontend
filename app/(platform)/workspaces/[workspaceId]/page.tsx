@@ -9,6 +9,7 @@ import {
   type WorkspaceMember,
   type Project,
 } from '@/lib/platform/api-client';
+import { BUSINESS_CATEGORIES, DESIGN_MOODS } from '@/lib/builder/wizard-data';
 import CreateAiProjectWizard from './_create-ai-project-wizard';
 
 type Tab = 'projects' | 'members' | 'settings';
@@ -28,17 +29,197 @@ function Avatar({ name, size = 32 }: { name: string; size?: number }) {
   );
 }
 
+// ── Edit App Modal ────────────────────────────────────────────────────────────
+
+interface ProjectMeta {
+  appName?: string;
+  description?: string;
+  category?: string;
+  mood?: string;
+  animationLevel?: number;
+  layoutStructure?: number;
+}
+
+function EditAppModal({
+  project,
+  onClose,
+  onSaved,
+}: {
+  project: Project;
+  onClose: () => void;
+  onSaved: (name: string) => void;
+}) {
+  const [name, setName] = useState(project.name);
+  const [meta, setMeta] = useState<ProjectMeta>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    void projectsApi.getConfig(project.id).then(({ config }) => {
+      const pm = (config.projectMeta ?? {}) as ProjectMeta;
+      setMeta({
+        appName: pm.appName ?? project.name,
+        description: pm.description ?? '',
+        category: pm.category ?? '',
+        mood: pm.mood ?? '',
+        animationLevel: pm.animationLevel ?? 2,
+        layoutStructure: pm.layoutStructure ?? 2,
+      });
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, [project.id, project.name]);
+
+  const patchMeta = (patch: Partial<ProjectMeta>) => setMeta(prev => ({ ...prev, ...patch }));
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '8px 10px', borderRadius: 7, border: '1px solid #374151',
+    background: '#1f2937', color: '#f9fafb', fontSize: 13, outline: 'none', boxSizing: 'border-box',
+  };
+  const labelStyle: React.CSSProperties = {
+    display: 'block', fontSize: 11.5, fontWeight: 500, color: '#9ca3af', marginBottom: 5,
+  };
+  const selectStyle: React.CSSProperties = { ...inputStyle };
+
+  async function handleSave(e: FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setSaving(true);
+    setError('');
+    try {
+      if (name.trim() !== project.name) {
+        await projectsApi.update(project.id, { name: name.trim() });
+      }
+      await projectsApi.updateMeta(project.id, {
+        projectMeta: {
+          appName: meta.appName ?? name.trim(),
+          description: meta.description,
+          category: meta.category,
+          mood: meta.mood,
+          animationLevel: meta.animationLevel,
+          layoutStructure: meta.layoutStructure,
+        },
+      });
+      onSaved(name.trim());
+      onClose();
+    } catch (err) {
+      setError((err as Error).message ?? 'Failed to save');
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)', padding: '16px' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{ width: '100%', maxWidth: 480, background: '#111827', borderRadius: 14, border: '1px solid #1f2937', boxShadow: '0 25px 50px rgba(0,0,0,0.5)', padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#f9fafb', margin: 0 }}>Edit app</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 18, lineHeight: 1, padding: 4 }}>×</button>
+        </div>
+
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '32px 0', color: '#6b7280', fontSize: 13 }}>Loading…</div>
+        ) : (
+          <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* App Name */}
+            <div>
+              <label style={labelStyle}>App name</label>
+              <input
+                type="text" value={name} onChange={e => setName(e.target.value)} required autoFocus
+                style={inputStyle}
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label style={labelStyle}>Business description</label>
+              <textarea
+                value={meta.description ?? ''} onChange={e => patchMeta({ description: e.target.value })}
+                rows={3} placeholder="Describe your business or app…"
+                style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
+              />
+            </div>
+
+            {/* Category */}
+            <div>
+              <label style={labelStyle}>Category</label>
+              <select value={meta.category ?? ''} onChange={e => patchMeta({ category: e.target.value })} style={selectStyle}>
+                <option value="">— Select category —</option>
+                {BUSINESS_CATEGORIES.map(c => (
+                  <option key={c.id} value={c.id}>{c.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Mood */}
+            <div>
+              <label style={labelStyle}>Design mood</label>
+              <select value={meta.mood ?? ''} onChange={e => patchMeta({ mood: e.target.value })} style={selectStyle}>
+                <option value="">— Select mood —</option>
+                {DESIGN_MOODS.map(m => (
+                  <option key={m.id} value={m.id}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Animation Level */}
+            <div>
+              <label style={labelStyle}>Animation level — {meta.animationLevel ?? 2} / 3</label>
+              <input
+                type="range" min={0} max={3} step={1} value={meta.animationLevel ?? 2}
+                onChange={e => patchMeta({ animationLevel: Number(e.target.value) })}
+                style={{ width: '100%', accentColor: '#3b82f6' }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, color: '#6b7280', marginTop: 2 }}>
+                <span>None</span><span>Subtle</span><span>Moderate</span><span>Rich</span>
+              </div>
+            </div>
+
+            {/* Structure Level */}
+            <div>
+              <label style={labelStyle}>Layout structure — {meta.layoutStructure ?? 2} / 4</label>
+              <input
+                type="range" min={0} max={4} step={1} value={meta.layoutStructure ?? 2}
+                onChange={e => patchMeta({ layoutStructure: Number(e.target.value) })}
+                style={{ width: '100%', accentColor: '#3b82f6' }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, color: '#6b7280', marginTop: 2 }}>
+                <span>Minimal</span><span>Simple</span><span>Standard</span><span>Rich</span><span>Complex</span>
+              </div>
+            </div>
+
+            {error && <p style={{ fontSize: 12, color: '#f87171', margin: 0 }}>{error}</p>}
+
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
+              <button type="button" onClick={onClose} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #374151', background: 'transparent', color: '#9ca3af', fontSize: 13, cursor: 'pointer' }}>
+                Cancel
+              </button>
+              <button type="submit" disabled={saving} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#2563eb', color: 'white', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+                {saving ? 'Saving…' : 'Save changes'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Project card ─────────────────────────────────────────────────────────────
 
 function ProjectCard({
   project,
   onOpen,
+  onEdit,
   onDelete,
   canDelete,
   deleting = false,
 }: {
   project: Project;
   onOpen: () => void;
+  onEdit: () => void;
   onDelete: () => void;
   canDelete: boolean;
   deleting?: boolean;
@@ -126,6 +307,12 @@ function ProjectCard({
                 >
                   Open editor
                 </button>
+                <button onClick={() => { setMenuOpen(false); onEdit(); }} style={{ width: '100%', padding: '8px 12px', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12.5, color: '#e2e8f0' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#374151'}
+                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'none'}
+                >
+                  Edit app info
+                </button>
                 {canDelete && (
                   <button onClick={() => { setMenuOpen(false); onDelete(); }} style={{ width: '100%', padding: '8px 12px', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12.5, color: '#f87171' }}
                     onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#374151'}
@@ -162,9 +349,21 @@ function ProjectsSection({
   const [showCreate, setShowCreate] = useState(false);
   const [showAiWizard, setShowAiWizard] = useState(false);
   const [newName, setNewName] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [newCategory, setNewCategory] = useState('');
+  const [newMood, setNewMood] = useState('');
+  const [newAnimationLevel, setNewAnimationLevel] = useState(2);
+  const [newLayoutStructure, setNewLayoutStructure] = useState(2);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+
+  function resetCreateForm() {
+    setNewName(''); setNewDescription(''); setNewCategory('');
+    setNewMood(''); setNewAnimationLevel(2); setNewLayoutStructure(2);
+    setCreateError('');
+  }
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
@@ -173,9 +372,22 @@ function ProjectsSection({
     setCreateError('');
     try {
       const { project } = await projectsApi.create(workspaceId, { name: newName.trim() });
+      // Save app context metadata if any fields were filled in
+      if (newDescription || newCategory || newMood) {
+        await projectsApi.updateMeta(project.id, {
+          projectMeta: {
+            appName: newName.trim(),
+            description: newDescription || undefined,
+            category: newCategory || undefined,
+            mood: newMood || undefined,
+            animationLevel: newAnimationLevel,
+            layoutStructure: newLayoutStructure,
+          },
+        });
+      }
       setProjectList(prev => [project, ...prev]);
       setShowCreate(false);
-      setNewName('');
+      resetCreateForm();
       router.push(`/builder/${project.id}`);
     } catch (err) {
       const e = err as Error & { code?: string };
@@ -258,6 +470,7 @@ function ProjectsSection({
               key={p.id}
               project={p}
               onOpen={() => router.push(`/builder/${p.id}`)}
+              onEdit={() => setEditingProject(p)}
               onDelete={() => handleDelete(p.id)}
               canDelete={isOwner}
               deleting={deletingId === p.id}
@@ -286,23 +499,70 @@ function ProjectsSection({
       {/* Create modal */}
       {showCreate && (
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', padding: '0 16px' }}
-          onClick={e => { if (e.target === e.currentTarget) { setShowCreate(false); setCreateError(''); } }}
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', padding: '16px' }}
+          onClick={e => { if (e.target === e.currentTarget) { setShowCreate(false); resetCreateForm(); } }}
         >
-          <div style={{ width: '100%', maxWidth: 380, background: '#111827', borderRadius: 14, border: '1px solid #1f2937', boxShadow: '0 25px 50px rgba(0,0,0,0.5)', padding: 24 }}>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#f9fafb', marginBottom: 20 }}>New project</h2>
+          <div style={{ width: '100%', maxWidth: 460, background: '#111827', borderRadius: 14, border: '1px solid #1f2937', boxShadow: '0 25px 50px rgba(0,0,0,0.5)', padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#f9fafb', margin: 0 }}>New project</h2>
+              <button onClick={() => { setShowCreate(false); resetCreateForm(); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 18, lineHeight: 1, padding: 4 }}>×</button>
+            </div>
             <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {/* Required */}
               <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#9ca3af', marginBottom: 6 }}>Project name</label>
+                <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: '#9ca3af', marginBottom: 5 }}>App name <span style={{ color: '#f87171' }}>*</span></label>
                 <input
                   type="text" required autoFocus value={newName}
                   onChange={e => setNewName(e.target.value)} placeholder="My project"
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #374151', background: '#1f2937', color: '#f9fafb', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: 7, border: '1px solid #374151', background: '#1f2937', color: '#f9fafb', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
                 />
               </div>
+
+              {/* Optional context */}
+              <div>
+                <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: '#9ca3af', marginBottom: 5 }}>Business description <span style={{ color: '#4b5563', fontWeight: 400 }}>(optional)</span></label>
+                <textarea
+                  value={newDescription} onChange={e => setNewDescription(e.target.value)}
+                  rows={2} placeholder="Describe your business or app…"
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: 7, border: '1px solid #374151', background: '#1f2937', color: '#f9fafb', fontSize: 13, outline: 'none', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: '#9ca3af', marginBottom: 5 }}>Category</label>
+                  <select value={newCategory} onChange={e => setNewCategory(e.target.value)}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: 7, border: '1px solid #374151', background: '#1f2937', color: newCategory ? '#f9fafb' : '#6b7280', fontSize: 13, outline: 'none' }}>
+                    <option value="">— Select —</option>
+                    {BUSINESS_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: '#9ca3af', marginBottom: 5 }}>Design mood</label>
+                  <select value={newMood} onChange={e => setNewMood(e.target.value)}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: 7, border: '1px solid #374151', background: '#1f2937', color: newMood ? '#f9fafb' : '#6b7280', fontSize: 13, outline: 'none' }}>
+                    <option value="">— Select —</option>
+                    {DESIGN_MOODS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: '#9ca3af', marginBottom: 5 }}>Animation — {newAnimationLevel}/3</label>
+                  <input type="range" min={0} max={3} step={1} value={newAnimationLevel} onChange={e => setNewAnimationLevel(Number(e.target.value))} style={{ width: '100%', accentColor: '#3b82f6' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#4b5563', marginTop: 1 }}><span>None</span><span>Rich</span></div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: '#9ca3af', marginBottom: 5 }}>Structure — {newLayoutStructure}/4</label>
+                  <input type="range" min={0} max={4} step={1} value={newLayoutStructure} onChange={e => setNewLayoutStructure(Number(e.target.value))} style={{ width: '100%', accentColor: '#3b82f6' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#4b5563', marginTop: 1 }}><span>Minimal</span><span>Complex</span></div>
+                </div>
+              </div>
+
               {createError && <p style={{ fontSize: 12, color: '#f87171', margin: 0 }}>{createError}</p>}
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => { setShowCreate(false); setCreateError(''); }} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #374151', background: 'transparent', color: '#9ca3af', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 2 }}>
+                <button type="button" onClick={() => { setShowCreate(false); resetCreateForm(); }} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #374151', background: 'transparent', color: '#9ca3af', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
                 <button type="submit" disabled={creating} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#2563eb', color: 'white', fontSize: 13, fontWeight: 600, cursor: creating ? 'not-allowed' : 'pointer', opacity: creating ? 0.7 : 1 }}>
                   {creating ? 'Creating…' : 'Create'}
                 </button>
@@ -317,6 +577,19 @@ function ProjectsSection({
         <CreateAiProjectWizard
           workspaceId={workspaceId}
           onClose={() => setShowAiWizard(false)}
+        />
+      )}
+
+      {/* Edit App Modal */}
+      {editingProject && (
+        <EditAppModal
+          project={editingProject}
+          onClose={() => setEditingProject(null)}
+          onSaved={(newName) => {
+            setProjectList(prev => prev.map(p =>
+              p.id === editingProject.id ? { ...p, name: newName } : p
+            ));
+          }}
         />
       )}
     </div>

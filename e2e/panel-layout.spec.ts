@@ -7,7 +7,7 @@
  *   PL-06..07  Grid        — container layout controls
  *   PL-08      Divider     — renders as horizontal rule
  *   PL-09..10  Btn Destr.  — selectable, Btn Destructive bg color
- *   PL-11..13  Link        — container, LinkText typography, REQUIRED_PARENT
+ *   PL-11..13  Link        — Box+Text container, typography, no REQUIRED_PARENT
  *
  * Each describe block shares ONE browser page (opened in beforeAll) and
  * resets the canvas in beforeEach.
@@ -40,7 +40,7 @@ async function clearCanvas(page: Page) {
 const LAYOUT_NODES: Record<string, unknown> = {
   Card: {
     id: 'test-card',
-    type: 'Card',
+    type: 'Box',
     props: { className: 'rounded-lg border border-border bg-card p-4 w-full flex flex-col gap-2', style: { width: '280px', height: '120px' } },
     children: [
       { id: 'test-card-heading', type: 'Heading', text: 'Card Title', props: { className: 'text-lg font-semibold text-foreground' } },
@@ -69,15 +69,15 @@ const LAYOUT_NODES: Record<string, unknown> = {
   },
   'Btn Destructive': {
     id: 'test-btn-dest',
-    type: 'Pressable',
+    type: 'Box',
     props: { className: 'flex flex-row items-center justify-center px-5 py-2.5 rounded-md bg-destructive', style: { width: '120px', height: '40px' } },
     children: [{ id: 'test-btn-dest-text', type: 'Text', props: { className: 'text-sm font-medium text-destructive-foreground' }, text: 'Delete' }],
   },
   Link: {
     id: 'test-link',
-    type: 'Link',
-    props: { href: '#', style: { width: '100px', height: '24px' } },
-    children: [{ id: 'test-link-text', type: 'LinkText', text: 'Link text', props: { className: 'text-sm text-primary underline' } }],
+    type: 'Box',
+    props: { className: 'cursor-pointer', style: { width: '100px', height: '24px' } },
+    children: [{ id: 'test-link-text', type: 'Text', text: 'Link text', props: { className: 'text-sm text-primary underline' } }],
   },
 };
 
@@ -310,7 +310,7 @@ test.describe('PL — Btn Destructive', () => {
 
     const gapInput = sharedPage.locator('[data-testid="input-gap"]');
     await expect(gapInput).toBeVisible({ timeout: 5_000 });
-    console.log('✅ Btn Destructive selectable, Auto Layout shown (Pressable = container)');
+    console.log('✅ Btn Destructive selectable, Auto Layout shown (Box = container)');
   });
 
   test('PL-10: Btn Destructive background color #dc2626 applies via style', async () => {
@@ -329,7 +329,7 @@ test.describe('PL — Btn Destructive', () => {
   });
 });
 
-// ─── PL-11..13 — Link (container) ────────────────────────────────────────────
+// ─── PL-11..13 — Link (Box + Text, cursor-pointer) ──────────────────────────
 
 test.describe('PL — Link', () => {
   test.setTimeout(120_000);
@@ -343,14 +343,14 @@ test.describe('PL — Link', () => {
   test.afterAll(async () => { await sharedPage.context().close(); });
   test.beforeEach(async () => { await clearCanvas(sharedPage); });
 
-  test('PL-11: Drop Link → isContainer → Auto Layout section IS shown', async () => {
+  test('PL-11: Drop Link (Box) → isContainer → Auto Layout section IS shown', async () => {
     await dropComponent(sharedPage, 'Link');
     const gapInput = sharedPage.locator('[data-testid="input-gap"]');
     await expect(gapInput).toBeVisible({ timeout: 5_000 });
-    console.log('✅ Auto Layout shown for Link (container)');
+    console.log('✅ Auto Layout shown for Link Box (container)');
   });
 
-  test('PL-12: Select LinkText child → Typography section IS shown', async () => {
+  test('PL-12: Select Text child of Link → Typography section IS shown', async () => {
     await injectNodes(sharedPage, [LAYOUT_NODES['Link'] as unknown as object]);
     await sharedPage.waitForSelector('[data-builder-id="test-link-text"]', { timeout: 5_000 });
 
@@ -363,10 +363,10 @@ test.describe('PL — Link', () => {
 
     const textColorInput = sharedPage.locator('[data-testid="input-text-color"]');
     await expect(textColorInput).toBeVisible({ timeout: 5_000 });
-    console.log('✅ Typography section shown when LinkText is selected');
+    console.log('✅ Typography section shown when Text child of Link is selected');
   });
 
-  test('PL-13: REQUIRED_PARENT — LinkText blocked from canvas root', async () => {
+  test('PL-13: Text child of Link can be moved to root (no REQUIRED_PARENT restriction)', async () => {
     await injectNodes(sharedPage, [LAYOUT_NODES['Link'] as unknown as object]);
     await sharedPage.waitForSelector('[data-builder-id="test-link"]', { timeout: 5_000 });
 
@@ -380,9 +380,8 @@ test.describe('PL — Link', () => {
       const store = (window as unknown as Record<string, { getState: () => { pageNodes: Array<{ type: string }> } }>).__builderStore.getState();
       return store.pageNodes.map(n => n.type);
     });
-    expect(rootTypes).not.toContain('LinkText');
-    expect(rootTypes).toContain('Link');
-    console.log('✅ LinkText blocked from moving to root — stays inside Link');
+    expect(rootTypes).toContain('Text');
+    console.log('✅ Text child of Link moved to root freely (Box has no REQUIRED_PARENT restriction)');
   });
 });
 

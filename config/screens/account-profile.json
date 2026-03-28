@@ -40,7 +40,7 @@
         ]
       },
       {
-        "type": "Card",
+        "type": "Box",
         "children": [
           {
             "type": "Box",
@@ -83,15 +83,10 @@
                           {
                             "type": "Input",
                             "id": "f1cc6656-57da-4814-a981-e1530a57942b",
-                            "children": [
-                              {
-                                "type": "InputField",
-                                "props": {
-                                  "value": "{{local.data.form.formData.firstName}}",
-                                  "placeholder": "Jane"
-                                }
-                              }
-                            ]
+                            "props": {
+                              "value": "{{local.data.form.formData.firstName}}",
+                              "placeholder": "Jane"
+                            }
                           }
                         ]
                       },
@@ -111,15 +106,10 @@
                           {
                             "type": "Input",
                             "id": "7a425bc1-4ee5-4292-9e43-e3e1664728bd",
-                            "children": [
-                              {
-                                "type": "InputField",
-                                "props": {
-                                  "value": "{{local.data.form.formData.lastName}}",
-                                  "placeholder": "Doe"
-                                }
-                              }
-                            ]
+                            "props": {
+                              "value": "{{local.data.form.formData.lastName}}",
+                              "placeholder": "Doe"
+                            }
                           }
                         ]
                       }
@@ -141,23 +131,18 @@
                       {
                         "type": "Input",
                         "id": "2e8ed8ad-ffaa-4c28-9d74-78aa4302bb6f",
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "props": {
-                              "type": "tel",
-                              "value": "{{local.data.form.formData.phoneNumber}}",
-                              "placeholder": "+1 (555) 000-0000"
-                            }
-                          }
-                        ]
+                        "props": {
+                          "type": "tel",
+                          "value": "{{local.data.form.formData.phoneNumber}}",
+                          "placeholder": "+1 (555) 000-0000"
+                        }
                       }
                     ]
                   },
                   {
-                    "type": "Pressable",
+                    "type": "Box",
                     "props": {
-                      "className": "bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
+                      "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
                     },
                     "children": [
                       {
@@ -178,10 +163,13 @@
               }
             ]
           }
-        ]
+        ],
+        "props": {
+          "className": "border rounded-xl bg-[var(--theme-card)] shadow-sm"
+        }
       },
       {
-        "type": "Card",
+        "type": "Box",
         "children": [
           {
             "type": "Box",
@@ -218,23 +206,18 @@
                       {
                         "type": "Input",
                         "id": "1a9ca77f-87ba-4416-afdf-9da9892caec3",
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "props": {
-                              "type": "email",
-                              "value": "{{local.data.form.formData.emailAddress}}",
-                              "placeholder": "you@example.com"
-                            }
-                          }
-                        ]
+                        "props": {
+                          "type": "email",
+                          "value": "{{local.data.form.formData.emailAddress}}",
+                          "placeholder": "you@example.com"
+                        }
                       }
                     ]
                   },
                   {
-                    "type": "Pressable",
+                    "type": "Box",
                     "props": {
-                      "className": "bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
+                      "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
                     },
                     "children": [
                       {
@@ -255,10 +238,13 @@
               }
             ]
           }
-        ]
+        ],
+        "props": {
+          "className": "border rounded-xl bg-[var(--theme-card)] shadow-sm"
+        }
       },
       {
-        "type": "Card",
+        "type": "Box",
         "children": [
           {
             "type": "Box",
@@ -295,16 +281,11 @@
                       {
                         "type": "Input",
                         "id": "ff0a280b-c141-4099-bbe0-2d88dea510c2",
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "props": {
-                              "type": "password",
-                              "value": "{{local.data.form.formData.currentPassword}}",
-                              "placeholder": "••••••••"
-                            }
-                          }
-                        ]
+                        "props": {
+                          "type": "password",
+                          "value": "{{local.data.form.formData.currentPassword}}",
+                          "placeholder": "••••••••"
+                        }
                       }
                     ]
                   },
@@ -324,23 +305,18 @@
                       {
                         "type": "Input",
                         "id": "95bf8303-fb42-4966-8f63-3dfd8da4e79c",
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "props": {
-                              "type": "password",
-                              "value": "{{local.data.form.formData.newPassword}}",
-                              "placeholder": "••••••••"
-                            }
-                          }
-                        ]
+                        "props": {
+                          "type": "password",
+                          "value": "{{local.data.form.formData.newPassword}}",
+                          "placeholder": "••••••••"
+                        }
                       }
                     ]
                   },
                   {
-                    "type": "Pressable",
+                    "type": "Box",
                     "props": {
-                      "className": "bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
+                      "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
                     },
                     "children": [
                       {
@@ -361,7 +337,10 @@
               }
             ]
           }
-        ]
+        ],
+        "props": {
+          "className": "border rounded-xl bg-[var(--theme-card)] shadow-sm"
+        }
       }
     ]
   }

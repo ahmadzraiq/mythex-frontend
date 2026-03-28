@@ -365,6 +365,48 @@ const MD_COMPONENTS: React.ComponentProps<typeof ReactMarkdown>['components'] = 
 // MessageBubble
 // ---------------------------------------------------------------------------
 
+function CopyMsgLogBtn({ msg }: { msg: AiChatMessage }) {
+  const [label, setLabel] = useState<'idle' | 'copied'>('idle');
+
+  const handleCopy = () => {
+    const payload = {
+      role: msg.role,
+      content: msg.content ?? '',
+      tools: (msg.toolCalls ?? []).map(t => ({
+        name: t.name,
+        status: t.status,
+        input: t.input,
+        result: t.result,
+      })),
+    };
+    navigator.clipboard.writeText(JSON.stringify(payload, null, 2)).then(() => {
+      setLabel('copied');
+      setTimeout(() => setLabel('idle'), 2000);
+    });
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      title="Copy this message's tools log"
+      style={{
+        marginTop: 4,
+        display: 'inline-flex', alignItems: 'center', gap: 4,
+        padding: '2px 8px', borderRadius: 5,
+        border: `1px solid ${label === 'copied' ? '#34d399' : '#1e293b'}`,
+        background: label === 'copied' ? 'rgba(52,211,153,0.1)' : 'transparent',
+        color: label === 'copied' ? '#34d399' : '#334155',
+        fontSize: 10, cursor: 'pointer', fontFamily: 'inherit',
+        transition: 'all 0.2s',
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#64748b'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#334155'; }}
+      onMouseLeave={e => { if (label !== 'copied') { (e.currentTarget as HTMLButtonElement).style.color = '#334155'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#1e293b'; } }}
+    >
+      {label === 'copied' ? '✓ Copied' : '⎘ Copy log'}
+    </button>
+  );
+}
+
 function MessageBubble({
   msg, onEdit, isEditing,
 }: {
@@ -532,10 +574,13 @@ function MessageBubble({
         </div>
       </div>
 
-      {/* Tool calls — below the message bubble */}
+      {/* Tool calls + per-message copy — below the message bubble */}
       {!isUser && msg.toolCalls && msg.toolCalls.length > 0 && (
         <div style={{ width: '100%', paddingLeft: 32 }}>
           <ToolCallsGroup tools={msg.toolCalls} streaming={isThisStreaming} isThinking={msg.isThinking} />
+          {!isThisStreaming && (
+            <CopyMsgLogBtn msg={msg} />
+          )}
         </div>
       )}
     </div>
@@ -767,7 +812,7 @@ export function AiChatPanel() {
   const {
     threads, loadingThreads, hasMoreThreads, loadingMoreThreads, loadMoreThreads,
     deletingThreadId,
-    sendMessage, startNewChat, deleteThread, selectThread, reloadThreads,
+    sendMessage, getSystemPrompt, startNewChat, deleteThread, selectThread, reloadThreads,
     loadMoreMessages, hasMoreMessages, loadingMoreMessages,
   } = useAiChat();
 
@@ -867,6 +912,52 @@ export function AiChatPanel() {
 
   const currentTitle = threads.find(t => t.id === aiCurrentThreadId)?.title;
 
+  // ── Copy tools log ─────────────────────────────────────────────────────────
+  const [copyToolsLabel, setCopyToolsLabel] = useState<'copy' | 'copied' | 'none'>('none');
+
+  useEffect(() => {
+    const hasCalls = aiChatHistory.some(m => m.toolCalls && m.toolCalls.length > 0);
+    setCopyToolsLabel(hasCalls ? 'copy' : 'none');
+  }, [aiChatHistory]);
+
+  const handleCopyToolsLog = useCallback(() => {
+    const log = aiChatHistory.map(m => ({
+      role: m.role,
+      content: m.content ?? '',
+      ...(m.toolCalls && m.toolCalls.length > 0
+        ? {
+            tools: m.toolCalls.map(t => ({
+              name: t.name,
+              status: t.status,
+              input: t.input,
+              result: t.result,
+            })),
+          }
+        : {}),
+    }));
+    const text = JSON.stringify(log, null, 2);
+    navigator.clipboard.writeText(text).then(() => {
+      setCopyToolsLabel('copied');
+      setTimeout(() => setCopyToolsLabel('copy'), 2000);
+    });
+  }, [aiChatHistory]);
+
+  // ── Copy system prompt ──────────────────────────────────────────────────────
+  const [copyPromptLabel, setCopyPromptLabel] = useState<'idle' | 'loading' | 'copied'>('idle');
+
+  const handleCopySystemPrompt = useCallback(async () => {
+    if (copyPromptLabel === 'loading') return;
+    setCopyPromptLabel('loading');
+    try {
+      const prompt = await getSystemPrompt();
+      await navigator.clipboard.writeText(prompt);
+      setCopyPromptLabel('copied');
+      setTimeout(() => setCopyPromptLabel('idle'), 2000);
+    } catch {
+      setCopyPromptLabel('idle');
+    }
+  }, [copyPromptLabel, getSystemPrompt]);
+
   return (
     <div
       style={{ width: 440, display: 'flex', flexDirection: 'column', background: '#0a0f1e', borderLeft: '1px solid #1e293b', overflow: 'hidden', height: '100%' }}
@@ -890,6 +981,48 @@ export function AiChatPanel() {
 
         {/* Model selector */}
         <ModelSelector value={aiSelectedModel} onChange={id => store.setAiSelectedModel(id)} />
+
+        {/* Copy tools log button — only when there are tool calls */}
+        {copyToolsLabel !== 'none' && (
+          <button
+            data-testid="ai-copy-tools-btn"
+            onClick={handleCopyToolsLog}
+            title="Copy all tool calls from this conversation to clipboard (for debugging)"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              padding: '4px 9px', borderRadius: 6,
+              border: `1px solid ${copyToolsLabel === 'copied' ? '#34d399' : '#334155'}`,
+              background: copyToolsLabel === 'copied' ? 'rgba(52,211,153,0.12)' : '#1e293b',
+              color: copyToolsLabel === 'copied' ? '#34d399' : '#64748b',
+              fontSize: 11, fontWeight: 500, cursor: 'pointer',
+              fontFamily: 'inherit', transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => { if (copyToolsLabel !== 'copied') { (e.currentTarget as HTMLButtonElement).style.borderColor = '#4f46e5'; (e.currentTarget as HTMLButtonElement).style.color = '#a5b4fc'; } }}
+            onMouseLeave={e => { if (copyToolsLabel !== 'copied') { (e.currentTarget as HTMLButtonElement).style.borderColor = '#334155'; (e.currentTarget as HTMLButtonElement).style.color = '#64748b'; } }}
+          >
+            {copyToolsLabel === 'copied' ? '✓ Copied' : '⎘ Copy Log'}
+          </button>
+        )}
+
+        {/* Copy system prompt button — always visible */}
+        <button
+          data-testid="ai-copy-prompt-btn"
+          onClick={() => void handleCopySystemPrompt()}
+          title="Copy the full system prompt to clipboard"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '4px 9px', borderRadius: 6,
+            border: `1px solid ${copyPromptLabel === 'copied' ? '#34d399' : '#334155'}`,
+            background: copyPromptLabel === 'copied' ? 'rgba(52,211,153,0.12)' : '#1e293b',
+            color: copyPromptLabel === 'copied' ? '#34d399' : copyPromptLabel === 'loading' ? '#7c3aed' : '#64748b',
+            fontSize: 11, fontWeight: 500, cursor: copyPromptLabel === 'loading' ? 'wait' : 'pointer',
+            fontFamily: 'inherit', transition: 'all 0.2s',
+          }}
+          onMouseEnter={e => { if (copyPromptLabel === 'idle') { (e.currentTarget as HTMLButtonElement).style.borderColor = '#4f46e5'; (e.currentTarget as HTMLButtonElement).style.color = '#a5b4fc'; } }}
+          onMouseLeave={e => { if (copyPromptLabel === 'idle') { (e.currentTarget as HTMLButtonElement).style.borderColor = '#334155'; (e.currentTarget as HTMLButtonElement).style.color = '#64748b'; } }}
+        >
+          {copyPromptLabel === 'copied' ? '✓ Copied' : copyPromptLabel === 'loading' ? '…' : '⎘ Prompt'}
+        </button>
 
         {/* New Chat button */}
         <button

@@ -6,7 +6,7 @@
  * FCV-02  FormContainer tree shows formData, fields, isSubmitting, isSubmitted, isValid
  * FCV-03  Clicking a formData field inserts variables['uuid-form']?.['formData']?.['field']
  * FCV-04  A Text node watching variables['uuid-form']?.['formData']?.['name'] updates live
- *         when the bound InputField inside the FormContainer is typed into
+ *         when the bound Input inside the FormContainer is typed into
  * FCV-05  Formula appears as a green chip in the editor (Variables tab)
  *
  * Run: npx playwright test e2e/builder-form-container-variables.spec.ts
@@ -102,7 +102,7 @@ async function typeInPreviewInput(page: Page, inputId: string, value: string) {
     const el = frame.querySelector(`[data-builder-id="${bid}"]`) as HTMLElement | null;
     if (!el) { console.error(`FCV: no element with data-builder-id="${bid}"`); return; }
 
-    // The element might itself be an <input> (InputField nodes) or wrap one
+    // The element might itself be an <input> (flat Input nodes) or wrap one
     const input: HTMLInputElement | null =
       el.tagName === 'INPUT' ? el as HTMLInputElement : el.querySelector('input');
     if (!input) { console.error(`FCV: no <input> for bid="${bid}"`); return; }
@@ -148,8 +148,7 @@ async function typeInPreviewInput(page: Page, inputId: string, value: string) {
 // ─── Test data ────────────────────────────────────────────────────────────────
 
 const FORM_ID    = 'a1b2c3d4-fcv1-0000-0000-000000000001';
-const INPUT_ID   = 'a1b2c3d4-fcv1-0000-0000-000000000002';
-const FIELD_ID   = 'a1b2c3d4-fcv1-0000-0000-000000000003';  // InputField node
+const FIELD_ID   = 'a1b2c3d4-fcv1-0000-0000-000000000003';  // Input node (flat)
 const TEXT_ID    = 'a1b2c3d4-fcv1-0000-0000-000000000004';
 const ANCHOR_ID  = 'a1b2c3d4-fcv1-0000-0000-000000000005'; // box to open editor from
 const FORM_NAME  = 'My Form';
@@ -166,7 +165,7 @@ test.describe('FCV — FormContainer variables[uuid-form] integration', () => {
     });
     await gotoBuilder(page);
 
-    // Add a FormContainer with an Input > InputField inside
+    // Add a FormContainer with a flat Input inside
     await addNode(page, {
       type: 'FormContainer',
       id: FORM_ID,
@@ -175,17 +174,9 @@ test.describe('FCV — FormContainer variables[uuid-form] integration', () => {
       children: [
         {
           type: 'Input',
-          id: INPUT_ID,
+          id: FIELD_ID,
           name: 'name',
-          props: { variant: 'outline' },
-          children: [
-            {
-              type: 'InputField',
-              id: FIELD_ID,
-              name: 'name',
-              props: { placeholder: 'Enter name...' },
-            }
-          ]
+          props: { variant: 'outline', placeholder: 'Enter name...' },
         }
       ]
     });
@@ -224,7 +215,7 @@ test.describe('FCV — FormContainer variables[uuid-form] integration', () => {
 
   test('FCV-02 FormContainer tree shows formData, fields and boolean flags', async ({ page }) => {
     // Type something so formData is populated before opening editor
-    await typeInPreviewInput(page, INPUT_ID, 'hello');
+    await typeInPreviewInput(page, FIELD_ID, 'hello');
 
     await openFormulaEditor(page, ANCHOR_ID);
     const varTab = page.locator('button').filter({ hasText: 'Variables' }).first(); await varTab.click();
@@ -249,7 +240,7 @@ test.describe('FCV — FormContainer variables[uuid-form] integration', () => {
   });
 
   test('FCV-03 Clicking a formData field inserts correct formula', async ({ page }) => {
-    await typeInPreviewInput(page, INPUT_ID, 'test');
+    await typeInPreviewInput(page, FIELD_ID, 'test');
     await openFormulaEditor(page, ANCHOR_ID);
     const varTab = page.locator('button').filter({ hasText: 'Variables' }).first(); await varTab.click();
     await page.waitForTimeout(400);
@@ -276,7 +267,7 @@ test.describe('FCV — FormContainer variables[uuid-form] integration', () => {
     expect(chipFormula!).toContain('name');
   });
 
-  test('FCV-04 Text node updates live when typing in a FormContainer InputField', async ({ page }) => {
+  test('FCV-04 Text node updates live when typing in a FormContainer Input', async ({ page }) => {
     // Patch Text node to watch the form field
     const formula = `variables['${FORM_ID}-form']?.['formData']?.['name']`;
     await patchNodeFormula(page, TEXT_ID, formula);
@@ -307,8 +298,8 @@ test.describe('FCV — FormContainer variables[uuid-form] integration', () => {
 
     await expect(textEl).toHaveText('DirectWrite', { timeout: 5_000 });
 
-    // ── Part B: Type in InputField directly (it has formCtx.setField in its onChange) ──
-    // InputField's onChange (wrapped by trackFormFieldProps) calls formCtx.setField('name', val)
+    // ── Part B: Type in Input directly (it has formCtx.setField in its onChange) ──
+    // Input's onChange (wrapped by trackFormFieldProps) calls formCtx.setField('name', val)
     // → FormContainer formState updates → variables['FORM_ID-form'] updates → Text re-renders
     await typeInPreviewInput(page, FIELD_ID, 'Hello World');
 
@@ -316,9 +307,9 @@ test.describe('FCV — FormContainer variables[uuid-form] integration', () => {
     console.log('FCV: text after typing:', JSON.stringify(textAfterTyping));
     // If form tracking is connected, the Text should now show 'Hello World'
     if (textAfterTyping === 'Hello World') {
-      console.log('FCV: ✓ Full form tracking chain works via InputField onChange');
+      console.log('FCV: ✓ Full form tracking chain works via Input onChange');
     } else {
-      console.log('FCV: InputField onChange did not propagate to formula (store write via formCtx.setField)');
+      console.log('FCV: Input onChange did not propagate to formula (store write via formCtx.setField)');
     }
 
     // ── Part C: Another direct write confirms continued reactivity ──

@@ -16,6 +16,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useBuilderStore } from './_store';
 import type { AiChatMessage } from './_store-types';
 import { executeTool, CLIENT_SIDE_TOOLS } from '@/lib/ai/tool-executor';
+import themeConfig from '@/config/theme.json';
+
+// Pre-compute default palette from the app's CSS variable defaults (strip '--' prefix).
+// Used when the user hasn't applied a theme preset yet so the AI always receives real hex values.
+const THEME_DEFAULTS: Record<string, string> = Object.fromEntries(
+  Object.entries((themeConfig.cssVariables?.root ?? {}) as Record<string, string>)
+    .filter(([k]) => k.startsWith('--'))
+    .map(([k, v]) => [k.slice(2), v])
+);
 
 // ---------------------------------------------------------------------------
 // Thread type (from backend)
@@ -38,8 +47,6 @@ type BuilderChatSSE =
   | { type: 'thinking_delta'; content: string }
   | { type: 'round_start'; round: number }
   | { type: 'tool_executed'; id: string; name: string; input: Record<string, unknown>; result?: unknown; error?: string }
-  | { type: 'generation_progress'; section: string; status: string }
-  | { type: 'generation_request'; tool: string; input: Record<string, unknown> }
   | { type: 'image_results'; images: Array<{ url: string; thumb: string; alt: string; credit: string; photographer?: string }> }
   | { type: 'icon_results'; icons: Array<{ id: string; name: string; prefix: string }> }
   | { type: 'done'; tools: Array<{ name: string; input: Record<string, unknown>; result?: unknown }> }
@@ -434,7 +441,7 @@ export function useAiChat() {
           pageTreeSnapshot,
           pageId: store.currentPageId,
           pages: store.pages.map(p => ({ id: p.id, name: p.name, route: p.route })),
-          theme: store.themeOverrides,
+          theme: { ...THEME_DEFAULTS, ...store.themeOverrides },
           mood: store.projectMood,
           appName: store.projectAppName,
           description: store.projectDescription,
@@ -497,12 +504,7 @@ export function useAiChat() {
               fullContent += ev.content;
               store.updateLastAiMessage({ content: fullContent, isThinking: false, streaming: true });
             } else if (ev.type === 'tool_executed') {
-              // Generation tools (generate_section, generate_app) are handled via
-              // the 'generation_request' event below — skip them here to avoid duplicate badges
-              const GENERATION_TOOLS = new Set(['generate_section', 'generate_app']);
-              if (GENERATION_TOOLS.has(ev.name)) {
-                // The generation_request event that follows will create the badge
-              } else {
+              {
                 store.setAiCurrentTool(ev.name);
                 let execResult: unknown = ev.result;
                 let execStatus: 'success' | 'error' = ev.error ? 'error' : 'success';
@@ -532,110 +534,6 @@ export function useAiChat() {
                 allToolCalls.push(tc);
                 store.updateLastAiMessage({ toolCalls: [...allToolCalls], isThinking: false, streaming: true });
               }
-            } else if (ev.type === 'generation_request' && ev.tool === 'generate_section') {
-              // Stream section nodes onto the current page
-              const sectionInput = ev.input as {
-                name: string;
-                description?: string;
-                components?: string[];
-                tone?: string;
-                layout?: string;
-                position?: string;
-              };
-
-              // Add a "generating…" tool badge immediately
-              const genTc: import('./_store-types').AiToolCall = {
-                name: 'generate_section',
-                input: sectionInput,
-                result: undefined,
-                status: 'generating',
-              };
-              allToolCalls.push(genTc);
-              store.updateLastAiMessage({ toolCalls: [...allToolCalls], streaming: true });
-
-              // Get context from store for the prompt builder (use wizard-saved context)
-              const s = useBuilderStore.getState();
-              const pages = s.pages.map(p => ({ name: p.name, route: p.name.toLowerCase().replace(/\s+/g, '-') }));
-
-              try {
-                const genRes = await fetch('/api/ai/generate-section-nodes', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    section: {
-                      name: sectionInput.name,
-                      description: sectionInput.description ?? '',
-                      designHints: {
-                        components: sectionInput.components ?? [],
-                        tone: sectionInput.tone ?? s.projectMood ?? 'modern',
-                        layout: sectionInput.layout ?? 'standard',
-                      },
-                    },
-                    animationLevel: s.projectAnimationLevel ?? 2,
-                    mood: s.projectMood || 'modern',
-                    appName: s.projectAppName || '',
-                    businessDescription: s.projectDescription || '',
-                    category: s.projectCategory || 'general',
-                    pageRoutes: pages,
-                  }),
-                  signal: abort.signal,
-                });
-
-                if (genRes.ok && genRes.body) {
-                  const genReader = genRes.body.getReader();
-                  const genDecoder = new TextDecoder();
-                  let genBuf = '';
-                  let genNodeCount = 0;
-
-                  const currentPageId = useBuilderStore.getState().currentPageId;
-
-                  while (true) {
-                    const { done: gDone, value: gVal } = await genReader.read();
-                    if (gDone) break;
-                    genBuf += genDecoder.decode(gVal, { stream: true });
-                    const genLines = genBuf.split('\n');
-                    genBuf = genLines.pop() ?? '';
-                    for (const gLine of genLines) {
-                      if (!gLine.startsWith('data: ')) continue;
-                      const gJson = gLine.slice(6).trim();
-                      if (!gJson) continue;
-                      try {
-                        const gEv = JSON.parse(gJson) as {
-                          type: string; shellId?: string; parentId?: string;
-                          node?: Record<string, unknown>; message?: string;
-                        };
-                        if (gEv.type === 'shell' && gEv.node) {
-                          if (sectionInput.position === 'prepend' || sectionInput.position === 'first') {
-                            useBuilderStore.getState().prependNodeIntoPage(currentPageId, gEv.node as never);
-                          } else {
-                            useBuilderStore.getState().insertNodeIntoPage(currentPageId, gEv.node as never);
-                          }
-                          genNodeCount++;
-                        } else if (gEv.type === 'node' && gEv.node) {
-                          useBuilderStore.getState().insertNodeIntoPage(currentPageId, gEv.node as never);
-                          genNodeCount++;
-                        } else if (gEv.type === 'section_child' && gEv.parentId && gEv.node) {
-                          useBuilderStore.getState().appendChildToNode(currentPageId, gEv.parentId, gEv.node as never);
-                          genNodeCount++;
-                        }
-                      } catch { /* skip malformed */ }
-                    }
-                  }
-                  // Update badge to done
-                  genTc.result = { nodeCount: genNodeCount };
-                  genTc.status = 'success';
-                } else {
-                  genTc.status = 'error';
-                  genTc.result = { error: `HTTP ${genRes.status}` };
-                }
-              } catch (genErr) {
-                if (!abort.signal.aborted) {
-                  genTc.status = 'error';
-                  genTc.result = { error: String(genErr) };
-                }
-              }
-              store.updateLastAiMessage({ toolCalls: [...allToolCalls], streaming: true });
-
             } else if (ev.type === 'image_results') {
               store.updateLastAiMessage({
                 imageResults: ev.images.map(img => ({
@@ -691,6 +589,67 @@ export function useAiChat() {
     }
   }, [store, createThread, persistMessage, autoRenameThread]);
 
+  // Auto-send pending message queued by the wizard (set via store.aiPendingMessage)
+  useEffect(() => {
+    const pending = useBuilderStore.getState().aiPendingMessage;
+    if (!pending) return;
+    useBuilderStore.getState().setAiPendingMessage(null);
+    void sendMessage(pending);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Get system prompt (for copy-to-clipboard debugging) ──────────────────
+  const getSystemPrompt = useCallback(async (): Promise<string> => {
+    const summarizeNode = (n: unknown, depth: number): unknown => {
+      const node = n as Record<string, unknown>;
+      const base: Record<string, unknown> = {
+        id: node.id,
+        type: node.type,
+        name: node.name,
+        text: typeof node.text === 'string' ? (node.text as string).slice(0, 60) : undefined,
+        className: (node.props as { className?: string } | undefined)?.className?.slice(0, 100),
+      };
+      const children = node.children as unknown[] | undefined;
+      if (depth > 0 && children?.length) {
+        base.children = children.map(c => summarizeNode(c, depth - 1));
+      } else if (children?.length) {
+        base.childCount = children.length;
+      }
+      return base;
+    };
+
+    const pageTreeSnapshot = store.pageNodes.map(n => summarizeNode(n, 3));
+    const res = await fetch('/api/ai/builder-chat', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: '',
+        pageTreeSnapshot,
+        pages: store.pages.map(p => ({ id: p.id, name: p.name, route: p.route })),
+        theme: { ...THEME_DEFAULTS, ...store.themeOverrides },
+        mood: store.projectMood,
+        appName: store.projectAppName,
+        description: store.projectDescription,
+        category: store.projectCategory,
+        variables: (store.customVars ?? []).map((v) => ({ id: v.id ?? v.name, name: v.name, label: v.label, type: v.type, initialValue: v.initialValue })),
+        workflows: Object.entries(store.pageWorkflows ?? {}).map(([name]) => ({
+          name,
+          trigger: store.pageWorkflowMeta?.[name]?.trigger ?? 'click',
+        })),
+        dataSources: (store.pageDataSources ?? []).map((ds) => ({
+          id: ds.id,
+          label: ds._label ?? ds.name ?? ds.id,
+          path: `collections['${ds.id}'].data`,
+        })),
+        model: store.aiSelectedModel,
+        systemPromptOnly: true,
+      }),
+    });
+    const data = await res.json() as { systemPrompt?: string };
+    return data.systemPrompt ?? '(no system prompt)';
+  }, [store]);
+
   return {
     threads,
     loadingThreads,
@@ -699,6 +658,7 @@ export function useAiChat() {
     loadMoreThreads,
     deletingThreadId,
     sendMessage,
+    getSystemPrompt,
     startNewChat,
     createThread,
     deleteThread,

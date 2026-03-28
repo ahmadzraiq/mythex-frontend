@@ -38,9 +38,9 @@
             ]
           },
           {
-            "type": "Card",
+            "type": "Box",
             "props": {
-              "className": "w-full !rounded-xl !border !border-[var(--theme-border)] !bg-[var(--theme-content-bg)] !py-6 !shadow-sm"
+              "className": "w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-card)] py-6 shadow-sm"
             },
             "children": [
               {
@@ -81,35 +81,27 @@
                         "props": {
                           "variant": "outline",
                           "size": "sm",
-                          "className": "w-full !rounded-md !border-[var(--theme-border)] !bg-[var(--theme-content-bg)]"
+                          "className": "!text-[var(--theme-foreground)]",
+                          "type": "email",
+                          "placeholder": "you@example.com",
+                          "placeholderTextColor": "#9ca3af",
+                          "autoComplete": "email",
+                          "value": "{{local.data.form.formData.emailAddress}}"
                         },
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "name": "emailAddress",
-                            "_validation": {
-                              "trigger": "submit",
-                              "rules": [
-                                {
-                                  "type": "required",
-                                  "message": "Email is required"
-                                },
-                                {
-                                  "type": "email",
-                                  "message": "Please enter a valid email address"
-                                }
-                              ]
+                        "name": "emailAddress",
+                        "_validation": {
+                          "trigger": "submit",
+                          "rules": [
+                            {
+                              "type": "required",
+                              "message": "Email is required"
                             },
-                            "props": {
+                            {
                               "type": "email",
-                              "placeholder": "you@example.com",
-                              "placeholderTextColor": "#9ca3af",
-                              "autoComplete": "email",
-                              "value": "{{local.data.form.formData.emailAddress}}",
-                              "className": "!text-[var(--theme-foreground)]"
+                              "message": "Please enter a valid email address"
                             }
-                          }
-                        ]
+                          ]
+                        }
                       },
                       {
                         "type": "Box",
@@ -154,35 +146,27 @@
                             "props": {
                               "variant": "outline",
                               "size": "sm",
-                              "className": "w-full !rounded-md !border-[var(--theme-border)] !bg-[var(--theme-content-bg)]"
+                              "className": "!text-[var(--theme-foreground)]",
+                              "placeholder": "John",
+                              "placeholderTextColor": "#9ca3af",
+                              "autoComplete": "given-name",
+                              "value": "{{local.data.form.formData.firstName}}"
                             },
-                            "children": [
-                              {
-                                "type": "InputField",
-                                "name": "firstName",
-                                "_validation": {
-                                  "trigger": "submit",
-                                  "rules": [
-                                    {
-                                      "type": "required",
-                                      "message": "First name is required"
-                                    },
-                                    {
-                                      "type": "minLength",
-                                      "value": "2",
-                                      "message": "Must be at least 2 characters"
-                                    }
-                                  ]
+                            "name": "firstName",
+                            "_validation": {
+                              "trigger": "submit",
+                              "rules": [
+                                {
+                                  "type": "required",
+                                  "message": "First name is required"
                                 },
-                                "props": {
-                                  "placeholder": "John",
-                                  "placeholderTextColor": "#9ca3af",
-                                  "autoComplete": "given-name",
-                                  "value": "{{local.data.form.formData.firstName}}",
-                                  "className": "!text-[var(--theme-foreground)]"
+                                {
+                                  "type": "minLength",
+                                  "value": "2",
+                                  "message": "Must be at least 2 characters"
                                 }
-                              }
-                            ]
+                              ]
+                            }
                           },
                           {
                             "type": "Box",
@@ -221,35 +205,27 @@
                             "props": {
                               "variant": "outline",
                               "size": "sm",
-                              "className": "w-full !rounded-md !border-[var(--theme-border)] !bg-[var(--theme-content-bg)]"
+                              "className": "!text-[var(--theme-foreground)]",
+                              "placeholder": "Doe",
+                              "placeholderTextColor": "#9ca3af",
+                              "autoComplete": "family-name",
+                              "value": "{{local.data.form.formData.lastName}}"
                             },
-                            "children": [
-                              {
-                                "type": "InputField",
-                                "name": "lastName",
-                                "_validation": {
-                                  "trigger": "submit",
-                                  "rules": [
-                                    {
-                                      "type": "required",
-                                      "message": "Last name is required"
-                                    },
-                                    {
-                                      "type": "minLength",
-                                      "value": "2",
-                                      "message": "Must be at least 2 characters"
-                                    }
-                                  ]
+                            "name": "lastName",
+                            "_validation": {
+                              "trigger": "submit",
+                              "rules": [
+                                {
+                                  "type": "required",
+                                  "message": "Last name is required"
                                 },
-                                "props": {
-                                  "placeholder": "Doe",
-                                  "placeholderTextColor": "#9ca3af",
-                                  "autoComplete": "family-name",
-                                  "value": "{{local.data.form.formData.lastName}}",
-                                  "className": "!text-[var(--theme-foreground)]"
+                                {
+                                  "type": "minLength",
+                                  "value": "2",
+                                  "message": "Must be at least 2 characters"
                                 }
-                              }
-                            ]
+                              ]
+                            }
                           },
                           {
                             "type": "Box",
@@ -290,35 +266,27 @@
                         "props": {
                           "variant": "outline",
                           "size": "sm",
-                          "className": "w-full !rounded-md !border-[var(--theme-border)] !bg-[var(--theme-content-bg)]"
+                          "className": "!text-[var(--theme-foreground)]",
+                          "type": "tel",
+                          "placeholder": "+1 234 567 8900",
+                          "placeholderTextColor": "#9ca3af",
+                          "autoComplete": "tel",
+                          "value": "{{local.data.form.formData.phoneNumber}}"
                         },
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "name": "phoneNumber",
-                            "_validation": {
-                              "trigger": "change",
-                              "rules": [
-                                {
-                                  "type": "phone",
-                                  "message": "Please enter a valid phone number"
-                                }
-                              ]
-                            },
-                            "_debounce": {
-                              "enabled": true,
-                              "delay": 600
-                            },
-                            "props": {
-                              "type": "tel",
-                              "placeholder": "+1 234 567 8900",
-                              "placeholderTextColor": "#9ca3af",
-                              "autoComplete": "tel",
-                              "value": "{{local.data.form.formData.phoneNumber}}",
-                              "className": "!text-[var(--theme-foreground)]"
+                        "name": "phoneNumber",
+                        "_validation": {
+                          "trigger": "change",
+                          "rules": [
+                            {
+                              "type": "phone",
+                              "message": "Please enter a valid phone number"
                             }
-                          }
-                        ]
+                          ]
+                        },
+                        "_debounce": {
+                          "enabled": true,
+                          "delay": 600
+                        }
                       },
                       {
                         "type": "Box",
@@ -357,36 +325,28 @@
                         "props": {
                           "variant": "outline",
                           "size": "sm",
-                          "className": "w-full !rounded-md !border-[var(--theme-border)] !bg-[var(--theme-content-bg)]"
+                          "className": "!text-[var(--theme-foreground)]",
+                          "type": "password",
+                          "placeholder": "••••••••",
+                          "placeholderTextColor": "#9ca3af",
+                          "autoComplete": "new-password",
+                          "value": "{{local.data.form.formData.password}}"
                         },
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "name": "password",
-                            "_validation": {
-                              "trigger": "submit",
-                              "rules": [
-                                {
-                                  "type": "required",
-                                  "message": "Password is required"
-                                },
-                                {
-                                  "type": "minLength",
-                                  "value": "8",
-                                  "message": "Password must be at least 8 characters"
-                                }
-                              ]
+                        "name": "password",
+                        "_validation": {
+                          "trigger": "submit",
+                          "rules": [
+                            {
+                              "type": "required",
+                              "message": "Password is required"
                             },
-                            "props": {
-                              "type": "password",
-                              "placeholder": "••••••••",
-                              "placeholderTextColor": "#9ca3af",
-                              "autoComplete": "new-password",
-                              "value": "{{local.data.form.formData.password}}",
-                              "className": "!text-[var(--theme-foreground)]"
+                            {
+                              "type": "minLength",
+                              "value": "8",
+                              "message": "Password must be at least 8 characters"
                             }
-                          }
-                        ]
+                          ]
+                        }
                       },
                       {
                         "type": "Box",
@@ -425,38 +385,30 @@
                         "props": {
                           "variant": "outline",
                           "size": "sm",
-                          "className": "w-full !rounded-md !border-[var(--theme-border)] !bg-[var(--theme-content-bg)]"
+                          "className": "!text-[var(--theme-foreground)]",
+                          "type": "password",
+                          "placeholder": "••••••••",
+                          "placeholderTextColor": "#9ca3af",
+                          "autoComplete": "new-password",
+                          "value": "{{local.data.form.formData.confirmPassword}}"
                         },
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "name": "confirmPassword",
-                            "_validation": {
-                              "trigger": "submit",
-                              "rules": [
-                                {
-                                  "type": "required",
-                                  "message": "Please confirm your password"
-                                },
-                                {
-                                  "type": "formula",
-                                  "formula": {
-                                    "formula": "local.data?.['form']?.['formData']?.['confirmPassword'] === local.data?.['form']?.['formData']?.['password']"
-                                  },
-                                  "message": "Passwords do not match"
-                                }
-                              ]
+                        "name": "confirmPassword",
+                        "_validation": {
+                          "trigger": "submit",
+                          "rules": [
+                            {
+                              "type": "required",
+                              "message": "Please confirm your password"
                             },
-                            "props": {
-                              "type": "password",
-                              "placeholder": "••••••••",
-                              "placeholderTextColor": "#9ca3af",
-                              "autoComplete": "new-password",
-                              "value": "{{local.data.form.formData.confirmPassword}}",
-                              "className": "!text-[var(--theme-foreground)]"
+                            {
+                              "type": "formula",
+                              "formula": {
+                                "formula": "local.data?.['form']?.['formData']?.['confirmPassword'] === local.data?.['form']?.['formData']?.['password']"
+                              },
+                              "message": "Passwords do not match"
                             }
-                          }
-                        ]
+                          ]
+                        }
                       },
                       {
                         "type": "Box",
@@ -490,16 +442,15 @@
                     ]
                   },
                   {
-                    "type": "Button",
+                    "type": "Box",
                     "name": "Submit",
                     "props": {
-                      "action": "primary",
                       "type": "submit",
-                      "className": "w-full !bg-[var(--theme-shop-button)] hover:!bg-[var(--theme-shop-buttonHover)]"
+                      "className": "flex flex-row items-center justify-center cursor-pointer px-4 py-2 rounded-md w-full !bg-[var(--theme-primary)] hover:!bg-[var(--theme-primary)]"
                     },
                     "children": [
                       {
-                        "type": "ButtonText",
+                        "type": "Text",
                         "props": {
                           "className": "!text-white"
                         },
@@ -525,7 +476,7 @@
                 "text": "Already have an account? "
               },
               {
-                "type": "Pressable",
+                "type": "Box",
                 "actions": [
                   {
                     "action": "3517ed88-9e35-42fd-8d44-650cb590d210"
@@ -535,7 +486,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-[var(--theme-shop-button)] underline hover:opacity-80 text-center"
+                      "className": "text-sm text-[var(--theme-primary)] underline hover:opacity-80 text-center"
                     },
                     "text": "Sign in"
                   }

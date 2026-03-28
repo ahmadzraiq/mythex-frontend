@@ -13,21 +13,21 @@
         {
           "type": "Heading",
           "props": {
-            "className": "text-3xl md:text-4xl font-bold text-[var(--theme-content-text)] mb-3"
+            "className": "text-3xl md:text-4xl font-bold text-[var(--theme-card-foreground)] mb-3"
           },
           "text": "Welcome"
         },
         {
           "type": "Text",
           "props": {
-            "className": "text-[var(--theme-content-textMuted)] mb-6"
+            "className": "text-[var(--theme-muted-foreground)] mb-6"
           },
           "text": "Your one-stop shop for quality products"
         },
         {
-          "type": "Pressable",
+          "type": "Box",
           "props": {
-            "className": "text-sm font-medium text-[var(--theme-content-text)] underline underline-offset-4"
+            "className": "text-sm font-medium text-[var(--theme-card-foreground)] underline underline-offset-4"
           },
           "actions": [
             {

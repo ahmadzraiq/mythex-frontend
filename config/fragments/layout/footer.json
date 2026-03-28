@@ -1,7 +1,7 @@
 {
   "type": "Box",
   "props": {
-    "className": "w-full border-t border-[var(--theme-header-border)] mt-auto bg-[var(--theme-footer-bg)]"
+    "className": "w-full border-t border-[var(--theme-border)] mt-auto bg-[var(--theme-background)]"
   },
   "children": [
     {
@@ -22,7 +22,7 @@
                 {
                   "type": "Text",
                   "props": {
-                    "className": "text-sm font-semibold mb-4 uppercase tracking-wider text-[var(--theme-footer-text)]"
+                    "className": "text-sm font-semibold mb-4 uppercase tracking-wider text-[var(--theme-foreground)]"
                   },
                   "text": "Vendure Store"
                 }
@@ -34,7 +34,7 @@
                 {
                   "type": "Text",
                   "props": {
-                    "className": "text-sm font-semibold mb-4 text-[var(--theme-footer-text)]"
+                    "className": "text-sm font-semibold mb-4 text-[var(--theme-foreground)]"
                   },
                   "text": "Categories"
                 },
@@ -53,7 +53,7 @@
                       },
                       "children": [
                         {
-                          "type": "Pressable",
+                          "type": "Box",
                           "actions": [
                             {
                               "action": "7ae5e4b1-51c4-4266-b001-971a30296623"
@@ -63,7 +63,7 @@
                             {
                               "type": "Text",
                               "props": {
-                                "className": "text-sm text-[var(--theme-footer-textMuted)] hover:text-[var(--theme-foreground)]"
+                                "className": "text-sm text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)]"
                               },
                               "text": "{{context.item.data.name}}"
                             }
@@ -81,7 +81,7 @@
                 {
                   "type": "Text",
                   "props": {
-                    "className": "text-sm font-semibold mb-4 text-[var(--theme-footer-text)]"
+                    "className": "text-sm font-semibold mb-4 text-[var(--theme-foreground)]"
                   },
                   "text": "Vendure"
                 },
@@ -92,36 +92,36 @@
                   },
                   "children": [
                     {
-                      "type": "Pressable",
+                      "type": "Box",
                       "children": [
                         {
                           "type": "Text",
                           "props": {
-                            "className": "text-sm text-[var(--theme-footer-textMuted)]"
+                            "className": "text-sm text-[var(--theme-muted-foreground)]"
                           },
                           "text": "GitHub"
                         }
                       ]
                     },
                     {
-                      "type": "Pressable",
+                      "type": "Box",
                       "children": [
                         {
                           "type": "Text",
                           "props": {
-                            "className": "text-sm text-[var(--theme-footer-textMuted)]"
+                            "className": "text-sm text-[var(--theme-muted-foreground)]"
                           },
                           "text": "Documentation"
                         }
                       ]
                     },
                     {
-                      "type": "Pressable",
+                      "type": "Box",
                       "children": [
                         {
                           "type": "Text",
                           "props": {
-                            "className": "text-sm text-[var(--theme-footer-textMuted)]"
+                            "className": "text-sm text-[var(--theme-muted-foreground)]"
                           },
                           "text": "Source code"
                         }
@@ -136,13 +136,13 @@
         {
           "type": "Box",
           "props": {
-            "className": "w-full mt-12 pt-8 border-t border-[var(--theme-header-border)] flex flex-col md:flex-row justify-between items-center gap-4"
+            "className": "w-full mt-12 pt-8 border-t border-[var(--theme-border)] flex flex-col md:flex-row justify-between items-center gap-4"
           },
           "children": [
             {
               "type": "Text",
               "props": {
-                "className": "text-sm text-[var(--theme-footer-textMuted)]"
+                "className": "text-sm text-[var(--theme-muted-foreground)]"
               },
               "text": "© 2025 Vendure Store. All rights reserved."
             },
@@ -155,7 +155,7 @@
                 {
                   "type": "Text",
                   "props": {
-                    "className": "text-sm text-[var(--theme-footer-textMuted)]"
+                    "className": "text-sm text-[var(--theme-muted-foreground)]"
                   },
                   "text": "Powered by"
                 },
@@ -172,7 +172,7 @@
                 {
                   "type": "Text",
                   "props": {
-                    "className": "text-sm text-[var(--theme-footer-textMuted)]"
+                    "className": "text-sm text-[var(--theme-muted-foreground)]"
                   },
                   "text": "&"
                 },

@@ -26,7 +26,7 @@ import appConfig from '@/config/app';
 import type { SDUIConfig } from '@/lib/sdui/types';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import { computeSnap, snapResizeSize, SNAP_THRESHOLD, type SnapGuide, type ContentRect } from './_snap-engine';
-import { removeTwToken } from './_tw-utils';
+import { removeTwToken, styleToClassName, STYLE_TO_CLASS_KEYS } from './_tw-utils';
 import { StateBar } from './_state-bar';
 import { applyStateTagOverrides } from '@/lib/sdui/builder-preview';
 
@@ -36,12 +36,9 @@ import { applyStateTagOverrides } from '@/lib/sdui/builder-preview';
 // Keep in sync with isContainer in _panel-right.tsx
 const CONTAINER_TYPES = new Set([
   'Box', 'VStack', 'HStack', 'Center', 'Grid', 'GridItem',
-  'ScrollView', 'View', 'Card', 'SafeAreaView', 'Pressable',
+  'ScrollView', 'SafeAreaView',
   'Checkbox', 'CheckboxGroup', 'Radio', 'RadioGroup',
-  'Badge', 'Avatar', 'Fab', 'Skeleton', 'Alert', 'Link',
-  'Modal', 'ModalContent', 'ModalHeader', 'ModalBody', 'ModalFooter',
-  'Tooltip', 'AlertDialog', 'AlertDialogContent',
-  'AlertDialogHeader', 'AlertDialogBody', 'AlertDialogFooter',
+  'Skeleton', 'Tooltip',
   'FormContainer',
 ]);
 
@@ -74,7 +71,7 @@ function ensureIds(node: SDUINode): SDUINode {
  * Any node type listed here must store its display text on the `text` prop.
  */
 const TEXT_NODE_TYPES = new Set([
-  'Text', 'Heading', 'ButtonText',
+  'Text', 'Heading',
   'CheckboxLabel', 'RadioLabel',
   'TabTitle', 'AccordionTitle',
   'SelectItem', 'SelectInput',
@@ -294,11 +291,17 @@ export default function BuilderCanvas() {
       const r = el.getBoundingClientRect();
       const currentNode = findNode(useBuilderStore.getState().pageNodes, editingId);
       const existingStyle = (currentNode?.props as { style?: Record<string, string> })?.style ?? {};
-      patchProp(editingId, 'props.style', {
-        ...existingStyle,
-        ...(origStyle.width  ? { width:  `${Math.round(r.width)}px`  } : {}),
-        ...(origStyle.height ? { height: `${Math.round(r.height)}px` } : {}),
-      });
+      const existingCls = (currentNode?.props as { className?: string })?.className ?? '';
+      let teCls = existingCls;
+      const { width: _w, height: _h, ...teStyle } = existingStyle as Record<string, string>;
+      if (origStyle.width) {
+        teCls = `${removeTwToken(teCls, 'w-')} w-[${Math.round(r.width)}px]`.trim();
+      }
+      if (origStyle.height) {
+        teCls = `${removeTwToken(removeTwToken(removeTwToken(teCls, 'h-'), 'min-h-'), 'flex-1')} h-[${Math.round(r.height)}px]`.trim();
+      }
+      patchProp(editingId, 'props.className', teCls);
+      patchProp(editingId, 'props.style', teStyle);
     }
 
     el.contentEditable = 'false';
@@ -1212,7 +1215,6 @@ export default function BuilderCanvas() {
       const nodeId   = hovEl.dataset.builderId!;
       const nodeType = hovEl.dataset.builderType ?? '';
       const nodeRect = hovEl.getBoundingClientRect();
-      const relY     = (e.clientY - nodeRect.top) / nodeRect.height;
 
       // Check if the node is a container (by type or by having children)
       const nodeInTree = findNode(useBuilderStore.getState().pageNodes, nodeId);
@@ -1230,11 +1232,25 @@ export default function BuilderCanvas() {
           return !!findNode((draggedNode.children as SDUINode[]), nodeId);
         });
 
-      // Edge zones (relY < 0.2 or > 0.8) allow escaping the container to drop
-      // before/after it in its parent. REQUIRED_PARENT in moveNode already
-      // protects truly context-bound nodes (e.g. InputField must stay in Input),
-      // so we don't need to override the edge-zone check here.
-      const inDropZone = relY > 0.2 && relY < 0.8;
+      // Edge zones: when the cursor is near the leading/trailing edge of a node,
+      // drop BEFORE or AFTER it in its parent instead of inside it.
+      // Use a pixel-capped threshold so large (full-screen) containers respond
+      // immediately when the cursor enters — not only after crossing 20% of their size.
+      // Cap at 12px so you never have to go more than 12px inside a large container.
+      const EDGE_ZONE_MAX_PX = 12;
+      // Row containers: check X-axis edges; column/default containers: check Y-axis edges.
+      const isRowForEdge = isRowContainer(nodeInTree);
+      const inDropZone = isRowForEdge
+        ? (() => {
+            const edgePxH = Math.min(EDGE_ZONE_MAX_PX, nodeRect.width * 0.2);
+            const relXPx = e.clientX - nodeRect.left;
+            return relXPx > edgePxH && relXPx < nodeRect.width - edgePxH;
+          })()
+        : (() => {
+            const edgePxV = Math.min(EDGE_ZONE_MAX_PX, nodeRect.height * 0.2);
+            const relYPx = e.clientY - nodeRect.top;
+            return relYPx > edgePxV && relYPx < nodeRect.height - edgePxV;
+          })();
 
       // If the hovered container has ALLOWED restrictions, check whether ALL
       // dragged nodes are permitted inside it. If any are blocked, fall through
@@ -1356,11 +1372,11 @@ export default function BuilderCanvas() {
         // Apply the exact pixel position the user dragged to.
         if (pos) {
           const existingStyle = (draggedNode?.props as { style?: Record<string, string> })?.style ?? {};
-          patchProp(canvasNodeId, 'props.style', {
-            ...existingStyle,
-            left: `${pos.x}px`,
-            top:  `${pos.y}px`,
-          });
+          const absDragCls = (draggedNode?.props as { className?: string })?.className ?? '';
+          const absFinalCls = `${removeTwToken(removeTwToken(absDragCls, 'left-'), 'top-')} left-[${pos.x}px] top-[${pos.y}px]`.trim();
+          patchProp(canvasNodeId, 'props.className', absFinalCls);
+          const { left: _l, top: _t, ...styleWithoutPos } = existingStyle as Record<string, string>;
+          patchProp(canvasNodeId, 'props.style', styleWithoutPos);
         }
 
         if (!isSameParent || pos) _pushHistory();
@@ -1491,27 +1507,23 @@ export default function BuilderCanvas() {
       window.removeEventListener('pointerup',   onUp);
       setSnapGuides([]);
 
-      // Commit final size to Zustand so the JSON config stays in sync
-      useBuilderStore.getState().patchProp(id, 'props.style', {
-        ...existingStyle,
-        width:  `${lastW}px`,
-        height: `${lastH}px`,
-      });
-
-      // When the user drags a resize handle they are explicitly setting a fixed pixel size.
-      // Remove any Hug/Fill/Screen classes for the affected dimensions so the Dimensions
-      // panel reflects Fixed mode correctly.
+      // Commit final size to Zustand as Tailwind arbitrary-value classes (class-only, no inline style).
+      // Strip w-fit/w-full/w-screen/h-fit/h-screen/flex-1 so Dimensions panel shows Fixed mode.
       const existingCls = (node?.props as { className?: string })?.className ?? '';
       let newCls = existingCls;
       if (handle.includes('e') || handle.includes('w')) {
-        newCls = removeTwToken(removeTwToken(removeTwToken(newCls, 'w-fit'), 'w-full'), 'w-screen');
+        newCls = removeTwToken(removeTwToken(removeTwToken(removeTwToken(newCls, 'w-fit'), 'w-full'), 'w-screen'), 'w-');
+        newCls = `${newCls} w-[${lastW}px]`.trim();
       }
       if (handle.includes('n') || handle.includes('s')) {
-        newCls = removeTwToken(removeTwToken(removeTwToken(newCls, 'h-fit'), 'h-screen'), 'flex-1');
+        newCls = removeTwToken(removeTwToken(removeTwToken(removeTwToken(removeTwToken(newCls, 'h-fit'), 'h-screen'), 'flex-1'), 'h-'), 'min-h-');
+        newCls = `${newCls} h-[${lastH}px]`.trim();
       }
-      if (newCls !== existingCls) {
-        useBuilderStore.getState().patchProp(id, 'props.className', newCls);
-      }
+      useBuilderStore.getState().patchProp(id, 'props.className', newCls);
+
+      // Strip width/height from inline style — classes are now the source of truth
+      const { width: _w, height: _h, ...styleWithoutDims } = existingStyle as Record<string, string>;
+      useBuilderStore.getState().patchProp(id, 'props.style', styleWithoutDims);
 
       useBuilderStore.getState()._pushHistory();
     };

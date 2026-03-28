@@ -41,7 +41,7 @@
                 {
                   "type": "DrawerCloseButton",
                   "props": {
-                    "className": "h-8 w-8 rounded-md border-0 bg-transparent hover:bg-[var(--theme-hero-bg)] flex items-center justify-center"
+                    "className": "h-8 w-8 rounded-md border-0 bg-transparent hover:bg-[var(--theme-muted)] flex items-center justify-center"
                   },
                   "actions": [
                     {
@@ -154,7 +154,7 @@
                       ]
                     },
                     {
-                      "type": "Pressable",
+                      "type": "Box",
                       "props": {
                         "className": "text-[var(--theme-muted-foreground)] hover:text-red-500 transition-colors p-1"
                       },
@@ -211,9 +211,9 @@
               ]
             },
             {
-              "type": "Pressable",
+              "type": "Box",
               "props": {
-                "className": "w-full bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] h-11 font-medium flex flex-row items-center justify-center rounded-md"
+                "className": "w-full bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] h-11 font-medium flex flex-row items-center justify-center rounded-md"
               },
               "children": [
                 {
@@ -231,9 +231,9 @@
               ]
             },
             {
-              "type": "Pressable",
+              "type": "Box",
               "props": {
-                "className": "w-full border border-[var(--theme-border)] bg-[var(--theme-content-bg)] text-[var(--theme-foreground)] hover:bg-[var(--theme-hero-bg)] h-10 flex flex-row items-center justify-center rounded-md"
+                "className": "w-full border border-[var(--theme-border)] bg-[var(--theme-card)] text-[var(--theme-foreground)] hover:bg-[var(--theme-muted)] h-10 flex flex-row items-center justify-center rounded-md"
               },
               "children": [
                 {

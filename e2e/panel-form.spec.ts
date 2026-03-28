@@ -40,8 +40,7 @@ const FORM_NODES: Record<string, unknown> = {
   Input: {
     id: 'test-input',
     type: 'Input',
-    props: { variant: 'outline', size: 'md', className: 'w-full !rounded-md !border-border !bg-background' },
-    children: [{ id: 'test-input-field', type: 'InputField', props: { placeholder: 'Enter text…', className: '!text-foreground' } }],
+    props: { variant: 'outline', size: 'md', className: 'w-full !rounded-md !border-border !bg-background', placeholder: 'Enter text…' },
   },
   Textarea: {
     id: 'test-textarea',
@@ -314,32 +313,21 @@ test.describe('PF — Input', () => {
     console.log('✅ Input opacity 50% applied, element still visible');
   });
 
-  test('PF-07: REQUIRED_PARENT — InputField cannot be moved to canvas root', async () => {
+  test('PF-07: Flat Input (no InputField child) renders and accepts placeholder prop', async () => {
     await injectNodes(sharedPage, [
-      { type: 'Input', id: 'inp-root', props: { className: 'w-64 h-10', style: { width: '256px', height: '40px' } },
-        children: [{ type: 'InputField', id: 'ifd-root', props: {} }] },
+      { type: 'Input', id: 'inp-flat', props: { className: 'w-64', placeholder: 'Flat input test', style: { width: '256px', height: '40px' } } },
     ]);
-    await sharedPage.waitForSelector('[data-builder-id="inp-root"]', { timeout: 5_000 });
-
-    await sharedPage.evaluate(() => {
-      (window as unknown as Record<string, { getState: () => { moveNode: (id: string, parent: string | null, idx: number) => void } }>).__builderStore
-        .getState().moveNode('ifd-root', null, 0);
-    });
-    await sharedPage.waitForTimeout(200);
+    await sharedPage.waitForSelector('[data-builder-id="inp-flat"]', { timeout: 5_000 });
 
     const rootTypes = await sharedPage.evaluate(() => {
       const store = (window as unknown as Record<string, { getState: () => { pageNodes: Array<{ type: string }> } }>).__builderStore.getState();
       return store.pageNodes.map(n => n.type);
     });
-    expect(rootTypes).not.toContain('InputField');
     expect(rootTypes).toContain('Input');
 
-    const inputChildren = await sharedPage.evaluate(() => {
-      const store = (window as unknown as Record<string, { getState: () => { pageNodes: Array<{ id: string; children?: Array<{ type: string }> }> } }>).__builderStore.getState();
-      return store.pageNodes.find(n => n.id === 'inp-root')?.children ?? [];
-    });
-    expect(inputChildren.some(c => c.type === 'InputField')).toBe(true);
-    console.log('✅ InputField blocked from moving to root — stays inside Input');
+    const hasInput = await sharedPage.locator('[data-builder-id="inp-flat"] input').count();
+    expect(hasInput).toBeGreaterThan(0);
+    console.log('✅ Flat Input renders without InputField child');
   });
 });
 

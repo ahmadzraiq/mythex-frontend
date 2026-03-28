@@ -61,11 +61,11 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "border rounded-lg px-6 bg-[var(--theme-content-bg)]"
+                  "className": "border rounded-lg px-6 bg-[var(--theme-card)]"
                 },
                 "children": [
                   {
-                    "type": "Pressable",
+                    "type": "Box",
                     "props": {
                       "className": {
                         "expr": "'flex flex-row items-center justify-between w-full py-4 ' + (collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1 ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')"
@@ -87,7 +87,7 @@
                             "type": "Box",
                             "props": {
                               "className": {
-                                "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + ((collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingLines?.length || 0) > 0 ? 'bg-green-500 !text-white' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'delivery' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]'))"
+                                "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + ((collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingLines?.length || 0) > 0 ? 'bg-green-500 !text-white' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'delivery' ? 'bg-[var(--theme-primary)] !text-white' : 'bg-[var(--theme-muted)] !text-[var(--theme-muted-foreground)]'))"
                               }
                             },
                             "children": [
@@ -184,10 +184,10 @@
                             "key": "shippingOpt",
                             "children": [
                               {
-                                "type": "Pressable",
+                                "type": "Box",
                                 "props": {
                                   "className": {
-                                    "expr": "'flex flex-row items-center gap-3 p-4 border-2 rounded-lg w-full cursor-pointer transition-colors ' + (variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] === context?.item?.data?.id ? 'border-[var(--theme-shop-button)] bg-[var(--theme-hero-bg)]' : 'border-[var(--theme-border)] hover:border-[var(--theme-shop-button)]')"
+                                    "expr": "'flex flex-row items-center gap-3 p-4 border-2 rounded-lg w-full cursor-pointer transition-colors ' + (variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] === context?.item?.data?.id ? 'border-[var(--theme-primary)] bg-[var(--theme-muted)]' : 'border-[var(--theme-border)] hover:border-[var(--theme-primary)]')"
                                   }
                                 },
                                 "actions": [
@@ -200,7 +200,7 @@
                                     "type": "Box",
                                     "props": {
                                       "className": {
-                                        "expr": "'w-5 h-5 min-w-5 min-h-5 rounded-full border-2 flex items-center justify-center shrink-0 ' + (variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] === context?.item?.data?.id ? 'border-[var(--theme-shop-button)] bg-[var(--theme-shop-button)]' : 'border-[var(--theme-border)]')"
+                                        "expr": "'w-5 h-5 min-w-5 min-h-5 rounded-full border-2 flex items-center justify-center shrink-0 ' + (variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] === context?.item?.data?.id ? 'border-[var(--theme-primary)] bg-[var(--theme-primary)]' : 'border-[var(--theme-border)]')"
                                       }
                                     },
                                     "children": [
@@ -275,10 +275,10 @@
                         ]
                       },
                       {
-                        "type": "Pressable",
+                        "type": "Box",
                         "props": {
                           "className": {
-                            "expr": "'flex flex-row items-center justify-center bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] mt-2 ' + (variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')"
+                            "expr": "'flex flex-row items-center justify-center bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] mt-2 ' + (variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')"
                           }
                         },
                         "children": [
@@ -306,11 +306,11 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "border rounded-lg px-6 bg-[var(--theme-content-bg)]"
+                  "className": "border rounded-lg px-6 bg-[var(--theme-card)]"
                 },
                 "children": [
                   {
-                    "type": "Pressable",
+                    "type": "Box",
                     "props": {
                       "className": {
                         "expr": "'flex flex-row items-center justify-between w-full py-4 ' + ((variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'review' || ((auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) && collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1 && (collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingLines?.length || 0) > 0 && variables['b3c4d5e6-f7a8-9012-bcde-123456789012'])) ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')"
@@ -332,7 +332,7 @@
                             "type": "Box",
                             "props": {
                               "className": {
-                                "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'review' ? 'bg-[var(--theme-shop-button)] !text-white' : 'bg-[var(--theme-hero-bg)] !text-[var(--theme-muted-foreground)]')"
+                                "expr": "'flex items-center justify-center w-8 h-8 min-w-8 min-h-8 rounded-full overflow-hidden shrink-0 ' + (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'review' ? 'bg-[var(--theme-primary)] !text-white' : 'bg-[var(--theme-muted)] !text-[var(--theme-muted-foreground)]')"
                               }
                             },
                             "children": [
@@ -443,7 +443,7 @@
                                 ]
                               },
                               {
-                                "type": "Pressable",
+                                "type": "Box",
                                 "props": {
                                   "className": "!border-[var(--theme-border)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
                                 },
@@ -501,7 +501,7 @@
                                 ]
                               },
                               {
-                                "type": "Pressable",
+                                "type": "Box",
                                 "props": {
                                   "className": "!border-[var(--theme-border)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
                                 },
@@ -553,7 +553,7 @@
                                 ]
                               },
                               {
-                                "type": "Pressable",
+                                "type": "Box",
                                 "props": {
                                   "className": "!border-[var(--theme-border)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
                                 },
@@ -604,7 +604,7 @@
                                 ]
                               },
                               {
-                                "type": "Pressable",
+                                "type": "Box",
                                 "props": {
                                   "className": "!border-[var(--theme-border)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
                                 },
@@ -642,10 +642,10 @@
                         ]
                       },
                       {
-                        "type": "Pressable",
+                        "type": "Box",
                         "props": {
                           "className": {
-                            "expr": "'flex flex-row items-center justify-center w-full bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] !py-3 ' + (variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')"
+                            "expr": "'flex flex-row items-center justify-center w-full bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] !py-3 ' + (variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')"
                           }
                         },
                         "children": [
@@ -678,7 +678,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "border border-[var(--theme-border)] rounded-lg p-6 bg-[var(--theme-content-bg)] sticky top-20 space-y-3"
+                  "className": "border border-[var(--theme-border)] rounded-lg p-6 bg-[var(--theme-card)] sticky top-20 space-y-3"
                 },
                 "children": [
                   {
@@ -705,7 +705,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "flex-shrink-0 w-16 h-16 rounded overflow-hidden bg-[var(--theme-hero-bg)]"
+                              "className": "flex-shrink-0 w-16 h-16 rounded overflow-hidden bg-[var(--theme-muted)]"
                             },
                             "condition": "context?.item?.data?.productVariant?.product?.featuredAsset?.preview",
                             "children": [

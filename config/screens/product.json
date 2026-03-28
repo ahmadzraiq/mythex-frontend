@@ -28,9 +28,9 @@
           "text": "The product you're looking for doesn't exist or has been removed."
         },
         {
-          "type": "Pressable",
+          "type": "Box",
           "props": {
-            "className": "!bg-[var(--theme-shop-button)] hover:!bg-[var(--theme-shop-buttonHover)] !text-white flex flex-row items-center justify-center py-3 px-4 rounded-md"
+            "className": "!bg-[var(--theme-primary)] hover:!bg-[var(--theme-primary)] !text-white flex flex-row items-center justify-center py-3 px-4 rounded-md"
           },
           "children": [
             {
@@ -66,7 +66,7 @@
             {
               "type": "Box",
               "props": {
-                "className": "aspect-square bg-[var(--theme-hero-bg)] rounded-lg"
+                "className": "aspect-square bg-[var(--theme-muted)] rounded-lg"
               }
             },
             {
@@ -78,19 +78,19 @@
                 {
                   "type": "Box",
                   "props": {
-                    "className": "h-10 bg-[var(--theme-hero-bg)] rounded w-3/4"
+                    "className": "h-10 bg-[var(--theme-muted)] rounded w-3/4"
                   }
                 },
                 {
                   "type": "Box",
                   "props": {
-                    "className": "h-6 bg-[var(--theme-hero-bg)] rounded w-1/4"
+                    "className": "h-6 bg-[var(--theme-muted)] rounded w-1/4"
                   }
                 },
                 {
                   "type": "Box",
                   "props": {
-                    "className": "h-32 bg-[var(--theme-hero-bg)] rounded"
+                    "className": "h-32 bg-[var(--theme-muted)] rounded"
                   }
                 }
               ]
@@ -325,14 +325,14 @@
                               },
                               "children": [
                                 {
-                                  "type": "AccordionTitleText",
+                                  "type": "Heading",
                                   "props": {
                                     "className": "!font-normal"
                                   },
                                   "text": "What are your shipping options?"
                                 },
                                 {
-                                  "type": "AccordionIcon",
+                                  "type": "Icon",
                                   "props": {
                                     "className": "!text-[var(--theme-muted-foreground)] h-4 w-4 shrink-0"
                                   }
@@ -348,7 +348,7 @@
                           },
                           "children": [
                             {
-                              "type": "AccordionContentText",
+                              "type": "Text",
                               "props": {
                                 "className": "text-[var(--theme-muted-foreground)]"
                               },
@@ -375,14 +375,14 @@
                               },
                               "children": [
                                 {
-                                  "type": "AccordionTitleText",
+                                  "type": "Heading",
                                   "props": {
                                     "className": "!font-normal"
                                   },
                                   "text": "What is your return policy?"
                                 },
                                 {
-                                  "type": "AccordionIcon",
+                                  "type": "Icon",
                                   "props": {
                                     "className": "!text-[var(--theme-muted-foreground)] h-4 w-4 shrink-0"
                                   }
@@ -398,7 +398,7 @@
                           },
                           "children": [
                             {
-                              "type": "AccordionContentText",
+                              "type": "Text",
                               "props": {
                                 "className": "text-[var(--theme-muted-foreground)]"
                               },
@@ -425,14 +425,14 @@
                               },
                               "children": [
                                 {
-                                  "type": "AccordionTitleText",
+                                  "type": "Heading",
                                   "props": {
                                     "className": "!font-normal"
                                   },
                                   "text": "How can I track my order?"
                                 },
                                 {
-                                  "type": "AccordionIcon",
+                                  "type": "Icon",
                                   "props": {
                                     "className": "!text-[var(--theme-muted-foreground)] h-4 w-4 shrink-0"
                                   }
@@ -448,7 +448,7 @@
                           },
                           "children": [
                             {
-                              "type": "AccordionContentText",
+                              "type": "Text",
                               "props": {
                                 "className": "text-[var(--theme-muted-foreground)]"
                               },
@@ -475,14 +475,14 @@
                               },
                               "children": [
                                 {
-                                  "type": "AccordionTitleText",
+                                  "type": "Heading",
                                   "props": {
                                     "className": "!font-normal"
                                   },
                                   "text": "Do you offer international shipping?"
                                 },
                                 {
-                                  "type": "AccordionIcon",
+                                  "type": "Icon",
                                   "props": {
                                     "className": "!text-[var(--theme-muted-foreground)] h-4 w-4 shrink-0"
                                   }
@@ -498,7 +498,7 @@
                           },
                           "children": [
                             {
-                              "type": "AccordionContentText",
+                              "type": "Text",
                               "props": {
                                 "className": "text-[var(--theme-muted-foreground)]"
                               },

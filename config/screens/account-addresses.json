@@ -48,9 +48,9 @@
             ]
           },
           {
-            "type": "Pressable",
+            "type": "Box",
             "props": {
-              "className": "bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
+              "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
             },
             "children": [
               {
@@ -70,7 +70,7 @@
         ]
       },
       {
-        "type": "Card",
+        "type": "Box",
         "props": {
           "className": "p-6"
         },
@@ -105,15 +105,10 @@
                   {
                     "type": "Input",
                     "id": "ddc7570e-0709-4d9e-a8e0-ea73f60a49fe",
-                    "children": [
-                      {
-                        "type": "InputField",
-                        "props": {
-                          "value": "{{local.data.form.formData.fullName}}",
-                          "placeholder": "Jane Doe"
-                        }
-                      }
-                    ]
+                    "props": {
+                      "value": "{{local.data.form.formData.fullName}}",
+                      "placeholder": "Jane Doe"
+                    }
                   }
                 ]
               },
@@ -133,15 +128,10 @@
                   {
                     "type": "Input",
                     "id": "06219502-9af1-40b6-b1b3-0089df2b1431",
-                    "children": [
-                      {
-                        "type": "InputField",
-                        "props": {
-                          "value": "{{local.data.form.formData.streetLine1}}",
-                          "placeholder": "123 Main St"
-                        }
-                      }
-                    ]
+                    "props": {
+                      "value": "{{local.data.form.formData.streetLine1}}",
+                      "placeholder": "123 Main St"
+                    }
                   }
                 ]
               },
@@ -167,15 +157,10 @@
                       {
                         "type": "Input",
                         "id": "5be72730-114b-4fc3-b692-175b74c383d4",
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "props": {
-                              "value": "{{local.data.form.formData.city}}",
-                              "placeholder": "New York"
-                            }
-                          }
-                        ]
+                        "props": {
+                          "value": "{{local.data.form.formData.city}}",
+                          "placeholder": "New York"
+                        }
                       }
                     ]
                   },
@@ -195,15 +180,10 @@
                       {
                         "type": "Input",
                         "id": "bc82cd04-3153-49b7-a1af-0cdea39f1d7d",
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "props": {
-                              "value": "{{local.data.form.formData.postalCode}}",
-                              "placeholder": "10001"
-                            }
-                          }
-                        ]
+                        "props": {
+                          "value": "{{local.data.form.formData.postalCode}}",
+                          "placeholder": "10001"
+                        }
                       }
                     ]
                   }
@@ -225,15 +205,10 @@
                   {
                     "type": "Input",
                     "id": "079e999a-72c4-4389-b736-1a2c961ddb8e",
-                    "children": [
-                      {
-                        "type": "InputField",
-                        "props": {
-                          "value": "{{local.data.form.formData.countryCode}}",
-                          "placeholder": "US"
-                        }
-                      }
-                    ]
+                    "props": {
+                      "value": "{{local.data.form.formData.countryCode}}",
+                      "placeholder": "US"
+                    }
                   }
                 ]
               },
@@ -244,9 +219,9 @@
                 },
                 "children": [
                   {
-                    "type": "Pressable",
+                    "type": "Box",
                     "props": {
-                      "className": "bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
+                      "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
                     },
                     "children": [
                       {
@@ -264,9 +239,9 @@
                     ]
                   },
                   {
-                    "type": "Pressable",
+                    "type": "Box",
                     "props": {
-                      "className": "border border-[var(--theme-border)] bg-[var(--theme-content-bg)] text-[var(--theme-foreground)] hover:bg-[var(--theme-hero-bg)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
+                      "className": "border border-[var(--theme-border)] bg-[var(--theme-card)] text-[var(--theme-foreground)] hover:bg-[var(--theme-muted)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
                     },
                     "children": [
                       {
@@ -314,7 +289,7 @@
         "key": "addressCard",
         "children": [
           {
-            "type": "Card",
+            "type": "Box",
             "children": [
               {
                 "type": "Box",
@@ -357,9 +332,9 @@
                     },
                     "children": [
                       {
-                        "type": "Pressable",
+                        "type": "Box",
                         "props": {
-                          "className": "border border-[var(--theme-border)] bg-[var(--theme-content-bg)] text-[var(--theme-foreground)] hover:bg-[var(--theme-hero-bg)] text-xs h-8 px-3 flex flex-row items-center justify-center rounded-md"
+                          "className": "border border-[var(--theme-border)] bg-[var(--theme-card)] text-[var(--theme-foreground)] hover:bg-[var(--theme-muted)] text-xs h-8 px-3 flex flex-row items-center justify-center rounded-md"
                         },
                         "children": [
                           {
@@ -372,7 +347,7 @@
                         ]
                       },
                       {
-                        "type": "Pressable",
+                        "type": "Box",
                         "props": {
                           "className": "border border-red-400 text-red-500 hover:bg-red-50 text-xs h-8 px-3 flex flex-row items-center justify-center rounded-md"
                         },
@@ -395,7 +370,10 @@
                   }
                 ]
               }
-            ]
+            ],
+            "props": {
+              "className": "border rounded-xl bg-[var(--theme-card)] shadow-sm"
+            }
           }
         ]
       }

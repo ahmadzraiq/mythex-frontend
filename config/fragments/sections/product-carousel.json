@@ -13,7 +13,7 @@
         {
           "type": "Heading",
           "props": {
-            "className": "text-3xl md:text-4xl font-bold mb-8 text-[var(--theme-content-text)]"
+            "className": "text-3xl md:text-4xl font-bold mb-8 text-[var(--theme-card-foreground)]"
           },
           "text": "Featured Products"
         },
@@ -35,7 +35,7 @@
               "type": "Heading",
               "props": {
                 "size": "xl",
-                "className": "font-semibold text-center text-[var(--theme-content-text)]"
+                "className": "font-semibold text-center text-[var(--theme-card-foreground)]"
               },
               "text": "No products yet"
             },
@@ -65,9 +65,9 @@
               },
               "children": [
                 {
-                  "type": "Pressable",
+                  "type": "Box",
                   "props": {
-                    "className": "group w-full text-left bg-[var(--theme-content-bg)] rounded-lg overflow-hidden border border-[var(--border)] hover:shadow-lg transition-shadow duration-150"
+                    "className": "group w-full text-left bg-[var(--theme-card)] rounded-lg overflow-hidden border border-[var(--border)] hover:shadow-lg transition-shadow duration-150"
                   },
                   "actions": [
                     {
@@ -78,7 +78,7 @@
                     {
                       "type": "Box",
                       "props": {
-                        "className": "aspect-square relative overflow-hidden bg-[var(--theme-hero-bg)]"
+                        "className": "aspect-square relative overflow-hidden bg-[var(--theme-muted)]"
                       },
                       "children": [
                         {
@@ -119,14 +119,14 @@
                           "type": "Heading",
                           "props": {
                             "size": "sm",
-                            "className": "font-medium text-[var(--theme-content-text)] line-clamp-2 group-hover:opacity-80 transition-colors"
+                            "className": "font-medium text-[var(--theme-card-foreground)] line-clamp-2 group-hover:opacity-80 transition-colors"
                           },
                           "text": "{{context.item.data.productName}}"
                         },
                         {
                           "type": "Text",
                           "props": {
-                            "className": "text-lg font-bold text-[var(--theme-content-text)]"
+                            "className": "text-lg font-bold text-[var(--theme-card-foreground)]"
                           },
                           "text": {
                             "expr": "context?.item?.data?.priceWithTax?.__typename === 'SinglePrice' ? formatCurrency(context?.item?.data?.priceWithTax?.value, context?.item?.data?.currencyCode) : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min, context?.item?.data?.currencyCode)"

@@ -15,20 +15,13 @@ import { Grid, GridItem } from '@/components/ui/grid';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 
-// Interactive
-import { Button, ButtonText, ButtonSpinner } from '@/components/ui/button';
-import { Pressable } from '@/components/ui/pressable';
-import { Link, LinkText } from '@/components/ui/link';
-
 // Feedback
 import { Spinner } from '@/components/ui/spinner';
-import { Divider } from '@/components/ui/divider';
 import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
 
 // Overlay — only Tooltip and Menu remain; Modal/Drawer/Popover/AlertDialog/Actionsheet
 // are replaced by the generic popup system (see lib/sdui/popup-store.ts + PopupRenderer).
 import { Tooltip, TooltipContent, TooltipText } from '@/components/ui/tooltip';
-import { Menu, MenuItem, MenuItemLabel, MenuSeparator } from '@/components/ui/menu';
 
 // Form
 import { Input, InputField, InputIcon, InputSlot } from '@/components/ui/input';
@@ -36,21 +29,12 @@ import { Checkbox, CheckboxGroup, CheckboxIndicator, CheckboxIcon, CheckboxLabel
 import { Switch } from '@/components/ui/switch';
 import { Textarea, TextareaInput } from '@/components/ui/textarea';
 import { Carousel, CarouselSlide } from '@/lib/sdui/carousel';
-import { SearchForm } from '@/components/shared/search-form';
 import { CountdownTimer } from '@/lib/sdui/components/CountdownTimer';
-
-// Data display
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableData } from '@/components/ui/table';
-import { Card } from '@/components/ui/card';
-import { Badge, BadgeText, BadgeIcon } from '@/components/ui/badge';
-import { Alert, AlertText, AlertIcon } from '@/components/ui/alert';
-import { Avatar, AvatarImage, AvatarFallbackText } from '@/components/ui/avatar';
 
 // Scroll
 import { ScrollView } from '@/components/ui/scroll-view';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 
-import { View } from '@/components/ui/view';
 import { NextImage, HtmlContent, InputWithField } from './components';
 import IconifyIcon from './components/IconifyIcon';
 import LottiePlayer from './components/LottiePlayer';
@@ -85,8 +69,6 @@ import QRCodeWidget from './components/QRCodeWidget';
 import MarkdownViewer from './components/MarkdownViewer';
 import GoogleMap from './components/GoogleMap';
 import GoogleMapPlaces from './components/GoogleMapPlaces';
-import { SocialIcon } from '@/components/ui/social-icon';
-
 
 // Accordion
 import {
@@ -94,9 +76,6 @@ import {
   AccordionItem,
   AccordionHeader,
   AccordionTrigger,
-  AccordionTitleText,
-  AccordionContentText,
-  AccordionIcon,
   AccordionContent,
 } from '@/components/ui/accordion';
 
@@ -105,7 +84,6 @@ import {
   Select,
   SelectTrigger,
   SelectInput,
-  SelectIcon,
   SelectPortal,
   SelectBackdrop,
   SelectContent,
@@ -120,18 +98,13 @@ import {
 } from '@/components/ui/select';
 
 // Radio
-import { Radio, RadioGroup, RadioIndicator, RadioLabel, RadioIcon } from '@/components/ui/radio';
+import { Radio, RadioGroup, RadioIndicator, RadioLabel } from '@/components/ui/radio';
 
 // Progress
 import { Progress, ProgressFilledTrack } from '@/components/ui/progress';
 
 // Slider
 import { Slider, SliderThumb, SliderTrack, SliderFilledTrack } from '@/components/ui/slider';
-
-// FAB
-import { Fab, FabLabel, FabIcon } from '@/components/ui/fab';
-
-// Note: BottomSheet requires react-native-gesture-handler & react-native-reanimated - add when deps installed
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- registry accepts dynamic props from JSON
 type RegistryComponent = React.ComponentType<any>;
@@ -145,63 +118,29 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   Center,
   Grid,
   GridItem,
-  Card,
   Heading,
-  Pressable,
-  Divider,
   Spinner,
-  Button,
-  ButtonText,
-  ButtonSpinner,
   Image: NextImage,
-  HtmlContent,
-  SocialIcon,
-  Link,
-  LinkText,
   FormContainer,
   Input: InputWithField,
-  InputField: InputField,
-  InputIcon,
-  InputSlot,
   Tooltip,
   TooltipContent,
   TooltipText,
-  Menu,
-  MenuItem,
-  MenuItemLabel,
-  MenuSeparator,
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableData,
   Checkbox,
   CheckboxGroup,
   CheckboxIndicator,
-  CheckboxIcon,
   CheckboxLabel,
   Switch,
   Textarea,
   TextareaInput,
-  Badge,
-  BadgeText,
-  BadgeIcon,
-  Alert,
-  AlertText,
-  AlertIcon,
   Skeleton,
   SkeletonText,
-  Avatar,
-  AvatarImage,
-  AvatarFallbackText,
   ScrollView,
   SafeAreaView,
-  // Additional components
-  View,
   Icon: IconifyIcon,
   LottiePlayer,
   Video,
+  HtmlContent,
   // SVG primitives — compose any SVG via JSON nodes
   svg: SvgEl,
   path: SvgPath,
@@ -221,14 +160,10 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   AccordionItem,
   AccordionHeader,
   AccordionTrigger,
-  AccordionTitleText,
-  AccordionContentText,
-  AccordionIcon,
   AccordionContent,
   Select,
   SelectTrigger,
   SelectInput,
-  SelectIcon,
   SelectPortal,
   SelectBackdrop,
   SelectContent,
@@ -244,16 +179,12 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   RadioGroup,
   RadioIndicator,
   RadioLabel,
-  RadioIcon,
   Progress,
   ProgressFilledTrack,
   Slider,
   SliderThumb,
   SliderTrack,
   SliderFilledTrack,
-  Fab,
-  FabLabel,
-  FabIcon,
   CountdownTimer,
   // Tier 3 — HTML input wrappers
   DatePicker,

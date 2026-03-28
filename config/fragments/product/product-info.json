@@ -73,10 +73,10 @@
                   },
                   "children": [
                     {
-                      "type": "Pressable",
+                      "type": "Box",
                       "condition": "getFromMap(variables['c4d5e6f7-a8b9-0123-cdef-234567890123'], get('$parent.id')) === context?.item?.data?.id",
                       "props": {
-                        "className": "flex items-center justify-center rounded-md border-2 border-[var(--theme-shop-button)] bg-[var(--theme-shop-button)]/5 px-4 py-3 transition-colors"
+                        "className": "flex items-center justify-center rounded-md border-2 border-[var(--theme-primary)] bg-[var(--theme-primary)]/5 px-4 py-3 transition-colors"
                       },
                       "actions": [
                         {
@@ -91,10 +91,10 @@
                       ]
                     },
                     {
-                      "type": "Pressable",
+                      "type": "Box",
                       "condition": "getFromMap(variables['c4d5e6f7-a8b9-0123-cdef-234567890123'], get('$parent.id')) !== context?.item?.data?.id",
                       "props": {
-                        "className": "flex items-center justify-center rounded-md border-2 border-[var(--theme-border)] bg-[var(--theme-hero-bg)] px-4 py-3 hover:bg-[var(--theme-content-bg)] transition-colors"
+                        "className": "flex items-center justify-center rounded-md border-2 border-[var(--theme-border)] bg-[var(--theme-muted)] px-4 py-3 hover:bg-[var(--theme-card)] transition-colors"
                       },
                       "actions": [
                         {
@@ -151,12 +151,12 @@
       },
       "children": [
         {
-          "type": "Pressable",
+          "type": "Box",
           "condition": {
             "expr": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) && getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') !== 'OUT_OF_STOCK'"
           },
           "props": {
-            "className": "w-full !bg-[var(--theme-shop-button)] hover:!bg-[var(--theme-shop-buttonHover)] !text-white flex flex-row items-center justify-center py-3 rounded-md"
+            "className": "w-full !bg-[var(--theme-primary)] hover:!bg-[var(--theme-primary)] !text-white flex flex-row items-center justify-center py-3 rounded-md"
           },
           "children": [
             {
@@ -174,7 +174,7 @@
           ]
         },
         {
-          "type": "Pressable",
+          "type": "Box",
           "condition": {
             "expr": "!findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) || getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') === 'OUT_OF_STOCK'"
           },

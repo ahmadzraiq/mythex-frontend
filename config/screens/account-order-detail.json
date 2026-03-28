@@ -17,7 +17,7 @@
         },
         "children": [
           {
-            "type": "Pressable",
+            "type": "Box",
             "actions": [
               {
                 "action": "d5d15a7d-ea78-467a-a181-2e801e93ce0f"
@@ -41,13 +41,13 @@
             "text": "Order #{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.code}}"
           },
           {
-            "type": "Badge",
+            "type": "Box",
             "props": {
               "className": "text-xs"
             },
             "children": [
               {
-                "type": "BadgeText",
+                "type": "Text",
                 "text": "{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.state}}"
               }
             ]
@@ -55,7 +55,7 @@
         ]
       },
       {
-        "type": "Card",
+        "type": "Box",
         "children": [
           {
             "type": "Box",
@@ -138,7 +138,10 @@
               }
             ]
           }
-        ]
+        ],
+        "props": {
+          "className": "border rounded-xl bg-[var(--theme-card)] shadow-sm"
+        }
       },
       {
         "type": "Box",
@@ -147,7 +150,7 @@
         },
         "children": [
           {
-            "type": "Card",
+            "type": "Box",
             "children": [
               {
                 "type": "Box",
@@ -192,10 +195,13 @@
                   }
                 ]
               }
-            ]
+            ],
+            "props": {
+              "className": "border rounded-xl bg-[var(--theme-card)] shadow-sm"
+            }
           },
           {
-            "type": "Card",
+            "type": "Box",
             "children": [
               {
                 "type": "Box",
@@ -253,7 +259,10 @@
                     ]
                   },
                   {
-                    "type": "Divider"
+                    "type": "Box",
+                    "props": {
+                      "className": "w-full h-px bg-gray-200 dark:bg-gray-700"
+                    }
                   },
                   {
                     "type": "Box",
@@ -275,7 +284,10 @@
                   }
                 ]
               }
-            ]
+            ],
+            "props": {
+              "className": "border rounded-xl bg-[var(--theme-card)] shadow-sm"
+            }
           }
         ]
       }

@@ -1,0 +1,375 @@
+---
+description: AI builder knowledge base — system prompt structure, core philosophy, contrast rules, asset handling, video defaults, and prompt design decisions
+globs: lib/ai/builder-knowledge.ts,lib/ai/builder-tools.ts,app/api/ai/builder-chat/**
+alwaysApply: false
+---
+
+# AI Builder Knowledge Base (`lib/ai/builder-knowledge.ts`)
+
+## Four-Category Principle — What the AI Needs vs What Is Leakage
+
+There are exactly **four things** the AI needs to know. Everything else is implementation leakage and must be kept out of `builder-knowledge.ts`, `builder-tools.ts`, and any `.cursor/rules` doc:
+
+| Category | Examples | Where it lives |
+|---|---|---|
+| **1. Design intent & principles** | Contrast rules, structural wrapper pattern, sizing modes | `builder-knowledge.ts` knowledge blocks |
+| **2. Tool names + input parameters** | `set_size(id, {width: "full"})`, `set_opacity(id, {opacity: 80})` | `builder-tools.ts` schema + quick-ref |
+| **3. Template / formula syntax** | `{{variables['UUID']}}`, `variables['UUID'] === 'active'`, `context?.item?.data.*` | `JSON_SCHEMA_RULES` |
+| **4. Component labels** | `"Box"`, `"Btn Solid"`, `"Card"` — exactly as shown in the left panel | component label list |
+
+**What is leakage (never put in what the AI sees):**
+- Tailwind class names (`flex-col`, `w-full`, `text-gray-900`, `rounded-lg`, `p-4`, …)
+- Raw JSON node structure (`className`, `style`, `props`, `children` keys)
+- CSS concept terminology (`align-items`, `justify-content`, `flex-1`, `h-screen`, …)
+- Internal prop names (`props.src`, `props.poster`, `props.icon`, `props.type`)
+- Tool write targets (`→ style.opacity`, `→ style.transform`, `→ props.className`, …)
+
+**Rule for new content:** Before adding anything to `builder-knowledge.ts` or a cursor rule, ask: "Is this one of the four categories above?" If not, it belongs only in `tool-executor.ts` (implementation) or `_panel-right.tsx` (panel source of truth).
+
+---
+
+## Core Concept — Tools Mirror the Panel Exactly
+
+**The fundamental rule of this AI system:**
+> AI tools expose exactly what the builder's right-side design panel exposes — nothing more, nothing less.
+
+This means:
+- If the panel has a pixel number input → the tool accepts a **number (pixels)**
+- If the panel has a dropdown of Tailwind tokens → the tool accepts those **exact enum strings**
+- If the panel writes to `style.paddingTop` → the tool writes to `style.paddingTop`
+- If the panel writes to `props.className` → the tool writes to `props.className`
+- If the panel doesn't expose a control → the tool doesn't expose it either
+
+**Why:** When the AI writes style via a tool and the user opens the panel, the panel must display the correct value. If the AI writes `opacity-50` class but the panel reads `style.opacity`, the panel shows 0 — the two are out of sync. The tool and the panel must write to the same place in the same units.
+
+---
+
+## How to Audit a Tool Against the Panel
+
+When adding or modifying a tool, open `_panel-right.tsx` and find the panel control for that property. Then:
+
+1. **Check write target** — does the panel use `patchStyle({ key: value })` or `patchCls(newClass)`?
+   - `patchStyle` → the panel calls `styleToClassName` internally before saving, so both panel and tool now write to `props.className` as arbitrary-value classes (e.g. `pt-[16px]`). The tool must do the same.
+   - `patchCls` → tool writes to `props.className` with a fixed Tailwind token
+2. **Check units** — is it a pixel `NumberInput`, a token `SelectInput`, or a boolean `Toggle`?
+   - `NumberInput` → tool parameter is `number` (pixels)
+   - `SelectInput` with token list → tool parameter is `string` enum matching exact token values
+   - `Toggle` → tool parameter is `boolean`
+3. **Check enum options** — compare panel's token array (from `_tw-utils.ts`) to the tool's enum exactly. If the panel has `"rounded"` (bare default), the tool must have `"default"` mapped to `"rounded"`.
+
+**Reference files for panel token arrays:**
+- `app/dev/builder/_panel-right.tsx` — all panel controls with their write targets
+- `app/dev/builder/_panel-primitives.tsx` — `NumberInput`, `SelectInput`, `FieldWithBinding`
+- `app/dev/builder/_tw-utils.ts` — `ROUNDED_TOKENS`, `SHADOW_TOKENS`, `LEADING_TOKENS`, `ENTER_TYPES`, `EXIT_TYPES`, `LOOP_TYPES`, etc.
+
+---
+
+## Style Mechanism Map (what each tool writes to)
+
+| Tool | Mechanism | Units |
+|---|---|---|
+| `set_background` | `props.className` (bg-[color] class) + strips `style.backgroundColor` | color string |
+| `set_text_color` | `props.className` (text-* class) | color token / hex |
+| `set_typography` | `props.className` (Tailwind text-* font-* etc.) | Tailwind tokens |
+| `set_border` | `props.className` (border-* rounded-* classes) | Tailwind tokens |
+| `set_shadow` | `props.className` (shadow-* class) | Tailwind tokens |
+| `set_opacity` | `style.opacity` (0–1 float) | 0–100 input → divided by 100 |
+| `set_spacing` | `props.className` as arbitrary-value classes (pt-[Npx], gap-[Npx], etc.) + strips `style.*` | pixels |
+| `set_size` | `props.className` for all values: width/height modes + max-w-[Npx], min-w-[Npx], etc. + strips `style.*`; `px:N` double-writes class AND `style.*` | pixels / mode strings |
+| `set_position` | `props.className` for position/zIndex + top-[Npx]/right-[Npx]/etc. for inset + strips `style.*` | pixels for inset |
+| `set_transform` | `style.transform` for rotate; `props.className` for flip/cursor/overflow/self | degrees for rotate |
+| `set_layout` | `props.className` for direction/align/justify + gap-[Npx] for gap + strips `style.gap` | pixels for gap |
+| `set_display` | `props.className` (display/grid classes) | Tailwind tokens |
+| `set_submit` | `props.type` = `"submit"` or null | boolean |
+| `set_input_props` | `props.type`, `props.step`, `props.multiline`, etc. | typed values |
+| `set_animation` | `node.animation.*` object | enum strings matching panel |
+
+**Runtime rendering note:** Arbitrary-value Tailwind classes written from JSON (e.g. `pt-[96px]`, `bg-[#0f172a]`) are not compiled by NativeWind's static scanner. The renderer's `classToInlineStyle()` function in `lib/sdui/renderer.tsx` converts them to inline styles at render time. This means the JSON stores classes (for panel sync) while the browser sees inline styles (for correct rendering). `props.style` values take precedence over `classToInlineStyle` output.
+
+---
+
+## Making Rules Generic
+
+When a new fix is discovered (e.g. video controls being wrong, or spacing using wrong units), the rule goes into the knowledge base and this doc as a **generic principle**, not a specific case.
+
+**Pattern:**
+- Specific: "Dark hero sections need white button borders" ❌
+- Generic: "When using a custom dark background, all children that use theme foreground tokens will lose contrast — override with explicit light colors upfront" ✅
+
+- Specific: "Video controls should be false in hero sections" ❌
+- Generic: "Video ambient defaults (autoPlay=true, loop=true, muted=true, controls=false) apply everywhere — only override when the user explicitly requests a media player" ✅
+
+- Specific: "The hero's gap should be 16px" ❌
+- Generic: "All spacing tools (set_spacing, set_layout) accept pixels — not Tailwind scale values" ✅
+
+**Rule for adding a new rule:** Ask "will this apply to any other context?" If yes, write the principle. If it's truly app-specific, don't add it to the knowledge base at all.
+
+---
+
+## How the System Prompt Is Built
+
+`buildKnowledge(context)` is called per-request and returns the full system prompt string. It injects:
+
+- `paletteSnapshot` — live resolved CSS variable values (var=hex pairs) so the AI knows the current theme
+- `currentPageName`, `pages`, `selectedNodeSummary` — per-request builder state
+- Component list (auto-derived from `PRIMITIVE_COMPONENTS`)
+- Component structure reference (from `aiRef` field on each primitive)
+- All tool descriptions, quick reference, formula functions
+
+**Injection order:**
+```
+1. Project context (appName, description, category, mood)
+2. Contrast Rule
+3. Builder Context (current page, selected node)
+4. Core Philosophy (no raw Tailwind, no set_class)
+5. Tool Strategy (build incrementally, pre-assign IDs)
+6. Section building patterns and examples
+7. Width/Height sizing model
+8. Quick reference table
+9. Component list (auto-generated)
+10. Component structure reference (from aiRef)
+11. Formula function library (auto-generated)
+12. Tool reference table
+```
+
+**Never hardcode theme values** — they come from `paletteSnapshot` at runtime.
+
+---
+
+## Contrast Rule
+
+Theme tokens contrast each other automatically — no adjustment needed when using only theme tokens.
+
+Rule only applies when the AI picks a **custom color** (hex, rgb, plain Tailwind shade):
+- Custom dark bg → light text/borders (white, gray-100, gray-300) for children
+- Custom light bg → dark text/borders (gray-900, gray-200) for children
+
+**Key decision:** This is the AI's responsibility, not a code-level auto-fix. The executor must NOT silently rewrite button/border colors when `set_background` is called — that would break pages where the user deliberately set element colors and just wants to change the section background.
+
+The AI handles contrast **upfront** — "dark background" in the prompt is enough signal.
+
+---
+
+## Contrast on Custom-Colored Sections — Checklist
+
+When you set a custom background color on a section (any hex, rgb, or named color you explicitly choose), you MUST immediately check every child element for contrast in the same batch:
+
+| Child element | Dark custom bg | Light custom bg |
+|---|---|---|
+| Any text | set_text_color → light/white value | set_text_color → dark value |
+| Any bordered/outline component | set_border → light color + set_text_color → light value | set_border → dark color + set_text_color → dark value |
+| Any filled component | verify its fill contrasts the bg | same |
+
+**Critical:** Any component with a border or outline placed inside a dark custom section MUST have its border and text color explicitly set to a light value. The default border color uses the theme foreground, which may be dark — making it invisible on a dark background.
+
+**Make the contrast decision upfront** when you set the background color — choose text and border colors in the same batch. Then do a final scan before finishing to catch anything missed. Never skip this scan when the section has a custom background color.
+
+---
+
+## Section Layout Pattern — Two Layers Always
+
+Every section must use two layers:
+1. **Outer section container** — `width: "full"` + background + vertical/horizontal padding. Never set `maxWidth` here.
+2. **Inner content container** — `width: "full"` + an appropriate `maxWidth` in pixels to constrain readable content.
+
+The outer container must be `width: "full"` so the background bleeds edge-to-edge on all screen sizes. Putting `maxWidth` on the outer container breaks this — the background only fills a narrow column on wide screens. `maxWidth` belongs on the inner container only.
+
+**Never use `width:"fit"` for the inner container.** `w-fit` shrinks to content width — combined with `maxWidth`, a child with `w-full` creates a circular dependency that browsers resolve unpredictably. The correct pattern is always `width:"full"` + `maxWidth` on the inner container:
+
+```
+set_size("section-inner", {width:"full", maxWidth:900, height:"fit"})  ✅
+set_size("section-inner", {width:"fit",  maxWidth:900, height:"fit"})  ❌ — breaks centering
+```
+
+**Observed during audit:** The AI used `width:"fit"` for the inner hero container, which causes layout issues on wide screens where the `w-full` video child creates a circular flex-sizing dependency.
+
+---
+
+## Design Judgment — Defaults Are Starting Points, Not Decisions
+
+Component defaults are neutral. The AI makes the actual design decisions.
+
+When adding any component, evaluate whether its default values fit the user's intent — and override anything that doesn't. The user's prompt provides enough context. Don't wait for the user to notice and ask for a fix.
+
+This applies universally: dimensions, typography, spacing, color, behavior, or any other property.
+
+### Structural Layout Containers — Always Clear Default Padding AND Min-Height
+
+Some components ship with default padding and a minimum height. When used as a **structural wrapper** (its only job is grouping or aligning children), both defaults are wrong and must be cleared in the same batch as `add_component`:
+
+- `set_spacing(id, { p: 0, gap: 0 })` — removes default padding AND gap
+- `set_size(id, { height: "fit" })` — removes the fixed min-height
+
+**Never skip `set_size({height: "fit"})`** on structural wrappers — missing it leaves an invisible gap equal to the default min-height even after padding is cleared.
+
+**How to decide:** Is this component's job to group/align children? → structural wrapper → clear both. Is it a visible UI block the user sees as a unit? → keep defaults.
+
+### Fixed Dimension Defaults Need Contextual Evaluation
+
+Some components ship with a fixed default dimension. That default is a neutral starting point — not a design decision. The AI must evaluate it against the section being built.
+
+**Rule:** After adding any component with a fixed dimension default, ask — does this dimension fit where it is placed? If not, override it immediately with `set_size` in the same batch. Never leave a dimension default that visually doesn't fit the context.
+
+---
+
+## Component Defaults Are Intentional — Do Not Override Unless Asked
+
+Every component ships with defaults that are deliberately chosen for the most common use case. The AI must not call follow-up tools to override those defaults immediately after adding a component — doing so undoes an intentional design decision.
+
+Only override a component's default behavior when the user explicitly requests it. The prompt context alone (e.g. "dark background", "hero section") is not sufficient justification to override playback behavior, interaction state, or other behavioral defaults.
+
+---
+
+## Asset Handling Rules
+
+Always search before adding:
+- Images: `search_images(query)` → `add_image(src, alt, parentId)`
+- Videos: `search_videos(query)` → `add_video(src, poster, parentId)`
+- Icons: `search_icons(query)` → `add_icon(icon, parentId)`
+
+Never hardcode a Pexels/Unsplash URL or icon name directly. The search tools are server-side and return real URLs from the API. Never reference external services (YouTube, etc.) — only internal asset searches.
+
+---
+
+## `Btn Outline` Default Classes
+
+Default class includes `border-[var(--theme-foreground)]` and `text-[var(--theme-foreground)]`.
+These are correct for light sections. On dark custom sections, the AI must override:
+- `set_border(id, { color: "white" })`
+- `set_text_color(id, { color: "white" })`
+
+---
+
+## `Btn Solid` on Dark Custom Sections
+
+Default class includes `bg-[var(--theme-foreground)]`. On most palettes `--theme-foreground` is a **dark** color (e.g. `#1A1F36`). On a custom dark section background the button is nearly invisible — same failure mode as Btn Outline but on the fill instead of the border.
+
+When a Btn Solid is placed inside a custom dark section, immediately call:
+- `set_background(id, { bg: "primary" })` — uses the brand accent (typically a saturated color) OR
+- `set_background(id, { bg: "white" })` — maximum contrast
+
+**Observed during audit:** AI built a dark hero (`#0f172a`) and correctly fixed Btn Outline contrast but silently left Btn Solid with `bg-[var(--theme-foreground)]` = `#1A1F36` — nearly identical to the section background. The button was invisible. Fixed by adding the dark-section warning to Component Defaults for Btn Solid (matching the existing Btn Outline warning).
+
+---
+
+## Adding Rules to the Knowledge Base
+
+- Keep rules **generic** — avoid hardcoding app-specific scenarios
+- Rules about "when X, do Y" must cover the general case, not just the specific bug that was observed
+- If a rule is too specific (e.g. "dark sections need white buttons"), make it a principle ("custom bg → matching contrast for children")
+- Avoid duplicating rules — check if an existing rule already covers the case before adding
+- Update this doc when a rule is added or changed so the decisions are traceable
+
+---
+
+## System Prompt Health — What Can Go Wrong and How to Check
+
+The Builder AI's behavior is entirely driven by what it receives at runtime: the assembled system prompt + tool schemas + live context. When the AI makes bad design decisions or calls wrong tools, the root cause is almost always in one of these areas. Before adding new features or reporting AI misbehavior, audit these layers first.
+
+---
+
+### Class of Bug 1 — Dead Tool References
+
+**What it is:** A string somewhere (an `aiRef`, a knowledge block) tells the AI to call a tool that no longer exists.
+
+**Why it's dangerous:** The AI confidently tries to call the tool. The executor rejects it or silently does nothing. The AI either loops or produces incomplete output — and there is no error the user sees.
+
+**Where to look:**
+- `aiRef` strings in `lib/builder/primitive-components.ts` — every one that says "use X tool" must match a tool that exists in `lib/ai/builder-tools.ts`
+- `aiRef` strings in `lib/ai/builder-knowledge.ts` / `primitive-components.ts` — any "adjust with X" reference
+- Any knowledge block that names a specific tool
+
+**How to verify:** Open `lib/ai/builder-tools.ts` and check that the tool name exists as a registered tool. If it's not there, it's a dead reference.
+
+**Observed during audit:** `set_class` was referenced in 4 `aiRef` strings (Box, Grid, Btn Solid, Toggle). `set_grid` was referenced in the old component-defaults block in `builder-knowledge.ts`. Both tools were removed. Fixed by replacing with the correct tools (`set_layout`, `set_display`, `set_background`, `set_text_color`, `set_condition`).
+
+---
+
+### Class of Bug 2 — Contradictory Instructions
+
+**What it is:** Two sections of the system prompt say opposite things about the same behavior.
+
+**Why it's dangerous:** The AI sees both instructions. Depending on which it encounters last or which seems more "local" to the task, it may follow either one. The behavior becomes unpredictable — sometimes correct, sometimes wrong.
+
+**Where to look:**
+- Any behavioral instruction that appears in more than one block (IDs, tool call patterns, color decisions)
+- The "Core Philosophy" block vs. component `aiRef` strings — if philosophy bans a tool, every `aiRef` must also not reference it
+- Timing rules that contradict mandatory rules — "do this as a verification pass" vs. "this is mandatory with no exceptions"
+
+**How to verify:** Search `lib/ai/builder-knowledge.ts` for the behavior in question (e.g. "nodeId", "contrast", "class") and read every occurrence. They must be consistent.
+
+**Observed during audit:** The "CRITICAL: Pre-assign short IDs" section told the AI to always pass `nodeId` in `add_component`. But a line buried inside Color Rule 1 said "NEVER pass a nodeId field." The stale note was from an old API shape and had been orphaned in the wrong section. Fixed by deleting it.
+
+A second contradiction: `contrastRules` closed with "This is a verification pass, not an upfront decision" while Color Rule 3 said contrast is mandatory with no exceptions. These directly conflicted. Fixed by rewriting the close of `contrastRules` to mandate upfront + final scan.
+
+---
+
+### Class of Bug 3 — Live Context Injection That Never Resolves
+
+**What it is:** A runtime injection (theme colors, page name, selected node) silently produces empty output because of a data format mismatch between where data is stored and where the injector looks for it.
+
+**Why it's dangerous:** The AI receives "(no theme palette)" or similar fallback text and designs without any color context — picking arbitrary colors that may clash with the actual theme.
+
+**Where to look:**
+- `buildPaletteSnapshot()` in `app/api/ai/builder-chat/route.ts` — the `THEME_VAR_MAP` array maps source keys to display names. The source key must exactly match how `store.themeOverrides` stores them.
+- `_store.ts` — `themeOverrides` and `patchTheme` show the actual key format
+- `_store-node-helpers.ts` — `_applyLightOverrides` shows `--${k}`, confirming `k` itself has no `--` prefix
+
+**How to verify:** In `_store.ts`, find how a theme preset populates `themeOverrides`. The keys it stores (e.g. `'background'`, `'primary'`) must exactly match the first column of `THEME_VAR_MAP`. If `THEME_VAR_MAP` has `'--background'` but the store has `'background'`, the lookup always returns `undefined`.
+
+**Quick check:** Open the builder, apply a theme preset, open the browser devtools, and evaluate `window.__zustand?.getState?.()?.themeOverrides` (or use the "Copy system prompt" button at the bottom of the AI chat panel) to see what the AI actually receives. If you see "(no theme palette)", the injection is broken.
+
+**Observed during audit:** `THEME_VAR_MAP` had `--` prefixed keys (`'--background'`) while `store.themeOverrides` stores without prefix (`'background'`). All 14 entries returned `undefined`. Fixed by stripping `--` from all source keys in `THEME_VAR_MAP`.
+
+---
+
+### Class of Bug 4 — Redundant Prose That Dilutes Actionable Instructions
+
+**What it is:** The prompt explains a concept Claude already knows as general knowledge (contrast theory, what "fill" means, that defaults exist). This takes up tokens and buries the actual constraint (the tool call, the system-specific behavior) deeper in the text.
+
+**Why it's dangerous:** The AI has finite attention weight. When a critical instruction is surrounded by text explaining things it already knows, the ratio of signal to noise drops. The unique, tool-specific instructions become less prominent.
+
+**Where to look:**
+- Any paragraph that starts with "X is when..." or "Y means..." for widely-understood concepts (light vs dark contrast, what viewport height is, that components have defaults)
+- Any block that explains WHY a rule exists rather than just stating the rule
+- Definitions of terms Claude already understands (fill, screen, near-white, etc.)
+
+**How to identify:** Read each paragraph and ask: "Would a senior frontend engineer already know this without being told?" If yes, and the paragraph doesn't also include a system-specific tool call or constraint, it's redundant prose.
+
+**Observed during audit:** Five locations trimmed — two-layer section intro, "defaults are neutral" filler, "neutral starting point" sentence, fill/screen definitions, and the near-white/dark-on-dark "NEVER" lines. All were condensed to keep only the tool-call instruction or system-specific constraint.
+
+---
+
+### Audit Checklist — Run This When the AI Behaves Unexpectedly
+
+1. **Copy the system prompt** — use the "Copy system prompt" button at the bottom of the AI chat panel to see exactly what the AI received, including live injections.
+2. **Search for the tool the AI called** — find every place in `builder-knowledge.ts` and `primitive-components.ts` that mentions it. Check consistency.
+3. **Search for the behavior that was wrong** — e.g. if contrast is wrong, search for "contrast" across both files. Read all occurrences together to find contradictions.
+4. **Check theme palette line in the copied prompt** — it should show hex values like `var(--theme-primary) = #00b4d8`. If it shows "(no theme palette)", `buildPaletteSnapshot` is broken.
+5. **Check aiRef strings for dead tools** — `grep -n "set_class\|set_grid\|_assignedNodeId" lib/builder/primitive-components.ts lib/ai/builder-knowledge.ts`. Any hit is a bug.
+6. **Check new tools match aiRef** — when a tool is renamed or removed, immediately update every `aiRef` that references it.
+
+---
+
+---
+
+## Component copy in the system prompt
+
+Baseline presets live in each primitive’s `defaultNode` and are summarized in `aiRef` (injected via `buildComponentStructureRef()`). **Do not** maintain a parallel “defaults” or “gotchas” list in `builder-knowledge.ts` for specific widgets — it duplicates design judgment the model already has and drifts from code.
+
+Keep `builder-knowledge` focused on **how to use this product**: tools, schema, formulas, theme injection, and project rules. Component-specific behavior belongs in `aiRef` (and rarely one line in **Color rules** if it applies to all edits).
+
+Any tool name referenced in builder knowledge or `aiRef` must exist in `lib/ai/builder-tools.ts`. (See "Class of Bug 1" in the audit section above.)
+
+---
+
+### Rule: Keep aiRef Strings in Sync With Registered Tools
+
+Every `aiRef` string in `lib/builder/primitive-components.ts` that names a tool is a contract. When a tool is added, renamed, or removed in `lib/ai/builder-tools.ts`:
+
+1. Search `primitive-components.ts` for the old tool name
+2. Update every occurrence to the new name or replacement
+3. Search `builder-knowledge.ts` for the old tool name and update there too
+
+Failure to do this produces Class of Bug 1 (dead tool references) silently — there is no compile error.
+

@@ -1772,16 +1772,13 @@ test.describe('Fix-MultiDrag: multi-select drag moves all selected nodes', () =>
   test('MD-2: moveNodes moves two nodes (with children) into a container', async () => {
     const page = sharedPage;
 
-    // Use Input nodes WITH InputField children — InputField must remain inside Input
-    // (crash guard: InputField uses useStyleContext which crashes if orphaned outside Input).
+    // Use flat Input nodes (no InputField children needed — Input is now a flat component)
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
         .getState()._setPageNodes([
           { type: 'Box',   id: 'container', props: { className: 'w-64 h-48', style: { width: '256px', height: '192px' } }, children: [] },
-          { type: 'Input', id: 'inp-a',     props: { className: 'w-48 h-10' },
-            children: [{ type: 'InputField', id: 'if-a', props: {} }] },
-          { type: 'Input', id: 'inp-b',     props: { className: 'w-48 h-10' },
-            children: [{ type: 'InputField', id: 'if-b', props: {} }] },
+          { type: 'Input', id: 'inp-a',     props: { className: 'w-48 h-10', placeholder: 'Email' } },
+          { type: 'Input', id: 'inp-b',     props: { className: 'w-48 h-10', placeholder: 'Name' } },
         ]);
     });
     await page.waitForSelector('[data-builder-id="container"]', { timeout: 5_000 });
@@ -1804,47 +1801,47 @@ test.describe('Fix-MultiDrag: multi-select drag moves all selected nodes', () =>
     expect(children).toHaveLength(2);
     expect(children.every(c => c.type === 'Input')).toBe(true);
 
-    // InputField must remain INSIDE each Input (not at container level — would crash)
+    // Input is flat — no child nodes expected
     const inpAChildren = await getNodeChildren(page, 'inp-a');
     const inpBChildren = await getNodeChildren(page, 'inp-b');
-    expect(inpAChildren.some(c => c.type === 'InputField')).toBe(true);
-    expect(inpBChildren.some(c => c.type === 'InputField')).toBe(true);
-    console.log('✅ moveNodes placed both Inputs inside container with InputField intact');
+    expect(inpAChildren).toHaveLength(0); // flat Input has no children
+    expect(inpBChildren).toHaveLength(0); // flat Input has no children
+    console.log('✅ moveNodes placed both Inputs inside container');
   });
 
   // MD-2b: moveNodes with parent+child both selected — child must NOT be moved independently
   test('MD-2b: moveNodes skips child nodes whose parent is also being moved', async () => {
     const page = sharedPage;
 
-    // Inject: VStack target + Input with InputField child
-    // REQUIRED_PARENT guard: InputField must never end up outside an Input
+    // Inject: VStack target + Box with Text child
+    // When both Box and Text are "selected" and moved, only Box should move — Text stays inside it
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
         .getState()._setPageNodes([
           { type: 'VStack', id: 'vs',  props: { className: 'w-64 h-48', style: { width: '256px', height: '192px' } }, children: [] },
-          { type: 'Input',  id: 'inp', props: { className: 'w-48 h-10' },
-            children: [{ type: 'InputField', id: 'ifd', props: {} }] },
+          { type: 'Box',    id: 'box', props: { className: 'w-48 h-10' },
+            children: [{ type: 'Text', id: 'txt-child', props: {}, text: 'Hello' }] },
         ]);
     });
-    await page.waitForSelector('[data-builder-id="inp"]', { timeout: 5_000 });
+    await page.waitForSelector('[data-builder-id="box"]', { timeout: 5_000 });
 
-    // Simulate what marquee-select produces: both Input AND InputField IDs selected
+    // Simulate what marquee-select produces: both Box AND Text IDs selected
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { moveNodes: (ids: string[], parent: string | null, idx: number) => void } }>).__builderStore
-        .getState().moveNodes(['inp', 'ifd'], 'vs', 0);
+        .getState().moveNodes(['box', 'txt-child'], 'vs', 0);
     });
     await page.waitForTimeout(200);
 
-    // VStack should contain exactly ONE child (Input), not two (Input + loose InputField)
+    // VStack should contain exactly ONE child (Box), not two (Box + loose Text)
     const vsChildren = await getNodeChildren(page, 'vs');
-    console.log('VStack children after moveNodes([inp, ifd]):', vsChildren.map(c => c.type));
+    console.log('VStack children after moveNodes([box, txt-child]):', vsChildren.map(c => c.type));
     expect(vsChildren).toHaveLength(1);
-    expect(vsChildren[0].type).toBe('Input');
+    expect(vsChildren[0].type).toBe('Box');
 
-    // InputField must still be inside Input
-    const inpChildren = await getNodeChildren(page, 'inp');
-    expect(inpChildren.some(c => c.type === 'InputField')).toBe(true);
-    console.log('✅ InputField stayed inside Input — not inserted as independent sibling');
+    // Text must still be inside Box
+    const boxChildren = await getNodeChildren(page, 'box');
+    expect(boxChildren.some(c => c.type === 'Text')).toBe(true);
+    console.log('✅ Text stayed inside Box — not inserted as independent sibling');
   });
 
   // MD-3: moveNodes reorders two root nodes atomically

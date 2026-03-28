@@ -41,9 +41,9 @@
             ]
           },
           {
-            "type": "Card",
+            "type": "Box",
             "props": {
-              "className": "w-full !rounded-xl !border !border-[var(--theme-border)] !bg-[var(--theme-content-bg)] !py-6 !shadow-sm"
+              "className": "w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-card)] py-6 shadow-sm"
             },
             "children": [
               {
@@ -81,35 +81,27 @@
                         "props": {
                           "variant": "outline",
                           "size": "sm",
-                          "className": "w-full !rounded-md !border-[var(--theme-border)] !bg-[var(--theme-content-bg)]"
+                          "className": "!text-[var(--theme-foreground)]",
+                          "type": "email",
+                          "placeholder": "you@example.com",
+                          "placeholderTextColor": "#9ca3af",
+                          "autoComplete": "email",
+                          "value": "{{local.data.form.formData.username}}"
                         },
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "name": "username",
-                            "_validation": {
-                              "trigger": "submit",
-                              "rules": [
-                                {
-                                  "type": "required",
-                                  "message": "Email is required"
-                                },
-                                {
-                                  "type": "email",
-                                  "message": "Please enter a valid email address"
-                                }
-                              ]
+                        "name": "username",
+                        "_validation": {
+                          "trigger": "submit",
+                          "rules": [
+                            {
+                              "type": "required",
+                              "message": "Email is required"
                             },
-                            "props": {
+                            {
                               "type": "email",
-                              "placeholder": "you@example.com",
-                              "placeholderTextColor": "#9ca3af",
-                              "autoComplete": "email",
-                              "value": "{{local.data.form.formData.username}}",
-                              "className": "!text-[var(--theme-foreground)]"
+                              "message": "Please enter a valid email address"
                             }
-                          }
-                        ]
+                          ]
+                        }
                       },
                       {
                         "type": "Box",
@@ -149,7 +141,7 @@
                             "text": "Password"
                           },
                           {
-                            "type": "Pressable",
+                            "type": "Box",
                             "actions": [
                               {
                                 "action": "765e9a1e-6248-4449-9b88-6d454fbfda1a"
@@ -173,31 +165,23 @@
                         "props": {
                           "variant": "outline",
                           "size": "sm",
-                          "className": "w-full !rounded-md !border-[var(--theme-border)] !bg-[var(--theme-content-bg)]"
+                          "className": "!text-[var(--theme-foreground)]",
+                          "type": "password",
+                          "placeholder": "••••••••",
+                          "placeholderTextColor": "#9ca3af",
+                          "autoComplete": "current-password",
+                          "value": "{{local.data.form.formData.password}}"
                         },
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "name": "password",
-                            "_validation": {
-                              "trigger": "submit",
-                              "rules": [
-                                {
-                                  "type": "required",
-                                  "message": "Password is required"
-                                }
-                              ]
-                            },
-                            "props": {
-                              "type": "password",
-                              "placeholder": "••••••••",
-                              "placeholderTextColor": "#9ca3af",
-                              "autoComplete": "current-password",
-                              "value": "{{local.data.form.formData.password}}",
-                              "className": "!text-[var(--theme-foreground)]"
+                        "name": "password",
+                        "_validation": {
+                          "trigger": "submit",
+                          "rules": [
+                            {
+                              "type": "required",
+                              "message": "Password is required"
                             }
-                          }
-                        ]
+                          ]
+                        }
                       },
                       {
                         "type": "Box",
@@ -234,16 +218,15 @@
                     ]
                   },
                   {
-                    "type": "Button",
+                    "type": "Box",
                     "name": "Submit",
                     "props": {
-                      "action": "primary",
                       "type": "submit",
-                      "className": "w-full !bg-[var(--theme-shop-button)] hover:!bg-[var(--theme-shop-buttonHover)]"
+                      "className": "flex flex-row items-center justify-center cursor-pointer px-4 py-2 rounded-md w-full !bg-[var(--theme-primary)] hover:!bg-[var(--theme-primary)]"
                     },
                     "children": [
                       {
-                        "type": "ButtonText",
+                        "type": "Text",
                         "props": {
                           "className": "!text-white"
                         },
@@ -269,7 +252,7 @@
                 "text": "Don't have an account? "
               },
               {
-                "type": "Pressable",
+                "type": "Box",
                 "actions": [
                   {
                     "action": "f72de6d3-1e5c-4632-80b2-a2785dc4b0ee"
@@ -279,7 +262,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-[var(--theme-shop-button)] underline hover:opacity-80 text-center"
+                      "className": "text-sm text-[var(--theme-primary)] underline hover:opacity-80 text-center"
                     },
                     "text": "Register"
                   }

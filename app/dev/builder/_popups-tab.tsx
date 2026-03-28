@@ -198,7 +198,7 @@ const STARTER_CONTENT: Record<string, Record<string, unknown>> = {
             ],
           },
           {
-            type: 'Pressable',
+            type: 'Box',
             actions: [{ action: 'closePopup' }],
             props: { className: 'shrink-0 mt-0.5 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700' },
             children: [{ type: 'Icon', props: { icon: 'lucide:x', size: 14, color: '#9ca3af' } }],
@@ -236,7 +236,7 @@ const STARTER_CONTENT: Record<string, Record<string, unknown>> = {
             ],
           },
           {
-            type: 'Pressable',
+            type: 'Box',
             actions: [{ action: 'closePopup' }],
             props: { className: 'shrink-0 mt-0.5 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700' },
             children: [{ type: 'Icon', props: { icon: 'lucide:x', size: 14, color: '#9ca3af' } }],

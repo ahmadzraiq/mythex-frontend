@@ -1,7 +1,7 @@
 /**
  * Binds SDUI node actions to React event props (onPress, onChange, etc.)
  * Uses onClick for View-based components (avoids "Unknown event handler onPress" on DOM).
- * Uses onPress for Pressable-based components (Button, Link, Pressable).
+ * Uses onPress for press-based components (Button, Link, MenuItem).
  *
  * Supports two action formats:
  * - Array format (preferred): `actions: [{ action: "workflowName" }, ...]`
@@ -15,7 +15,7 @@ import { normalizeEvent } from './actions/normalize-event';
 
 type RunAction = (action: unknown, event?: unknown, scope?: Record<string, unknown>) => void | Promise<void>;
 
-const PRESS_HANDLER_TYPES = new Set(['Pressable', 'Button', 'Link', 'MenuItem', 'MenuItemLabel']);
+const PRESS_HANDLER_TYPES = new Set(['MenuItem', 'MenuItemLabel']);
 
 /**
  * Lifecycle triggers that are handled by the engine/renderer via useEffect or FormContainer —
@@ -102,7 +102,7 @@ function bindEventHandler(
     result.onSubmitEditing = () => handler(undefined);
   } else if (event === 'doubleClick') {
     result.onDoubleClick = handler;
-    // For press-type components (Button, Pressable), Pressable may not forward onDoubleClick
+    // For press-type components (Button, Link), onPress may not forward onDoubleClick
     // to the underlying DOM div. Implement a manual double-press detector via onPress as fallback.
     if (componentType && PRESS_HANDLER_TYPES.has(componentType)) {
       let lastPressTime = 0;

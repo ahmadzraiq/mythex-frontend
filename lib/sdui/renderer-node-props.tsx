@@ -21,16 +21,16 @@ import { AUTOFILL_SUPPRESS_TYPES } from './controlled-component-registry';
 // Defined at module level so they are not recreated on every render.
 
 /** Components that use onPress (not onClick) for their primary interaction */
-export const PRESS_ONLY_TYPES = new Set(['Button', 'Pressable', 'Link', 'MenuItem', 'MenuItemLabel']);
+export const PRESS_ONLY_TYPES = new Set(['MenuItem', 'MenuItemLabel']);
 
 /** Components that natively handle their own press/click (no transparent wrapper needed) */
-export const SUBMIT_BUTTON_TYPES = new Set(['Button', 'Pressable']);
+export const SUBMIT_BUTTON_TYPES = new Set<string>(['Box', 'HStack', 'VStack', 'Center']);
 
 /** Interactive components that receive a `disabled` prop for preview-state dimming */
-export const INTERACTIVE_TYPES = new Set(['Button', 'Input', 'Select', 'Pressable', 'InputField', 'ButtonText']);
+export const INTERACTIVE_TYPES = new Set(['Input', 'Select', 'InputField']);
 
 /** Components that are already clickable — no transparent click-wrapper div needed */
-export const ALREADY_CLICKABLE = new Set(['Pressable', 'Button', 'Link', 'MenuItem', 'MenuItemLabel', 'FormContainer']);
+export const ALREADY_CLICKABLE = new Set(['MenuItem', 'MenuItemLabel', 'FormContainer']);
 
 // ── Standalone React component ────────────────────────────────────────────────
 
@@ -97,7 +97,7 @@ export function applyFormContextBindings(
   const isPressType = PRESS_ONLY_TYPES.has(node.type as string);
 
   /** Set the primary handler for the node's component type.
-   * Press-type components (Button, Pressable, etc.) use onPress.
+   * Press-type components (Button, Link, etc.) use onPress.
    * All other elements use onClick only — never set onPress on DOM elements,
    * as React logs "Unknown event handler property `onPress`" for them. */
   const setHandlers = (fn: () => void) => {

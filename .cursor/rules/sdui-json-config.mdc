@@ -27,7 +27,7 @@ Use this order for predictable AI scanning: 1. `type` 2. `props` 3. `condition` 
 - Dynamic (e.g. product detail): `{ "action": "navigate", "payload": { "routeConfig": "product", "slug": { "var": "$item.slug" } } }`—route path comes from `config/routes.json`.
 
 ## Theme & Colors
-- Use theme variables: `text-[var(--theme-header-text)]`, `bg-[var(--theme-announcement-bg)]`—never hardcoded hex colors.
+- Use theme variables: `text-[var(--theme-foreground)]`, `bg-[var(--theme-announcement-bg)]`—never hardcoded hex colors.
 - Theme defined in `config/theme.json` (colors, sections.announcement, sections.header, sections.hero).
 
 ## Content Slot

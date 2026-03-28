@@ -119,7 +119,7 @@ These three files are the wiring layer. Nothing renders without them. Create the
 
 - [ ] No duplicate content (e.g. newsletter in one place only)
 - [ ] No dark-on-dark text; use `text-white` or `text-white/90` on dark backgrounds
-- [ ] Theme in JSON only; use `var(--theme-*)` in classNames
+- [ ] Theme in JSON only; use generic `var(--theme-*)` in classNames (`--theme-primary`, `--theme-background`, `--theme-card`, `--theme-muted`, etc. — not domain-prefixed vars)
 - [ ] Text on images: strong gradient `bg-gradient-to-t from-black/80`, `drop-shadow-sm` on text
 - [ ] Outline buttons on dark: `!border-white/70` not dark borders
 

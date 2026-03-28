@@ -64,58 +64,6 @@
     "destructive": "#ef4444",
     "destructiveForeground": "#ffffff"
   },
-  "sections": {
-    "header": {
-      "bg": "#faf5ff",
-      "text": "#3b0764",
-      "border": "#ddd6fe"
-    },
-    "footer": {
-      "bg": "#faf5ff",
-      "text": "#3b0764",
-      "textMuted": "#6d28d9",
-      "border": "#ddd6fe"
-    },
-    "hero": {
-      "bg": "#ede9fe"
-    },
-    "content": {
-      "bg": "#ffffff",
-      "text": "#3b0764",
-      "textMuted": "#6d28d9"
-    },
-    "shop": {
-      "button": "#7c3aed",
-      "buttonHover": "#6d28d9",
-      "buttonText": "#ffffff"
-    }
-  },
-  "sectionsDark": {
-    "header": {
-      "bg": "#0f0720",
-      "text": "#ede9fe",
-      "border": "#2d1b69"
-    },
-    "footer": {
-      "bg": "#0f0720",
-      "text": "#ede9fe",
-      "textMuted": "#c4b5fd",
-      "border": "#2d1b69"
-    },
-    "hero": {
-      "bg": "#2d1b69"
-    },
-    "content": {
-      "bg": "#1a0a38",
-      "text": "#ede9fe",
-      "textMuted": "#c4b5fd"
-    },
-    "shop": {
-      "button": "#a78bfa",
-      "buttonHover": "#7c3aed",
-      "buttonText": "#0f0720"
-    }
-  },
   "colorsDark": {
     "background": "#0f0720",
     "foreground": "#ede9fe",
@@ -138,35 +86,5 @@
   "fonts": {
     "heading": "var(--font-space-grotesk)",
     "body": "var(--font-space-grotesk)"
-  },
-  "presets": {
-    "modern": {
-      "sections": {
-        "hero": {
-          "bg": "#e2e8f0"
-        },
-        "shop": {
-          "button": "#0f172a",
-          "buttonHover": "#1e293b"
-        }
-      }
-    },
-    "luxury": {
-      "sections": {
-        "hero": {
-          "bg": "#0f172a"
-        },
-        "header": {
-          "bg": "#0f172a",
-          "text": "#f8fafc",
-          "border": "#334155"
-        },
-        "shop": {
-          "button": "#c9a227",
-          "buttonHover": "#d4af37",
-          "buttonText": "#0f172a"
-        }
-      }
-    }
   }
 }

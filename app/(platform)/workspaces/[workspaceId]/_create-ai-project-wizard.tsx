@@ -852,16 +852,14 @@ export default function CreateAiProjectWizard({
           pages,
           themeOverrides,
           themeDarkOverrides,
-          _wizardParams: {
+          projectMeta: {
             appName: state.appName,
-            businessDescription: state.businessDescription,
+            description: state.businessDescription,
             category: state.category,
             mood: state.mood,
             animationLevel: state.animationLevel,
             layoutStructure: state.layoutStructure,
-            palette,
             font,
-            selectedPages: selectedPagesFlat,
           },
         }),
       });

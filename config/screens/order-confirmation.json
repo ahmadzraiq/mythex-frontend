@@ -87,9 +87,9 @@
             ]
           },
           {
-            "type": "Card",
+            "type": "Box",
             "props": {
-              "className": "mb-6 rounded-xl border border-[var(--theme-border)] shadow-sm bg-[var(--theme-content-bg)] p-0 overflow-hidden"
+              "className": "mb-6 rounded-xl border border-[var(--theme-border)] shadow-sm bg-[var(--theme-card)] p-0 overflow-hidden"
             },
             "condition": "collections['a3b4c5d6-e7f8-9012-abcd-123456789012']?.data?.orderByCode",
             "children": [
@@ -214,9 +214,9 @@
                     ]
                   },
                   {
-                    "type": "Divider",
+                    "type": "Box",
                     "props": {
-                      "className": "my-4 h-px w-full !bg-[var(--theme-border)]"
+                      "className": "my-4 h-px w-full !bg-[var(--theme-border)] w-full h-px bg-gray-200 dark:bg-gray-700"
                     }
                   },
                   {
@@ -242,9 +242,9 @@
             ]
           },
           {
-            "type": "Card",
+            "type": "Box",
             "props": {
-              "className": "mb-6 rounded-xl border border-[var(--theme-border)] shadow-sm bg-[var(--theme-content-bg)] p-0 overflow-hidden"
+              "className": "mb-6 rounded-xl border border-[var(--theme-border)] shadow-sm bg-[var(--theme-card)] p-0 overflow-hidden"
             },
             "condition": "collections['a3b4c5d6-e7f8-9012-abcd-123456789012']?.data?.orderByCode && collections['a3b4c5d6-e7f8-9012-abcd-123456789012']?.data?.orderByCode?.shippingAddress",
             "children": [
@@ -311,9 +311,9 @@
             "condition": "collections['a3b4c5d6-e7f8-9012-abcd-123456789012']?.data?.orderByCode",
             "children": [
               {
-                "type": "Pressable",
+                "type": "Box",
                 "props": {
-                  "className": "flex-1 rounded-md h-9 px-4 py-2 text-sm font-medium bg-[var(--theme-shop-button)] text-white hover:bg-[var(--theme-shop-buttonHover)] flex flex-row items-center justify-center"
+                  "className": "flex-1 rounded-md h-9 px-4 py-2 text-sm font-medium bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] flex flex-row items-center justify-center"
                 },
                 "children": [
                   {

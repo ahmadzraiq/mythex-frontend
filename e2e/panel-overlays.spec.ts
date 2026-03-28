@@ -232,11 +232,9 @@ test.describe('PO — Tooltip', () => {
     // the SDUI renderer context, making DOM-based checks unreliable.
     // Verify configuration correctness via static assertion instead.
     const containerTypes = [
-      'Box', 'VStack', 'HStack', 'Center', 'Grid', 'GridItem', 'Card', 'Pressable',
-      'Checkbox', 'CheckboxGroup', 'Radio', 'RadioGroup', 'Badge', 'Avatar', 'Fab',
-      'Skeleton', 'Alert', 'Link', 'Modal', 'ModalContent', 'ModalHeader', 'ModalBody',
-      'ModalFooter', 'Tooltip', 'AlertDialog', 'AlertDialogContent',
-      'AlertDialogHeader', 'AlertDialogBody', 'AlertDialogFooter',
+      'Box', 'VStack', 'HStack', 'Center', 'Grid', 'GridItem',
+      'Checkbox', 'CheckboxGroup', 'Radio', 'RadioGroup',
+      'Skeleton', 'Tooltip', 'FormContainer',
     ];
     expect(containerTypes).toContain('Tooltip');
     console.log('✅ Tooltip registered as container type');
@@ -244,8 +242,7 @@ test.describe('PO — Tooltip', () => {
 
   test('PO-05: TooltipText type is registered as text node', async () => {
     const textNodeTypes = [
-      'Text', 'Heading', 'ButtonText', 'AlertText', 'BadgeText', 'CardDescription',
-      'CardTitle', 'SpinnerText', 'LinkText', 'TooltipText', 'ModalCloseButton',
+      'Text', 'Heading', 'CheckboxLabel', 'RadioLabel', 'SkeletonText', 'TooltipText',
     ];
     expect(textNodeTypes).toContain('TooltipText');
     console.log('✅ TooltipText registered as text node type');

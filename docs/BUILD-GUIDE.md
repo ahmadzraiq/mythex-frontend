@@ -11,7 +11,7 @@ config/
 ├── app.ts              # Merges routes, screens, actions; resolves $ref/$slot
 ├── routes.json         # Paths, auth, layout, paramChangeAction
 ├── store.json          # initialData, engineConventions, computed, searchParamSync
-├── theme.json          # Brand colors, sections (header, footer, hero)
+├── theme.json          # Brand colors: cssVariables (root/dark), colors + colorsDark → generic var(--theme-*), fonts
 ├── screens/            # One .json per screen (meta, state, layout, content/ui)
 ├── layouts/            # Layout structures (navbar + $slot + footer)
 ├── fragments/          # Reusable UI (navbar, product-card, modals/*)

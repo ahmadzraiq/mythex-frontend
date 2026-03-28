@@ -2,7 +2,7 @@
   "type": "Box",
   "id": "navbar-root",
   "props": {
-    "className": "fixed top-0 left-0 right-0 z-50 border-b border-[var(--theme-header-border)] bg-[var(--theme-header-bg)] w-full"
+    "className": "fixed top-0 left-0 right-0 z-50 border-b border-[var(--theme-border)] bg-[var(--theme-background)] w-full"
   },
   "children": [
     {
@@ -27,7 +27,7 @@
               },
               "children": [
                 {
-                  "type": "Pressable",
+                  "type": "Box",
                   "id": "navbar-logo",
                   "actions": [
                     {
@@ -64,9 +64,9 @@
                       },
                       "children": [
                         {
-                          "type": "Pressable",
+                          "type": "Box",
                           "props": {
-                            "className": "px-2 py-1.5 rounded text-sm hover:bg-[var(--theme-content-text)]/10 text-[var(--theme-header-text)]"
+                            "className": "px-2 py-1.5 rounded text-sm hover:bg-[var(--theme-card-foreground)]/10 text-[var(--theme-foreground)]"
                           },
                           "actions": [
                             {
@@ -77,7 +77,7 @@
                             {
                               "type": "Text",
                               "props": {
-                                "className": "text-sm font-medium text-[var(--theme-header-text)]"
+                                "className": "text-sm font-medium text-[var(--theme-foreground)]"
                               },
                               "text": "{{context.item.data.name}}"
                             }
@@ -119,7 +119,7 @@
                       },
                       "children": [
                         {
-                          "type": "Pressable",
+                          "type": "Box",
                           "props": {
                             "className": "fixed inset-0 z-40"
                           },
@@ -131,10 +131,10 @@
                           ]
                         },
                         {
-                          "type": "Pressable",
+                          "type": "Box",
                           "id": "navbar-theme-button",
                           "props": {
-                            "className": "relative z-50 inline-flex items-center justify-center h-8 w-8 rounded hover:bg-[var(--theme-content-text)]/10"
+                            "className": "relative z-50 inline-flex items-center justify-center h-8 w-8 rounded hover:bg-[var(--theme-card-foreground)]/10"
                           },
                           "actions": [
                             {
@@ -147,7 +147,7 @@
                               "props": {
                                 "icon": "lucide:sun",
                                 "size": 18,
-                                "className": "text-[var(--theme-header-text)]"
+                                "className": "text-[var(--theme-foreground)]"
                               },
                               "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] === 'dark'"
                             },
@@ -156,7 +156,7 @@
                               "props": {
                                 "icon": "lucide:moon",
                                 "size": 18,
-                                "className": "text-[var(--theme-header-text)]"
+                                "className": "text-[var(--theme-foreground)]"
                               },
                               "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] !== 'dark'"
                             }
@@ -165,14 +165,14 @@
                         {
                           "type": "Box",
                           "props": {
-                            "className": "absolute right-0 top-full mt-1 w-36 rounded-md border border-[var(--border)] bg-[var(--theme-content-bg)] shadow-md z-50 py-1"
+                            "className": "absolute right-0 top-full mt-1 w-36 rounded-md border border-[var(--border)] bg-[var(--theme-card)] shadow-md z-50 py-1"
                           },
                           "condition": "variables['e4f5a6b7-c8d9-0123-efab-234567890123']",
                           "children": [
                             {
-                              "type": "Pressable",
+                              "type": "Box",
                               "props": {
-                                "className": "w-full flex flex-row items-center gap-2 px-3 py-2 hover:bg-[var(--theme-content-text)]/10"
+                                "className": "w-full flex flex-row items-center gap-2 px-3 py-2 hover:bg-[var(--theme-card-foreground)]/10"
                               },
                               "actions": [
                                 {
@@ -185,7 +185,7 @@
                                   "props": {
                                     "icon": "lucide:sun",
                                     "size": 16,
-                                    "className": "text-[var(--theme-header-text)]"
+                                    "className": "text-[var(--theme-foreground)]"
                                   }
                                 },
                                 {
@@ -198,7 +198,7 @@
                                 {
                                   "type": "Text",
                                   "props": {
-                                    "className": "text-xs text-[var(--theme-content-textMuted)]"
+                                    "className": "text-xs text-[var(--theme-muted-foreground)]"
                                   },
                                   "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] === 'light'",
                                   "text": "✓"
@@ -206,9 +206,9 @@
                               ]
                             },
                             {
-                              "type": "Pressable",
+                              "type": "Box",
                               "props": {
-                                "className": "w-full flex flex-row items-center gap-2 px-3 py-2 hover:bg-[var(--theme-content-text)]/10"
+                                "className": "w-full flex flex-row items-center gap-2 px-3 py-2 hover:bg-[var(--theme-card-foreground)]/10"
                               },
                               "actions": [
                                 {
@@ -221,7 +221,7 @@
                                   "props": {
                                     "icon": "lucide:moon",
                                     "size": 16,
-                                    "className": "text-[var(--theme-header-text)]"
+                                    "className": "text-[var(--theme-foreground)]"
                                   }
                                 },
                                 {
@@ -234,7 +234,7 @@
                                 {
                                   "type": "Text",
                                   "props": {
-                                    "className": "text-xs text-[var(--theme-content-textMuted)]"
+                                    "className": "text-xs text-[var(--theme-muted-foreground)]"
                                   },
                                   "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] === 'dark'",
                                   "text": "✓"
@@ -242,9 +242,9 @@
                               ]
                             },
                             {
-                              "type": "Pressable",
+                              "type": "Box",
                               "props": {
-                                "className": "w-full flex flex-row items-center gap-2 px-3 py-2 hover:bg-[var(--theme-content-text)]/10"
+                                "className": "w-full flex flex-row items-center gap-2 px-3 py-2 hover:bg-[var(--theme-card-foreground)]/10"
                               },
                               "actions": [
                                 {
@@ -257,7 +257,7 @@
                                   "props": {
                                     "icon": "lucide:monitor",
                                     "size": 16,
-                                    "className": "text-[var(--theme-header-text)]"
+                                    "className": "text-[var(--theme-foreground)]"
                                   }
                                 },
                                 {
@@ -270,7 +270,7 @@
                                 {
                                   "type": "Text",
                                   "props": {
-                                    "className": "text-xs text-[var(--theme-content-textMuted)]"
+                                    "className": "text-xs text-[var(--theme-muted-foreground)]"
                                   },
                                   "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] === 'system'",
                                   "text": "✓"
@@ -287,10 +287,10 @@
                       "props": {},
                       "children": [
                         {
-                          "type": "Pressable",
+                          "type": "Box",
                           "id": "navbar-cart-button",
                           "props": {
-                            "className": "relative inline-flex items-center justify-center h-8 w-8 rounded hover:bg-[var(--theme-content-text)]/10"
+                            "className": "relative inline-flex items-center justify-center h-8 w-8 rounded hover:bg-[var(--theme-card-foreground)]/10"
                           },
                           "actions": [
                             {
@@ -303,21 +303,21 @@
                               "props": {
                                 "icon": "lucide:shopping-bag",
                                 "size": 18,
-                                "className": "text-[var(--theme-header-text)]"
+                                "className": "text-[var(--theme-foreground)]"
                               }
                             },
                             {
                               "type": "Box",
                               "id": "navbar-cart-badge",
                               "props": {
-                                "className": "absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-[var(--theme-shop-button)] flex items-center justify-center pointer-events-none"
+                                "className": "absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-[var(--theme-primary)] flex items-center justify-center pointer-events-none"
                               },
                               "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity > 0",
                               "children": [
                                 {
                                   "type": "Text",
                                   "props": {
-                                    "className": "text-[var(--theme-shop-buttonText)] text-[9px] font-bold"
+                                    "className": "text-[var(--theme-primary-foreground)] text-[9px] font-bold"
                                   },
                                   "text": "{{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.totalQuantity}}"
                                 }
@@ -333,10 +333,10 @@
                       "props": {},
                       "children": [
                         {
-                          "type": "Pressable",
+                          "type": "Box",
                           "id": "navbar-sign-in",
                           "props": {
-                            "className": "inline-flex flex-row items-center h-8 px-2 rounded hover:bg-[var(--theme-content-text)]/10"
+                            "className": "inline-flex flex-row items-center h-8 px-2 rounded hover:bg-[var(--theme-card-foreground)]/10"
                           },
                           "condition": "!auth?.user",
                           "actions": [
@@ -348,7 +348,7 @@
                             {
                               "type": "Text",
                               "props": {
-                                "className": "text-sm font-medium text-[var(--theme-header-text)]"
+                                "className": "text-sm font-medium text-[var(--theme-foreground)]"
                               },
                               "text": "Sign in"
                             }
@@ -362,9 +362,9 @@
                           "condition": "auth?.user",
                           "children": [
                             {
-                              "type": "Pressable",
+                              "type": "Box",
                               "props": {
-                                "className": "inline-flex flex-row items-center gap-1.5 h-8 px-2 rounded hover:bg-[var(--theme-hero-bg)]"
+                                "className": "inline-flex flex-row items-center gap-1.5 h-8 px-2 rounded hover:bg-[var(--theme-muted)]"
                               },
                               "actions": [
                                 {
@@ -377,22 +377,22 @@
                                   "props": {
                                     "icon": "lucide:user",
                                     "size": 16,
-                                    "className": "text-[var(--theme-header-text)]"
+                                    "className": "text-[var(--theme-foreground)]"
                                   }
                                 },
                                 {
                                   "type": "Text",
                                   "props": {
-                                    "className": "hidden sm:flex text-sm font-medium text-[var(--theme-header-text)]"
+                                    "className": "hidden sm:flex text-sm font-medium text-[var(--theme-foreground)]"
                                   },
                                   "text": "Hi, {{auth.user.firstName}}"
                                 }
                               ]
                             },
                             {
-                              "type": "Pressable",
+                              "type": "Box",
                               "props": {
-                                "className": "h-8 px-2 rounded hover:bg-[var(--theme-hero-bg)]"
+                                "className": "h-8 px-2 rounded hover:bg-[var(--theme-muted)]"
                               },
                               "actions": [
                                 {
@@ -403,7 +403,7 @@
                                 {
                                   "type": "Text",
                                   "props": {
-                                    "className": "text-sm text-[var(--theme-content-textMuted)]"
+                                    "className": "text-sm text-[var(--theme-muted-foreground)]"
                                   },
                                   "text": "Sign out"
                                 }

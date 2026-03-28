@@ -1,7 +1,7 @@
 {
   "type": "Box",
   "props": {
-    "className": "py-12 md:py-16 bg-[var(--theme-content-bg)]"
+    "className": "py-12 md:py-16 bg-[var(--theme-card)]"
   },
   "children": [
     {
@@ -13,7 +13,7 @@
         {
           "type": "Heading",
           "props": {
-            "className": "text-3xl md:text-4xl font-bold mb-8 text-[var(--theme-content-text)]"
+            "className": "text-3xl md:text-4xl font-bold mb-8 text-[var(--theme-card-foreground)]"
           },
           "text": "Featured Products"
         },
@@ -57,7 +57,7 @@
               "type": "Heading",
               "props": {
                 "size": "xl",
-                "className": "font-semibold text-center text-[var(--theme-content-text)]"
+                "className": "font-semibold text-center text-[var(--theme-card-foreground)]"
               },
               "text": "No products yet"
             },

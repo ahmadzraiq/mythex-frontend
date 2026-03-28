@@ -7,7 +7,7 @@
  * ST-04  Selecting a Button node in Settings tab shows a Submit toggle
  * ST-05  Submit toggle On → actions.click.type === 'submitForm'
  * ST-06  Submit toggle Off → click action removed
- * ST-07  Selecting an InputField inside FormContainer shows Form container label + Field name
+ * ST-07  Selecting an Input inside FormContainer shows Form container label + Field name
  * ST-08  Changing Field name updates node.props.name
  * ST-09  Input type dropdown exists and changing to 'email' sets props.type = 'email'
  * ST-10  Custom validation Off hides formula button; On reveals it
@@ -210,10 +210,10 @@ test('ST-06: Submit toggle Off → click action removed', async ({ page }) => {
   expect(actions?.click).toBeUndefined();
 });
 
-test('ST-07: InputField inside FormContainer shows Form container label and Field name', async ({ page }) => {
+test('ST-07: Input inside FormContainer shows Form container label and Field name', async ({ page }) => {
   await gotoBuilder(page);
 
-  // Add a FormContainer with an InputField child
+  // Add a FormContainer with a flat Input child
   await page.evaluate(() => {
     const store = (window as unknown as Record<string, BuilderStore>).__builderStore?.getState();
     (store?.addNode as (node: unknown, parentId: null) => void)({
@@ -223,15 +223,8 @@ test('ST-07: InputField inside FormContainer shows Form container label and Fiel
       children: [
         {
           type: 'Input',
-          id: 'st07-input',
-          props: { variant: 'outline', size: 'md' },
-          children: [
-            {
-              type: 'InputField',
-              id: 'st07-field',
-              props: { placeholder: 'Email', name: 'email' },
-            },
-          ],
+          id: 'st07-field',
+          props: { variant: 'outline', size: 'md', placeholder: 'Email', name: 'email' },
         },
       ],
     }, null);
@@ -260,15 +253,8 @@ test('ST-08: Changing Field name updates node.props.name', async ({ page }) => {
       children: [
         {
           type: 'Input',
-          id: 'st08-input',
-          props: { variant: 'outline', size: 'md' },
-          children: [
-            {
-              type: 'InputField',
-              id: 'st08-field',
-              props: { placeholder: 'Username', name: 'username' },
-            },
-          ],
+          id: 'st08-field',
+          props: { variant: 'outline', size: 'md', placeholder: 'Username', name: 'username' },
         },
       ],
     }, null);
@@ -287,20 +273,13 @@ test('ST-08: Changing Field name updates node.props.name', async ({ page }) => {
   expect(props?.name).toBe('emailAddress');
 });
 
-test('ST-09: Input type dropdown changes props.type for InputField', async ({ page }) => {
+test('ST-09: Input type dropdown changes props.type for Input', async ({ page }) => {
   await gotoBuilder(page);
 
   await addNode(page, {
     type: 'Input',
-    id: 'st09-input',
-    props: { variant: 'outline', size: 'md' },
-    children: [
-      {
-        type: 'InputField',
-        id: 'st09-field',
-        props: { type: 'text', placeholder: 'Enter text' },
-      },
-    ],
+    id: 'st09-field',
+    props: { variant: 'outline', size: 'md', type: 'text', placeholder: 'Enter text' },
   });
   await page.waitForTimeout(300);
   await selectNode(page, 'st09-field');
@@ -330,15 +309,8 @@ test('ST-10: Custom validation Off hides formula button; On shows it', async ({ 
       children: [
         {
           type: 'Input',
-          id: 'st10-input',
-          props: { variant: 'outline', size: 'md' },
-          children: [
-            {
-              type: 'InputField',
-              id: 'st10-field',
-              props: { placeholder: 'Value', name: 'value' },
-            },
-          ],
+          id: 'st10-field',
+          props: { variant: 'outline', size: 'md', placeholder: 'Value', name: 'value' },
         },
       ],
     }, null);
@@ -362,24 +334,17 @@ test('ST-10: Custom validation Off hides formula button; On shows it', async ({ 
   await expect(formulaBtn).toBeVisible({ timeout: 5_000 });
 });
 
-// ─── Helper: add a standalone InputField and select it ───────────────────────
+// ─── Helper: add a standalone Input and select it ───────────────────────
 
-async function addInputFieldAndSelect(page: Page, idSuffix: string, initialType = 'text') {
+async function addInputAndSelect(page: Page, idSuffix: string, initialType = 'text') {
   const fieldId = `st-field-${idSuffix}`;
   await page.evaluate(
     ({ id, type }) => {
       const store = (window as unknown as Record<string, BuilderStore>).__builderStore?.getState();
       (store?.addNode as (node: unknown, parentId: null) => void)({
         type: 'Input',
-        id: `st-input-${id}`,
-        props: { variant: 'outline', size: 'md' },
-        children: [
-          {
-            type: 'InputField',
-            id: `st-field-${id}`,
-            props: { type, placeholder: 'Enter value' },
-          },
-        ],
+        id: `st-field-${id}`,
+        props: { variant: 'outline', size: 'md', type, placeholder: 'Enter value' },
       }, null);
     },
     { id: idSuffix, type: initialType }
@@ -411,7 +376,7 @@ for (const { label, selectValue, expectedType, expectedStep } of INPUT_TYPE_CASE
   const suffix = String(stSuffix++);
   test(`${label} → props.type = '${expectedType}'${expectedStep ? `, step = '${expectedStep}'` : ''}`, async ({ page }) => {
     await gotoBuilder(page);
-    const fieldId = await addInputFieldAndSelect(page, suffix);
+    const fieldId = await addInputAndSelect(page, suffix);
 
     const typeSelect = page.locator('[data-testid="settings-input-type-select"]');
     await expect(typeSelect).toBeVisible({ timeout: 5_000 });
@@ -430,7 +395,7 @@ for (const { label, selectValue, expectedType, expectedStep } of INPUT_TYPE_CASE
 
 test('ST-22: Validation trigger dropdown defaults to On form submit', async ({ page }) => {
   await gotoBuilder(page);
-  const fieldId = await addInputFieldAndSelect(page, 'trig-default');
+  const fieldId = await addInputAndSelect(page, 'trig-default');
 
   // Put the field inside a form so the Form Container section is visible
   // (Validation section only shows for form fields)
@@ -445,15 +410,8 @@ test('ST-22: Validation trigger dropdown defaults to On form submit', async ({ p
       children: [
         {
           type: 'Input',
-          id: 'st22-input',
-          props: { variant: 'outline' },
-          children: [
-            {
-              type: 'InputField',
-              id: 'st22-field',
-              props: { placeholder: 'Value', name: 'value' },
-            },
-          ],
+          id: 'st22-field',
+          props: { variant: 'outline', placeholder: 'Value', name: 'value' },
         },
       ],
     }, null);
@@ -478,15 +436,8 @@ test('ST-23: Validation trigger dropdown changes to On input change', async ({ p
       children: [
         {
           type: 'Input',
-          id: 'st23-input',
-          props: { variant: 'outline' },
-          children: [
-            {
-              type: 'InputField',
-              id: 'st23-field',
-              props: { placeholder: 'Value', name: 'value' },
-            },
-          ],
+          id: 'st23-field',
+          props: { variant: 'outline', placeholder: 'Value', name: 'value' },
         },
       ],
     }, null);
@@ -527,7 +478,7 @@ test('ST-24: Interactions section is absent from the Design tab', async ({ page 
 test('ST-25: Field name persists after selecting another element and coming back', async ({ page }) => {
   await gotoBuilder(page);
 
-  // Add a FormContainer with two InputFields
+  // Add a FormContainer with two Inputs
   await page.evaluate(() => {
     const store = (window as unknown as Record<string, BuilderStore>).__builderStore?.getState();
     (store?.addNode as (node: unknown, parentId: null) => void)({
@@ -537,11 +488,8 @@ test('ST-25: Field name persists after selecting another element and coming back
       children: [
         {
           type: 'Input',
-          id: 'st25-input-a',
-          props: { variant: 'outline', size: 'md' },
-          children: [
-            { type: 'InputField', id: 'st25-field-a', props: { name: 'originalName', placeholder: 'Field A' } },
-          ],
+          id: 'st25-field-a',
+          props: { variant: 'outline', size: 'md', name: 'originalName', placeholder: 'Field A' },
         },
         {
           type: 'Box',
@@ -553,7 +501,7 @@ test('ST-25: Field name persists after selecting another element and coming back
   });
   await page.waitForTimeout(500);
 
-  // 1. Select the InputField and open Settings tab
+  // 1. Select the Input and open Settings tab
   await selectNode(page, 'st25-field-a');
   await openSettingsTab(page);
 
@@ -569,7 +517,7 @@ test('ST-25: Field name persists after selecting another element and coming back
   await selectNode(page, 'st25-sibling');
   await page.waitForTimeout(300);
 
-  // 4. Come back to the InputField
+  // 4. Come back to the Input
   await selectNode(page, 'st25-field-a');
   await page.waitForTimeout(300);
 
@@ -588,7 +536,7 @@ test('ST-25: Field name persists after selecting another element and coming back
 test('ST-25b: Typing in field A then switching to field B does not copy B name into A', async ({ page }) => {
   await gotoBuilder(page);
 
-  // Two InputFields in the same FormContainer
+  // Two Inputs in the same FormContainer
   await page.evaluate(() => {
     const store = (window as unknown as Record<string, BuilderStore>).__builderStore?.getState();
     (store?.addNode as (node: unknown, parentId: null) => void)({
@@ -597,12 +545,10 @@ test('ST-25b: Typing in field A then switching to field B does not copy B name i
       props: { className: 'w-full flex flex-col gap-4' },
       children: [
         {
-          type: 'Input', id: 'st25b-input-a', props: { variant: 'outline', size: 'md' },
-          children: [{ type: 'InputField', id: 'st25b-field-a', props: { name: 'firstField', placeholder: 'A' } }],
+          type: 'Input', id: 'st25b-field-a', props: { variant: 'outline', size: 'md', name: 'firstField', placeholder: 'A' },
         },
         {
-          type: 'Input', id: 'st25b-input-b', props: { variant: 'outline', size: 'md' },
-          children: [{ type: 'InputField', id: 'st25b-field-b', props: { name: 'secondField', placeholder: 'B' } }],
+          type: 'Input', id: 'st25b-field-b', props: { variant: 'outline', size: 'md', name: 'secondField', placeholder: 'B' },
         },
       ],
     }, null);

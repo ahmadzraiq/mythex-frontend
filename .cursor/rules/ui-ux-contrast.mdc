@@ -18,7 +18,7 @@ alwaysApply: true
 ## 3. Theme in JSON Only
 - **Avoid** hardcoding colors in `globals.css` or inline styles.
 - **Do** define all theme values in `config/theme.json`.
-- **Do** use `var(--theme-*)` in classNames (e.g. `bg-[var(--theme-footer-bg)]`).
+- **Do** use `var(--theme-*)` in classNames (e.g. `bg-[var(--theme-background)]`).
 - **Do** use `ThemeStyles` to inject theme from JSON—no theme fallbacks in CSS.
 
 ## 4. Text on Image Cards

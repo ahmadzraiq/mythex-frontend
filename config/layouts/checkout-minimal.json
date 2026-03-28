@@ -2,13 +2,13 @@
   "structure": {
     "type": "Box",
     "props": {
-      "className": "flex flex-col min-h-screen bg-[var(--theme-content-bg)]"
+      "className": "flex flex-col min-h-screen bg-[var(--theme-card)]"
     },
     "children": [
       {
         "type": "Box",
         "props": {
-          "className": "border-b border-[var(--theme-header-border)] bg-[var(--theme-header-bg)] px-6 py-4"
+          "className": "border-b border-[var(--theme-border)] bg-[var(--theme-background)] px-6 py-4"
         },
         "children": [
           {
@@ -18,7 +18,7 @@
             },
             "children": [
               {
-                "type": "Pressable",
+                "type": "Box",
                 "actions": [
                   {
                     "action": "navigateToHome"
@@ -28,14 +28,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-xl font-bold text-[var(--theme-header-text)]"
+                      "className": "text-xl font-bold text-[var(--theme-foreground)]"
                     },
                     "text": "Store"
                   }
                 ]
               },
               {
-                "type": "Pressable",
+                "type": "Box",
                 "actions": [
                   {
                     "action": "navigateToCart"
@@ -45,7 +45,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-[var(--theme-content-textMuted)]"
+                      "className": "text-sm text-[var(--theme-muted-foreground)]"
                     },
                     "text": "Back to cart"
                   }

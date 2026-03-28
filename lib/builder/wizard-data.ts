@@ -454,36 +454,19 @@ export function guessCategoryFromDescription(desc: string): string {
 
 // ── Shared page sections (same on every page) ─────────────────────────────────
 
-export interface AiSectionDesignHints {
-  components?: string[];
-  tone?: string;
-  layout?: string;
-}
-
 export interface SharedSection {
   name: string;
   description: string;
-  designHints: AiSectionDesignHints;
 }
 
 export const SHARED_NAV_SECTION: SharedSection = {
   name: 'Navigation',
   description: 'Site-wide navigation bar with logo, primary menu links, optional secondary actions (search, CTA button), and a responsive mobile hamburger menu.',
-  designHints: {
-    components: ['Box', 'HStack', 'Link', 'Btn Solid', 'Icon Btn', 'Image'],
-    tone: 'clean, accessible, branded',
-    layout: 'full-width sticky bar: logo left, nav links center, CTA right — collapses to hamburger on mobile',
-  },
 };
 
 export const SHARED_FOOTER_SECTION: SharedSection = {
   name: 'Footer',
   description: 'Site-wide footer with brand logo, grouped navigation links, social media icons, contact info, and copyright notice.',
-  designHints: {
-    components: ['Box', 'Grid', 'VStack', 'Link', 'Icon', 'Text', 'Divider'],
-    tone: 'subdued, structured, trustworthy',
-    layout: '4-column grid with logo + tagline, link groups, social icons, and full-width copyright bar below',
-  },
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────

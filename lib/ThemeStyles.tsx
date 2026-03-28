@@ -1,10 +1,12 @@
 /**
  * Injects all design tokens from config/theme.json as CSS variables.
  *
- * Outputs three blocks:
- *  1. :root { --primary: R G B; --radius: ...; ... }  — standard design-system vars
- *  2. .dark { --primary: R G B; ... }                 — dark-mode overrides
- *  3. :root { --theme-section-key: #hex; ... }        — section-level theme vars
+ * Outputs:
+ *  1. :root { --primary: R G B; --radius: ...; ... } from cssVariables.root — design-system vars
+ *  2. .dark { ... } from cssVariables.dark
+ *  3. :root / .dark blocks from theme.colors / theme.colorsDark — generic `--theme-*` hex vars
+ *     (e.g. --theme-primary, --theme-background, --theme-card). Use these in JSON classNames only;
+ *     do not rely on removed domain-prefixed names like --theme-shop-* or --theme-hero-*.
  *
  * Colors in cssVariables are stored as hex in JSON and converted to RGB triplets
  * here so that tailwind.config.js can use them as `rgb(var(--primary)/<alpha-value>)`.
@@ -80,7 +82,7 @@ export function ThemeStyles() {
     cssBlocks.push(`:root {\n${themeVarsLight.join(';\n')}\n}`);
   }
 
-  // ── Dark mode: colorsDark + sectionsDark ───────────────────────────────────
+  // ── Dark mode: colorsDark (+ optional legacy theme.sectionsDark if present) ─
   const themeVarsDark: string[] = [];
 
   if (theme.colorsDark) {

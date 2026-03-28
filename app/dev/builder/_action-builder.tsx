@@ -791,7 +791,7 @@ export function ActionBuilder({ value, onChange, availableEvents, inMapContext, 
 // ─── Helper: events for a node type ──────────────────────────────────────────
 
 export function eventsForNodeType(type: string): EventTrigger[] {
-  const clickable = new Set(['Box', 'Pressable', 'Button', 'Card', 'Link', 'Image', 'Fab']);
+  const clickable = new Set(['Box', 'Card', 'Image', 'Fab']);
   const inputlike = new Set(['Input', 'InputField', 'Textarea', 'TextareaInput', 'Select', 'Switch', 'Checkbox', 'Radio', 'Slider']);
   const formlike  = new Set(['Form']);
 

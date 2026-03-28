@@ -55,8 +55,6 @@ import BuilderCanvas from './_canvas';
 import PanelLeft, { PageConfigSlidePanelContent } from './_panel-left';
 import PanelRight from './_panel-right';
 import { SlidePanel } from './_slide-panel';
-import { useAIGeneration, type WizardResult } from './_use-ai-generation';
-import { AIGeneratePanel } from './_ai-generate-panel';
 import {
   DataSlidePanelContent,
   getDataSlideTitle,
@@ -718,6 +716,9 @@ export default function BuilderPage() {
   const initTheme = useBuilderStore(s => s.initTheme);
   const loadFromConfig = useBuilderStore(s => s.loadFromConfig);
   const setProjectContext = useBuilderStore(s => s.setProjectContext);
+  const setAiPendingMessage = useBuilderStore(s => s.setAiPendingMessage);
+  const toggleAiMode = useBuilderStore(s => s.toggleAiMode);
+  const aiMode = useBuilderStore(s => s.aiMode);
   const workflowCanvasTarget = useBuilderStore(s => s.workflowCanvasTarget);
   const closeWorkflowCanvas = useBuilderStore(s => s.closeWorkflowCanvas);
   const [leftSlide, setLeftSlide] = useState<LeftSlideState>(null);
@@ -727,11 +728,9 @@ export default function BuilderPage() {
   // user never sees an empty canvas flash while the project config is loading.
   const [configLoading, setConfigLoading] = useState(true);
 
-  // AI generation — triggered when ?ai=build is present in URL after wizard
-  const { genState, start: startAIGeneration, cancel: cancelAIGeneration } = useAIGeneration();
+  // Wizard AI build mode — ?ai=build triggers chat auto-send after config loads
   const searchParams = useSearchParams();
   const aiBuildMode = searchParams.get('ai') === 'build';
-  const [aiAppName, setAiAppName] = useState<string>('');
 
   // Persistent reference to the dev-preview window so we can reuse it and send
   // updated config via postMessage without reopening a new tab on every click.
@@ -758,14 +757,21 @@ export default function BuilderPage() {
       }
       setConfigLoading(false);
 
-      // If wizard triggered AI build mode, start generation after config loads
+      // If wizard triggered AI build mode, open chat and auto-send the build request
       if (aiBuildMode && projectId) {
         const stored = localStorage.getItem(`ai_wizard_result_${projectId}`);
         if (stored) {
           try {
-            const wizardResult = JSON.parse(stored) as WizardResult;
-            setAiAppName(wizardResult.appName ?? '');
-            // Save wizard context to store so chat AI can use it for section generation
+            const wizardResult = JSON.parse(stored) as {
+              appName: string;
+              businessDescription: string;
+              category: string;
+              mood: string;
+              animationLevel: number;
+              layoutStructure: number;
+              selectedPages: Array<{ name: string; sections: Array<{ name: string; description?: string }> }>;
+            };
+            // Save wizard context so the AI always has it in every message
             setProjectContext({
               mood:           wizardResult.mood,
               animationLevel: wizardResult.animationLevel,
@@ -773,16 +779,22 @@ export default function BuilderPage() {
               appName:        wizardResult.appName,
               category:       wizardResult.category,
             });
-            // Small delay to let the store settle before inserting nodes
-            setTimeout(() => {
-              void startAIGeneration(wizardResult);
-              // Clean up localStorage key
-              localStorage.removeItem(`ai_wizard_result_${projectId}`);
-              // Remove ?ai=build from URL without triggering navigation
-              const url = new URL(window.location.href);
-              url.searchParams.delete('ai');
-              window.history.replaceState({}, '', url.toString());
-            }, 500);
+            // Build a focused prompt — business context is already in the AI system prompt
+            const sections = wizardResult.selectedPages.flatMap(p =>
+              p.sections.map(s => `  - [${p.name}] ${s.name}${s.description ? `: ${s.description}` : ''}`)
+            ).join('\n');
+            const msg =
+              `Build the app using the project context you already have.\n\n` +
+              `Pages and sections to build:\n${sections}\n\n` +
+              `Build each section step by step. Start with the first page and work through all sections.`;
+            setAiPendingMessage(msg);
+            // Open the chat panel (aiMode controls right panel showing chat)
+            if (!aiMode) toggleAiMode();
+            // Clean up
+            localStorage.removeItem(`ai_wizard_result_${projectId}`);
+            const url = new URL(window.location.href);
+            url.searchParams.delete('ai');
+            window.history.replaceState({}, '', url.toString());
           } catch (e) {
             console.error('[builder] Failed to parse wizard result:', e);
           }
@@ -1168,14 +1180,6 @@ export default function BuilderPage() {
         />
       )}
 
-      {/* AI Generation panel — slides in from the right during wizard AI build */}
-      {genState.active && (
-        <AIGeneratePanel
-          appName={aiAppName}
-          genState={genState}
-          onCancel={cancelAIGeneration}
-        />
-      )}
     </div>
   );
 }

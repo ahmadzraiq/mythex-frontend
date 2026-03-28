@@ -1,0 +1,175 @@
+---
+description: AI builder tool executor — patterns, known fixes, and why each decision was made
+globs: lib/ai/**,lib/builder/**
+alwaysApply: false
+---
+
+# AI Builder Tool Executor (`lib/ai/tool-executor.ts`)
+
+## Core Rule — Tool Behavior Must Mirror the Panel
+
+Every executor function must write to exactly the same place as the builder's right-side panel control for that property. The panel's `patchStyle` path now calls `styleToClassName` before saving, so pixel inputs are stored as arbitrary-value Tailwind classes (e.g. `pt-[16px]`). The tool must do the same — write to `props.className`, never to `style.*` for pixel inputs.
+
+See `ai-builder-knowledge.mdc` for the full alignment philosophy and audit process.
+
+---
+
+## Style Mechanism Decisions (How & Why Each Tool Writes)
+
+### Inline Style vs Tailwind Class
+
+**When to write to `props.className` (Tailwind arbitrary-value class):**
+- Pixel-value controls (`NumberInput`): write as `pt-[Npx]`, `gap-[Npx]`, `max-w-[Npx]`, `top-[Npx]`, etc. — always strip the corresponding `style.*` key
+- Token-value controls (`SelectInput`): write as a standard Tailwind utility like `shadow-lg`, `rounded-xl`, `font-bold`
+- Colors: write as `bg-[#hex]`, `bg-[var(--...)]`, `text-[#hex]`, `border-[#hex]`, etc.
+
+**When to write to `style.*` (inline style) — exceptions only:**
+- `transform: rotate(Ndeg)` — degrees don't map cleanly to a Tailwind class
+- `px:N` exact width/height — double-write BOTH `w-[Npx]` class AND `style.width = "Npx"` to guard against stale `defaultNode` inline styles winning
+- `style.opacity` — panel reads directly from `style.opacity`; no class form
+
+**Why this changed from the old model:** The panel's `patchStyle` now runs `styleToClassName` before saving — pixel inputs like `padding: 24` become `pt-[24px] pr-[24px] pb-[24px] pl-[24px]` in `props.className` and `props.style` is cleared of those keys. Both panel and tool now use the same storage format. At render time, `classToInlineStyle()` in `lib/sdui/renderer.tsx` converts arbitrary-value classes back to inline styles so the browser renders them correctly (NativeWind's JIT scanner can't see dynamic classes from JSON).
+
+**When to write both `props.className` AND `style.*`:**
+- `set_size` with `px:N` values: double-write guards against `defaultNode` inline style winning
+
+---
+
+## Tool-by-Tool Decisions
+
+### `set_spacing`
+- Writes to `props.className` as arbitrary-value classes: `pt-[Npx]`, `pr-[Npx]`, `pb-[Npx]`, `pl-[Npx]`, `mx-[Npx]`, `gap-[Npx]`, etc.
+- Values are **pixels** — input `p: 24` becomes `pt-[24px] pr-[24px] pb-[24px] pl-[24px]`
+- Strips bare shorthands (`p-4`, `m-8`) and side-specific classes (`pt-*`, `gap-*`) before writing — prevents conflicts with primitive defaults
+- Zero value (`p: 0`, `gap: 0`) strips existing classes without writing a zero-value class — zero padding/gap = no class needed
+- Strips corresponding `style.*` keys (`paddingTop`, `gap`, etc.) so inline styles from old code don't conflict
+- **Why classes:** The panel's `patchStyle` now calls `styleToClassName` before saving — both panel and tool write arbitrary-value classes, keeping them in sync
+
+### `set_layout.gap`
+- Gap writes `gap-[Npx]` to `props.className` — same pattern as `set_spacing`
+- Strips any existing `gap-*` class and `style.gap` key
+- `buildLayoutClass()` helper is gap-unaware; gap handling happens after it returns in the executor
+- **Why classes:** Same reason as `set_spacing` — panel now writes classes, not `style.gap`
+
+### `set_opacity`
+- Writes to `style.opacity` as a 0–1 float (input 0–100 → divided by 100)
+- Strips any `opacity-*` Tailwind class
+- `opacity: 100` → removes the `opacity` style key entirely (fully visible = no override needed)
+- **Why:** The panel opacity slider → `patchStyle({ opacity: "0.8" })`
+
+### `set_position` inset (top/right/bottom/left)
+- Writes `top-[Npx]`, `right-[Npx]`, `bottom-[Npx]`, `left-[Npx]` to `props.className`
+- Strips corresponding `style.*` keys (`top`, `right`, `bottom`, `left`)
+- position type and zIndex still use standard Tailwind token classes (`absolute`, `z-10`, etc.)
+- **Why classes:** Same migration as `set_spacing` — panel writes arbitrary-value classes, not `style.*`
+
+### `set_transform` rotate
+- Writes to `style.transform = "rotate(Ndeg)"` — any degree value, not limited to Tailwind's preset values
+- Strips any `rotate-*` / `-rotate-*` Tailwind classes
+- `rotate: 0` → removes the `transform` style key
+- **Why:** Rotate in the panel is a `NumberInput` (-180 to 180) → `patchStyle({ transform: "rotate(Ndeg)" })`
+- flipX/flipY still use Tailwind classes (`-scale-x-100` etc.) because the panel uses a toggle that writes a class
+
+### `set_size`
+- `width` / `height` named modes (`full`, `fit`, `fill`, `screen`, `min-screen`) → standard Tailwind token classes (`w-full`, `h-fit`, `flex-1`, `h-screen`, `min-h-screen`)
+- `maxWidth`, `minWidth`, `maxHeight`, `minHeight` → write `max-w-[Npx]`, `min-w-[Npx]`, etc. to `props.className`; strip conflicting classes AND `style.*` keys; zero values strip without writing
+- `px:N` exact width/height → **double-write**: `w-[Npx]` class AND `style.width = "Npx"` (guards against stale defaultNode inline styles)
+- **Why classes for min/max:** Same migration as `set_spacing`
+
+### `set_border` radius
+- `"default"` → `rounded` (bare default Tailwind border-radius token)
+- Per-corner `"default"` → bare `rounded-tl` / `rounded-tr` / etc.
+- **Why:** The panel's `ROUNDED_TOKENS` array includes the bare `"rounded"` token
+
+### `set_shadow`
+- `"default"` → `shadow` (bare default Tailwind shadow token, between none and sm)
+- **Why:** The panel's `SHADOW_TOKENS` array includes the bare `"shadow"` token
+
+### `set_submit`
+- Writes `props.type = "submit"` (true) or removes it (false)
+- **Why:** The panel Settings has a "Submit" toggle that sets `props.type = "submit"` on a Button so it triggers FormContainer. The old tool controlled `props.action` (visual variant) — a completely different prop
+
+### `set_input_props` type
+- `"decimal"` → writes `props.type = "number"` + `props.step = "0.01"`
+- Removed: `"url"`, `"search"`, `"date"` (not in the panel's Settings input type dropdown)
+- **Why:** Matches the panel's actual type options exactly
+
+---
+
+## `set_src` — Image vs Video Routing
+
+- **Image nodes** → `store.patchProp(id, 'src', url)` → sets top-level `node.src`
+- **Video nodes** → `store.patchProp(id, 'props.src', url)` → sets `node.props.src`
+
+Renderer picks up both: `...(node.src && { src: node.src })` spread, falling back to `node.props.src` when top-level `src` is falsy.
+
+---
+
+## `set_text` / `set_text_color` — Child Targeting
+
+Button-like `Box` nodes and `Link` nodes hold visible text in a **child** (`Text`, `LinkText`, `ButtonText`). Both `set_text` and `set_text_color` walk to the child before patching — never patch the wrapper's `text` or `className` directly. The check is structure-based: if the node has no own `text` property and has exactly one text-type child, the child is targeted automatically.
+
+---
+
+## Video Component Defaults
+
+`primitive-components.ts` defaultNode and `add_video` executor both use:
+```
+autoPlay: true, loop: true, muted: true, controls: false
+```
+This is the correct ambient/embedded default for landing pages. Only override when the user explicitly requests a media player (`controls: true`).
+
+---
+
+## Class Conflict Prevention
+
+When writing an arbitrary-value class for a property, always strip the corresponding `style.*` key, and vice versa. Also strip old-style shorthand classes (e.g. `p-4` when setting individual sides).
+
+Common patterns:
+```typescript
+// Write class AND strip the inline style key
+cls = `${cls} pt-[24px]`.trim();
+removeNodeStyleKeys(store, nodeId, ['paddingTop']);
+
+// Strip shorthand when setting individual sides
+cls = cls.split(' ').filter(t => !/^p-/.test(t)).join(' ').trim(); // removes p-4, p-8, etc.
+
+// Write class AND strip old token
+cls = replaceTokenGroup(cls, ROUNDED_PREFIXES, 'rounded-xl');
+// (borderRadius is not written inline — the class alone is authoritative)
+```
+
+---
+
+## Helper Functions Reference
+
+| Function | Purpose |
+|---|---|
+| `getNodeClassName(store, id)` | Read current `props.className` |
+| `setNodeClassName(store, id, cls)` | Write `props.className` (normalises whitespace) |
+| `patchNodeStyle(store, id, patch)` | Merge-patch `props.style`, removing empty-string keys |
+| `getNodeStyle(store, id)` | Read current `props.style` |
+| `replaceTokenGroup(cls, patterns, token)` | Replace a group of tokens with a new one (uses exact-token removal) |
+| `removeExactToken(cls, token)` | Remove a specific token without touching compound tokens (e.g. removes `flex` without touching `flex-col`) |
+| `replaceTwToken(cls, prefix, token)` | Replace a prefix-matched token |
+| `removeTwToken(cls, prefix)` | Remove all tokens matching a prefix |
+| `resolveColorClass(color, prefix)` | Map friendly names to CSS-variable Tailwind classes |
+| `findNode(nodes, id)` | Deep-find a node by ID in the tree |
+
+---
+
+## Adding New Tools — Checklist
+
+1. Open `_panel-right.tsx` — find the panel control and verify write target (`patchStyle` or `patchCls`) and units (`NumberInput` = pixels, `SelectInput` = token enum)
+2. Add executor function in `tool-executor.ts` — write to exactly the same target as the panel
+3. Add schema in `builder-tools.ts` — use `number` for pixels, `string` enum for tokens, `boolean` for toggles
+4. Add to `ALLOWED_TOOLS` set at the bottom of `tool-executor.ts`
+5. If it's a search tool (server-side): add to `isSearchTool` array in `app/api/ai/builder-chat/route.ts`
+6. Update quick reference in `builder-knowledge.ts` and the tool reference table
+7. Update this doc if a new style mechanism decision is made
+
+---
+
+## `buildLayoutClass()` Helper
+
+Used by `set_layout`. Handles direction, align, justify, and width classes. Gap is handled separately — it writes `gap-[Npx]` to `props.className` (not `style.gap`) and the class-stripping + `style.gap` removal happen in the `set_layout` executor after `buildLayoutClass` returns. The function itself is left unaware of gap to keep it generic.

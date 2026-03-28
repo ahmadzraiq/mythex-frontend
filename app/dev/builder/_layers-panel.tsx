@@ -104,9 +104,9 @@ export function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps) {
 // Keep in sync with isContainer in _panel-right.tsx and CONTAINER_TYPES in _canvas.tsx
 const LAYER_CONTAINER_TYPES = new Set([
   'Box', 'VStack', 'HStack', 'Center', 'Grid', 'GridItem',
-  'ScrollView', 'View', 'Card', 'SafeAreaView', 'Pressable',
+  'ScrollView', 'View', 'Card', 'SafeAreaView',
   'Checkbox', 'CheckboxGroup', 'Radio', 'RadioGroup',
-  'Badge', 'Avatar', 'Fab', 'Skeleton', 'Alert', 'Link',
+  'Badge', 'Avatar', 'Fab', 'Skeleton', 'Alert',
   'Modal', 'ModalContent', 'ModalHeader', 'ModalBody', 'ModalFooter',
   'Tooltip', 'AlertDialog', 'AlertDialogContent',
   'AlertDialogHeader', 'AlertDialogBody', 'AlertDialogFooter',

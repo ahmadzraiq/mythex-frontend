@@ -5,6 +5,19 @@
  * this file and compile every class we might dynamically apply.
  */
 
+// ─── Style properties that styleToClassName can encode as Tailwind classes ───
+// Any style key in this set should NOT be persisted in props.style — it belongs
+// in props.className as an arbitrary-value class (e.g. w-[317px], pt-[8px]).
+// `transform` is intentionally absent: rotation stays inline by design.
+export const STYLE_TO_CLASS_KEYS = new Set([
+  'backgroundColor', 'color', 'borderColor',
+  'width', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight',
+  'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'paddingBlock', 'paddingInline',
+  'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
+  'gap', 'opacity',
+  'top', 'right', 'bottom', 'left',
+]);
+
 // ─── Token tables (JIT-scannable) ────────────────────────────────────────────
 
 export const SPACING_SCALE = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, 72, 80, 96] as const;

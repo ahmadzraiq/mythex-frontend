@@ -144,6 +144,7 @@ export const InactivePagesGrid = memo(function InactivePagesGrid({
             {/* Frame */}
             <div
               data-builder-page-id={page.id}
+              data-builder-page-frame="0"
               style={{
                 position: 'absolute',
                 left: worldLeft,
@@ -156,6 +157,16 @@ export const InactivePagesGrid = memo(function InactivePagesGrid({
                 transform: 'translateZ(0)',
               }}
             >
+              {/* Viewport simulation — same as the active frame so min-h-screen /
+                  h-screen resolve to VIEWPORT_H, not the real browser 100vh.
+                  Without this, inactive frames have a different height than the
+                  active frame, causing a visible height jump when switching pages. */}
+              <style>{`
+                [data-builder-page-frame="0"] .h-screen    { height: ${VIEWPORT_H}px !important; }
+                [data-builder-page-frame="0"] .min-h-screen { min-height: ${VIEWPORT_H}px !important; }
+                [data-builder-page-frame="0"] .w-screen    { width: ${vpWidth}px !important; }
+                [data-builder-page-frame="0"] .max-h-screen { max-height: ${VIEWPORT_H}px !important; }
+              `}</style>
               <InactivePageEngine
                 pageId={page.id}
                 configName={page.name || 'page'}

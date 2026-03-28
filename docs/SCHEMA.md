@@ -70,7 +70,7 @@ Every UI node has:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| type | string | Component: Box, Text, HStack, VStack, Button, Card, Form, Modal, etc. |
+| type | string | Component: Box, Text, HStack, VStack, Input, Heading, Icon, Image, etc. |
 | props | object | Component props (className, size, variant, etc.) |
 | children | array | Child nodes |
 | text | string | Text content (use with {{variable}} interpolation) |
@@ -157,10 +157,10 @@ Key nodes in reusable sections should carry a stable `id` attribute so the build
 
 ```json
 {
-  "type": "Card",
+  "type": "Box",
   "map": "products.list",
   "key": "product",
-  "children": [{ "type": "Text", "text": "{{$item.name}}" }]
+  "children": [{ "type": "Text", "text": "{{context.item.data.name}}" }]
 }
 ```
 
@@ -457,7 +457,7 @@ Form must wrap FormInputWithLabel and FormSubmitButton. FormSubmitButton must be
   "children": [
     { "type": "Box", "children": [/* FormInputWithLabel */] },
     { "type": "ModalFooter", "children": [
-      { "type": "Button", "text": "Cancel", "actions": { "click": { "action": "closeCreateModal" } } },
+      { "type": "Box", "children": [{ "type": "Text", "text": "Cancel" }], "actions": [{ "action": "closeCreateModal" }] },
       { "type": "FormSubmitButton", "props": { "action": "primary" }, "text": "Save" }
     ]}
   ]
@@ -492,14 +492,12 @@ All components from `@/components/ui/*` are supported. Use `type` in JSON to ref
 ### Layout
 | Component | Description |
 |-----------|-------------|
-| Box | Flex container, base layout |
-| View | Base view (react-native) |
+| Box | Flex container, base layout — use for any container, card surface, divider, or clickable area |
 | HStack | Horizontal stack |
 | VStack | Vertical stack |
 | Center | Centered content |
 | Grid | CSS grid layout |
 | GridItem | Grid cell |
-| Divider | Horizontal/vertical divider |
 
 ### Typography
 | Component | Description |
@@ -510,26 +508,17 @@ All components from `@/components/ui/*` are supported. Use `type` in JSON to ref
 ### Interactive
 | Component | Description |
 |-----------|-------------|
-| Button | Primary action (use `text` or children). Use `props.textClassName` to override ButtonText color when Gluestack defaults don't apply (e.g. `!text-gray-900` on light backgrounds). |
-| ButtonText | Button label |
-| ButtonIcon | Button icon |
-| ButtonSpinner | Loading spinner in button |
-| Pressable | Pressable area |
-| Link | Navigation link |
-| LinkText | Link label |
+| Box | Any clickable/actionable container. Add actions array with a named workflow. Use `className` for all styling. |
+| Link | `Box` with `cursor-pointer` and a `Text` child. Navigate via a `click` action workflow. |
 
 ### Form
 | Component | Description |
 |-----------|-------------|
-| Form | Form wrapper (defaultValues, validationRules, submitAction) |
-| FormInputWithLabel | Input with label (name, label required) |
-| FormSubmitButton | Submit button (must be inside Form) |
-| Input | Text input (composite: Input + InputField) |
-| InputField | Raw input field |
-| InputIcon | Input icon |
+| FormContainer | Form wrapper |
+| Input | Text input (`InputWithField` — no children needed; pass placeholder, name, type, value directly as props) |
 | Checkbox | Checkbox (value required) |
+| CheckboxGroup | Checkbox group |
 | CheckboxIndicator | Checkbox indicator |
-| CheckboxIcon | Checkbox check icon |
 | CheckboxLabel | Checkbox label |
 | Switch | Toggle switch |
 | Textarea | Multi-line input |
@@ -538,11 +527,9 @@ All components from `@/components/ui/*` are supported. Use `type` in JSON to ref
 | RadioGroup | Radio group |
 | RadioIndicator | Radio indicator |
 | RadioLabel | Radio label |
-| RadioIcon | Radio icon |
 | Select | Dropdown select |
 | SelectTrigger | Select trigger |
 | SelectInput | Select input |
-| SelectIcon | Select icon |
 | SelectPortal | Select portal |
 | SelectBackdrop | Select backdrop |
 | SelectContent | Select content |
@@ -554,111 +541,36 @@ All components from `@/components/ui/*` are supported. Use `type` in JSON to ref
 | SelectFlatList | Flat list for select |
 | SelectSectionList | Section list for select |
 | SelectSectionHeaderText | Section header text |
-| FormControl | Form control wrapper |
-| FormControlLabel | Form control label |
-| FormControlLabelText | Form control label text |
-| FormControlError | Error message |
-| FormControlErrorText | Error text |
-| FormControlHelper | Helper text |
-| FormControlHelperText | Helper text content |
 
 ### Data display
 | Component | Description |
 |-----------|-------------|
-| Table | Table container |
-| TableHeader | Table header |
-| TableBody | Table body |
-| TableRow | Table row |
-| TableHead | Table header cell |
-| TableData | Table data cell |
-| Card | Card container |
-| Badge | Badge/tag |
-| BadgeText | Badge text |
-| BadgeIcon | Badge icon |
-| Alert | Alert message |
-| AlertText | Alert text |
-| AlertIcon | Alert icon |
 | Skeleton | Loading skeleton |
 | SkeletonText | Skeleton text |
-| Avatar | User avatar |
-| AvatarImage | Avatar image |
-| AvatarFallbackText | Avatar fallback |
 | Progress | Progress bar |
 | ProgressFilledTrack | Progress fill |
+
+> **Note:** Card, Badge, Avatar, Alert, Table, Divider are replaced by `Box` + `Text` + `Icon` + `className`. Use Box with border/bg/rounded for cards and surfaces, Box with h-px for dividers, and Box + Text for badges/pills.
 
 ### Overlay
 | Component | Description |
 |-----------|-------------|
-| Modal | Modal dialog |
-| ModalBackdrop | Modal backdrop |
-| ModalContent | Modal content |
-| ModalHeader | Modal header |
-| ModalBody | Modal body |
-| ModalFooter | Modal footer |
-| ModalCloseButton | Modal close button |
-| Drawer | Drawer/sidebar |
-| DrawerBackdrop | Drawer backdrop |
-| DrawerContent | Drawer content |
-| DrawerHeader | Drawer header |
-| DrawerBody | Drawer body |
-| DrawerFooter | Drawer footer |
-| DrawerCloseButton | Drawer close button |
-| Popover | Popover |
-| PopoverBackdrop | Popover backdrop |
-| PopoverContent | Popover content |
-| PopoverHeader | Popover header |
-| PopoverBody | Popover body |
-| PopoverFooter | Popover footer |
-| PopoverCloseButton | Popover close button |
 | Tooltip | Tooltip (needs trigger) |
 | TooltipContent | Tooltip content |
 | TooltipText | Tooltip text |
-| Menu | Menu (needs trigger) |
-| MenuItem | Menu item |
-| MenuItemLabel | Menu item label |
-| MenuSeparator | Menu separator |
-| Actionsheet | Action sheet |
-| ActionsheetContent | Actionsheet content |
-| ActionsheetItem | Actionsheet item |
-| ActionsheetItemText | Actionsheet item text |
-| ActionsheetDragIndicator | Actionsheet drag indicator |
-| ActionsheetDragIndicatorWrapper | Wrapper for drag indicator |
-| ActionsheetBackdrop | Actionsheet backdrop |
-| ActionsheetScrollView | Actionsheet scroll |
-| ActionsheetIcon | Actionsheet icon |
-| ActionsheetVirtualizedList | Virtualized list |
-| ActionsheetFlatList | Flat list |
-| ActionsheetSectionList | Section list |
-| ActionsheetSectionHeaderText | Section header text |
-| AlertDialog | Confirmation dialog |
-| AlertDialogContent | AlertDialog content |
-| AlertDialogCloseButton | AlertDialog close |
-| AlertDialogHeader | AlertDialog header |
-| AlertDialogFooter | AlertDialog footer |
-| AlertDialogBody | AlertDialog body |
-| AlertDialogBackdrop | AlertDialog backdrop |
-| BottomSheet* | Bottom sheet (requires react-native-gesture-handler, react-native-reanimated) |
 
 ### Feedback & media
 | Component | Description |
 |-----------|-------------|
 | Spinner | Loading spinner |
-| Icon | Icon (as, name, size) |
-| Image | Image (source, alt) |
-| NextImage | Next.js Image (src, alt, fill, width, height) |
+| Icon | Icon (Iconify format: `set:name`, e.g. `lucide:search`) |
+| Image | Image (src, alt) |
 
 ### Scroll & layout
 | Component | Description |
 |-----------|-------------|
 | ScrollView | Scrollable container |
 | SafeAreaView | Safe area wrapper |
-
-### FAB
-| Component | Description |
-|-----------|-------------|
-| Fab | Floating action button |
-| FabLabel | FAB label |
-| FabIcon | FAB icon |
 
 ### Accordion
 | Component | Description |
@@ -667,9 +579,6 @@ All components from `@/components/ui/*` are supported. Use `type` in JSON to ref
 | AccordionItem | Accordion item (value, children) |
 | AccordionHeader | Accordion header |
 | AccordionTrigger | Accordion trigger |
-| AccordionTitleText | Accordion title |
-| AccordionContentText | Accordion content text |
-| AccordionIcon | Accordion icon |
 | AccordionContent | Accordion content |
 
 ### Slider

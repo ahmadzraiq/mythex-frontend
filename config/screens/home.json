@@ -13,7 +13,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full relative bg-[var(--theme-hero-bg)] overflow-hidden"
+          "className": "w-full relative bg-[var(--theme-muted)] overflow-hidden"
         },
         "children": [
           {
@@ -49,9 +49,9 @@
                     },
                     "children": [
                       {
-                        "type": "Pressable",
+                        "type": "Box",
                         "props": {
-                          "className": "inline-flex items-center justify-center min-w-[200px] h-11 px-8 rounded-lg bg-[var(--theme-shop-button)] hover:bg-[var(--theme-shop-buttonHover)]"
+                          "className": "inline-flex items-center justify-center min-w-[200px] h-11 px-8 rounded-lg bg-[var(--theme-primary)] hover:bg-[var(--theme-primary)]"
                         },
                         "actions": [
                           {
@@ -62,16 +62,16 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[var(--theme-shop-buttonText)] text-base font-semibold"
+                              "className": "text-[var(--theme-primary-foreground)] text-base font-semibold"
                             },
                             "text": "Shop Now"
                           }
                         ]
                       },
                       {
-                        "type": "Pressable",
+                        "type": "Box",
                         "props": {
-                          "className": "inline-flex flex-row items-center justify-center gap-2 min-w-[200px] h-11 px-8 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-content-bg)] hover:bg-[var(--theme-hero-bg)]"
+                          "className": "inline-flex flex-row items-center justify-center gap-2 min-w-[200px] h-11 px-8 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-card)] hover:bg-[var(--theme-muted)]"
                         },
                         "actions": [
                           {
@@ -131,9 +131,9 @@
                     },
                     "children": [
                       {
-                        "type": "Pressable",
+                        "type": "Box",
                         "props": {
-                          "className": "group w-full text-left bg-[var(--theme-content-bg)] rounded-lg overflow-hidden border border-[var(--theme-border)] hover:shadow-lg transition-shadow duration-150"
+                          "className": "group w-full text-left bg-[var(--theme-card)] rounded-lg overflow-hidden border border-[var(--theme-border)] hover:shadow-lg transition-shadow duration-150"
                         },
                         "actions": [
                           {
@@ -144,7 +144,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "aspect-square relative overflow-hidden bg-[var(--theme-hero-bg)]"
+                              "className": "aspect-square relative overflow-hidden bg-[var(--theme-muted)]"
                             },
                             "children": [
                               {
@@ -213,7 +213,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full py-16 bg-[var(--theme-hero-bg)]"
+          "className": "w-full py-16 bg-[var(--theme-muted)]"
         },
         "children": [
           {

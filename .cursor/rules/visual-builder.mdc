@@ -29,7 +29,7 @@ A Figma-like visual page builder that renders SDUI components directly in the sa
 | `_tw-utils.ts` | Tailwind class utilities: token tables, parse/replace/remove helpers, spacing helpers, border-radius helpers, alignment helpers. |
 | `e2e/builder.spec.ts` | Main Playwright E2E test suite (selection, DnD, overlays). |
 | `e2e/test-dnd.spec.ts` | DnD, right-panel property tests (T*, U*, V* series), drop-line direction tests (DI-01..04). |
-| `e2e/panel-interactive.spec.ts` | Exhaustive right-panel tests for Pressable-based buttons (BP-00 to BP-44+) and Content section (PI-01..03). Supersedes deleted `button-panel.spec.ts`. |
+| `e2e/panel-interactive.spec.ts` | Exhaustive right-panel tests for Box-based buttons (BP-00 to BP-44+) and Content section (PI-01..03). Supersedes deleted `button-panel.spec.ts`. |
 | `e2e/panel-form.spec.ts` | Right-panel tests for Input, Textarea, Checkbox, Toggle, Switch, DatePicker, TimePicker, DateTimePicker, ColorPicker, FileUpload (PF-01..31). |
 | `e2e/panel-display.spec.ts` | Right-panel tests for Heading, Badge, Avatar, Chip, StarRating, Breadcrumbs, Tabs, Stepper, Pagination, Accordion, JsonViewer (PD-01..26). |
 | `e2e/panel-media.spec.ts` | Right-panel tests for Image and Icon/Icon Tap (PM-01..10). |
@@ -67,7 +67,7 @@ Components render directly in the React tree. The canvas uses a `data-builder-pa
 
 ## Palette — Primitive Components (`_panel-left.tsx`)
 
-All components in the palette are **primitives**: they use `Box`, `Text`, `Pressable`, and `Icon` as building blocks, giving users full `className`-based control over styling. Gluestack compound components (Slider, Select, etc.) are used when no plain-primitive equivalent exists.
+All components in the palette are **primitives**: they use `Box`, `Text`, and `Icon` as building blocks, giving users full `className`-based control over styling. Gluestack compound components (Slider, Select, etc.) are used when no plain-primitive equivalent exists.
 
 **Groups and key `defaultNode` patterns:**
 
@@ -79,44 +79,44 @@ All components in the palette are **primitives**: they use `Box`, `Text`, `Press
 | Layout | HStack | `HStack` | Gluestack HStack (row) |
 | Layout | Center | `Center` | Centers children horizontally & vertically |
 | Layout | Grid | `Grid` (empty, `grid-cols-2 gap-4`) | CSS grid container; `isContainer`; drop `GridItem` children into it |
-| Layout | Card | `Card` + `Heading`/`Text` children | Bordered surface container; `isContainer` |
+| Layout | Card | `Box` with border/bg/rounded/shadow className | Bordered surface container; `isContainer` |
 | Layout | Divider | `Box` `h-px bg-border` | Horizontal rule |
 | Typography | Text | `Text` | Text node (Typography section) |
 | Typography | Heading | `Heading` | Text node (Typography section) |
 | Typography | Label | `Text` `text-sm font-medium` | Text node |
 | Typography | Caption | `Text` `text-xs` | Text node |
-| Typography | Link | `Link` + `LinkText` child | Navigable link; `isContainer` |
-| Buttons | Btn Solid | `Pressable` + `Text` child | `bg-primary text-primary-foreground` |
-| Buttons | Btn Destructive | `Pressable` + `Text` child | `bg-destructive text-destructive-foreground` |
-| Buttons | Btn Outline | `Pressable` + `Text` child | `border border-primary` |
-| Buttons | Btn Ghost | `Pressable` + `Text` child | No bg, no border |
-| Buttons | Btn + Icon L | `Pressable` + `Icon` + `Text` | Icon left of label |
-| Buttons | Btn + Icon R | `Pressable` + `Text` + `Icon` | Icon right of label |
-| Buttons | Icon Btn | `Pressable` + `Icon` | Square icon button |
-| Buttons | Icon Btn Round | `Pressable` + `Icon` | Circular icon button |
-| Buttons | Link Btn | `Pressable` + `Text` + `Icon` | Underlined link-style |
-| Buttons | Pressable | `Pressable` | Bare interactive container |
-| Buttons | FAB | `Fab` + `FabIcon` + `FabLabel` | Floating action button; `isContainer` |
+| Typography | Link | `Box` with `cursor-pointer` + `Text` child | Navigable link; `isContainer` |
+| Buttons | Btn Solid | `Box` + `Text` child | `bg-primary text-primary-foreground` |
+| Buttons | Btn Destructive | `Box` + `Text` child | `bg-destructive text-destructive-foreground` |
+| Buttons | Btn Outline | `Box` + `Text` child | `border border-primary` |
+| Buttons | Btn Ghost | `Box` + `Text` child | No bg, no border |
+| Buttons | Btn + Icon L | `Box` + `Icon` + `Text` | Icon left of label |
+| Buttons | Btn + Icon R | `Box` + `Text` + `Icon` | Icon right of label |
+| Buttons | Icon Btn | `Box` + `Icon` | Square icon button |
+| Buttons | Icon Btn Round | `Box` + `Icon` | Circular icon button |
+| Buttons | Link Btn | `Box` + `Text` + `Icon` | Underlined link-style |
+
+| Buttons | FAB | `Box` + `Icon` + `Text` | Floating action button; `isContainer` |
 | Form | Input | `Input` | `InputWithField` composite; supports `forwardRef`; `isLeafWidget` |
-| Form | Input Search | `Input` + `InputSlot` + `InputField` | Input with leading search icon |
+| Form | Input Search | `Box` (flex-row) + `Icon` + `Input` | Input with leading search icon |
 | Form | Textarea | `Textarea` | Multi-line input; `isLeafWidget` |
 | Form | Select | `Select` + `SelectTrigger`/`SelectPortal` | Dropdown picker; `isLeafWidget` |
 | Form | Slider | `Slider` + `SliderTrack`/`SliderThumb` | Range input; `isLeafWidget` |
 | Form | Radio | `Radio` + `RadioIndicator` + `RadioLabel` | Single radio option; `isContainer` |
 | Form | Radio Group | `RadioGroup` wrapping `Radio` children | Mutually exclusive group; `isContainer` |
 | Form | Progress | `Progress` + `ProgressFilledTrack` | Progress bar; `isLeafWidget` |
-| Form | Toggle | `Pressable` + `Box` thumb | Primitive toggle (track + thumb); `isContainer` |
+| Form | Toggle | `Box` + `Box` thumb | Primitive toggle (track + thumb); `isContainer` |
 | Form | Checkbox | `Checkbox` + `CheckboxIndicator` + `CheckboxLabel` | Checkbox; `isContainer` |
 | Media | Image | `Image` | Custom `img` wrapper; `isLeafWidget` |
 | Media | Icon | `Icon` | Iconify icon; `forwardRef` via `span`; `isLeafWidget` |
-| Media | Icon Tap | `Pressable` + `Icon` | Icon in a circle |
-| Display | Badge | `Badge` + `BadgeText` child | `isContainer` |
-| Display | Avatar | `Avatar` + `AvatarFallbackText` child | `isContainer` |
+| Media | Icon Tap | `Box` + `Icon` | Icon in a circle |
+| Display | Badge | `Box` + `Text` child | Pill-shaped label |
+| Display | Avatar | `Box` + `Image` or `Text` child | Circular avatar |
 | Display | Spinner | `Spinner` | Animated loading indicator; `isLeafWidget` |
 | Display | Skeleton | `Skeleton` + `SkeletonText` | Loading placeholder; `isContainer` |
-| Display | Alert | `Alert` + `Icon` + `AlertText` | Informational callout; `isContainer` |
-| Form | Switch | `Pressable` (track) + `Box` (thumb) | Primitive toggle; fully styleable sub-parts; `isContainer` |
-| Form | Switch On | `Pressable` + `Box` (right) | Same but active state |
+| Display | Alert | `Box` + `Icon` + `Text` | Informational callout; `isContainer` |
+| Form | Switch | `Box` (track) + `Box` (thumb) | Primitive toggle; fully styleable sub-parts; `isContainer` |
+| Form | Switch On | `Box` + `Box` (right) | Same but active state |
 | Form | DatePicker | `DatePicker` | Native `<input type="date">`; `isLeafWidget` |
 | Form | TimePicker | `TimePicker` | Native `<input type="time">`; `isLeafWidget` |
 | Form | Date & Time | `DateTimePicker` | Native `<input type="datetime-local">`; `isLeafWidget` |
@@ -124,14 +124,14 @@ All components in the palette are **primitives**: they use `Box`, `Text`, `Press
 | Form | File Upload | `FileUpload` | Dashed drop zone + hidden file input; `isLeafWidget` |
 | Form | Autocomplete | `Box` + `Input` + dropdown `Box` | Primitive search-with-dropdown; `isContainer` |
 | Layout | ScrollView | `Box` `overflow-auto` | Scrollable container; `isContainer` |
-| Composite | Chip | `Pressable` + `Text` + `Icon X` | Removable tag; `isContainer` |
+| Composite | Chip | `Box` + `Text` + `Icon X` | Removable tag; `isContainer` |
 | Composite | Tag | `Box` `rounded-full` + `Text` | Static tag; `isContainer` |
 | Composite | Tabs | `Box` + tab bar + content | `isContainer` |
 | Composite | Stepper | `Box` + circle nodes + connectors | Step progress; `isContainer` |
 | Composite | Pagination | `Box` + Prev/Next + pages | Page nav bar; `isContainer` |
 | Composite | Star Rating | `Box` + 5× `Icon Star` | Rating display; `isContainer` |
 | Composite | Breadcrumbs | `Box` + `Text` + separators | Nav path; `isContainer` |
-| Composite | Accordion | `Box` + `Pressable` header + body | Collapsible section; `isContainer` |
+| Composite | Accordion | `Box` + `Box` header + body | Collapsible section; `isContainer` |
 | Composite | Table | `Box` + header row + data rows | Flex-based table; `isContainer` |
 | Composite | Snackbar | `Box` + `Icon` + `Text` | Bottom notification bar; `isContainer` |
 | Overlays | Modal | `Modal` (`isOpen: true`) + backdrop + content | Gluestack portal dialog; `isContainer` |
@@ -146,9 +146,9 @@ All components in the palette are **primitives**: they use `Box`, `Text`, `Press
 | Data & Media | Google Map | `GoogleMap` | Embedded map; placeholder without `apiKey`; `isLeafWidget` |
 | Data & Media | Places Search | `GoogleMapPlaces` | Places search input; `isLeafWidget` |
 
-**Primitive-first rule:** Every component that CAN be composed from `Box`, `Pressable`, `Text`, `Icon` MUST be. Exceptions: Gluestack overlay compounds (Modal, Tooltip, AlertDialog) manage DOM portals; HTML input wrappers (DatePicker, ColorPicker, etc.) wrap native elements for semantic/accessibility reasons.
+**Primitive-first rule:** Every component that CAN be composed from `Box`, `Text`, `Icon` MUST be. Exceptions: Gluestack overlay compounds (Tooltip) manage DOM portals; HTML input wrappers (DatePicker, ColorPicker, etc.) wrap native elements for semantic/accessibility reasons. Form inputs (Checkbox, Radio, Select, Slider, Textarea) are kept for their native behavior and accessibility semantics.
 
-**Rule:** When adding a new palette entry, prefer `Pressable`/`Box`/`Text`/`Icon` primitives. Use Gluestack compound components only when no primitive equivalent exists. All new Gluestack compound sub-components need `REQUIRED_PARENT` / `ALLOWED_CHILDREN` entries in `_store.ts`.
+**Rule:** When adding a new palette entry, prefer `Box`/`Text`/`Icon` primitives. Use Gluestack compound components only when no primitive equivalent exists. All new Gluestack compound sub-components need `REQUIRED_PARENT` / `ALLOWED_CHILDREN` entries in `_store.ts`.
 
 ---
 
@@ -159,7 +159,7 @@ Context-dependent Gluestack sub-components crash when orphaned (they use `useSty
 - **`REQUIRED_PARENT`**: maps a sub-component type → its required parent type. Dragging out is blocked.
 - **`ALLOWED_CHILDREN`**: maps a container type → allowed child types. Dropping incompatible children is blocked.
 
-**Current guards include:** `InputField`, `InputSlot`, `SelectItem`, `SelectInput`, `SelectTrigger`, `SelectIcon`, `SelectPortal`, `SelectBackdrop`, `SelectContent`, `BadgeText`, `BadgeIcon`, `AvatarFallbackText`, `AvatarImage`, `CheckboxIndicator`, `CheckboxLabel`, `RadioIndicator`, `RadioLabel`, `FabLabel`, `FabIcon`, `SliderTrack`, `SliderFilledTrack`, `SliderThumb`, `SkeletonText`, `AlertText`, `AlertIcon`, `LinkText`, `ProgressFilledTrack`, `TextareaInput`.
+**Current guards include:** `SelectItem`, `SelectInput`, `SelectTrigger`, `SelectPortal`, `SelectBackdrop`, `SelectContent`, `CheckboxIndicator`, `CheckboxLabel`, `RadioIndicator`, `RadioLabel`, `SliderTrack`, `SliderFilledTrack`, `SliderThumb`, `SkeletonText`, `ProgressFilledTrack`, `TextareaInput`, `TooltipContent`, `TooltipText`.
 
 **Rule:** When adding any new Gluestack sub-component to the palette, also add its `REQUIRED_PARENT` and parent's `ALLOWED_CHILDREN` entry.
 
@@ -171,8 +171,8 @@ Three booleans control which design sections are shown:
 
 | Variable | Includes | Controls |
 |---|---|---|
-| `isContainer` | `Box`, `VStack`, `HStack`, `Center`, `Grid`, `GridItem`, `Card`, `Pressable`, `Checkbox`, `Radio`, `RadioGroup`, `Badge`, `Avatar`, `Fab`, `Skeleton`, `Alert`, `Link` | Alignment grid, Auto Layout section |
-| `isTextNode` | `Text`, `Heading`, `ButtonText`, `BadgeText`, `AvatarFallbackText`, `CheckboxLabel`, `RadioLabel`, `FabLabel`, `SkeletonText`, `AlertText`, `LinkText` | Typography section |
+| `isContainer` | `Box`, `VStack`, `HStack`, `Center`, `Grid`, `GridItem`, `Checkbox`, `Radio`, `RadioGroup`, `Skeleton` | Alignment grid, Auto Layout section |
+| `isTextNode` | `Text`, `Heading`, `CheckboxLabel`, `RadioLabel`, `SkeletonText`, `TooltipText` | Typography section |
 | `isLeafWidget` | `Input`, `Icon`, `Image`, `Textarea`, `Select`, `Slider`, `Progress`, `Spinner` | Hides Auto Layout + Alignment |
 
 **Content section:** shown for `isTextNode` nodes (edits `node.text`) and for `isContainer` nodes that have a `Text` or `Heading` child (edits the first such child's `text`).
@@ -211,7 +211,7 @@ Full section list in render order:
 2. **Dimensions** — W mode: Hug (`w-fit`) / Fill (`w-full`) / Fixed (removes fit/full). H mode: same with `h-*`. Also: Min W / Max W / Min H / Max H (inline `style.minWidth/maxWidth/minHeight/maxHeight`).
 3. **Self Alignment** — How this node aligns inside its parent flex container: `self-auto/start/center/end/stretch/baseline`
 4. **Transform** — Rotation (inline `style.transform = rotate(Ndeg)`), Flip H (`-scale-x-100`), Flip V (`-scale-y-100`)
-5. **Alignment** *(containers only)* — 9-cell grid (items-* + justify-*). Only shown for Box/VStack/HStack/Pressable.
+5. **Alignment** *(containers only)* — 9-cell grid (items-* + justify-*). Only shown for Box/VStack/HStack.
 6. **Auto Layout** *(containers only)* — Flex direction, wrap, gap (inline `style.gap`), space-between mode
 7. **Padding** — Exact pixel values via inline `style.paddingLeft/Right/Top/Bottom`. Combined H/V or individual toggle.
 8. **Margin** — Exact pixel values via inline `style.marginLeft/Right/Top/Bottom`. Combined H/V or individual toggle.
@@ -220,7 +220,7 @@ Full section list in render order:
 11. **Fill** — Background color (inline `style.backgroundColor`, initialized from computed DOM color) + bg-opacity slider
 12. **Stroke** — Border color (inline `style.borderColor`, initialized from computed DOM color), border width, border style
 13. **Effects** — Drop shadow (`shadow-*` class)
-14. **Typography** *(Text/Heading/ButtonText only)* — Size, Weight, Leading, Tracking, Text alignment, Decoration, Transform, Text color (inline `style.color`, initialized from computed DOM color)
+14. **Typography** *(Text/Heading only)* — Size, Weight, Leading, Tracking, Text alignment, Decoration, Transform, Text color (inline `style.color`, initialized from computed DOM color)
 15. **Border Radius** — 4-corner selects. All equal → single global token. Mixed → per-corner tokens.
 16. **Opacity** — Inline `style.opacity` (0–1). Slider min=5.
 17. **Selection colors** — Hex swatches from className
@@ -444,7 +444,7 @@ return className.replace(new RegExp(`(?:^|\\s)${escaped}\\S*`, 'g'), ' ')...
 
 ### 7. CONTAINER_TYPES Must Stay in Sync Across Three Files
 
-**Root cause:** `CONTAINER_TYPES` in `_canvas.tsx` and `LAYER_CONTAINER_TYPES` in `_panel-left.tsx` only contained 8 types (`Box`, `VStack`, `HStack`, `ScrollView`, `View`, `Card`, `SafeAreaView`, `Pressable`). Any type NOT in this set is treated as a leaf — you cannot drop children into it when it's empty (the `children.length > 0` fallback only helps non-empty containers).
+**Root cause:** `CONTAINER_TYPES` in `_canvas.tsx` and `LAYER_CONTAINER_TYPES` in `_panel-left.tsx` only contained a few types. Any type NOT in this set is treated as a leaf — you cannot drop children into it when it's empty (the `children.length > 0` fallback only helps non-empty containers).
 
 **Impact:** `Center`, `Grid`, `GridItem`, and all Gluestack compound containers were non-droppable when first placed on the canvas.
 
@@ -659,8 +659,8 @@ test.describe('History (Undo / Redo)', () => {
 ```
 
 **Test series:**
-- `BP-00`–`BP-44` (in `panel-interactive.spec.ts`): Pressable-based button, all right-panel controls. Replaces old `button-panel.spec.ts` (deleted).
-- `PI-01`–`PI-03`: Content section for Pressable with Text children.
+- `BP-00`–`BP-44` (in `panel-interactive.spec.ts`): Box-based button, all right-panel controls. Replaces old `button-panel.spec.ts` (deleted).
+- `PI-01`–`PI-03`: Content section for Box with Text children.
 - `PF-01`–`PF-16` (in `panel-form.spec.ts`): Input, Textarea, Checkbox, Toggle.
 - `PD-01`–`PD-11` (in `panel-display.spec.ts`): Heading, Badge, Avatar.
 - `PM-01`–`PM-10` (in `panel-media.spec.ts`): Image (placeholder, resize, src), Icon (size/color), Icon Tap.
@@ -695,7 +695,7 @@ await page.getByTestId('layer-row').first().click();
 
 ### 10. Inline text editing — double-click on canvas
 
-**Feature:** Double-clicking a `Text`, `Heading`, `ButtonText`, or any text-type node on the canvas activates **contentEditable directly on the rendered DOM element**. No floating textarea — the user edits the actual node in place. Fonts, size, color, and layout remain identical to the design.
+**Feature:** Double-clicking a `Text`, `Heading`, or any text-type node on the canvas activates **contentEditable directly on the rendered DOM element**. No floating textarea — the user edits the actual node in place. Fonts, size, color, and layout remain identical to the design.
 
 **Implementation:** `_canvas.tsx` tracks only `editingId`. On double-click, the handler walks up the DOM tree (then down into children as fallback) to find a node whose type is in `TEXT_NODE_TYPES`. It then:
 1. Sets `el.contentEditable = "true"` and adds a blue `outline` to the element.
@@ -715,9 +715,9 @@ The **capture overlay** gets `pointerEvents: 'none'` while `editingId` is set, s
 
 ### 11. Content section in right panel (text editing)
 
-**Feature:** When a `Text`, `Heading`, or any `isTextNode` is selected, a "Content" section appears at the top of the Design panel. For `isContainer` nodes (e.g. `Pressable`) that have a `Text` or `Heading` child, the section edits the first such child's `text`. Edits via `patchProp(nodeId, 'text', value)`.
+**Feature:** When a `Text`, `Heading`, or any `isTextNode` is selected, a "Content" section appears at the top of the Design panel. For `isContainer` nodes (e.g. `Box`) that have a `Text` or `Heading` child, the section edits the first such child's `text`. Edits via `patchProp(nodeId, 'text', value)`.
 
-**Rule:** Use `patchProp(id, 'text', value)` not `patchProp(id, 'props.text', value)` — the `text` field is at the node root level, not inside `props`. The Pressable→Text child pattern (primitive button) is fully supported.
+**Rule:** Use `patchProp(id, 'text', value)` not `patchProp(id, 'props.text', value)` — the `text` field is at the node root level, not inside `props`. The Box→Text child pattern (primitive button) is fully supported.
 
 ---
 
@@ -905,7 +905,7 @@ if (hit.kind === 'node') {
 
 **Rule:** Any drag-and-drop operation that could involve multiple selected nodes must use `moveNodes` (not repeated `moveNode` calls). Repeated single moves cause index drift and incorrect ordering.
 
-**Additional guard — topmost-only filter:** `moveNodes` must filter `nodeIds` to only the topmost nodes before moving. If a marquee-selection includes both a parent (e.g. `Button`) and its child (e.g. `ButtonText`), naively moving both independently inserts `ButtonText` as a sibling of `Button` — outside Gluestack's Button context — causing a hard crash (`useStyleContext` returns undefined). Fix: before collecting `nodesToMove`, walk each node's ancestor chain; if any ancestor is also in the move set, skip that node (it will ride along inside its ancestor's cloned subtree).
+**Additional guard — topmost-only filter:** `moveNodes` must filter `nodeIds` to only the topmost nodes before moving. If a marquee-selection includes both a parent and its child, naively moving both independently inserts the child as a sibling of the parent — causing broken structure. Fix: before collecting `nodesToMove`, walk each node's ancestor chain; if any ancestor is also in the move set, skip that node (it will ride along inside its ancestor's cloned subtree).
 
 ```typescript
 const nodeIdSet = new Set(nodeIds);
@@ -1071,9 +1071,9 @@ Apply this pattern to **both** the `hovEl` siblings path and the root-level `nod
 2. Edge-zone escape is intentionally kept: `const inDropZone = relY > 0.2 && relY < 0.8;` — **no** `isHomeCont` override. This allows dragging a node OUT of any container (e.g. Input out of FormContainer) by hovering near the top/bottom edge. `REQUIRED_PARENT` in `moveNode` already prevents truly context-bound nodes (e.g. InputField → Input) from escaping — the drag will silently be rejected on drop, so no visual glitch occurs.
 
   **Do NOT re-add** `isHomeCont ? true` to force the node to stay inside its home container. This was the original cause of the "can't drag Input out of FormContainer" bug.
-3. **skipIds must include full subtrees** — `draggingIdSet` must include not just the top-level dragged IDs but also every descendant. Without this, children of the dragged node (e.g. `InputField` inside `Input`) are hit by `findDropTargetElAt`. The nearest-gap algorithm then sets `parentId = dragged-node-id`, and `moveNode(node, node, …)` triggers the self-drop guard silently — preventing the move. The fix builds `draggingIdSet` with `collectSubtreeIds` before calling `findDropTargetElAt`. **Do NOT remove this expansion.**
-4. **ALLOWED_DROP_INTO check in onDragOver** — before routing to "inside container", check `ALLOWED_DROP_INTO[containerType]`. If the dragged types are not permitted (e.g. dragging `Input` over sibling `Input2` — `ALLOWED[Input]` only accepts `InputField/InputSlot/InputIcon`), fall through to "before/after in parent". Without this, `dropTargetRef` points inside the sibling, `moveNode` silently blocks it, and the user sees no drop indicator and no move.
-5. **Auto-escalation of context-bound nodes in onDragStart** — when the user clicks the visible text field (selects `InputField`) and drags, `REQUIRED_PARENT['InputField'] = 'Input'` would block the move. `onDragStart` now checks `DRAG_REQUIRED_PARENT[dragId.type]`: if set, walks up the DOM to find the required parent and escalates `dragId` to that parent. Also updates the selection so the correct node is highlighted. **Do NOT remove this — it's what makes clicking on a text input and dragging it work at all.**
+3. **skipIds must include full subtrees** — `draggingIdSet` must include not just the top-level dragged IDs but also every descendant. Without this, children of the dragged node are hit by `findDropTargetElAt`. The nearest-gap algorithm then sets `parentId = dragged-node-id`, and `moveNode(node, node, …)` triggers the self-drop guard silently — preventing the move. The fix builds `draggingIdSet` with `collectSubtreeIds` before calling `findDropTargetElAt`. **Do NOT remove this expansion.**
+4. **ALLOWED_DROP_INTO check in onDragOver** — before routing to "inside container", check `ALLOWED_DROP_INTO[containerType]`. If the dragged types are not permitted (e.g. dragging a node over a Checkbox — `ALLOWED[Checkbox]` only accepts `CheckboxIndicator/CheckboxLabel`), fall through to "before/after in parent". Without this, `dropTargetRef` points inside the sibling, `moveNode` silently blocks it, and the user sees no drop indicator and no move.
+5. **Auto-escalation of context-bound nodes in onDragStart** — when the user clicks a sub-component that has a `REQUIRED_PARENT` (e.g. `CheckboxIndicator`) and drags, the drag is escalated to the required parent so context-bound sub-components always move as a unit. `onDragStart` checks `DRAG_REQUIRED_PARENT[dragId.type]`: if set, walks up the DOM to find the required parent and escalates `dragId` to that parent. Also updates the selection so the correct node is highlighted. **Do NOT remove this — it's what makes clicking on a sub-component and dragging it work at all.**
 3. `isDroppingIntoSelf` correctly checks for cycles (hover container inside dragged subtree):
 ```typescript
 const isDroppingIntoSelf = isContainer && allDraggingIds.some(id => {
@@ -1163,27 +1163,27 @@ Same guard in `onDrop`: `if (isAbsNode && !isMultiDrag)`.
 
 ---
 
-## §29 ButtonText Crash Guard — REQUIRED_PARENT + ALLOWED_CHILDREN
+## §29 Context-Dependent Sub-Component Crash Guard — REQUIRED_PARENT + ALLOWED_CHILDREN
 
-**Root cause:** `ButtonText` uses `useStyleContext(SCOPE)` to read `variant/size/action` from its parent `Button`. Moving it outside a `Button` (via canvas DnD, layers DnD, or context menu) makes that context `undefined` → hard crash.
+**Root cause:** Gluestack sub-components like `CheckboxIndicator`, etc. use `useStyleContext(SCOPE)` to read styling from their parent. Moving them outside their required parent makes that context `undefined` → hard crash.
 
 **Fix:** `moveNode` in `_store.ts` validates both directions before any tree mutation:
 ```typescript
 // Node requires a specific parent type
-const REQUIRED_PARENT: Record<string, string> = { ButtonText: 'Button' };
+const REQUIRED_PARENT: Record<string, string> = { CheckboxIndicator: 'Checkbox' /* ... */ };
 if (REQUIRED_PARENT[node.type]) {
   const newParent = newParentId ? findNode(s.pageNodes, newParentId) : null;
   if (!newParent || newParent.type !== REQUIRED_PARENT[node.type]) return s;
 }
 // Parent only accepts specific child types
-const ALLOWED: Record<string, Set<string>> = { Button: new Set(['ButtonText', 'Icon']) };
+const ALLOWED: Record<string, Set<string>> = { Checkbox: new Set(['CheckboxIndicator', 'CheckboxLabel']) };
 if (newParentId) {
   const newParent = findNode(s.pageNodes, newParentId);
   if (newParent && ALLOWED[newParent.type] && !ALLOWED[newParent.type].has(node.type)) return s;
 }
 ```
 
-**Rule:** Any time you add a Gluestack compound component (like `CheckboxIndicator`, `RadioIndicator`, etc.) that uses `useStyleContext`, add it to `REQUIRED_PARENT` and the parent type to `ALLOWED` in `_store.ts`. The crash will occur even in the live preview — the guard must be in the store, not just the UI.
+**Rule:** Any time you add a Gluestack compound component that uses `useStyleContext`, add it to `REQUIRED_PARENT` and the parent type to `ALLOWED` in `_store.ts`.
 
 ---
 
@@ -1266,7 +1266,7 @@ For flow nodes, the target index additionally skips over any `absolute`/`fixed` 
 
 **Root cause (two cases):**
 
-**Case A:** Hovering over another absolute node (e.g. dragging abs-button1 over abs-button2). If button2 has a `ButtonText` child, `hovIsContainer = true`. The code set `effectiveParentId = hovId` (button2), treating it as a drop container. When the cursor touched button2's top edge and briefly exited, `effectiveParentId` flipped to `null` (same as `currentParentId`), clearing the container highlight.
+**Case A:** Hovering over another absolute node (e.g. dragging abs-button1 over abs-button2). If button2 has a `Text` child, `hovIsContainer = true`. The code set `effectiveParentId = hovId` (button2), treating it as a drop container. When the cursor touched button2's top edge and briefly exited, `effectiveParentId` flipped to `null` (same as `currentParentId`), clearing the container highlight.
 
 **Fix A:** After computing `hovIsContainer`, also check if the hovered node is itself `absolute`/`fixed`. If it is, skip the container path:
 ```typescript
@@ -1279,7 +1279,7 @@ if (hovIsContainer && !hovIsAbs) {
 }
 ```
 
-**Case B:** Cursor moves over `ButtonText` (inside an abs `Button`). `ButtonText` is not abs, so `hovIsAbs = false`. Resolving `leafParent = Button` returns the abs Button as parent — same problem.
+**Case B:** Cursor moves over a `Text` child inside an abs `Box`. `Text` is not abs, so `hovIsAbs = false`. Resolving `leafParent = Box` returns the abs Box as parent — same problem.
 
 **Fix B:** In the `else` branch, walk up the ancestor chain until finding a non-absolute parent:
 ```typescript
@@ -1331,7 +1331,7 @@ nodeEl.style.top  = `${liveTop}px`;
 ## Component Type Classification (Right Panel)
 
 ```ts
-const isContainer  = ['Box', 'VStack', 'HStack', 'Pressable'].includes(node.type);
+const isContainer  = ['Box', 'VStack', 'HStack', 'Box'].includes(node.type);
 const isTextNode   = ['Text', 'Heading', 'ButtonText'].includes(node.type);
 const isLeafWidget = ['Button', 'Input', 'Switch', 'Checkbox', 'Icon', 'Image'].includes(node.type);
 const showPadding  = !isTextNode;
@@ -2009,20 +2009,20 @@ export interface SDUINode {
 The Settings tab shows for every node type. Top-level structure:
 
 1. **Name** — always at the very top; edits `node.name` and syncs `node.props.name` (the auto-tracking key)
-2. **Input type** (Input / InputField only) — dropdown to set `props.type` / `props.inputMode`
-3. **Placeholder** (Input / InputField only) — edits `props.placeholder`
-4. **Initial value** (Input / InputField only) — edits `node._initialValue`; propagated to `FormContainer.props.initialFormData` via `patchInitialValue`
-5. **Browser autofill** (Input / InputField only) — edits `props.autoComplete`
-6. **Debounce** (Input / InputField only) — toggle + delay ms input; edits `node._debounce`
-7. **Validation trigger** (Input / InputField only) — "On submit" / "On input change"
-8. **Validation rules** (Input / InputField only) — list of `ValidationRule` items
+2. **Input type** (Input only) — dropdown to set `props.type` / `props.inputMode`
+3. **Placeholder** (Input only) — edits `props.placeholder`
+4. **Initial value** (Input only) — edits `node._initialValue`; propagated to `FormContainer.props.initialFormData` via `patchInitialValue`
+5. **Browser autofill** (Input only) — edits `props.autoComplete`
+6. **Debounce** (Input only) — toggle + delay ms input; edits `node._debounce`
+7. **Validation trigger** (Input only) — "On submit" / "On input change"
+8. **Validation rules** (Input only) — list of `ValidationRule` items
 9. **Submit type** (Button only) — on/off toggle; sets `node.props.submitType = 'submit'`
 
 ### Name field sync
 
 When the user edits the name field, two things must happen simultaneously:
 - `store.patchNodeField(nodeId, 'name', newName)` — update the display name
-- `store.patchNodeField(nodeId, 'props', { ...nodeProps, name: newName })` — update `node.props.name` (the key `ControlledInputField` uses for auto-tracking)
+- `store.patchNodeField(nodeId, 'props', { ...nodeProps, name: newName })` — update `node.props.name` (the key `InputWithField` uses for auto-tracking)
 
 **Rule:** `node.props.name` is the single source of truth for field identity. It determines the key in `local.data.form.formData` where the value is written. Changing it MUST also rename the key in `FormContainer.props.initialFormData` so the formula path stays in sync.
 

@@ -38,9 +38,9 @@
             "text": "Add some items to your cart to get started"
           },
           {
-            "type": "Pressable",
+            "type": "Box",
             "props": {
-              "className": "!bg-[var(--theme-shop-button)] hover:!bg-[var(--theme-shop-buttonHover)] px-6 flex flex-row items-center justify-center py-3 rounded-md"
+              "className": "!bg-[var(--theme-primary)] hover:!bg-[var(--theme-primary)] px-6 flex flex-row items-center justify-center py-3 rounded-md"
             },
             "children": [
               {
@@ -87,11 +87,11 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex flex-col sm:flex-row gap-4 p-4 border border-[var(--theme-border)] rounded-lg !bg-[var(--theme-content-bg)]"
+                      "className": "flex flex-col sm:flex-row gap-4 p-4 border border-[var(--theme-border)] rounded-lg !bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
-                        "type": "Pressable",
+                        "type": "Box",
                         "props": {
                           "className": "flex-shrink-0"
                         },
@@ -120,7 +120,7 @@
                         },
                         "children": [
                           {
-                            "type": "Pressable",
+                            "type": "Box",
                             "props": {
                               "className": "font-semibold hover:underline block"
                             },
@@ -164,9 +164,9 @@
                                 },
                                 "children": [
                                   {
-                                    "type": "Pressable",
+                                    "type": "Box",
                                     "props": {
-                                      "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-[var(--theme-hero-bg)] rounded-none disabled:opacity-50 flex-row"
+                                      "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-[var(--theme-muted)] rounded-none disabled:opacity-50 flex-row"
                                     },
                                     "condition": "context?.item?.data?.quantity > 1",
                                     "children": [
@@ -185,9 +185,9 @@
                                     ]
                                   },
                                   {
-                                    "type": "Pressable",
+                                    "type": "Box",
                                     "props": {
-                                      "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-[var(--theme-hero-bg)] rounded-none disabled:opacity-50 flex-row"
+                                      "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-[var(--theme-muted)] rounded-none disabled:opacity-50 flex-row"
                                     },
                                     "condition": "(context?.item?.data?.quantity || 0) === 1",
                                     "children": [
@@ -213,9 +213,9 @@
                                     "text": "{{context.item.data.quantity}}"
                                   },
                                   {
-                                    "type": "Pressable",
+                                    "type": "Box",
                                     "props": {
-                                      "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-[var(--theme-hero-bg)] rounded-none flex-row"
+                                      "className": "h-9 w-9 p-0 flex items-center justify-center border-0 !bg-transparent hover:!bg-[var(--theme-muted)] rounded-none flex-row"
                                     },
                                     "children": [
                                       {
@@ -233,7 +233,7 @@
                                     ]
                                   },
                                   {
-                                    "type": "Pressable",
+                                    "type": "Box",
                                     "props": {
                                       "className": "h-9 w-9 p-0 flex items-center justify-center !bg-transparent border-0 hover:!bg-red-50 rounded-none flex-row"
                                     },
@@ -325,7 +325,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "border border-[var(--theme-border)] rounded-lg p-6 bg-[var(--theme-content-bg)] sticky top-4 h-fit"
+                  "className": "border border-[var(--theme-border)] rounded-lg p-6 bg-[var(--theme-card)] sticky top-4 h-fit"
                 },
                 "children": [
                   {
@@ -441,9 +441,9 @@
                     ]
                   },
                   {
-                    "type": "Pressable",
+                    "type": "Box",
                     "props": {
-                      "className": "w-full !bg-[var(--theme-shop-button)] hover:!bg-[var(--theme-shop-buttonHover)] h-11 text-base font-medium flex flex-row items-center justify-center rounded-md"
+                      "className": "w-full !bg-[var(--theme-primary)] hover:!bg-[var(--theme-primary)] h-11 text-base font-medium flex flex-row items-center justify-center rounded-md"
                     },
                     "children": [
                       {
@@ -461,9 +461,9 @@
                     ]
                   },
                   {
-                    "type": "Pressable",
+                    "type": "Box",
                     "props": {
-                      "className": "w-full mt-2 border border-[var(--theme-border)] !bg-[var(--theme-content-bg)] hover:!bg-[var(--theme-hero-bg)] h-10 flex flex-row items-center justify-center rounded-md"
+                      "className": "w-full mt-2 border border-[var(--theme-border)] !bg-[var(--theme-card)] hover:!bg-[var(--theme-muted)] h-10 flex flex-row items-center justify-center rounded-md"
                     },
                     "children": [
                       {
@@ -485,7 +485,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "border border-[var(--theme-border)] rounded-lg p-6 bg-[var(--theme-content-bg)]"
+                  "className": "border border-[var(--theme-border)] rounded-lg p-6 bg-[var(--theme-card)]"
                 },
                 "children": [
                   {
@@ -563,7 +563,7 @@
                                 ]
                               },
                               {
-                                "type": "Pressable",
+                                "type": "Box",
                                 "props": {
                                   "className": "h-8 !bg-transparent hover:!bg-red-50 flex flex-row items-center justify-center px-4 rounded-md"
                                 },
@@ -601,23 +601,15 @@
                         "props": {
                           "variant": "outline",
                           "size": "sm",
-                          "className": "flex-1 !rounded-md !border-[var(--theme-border)] !bg-[var(--theme-content-bg)]"
-                        },
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "props": {
-                              "placeholder": "Enter code",
-                              "value": "{{local.data.form.formData.couponCode}}",
-                              "className": "!text-[var(--theme-foreground)]"
-                            }
-                          }
-                        ]
+                          "className": "!text-[var(--theme-foreground)]",
+                          "placeholder": "Enter code",
+                          "value": "{{local.data.form.formData.couponCode}}"
+                        }
                       },
                       {
-                        "type": "Pressable",
+                        "type": "Box",
                         "props": {
-                          "className": "!bg-[var(--theme-shop-button)] hover:!bg-[var(--theme-shop-buttonHover)] px-4 flex flex-row items-center justify-center py-3 rounded-md"
+                          "className": "!bg-[var(--theme-primary)] hover:!bg-[var(--theme-primary)] px-4 flex flex-row items-center justify-center py-3 rounded-md"
                         },
                         "children": [
                           {

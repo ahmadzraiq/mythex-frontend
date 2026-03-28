@@ -51,7 +51,7 @@
                         "text": "Filters"
                       },
                       {
-                        "type": "Pressable",
+                        "type": "Box",
                         "condition": "arrayLength(route?.facets || []) > 0",
                         "props": {
                           "className": "text-sm text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] transition-colors"
@@ -111,7 +111,7 @@
                                 },
                                 "children": [
                                   {
-                                    "type": "Pressable",
+                                    "type": "Box",
                                     "props": {
                                       "className": "flex flex-row items-center gap-2 cursor-pointer group"
                                     },
@@ -132,7 +132,7 @@
                                       {
                                         "type": "Box",
                                         "props": {
-                                          "className": "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors bg-[var(--theme-shop-button)] border-[var(--theme-shop-button)]"
+                                          "className": "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors bg-[var(--theme-primary)] border-[var(--theme-primary)]"
                                         },
                                         "condition": "arrayIncludes(route?.facets || [], context?.item?.data?.facetValue?.id)",
                                         "children": [
@@ -202,7 +202,7 @@
                     },
                     "children": [
                       {
-                        "type": "Pressable",
+                        "type": "Box",
                         "props": {
                           "className": "fixed inset-0 z-[9998]"
                         },
@@ -214,9 +214,9 @@
                         ]
                       },
                       {
-                        "type": "Pressable",
+                        "type": "Box",
                         "props": {
-                          "className": "relative z-50 flex flex-row items-center gap-2 h-9 px-3 rounded-md border border-[var(--theme-border)] bg-[var(--theme-content-bg)] hover:bg-[var(--theme-hero-bg)] min-w-[180px] justify-between"
+                          "className": "relative z-50 flex flex-row items-center gap-2 h-9 px-3 rounded-md border border-[var(--theme-border)] bg-[var(--theme-card)] hover:bg-[var(--theme-muted)] min-w-[180px] justify-between"
                         },
                         "actions": [
                           {
@@ -247,13 +247,13 @@
                         "type": "Box",
                         "condition": "variables['c8d9e0f1-a2b3-4567-cdef-678901234567']",
                         "props": {
-                          "className": "absolute right-0 top-full mt-1 min-w-[180px] rounded-md border border-[var(--theme-border)] bg-[var(--theme-content-bg)] shadow-md z-[9999] py-1"
+                          "className": "absolute right-0 top-full mt-1 min-w-[180px] rounded-md border border-[var(--theme-border)] bg-[var(--theme-card)] shadow-md z-[9999] py-1"
                         },
                         "children": [
                           {
-                            "type": "Pressable",
+                            "type": "Box",
                             "props": {
-                              "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-[var(--theme-hero-bg)]"
+                              "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-[var(--theme-muted)]"
                             },
                             "actions": [
                               {
@@ -280,9 +280,9 @@
                             ]
                           },
                           {
-                            "type": "Pressable",
+                            "type": "Box",
                             "props": {
-                              "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-[var(--theme-hero-bg)]"
+                              "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-[var(--theme-muted)]"
                             },
                             "actions": [
                               {
@@ -309,9 +309,9 @@
                             ]
                           },
                           {
-                            "type": "Pressable",
+                            "type": "Box",
                             "props": {
-                              "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-[var(--theme-hero-bg)]"
+                              "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-[var(--theme-muted)]"
                             },
                             "actions": [
                               {
@@ -338,9 +338,9 @@
                             ]
                           },
                           {
-                            "type": "Pressable",
+                            "type": "Box",
                             "props": {
-                              "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-[var(--theme-hero-bg)]"
+                              "className": "flex flex-row items-center justify-between w-full px-3 py-2 hover:bg-[var(--theme-muted)]"
                             },
                             "actions": [
                               {

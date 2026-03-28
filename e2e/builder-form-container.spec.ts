@@ -157,14 +157,12 @@ test.describe('FC — FormContainer Palette & Store', () => {
         {
           type: 'Input',
           id: 'fc03-i1',
-          props: {},
-          children: [{ type: 'InputField', id: 'fc03-f1', props: { placeholder: 'Email', name: 'email' } }],
+          props: { placeholder: 'Email', name: 'email' },
         },
         {
           type: 'Input',
           id: 'fc03-i2',
-          props: {},
-          children: [{ type: 'InputField', id: 'fc03-f2', props: { placeholder: 'Password', name: 'password' } }],
+          props: { placeholder: 'Password', name: 'password' },
         },
         {
           type: 'Button',
@@ -547,10 +545,7 @@ test.describe('FC — Drag Input out of FormContainer', () => {
             {
               type: 'Input',
               id: 'fc15-input',
-              props: { variant: 'outline', size: 'md' },
-              children: [
-                { type: 'InputField', id: 'fc15-inputfield', props: { placeholder: 'Email' } }
-              ]
+              props: { variant: 'outline', size: 'md', placeholder: 'Email' },
             }
           ]
         },
@@ -605,12 +600,12 @@ test.describe('FC — Drag Input out of FormContainer', () => {
   });
 
   /**
-   * FC-16: moveNode (store-level) — InputField CANNOT escape its Input parent.
+   * FC-16: moveNode (store-level) — Input can be moved to root (no REQUIRED_PARENT constraint).
    *
-   * InputField has REQUIRED_PARENT['InputField'] = 'Input', so moving it out
-   * of Input to root must be blocked (moveNode returns state unchanged).
+   * Input is a flat component with no REQUIRED_PARENT rule, so moving it from
+   * inside a Box to root must succeed.
    */
-  test('FC-16: moveNode — InputField cannot escape its Input (REQUIRED_PARENT guard)', async ({ page }) => {
+  test('FC-16: moveNode — Input can move to root (no REQUIRED_PARENT constraint)', async ({ page }) => {
     await gotoBuilder(page);
 
     await page.evaluate(() => {
@@ -619,11 +614,11 @@ test.describe('FC — Drag Input out of FormContainer', () => {
       if (!store) return;
       (store.addNode as (n: unknown, p: null) => void)(
         {
-          type: 'Input',
-          id: 'fc16-input',
-          props: { variant: 'outline' },
+          type: 'Box',
+          id: 'fc16-box',
+          props: { className: 'flex flex-col gap-2' },
           children: [
-            { type: 'InputField', id: 'fc16-inputfield', props: { placeholder: 'Email' } }
+            { type: 'Input', id: 'fc16-input', props: { placeholder: 'Email', name: 'email' } }
           ]
         },
         null
@@ -640,13 +635,13 @@ test.describe('FC — Drag Input out of FormContainer', () => {
         return false;
       }
       const store = (window as unknown as Record<string, { getState: () => { pageNodes: unknown[] } }>).__builderStore?.getState();
-      return find(store?.pageNodes ?? [], 'fc16-inputfield');
+      return find(store?.pageNodes ?? [], 'fc16-input');
     }, {}, { timeout: 5_000 });
 
-    // Try to move InputField to root — should be blocked
+    // Move Input to root — should succeed (no REQUIRED_PARENT)
     await page.evaluate(() => {
       const store = (window as unknown as Record<string, { getState: () => { moveNode: (a: string, b: string | null, c: number) => void } }>).__builderStore?.getState();
-      store?.moveNode('fc16-inputfield', null, 1);
+      store?.moveNode('fc16-input', null, 1);
     });
     await page.waitForTimeout(200);
 
@@ -654,11 +649,11 @@ test.describe('FC — Drag Input out of FormContainer', () => {
       const store = (window as unknown as Record<string, { getState: () => { pageNodes: Array<{ id: string; type: string }> } }>).__builderStore?.getState();
       return store?.pageNodes.map(n => ({ id: n.id, type: n.type }));
     });
-    console.log('Root nodes (InputField should NOT appear here):', JSON.stringify(rootAfter));
-    const inputFieldAtRoot = rootAfter?.some(n => n.id === 'fc16-inputfield');
-    expect(inputFieldAtRoot).toBe(false); // Must remain inside Input
+    console.log('Root nodes after move:', JSON.stringify(rootAfter));
+    const inputAtRoot = rootAfter?.some(n => n.id === 'fc16-input');
+    expect(inputAtRoot).toBe(true); // Must now be at root
 
-    console.log('✅ InputField correctly blocked from escaping Input by REQUIRED_PARENT guard');
+    console.log('✅ Input correctly moved to root (no REQUIRED_PARENT guard blocks it)');
   });
 
   /**
@@ -679,7 +674,7 @@ test.describe('FC — Drag Input out of FormContainer', () => {
   test('FC-17: Store — Input inside FormContainer can move to root (subtree-skipIds logic)', async ({ page }) => {
     await gotoBuilder(page);
 
-    // Set up: FormContainer at root with Input containing InputField
+    // Set up: FormContainer at root with flat Input
     await page.evaluate(() => {
       const bs = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore;
       const store = bs?.getState();
@@ -693,10 +688,7 @@ test.describe('FC — Drag Input out of FormContainer', () => {
             {
               type: 'Input',
               id: 'fc17-input',
-              props: { variant: 'outline', size: 'md' },
-              children: [
-                { type: 'InputField', id: 'fc17-inputfield', props: { placeholder: 'Email' } }
-              ]
+              props: { variant: 'outline', size: 'md', placeholder: 'Email' },
             }
           ]
         },
@@ -783,14 +775,12 @@ test.describe('FC — Drag Input out of FormContainer', () => {
             {
               type: 'Input',
               id: 'fc18-input1',
-              props: { variant: 'outline' },
-              children: [{ type: 'InputField', id: 'fc18-if1', props: { placeholder: 'Email' } }]
+              props: { variant: 'outline', placeholder: 'Email' },
             },
             {
               type: 'Input',
               id: 'fc18-input2',
-              props: { variant: 'outline' },
-              children: [{ type: 'InputField', id: 'fc18-if2', props: { placeholder: 'Password' } }]
+              props: { variant: 'outline', placeholder: 'Password' },
             }
           ]
         },
@@ -842,17 +832,13 @@ test.describe('FC — Drag Input out of FormContainer', () => {
   });
 
   /**
-   * FC-19: moveNode — InputField selected, then drag escalates to Input parent.
+   * FC-19: moveNode — Input at root can move back inside FormContainer.
    *
-   * The user clicks the visible text field (which selects InputField, not Input),
-   * then tries to drag it out. Without escalation, REQUIRED_PARENT blocks the move.
-   * With escalation: onDragStart detects InputField has REQUIRED_PARENT['InputField']='Input',
-   * walks up to Input, and drags Input instead.
-   *
-   * At the store level: moveNode(InputField.id, null) must be blocked (it stays
-   * inside Input). Moving Input.id to null must succeed.
+   * Verifies the reverse of FC-15: an Input that is at root level can be
+   * moved inside a FormContainer. The ALLOWED guard for FormContainer includes
+   * Input, so this move must succeed.
    */
-  test('FC-19: Store — InputField blocked at root, but its parent Input can move out', async ({ page }) => {
+  test('FC-19: Store — Input at root can move inside FormContainer (ALLOWED)', async ({ page }) => {
     await gotoBuilder(page);
 
     await page.evaluate(() => {
@@ -864,17 +850,12 @@ test.describe('FC — Drag Input out of FormContainer', () => {
           type: 'FormContainer',
           id: 'fc19-form',
           props: { className: 'flex flex-col gap-4 w-full' },
-          children: [
-            {
-              type: 'Input',
-              id: 'fc19-input',
-              props: { variant: 'outline' },
-              children: [
-                { type: 'InputField', id: 'fc19-inputfield', props: { placeholder: 'Email' } }
-              ]
-            }
-          ]
+          children: [],
         },
+        null
+      );
+      (store.addNode as (n: unknown, p: null) => void)(
+        { type: 'Input', id: 'fc19-input', props: { placeholder: 'Email', name: 'email' } },
         null
       );
     });
@@ -889,29 +870,20 @@ test.describe('FC — Drag Input out of FormContainer', () => {
         return false;
       }
       const store = (window as unknown as Record<string, { getState: () => { pageNodes: unknown[] } }>).__builderStore?.getState();
-      return find(store?.pageNodes ?? [], 'fc19-inputfield');
+      return find(store?.pageNodes ?? [], 'fc19-input');
     }, {}, { timeout: 5_000 });
 
-    // Attempt 1: move InputField to root — must be BLOCKED (REQUIRED_PARENT)
-    await page.evaluate(() => {
-      const store = (window as unknown as Record<string, { getState: () => { moveNode: (a: string, b: string | null, c: number) => void } }>).__builderStore?.getState();
-      store?.moveNode('fc19-inputfield', null, 1);
-    });
-    await page.waitForTimeout(200);
-
-    const inputFieldAtRoot = await page.evaluate(() => {
+    // Verify Input starts at root
+    const inputAtRootBefore = await page.evaluate(() => {
       const store = (window as unknown as Record<string, { getState: () => { pageNodes: Array<{ id: string }> } }>).__builderStore?.getState();
-      return store?.pageNodes.some(n => n.id === 'fc19-inputfield') ?? false;
+      return store?.pageNodes.some(n => n.id === 'fc19-input') ?? false;
     });
-    expect(inputFieldAtRoot).toBe(false); // Must stay inside Input
-    console.log('✅ InputField cannot move to root (REQUIRED_PARENT blocks)');
+    expect(inputAtRootBefore).toBe(true);
 
-    // Attempt 2: move Input (the container) to root — must SUCCEED
-    // This is what onDragStart escalation achieves: even if user selected InputField,
-    // the drag uses Input.id after escalation.
+    // Move Input inside FormContainer — must SUCCEED
     await page.evaluate(() => {
       const store = (window as unknown as Record<string, { getState: () => { moveNode: (a: string, b: string | null, c: number) => void } }>).__builderStore?.getState();
-      store?.moveNode('fc19-input', null, 1);
+      store?.moveNode('fc19-input', 'fc19-form', 0);
     });
     await page.waitForTimeout(200);
 
@@ -919,11 +891,11 @@ test.describe('FC — Drag Input out of FormContainer', () => {
       const store = (window as unknown as Record<string, { getState: () => { pageNodes: Array<{ id: string; type: string }> } }>).__builderStore?.getState();
       return store?.pageNodes.map(n => ({ id: n.id, type: n.type }));
     });
-    console.log('Root nodes after escalated move:', JSON.stringify(rootNodes));
+    console.log('Root nodes after move into FormContainer:', JSON.stringify(rootNodes));
 
     const inputAtRoot = rootNodes?.some(n => n.id === 'fc19-input');
-    expect(inputAtRoot).toBe(true); // Input must now be at root
-    console.log('✅ Input (escalated from InputField drag) successfully moved to root');
+    expect(inputAtRoot).toBe(false); // Input must now be inside FormContainer, not at root
+    console.log('✅ Input successfully moved inside FormContainer (ALLOWED guard permits it)');
   });
 });
 

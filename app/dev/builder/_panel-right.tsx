@@ -45,6 +45,7 @@ import { SettingsTab, AlignDistributePanel } from './_panel-right-settings';
 import { PreviewDataEditor, ElementWorkflowsTab } from './_panel-right-workflows';
 import { AnimationInDesign } from './_animation-panel';
 import { useBuilderStore, findParentNode } from './_store';
+import { findNode } from './_store-node-helpers';
 import { updatePopup as updatePopupData } from '@/lib/builder/popup-data';
 import { usePopupStore } from '@/lib/sdui/popup-store';
 import { WorkflowBindButton, toHumanName } from './_workflow-canvas'; // used only for unbound slot picker
@@ -60,6 +61,7 @@ import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import { FigmaColorPicker } from './_color-picker';
 import {
+  STYLE_TO_CLASS_KEYS,
   parseTwToken,
   parseTwArbitrary,
   replaceTwToken,
@@ -227,16 +229,21 @@ function DesignTab({ node }: { node: SDUINode }) {
         return null;
       }
       const nodeData = readNodeData(useBuilderStore.getState().pageNodes) ?? { className: '', style: {} };
-      // Also write className for export portability (arbitrary value classes as Tailwind tokens)
-      const newCls = styleToClassName(pendingStyleRef.current, nodeData.className);
-      store.patchProp(id, 'props.className', newCls);
-      // Keep props.style for reliable rendering — Tailwind's safelist can't pre-compile
-      // runtime-only arbitrary values (e.g. w-[317px], rotate-[23deg]). Inline style
-      // guarantees correct display in both the canvas and the preview page.
-      const mergedStyle = Object.fromEntries(
-        Object.entries({ ...nodeData.style, ...pendingStyleRef.current }).filter(([, v]) => v !== ''),
+      // Merge ALL existing + new style; convert everything expressible to className.
+      // Passing the full merged object (not just pending) ensures existing inline styles
+      // on the node are also migrated to classes on the next edit.
+      const allStyle = Object.fromEntries(
+        Object.entries({ ...nodeData.style, ...pendingStyleRef.current })
+          .filter(([, v]) => v !== '' && typeof v === 'string'),
       );
-      store.patchProp(id, 'props.style', mergedStyle);
+      const newCls = styleToClassName(allStyle, nodeData.className);
+      store.patchProp(id, 'props.className', newCls);
+      // Only persist style properties that styleToClassName cannot encode as classes
+      // (e.g. transform/rotation stays inline by design).
+      const cleanStyle = Object.fromEntries(
+        Object.entries(allStyle).filter(([k]) => !STYLE_TO_CLASS_KEYS.has(k)),
+      );
+      store.patchProp(id, 'props.style', Object.keys(cleanStyle).length ? cleanStyle : {});
       pendingStyleRef.current = {};
       styleFlushTimer.current = null;
       commitHistory();
@@ -370,12 +377,16 @@ function DesignTab({ node }: { node: SDUINode }) {
             return null;
           }
           const nodeData = readNodeDataFlush(useBuilderStore.getState().pageNodes) ?? { className: '', style: {} };
-          const newCls = styleToClassName(pendingStyleRef.current, nodeData.className);
-          store.patchProp(id, 'props.className', newCls);
-          const mergedStyle = Object.fromEntries(
-            Object.entries({ ...nodeData.style, ...pendingStyleRef.current }).filter(([, v]) => v !== ''),
+          const allStyleFlush = Object.fromEntries(
+            Object.entries({ ...nodeData.style, ...pendingStyleRef.current })
+              .filter(([, v]) => v !== '' && typeof v === 'string'),
           );
-          store.patchProp(id, 'props.style', mergedStyle);
+          const newCls = styleToClassName(allStyleFlush, nodeData.className);
+          store.patchProp(id, 'props.className', newCls);
+          const cleanStyleFlush = Object.fromEntries(
+            Object.entries(allStyleFlush).filter(([k]) => !STYLE_TO_CLASS_KEYS.has(k)),
+          );
+          store.patchProp(id, 'props.style', Object.keys(cleanStyleFlush).length ? cleanStyleFlush : {});
           pendingStyleRef.current = {};
         }
         styleFlushTimer.current = null;
@@ -423,8 +434,12 @@ function DesignTab({ node }: { node: SDUINode }) {
     // Use rgb(var(--X)) so Tailwind generates: background-color: rgb(var(--X))
     // which correctly resolves the R G B triplet CSS variable format used by ThemeStyles.
     const newCls = `${next} ${clsPrefix}-[${cssVarValue}]`.trim();
-    // Atomic Zustand update: clear inline style so the class wins, update className
-    store.patchProp(nodeId, stylePropPath, '');
+    // Atomic Zustand update: remove the inline style prop (don't write '' — empty strings linger),
+    // then update className so the CSS-var class wins.
+    const existingNode = findNode(useBuilderStore.getState().pageNodes, nodeId);
+    const currentStyle = (existingNode?.props as { style?: Record<string, string> })?.style ?? {};
+    const { [cssProp]: _removed, ...cleanedStyle } = currentStyle as Record<string, string>;
+    store.patchProp(nodeId, 'props.style', cleanedStyle);
     store.patchProp(nodeId, 'props.className', newCls);
     commitHistory();
   }, [nodeId, cls, store, commitHistory]);
@@ -512,9 +527,9 @@ function DesignTab({ node }: { node: SDUINode }) {
   // per node type to avoid corrupting Gluestack's internal layout.
   // Containers: show Auto Layout + Alignment sections so children can be rearranged.
   // Includes Gluestack compounds whose children ARE real SDUI nodes (Checkbox, Radio, Badge, Avatar, Fab).
-  const isContainer  = ['Box', 'VStack', 'HStack', 'Center', 'Grid', 'GridItem', 'Card', 'Pressable', 'Checkbox', 'CheckboxGroup', 'Radio', 'RadioGroup', 'Badge', 'Avatar', 'Fab', 'Skeleton', 'Alert', 'Link', 'Modal', 'ModalContent', 'ModalHeader', 'ModalBody', 'ModalFooter', 'Tooltip', 'AlertDialog', 'AlertDialogContent', 'AlertDialogHeader', 'AlertDialogBody', 'AlertDialogFooter', 'FormContainer'].includes(node.type);
+  const isContainer  = ['Box', 'VStack', 'HStack', 'Center', 'Grid', 'GridItem', 'Checkbox', 'CheckboxGroup', 'Radio', 'RadioGroup', 'Skeleton', 'Tooltip', 'FormContainer'].includes(node.type);
   // CheckboxLabel / RadioLabel etc. are text nodes — show Typography section when selected
-  const isTextNode   = ['Text', 'Heading', 'ButtonText', 'CheckboxLabel', 'RadioLabel', 'BadgeText', 'FabLabel', 'AvatarFallbackText', 'SkeletonText', 'AlertText', 'LinkText', 'TooltipText', 'ModalCloseButton'].includes(node.type);
+  const isTextNode   = ['Text', 'Heading', 'CheckboxLabel', 'RadioLabel', 'SkeletonText', 'TooltipText'].includes(node.type);
   // Padding/border-radius make sense for containers + button-like widgets, not raw text
   const showPadding  = !isTextNode;
   // Auto Layout (flex dir, gap) and Alignment only make sense for flex containers
@@ -596,15 +611,12 @@ function DesignTab({ node }: { node: SDUINode }) {
 
   // ── Text content helpers ─────────────────────────────────────────────────────
   // For Text / Heading / ButtonText nodes we expose their `text` prop directly.
-  // For Button find the first ButtonText child; for other containers (e.g. Pressable)
+  // For Button find the first ButtonText child; for other containers (Box-based buttons)
   // find the first Text/Heading child so primitive buttons get a Content section too.
   const hasDirectText = isTextNode && (node as { text?: string }).text !== undefined;
-  const buttonTextChild =
-    node.type === 'Button'
-      ? (node.children as SDUINode[] | undefined)?.find(c => c.type === 'ButtonText')
-      : isContainer
-        ? (node.children as SDUINode[] | undefined)?.find(c => c.type === 'Text' || c.type === 'Heading')
-        : null;
+  const buttonTextChild = isContainer
+    ? (node.children as SDUINode[] | undefined)?.find(c => c.type === 'Text' || c.type === 'Heading')
+    : null;
   const hasContent = hasDirectText || !!buttonTextChild;
 
   // Convert a stored text string → FormulaValue for FieldWithBinding.

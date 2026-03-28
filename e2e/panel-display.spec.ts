@@ -3,7 +3,7 @@
  *
  * Covers right-panel behavior for display-related components:
  *   PD-01..05  Heading  — typography section visibility, font controls
- *   PD-06..08  Badge    — container layout controls, BadgeText typography
+ *   PD-06..08  Box (badge-styled) — container layout controls, className styling
  *   PD-09..11  Avatar   — resize, border-radius
  *
  * Each describe block shares ONE browser page (opened in beforeAll) and
@@ -46,15 +46,15 @@ const DISPLAY_NODES: Record<string, unknown> = {
   },
   Badge: {
     id: 'test-badge',
-    type: 'Badge',
+    type: 'Box',
     props: { className: 'flex flex-row items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary' },
-    children: [{ id: 'test-badge-text', type: 'BadgeText', props: { className: 'text-xs font-medium text-primary-foreground' }, text: 'Badge' }],
+    children: [{ id: 'test-badge-text', type: 'Text', props: { className: 'text-xs font-medium text-primary-foreground' }, text: 'Badge' }],
   },
   Avatar: {
     id: 'test-avatar',
-    type: 'Avatar',
-    props: { className: 'w-12 h-12 rounded-full' },
-    children: [{ id: 'test-avatar-fallback', type: 'AvatarFallbackText', text: 'AB', props: { className: 'text-sm font-medium text-primary-foreground' } }],
+    type: 'Box',
+    props: { className: 'w-12 h-12 rounded-full bg-muted flex items-center justify-center' },
+    children: [{ id: 'test-avatar-fallback', type: 'Text', text: 'AB', props: { className: 'text-sm font-medium text-primary-foreground' } }],
   },
   Spinner: {
     id: 'test-spinner',
@@ -69,16 +69,16 @@ const DISPLAY_NODES: Record<string, unknown> = {
   },
   Alert: {
     id: 'test-alert',
-    type: 'Alert',
+    type: 'Box',
     props: { className: 'flex flex-row items-start gap-3 p-4 rounded-md bg-amber-50 border border-amber-200', style: { width: '300px' } },
     children: [
       { id: 'test-alert-icon', type: 'Icon', props: { icon: 'lucide:alert-circle', size: 18, color: '#d97706' } },
-      { id: 'test-alert-text', type: 'AlertText', text: 'This is an alert message.', props: { className: 'text-sm text-amber-800' } },
+      { id: 'test-alert-text', type: 'Text', text: 'This is an alert message.', props: { className: 'text-sm text-amber-800' } },
     ],
   },
   Chip: {
     id: 'test-chip',
-    type: 'Pressable',
+    type: 'Box',
     props: { className: 'flex flex-row items-center gap-1 px-3 py-1 rounded-full bg-secondary', style: { width: '80px', height: '30px' } },
     children: [
       { id: 'test-chip-label', type: 'Text', props: { className: 'text-sm font-medium text-secondary-foreground' }, text: 'Label' },
@@ -115,8 +115,8 @@ const DISPLAY_NODES: Record<string, unknown> = {
         type: 'Box',
         props: { className: 'flex flex-row border-b border-border' },
         children: [
-          { id: 'test-tab-1', type: 'Pressable', props: { className: 'px-4 py-2 border-b-2 border-primary' }, children: [{ id: 'test-tab-1-text', type: 'Text', props: { className: 'text-sm font-medium text-primary' }, text: 'Tab 1' }] },
-          { id: 'test-tab-2', type: 'Pressable', props: { className: 'px-4 py-2 border-b-2 border-transparent' }, children: [{ id: 'test-tab-2-text', type: 'Text', props: { className: 'text-sm font-medium text-muted-foreground' }, text: 'Tab 2' }] },
+          { id: 'test-tab-1', type: 'Box', props: { className: 'px-4 py-2 border-b-2 border-primary' }, children: [{ id: 'test-tab-1-text', type: 'Text', props: { className: 'text-sm font-medium text-primary' }, text: 'Tab 1' }] },
+          { id: 'test-tab-2', type: 'Box', props: { className: 'px-4 py-2 border-b-2 border-transparent' }, children: [{ id: 'test-tab-2-text', type: 'Text', props: { className: 'text-sm font-medium text-muted-foreground' }, text: 'Tab 2' }] },
         ],
       },
       { id: 'test-tabs-content', type: 'Box', props: { className: 'p-4 w-full' }, children: [{ id: 'test-tabs-body', type: 'Text', props: { className: 'text-sm text-foreground' }, text: 'Tab content' }] },
@@ -137,9 +137,9 @@ const DISPLAY_NODES: Record<string, unknown> = {
     type: 'Box',
     props: { className: 'flex flex-row gap-1 items-center', style: { width: '240px', height: '36px' } },
     children: [
-      { id: 'test-pg-prev', type: 'Pressable', props: { className: 'w-8 h-8 rounded-md border border-border flex items-center justify-center' }, children: [{ id: 'test-pg-prev-icon', type: 'Icon', props: { icon: 'lucide:chevron-left', size: 14, color: '#6b7280' } }] },
-      { id: 'test-pg-1', type: 'Pressable', props: { className: 'w-8 h-8 rounded-md bg-primary flex items-center justify-center' }, children: [{ id: 'test-pg-1-text', type: 'Text', props: { className: 'text-sm font-medium text-primary-foreground' }, text: '1' }] },
-      { id: 'test-pg-next', type: 'Pressable', props: { className: 'w-8 h-8 rounded-md border border-border flex items-center justify-center' }, children: [{ id: 'test-pg-next-icon', type: 'Icon', props: { icon: 'lucide:chevron-right', size: 14, color: '#6b7280' } }] },
+      { id: 'test-pg-prev', type: 'Box', props: { className: 'w-8 h-8 rounded-md border border-border flex items-center justify-center' }, children: [{ id: 'test-pg-prev-icon', type: 'Icon', props: { icon: 'lucide:chevron-left', size: 14, color: '#6b7280' } }] },
+      { id: 'test-pg-1', type: 'Box', props: { className: 'w-8 h-8 rounded-md bg-primary flex items-center justify-center' }, children: [{ id: 'test-pg-1-text', type: 'Text', props: { className: 'text-sm font-medium text-primary-foreground' }, text: '1' }] },
+      { id: 'test-pg-next', type: 'Box', props: { className: 'w-8 h-8 rounded-md border border-border flex items-center justify-center' }, children: [{ id: 'test-pg-next-icon', type: 'Icon', props: { icon: 'lucide:chevron-right', size: 14, color: '#6b7280' } }] },
     ],
   },
   Accordion: {
@@ -149,7 +149,7 @@ const DISPLAY_NODES: Record<string, unknown> = {
     children: [
       {
         id: 'test-accordion-header',
-        type: 'Pressable',
+        type: 'Box',
         props: { className: 'flex flex-row items-center justify-between p-4 bg-background' },
         children: [
           { id: 'test-accordion-title', type: 'Text', props: { className: 'text-sm font-medium text-foreground' }, text: 'Section Title' },
@@ -322,9 +322,9 @@ test.describe('PD — Heading', () => {
   });
 });
 
-// ─── PD-06..08 — Badge (container) ───────────────────────────────────────────
+// ─── PD-06..08 — Box (badge-styled, formerly Badge) ─────────────────────────
 
-test.describe('PD — Badge', () => {
+test.describe('PD — Box Badge-styled', () => {
   test.setTimeout(120_000);
 
   let sharedPage: Page;
@@ -336,22 +336,22 @@ test.describe('PD — Badge', () => {
   test.afterAll(async () => { await sharedPage.context().close(); });
   test.beforeEach(async () => { await clearCanvas(sharedPage); });
 
-  test('PD-06: Drop Badge → Auto Layout IS shown (Badge is a container)', async () => {
-    await dropComponent(sharedPage, 'Badge');
+  test('PD-06: Drop Box → Auto Layout IS shown (Box is a container)', async () => {
+    await dropComponent(sharedPage, 'Box');
     await selectFirstNodeViaLayers(sharedPage);
 
     const gapInput = sharedPage.locator('[data-testid="input-gap"]');
     await expect(gapInput).toBeVisible({ timeout: 5_000 });
-    console.log('✅ Auto Layout shown for Badge (container)');
+    console.log('✅ Auto Layout shown for Box (container)');
   });
 
-  test('PD-07: Select BadgeText child → Typography section IS shown', async () => {
+  test('PD-07: Select Text child → Typography section IS shown', async () => {
     await injectNodes(sharedPage, [
       {
-        type: 'Badge', id: 'bdg-01',
+        type: 'Box', id: 'bdg-01',
         props: { className: 'flex flex-row items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500', style: { width: '80px', height: '28px' } },
         children: [
-          { type: 'BadgeText', id: 'bdg-txt', props: { className: 'text-xs text-white' }, text: 'New' },
+          { type: 'Text', id: 'bdg-txt', props: { className: 'text-xs text-white' }, text: 'New' },
         ],
       },
     ]);
@@ -366,11 +366,11 @@ test.describe('PD — Badge', () => {
 
     const textColorInput = sharedPage.locator('[data-testid="input-text-color"]');
     await expect(textColorInput).toBeVisible({ timeout: 5_000 });
-    console.log('✅ Typography section shown when BadgeText is selected');
+    console.log('✅ Typography section shown when Text child is selected');
   });
 
-  test('PD-08: Background color applies to Badge root', async () => {
-    await dropComponent(sharedPage, 'Badge');
+  test('PD-08: Background color applies to Box root', async () => {
+    await dropComponent(sharedPage, 'Box');
     await selectFirstNodeViaLayers(sharedPage);
     const nodeId = await getFirstNodeId(sharedPage);
     expect(nodeId).toBeTruthy();
@@ -384,13 +384,13 @@ test.describe('PD — Badge', () => {
     const style = await getNodeStyle(sharedPage, nodeId);
     expect(style.backgroundColor).toBe('#8b5cf6');
     await expect(sharedPage.locator(`[data-builder-id="${nodeId}"]`)).toBeVisible();
-    console.log('✅ Badge background color #8b5cf6 applied');
+    console.log('✅ Box background color #8b5cf6 applied');
   });
 });
 
-// ─── PD-09..11 — Avatar ───────────────────────────────────────────────────────
+// ─── PD-09..11 — Image ───────────────────────────────────────────────────────
 
-test.describe('PD — Avatar', () => {
+test.describe('PD — Image', () => {
   test.setTimeout(120_000);
 
   let sharedPage: Page;
@@ -402,19 +402,19 @@ test.describe('PD — Avatar', () => {
   test.afterAll(async () => { await sharedPage.context().close(); });
   test.beforeEach(async () => { await clearCanvas(sharedPage); });
 
-  test('PD-09: Drop Avatar → selectable, shows Dimensions section', async () => {
-    await dropComponent(sharedPage, 'Avatar');
+  test('PD-09: Drop Image → selectable, shows Dimensions section', async () => {
+    await dropComponent(sharedPage, 'Image');
     await selectFirstNodeViaLayers(sharedPage);
     const nodeId = await getFirstNodeId(sharedPage);
     expect(nodeId).toBeTruthy();
 
     await expect(sharedPage.locator('[data-testid="input-pos-w"]')).toBeAttached({ timeout: 5_000 });
     await expect(sharedPage.locator(`[data-builder-id="${nodeId}"]`)).toBeVisible();
-    console.log('✅ Avatar selectable, Dimensions section visible');
+    console.log('✅ Image selectable, Dimensions section visible');
   });
 
-  test('PD-10: Avatar W/H resize applies style.width and style.height', async () => {
-    await dropComponent(sharedPage, 'Avatar');
+  test('PD-10: Image W/H resize applies style.width and style.height', async () => {
+    await dropComponent(sharedPage, 'Image');
     await selectFirstNodeViaLayers(sharedPage);
     const nodeId = await getFirstNodeId(sharedPage);
 
@@ -427,11 +427,11 @@ test.describe('PD — Avatar', () => {
     expect(style.width).toBe('80px');
     expect(style.height).toBe('80px');
     await expect(sharedPage.locator(`[data-builder-id="${nodeId}"]`)).toBeVisible();
-    console.log('✅ Avatar W=80 H=80 applied via inline style');
+    console.log('✅ Image W=80 H=80 applied via inline style');
   });
 
-  test('PD-11: Avatar all corners rounded-full applies in className', async () => {
-    await dropComponent(sharedPage, 'Avatar');
+  test('PD-11: Image all corners rounded-full applies in className', async () => {
+    await dropComponent(sharedPage, 'Image');
     await selectFirstNodeViaLayers(sharedPage);
     const nodeId = await getFirstNodeId(sharedPage);
 
@@ -445,7 +445,7 @@ test.describe('PD — Avatar', () => {
     const cls = await getNodeClassName(sharedPage, nodeId);
     expect(cls).toContain('rounded-full');
     await expect(sharedPage.locator(`[data-builder-id="${nodeId}"]`)).toBeVisible();
-    console.log('✅ Avatar rounded-full applied to className');
+    console.log('✅ Image rounded-full applied to className');
   });
 });
 
@@ -543,9 +543,9 @@ test.describe('PD — Skeleton', () => {
   });
 });
 
-// ─── PD-17..19 — Alert (container) ───────────────────────────────────────────
+// ─── PD-17..19 — Box (alert-styled, formerly Alert) ─────────────────────────
 
-test.describe('PD — Alert', () => {
+test.describe('PD — Box Alert-styled', () => {
   test.setTimeout(120_000);
 
   let sharedPage: Page;
@@ -557,14 +557,14 @@ test.describe('PD — Alert', () => {
   test.afterAll(async () => { await sharedPage.context().close(); });
   test.beforeEach(async () => { await clearCanvas(sharedPage); });
 
-  test('PD-17: Drop Alert → isContainer → Auto Layout section IS shown', async () => {
-    await dropComponent(sharedPage, 'Alert');
+  test('PD-17: Drop Box → isContainer → Auto Layout section IS shown', async () => {
+    await dropComponent(sharedPage, 'Box');
     const gapInput = sharedPage.locator('[data-testid="input-gap"]');
     await expect(gapInput).toBeVisible({ timeout: 5_000 });
-    console.log('✅ Auto Layout shown for Alert (container)');
+    console.log('✅ Auto Layout shown for Box (container)');
   });
 
-  test('PD-18: Select AlertText child → Typography section IS shown', async () => {
+  test('PD-18: Select Text child of Box → Typography section IS shown', async () => {
     await injectNodes(sharedPage, [DISPLAY_NODES['Alert'] as unknown as object]);
     await sharedPage.waitForSelector('[data-builder-id="test-alert-text"]', { timeout: 5_000 });
 
@@ -577,26 +577,19 @@ test.describe('PD — Alert', () => {
 
     const textColorInput = sharedPage.locator('[data-testid="input-text-color"]');
     await expect(textColorInput).toBeVisible({ timeout: 5_000 });
-    console.log('✅ Typography section shown when AlertText is selected');
+    console.log('✅ Typography section shown when Text child is selected');
   });
 
-  test('PD-19: REQUIRED_PARENT — AlertText blocked from canvas root', async () => {
+  test('PD-19: Box alert node is selectable and has correct type in store', async () => {
     await injectNodes(sharedPage, [DISPLAY_NODES['Alert'] as unknown as object]);
     await sharedPage.waitForSelector('[data-builder-id="test-alert"]', { timeout: 5_000 });
-
-    await sharedPage.evaluate(() => {
-      (window as unknown as Record<string, { getState: () => { moveNode: (id: string, parent: string | null, idx: number) => void } }>).__builderStore
-        .getState().moveNode('test-alert-text', null, 0);
-    });
-    await sharedPage.waitForTimeout(200);
 
     const rootTypes = await sharedPage.evaluate(() => {
       const store = (window as unknown as Record<string, { getState: () => { pageNodes: Array<{ type: string }> } }>).__builderStore.getState();
       return store.pageNodes.map(n => n.type);
     });
-    expect(rootTypes).not.toContain('AlertText');
-    expect(rootTypes).toContain('Alert');
-    console.log('✅ AlertText blocked from moving to root — stays inside Alert');
+    expect(rootTypes).toContain('Box');
+    console.log('✅ Box (alert-styled) present at root');
   });
 });
 

@@ -40,57 +40,69 @@
         "condition": "(collections['c5d6e7f8-a9b0-1234-cdef-345678901234']?.data?.activeCustomer?.orders?.items?.length || 0) > 0",
         "children": [
           {
-            "type": "Table",
+            "type": "Box",
             "children": [
               {
-                "type": "TableHeader",
+                "type": "Box",
                 "props": {
-                  "className": "bg-[var(--theme-hero-bg)]"
+                  "className": "bg-[var(--theme-muted)]"
                 },
                 "children": [
                   {
-                    "type": "TableRow",
+                    "type": "Box",
                     "children": [
                       {
-                        "type": "TableHead",
+                        "type": "Box",
                         "children": [
                           {
                             "type": "Text",
                             "text": "Order Number"
                           }
-                        ]
+                        ],
+                        "props": {
+                          "className": "font-medium text-sm px-3 py-2 flex-1"
+                        }
                       },
                       {
-                        "type": "TableHead",
+                        "type": "Box",
                         "children": [
                           {
                             "type": "Text",
                             "text": "Date"
                           }
-                        ]
+                        ],
+                        "props": {
+                          "className": "font-medium text-sm px-3 py-2 flex-1"
+                        }
                       },
                       {
-                        "type": "TableHead",
+                        "type": "Box",
                         "children": [
                           {
                             "type": "Text",
                             "text": "Status"
                           }
-                        ]
+                        ],
+                        "props": {
+                          "className": "font-medium text-sm px-3 py-2 flex-1"
+                        }
                       },
                       {
-                        "type": "TableHead",
+                        "type": "Box",
                         "children": [
                           {
                             "type": "Text",
                             "text": "Items"
                           }
-                        ]
+                        ],
+                        "props": {
+                          "className": "font-medium text-sm px-3 py-2 flex-1"
+                        }
                       },
                       {
-                        "type": "TableHead",
+                        "type": "Box",
                         "props": {
-                          "className": "text-right"
+                          "className": "text-right font-medium text-sm px-3 py-2 flex-1"
                         },
                         "children": [
                           {
@@ -99,31 +111,34 @@
                           }
                         ]
                       }
-                    ]
+                    ],
+                    "props": {
+                      "className": "flex flex-row"
+                    }
                   }
                 ]
               },
               {
-                "type": "TableBody",
+                "type": "Box",
                 "children": [
                   {
-                    "type": "TableRow",
+                    "type": "Box",
                     "map": "collections.c5d6e7f8-a9b0-1234-cdef-345678901234.data.activeCustomer.orders.items",
                     "key": "orderRow",
                     "props": {
-                      "className": "hover:bg-[var(--theme-hero-bg)]"
+                      "className": "hover:bg-[var(--theme-muted)] flex flex-row"
                     },
                     "children": [
                       {
-                        "type": "TableData",
+                        "type": "Box",
                         "props": {
-                          "className": "font-medium"
+                          "className": "font-medium text-sm px-3 py-3 flex-1"
                         },
                         "children": [
                           {
-                            "type": "Pressable",
+                            "type": "Box",
                             "props": {
-                              "className": "inline-flex items-center gap-1 px-3 py-1.5 border border-[var(--theme-border)] rounded-md text-sm hover:bg-[var(--theme-hero-bg)] transition-colors"
+                              "className": "inline-flex items-center gap-1 px-3 py-1.5 border border-[var(--theme-border)] rounded-md text-sm hover:bg-[var(--theme-muted)] transition-colors"
                             },
                             "actions": [
                               {
@@ -147,44 +162,53 @@
                         ]
                       },
                       {
-                        "type": "TableData",
+                        "type": "Box",
                         "children": [
                           {
                             "type": "Text",
                             "text": "{{context.item.data.createdAt}}"
                           }
-                        ]
+                        ],
+                        "props": {
+                          "className": "text-sm px-3 py-3 flex-1"
+                        }
                       },
                       {
-                        "type": "TableData",
+                        "type": "Box",
                         "children": [
                           {
-                            "type": "Badge",
+                            "type": "Box",
                             "props": {
                               "className": "text-xs font-medium"
                             },
                             "children": [
                               {
-                                "type": "BadgeText",
+                                "type": "Text",
                                 "text": "{{context.item.data.state}}"
                               }
                             ]
                           }
-                        ]
+                        ],
+                        "props": {
+                          "className": "text-sm px-3 py-3 flex-1"
+                        }
                       },
                       {
-                        "type": "TableData",
+                        "type": "Box",
                         "children": [
                           {
                             "type": "Text",
                             "text": "{{context.item.data.lines.length}} item(s)"
                           }
-                        ]
+                        ],
+                        "props": {
+                          "className": "text-sm px-3 py-3 flex-1"
+                        }
                       },
                       {
-                        "type": "TableData",
+                        "type": "Box",
                         "props": {
-                          "className": "text-right"
+                          "className": "text-right text-sm px-3 py-3 flex-1"
                         },
                         "children": [
                           {
@@ -202,7 +226,10 @@
                   }
                 ]
               }
-            ]
+            ],
+            "props": {
+              "className": ""
+            }
           }
         ]
       }

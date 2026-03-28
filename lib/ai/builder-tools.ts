@@ -5,8 +5,6 @@
  * - It adds components by their palette label ("Card", "Btn Solid", etc.)
  * - It edits text, styles, and props through semantic design tools
  * - It NEVER writes raw JSON — that's the builder's job
- * - For rich AI-generated sections, it calls generate_section() which triggers
- *   the streaming generator that builds the section live on canvas
  *
  * Grouped by category to match the builder's left-panel organization.
  */
@@ -43,7 +41,7 @@ const readTools: BuilderTool[] = [
   },
   {
     name: 'get_node_details',
-    description: 'Get full details of one or more nodes — all props, className, text, children. Use when you need to see the current state of a specific node before editing it.',
+    description: 'Get full details of one or more nodes — props, text, children, and other fields as stored in the builder. Use when you need the current state of a specific node before editing it.',
     input_schema: {
       type: 'object',
       properties: {
@@ -152,22 +150,22 @@ const generationTools: BuilderTool[] = [
 const addTools: BuilderTool[] = [
   {
     name: 'add_component',
-    description: 'Add a component to the page by its palette label — exactly like dragging it from the builder\'s left panel. The builder inserts the component template with proper defaults. AI never writes JSON.\n\nBATCH TIP: Provide a short nodeId (e.g. "section-wrap") so you can use it as parentId for child components in the SAME batch of tool calls — no need to wait for the result.',
+    description: 'Add a component to the page by its palette label — exactly like dragging it from the builder\'s left panel. The builder inserts the component template with proper defaults. AI never writes JSON. Do NOT use this tool for Image or Video — use add_image / add_video instead; those tools set src (and poster for video) correctly.\n\nBATCH TIP: Pass a short descriptive nodeId (e.g. "section-wrap"). Use that same string as parentId for children in the same batch. After the batch, use the real UUID from the tool result for all subsequent rounds.',
     input_schema: {
       type: 'object',
       properties: {
         label: {
           type: 'string',
           enum: COMPONENT_LABELS as unknown as string[],
-          description: 'Component palette label. E.g. "Card", "Btn Solid", "Heading", "Image", "HStack".',
+          description: 'Component palette label. E.g. "Card", "Btn Solid", "Heading", "HStack". Do NOT use for Image or Video — use add_image / add_video instead; those tools set src correctly.',
         },
         nodeId: {
           type: 'string',
-          description: 'Optional: pre-assign a short descriptive ID like "hero-wrap", "features-grid", "cta-btn". Use this same string as parentId for children in the same batch.',
+          description: 'Optional: short descriptive id for this node (e.g. "section-wrap", "hero-title"). Use this same string as parentId for children in the same batch. After the batch, use the real UUID returned in the result for all future tool calls.',
         },
         parentId: {
           type: 'string',
-          description: 'ID of the container to add into. Omit to add at the top-level of the current page.',
+          description: 'ID of the container to add into. Use either the short alias from the same batch, or the real UUID from a previous round\'s result. Omit to add at the top-level of the current page.',
         },
         atIndex: {
           type: 'number',
@@ -201,7 +199,7 @@ const addTools: BuilderTool[] = [
         alt: { type: 'string', description: 'Alt text.' },
         objectFit: { type: 'string', description: 'Object fit: cover | contain | fill | none | scale-down. Default "cover".' },
         parentId: { type: 'string', description: 'Container to add into.' },
-        className: { type: 'string', description: 'Tailwind classes. Default "w-full h-64 object-cover rounded-xl".' },
+        className: { type: 'string', description: 'Optional layout override. Omit to use the default Image preset; prefer set_size / set_border after adding when possible.' },
       },
       required: ['src'],
     },
@@ -220,7 +218,7 @@ const addTools: BuilderTool[] = [
         controls: { type: 'boolean', description: 'Show playback controls. Default true.' },
         objectFit: { type: 'string', description: 'Object fit: cover | contain | fill. Default "cover".' },
         parentId: { type: 'string', description: 'Container to add into.' },
-        className: { type: 'string', description: 'Tailwind classes. Default "w-full h-64 rounded-xl".' },
+        className: { type: 'string', description: 'Optional layout override. Omit to use the default Video preset; prefer set_size after adding when possible.' },
       },
       required: ['src'],
     },
@@ -330,7 +328,7 @@ const textTools: BuilderTool[] = [
   },
   {
     name: 'set_href',
-    description: 'Set the href/link destination on a Link or Pressable node.',
+    description: 'Set the href/link destination on a Link node.',
     input_schema: {
       type: 'object',
       properties: {
@@ -342,12 +340,12 @@ const textTools: BuilderTool[] = [
   },
   {
     name: 'set_src',
-    description: 'Set the source URL on an Image or Video node. Also accepts objectFit, alt (Image), and poster (Video).',
+    description: 'Set the source URL on an Image or Video node only (Box ignores src — use add_image / add_component Image for photo layers). Also objectFit, alt (Image), poster (Video). To change objectFit or poster on a Video without changing the URL, use set_video_props instead.',
     input_schema: {
       type: 'object',
       properties: {
         nodeId: { type: 'string' },
-        src: { type: 'string', description: 'New image/video URL.' },
+        src: { type: 'string', description: 'New image/video URL. Required — always include the URL when calling this tool.' },
         alt: { type: 'string', description: 'Alt text (Image only).' },
         objectFit: { type: 'string', description: 'Object fit: cover | contain | fill | none | scale-down.' },
         poster: { type: 'string', description: 'Poster image URL (Video only).' },
@@ -357,7 +355,7 @@ const textTools: BuilderTool[] = [
   },
   {
     name: 'set_video_props',
-    description: 'Set playback and display properties on a Video node without changing the source URL.',
+    description: 'Set playback and display properties on a Video node without changing the source URL. IMPORTANT: Video defaults are already correct for ambient/embedded use (autoPlay=true, loop=true, muted=true, controls=false). Only call this tool when the user explicitly asks to change playback behavior — do NOT call it just to add controls or disable autoPlay.',
     input_schema: {
       type: 'object',
       properties: {
@@ -391,12 +389,12 @@ const textTools: BuilderTool[] = [
 // ─── Semantic Design Tools ────────────────────────────────────────────────────
 // Every design property is controlled via a dedicated semantic tool — mirroring
 // each section of the builder's right-panel Design controls.
-// The AI never writes raw Tailwind class strings directly.
+// The AI uses semantic design tools only — not raw layout utility strings.
 
 const semanticDesignTools: BuilderTool[] = [
   {
     name: 'set_background',
-    description: 'Set the background color or image of a node. Use theme variable names ("primary", "card", "muted") or Tailwind color tokens ("blue-600") or hex values ("#1a1a1a").',
+    description: 'Set the background color of a node (solid / theme colors only). Use theme names ("primary", "card", "muted"), named palette shades the panel accepts (e.g. "blue-600"), or hex (e.g. "#1a1a1a"). For photos or full-bleed imagery use add_image or add_component Image + set_src, not this tool.',
     input_schema: {
       type: 'object',
       properties: {
@@ -405,17 +403,13 @@ const semanticDesignTools: BuilderTool[] = [
           type: 'string',
           description: 'Background color. Theme names: "primary", "card", "background", "muted", "secondary", "accent", "destructive", "foreground". Or: "transparent", "#hex", "blue-600", "var(--theme-*)".',
         },
-        bgImage: {
-          type: 'string',
-          description: 'CSS background-image value, e.g. "url(https://...)" or "linear-gradient(to right, #000, #fff)". Sets backgroundSize:cover and backgroundPosition:center automatically.',
-        },
       },
       required: ['nodeId'],
     },
   },
   {
     name: 'set_text_color',
-    description: 'Set the text color of a node. Use theme variable names ("foreground", "primary", "muted-foreground") or Tailwind tokens ("gray-900") or hex values.',
+    description: 'Set the text color of a node. Use theme names ("foreground", "primary", "muted-foreground"), named palette shades (e.g. "gray-900"), or hex.',
     input_schema: {
       type: 'object',
       properties: {
@@ -452,8 +446,8 @@ const semanticDesignTools: BuilderTool[] = [
         },
         leading: {
           type: 'string',
-          enum: ['none', 'tight', 'snug', 'normal', 'relaxed', 'loose'],
-          description: 'Line height.',
+          enum: ['none', 'tight', 'snug', 'normal', 'relaxed', 'loose', '3', '4', '5', '6', '7', '8', '9', '10'],
+          description: 'Line height. Named scale or numeric (3–10).',
         },
         tracking: {
           type: 'string',
@@ -498,13 +492,13 @@ const semanticDesignTools: BuilderTool[] = [
         },
         radius: {
           type: 'string',
-          enum: ['none', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', 'full'],
-          description: 'Border radius applied to all four corners.',
+          enum: ['none', 'sm', 'default', 'md', 'lg', 'xl', '2xl', '3xl', 'full'],
+          description: 'Border radius applied to all four corners. "default" = small standard radius (matches Design panel).',
         },
-        radiusTL: { type: 'string', enum: ['none', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', 'full'], description: 'Top-left corner radius.' },
-        radiusTR: { type: 'string', enum: ['none', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', 'full'], description: 'Top-right corner radius.' },
-        radiusBR: { type: 'string', enum: ['none', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', 'full'], description: 'Bottom-right corner radius.' },
-        radiusBL: { type: 'string', enum: ['none', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', 'full'], description: 'Bottom-left corner radius.' },
+        radiusTL: { type: 'string', enum: ['none', 'sm', 'default', 'md', 'lg', 'xl', '2xl', '3xl', 'full'], description: 'Top-left corner radius.' },
+        radiusTR: { type: 'string', enum: ['none', 'sm', 'default', 'md', 'lg', 'xl', '2xl', '3xl', 'full'], description: 'Top-right corner radius.' },
+        radiusBR: { type: 'string', enum: ['none', 'sm', 'default', 'md', 'lg', 'xl', '2xl', '3xl', 'full'], description: 'Bottom-right corner radius.' },
+        radiusBL: { type: 'string', enum: ['none', 'sm', 'default', 'md', 'lg', 'xl', '2xl', '3xl', 'full'], description: 'Bottom-left corner radius.' },
       },
       required: ['nodeId'],
     },
@@ -518,8 +512,8 @@ const semanticDesignTools: BuilderTool[] = [
         nodeId: { type: 'string' },
         shadow: {
           type: 'string',
-          enum: ['none', 'sm', 'md', 'lg', 'xl', '2xl', 'inner'],
-          description: '"none" removes the shadow.',
+          enum: ['none', 'sm', 'default', 'md', 'lg', 'xl', '2xl', 'inner'],
+          description: '"none" removes the shadow. "default" = medium standard shadow (matches Design panel).',
         },
       },
       required: ['nodeId', 'shadow'],
@@ -527,54 +521,57 @@ const semanticDesignTools: BuilderTool[] = [
   },
   {
     name: 'set_opacity',
-    description: 'Set the opacity of a node (0–100).',
+    description: 'Set the opacity of a node (0–100). Matches the builder panel Opacity slider.',
     input_schema: {
       type: 'object',
       properties: {
         nodeId: { type: 'string' },
-        opacity: { type: 'number', description: 'Opacity 0–100. E.g. 50 = 50% transparent, 100 = fully visible.' },
+        opacity: { type: 'number', description: 'Opacity 0–100. E.g. 50 = half transparent, 100 = fully visible.' },
       },
       required: ['nodeId', 'opacity'],
     },
   },
   {
     name: 'set_spacing',
-    description: 'Set padding, margin, and/or gap on a node using Tailwind spacing scale values (0–96). Use -1 for "auto" margins.',
+    description: 'Set padding, margin, and/or gap on a node in pixels. Matches the builder panel Padding/Margin/Gap number inputs.',
     input_schema: {
       type: 'object',
       properties: {
         nodeId: { type: 'string' },
-        p:  { type: 'number', description: 'Padding all sides.' },
-        px: { type: 'number', description: 'Horizontal padding (left + right).' },
-        py: { type: 'number', description: 'Vertical padding (top + bottom).' },
-        pt: { type: 'number', description: 'Padding top.' },
-        pr: { type: 'number', description: 'Padding right.' },
-        pb: { type: 'number', description: 'Padding bottom.' },
-        pl: { type: 'number', description: 'Padding left.' },
-        m:  { type: 'number', description: 'Margin all sides. Use -1 for "auto".' },
-        mx: { type: 'number', description: 'Horizontal margin. Use -1 for "auto".' },
-        my: { type: 'number', description: 'Vertical margin. Use -1 for "auto".' },
-        mt: { type: 'number', description: 'Margin top.' },
-        mr: { type: 'number', description: 'Margin right.' },
-        mb: { type: 'number', description: 'Margin bottom.' },
-        ml: { type: 'number', description: 'Margin left.' },
-        gap:  { type: 'number', description: 'Gap between flex/grid children.' },
-        gapX: { type: 'number', description: 'Horizontal gap between children.' },
-        gapY: { type: 'number', description: 'Vertical gap between children.' },
+        p:  { type: 'number', description: 'Padding all sides in px.' },
+        px: { type: 'number', description: 'Horizontal padding (left + right) in px.' },
+        py: { type: 'number', description: 'Vertical padding (top + bottom) in px.' },
+        pt: { type: 'number', description: 'Padding top in px.' },
+        pr: { type: 'number', description: 'Padding right in px.' },
+        pb: { type: 'number', description: 'Padding bottom in px.' },
+        pl: { type: 'number', description: 'Padding left in px.' },
+        m:  { type: 'number', description: 'Margin all sides in px.' },
+        mx: { type: 'number', description: 'Horizontal margin (left + right) in px.' },
+        my: { type: 'number', description: 'Vertical margin (top + bottom) in px.' },
+        mt: { type: 'number', description: 'Margin top in px.' },
+        mr: { type: 'number', description: 'Margin right in px.' },
+        mb: { type: 'number', description: 'Margin bottom in px.' },
+        ml: { type: 'number', description: 'Margin left in px.' },
+        gap:  { type: 'number', description: 'Gap between flex/grid children in px.' },
+        gapX: { type: 'number', description: 'Horizontal gap between children in px.' },
+        gapY: { type: 'number', description: 'Vertical gap between children in px.' },
       },
       required: ['nodeId'],
     },
   },
   {
     name: 'set_size',
-    description: 'Set width, height, or max-width on a node. Mirrors the builder right panel Hug/Fill/Fixed controls.',
+    description: 'Set width, height, or size constraints on a node. Mirrors the builder right panel Hug/Fill/Fixed controls and Min/Max W/H fields.',
     input_schema: {
       type: 'object',
       properties: {
         nodeId: { type: 'string' },
-        width: { type: 'string', description: 'Width mode: "full" fills parent (w-full, builder Fill), "fit" wraps content (w-fit, builder Hug), "px:N" for fixed pixels (e.g. "px:320"), or Tailwind token "1/2", "64", etc.' },
-        height: { type: 'string', description: 'Height mode: "fill" grows to fill available space in flex parent (flex-1, builder Fill — matches Figma Fill, works in any flex-col container), "screen" full viewport height (h-screen / 100vh — for full-page sections, modals, overlays), "fit" wraps content (h-fit, builder Hug), "px:N" for exact pixels (e.g. "px:400"), "vh:N" for viewport-relative height (e.g. "vh:90" = 90vh). Legacy "full" also maps to flex-1. Use "min-screen" for sections that need AT LEAST full viewport height (min-h-screen).' },
-        maxWidth: { type: 'string', enum: ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', 'full', 'screen-sm', 'screen-md', 'screen-lg', 'screen-xl'], description: 'Max-width constraint.' },
+        width: { type: 'string', description: 'Width mode: "fill" grows to take remaining space in the parent container (use for expanding columns in row/horizontal layouts), "full" is 100% of parent width, "fit" shrinks to content size, "screen" is full viewport width, "px:N" sets an exact pixel width (e.g. "px:320"). In multi-column row layouts, at least one column should use "fill" — not "fit" on every column.' },
+        height: { type: 'string', description: 'Height mode: "fill" grows to fill remaining space in the parent flex container (use for sidebars, cards — does NOT work on position:absolute nodes), "screen" is full viewport height (use for full-page sections and ALL position:absolute background/overlay layers), "fit" shrinks to content, "px:N" for exact pixels (e.g. "px:400"), "vh:N" for viewport-relative height (e.g. "vh:90"). Use "min-screen" for sections that need at least full viewport height.' },
+        maxWidth:  { type: 'number', description: 'Max-width constraint in pixels (e.g. 800). Matches the builder panel Max W field.' },
+        minWidth:  { type: 'number', description: 'Min-width constraint in pixels. Matches the builder panel Min W field.' },
+        maxHeight: { type: 'number', description: 'Max-height constraint in pixels. Matches the builder panel Max H field.' },
+        minHeight: { type: 'number', description: 'Min-height constraint in pixels. Matches the builder panel Min H field.' },
       },
       required: ['nodeId'],
     },
@@ -596,10 +593,10 @@ const semanticDesignTools: BuilderTool[] = [
           enum: ['0', '10', '20', '30', '40', '50', 'auto'],
           description: 'Z-index.',
         },
-        top:    { type: 'number', description: 'Top inset in Tailwind spacing scale (0, 1, 2, 4, 8, 16…). Use 0 for "top-0".' },
-        right:  { type: 'number', description: 'Right inset.' },
-        bottom: { type: 'number', description: 'Bottom inset.' },
-        left:   { type: 'number', description: 'Left inset.' },
+        top:    { type: 'number', description: 'Top inset in pixels.' },
+        right:  { type: 'number', description: 'Right inset in pixels.' },
+        bottom: { type: 'number', description: 'Bottom inset in pixels.' },
+        left:   { type: 'number', description: 'Left inset in pixels.' },
       },
       required: ['nodeId'],
     },
@@ -611,7 +608,7 @@ const semanticDesignTools: BuilderTool[] = [
       type: 'object',
       properties: {
         nodeId: { type: 'string' },
-        rotate: { type: 'number', description: 'Rotation degrees. Supported: 0, 1, 2, 3, 6, 12, 45, 90, 180. Negative = counter-clockwise.' },
+        rotate: { type: 'number', description: 'Rotation in degrees (-180 to 180). Any degree value is supported.' },
         flipX: { type: 'boolean', description: 'Flip horizontally (mirror on X axis).' },
         flipY: { type: 'boolean', description: 'Flip vertically (mirror on Y axis).' },
         cursor: {
@@ -644,6 +641,18 @@ const semanticDesignTools: BuilderTool[] = [
     },
   },
   {
+    name: 'set_overflow',
+    description: 'Clip (or unclip) a node\'s content — mirrors the "Clip content" toggle in the design panel. Use clip:true to add overflow-hidden so child content is clipped to the box boundary; clip:false to remove it. Use this instead of set_transform when you only need to control clipping.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        nodeId: { type: 'string', description: 'Node ID' },
+        clip: { type: 'boolean', description: 'true = add overflow-hidden, false = remove overflow-hidden' },
+      },
+      required: ['nodeId', 'clip'],
+    },
+  },
+  {
     name: 'set_display',
     description: 'Set display mode (flex, grid, block, hidden) and grid-specific properties on a node.',
     input_schema: {
@@ -669,18 +678,14 @@ const semanticDesignTools: BuilderTool[] = [
   },
   {
     name: 'set_submit',
-    description: 'Configure a Button\'s action variant (controls Gluestack Button style: primary, secondary, destructive, etc.).',
+    description: 'Toggle the form-submit behavior of a Button. Matches the builder Settings panel "Submit" toggle — when enabled the button triggers FormContainer validation and submission.',
     input_schema: {
       type: 'object',
       properties: {
         nodeId: { type: 'string' },
-        action: {
-          type: 'string',
-          enum: ['primary', 'secondary', 'destructive', 'positive', 'custom'],
-          description: 'Button action variant. "primary" = filled accent style, "secondary" = softer, "destructive" = red/danger, "positive" = green/success, "custom" = no variant injection (use with className).',
-        },
+        submit: { type: 'boolean', description: 'true = button acts as a form submit trigger. false = regular button.' },
       },
-      required: ['nodeId', 'action'],
+      required: ['nodeId', 'submit'],
     },
   },
   {
@@ -692,8 +697,8 @@ const semanticDesignTools: BuilderTool[] = [
         nodeId: { type: 'string' },
         type: {
           type: 'string',
-          enum: ['text', 'email', 'password', 'number', 'tel', 'url', 'search', 'date'],
-          description: 'HTML input type.',
+          enum: ['text', 'email', 'password', 'number', 'decimal', 'tel'],
+          description: 'Input type. "decimal" = number input that allows decimal values. Matches the builder Settings panel input type options.',
         },
         multiline: { type: 'boolean', description: 'Switch to a multiline textarea.' },
         rows: { type: 'number', description: 'Visible rows for multiline textarea.' },
@@ -716,12 +721,10 @@ const layoutTools: BuilderTool[] = [
       type: 'object',
       properties: {
         nodeId: { type: 'string' },
-        direction: { type: 'string', enum: ['row', 'column'], description: 'flex-row or flex-col.' },
-        align: { type: 'string', enum: ['start', 'center', 'end', 'stretch', 'baseline'], description: 'align-items.' },
-        justify: { type: 'string', enum: ['start', 'center', 'end', 'between', 'around', 'evenly'], description: 'justify-content.' },
-        gap: { type: 'string', description: 'Gap class, e.g. "gap-4", "gap-8".' },
-        padding: { type: 'string', description: 'Padding class, e.g. "p-6", "px-8 py-12".' },
-        width: { type: 'string', description: 'Width class, e.g. "w-full", "max-w-4xl mx-auto".' },
+        direction: { type: 'string', enum: ['row', 'column'], description: '"row" lays children side by side; "column" stacks them top to bottom.' },
+        align: { type: 'string', enum: ['start', 'center', 'end', 'stretch', 'baseline'], description: 'Cross-axis alignment of children (e.g. center = vertically centered in a row).' },
+        justify: { type: 'string', enum: ['start', 'center', 'end', 'between', 'around', 'evenly'], description: 'Main-axis distribution of children (e.g. between = space evenly between, center = grouped in center).' },
+        gap: { type: 'number', description: 'Gap between children in pixels.' },
       },
       required: ['nodeId'],
     },
@@ -845,19 +848,19 @@ Each step must have a unique "id" plus "type" and "config". Examples:
         nodeId: { type: 'string' },
         enter: {
           type: 'string',
-          enum: ['fadeIn', 'slideUp', 'slideDown', 'slideLeft', 'slideRight', 'scaleIn', 'bounceIn', 'none'],
+          enum: ['none', 'fadeIn', 'slideInUp', 'slideInDown', 'slideInLeft', 'slideInLeftSubtle', 'slideInRight', 'riseFade', 'dropIn', 'zoomIn', 'expandIn', 'bounceIn', 'flipInX', 'flipInY', 'flipIn3D', 'tiltIn', 'skewIn', 'skewInY', 'blurIn', 'glowIn', 'rollIn'],
           description: 'Enter animation (plays on mount). "none" removes it.',
         },
         enterDuration: { type: 'number', description: 'Enter animation duration in ms. Default 300.' },
         exit: {
           type: 'string',
-          enum: ['fadeOut', 'slideUp', 'slideDown', 'slideLeft', 'slideRight', 'scaleOut', 'none'],
+          enum: ['none', 'fadeOut', 'slideOutUp', 'slideOutDown', 'slideOutLeft', 'slideOutRight', 'zoomOut', 'shrinkOut', 'bounceOut', 'flipOutX', 'flipOutY', 'flipOut3D', 'blurOut', 'skewOut', 'rollOut'],
           description: 'Exit animation. "none" removes it.',
         },
         exitDuration: { type: 'number', description: 'Exit animation duration in ms. Default 300.' },
         loop: {
           type: 'string',
-          enum: ['pulse', 'spin', 'bounce', 'ping', 'glowPulse', 'gradientDrift', 'none'],
+          enum: ['none', 'pulse', 'breathe', 'float', 'shake', 'wiggle', 'wobble', 'swing', 'spin', 'ticker', 'bounce', 'heartbeat', 'flash', 'ripple', 'glowPulse', 'gradientDrift'],
           description: 'Continuous loop animation. "none" removes it.',
         },
         hover: {
@@ -872,14 +875,14 @@ Each step must have a unique "id" plus "type" and "config". Examples:
         },
         scroll: {
           type: 'string',
-          enum: ['fadeIn', 'slideUp', 'zoomIn', 'none'],
+          enum: ['none', 'fadeIn', 'slideInUp', 'slideInDown', 'slideInLeft', 'slideInRight', 'riseFade', 'dropIn', 'zoomIn', 'expandIn', 'bounceIn', 'blurIn'],
           description: 'Scroll-triggered enter animation — fires when the element enters the viewport.',
         },
         imperativeTrigger: {
           type: 'object',
           description: 'Trigger the animation imperatively when a variable changes. E.g. to shake on error: { "type": "shake", "watchVar": "variables[\'UUID\']", "duration": 500 }',
           properties: {
-            type: { type: 'string', enum: ['shake', 'pulse', 'bounce', 'flash'], description: 'Animation type.' },
+            type: { type: 'string', enum: ['none', 'pulse', 'breathe', 'float', 'shake', 'wiggle', 'wobble', 'swing', 'spin', 'bounce', 'heartbeat', 'flash', 'ripple', 'glowPulse', 'gradientDrift'], description: 'Animation type.' },
             watchVar: { type: 'string', description: 'Formula expression to watch for changes, e.g. "variables[\'UUID\']".' },
             duration: { type: 'number', description: 'Animation duration in ms. Default 500.' },
           },
@@ -1041,7 +1044,7 @@ const themeTools: BuilderTool[] = [
       properties: {
         variable: {
           type: 'string',
-          description: 'CSS var name without --. E.g. "theme-primary", "theme-background", "theme-shop-button", "font-heading".',
+          description: 'CSS var name without --. E.g. "theme-primary", "theme-background", "theme-card", "font-heading".',
         },
         value: { type: 'string', description: 'New value, e.g. "#6366f1" or "Inter".' },
         mode: { type: 'string', enum: ['light', 'dark'], description: 'Which color mode. Default "light".' },
@@ -1152,6 +1155,18 @@ const assetTools: BuilderTool[] = [
     },
   },
   {
+    name: 'search_videos',
+    description: 'Search for stock videos from the project asset library. Returns direct video file URLs. Always use this before add_video — never hardcode a video URL.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search query, e.g. "workflow automation", "city aerial", "team meeting".' },
+        count: { type: 'number', description: 'Number of results (1-8). Default 4.' },
+      },
+      required: ['query'],
+    },
+  },
+  {
     name: 'search_icons',
     description: 'Search for icons from Iconify. Returns icon names like "lucide:coffee". Use with add_icon or set_icon.',
     input_schema: {
@@ -1168,11 +1183,10 @@ const assetTools: BuilderTool[] = [
 
 // ─── All Tools (in priority order) ───────────────────────────────────────────
 
+/** Tools for the builder chat AI — excludes generationTools (raw JSON pipeline removed) */
 export const ALL_BUILDER_TOOLS: BuilderTool[] = [
   // Context first — AI reads before acting
   ...readTools,
-  // Generation — rich AI content
-  ...generationTools,
   // Structure — add / remove / reorder / reparent
   ...addTools,
   ...structureTools,

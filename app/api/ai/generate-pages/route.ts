@@ -7,12 +7,6 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 export interface AiSection {
   name: string;
   description?: string;
-  designHints?: {
-    /** Labels from PRIMITIVE_COMPONENTS in _components-tab.tsx (e.g. "Grid", "Card", "Btn Solid") */
-    components?: string[];
-    tone?: string;
-    layout?: string;
-  };
 }
 
 export interface AiPage {

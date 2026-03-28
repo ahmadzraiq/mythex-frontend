@@ -70,6 +70,10 @@ function uuid(): string {
   return crypto.randomUUID();
 }
 
+function isUUID(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
+
 // ─── Assign UUIDs to all nodes in a tree ─────────────────────────────────────
 
 function assignIds(node: Record<string, unknown>): Record<string, unknown> {
@@ -169,7 +173,7 @@ function buildLayoutClass(input: ToolInput, current = ''): string {
 
   if (input.align)   cls = replaceTwToken(cls, 'items-', `items-${input.align}`);
   if (input.justify) cls = replaceTwToken(cls, 'justify-', `justify-${input.justify}`);
-  if (input.gap)     cls = replaceTwToken(cls, 'gap-', input.gap as string);
+  // gap is handled via inline style (written after buildLayoutClass via patchNodeStyle in set_layout executor)
 
   // Process padding and width in a single pass (no early returns — both can be set together)
   if (input.padding) {
@@ -177,8 +181,13 @@ function buildLayoutClass(input: ToolInput, current = ''): string {
     cls += ` ${input.padding}`;
   }
   if (input.width) {
-    cls = cls.split(' ').filter(t => !/^(w-|max-w-)/.test(t)).join(' ');
-    cls += ` ${input.width}`;
+    const widthVal = input.width as string;
+    cls = cls.split(' ').filter(t => !/^(w-|max-w-|mx-)/.test(t)).join(' ');
+    cls += ` ${widthVal}`;
+    // max-w-* always needs mx-auto to actually center — add it automatically
+    if (/^max-w-/.test(widthVal) && !widthVal.includes('mx-auto')) {
+      cls += ' mx-auto';
+    }
   }
 
   return cls.replace(/\s+/g, ' ').trim();
@@ -207,6 +216,14 @@ function patchNodeStyle(store: BuilderStore, nodeId: string, patch: Record<strin
   const existing = getNodeStyle(store, nodeId);
   const merged = { ...existing, ...patch };
   const clean = Object.fromEntries(Object.entries(merged).filter(([, v]) => v !== '' && v != null));
+  store.patchProp(nodeId, 'props.style', clean);
+}
+
+// Helper: remove specific keys from props.style entirely (no empty-string residue).
+function removeNodeStyleKeys(store: BuilderStore, nodeId: string, keys: string[]): void {
+  const existing = getNodeStyle(store, nodeId);
+  const keySet = new Set(keys);
+  const clean = Object.fromEntries(Object.entries(existing).filter(([k]) => !keySet.has(k)));
   store.patchProp(nodeId, 'props.style', clean);
 }
 
@@ -271,10 +288,23 @@ function stripBorderColorTokens(cls: string): string {
 
 // Replace or add a specific token group (e.g. all text-size tokens).
 // Strips each pattern from `patterns` and appends `newToken` (if not empty).
+/**
+ * Remove an exact class token — unlike removeTwToken which uses prefix matching
+ * (e.g. "flex" prefix removes "flex-col"), this removes only the exact class.
+ * Uses space/start/end anchors so "flex" never matches "flex-col" or "flex-row".
+ */
+function removeExactToken(cls: string, token: string): string {
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return cls
+    .replace(new RegExp(`(^|\\s)${escaped}(\\s|$)`, 'g'), ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function replaceTokenGroup(cls: string, patterns: string[], newToken: string): string {
   let result = cls;
   for (const p of patterns) {
-    result = removeTwToken(result, p);
+    result = removeExactToken(result, p);
   }
   return newToken ? `${result} ${newToken}`.replace(/\s+/g, ' ').trim() : result.replace(/\s+/g, ' ').trim();
 }
@@ -434,14 +464,30 @@ const handlers: Record<string, Handler> = {
       return { success: false, error: `Unknown component label: "${label}". Available: ${Object.keys(COMPONENT_SCHEMA).join(', ')}` };
     }
 
-    const finalNodeId = (input.nodeId as string | undefined)
+    const requestedId = (input.nodeId as string | undefined)
       ?? (input._assignedNodeId as string | undefined);
-    if (finalNodeId) {
-      (template as unknown as Record<string, unknown>).id = finalNodeId;
+    // Use the requested id only when it is a valid UUID (canonical path). Non-UUID strings
+    // fall back to assignIds; executeTools may map alias → real id for same-batch parentId
+    // resolution, but prompts should use real UUIDs for nodeId/parentId.
+    if (requestedId && isUUID(requestedId)) {
+      (template as unknown as Record<string, unknown>).id = requestedId;
+    }
+
+    // Defensive: models often pass src with add_component("Image"); apply it so the URL is not dropped.
+    if (label === 'Image' && input.src) {
+      (template as unknown as Record<string, unknown>).src = input.src;
     }
 
     const parentId = (input.parentId as string | null) ?? null;
     const atIdx = input.atIndex as number | undefined;
+
+    // Guard: if parentId is given but doesn't exist in the current page, the node would be
+    // silently dropped (insertNode returns the unchanged tree). Return an error so the AI
+    // can call get_page_tree to get valid IDs and retry.
+    if (parentId && !findNode(store.pageNodes as SDUINode[], parentId)) {
+      return { success: false, error: `Parent node "${parentId}" not found in the current page. Call get_page_tree first to get valid node IDs, or omit parentId to add at the page root.` };
+    }
+
     store.addNode(template, parentId, atIdx);
 
     return { success: true, data: { nodeId: template.id, type: (template as { type?: string }).type, message: `Added ${label} with nodeId ${template.id}` } };
@@ -450,6 +496,10 @@ const handlers: Record<string, Handler> = {
   add_icon(input, getStore) {
     const store = getStore();
     const nodeId = (input._assignedNodeId as string | undefined) ?? uuid();
+    const parentId = (input.parentId as string | null) ?? null;
+    if (parentId && !findNode(store.pageNodes as SDUINode[], parentId)) {
+      return { success: false, error: `Parent node "${parentId}" not found in the current page. Call get_page_tree first to get valid node IDs, or omit parentId to add at the page root.` };
+    }
     const node = {
       id: nodeId,
       type: 'Icon',
@@ -460,47 +510,52 @@ const handlers: Record<string, Handler> = {
         color: (input.color as string) || 'currentColor',
       },
     } as unknown as SDUINode;
-    store.addNode(node, (input.parentId as string | null) ?? null);
+    store.addNode(node, parentId);
     return { success: true, data: { nodeId, message: `Added icon "${input.icon}"` } };
   },
 
   add_image(input, getStore) {
     const store = getStore();
     const nodeId = (input._assignedNodeId as string | undefined) ?? uuid();
+    const parentId = (input.parentId as string | null) ?? null;
+    if (parentId && !findNode(store.pageNodes as SDUINode[], parentId)) {
+      return { success: false, error: `Parent node "${parentId}" not found in the current page. Call get_page_tree first to get valid node IDs, or omit parentId to add at the page root.` };
+    }
     const node = {
       id: nodeId,
       type: 'Image',
       src: input.src as string,
       props: {
         alt: (input.alt as string) || '',
-        width: 800,
-        height: 500,
-        objectFit: (input.objectFit as string) || 'cover',
-        className: (input.className as string) || 'w-full h-64 object-cover rounded-xl',
+        className: (input.className as string) || 'w-full rounded-xl',
       },
     } as unknown as SDUINode;
-    store.addNode(node, (input.parentId as string | null) ?? null);
+    store.addNode(node, parentId);
     return { success: true, data: { nodeId, message: 'Added image' } };
   },
 
   add_video(input, getStore) {
     const store = getStore();
     const nodeId = (input._assignedNodeId as string | undefined) ?? uuid();
+    const parentId = (input.parentId as string | null) ?? null;
+    if (parentId && !findNode(store.pageNodes as SDUINode[], parentId)) {
+      return { success: false, error: `Parent node "${parentId}" not found in the current page. Call get_page_tree first to get valid node IDs, or omit parentId to add at the page root.` };
+    }
     const node = {
       id: nodeId,
       type: 'Video',
       props: {
         src: input.src as string,
         ...(input.poster ? { poster: input.poster as string } : {}),
-        autoPlay: (input.autoPlay as boolean) ?? false,
-        loop:     (input.loop as boolean) ?? false,
+        autoPlay: (input.autoPlay as boolean) ?? true,
+        loop:     (input.loop as boolean) ?? true,
         muted:    (input.muted as boolean) ?? true,
-        controls: (input.controls as boolean) ?? true,
+        controls: (input.controls as boolean) ?? false,
         objectFit: (input.objectFit as string) || 'cover',
         className: (input.className as string) || 'w-full h-64 rounded-xl',
       },
     } as unknown as SDUINode;
-    store.addNode(node, (input.parentId as string | null) ?? null);
+    store.addNode(node, parentId);
     return { success: true, data: { nodeId, message: 'Added video' } };
   },
 
@@ -561,13 +616,15 @@ const handlers: Record<string, Handler> = {
     const nodeId = input.nodeId as string;
     const text = input.text as string;
 
-    const TEXT_CHILD_TYPES = new Set(['Text', 'ButtonText', 'FabLabel', 'LinkText', 'RadioLabel', 'CheckboxLabel']);
+    const TEXT_CHILD_TYPES = new Set(['Text', 'RadioLabel', 'CheckboxLabel']);
     const node = findNode(store.pageNodes as SDUINode[], nodeId);
-    if (node && node.type === 'Pressable' && Array.isArray(node.children)) {
-      const textChild = (node.children as SDUINode[]).find(c => TEXT_CHILD_TYPES.has(c.type));
-      if (textChild?.id) {
-        store.patchProp(textChild.id, 'text', text);
-        return { success: true, data: { message: `Set button text to "${text.slice(0, 50)}" (via child ${textChild.type})` } };
+    // Redirect to a single text-type child when the node itself has no `text` property
+    // (handles button-like Box wrappers, etc.)
+    if (node && !('text' in node) && Array.isArray(node.children)) {
+      const textChildren = (node.children as SDUINode[]).filter(c => TEXT_CHILD_TYPES.has(c.type));
+      if (textChildren.length === 1 && textChildren[0].id) {
+        store.patchProp(textChildren[0].id, 'text', text);
+        return { success: true, data: { message: `Set text to "${text.slice(0, 50)}" (via child ${textChildren[0].type})` } };
       }
     }
 
@@ -579,16 +636,8 @@ const handlers: Record<string, Handler> = {
     const store = getStore();
     const nodeId = input.nodeId as string;
     const placeholder = input.placeholder as string;
-
-    const targetNode = findNode(store.pageNodes, nodeId);
-    const inputFieldChild = (targetNode?.children as SDUINode[] | undefined)
-      ?.find(c => (c as SDUINode).type === 'InputField') as SDUINode | undefined;
-
-    if (inputFieldChild?.id) {
-      store.patchProp(inputFieldChild.id, 'props.placeholder', placeholder);
-    } else {
-      store.patchProp(nodeId, 'props.placeholder', placeholder);
-    }
+    // Input is now a flat node (InputWithField) — set placeholder directly on it
+    store.patchProp(nodeId, 'props.placeholder', placeholder);
     return { success: true, data: { message: `Set placeholder` } };
   },
 
@@ -602,15 +651,25 @@ const handlers: Record<string, Handler> = {
     const store = getStore();
     const nodeId = input.nodeId as string;
     const node = findNode(store.pageNodes as SDUINode[], nodeId);
-    // Image nodes store URL at top-level src; Video/other nodes store in props.src
-    if (node?.type === 'Image') {
-      store.patchProp(nodeId, 'src', input.src);
-    } else {
-      store.patchProp(nodeId, 'props.src', input.src);
+    // Box/HStack/etc. ignore props.src — only Image/Video render a URL. Without this guard,
+    // set_src "succeeds" but nothing appears on canvas (common AI hero pattern: Box + set_src).
+    const nodeType = node?.type as string | undefined;
+    if (!node || (nodeType !== 'Image' && nodeType !== 'Video')) {
+      return {
+        success: false,
+        error:
+          'set_src only works on Image or Video nodes. Add an Image (add_component label "Image" or add_image), then call set_src. For a full-bleed photo behind content, use an Image layer with absolute positioning and object-cover — do not use set_background for image URLs.',
+      };
     }
-    if (input.alt)       store.patchProp(nodeId, 'props.alt', input.alt);
-    if (input.objectFit) store.patchProp(nodeId, 'props.objectFit', input.objectFit);
-    if (input.poster)    store.patchProp(nodeId, 'props.poster', input.poster);
+    // Image nodes store URL at top-level src; Video uses props.src
+    if (nodeType === 'Image') {
+      if (input.src !== undefined) store.patchProp(nodeId, 'src', input.src);
+    } else {
+      if (input.src !== undefined) store.patchProp(nodeId, 'props.src', input.src);
+    }
+    if (input.alt        !== undefined) store.patchProp(nodeId, 'props.alt',       input.alt);
+    if (input.objectFit  !== undefined) store.patchProp(nodeId, 'props.objectFit', input.objectFit);
+    if (input.poster     !== undefined) store.patchProp(nodeId, 'props.poster',    input.poster);
     return { success: true, data: { message: 'Updated source' } };
   },
 
@@ -643,22 +702,15 @@ const handlers: Record<string, Handler> = {
     const store = getStore();
     const nodeId = input.nodeId as string;
     let cls = getNodeClassName(store, nodeId);
-    const stylePatch: Record<string, string> = {};
 
     if (input.bg != null) {
-      const bgClass = resolveColorClass(input.bg as string, 'bg');
+      const bgVal = input.bg as string;
+      const bgClass = resolveColorClass(bgVal, 'bg');
       cls = replaceTwToken(cls, 'bg-', bgClass);
-      // Clear inline backgroundColor so the Tailwind class wins (panel can leave inline values)
-      stylePatch.backgroundColor = '';
+      // Remove any residual inline backgroundColor — class is the single source of truth
+      removeNodeStyleKeys(store, nodeId, ['backgroundColor']);
     }
 
-    if (input.bgImage) {
-      stylePatch.backgroundImage = input.bgImage as string;
-      stylePatch.backgroundSize = 'cover';
-      stylePatch.backgroundPosition = 'center';
-    }
-
-    if (Object.keys(stylePatch).length > 0) patchNodeStyle(store, nodeId, stylePatch);
     setNodeClassName(store, nodeId, cls);
     return { success: true, data: { message: 'Updated background' } };
   },
@@ -666,8 +718,26 @@ const handlers: Record<string, Handler> = {
   set_text_color(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
-    let cls = getNodeClassName(store, nodeId);
     const colorClass = resolveColorClass(input.color as string, 'text');
+
+    // Apply color to the text child when the node itself has no `text` property
+    // (handles button-like Box wrappers, etc.)
+    const WRAPPER_TEXT_CHILD_TYPES = new Set(['Text', 'RadioLabel', 'CheckboxLabel']);
+    const node = findNode(store.pageNodes as SDUINode[], nodeId);
+    if (node && !('text' in node) && Array.isArray(node.children)) {
+      const textChildren = (node.children as SDUINode[]).filter(c => WRAPPER_TEXT_CHILD_TYPES.has(c.type));
+      if (textChildren.length === 1 && textChildren[0].id) {
+        const textChild = textChildren[0];
+        let childCls = getNodeClassName(store, textChild.id);
+        childCls = stripTextColorTokens(childCls);
+        childCls = `${childCls} ${colorClass}`.replace(/\s+/g, ' ').trim();
+        patchNodeStyle(store, textChild.id, { color: '' });
+        setNodeClassName(store, textChild.id, childCls);
+        return { success: true, data: { message: `Set text color to "${input.color}" (via child ${textChild.type})` } };
+      }
+    }
+
+    let cls = getNodeClassName(store, nodeId);
     cls = stripTextColorTokens(cls);
     cls = `${cls} ${colorClass}`.replace(/\s+/g, ' ').trim();
     // Clear inline color so the Tailwind class wins
@@ -722,7 +792,8 @@ const handlers: Record<string, Handler> = {
       cls = `${cls} ${borderColorClass}`.replace(/\s+/g, ' ').trim();
     }
     if (input.radius) {
-      const token = input.radius === 'md' ? 'rounded-md' : input.radius === 'none' ? 'rounded-none' : `rounded-${input.radius}`;
+      const r = input.radius as string;
+      const token = r === 'none' ? 'rounded-none' : r === 'default' ? 'rounded' : `rounded-${r}`;
       cls = replaceTokenGroup(cls, ROUNDED_PREFIXES, token);
     }
     // Per-corner radii
@@ -735,7 +806,7 @@ const handlers: Record<string, Handler> = {
     for (const [key, prefix] of corners) {
       if (input[key]) {
         const val = input[key] as string;
-        const token = val === 'none' ? `${prefix}-none` : val === 'md' ? `${prefix}-md` : `${prefix}-${val}`;
+        const token = val === 'none' ? `${prefix}-none` : val === 'default' ? prefix : `${prefix}-${val}`;
         cls = replaceTwToken(cls, `${prefix}-`, token);
       }
     }
@@ -749,7 +820,7 @@ const handlers: Record<string, Handler> = {
     const nodeId = input.nodeId as string;
     let cls = getNodeClassName(store, nodeId);
     const shadow = input.shadow as string;
-    const token = shadow === 'none' ? '' : shadow === 'md' ? 'shadow-md' : shadow === 'sm' ? 'shadow-sm' : `shadow-${shadow}`;
+    const token = shadow === 'none' ? '' : shadow === 'default' ? 'shadow' : `shadow-${shadow}`;
     cls = replaceTokenGroup(cls, SHADOW_PREFIXES, token);
     setNodeClassName(store, nodeId, cls);
     return { success: true, data: { message: shadow === 'none' ? 'Removed shadow' : `Set shadow to "${shadow}"` } };
@@ -759,50 +830,94 @@ const handlers: Record<string, Handler> = {
     const store = getStore();
     const nodeId = input.nodeId as string;
     let cls = getNodeClassName(store, nodeId);
-    const value = Math.round(Number(input.opacity) / 5) * 5; // snap to nearest 5
-    const token = `opacity-${value}`;
-    cls = replaceTokenGroup(cls, OPACITY_PREFIXES, token);
-    // Clear inline opacity so the Tailwind class wins
-    patchNodeStyle(store, nodeId, { opacity: '' });
+    const value = Math.min(100, Math.max(0, Number(input.opacity)));
+    // Write to style.opacity (0–1 float) — matches the builder panel's patchStyle behaviour
+    const opacityFloat = value >= 100 ? '' : String(value / 100);
+    // Clear any Tailwind opacity-* class that would conflict
+    cls = cls.split(' ').filter(t => !/^opacity-/.test(t)).join(' ').replace(/\s+/g, ' ').trim();
+    patchNodeStyle(store, nodeId, { opacity: opacityFloat });
     setNodeClassName(store, nodeId, cls);
-    return { success: true, data: { message: `Set opacity to ${input.opacity}%` } };
+    return { success: true, data: { message: `Set opacity to ${value}%` } };
   },
 
   set_spacing(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
     let cls = getNodeClassName(store, nodeId);
-    const stylePatch: Record<string, string> = {};
 
-    // Map: tool input key → [tailwind prefix, inline style keys to clear]
-    const SPACING_MAP: [string, string, string[]][] = [
-      ['p',    'p',     ['paddingTop','paddingRight','paddingBottom','paddingLeft','padding']],
-      ['px',   'px',    ['paddingLeft','paddingRight']],
-      ['py',   'py',    ['paddingTop','paddingBottom']],
-      ['pt',   'pt',    ['paddingTop']],
-      ['pr',   'pr',    ['paddingRight']],
-      ['pb',   'pb',    ['paddingBottom']],
-      ['pl',   'pl',    ['paddingLeft']],
-      ['m',    'm',     ['marginTop','marginRight','marginBottom','marginLeft','margin']],
-      ['mx',   'mx',    ['marginLeft','marginRight']],
-      ['my',   'my',    ['marginTop','marginBottom']],
-      ['mt',   'mt',    ['marginTop']],
-      ['mr',   'mr',    ['marginRight']],
-      ['mb',   'mb',    ['marginBottom']],
-      ['ml',   'ml',    ['marginLeft']],
-      ['gap',  'gap',   ['gap']],
-      ['gapX', 'gap-x', ['columnGap']],
-      ['gapY', 'gap-y', ['rowGap']],
-    ];
+    const toPx = (n: number) => `${n}px`;
 
-    for (const [key, prefix, styleKeys] of SPACING_MAP) {
-      if (input[key] != null) {
-        cls = replaceTwToken(cls, `${prefix}-`, spacingToken(prefix, input[key] as number));
-        for (const sk of styleKeys) stylePatch[sk] = '';
+    // Helper: strip the bare p-* or m-* shorthand (e.g. p-4, m-8) when individual
+    // sides are being set. The shorthand sets all four sides and would conflict with
+    // per-side arbitrary values (e.g. p-4 alongside pt-[96px] is confusing noise).
+    const stripPShorthand = (c: string) => c.split(' ').filter(t => !/^p-/.test(t)).join(' ').trim();
+    const stripMShorthand = (c: string) => c.split(' ').filter(t => !/^-?m-/.test(t)).join(' ').trim();
+    // Helper: write an arbitrary Tailwind token only when value > 0; for 0 just strip.
+    const setTok = (c: string, stripRe: RegExp, token: string, val: number) => {
+      c = c.split(' ').filter(t => !stripRe.test(t)).join(' ').trim();
+      return val !== 0 ? `${c} ${token}`.trim() : c;
+    };
+
+    // Padding — write as arbitrary Tailwind classes, never inline style.
+    // When value is 0 we only strip (zero padding = no class needed).
+    if (input.p != null) {
+      const n = input.p as number;
+      cls = cls.split(' ').filter(t => !/^p[xyblrt]?-/.test(t)).join(' ').trim();
+      if (n !== 0) {
+        const v = toPx(n);
+        cls = `${cls} pt-[${v}] pr-[${v}] pb-[${v}] pl-[${v}]`.trim();
       }
     }
+    if (input.px != null) {
+      const n = input.px as number;
+      cls = stripPShorthand(cls.split(' ').filter(t => !/^p[xlr]-/.test(t)).join(' ').trim());
+      if (n !== 0) cls = `${cls} pl-[${toPx(n)}] pr-[${toPx(n)}]`.trim();
+    }
+    if (input.py != null) {
+      const n = input.py as number;
+      cls = stripPShorthand(cls.split(' ').filter(t => !/^p[ybt]-/.test(t)).join(' ').trim());
+      if (n !== 0) cls = `${cls} pt-[${toPx(n)}] pb-[${toPx(n)}]`.trim();
+    }
+    if (input.pt != null) { cls = setTok(stripPShorthand(cls), /^pt-/, `pt-[${toPx(input.pt as number)}]`, input.pt as number); }
+    if (input.pr != null) { cls = setTok(stripPShorthand(cls), /^pr-/, `pr-[${toPx(input.pr as number)}]`, input.pr as number); }
+    if (input.pb != null) { cls = setTok(stripPShorthand(cls), /^pb-/, `pb-[${toPx(input.pb as number)}]`, input.pb as number); }
+    if (input.pl != null) { cls = setTok(stripPShorthand(cls), /^pl-/, `pl-[${toPx(input.pl as number)}]`, input.pl as number); }
 
-    if (Object.keys(stylePatch).length > 0) patchNodeStyle(store, nodeId, stylePatch);
+    // Margin — same pattern
+    if (input.m != null) {
+      const n = input.m as number;
+      cls = cls.split(' ').filter(t => !/^-?m[xyblrt]?-/.test(t)).join(' ').trim();
+      if (n !== 0) {
+        const v = toPx(n);
+        cls = `${cls} mt-[${v}] mr-[${v}] mb-[${v}] ml-[${v}]`.trim();
+      }
+    }
+    if (input.mx != null) {
+      const n = input.mx as number;
+      cls = stripMShorthand(cls.split(' ').filter(t => !/^-?m[xlr]-/.test(t)).join(' ').trim());
+      if (n !== 0) cls = `${cls} ml-[${toPx(n)}] mr-[${toPx(n)}]`.trim();
+    }
+    if (input.my != null) {
+      const n = input.my as number;
+      cls = stripMShorthand(cls.split(' ').filter(t => !/^-?m[ybt]-/.test(t)).join(' ').trim());
+      if (n !== 0) cls = `${cls} mt-[${toPx(n)}] mb-[${toPx(n)}]`.trim();
+    }
+    if (input.mt != null) { cls = setTok(stripMShorthand(cls), /^-?mt-/, `mt-[${toPx(input.mt as number)}]`, input.mt as number); }
+    if (input.mr != null) { cls = setTok(stripMShorthand(cls), /^-?mr-/, `mr-[${toPx(input.mr as number)}]`, input.mr as number); }
+    if (input.mb != null) { cls = setTok(stripMShorthand(cls), /^-?mb-/, `mb-[${toPx(input.mb as number)}]`, input.mb as number); }
+    if (input.ml != null) { cls = setTok(stripMShorthand(cls), /^-?ml-/, `ml-[${toPx(input.ml as number)}]`, input.ml as number); }
+
+    // Gap — arbitrary classes; value 0 = just strip (no gap-[0px] noise)
+    if (input.gap  != null) { cls = setTok(cls.split(' ').filter(t => !/^gap-/.test(t)).join(' ').trim(),   /^gap-/,   `gap-[${toPx(input.gap  as number)}]`, input.gap  as number); }
+    if (input.gapX != null) { cls = setTok(cls.split(' ').filter(t => !/^gap-x-/.test(t)).join(' ').trim(), /^gap-x-/, `gap-x-[${toPx(input.gapX as number)}]`, input.gapX as number); }
+    if (input.gapY != null) { cls = setTok(cls.split(' ').filter(t => !/^gap-y-/.test(t)).join(' ').trim(), /^gap-y-/, `gap-y-[${toPx(input.gapY as number)}]`, input.gapY as number); }
+
+    // Strip any residual inline spacing styles that used to be written by the old path
+    removeNodeStyleKeys(store, nodeId, [
+      'paddingTop','paddingRight','paddingBottom','paddingLeft','paddingBlock','paddingInline',
+      'marginTop','marginRight','marginBottom','marginLeft',
+      'gap','columnGap','rowGap',
+    ]);
     setNodeClassName(store, nodeId, cls);
     return { success: true, data: { message: 'Updated spacing' } };
   },
@@ -811,51 +926,77 @@ const handlers: Record<string, Handler> = {
     const store = getStore();
     const nodeId = input.nodeId as string;
     let cls = getNodeClassName(store, nodeId);
-    const stylePatch: Record<string, string> = {};
 
     if (input.width != null) {
       const w = input.width as string;
-      const token = w.startsWith('px:') ? `w-[${w.slice(3)}px]` : `w-${w}`;
-      cls = replaceTwToken(cls, 'w-', token);
-      // Clear inline width/minWidth so Tailwind class wins (mirrors right panel Fill/Hug)
-      if (!w.startsWith('px:')) { stylePatch.width = ''; stylePatch.minWidth = ''; }
+      if (w === 'fill') {
+        // w-full: matches exactly what the panel's Width "Fill" button writes.
+        cls = cls.split(' ').filter(t => !/^w-/.test(t) && !/^grow$/.test(t) && !/^min-w-/.test(t)).join(' ').trim();
+        cls = `${cls} w-full`.trim();
+      } else if (w.startsWith('px:')) {
+        const px = w.slice(3);
+        cls = cls.split(' ').filter(t => !/^flex-1/.test(t)).join(' ').trim();
+        cls = replaceTwToken(cls, 'w-', `w-[${px}px]`);
+        // Ensure min-width:0 class so the element doesn't overflow flex parents
+        cls = cls.split(' ').filter(t => !/^min-w-/.test(t)).join(' ').trim();
+        cls = `${cls} min-w-[0px]`.trim();
+      } else {
+        cls = cls.split(' ').filter(t => !/^flex-1/.test(t)).join(' ').trim();
+        cls = replaceTwToken(cls, 'w-', `w-${w}`);
+        // Remove any stale min-w arbitrary value when switching to named mode
+        cls = cls.split(' ').filter(t => !/^min-w-\[0/.test(t)).join(' ').trim();
+      }
     }
     if (input.height != null) {
       const h = input.height as string;
       if (h === 'min-screen') {
-        // min-h-screen = min-height: 100vh — absolute, works for top-level page sections
-        // regardless of parent height. Use for login/hero/404/landing full-viewport sections.
         cls = replaceTwToken(cls, 'min-h-', 'min-h-screen');
-        stylePatch.minHeight = '';
       } else if (h === 'fill' || h === 'full') {
-        // Fill = flex-1 (grows in flex parent, like Figma Fill). Works in any flex-col parent.
-        // Remove all h-mode tokens then add flex-1.
-        cls = removeTwToken(removeTwToken(cls, 'h-'), 'flex-1');
+        // Fill = flex-1 (grows in flex parent, like Figma Fill)
+        cls = removeTwToken(removeTwToken(removeTwToken(cls, 'h-'), 'flex-1'), 'min-h-');
         cls = `${cls} flex-1`.trim();
-        stylePatch.height = ''; stylePatch.minHeight = '';
       } else if (h === 'screen') {
-        // Screen = h-screen (100vh) — for full-viewport overlays, modals, hero sections.
-        cls = removeTwToken(removeTwToken(cls, 'h-'), 'flex-1');
+        cls = removeTwToken(removeTwToken(removeTwToken(cls, 'h-'), 'flex-1'), 'min-h-');
         cls = `${cls} h-screen`.trim();
-        stylePatch.height = ''; stylePatch.minHeight = '';
       } else if (h.startsWith('vh:')) {
-        // vh unit: set inline style height: Nvh
-        stylePatch.height = `${h.slice(3)}vh`; stylePatch.minHeight = '0';
+        // vh unit: Tailwind arbitrary class h-[Nvh]
+        const vhVal = h.slice(3);
         cls = removeTwToken(removeTwToken(removeTwToken(cls, 'h-fit'), 'h-screen'), 'flex-1');
+        cls = `${cls} h-[${vhVal}vh]`.trim();
+      } else if (h.startsWith('px:')) {
+        // Exact pixel height — class only
+        const px = h.slice(3);
+        cls = removeTwToken(removeTwToken(removeTwToken(cls, 'h-'), 'flex-1'), 'min-h-');
+        cls = `${cls} h-[${px}px]`.trim();
       } else {
-        const token = h.startsWith('px:') ? `h-[${h.slice(3)}px]` : `h-${h}`;
-        cls = removeTwToken(removeTwToken(cls, 'h-'), 'flex-1');
+        const token = `h-${h}`;
+        cls = removeTwToken(removeTwToken(removeTwToken(cls, 'h-'), 'flex-1'), 'min-h-');
         cls = replaceTwToken(cls, 'h-', token);
-        // Clear inline height/minHeight so Tailwind class wins
-        if (!h.startsWith('px:')) { stylePatch.height = ''; stylePatch.minHeight = ''; }
       }
     }
-    if (input.maxWidth) {
-      cls = replaceTwToken(cls, 'max-w-', `max-w-${input.maxWidth}`);
-      stylePatch.maxWidth = '';
+    if (input.maxWidth != null) {
+      const px = Number(input.maxWidth);
+      cls = cls.split(' ').filter(t => !/^max-w-/.test(t)).join(' ').trim();
+      if (px > 0) cls = `${cls} max-w-[${px}px]`.trim();
+    }
+    if (input.minWidth != null) {
+      const px = Number(input.minWidth);
+      cls = cls.split(' ').filter(t => !/^min-w-/.test(t)).join(' ').trim();
+      if (px > 0) cls = `${cls} min-w-[${px}px]`.trim();
+    }
+    if (input.maxHeight != null) {
+      const px = Number(input.maxHeight);
+      cls = cls.split(' ').filter(t => !/^max-h-/.test(t)).join(' ').trim();
+      if (px > 0) cls = `${cls} max-h-[${px}px]`.trim();
+    }
+    if (input.minHeight != null) {
+      const px = Number(input.minHeight);
+      cls = cls.split(' ').filter(t => !/^min-h-/.test(t)).join(' ').trim();
+      if (px > 0) cls = `${cls} min-h-[${px}px]`.trim();
     }
 
-    if (Object.keys(stylePatch).length > 0) patchNodeStyle(store, nodeId, stylePatch);
+    // Strip any residual inline size styles that used to be written by the old path
+    removeNodeStyleKeys(store, nodeId, ['width', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight']);
     setNodeClassName(store, nodeId, cls);
     return { success: true, data: { message: 'Updated size' } };
   },
@@ -866,12 +1007,21 @@ const handlers: Record<string, Handler> = {
     let cls = getNodeClassName(store, nodeId);
 
     if (input.position) cls = replaceTokenGroup(cls, POSITION_TOKENS, input.position as string);
-    if (input.zIndex)   cls = replaceTokenGroup(cls, Z_PREFIXES, `z-${input.zIndex}`);
-    if (input.top != null)    cls = replaceTwToken(cls, 'top-', `top-${input.top}`);
-    if (input.right != null)  cls = replaceTwToken(cls, 'right-', `right-${input.right}`);
-    if (input.bottom != null) cls = replaceTwToken(cls, 'bottom-', `bottom-${input.bottom}`);
-    if (input.left != null)   cls = replaceTwToken(cls, 'left-', `left-${input.left}`);
+    if (input.zIndex) {
+      const zVal = String(input.zIndex);
+      const twZScale = new Set(['0', '10', '20', '30', '40', '50', 'auto']);
+      const zCls = twZScale.has(zVal) ? `z-${zVal}` : `z-[${zVal}]`;
+      cls = replaceTokenGroup(cls, Z_PREFIXES, zCls);
+    }
 
+    // Inset: write as arbitrary Tailwind classes, not inline style
+    if (input.top    != null) { cls = cls.split(' ').filter(t => !/^top-/.test(t)).join(' ').trim();    cls = `${cls} top-[${input.top}px]`.trim(); }
+    if (input.right  != null) { cls = cls.split(' ').filter(t => !/^right-/.test(t)).join(' ').trim();  cls = `${cls} right-[${input.right}px]`.trim(); }
+    if (input.bottom != null) { cls = cls.split(' ').filter(t => !/^bottom-/.test(t)).join(' ').trim(); cls = `${cls} bottom-[${input.bottom}px]`.trim(); }
+    if (input.left   != null) { cls = cls.split(' ').filter(t => !/^left-/.test(t)).join(' ').trim();   cls = `${cls} left-[${input.left}px]`.trim(); }
+
+    // Strip any residual inline inset styles
+    removeNodeStyleKeys(store, nodeId, ['top', 'right', 'bottom', 'left']);
     setNodeClassName(store, nodeId, cls);
     return { success: true, data: { message: 'Updated position' } };
   },
@@ -884,10 +1034,10 @@ const handlers: Record<string, Handler> = {
 
     if (input.rotate != null) {
       const deg = Number(input.rotate);
-      const token = deg < 0 ? `-rotate-${Math.abs(deg)}` : `rotate-${deg}`;
-      cls = replaceTwToken(cls, 'rotate-', token);
-      // Clear inline transform so the Tailwind rotate class wins
-      stylePatch.transform = '';
+      // Write to style.transform (matches the panel's patchStyle behaviour — any degree value supported)
+      stylePatch.transform = deg === 0 ? '' : `rotate(${deg}deg)`;
+      // Clear any Tailwind rotate-* class that would conflict
+      cls = cls.split(' ').filter(t => !/^-?rotate-/.test(t)).join(' ').replace(/\s+/g, ' ').trim();
     }
     if (input.flipX !== undefined) {
       cls = removeTwToken(cls, 'scale-x-');
@@ -912,6 +1062,19 @@ const handlers: Record<string, Handler> = {
     return { success: true, data: { message: 'Updated transform/display properties' } };
   },
 
+  set_overflow(input, getStore) {
+    const store = getStore();
+    const nodeId = input.nodeId as string;
+    let cls = getNodeClassName(store, nodeId);
+    if (input.clip) {
+      if (!cls.includes('overflow-hidden')) cls = `${cls} overflow-hidden`.trim();
+    } else {
+      cls = cls.split(' ').filter(t => t !== 'overflow-hidden').join(' ').trim();
+    }
+    setNodeClassName(store, nodeId, cls);
+    return { success: true, data: { message: (input.clip as boolean) ? 'Clipping enabled (overflow-hidden)' : 'Clipping removed' } };
+  },
+
   set_display(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
@@ -932,20 +1095,26 @@ const handlers: Record<string, Handler> = {
 
   set_submit(input, getStore) {
     const store = getStore();
-    store.patchProp(input.nodeId as string, 'props.action', input.action);
-    return { success: true, data: { message: `Set button action variant to "${input.action}"` } };
+    // Toggle props.type='submit' — mirrors the builder Settings panel "Submit" toggle
+    store.patchProp(input.nodeId as string, 'props.type', input.submit ? 'submit' : null);
+    return { success: true, data: { message: input.submit ? 'Set button as form submit' : 'Cleared button submit type' } };
   },
 
   set_input_props(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
-    // Find the InputField child if this is an Input wrapper
-    const node = findNode(store.pageNodes as SDUINode[], nodeId);
-    const inputFieldChild = (node?.children as SDUINode[] | undefined)
-      ?.find(c => (c as SDUINode).type === 'InputField') as SDUINode | undefined;
-    const targetId = inputFieldChild?.id ?? nodeId;
+    // Input is now a flat node (InputWithField) — set props directly on it
+    const targetId = nodeId;
 
-    if (input.type)      store.patchProp(targetId, 'props.type', input.type);
+    if (input.type) {
+      if (input.type === 'decimal') {
+        // "decimal" maps to type=number with step=0.01 — matches the builder panel behaviour
+        store.patchProp(targetId, 'props.type', 'number');
+        store.patchProp(targetId, 'props.step', '0.01');
+      } else {
+        store.patchProp(targetId, 'props.type', input.type);
+      }
+    }
     if (input.multiline !== undefined) store.patchProp(targetId, 'props.multiline', input.multiline);
     if (input.rows)      store.patchProp(targetId, 'props.rows', input.rows);
     if (input.min != null) store.patchProp(targetId, 'props.min', input.min);
@@ -958,10 +1127,17 @@ const handlers: Record<string, Handler> = {
 
   set_layout(input, getStore) {
     const store = getStore();
-    const node = findNode(store.pageNodes, input.nodeId as string);
+    const nodeId = input.nodeId as string;
+    const node = findNode(store.pageNodes, nodeId);
     const current = (node?.props as { className?: string })?.className ?? '';
-    const updated = buildLayoutClass(input, current);
-    store.patchProp(input.nodeId as string, 'props.className', updated);
+    let updated = buildLayoutClass(input, current);
+    // gap is a pixel number — write as arbitrary Tailwind class, not inline style
+    if (input.gap != null) {
+      updated = updated.split(' ').filter(t => !/^gap(-[xy])?-/.test(t)).join(' ').replace(/\s+/g, ' ').trim();
+      updated = `${updated} gap-[${input.gap}px]`.trim();
+      removeNodeStyleKeys(store, nodeId, ['gap', 'columnGap', 'rowGap']);
+    }
+    store.patchProp(nodeId, 'props.className', updated);
     return { success: true, data: { message: 'Updated layout' } };
   },
 
@@ -1299,6 +1475,10 @@ const handlers: Record<string, Handler> = {
     return { success: true, data: { pending: 'server_side' } };
   },
 
+  search_videos() {
+    return { success: true, data: { pending: 'server_side' } };
+  },
+
   search_icons() {
     return { success: true, data: { pending: 'server_side' } };
   },
@@ -1327,17 +1507,49 @@ export async function executeTool(
   }
 }
 
-/** Execute multiple tool calls in sequence. */
+/** Execute multiple tool calls in sequence.
+ *
+ * When add_component receives a non-UUID nodeId, the tree stores a generated UUID; aliasMap
+ * maps that provisional string to the real id so same-batch parentId still resolves.
+ * Preferred: pass UUID nodeIds everywhere (see builder knowledge) — then aliasMap is unused.
+ */
 export async function executeTools(
   toolCalls: Array<{ name: string; input: ToolInput; id: string }>,
   getStore: StoreGetter,
 ): Promise<Array<{ id: string; result: ToolResult }>> {
+  // Maps AI-provided short aliases → actual UUID stored in the tree
+  const aliasMap = new Map<string, string>();
+
   const results: Array<{ id: string; result: ToolResult }> = [];
   for (const call of toolCalls) {
-    const result = await executeTool(call.name, call.input, getStore);
+    // Resolve any aliased string values in this call's input before executing
+    const resolvedInput = resolveAliases(call.input, aliasMap);
+    const result = await executeTool(call.name, resolvedInput, getStore);
+
+    // After add_component / add_icon / add_image / add_video — if the AI passed
+    // a short non-UUID nodeId, record the alias → actual UUID mapping so later
+    // calls in this batch can use it as parentId.
+    if (result.success && resolvedInput.nodeId && typeof resolvedInput.nodeId === 'string') {
+      const originalId = call.input.nodeId as string | undefined;
+      const actualId = (result.data as { nodeId?: string } | undefined)?.nodeId;
+      if (originalId && actualId && originalId !== actualId && !isUUID(originalId)) {
+        aliasMap.set(originalId, actualId);
+      }
+    }
+
     results.push({ id: call.id, result });
   }
   return results;
+}
+
+/** Replace any aliased string values in a tool input with their resolved UUIDs. */
+function resolveAliases(input: ToolInput, aliasMap: Map<string, string>): ToolInput {
+  if (!aliasMap.size) return input;
+  const out: ToolInput = {};
+  for (const [key, val] of Object.entries(input)) {
+    out[key] = (typeof val === 'string' && aliasMap.has(val)) ? aliasMap.get(val)! : val;
+  }
+  return out;
 }
 
 /** Format tool results as Anthropic tool_result content blocks. */
@@ -1361,7 +1573,7 @@ export const CLIENT_SIDE_TOOLS = new Set([
   'delete_node', 'duplicate_node', 'move_node_up', 'move_node_down', 'move_node', 'wrap_in_container',
   'set_text', 'set_placeholder', 'set_href', 'set_src', 'set_icon', 'set_video_props',
   'set_background', 'set_text_color', 'set_typography', 'set_border', 'set_shadow',
-  'set_opacity', 'set_spacing', 'set_size', 'set_position', 'set_transform', 'set_display',
+  'set_opacity', 'set_spacing', 'set_size', 'set_position', 'set_transform', 'set_overflow', 'set_display',
   'set_submit', 'set_input_props',
   'set_layout',
   'set_condition', 'set_repeat', 'bind_action', 'unbind_action', 'create_workflow',
