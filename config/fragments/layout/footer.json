@@ -7,13 +7,13 @@
     {
       "type": "Box",
       "props": {
-        "className": "w-full max-w-screen-xl mx-auto px-4 py-12"
+        "className": "w-full max-w-screen-xl mx-auto px-[16px] py-[48px]"
       },
       "children": [
         {
           "type": "Box",
           "props": {
-            "className": "w-full grid grid-cols-1 md:grid-cols-4 gap-8"
+            "className": "w-full grid grid-cols-1 md:grid-cols-4 gap-[32px]"
           },
           "children": [
             {
@@ -22,7 +22,7 @@
                 {
                   "type": "Text",
                   "props": {
-                    "className": "text-sm font-semibold mb-4 uppercase tracking-wider text-[var(--theme-foreground)]"
+                    "className": "text-[14px] font-semibold mb-[16px] uppercase tracking-wider text-[var(--theme-foreground)]"
                   },
                   "text": "Vendure Store"
                 }
@@ -34,14 +34,14 @@
                 {
                   "type": "Text",
                   "props": {
-                    "className": "text-sm font-semibold mb-4 text-[var(--theme-foreground)]"
+                    "className": "text-[14px] font-semibold mb-[16px] text-[var(--theme-foreground)]"
                   },
                   "text": "Categories"
                 },
                 {
                   "type": "Box",
                   "props": {
-                    "className": "flex flex-col gap-2"
+                    "className": "flex flex-col gap-[8px]"
                   },
                   "children": [
                     {
@@ -63,7 +63,7 @@
                             {
                               "type": "Text",
                               "props": {
-                                "className": "text-sm text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)]"
+                                "className": "text-[14px] text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)]"
                               },
                               "text": "{{context.item.data.name}}"
                             }
@@ -81,14 +81,14 @@
                 {
                   "type": "Text",
                   "props": {
-                    "className": "text-sm font-semibold mb-4 text-[var(--theme-foreground)]"
+                    "className": "text-[14px] font-semibold mb-[16px] text-[var(--theme-foreground)]"
                   },
                   "text": "Vendure"
                 },
                 {
                   "type": "Box",
                   "props": {
-                    "className": "flex flex-col gap-2"
+                    "className": "flex flex-col gap-[8px]"
                   },
                   "children": [
                     {
@@ -97,7 +97,7 @@
                         {
                           "type": "Text",
                           "props": {
-                            "className": "text-sm text-[var(--theme-muted-foreground)]"
+                            "className": "text-[14px] text-[var(--theme-muted-foreground)]"
                           },
                           "text": "GitHub"
                         }
@@ -109,7 +109,7 @@
                         {
                           "type": "Text",
                           "props": {
-                            "className": "text-sm text-[var(--theme-muted-foreground)]"
+                            "className": "text-[14px] text-[var(--theme-muted-foreground)]"
                           },
                           "text": "Documentation"
                         }
@@ -121,7 +121,7 @@
                         {
                           "type": "Text",
                           "props": {
-                            "className": "text-sm text-[var(--theme-muted-foreground)]"
+                            "className": "text-[14px] text-[var(--theme-muted-foreground)]"
                           },
                           "text": "Source code"
                         }
@@ -136,26 +136,26 @@
         {
           "type": "Box",
           "props": {
-            "className": "w-full mt-12 pt-8 border-t border-[var(--theme-border)] flex flex-col md:flex-row justify-between items-center gap-4"
+            "className": "w-full mt-[48px] pt-[32px] border-t border-[var(--theme-border)] flex flex-col md:flex-row justify-between items-center gap-[16px]"
           },
           "children": [
             {
               "type": "Text",
               "props": {
-                "className": "text-sm text-[var(--theme-muted-foreground)]"
+                "className": "text-[14px] text-[var(--theme-muted-foreground)]"
               },
               "text": "© 2025 Vendure Store. All rights reserved."
             },
             {
               "type": "Box",
               "props": {
-                "className": "flex flex-row items-center gap-2"
+                "className": "flex flex-row items-center gap-[8px]"
               },
               "children": [
                 {
                   "type": "Text",
                   "props": {
-                    "className": "text-sm text-[var(--theme-muted-foreground)]"
+                    "className": "text-[14px] text-[var(--theme-muted-foreground)]"
                   },
                   "text": "Powered by"
                 },
@@ -166,13 +166,13 @@
                     "alt": "Vendure",
                     "width": 40,
                     "height": 27,
-                    "className": "h-4 w-auto dark:invert"
+                    "className": "h-[16px] w-auto dark:invert"
                   }
                 },
                 {
                   "type": "Text",
                   "props": {
-                    "className": "text-sm text-[var(--theme-muted-foreground)]"
+                    "className": "text-[14px] text-[var(--theme-muted-foreground)]"
                   },
                   "text": "&"
                 },
@@ -183,7 +183,7 @@
                     "alt": "Next.js",
                     "width": 16,
                     "height": 16,
-                    "className": "h-5 w-auto dark:invert"
+                    "className": "h-[20px] w-auto dark:invert"
                   }
                 }
               ]

@@ -266,19 +266,20 @@ test.describe('PD — Heading', () => {
     console.log('✅ Typography section shown for Heading');
   });
 
-  test('PD-02: Heading font-size token text-3xl applies in className', async () => {
+  test('PD-02: Heading font-size 30px applies text-[30px] in className', async () => {
     await dropComponent(sharedPage, 'Heading');
     await selectFirstNodeViaLayers(sharedPage);
     const nodeId = await getFirstNodeId(sharedPage);
 
-    const fontSizeSelect = sharedPage.locator('[data-testid="select-text-size"]');
-    await expect(fontSizeSelect).toBeVisible({ timeout: 5_000 });
-    await fontSizeSelect.selectOption('text-3xl');
+    const fontSizeInput = sharedPage.locator('[data-testid="input-text-size"]');
+    await expect(fontSizeInput).toBeVisible({ timeout: 5_000 });
+    await fontSizeInput.fill('30');
+    await fontSizeInput.press('Tab');
     await sharedPage.waitForTimeout(200);
 
     const cls = await getNodeClassName(sharedPage, nodeId);
-    expect(cls).toContain('text-3xl');
-    console.log('✅ Heading font-size text-3xl applied to className');
+    expect(cls).toContain('text-[30px]');
+    console.log('✅ Heading font-size text-[30px] applied to className');
   });
 
   test('PD-03: Heading font-weight font-bold applies in className', async () => {
@@ -430,22 +431,27 @@ test.describe('PD — Image', () => {
     console.log('✅ Image W=80 H=80 applied via inline style');
   });
 
-  test('PD-11: Image all corners rounded-full applies in className', async () => {
+  test('PD-11: Image per-corner radius NumberInput writes rounded-{corner}-[Xpx] to className', async () => {
     await dropComponent(sharedPage, 'Image');
     await selectFirstNodeViaLayers(sharedPage);
     const nodeId = await getFirstNodeId(sharedPage);
 
-    await scrollTo(sharedPage, 'select-corner-tl');
+    await scrollTo(sharedPage, 'input-corner-tl');
     for (const corner of ['tl', 'tr', 'br', 'bl']) {
-      await sharedPage.locator(`[data-testid="select-corner-${corner}"]`).selectOption('rounded-full');
+      const input = sharedPage.locator(`[data-testid="input-corner-${corner}"]`);
+      await input.fill('9999');
+      await input.press('Enter');
       await sharedPage.waitForTimeout(100);
     }
-    await sharedPage.waitForTimeout(200);
+    await sharedPage.waitForTimeout(400);
 
     const cls = await getNodeClassName(sharedPage, nodeId);
-    expect(cls).toContain('rounded-full');
+    expect(cls).toContain('rounded-tl-[9999px]');
+    expect(cls).toContain('rounded-tr-[9999px]');
+    expect(cls).toContain('rounded-br-[9999px]');
+    expect(cls).toContain('rounded-bl-[9999px]');
     await expect(sharedPage.locator(`[data-builder-id="${nodeId}"]`)).toBeVisible();
-    console.log('✅ Image rounded-full applied to className');
+    console.log('✅ Image per-corner radius rounded-[corner]-[9999px] written to className');
   });
 });
 

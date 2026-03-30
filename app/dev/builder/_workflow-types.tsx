@@ -617,11 +617,13 @@ export function getStepSummary(
     case 'changeVariableValue': {
       const vId = cfg.variableName as string | undefined;
       if (!vId) return null;
-      return varLabels?.[vId] ?? vId.split('.').pop() ?? vId;
+      const uuidRe = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+      return varLabels?.[vId] ?? (uuidRe.test(vId) ? '(unknown variable)' : vId.split('.').pop() ?? vId);
     }
     case 'resetVariableValue': {
       const names = (cfg.variableNames as string[] | undefined) ?? (cfg.variableName ? [cfg.variableName as string] : []);
-      const resolved = names.filter(Boolean).map(id => varLabels?.[id] ?? id.split('.').pop() ?? id);
+      const uuidRe = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+      const resolved = names.filter(Boolean).map(id => varLabels?.[id as string] ?? (uuidRe.test(id as string) ? '(unknown variable)' : (id as string).split('.').pop() ?? id));
       return resolved.length > 0 ? resolved.join(', ') : null;
     }
     case 'executeComponentAction': {

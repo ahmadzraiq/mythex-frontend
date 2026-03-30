@@ -1449,3 +1449,202 @@ window.open(buildFinalUrl(data), '_blank');           // gesture expired → cur
 ```
 
 **Applies to:** Any async handler (button onClick, form submit, etc.) that calls `window.open` after one or more `await` operations — e.g. saving to a backend, fetching a token, dynamic import.
+
+---
+
+## `classToInlineStyle` — All Arbitrary-Value Classes Must Have a Corresponding Case
+
+**Problem:** The builder persists style changes (border-radius, z-index, per-corner radius) as arbitrary Tailwind classes in `props.className` (e.g. `rounded-[6px]`, `rounded-tl-[5px]`, `z-[2]`). If `classToInlineStyle` in `lib/sdui/renderer.tsx` lacks a `case` for these prefixes, the values appear correctly in the builder panel but are **silently ignored** in the canvas/preview — the developer must manually toggle the value to trigger a re-render.
+
+**Root cause:** Arbitrary-value Tailwind classes from JSON config are never compiled by Tailwind JIT (only scanned source files are compiled). Therefore `classToInlineStyle` is the *only* mechanism that converts them to inline styles for rendering.
+
+**The canonical rule:** Every CSS property that `styleToClassName` in `app/dev/builder/_tw-utils.ts` can encode into a Tailwind class (i.e. every entry in `STYLE_TO_CLASS_KEYS`) must have a corresponding `case` in `classToInlineStyle`. These two functions are inverses of each other.
+
+**Supported prefixes in `classToInlineStyle` (as of fix):**
+
+| Tailwind prefix | CSS property |
+|---|---|
+| `absolute`, `relative`, `fixed`, `sticky`, `static` (bare keywords) | `position` |
+| `rounded` | `borderRadius` |
+| `rounded-tl` | `borderTopLeftRadius` |
+| `rounded-tr` | `borderTopRightRadius` |
+| `rounded-br` | `borderBottomRightRadius` |
+| `rounded-bl` | `borderBottomLeftRadius` |
+| `z` | `zIndex` |
+| `w`, `h`, `min-w`, `max-w`, `min-h`, `max-h` | width/height variants |
+| `p`, `pt`, `pr`, `pb`, `pl`, `px`, `py` | padding variants |
+| `m`, `mt`, `mr`, `mb`, `ml`, `mx`, `my` | margin variants |
+| `gap`, `gap-x`, `gap-y` | gap |
+| `top`, `right`, `bottom`, `left` | positioning insets |
+| `opacity` | opacity |
+| `bg` | backgroundColor |
+| `text` | color / fontSize |
+| `border` | borderColor / borderWidth |
+
+**Rule:** When adding a new property to `STYLE_TO_CLASS_KEYS` / `styleToClassName`, ALWAYS add the matching `case` to `classToInlineStyle` in the same PR — otherwise the builder writes a value that the canvas cannot read.
+
+---
+
+## Animated Nodes in Builder — `data-builder-id` Must Be Set via Ref, Not JSX Prop
+
+**Problem:** Passing `data-builder-id={nodeId}` as a JSX prop to `Animated.View` does NOT set the attribute in the DOM. Reanimated's `createAnimatedComponent` and RNW's `View` cssInterop chain both strip unknown `data-*` props before they reach the DOM element. Result: `elementsFromPoint` finds the element but `.closest('[data-builder-id]')` returns null → canvas click-to-select silently fails for ALL animated nodes.
+
+**Fix (applied in `lib/sdui/components/animated-node.tsx`):** A `useEffect` imperatively calls `element.setAttribute('data-builder-id', nodeId)` on mount using `animatedRef.current`, which is the actual underlying DOM element:
+
+```tsx
+useEffect(() => {
+  if (!builderMode || !nodeId || Platform.OS !== 'web') return;
+  const el = animatedRef.current as unknown as HTMLElement | null;
+  if (!el || typeof el.setAttribute !== 'function') return;
+  el.setAttribute('data-builder-id', nodeId);
+  el.setAttribute('data-builder-type', nodeType ?? 'Box');
+}, [builderMode, nodeId, nodeType]);
+```
+
+**Rule:** For any component wrapping `Animated.View` that needs `data-builder-id` in the DOM, ALWAYS use a ref-based `setAttribute` call — never a JSX prop. This is the same pattern used by `applyBuilderAnnotation` for non-animated nodes, which has the same comment: *"Gluestack/NativeWind's cssInterop chain strips unknown data-* props before they reach the DOM, so a ref callback is the only reliable way to set them."*
+
+---
+
+## Animated Nodes in Builder — `arbStyles` Must Go to `outerStyle`, Not Inner Element
+
+**Problem:** In builder mode, animated nodes use `animNodeOwnsId = true` — the outer `Animated.View` wrapper carries `data-builder-id` and is the selection/resize target. The inner element (e.g. `Button`, `Box`) is a visual child.
+
+If `arbStyles` (extracted from `className` by `classToInlineStyle`) are applied to BOTH the inner element (via `cleanProps.style`) AND the outer wrapper (via `outerStyle` in the `animNodeOwnsId` block), properties like `padding` and `backgroundColor` are **double-applied**. The button appears oversized in the builder (extra padding from double application) but renders correctly in preview (no `animNodeOwnsId`).
+
+Additionally, a hover outline drawn around the outer (oversized) wrapper creates an artifact that looks like a "large underline" far below visually thin elements.
+
+**Fix (applied in `lib/sdui/renderer.tsx`):**
+1. Skip adding `arbStyles` to `cleanProps.style` when `animNodeOwnsId` is true:
+   ```tsx
+   if (Object.keys(arbStyles).length > 0 && !animNodeOwnsId) {
+     cleanProps.style = { ...arbStyles, ...(cleanProps.style as Record<string, unknown> ?? {}) };
+   }
+   ```
+2. In the `animNodeOwnsId` block, explicitly merge `arbStyles` into `outerStyle` (so the outer wrapper gets them exactly once):
+   ```tsx
+   if (animNodeOwnsId) {
+     const innerStyle = cleanProps.style as Record<string, unknown> | undefined;
+     const styleForOuter = { ...arbStyles, ...(innerStyle ?? {}) };
+     if (Object.keys(styleForOuter).length > 0) {
+       resolvedAnimCfg = { ...resolvedAnimCfg, outerStyle: styleForOuter };
+     }
+     if (innerStyle) delete (cleanProps as Record<string, unknown>).style;
+   }
+   ```
+
+**Rule:** `arbStyles` always go to the inner element via `cleanProps.style`. In `animNodeOwnsId` mode, ONLY the `OUTER_PASSTHROUGH` subset (width, height, min/max sizes, top/right/bottom/left, borderRadius variants, zIndex) is additionally forwarded to `outerStyle` so the selection wrapper matches the element's dimensions. Padding, margin, color, fontSize, borderWidth/Color NEVER go to `outerStyle` — they stay on the inner element only, otherwise the builder shows the element taller/wider than in preview.
+
+---
+
+## `set_animation` Tool — Hover/Press Field Names
+
+**Problem:** The `set_animation` tool previously wrote `{ type: 'scale', value: 1.05 }` for hover/press. `HoverConfig` and `PressConfig` have **no** `type` or `value` fields — the engine silently ignored these, so hover/press animations set by the AI never animated at all.
+
+**Correct field names:**
+- `HoverConfig`: `scale`, `opacity`, `y`, `duration`, `easing`
+- `PressConfig`: `scale`, `opacity`, `x`, `y`, `duration`, `easing`
+
+**Fix (applied in `lib/ai/tool-executor.ts`):**
+- `hover: 'scale'` → writes `{ scale: 1.05, duration: 200 }`
+- `hover: 'lift'` → writes `{ y: -4, duration: 200 }`
+- `press: 'scale'` → writes `{ scale: 0.95, duration: 100 }`
+- `press: 'bounce'` → writes `{ scale: 0.9, duration: 100 }`
+
+**Rule:** Never use `type` or `value` inside `hover` or `press` animation config. Both types only accept numeric scalar fields.
+
+---
+
+## `set_animation` Tool — Phantom Exit Types
+
+**Problem:** `bounceOut`, `flipOutX`, `flipOutY`, `flipOut3D`, `rollOut` appear in `EXIT_TYPES` in the builder panel but are **not** in `REANIMATED_EXIT_MAP` or `EXIT_TO` in the engine. Using them silently falls back to `opacity: 0` only — no slide, flip, or bounce.
+
+**Fix:** These types have been removed from the `set_animation` tool enum in `lib/ai/builder-tools.ts`. The confirmed-working exit types are: `fadeOut`, `slideOutUp`, `slideOutDown`, `slideOutLeft`, `slideOutRight`, `zoomOut`, `shrinkOut`, `blurOut`, `skewOut`.
+
+**Rule:** Never use the removed exit types in JSON config or AI tool calls. They silently no-op beyond a basic fade.
+
+---
+
+## Builder Tool Executor — All Setters Must Validate `nodeId` Existence
+
+**Problem:** All setter tools (`set_text`, `set_typography`, `set_text_color`, `set_size`, `set_spacing`, `set_border`, `set_background`, `set_opacity`, `set_position`, `set_layout`, `set_overflow`, `set_animation`, `set_icon`, `rename_node`) call `patchProp` / `patchNodeById` which silently does nothing when no node matches the given `nodeId`. The tool returns `{ success: true }` even though no change occurred — the AI cannot detect the failure and continues building on ghost nodes.
+
+This is most visible when `add_component` fails (e.g. due to an invalid `parentId` string like `"hero-content"` instead of a UUID), and then all subsequent styling calls also silently succeed, producing a hero section that looks complete in the chat log but has no nodes on the canvas.
+
+**Fix (applied in `lib/ai/tool-executor.ts`):** A shared `requireNode` helper is called at the start of every setter:
+
+```ts
+function requireNode(store: BuilderStore, nodeId: string | undefined) {
+  if (!nodeId) return { success: false, error: 'nodeId is required.' };
+  if (!findNode(store.pageNodes as SDUINode[], nodeId)) {
+    return {
+      success: false,
+      error: `Node "${nodeId}" not found on the current page. Call get_page_tree first to get valid node IDs, or check whether a prior add_component step failed.`,
+    };
+  }
+  return null;
+}
+```
+
+Each setter starts with:
+```ts
+const nodeErr = requireNode(store, nodeId);
+if (nodeErr) return nodeErr;
+```
+
+**Rule:** When adding a new setter tool to `lib/ai/tool-executor.ts`, ALWAYS add `requireNode` as the first guard. Never call `patchProp`, `patchNodeById`, or `patchNodeField` without first verifying the node exists.
+
+**Builder chat error display:** Failed steps (`status: "error"`) now show a **red dot** (`#ef4444`) and red label (`#fca5a5`) in the builder chat panel. Previously they showed as blue, making them look like informational items rather than failures. The summary dot in a collapsed tool group also turns red when any step in the group failed.
+
+---
+
+## Animated Node `animNodeOwnsId` — Outer Wrapper Style Rule
+
+**Problem:** In builder mode, when a node has an animation config, `animNodeOwnsId` is true and the renderer wraps the element in an `AnimatedNode`. The outer animated wrapper is the selectable/resizable target. A previous bug spread the full `cleanProps.style` (which = `arbStyles` + `node.props.style`) to `outerStyle`, then deleted it from the inner element. This caused:
+- Padding that existed in both arbStyles AND compiled CSS classes to be applied twice (outer padding + inner CSS padding), making builder elements taller/wider than preview.
+- Non-JIT-compiled arbitrary classes to lose their inline style fallback on the inner element.
+
+**Fix (applied in `lib/sdui/renderer.tsx` `animNodeOwnsId` block):**
+- `outerFromArb` — only keys in `OUTER_PASSTHROUGH` (`width`, `height`, size constraints, `top`/`right`/`bottom`/`left`, `borderRadius` variants, `zIndex`) from `arbStyles` go to the outer wrapper.
+- `nodePropsStyle` — only `node.props.style` (explicit JSON style written by tools like `set_opacity`) goes to the outer wrapper, NOT the full `cleanProps.style`.
+- `cleanProps.style` is **not deleted** — the inner element keeps its full arbStyles inline styles so non-compiled arbitrary classes still render.
+
+```ts
+// ✅ CORRECT
+const outerFromArb: Record<string, unknown> = {};
+for (const key of OUTER_PASSTHROUGH) {
+  if (key in arbStyles) outerFromArb[key] = arbStyles[key];
+}
+const nodePropsStyle = (node.props?.style ?? {}) as Record<string, unknown>;
+const styleForOuter = { ...outerFromArb, ...nodePropsStyle };
+// Do NOT delete cleanProps.style
+
+// ❌ WRONG — caused double padding and lost inline styles
+const innerStyle = cleanProps.style; // includes arbStyles padding!
+const styleForOuter = { ...outerFromArb, ...innerStyle }; // padding leaks to outer
+delete cleanProps.style; // inner loses inline style fallback
+```
+
+**Rule:** When modifying the `animNodeOwnsId` block in `renderer.tsx`, never spread the full `cleanProps.style` into `outerStyle` and never delete `cleanProps.style` from the inner element.
+
+---
+
+## Background Media — Always Remove Default Border-Radius
+
+**Problem:** `Video` and `Image` components ship with rounded corners by default (`rounded-[6px]` on Video, `rounded-[8px]` on Image). When used as full-screen background layers (absolute, w-screen, h-screen), these rounded corners create visible clipped edges at the viewport boundary.
+
+**Fix:** After placing any Video or Image as a full-screen absolute background layer, immediately call `set_border(nodeId, {radius: 0})`.
+
+```ts
+// ✅ After set_position(videoId, {position: "absolute", top: 0, left: 0, zIndex: 0})
+set_border(videoId, { radius: 0 });  // remove default rounded-[6px]
+```
+
+**Rule:** The `aiRef` for Video and Image explicitly documents this requirement. It is enforced as a "Derived rule" in the builder system prompt — any tool that adds a Video or Image as a background layer must always pair it with `set_border({radius: 0})`.
+
+## Hero Container — Remove Default Padding When All Children Are Absolute
+
+**Problem:** Default Box/VStack templates ship with `p-[16px] gap-[16px]`. When a container's sole purpose is to stack absolute-positioned children (video layer, overlay layer, content layer), this padding creates invisible dead space that shifts the absolute coordinate origin.
+
+**Fix:** After creating a container whose children will ALL be absolutely positioned, call `set_spacing(containerId, {p: 0, gap: 0})`.
+
+**Rule:** Applies to hero section wrappers, full-screen overlay roots, and any container that only holds absolute children. Enforced as a "Derived rule" in the builder system prompt.

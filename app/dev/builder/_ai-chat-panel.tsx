@@ -78,11 +78,11 @@ function ToolRow({ tool, stepNumber }: { tool: AiToolCall; stepNumber: number })
         animation: isGenerating ? 'toolDotSpin 1.4s linear infinite' : 'none',
       }
     : isError
-    ? { background: '#60a5fa' }
+    ? { background: '#ef4444' }
     : { background: '#34d399', animation: 'toolDotPop 0.35s cubic-bezier(0.34,1.56,0.64,1)' };
 
   const labelAnim = (isPending || isGenerating) ? 'toolLabelShimmer 1.8s ease-in-out infinite' : 'none';
-  const labelColor = (isGenerating || isPending) ? '#475569' : isError ? '#93c5fd' : '#94a3b8';
+  const labelColor = (isGenerating || isPending) ? '#475569' : isError ? '#fca5a5' : '#94a3b8';
 
   return (
     <div style={{ animation: 'toolSlideIn 0.18s ease-out both' }}>
@@ -193,8 +193,8 @@ function ToolCallsGroup({ tools, streaming, isThinking }: { tools: AiToolCall[];
   }
 
   // ── Done state ───────────────────────────────────────────────────────────
-  // Status dot: green = success, blue = has errors
-  const doneDotColor = hasError ? '#60a5fa' : '#34d399';
+  // Status dot: green = success, red = has errors
+  const doneDotColor = hasError ? '#ef4444' : '#34d399';
   return (
     <div style={{ marginBottom: 10 }}>
       {/* Summary line: dot · N steps · Xs ▼ */}
@@ -825,7 +825,8 @@ export function AiChatPanel() {
   // ID of the message being edited — truncation happens at send time, NOT on click
   const [editTargetId, setEditTargetId] = useState<string | null>(null);
 
-  const { aiChatHistory, aiGenerating, aiSelectedNodeIds, aiCurrentThreadId, aiSelectedModel } = store;
+  const { aiChatHistory, aiGenerating, aiSelectedNodeIds, aiCurrentThreadId, aiSelectedModel, pages, currentPageId } = store;
+  const currentPageName = pages.find(p => p.id === currentPageId)?.name ?? 'Home';
 
   // Text is buffered during streaming and revealed all at once when done —
   // no typewriter needed. MessageBubble reads msg.content directly.
@@ -1170,9 +1171,22 @@ export function AiChatPanel() {
             </div>
           )}
 
+          {/* Active page indicator — always visible, non-removable */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '8px 12px 0', alignItems: 'center' }}>
+            <span style={{ fontSize: 10, color: '#475569' }}>Page:</span>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 3,
+              fontSize: 10, padding: '2px 7px', borderRadius: 20,
+              background: 'rgba(16,185,129,0.15)', color: '#6ee7b7',
+              border: '1px solid rgba(16,185,129,0.3)',
+            }}>
+              ⬡ {currentPageName}
+            </span>
+          </div>
+
           {/* Node chips — inside container */}
           {aiSelectedNodeIds.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '8px 12px 0', alignItems: 'center' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '4px 12px 0', alignItems: 'center' }}>
               <span style={{ fontSize: 10, color: '#475569' }}>Referencing:</span>
               {aiSelectedNodeIds.map(id => (
                 <span key={id} style={{

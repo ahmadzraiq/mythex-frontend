@@ -7,13 +7,13 @@
   "content": {
     "type": "Box",
     "props": {
-      "className": "space-y-6 flex flex-col"
+      "className": "space-y-[24px] flex flex-col"
     },
     "children": [
       {
         "type": "Box",
         "props": {
-          "className": "flex items-center gap-3 flex-row"
+          "className": "flex items-center gap-[12px] flex-row"
         },
         "children": [
           {
@@ -27,7 +27,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] hover:underline transition-colors"
+                  "className": "text-[14px] text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] hover:underline transition-colors"
                 },
                 "text": "← Orders"
               }
@@ -36,14 +36,14 @@
           {
             "type": "Heading",
             "props": {
-              "className": "text-3xl font-bold"
+              "className": "text-[30px] font-bold"
             },
             "text": "Order #{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.code}}"
           },
           {
             "type": "Box",
             "props": {
-              "className": "text-xs"
+              "className": "text-[12px]"
             },
             "children": [
               {
@@ -60,20 +60,20 @@
           {
             "type": "Box",
             "props": {
-              "className": "p-6 space-y-4"
+              "className": "p-[24px] space-y-[16px]"
             },
             "children": [
               {
                 "type": "Heading",
                 "props": {
-                  "className": "text-lg font-semibold mb-4"
+                  "className": "text-[18px] font-semibold mb-[16px]"
                 },
                 "text": "Items"
               },
               {
                 "type": "Box",
                 "props": {
-                  "className": "space-y-4 flex flex-col"
+                  "className": "space-y-[16px] flex flex-col"
                 },
                 "map": "collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.lines",
                 "key": "orderDetailLine",
@@ -81,7 +81,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex gap-4 items-start flex-row"
+                      "className": "flex gap-[16px] items-start flex-row"
                     },
                     "children": [
                       {
@@ -91,7 +91,7 @@
                           "alt": "{{context.item.data.productVariant.product.name}}",
                           "width": 80,
                           "height": 80,
-                          "className": "rounded-md object-cover w-20 h-20 flex-shrink-0 border border-[var(--theme-border)]"
+                          "className": "rounded-[6px] object-cover w-[80px] h-[80px] flex-shrink-0 border-[1px] border-[var(--theme-border)]"
                         }
                       },
                       {
@@ -110,14 +110,14 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-sm text-[var(--theme-muted-foreground)]"
+                              "className": "text-[14px] text-[var(--theme-muted-foreground)]"
                             },
                             "text": "{{context.item.data.productVariant.name}}"
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
+                              "className": "text-[14px] text-[var(--theme-muted-foreground)] mt-[4px]"
                             },
                             "text": "Qty: {{context.item.data.quantity}}"
                           }
@@ -140,13 +140,13 @@
           }
         ],
         "props": {
-          "className": "border rounded-xl bg-[var(--theme-card)] shadow-sm"
+          "className": "border-[1px] rounded-[12px] bg-[var(--theme-card)] shadow-sm"
         }
       },
       {
         "type": "Box",
         "props": {
-          "className": "grid md:grid-cols-2 gap-6"
+          "className": "grid md:grid-cols-2 gap-[24px]"
         },
         "children": [
           {
@@ -155,41 +155,41 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "p-6"
+                  "className": "p-[24px]"
                 },
                 "children": [
                   {
                     "type": "Heading",
                     "props": {
-                      "className": "text-base font-semibold mb-3"
+                      "className": "text-[16px] font-semibold mb-[12px]"
                     },
                     "text": "Shipping Address"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm"
+                      "className": "text-[14px]"
                     },
                     "text": "{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.shippingAddress.fullName}}"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-[var(--theme-muted-foreground)]"
+                      "className": "text-[14px] text-[var(--theme-muted-foreground)]"
                     },
                     "text": "{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.shippingAddress.streetLine1}}"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-[var(--theme-muted-foreground)]"
+                      "className": "text-[14px] text-[var(--theme-muted-foreground)]"
                     },
                     "text": "{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.shippingAddress.city}}, {{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.shippingAddress.postalCode}}"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-[var(--theme-muted-foreground)]"
+                      "className": "text-[14px] text-[var(--theme-muted-foreground)]"
                     },
                     "text": "{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.shippingAddress.country}}"
                   }
@@ -197,7 +197,7 @@
               }
             ],
             "props": {
-              "className": "border rounded-xl bg-[var(--theme-card)] shadow-sm"
+              "className": "border-[1px] rounded-[12px] bg-[var(--theme-card)] shadow-sm"
             }
           },
           {
@@ -206,20 +206,20 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "p-6 space-y-2"
+                  "className": "p-[24px] space-y-[8px]"
                 },
                 "children": [
                   {
                     "type": "Heading",
                     "props": {
-                      "className": "text-base font-semibold mb-3"
+                      "className": "text-[16px] font-semibold mb-[12px]"
                     },
                     "text": "Order Summary"
                   },
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex justify-between text-sm flex-row"
+                      "className": "flex justify-between text-[14px] flex-row"
                     },
                     "children": [
                       {
@@ -240,7 +240,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex justify-between text-sm flex-row"
+                      "className": "flex justify-between text-[14px] flex-row"
                     },
                     "children": [
                       {
@@ -286,7 +286,7 @@
               }
             ],
             "props": {
-              "className": "border rounded-xl bg-[var(--theme-card)] shadow-sm"
+              "className": "border-[1px] rounded-[12px] bg-[var(--theme-card)] shadow-sm"
             }
           }
         ]

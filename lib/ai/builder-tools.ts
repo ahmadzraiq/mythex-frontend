@@ -88,6 +88,24 @@ const readTools: BuilderTool[] = [
     description: 'List all configured data sources (API collections) in this project. Returns each source\'s id, label, and the path to use in formulas (e.g. "collections[\'UUID\'].data"). Use this before set_repeat or writing any formula that references collection data.',
     input_schema: { type: 'object', properties: {} },
   },
+  {
+    name: 'search_nodes',
+    description: 'Search the current page tree for nodes matching a query string. Case-insensitive substring match against node name, type, text content, and id. Returns all matches with their IDs and breadcrumb paths so you can reference them in subsequent tool calls. Use this to find an existing node before modifying it, instead of loading the full tree. Scope: current page only — use switch_page first to search a different page.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Substring to search for in node name, type, text content, or id (case-insensitive).',
+        },
+        nodeType: {
+          type: 'string',
+          description: 'Optional: filter results to a specific component type, e.g. "Button", "Text", "Box".',
+        },
+      },
+      required: ['query'],
+    },
+  },
 ];
 
 // ─── Section Generation (streaming, shows live building on canvas) ─────────────
@@ -150,7 +168,7 @@ const generationTools: BuilderTool[] = [
 const addTools: BuilderTool[] = [
   {
     name: 'add_component',
-    description: 'Add a component to the page by its palette label — exactly like dragging it from the builder\'s left panel. The builder inserts the component template with proper defaults. AI never writes JSON. Do NOT use this tool for Image or Video — use add_image / add_video instead; those tools set src (and poster for video) correctly.\n\nBATCH TIP: Pass a short descriptive nodeId (e.g. "section-wrap"). Use that same string as parentId for children in the same batch. After the batch, use the real UUID from the tool result for all subsequent rounds.',
+    description: 'Add a component to the page by its palette label — exactly like dragging it from the builder\'s left panel. The builder inserts the component template with proper defaults. AI never writes JSON. Do NOT use this tool for Image or Video — use add_image / add_video instead; those tools set src (and poster for video) correctly.\n\nBATCH TIP: Always generate a UUID for nodeId (e.g. "a1b2c3d4-e5f6-7890-abcd-ef1234567890"). Use that same UUID as parentId for children in the same batch. Set name on container/section nodes to label them in the Layers panel.',
     input_schema: {
       type: 'object',
       properties: {
@@ -161,11 +179,15 @@ const addTools: BuilderTool[] = [
         },
         nodeId: {
           type: 'string',
-          description: 'Optional: short descriptive id for this node (e.g. "section-wrap", "hero-title"). Use this same string as parentId for children in the same batch. After the batch, use the real UUID returned in the result for all future tool calls.',
+          description: 'UUID for this node — generate a UUID yourself (e.g. "a1b2c3d4-e5f6-7890-abcd-ef1234567890"). Use this exact UUID as parentId for children in the same batch and for all subsequent tool calls.',
+        },
+        name: {
+          type: 'string',
+          description: 'Display name shown in the Layers panel (e.g. "Hero Section", "Pricing Card", "Nav Bar"). Always set this on container/section nodes. Replaces the need for a separate rename_node call on initial creation.',
         },
         parentId: {
           type: 'string',
-          description: 'ID of the container to add into. Use either the short alias from the same batch, or the real UUID from a previous round\'s result. Omit to add at the top-level of the current page.',
+          description: 'UUID of the container to add into. Use the UUID you set as nodeId on the parent in this batch, or the real UUID from a previous round\'s result. Omit to add at the top-level of the current page.',
         },
         atIndex: {
           type: 'number',
@@ -279,10 +301,10 @@ const structureTools: BuilderTool[] = [
       type: 'object',
       properties: {
         nodeId: { type: 'string', description: 'Node to move.' },
-        targetParentId: { type: 'string', description: 'ID of the destination container. Pass the page root container ID to move to top-level.' },
+        targetParentId: { type: 'string', description: 'ID of the destination container node. Omit entirely to move to the page root level. NEVER pass a page ID (e.g. "page-1234567890") — that is not a node ID, is not in the tree, and silently deletes the node causing all subsequent operations to fail.' },
         atIndex: { type: 'number', description: 'Position within the target parent. Omit to append at end.' },
       },
-      required: ['nodeId', 'targetParentId'],
+      required: ['nodeId'],
     },
   },
   {
@@ -430,9 +452,8 @@ const semanticDesignTools: BuilderTool[] = [
       properties: {
         nodeId: { type: 'string' },
         size: {
-          type: 'string',
-          enum: ['xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', '8xl', '9xl'],
-          description: 'Font size.',
+          type: 'number',
+          description: 'Font size in pixels. E.g. 12, 14, 16, 18, 20, 24, 30, 36, 48.',
         },
         weight: {
           type: 'string',
@@ -477,9 +498,8 @@ const semanticDesignTools: BuilderTool[] = [
       properties: {
         nodeId: { type: 'string' },
         width: {
-          type: 'string',
-          enum: ['0', '1', '2', '4', '8'],
-          description: 'Border width in px. "0" removes border.',
+          type: 'number',
+          description: 'Border width in pixels. E.g. 1, 2, 4. Pass 0 to remove border.',
         },
         style: {
           type: 'string',
@@ -491,14 +511,13 @@ const semanticDesignTools: BuilderTool[] = [
           description: 'Border color. Theme names: "border", "primary", "muted". Or: "gray-200", "#hex".',
         },
         radius: {
-          type: 'string',
-          enum: ['none', 'sm', 'default', 'md', 'lg', 'xl', '2xl', '3xl', 'full'],
-          description: 'Border radius applied to all four corners. "default" = small standard radius (matches Design panel).',
+          type: 'number',
+          description: 'Border radius in pixels applied to all four corners. E.g. 4, 6, 8, 12, 9999 (full/pill).',
         },
-        radiusTL: { type: 'string', enum: ['none', 'sm', 'default', 'md', 'lg', 'xl', '2xl', '3xl', 'full'], description: 'Top-left corner radius.' },
-        radiusTR: { type: 'string', enum: ['none', 'sm', 'default', 'md', 'lg', 'xl', '2xl', '3xl', 'full'], description: 'Top-right corner radius.' },
-        radiusBR: { type: 'string', enum: ['none', 'sm', 'default', 'md', 'lg', 'xl', '2xl', '3xl', 'full'], description: 'Bottom-right corner radius.' },
-        radiusBL: { type: 'string', enum: ['none', 'sm', 'default', 'md', 'lg', 'xl', '2xl', '3xl', 'full'], description: 'Bottom-left corner radius.' },
+        radiusTL: { type: 'number', description: 'Top-left corner radius in pixels.' },
+        radiusTR: { type: 'number', description: 'Top-right corner radius in pixels.' },
+        radiusBR: { type: 'number', description: 'Bottom-right corner radius in pixels.' },
+        radiusBL: { type: 'number', description: 'Bottom-left corner radius in pixels.' },
       },
       required: ['nodeId'],
     },
@@ -589,9 +608,8 @@ const semanticDesignTools: BuilderTool[] = [
           description: 'Position type.',
         },
         zIndex: {
-          type: 'string',
-          enum: ['0', '10', '20', '30', '40', '50', 'auto'],
-          description: 'Z-index.',
+          type: 'number',
+          description: 'Z-index as an integer. E.g. 0, 10, 20, 50, 100.',
         },
         top:    { type: 'number', description: 'Top inset in pixels.' },
         right:  { type: 'number', description: 'Right inset in pixels.' },
@@ -642,12 +660,12 @@ const semanticDesignTools: BuilderTool[] = [
   },
   {
     name: 'set_overflow',
-    description: 'Clip (or unclip) a node\'s content — mirrors the "Clip content" toggle in the design panel. Use clip:true to add overflow-hidden so child content is clipped to the box boundary; clip:false to remove it. Use this instead of set_transform when you only need to control clipping.',
+    description: 'Clip (or unclip) a node\'s content — mirrors the "Clip content" toggle in the design panel. Use clip:true so child content is clipped to the box boundary; clip:false to remove clipping. Use this instead of set_transform when you only need to control clipping.',
     input_schema: {
       type: 'object',
       properties: {
         nodeId: { type: 'string', description: 'Node ID' },
-        clip: { type: 'boolean', description: 'true = add overflow-hidden, false = remove overflow-hidden' },
+        clip: { type: 'boolean', description: 'true = clip content to box boundary, false = allow content to overflow' },
       },
       required: ['nodeId', 'clip'],
     },
@@ -756,7 +774,7 @@ const logicTools: BuilderTool[] = [
       type: 'object',
       properties: {
         nodeId: { type: 'string' },
-        mapPath: { type: 'string', description: 'State path to the array, e.g. "collections.UUID.data.items". Pass "" to remove.' },
+        mapPath: { type: 'string', description: 'State path to the array, e.g. "variables[\'varId\']" or "collections.UUID.data.items". For nested repeat (sub-list inside an outer repeated item), use "context.item.data.fieldName". Pass "" to remove.' },
         keyField: { type: 'string', description: 'Field to use as React key, e.g. "id".' },
       },
       required: ['nodeId', 'mapPath'],
@@ -848,14 +866,17 @@ Each step must have a unique "id" plus "type" and "config". Examples:
         nodeId: { type: 'string' },
         enter: {
           type: 'string',
-          enum: ['none', 'fadeIn', 'slideInUp', 'slideInDown', 'slideInLeft', 'slideInLeftSubtle', 'slideInRight', 'riseFade', 'dropIn', 'zoomIn', 'expandIn', 'bounceIn', 'flipInX', 'flipInY', 'flipIn3D', 'tiltIn', 'skewIn', 'skewInY', 'blurIn', 'glowIn', 'rollIn'],
+          enum: ['none', 'fadeIn', 'slideInUp', 'slideInDown', 'slideInLeft', 'slideInLeftSubtle', 'slideInRight', 'riseFade', 'dropIn', 'zoomIn', 'expandIn', 'bounceIn', 'flipInX', 'flipInY', 'flipIn3D', 'tiltIn', 'skewIn', 'skewInY', 'blurIn', 'glowIn', 'rollIn', 'revealUp', 'charFall', 'charBounce'],
           description: 'Enter animation (plays on mount). "none" removes it.',
         },
         enterDuration: { type: 'number', description: 'Enter animation duration in ms. Default 300.' },
+        enterDelay: { type: 'number', description: 'Delay before the enter animation starts (ms).' },
+        enterStagger: { type: 'number', description: 'Per-child stagger offset (ms) when this node is a mapped list container — each child enters after the previous by this amount.' },
         exit: {
           type: 'string',
-          enum: ['none', 'fadeOut', 'slideOutUp', 'slideOutDown', 'slideOutLeft', 'slideOutRight', 'zoomOut', 'shrinkOut', 'bounceOut', 'flipOutX', 'flipOutY', 'flipOut3D', 'blurOut', 'skewOut', 'rollOut'],
-          description: 'Exit animation. "none" removes it.',
+          // bounceOut, flipOutX, flipOutY, flipOut3D, rollOut are NOT in REANIMATED_EXIT_MAP — removed
+          enum: ['none', 'fadeOut', 'slideOutUp', 'slideOutDown', 'slideOutLeft', 'slideOutRight', 'zoomOut', 'shrinkOut', 'blurOut', 'skewOut'],
+          description: 'Exit animation (plays on unmount). "none" removes it.',
         },
         exitDuration: { type: 'number', description: 'Exit animation duration in ms. Default 300.' },
         loop: {
@@ -863,29 +884,36 @@ Each step must have a unique "id" plus "type" and "config". Examples:
           enum: ['none', 'pulse', 'breathe', 'float', 'shake', 'wiggle', 'wobble', 'swing', 'spin', 'ticker', 'bounce', 'heartbeat', 'flash', 'ripple', 'glowPulse', 'gradientDrift'],
           description: 'Continuous loop animation. "none" removes it.',
         },
+        loopDuration: { type: 'number', description: 'Loop animation duration per cycle in ms. Default 1500.' },
+        loopColor: { type: 'string', description: 'Glow/shadow color for glowPulse and ripple loop types (hex, e.g. "#a855f7"). Required for glowPulse to be visible on light backgrounds.' },
         hover: {
           type: 'string',
           enum: ['scale', 'lift', 'none'],
-          description: 'Hover animation. "scale" = grows slightly, "lift" = moves up.',
+          description: 'Hover animation. "scale" = grows slightly (scale: 1.05), "lift" = moves up (y: -4px).',
         },
         press: {
           type: 'string',
           enum: ['scale', 'bounce', 'none'],
-          description: 'Press/active animation that plays when clicked.',
+          description: 'Press/tap animation. "scale" = shrinks on tap (scale: 0.95), "bounce" = deeper shrink (scale: 0.9).',
         },
         scroll: {
           type: 'string',
           enum: ['none', 'fadeIn', 'slideInUp', 'slideInDown', 'slideInLeft', 'slideInRight', 'riseFade', 'dropIn', 'zoomIn', 'expandIn', 'bounceIn', 'blurIn'],
-          description: 'Scroll-triggered enter animation — fires when the element enters the viewport.',
+          description: 'Scroll-triggered enter animation — fires when the element scrolls into the viewport.',
+        },
+        shimmer: {
+          type: 'boolean',
+          description: 'Add a shimmer/skeleton-loading highlight sweep effect. Use on placeholder cards or loading states.',
         },
         imperativeTrigger: {
           type: 'object',
-          description: 'Trigger the animation imperatively when a variable changes. E.g. to shake on error: { "type": "shake", "watchVar": "variables[\'UUID\']", "duration": 500 }',
+          description: 'Re-play a one-shot animation whenever a variable changes (e.g. shake on validation error). watchVar must be a formula expression like "variables[\'UUID\']". Use Date.now() as the variable value to guarantee a change on every trigger.',
           properties: {
-            type: { type: 'string', enum: ['none', 'pulse', 'breathe', 'float', 'shake', 'wiggle', 'wobble', 'swing', 'spin', 'bounce', 'heartbeat', 'flash', 'ripple', 'glowPulse', 'gradientDrift'], description: 'Animation type.' },
-            watchVar: { type: 'string', description: 'Formula expression to watch for changes, e.g. "variables[\'UUID\']".' },
+            type: { type: 'string', enum: ['pulse', 'breathe', 'float', 'shake', 'wiggle', 'wobble', 'swing', 'spin', 'bounce', 'heartbeat', 'flash', 'ripple', 'glowPulse'], description: 'Animation type to replay.' },
+            watchVar: { type: 'string', description: 'Formula expression to watch, e.g. "variables[\'UUID\']".' },
             duration: { type: 'number', description: 'Animation duration in ms. Default 500.' },
           },
+          required: ['type', 'watchVar'],
         },
       },
       required: ['nodeId'],
@@ -956,7 +984,7 @@ Each step must have a unique "id" plus "type" and "config". Examples:
 const variableTools: BuilderTool[] = [
   {
     name: 'add_variable',
-    description: 'Create a new project variable. Variables are referenced as variables[\'UUID\'] in conditions and {{variables[\'UUID\']}} in text.\n\nBATCH TIP: Provide a short variableId (e.g. "show-menu") so you can immediately use variables[\'show-menu\'] in set_text, set_condition, and create_workflow calls in the same batch — no round-trip needed.',
+    description: 'Create a new project variable. Variables are referenced as variables[\'UUID\'] in conditions and {{variables[\'UUID\']}} in text.\n\nBATCH TIP: Pre-assign a hex UUID for variableId so you can immediately use variables[\'UUID\'] in set_text, set_condition, and create_workflow variableName in the same batch — no round-trip needed.',
     input_schema: {
       type: 'object',
       properties: {
@@ -965,7 +993,7 @@ const variableTools: BuilderTool[] = [
         initialValue: { description: 'Initial value.' },
         variableId: {
           type: 'string',
-          description: 'Optional: pre-assign a short descriptive ID like "show-modal", "active-tab". Use this same string in variables[\'your-id\'] bindings in the same batch.',
+          description: 'Pre-assign a hex UUID (8-4-4-4-12 format, hex characters only). Use this SAME UUID as variableName in create_workflow changeVariableValue steps and in variables[\'UUID\'] bindings in the same batch.',
         },
       },
       required: ['name', 'type'],

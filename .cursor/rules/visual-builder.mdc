@@ -78,13 +78,13 @@ All components in the palette are **primitives**: they use `Box`, `Text`, and `I
 | Layout | VStack | `VStack` | Gluestack VStack (column) |
 | Layout | HStack | `HStack` | Gluestack HStack (row) |
 | Layout | Center | `Center` | Centers children horizontally & vertically |
-| Layout | Grid | `Grid` (empty, `grid-cols-2 gap-4`) | CSS grid container; `isContainer`; drop `GridItem` children into it |
+| Layout | Grid | `Grid` (empty, `grid-cols-2 gap-[16px]`) | CSS grid container; `isContainer`; drop `GridItem` children into it |
 | Layout | Card | `Box` with border/bg/rounded/shadow className | Bordered surface container; `isContainer` |
 | Layout | Divider | `Box` `h-px bg-border` | Horizontal rule |
 | Typography | Text | `Text` | Text node (Typography section) |
 | Typography | Heading | `Heading` | Text node (Typography section) |
-| Typography | Label | `Text` `text-sm font-medium` | Text node |
-| Typography | Caption | `Text` `text-xs` | Text node |
+| Typography | Label | `Text` `text-[14px] font-medium` | Text node |
+| Typography | Caption | `Text` `text-[12px]` | Text node |
 | Typography | Link | `Box` with `cursor-pointer` + `Text` child | Navigable link; `isContainer` |
 | Buttons | Btn Solid | `Box` + `Text` child | `bg-primary text-primary-foreground` |
 | Buttons | Btn Destructive | `Box` + `Text` child | `bg-destructive text-destructive-foreground` |
@@ -125,7 +125,7 @@ All components in the palette are **primitives**: they use `Box`, `Text`, and `I
 | Form | Autocomplete | `Box` + `Input` + dropdown `Box` | Primitive search-with-dropdown; `isContainer` |
 | Layout | ScrollView | `Box` `overflow-auto` | Scrollable container; `isContainer` |
 | Composite | Chip | `Box` + `Text` + `Icon X` | Removable tag; `isContainer` |
-| Composite | Tag | `Box` `rounded-full` + `Text` | Static tag; `isContainer` |
+| Composite | Tag | `Box` `rounded-[9999px]` + `Text` | Static tag; `isContainer` |
 | Composite | Tabs | `Box` + tab bar + content | `isContainer` |
 | Composite | Stepper | `Box` + circle nodes + connectors | Step progress; `isContainer` |
 | Composite | Pagination | `Box` + Prev/Next + pages | Page nav bar; `isContainer` |
@@ -332,7 +332,7 @@ export const showcaseNodes: SDUINode[] = showcaseRaw.map(ensureIds);
 
 ## Showcase / Preview — Grid Layout Must Have `w-full`
 
-**Problem:** The showcase `row()` grid (`grid grid-cols-3 gap-6 items-start`) renders correctly in the builder canvas but shows the wrong number of columns in the preview tab.
+**Problem:** The showcase `row()` grid (`grid grid-cols-3 gap-[24px] items-start`) renders correctly in the builder canvas but shows the wrong number of columns in the preview tab.
 
 **Root cause:** NativeWind's `Box` → React Native `View` does **not** auto-expand to fill its parent. Without `w-full`, the grid container collapses to its content size. CSS `grid-template-columns: repeat(3, 1fr)` computes `1fr` relative to the container's actual width — if the container is content-sized, each `1fr` equals one item's natural width, letting many items pack per row instead of exactly 3.
 
@@ -341,7 +341,7 @@ In the builder canvas the page frame has a fixed pixel `width` set via inline st
 **Fix:**
 1. Add `w-full` to every grid container in `_showcase.ts` `row()`:
    ```ts
-   props: { className: 'grid grid-cols-3 gap-6 items-start w-full' }
+   props: { className: 'grid grid-cols-3 gap-[24px] items-start w-full' }
    ```
 2. Add `grid-cols-*` to the Tailwind safelist in `tailwind.config.js`:
    ```js
@@ -429,16 +429,25 @@ return className.replace(new RegExp(`(?:^|\\s)${escaped}\\S*`, 'g'), ' ')...
 
 ---
 
-### 6. Border radius: per-corner tokens vs global tokens
+### 6. Border radius: per-corner arbitrary-px tokens
 
-**Root cause:** The old `applyBorderRadius` emitted `rounded-lg rounded-none rounded-none rounded-none` (all global, last one wins → all corners = none). `expandBorderRadius` returned per-corner tokens like `rounded-tl-lg` which don't match any `ROUNDED_TOKENS` select option.
+**Current design:** Each corner (TL, TR, BR, BL) has an independent `NumberInput` in the panel. Entering a pixel value writes `rounded-{corner}-[Xpx]` via `patchStyle({borderTopLeftRadius: 'Xpx'})` → `styleToClassName`. There is no global rollup (even when all 4 corners are equal, 4 per-corner classes are written).
 
-**Fix:**
-- `expandBorderRadius`: parse per-corner tokens via regex `\brounded-tl(?:-\S+)?`, convert back to global format (`rounded-tl-lg` → `rounded-lg`) for select display.
-- `applyBorderRadius`: when corners differ, emit per-corner tokens (`rounded-tl-lg rounded-tr-none…`); when equal, emit single global token.
-- Helper `globalToCornerToken('rounded-lg', 'tl')` → `'rounded-tl-lg'`.
+**Reading:** `expandBorderRadius` reads the current className and returns a per-corner pixel map `{tl, tr, br, bl}`. It resolves:
+1. Explicit per-corner arbitrary class (`rounded-tl-[8px]` → 8)
+2. Fallback to global arbitrary class (`rounded-[8px]` → 8 for all corners)
+3. Scale token backward-compat (`rounded-lg` → 8, `rounded-full` → 9999)
 
-**Rule:** Never concatenate four global `rounded-*` tokens for mixed corners. Always convert to `rounded-{corner}-{size}`.
+**Writing:** `patchStyle({borderTopLeftRadius: 'Npx'})` → `styleToClassName` emits `rounded-tl-[Npx]` and strips all existing radius tokens for that corner.
+
+**Rule:** All new border-radius writes must use `patchStyle` with explicit `px` values. Never emit bare scale tokens like `rounded-lg` or `rounded-full` — always use `rounded-[Xpx]` / `rounded-tl-[Xpx]`.
+
+**Animated nodes — border-radius on outer wrapper:**
+For nodes that have an `animation` config (enter, hover, loop, etc.), `AnimatedNode` wraps the content in an outer `View`/`Animated.View` that holds `data-builder-id`. In builder mode, `renderer.tsx` automatically forwards `rounded-[Xpx]` / `rounded-{corner}-[Xpx]` from the inner node's `className` to the outer wrapper's `outerStyle`. This ensures:
+1. `patchStyle({ borderRadius })` on the `data-builder-id` element produces a visible effect
+2. The selection ring in `_overlay.tsx` reads the outer wrapper's border-radius (via `el.style.borderRadius` or `getComputedStyle`) and applies it to the ring, so the ring follows rounded corners
+
+**Safelist:** `tailwind.config.js` includes `{ pattern: /^rounded-\[\d+px\]$/ }` and `{ pattern: /^rounded-(tl|tr|br|bl)-\[\d+px\]$/ }` so that AI-generated arbitrary-px border-radius classes always have compiled CSS, even if they don't appear in static build-time content files.
 
 ---
 
@@ -549,23 +558,30 @@ Parse className into structured px/token values for display in inputs. These are
 Maps 0–8 cell index → `items-*` + `justify-*` classes. Used by the 9-cell grid.
 
 ### `globalToCornerToken(global, corner)`
-`'rounded-lg'` + `'tl'` → `'rounded-tl-lg'`. Used in `applyBorderRadius` for mixed-corner case.
+Legacy helper: `'rounded-lg'` + `'tl'` → `'rounded-tl-lg'`. Kept for backward-compat reading of old scale-token nodes. New writes always use `rounded-{corner}-[Xpx]` via `patchStyle`.
 
 ---
 
 ## Tailwind Safelist (`tailwind.config.js`)
 
 All dynamically applied builder classes must be in the safelist. Current coverage:
-- Spacing: `p/px/py/pt/pr/pb/pl-{scale}` (includes decimals like `1.5`)
-- Margin: `m/mx/my/mt/mr/mb/ml-{scale|auto}` (includes decimals)
-- Gap, W, H, max-w, opacity, rounded, text-*, font-*, leading, tracking
+- **Spacing (arbitrary-px):** `pt/pr/pb/pl/px/py-[*]`, `mt/mr/mb/ml/mx/my-[*]`, `gap-[*]`, `gap-x-[*]`, `gap-y-[*]`
+- **Dimensions (arbitrary-px):** `w-[*]`, `h-[*]`, `max-w-[*]`
+- **Border radius (arbitrary-px):** `rounded-[*]`, `rounded-tl/tr/br/bl-[*]`
+- **Border width (arbitrary-px):** `border-[*px]`
+- **Typography (arbitrary-px):** `text-[*px]`
+- **Z-index (arbitrary):** `z-[*]`
+- **Scale tokens (legacy backward-compat):** `p/px/py/pt/pr/pb/pl-{scale}`, `rounded-{size}`, `text-{size}`, `border-{size}` — kept so old nodes display correctly; new writes always use arbitrary-px
 - Flex: direction, items, justify, wrap
 - Rotate (including negated and arbitrary): `-?rotate-(N|[...])`, `-?scale-x/y-*`
 - Position: `static/relative/absolute/fixed/sticky`
-- Z-index: `z-0/10/20/30/40/50/auto`
+- Z-index scale: `z-0/10/20/30/40/50/auto`
 - Cursor, display, overflow, text-align, text-decoration, text-transform, self-*
+- Shadow: `shadow-{size}` (still scale-token based)
+- Font weight: `font-{weight}` (still scale-token based)
+- Opacity: `opacity-{value}` (still scale-token based)
 
-**Rule:** Any new class dynamically applied by the builder must be added to the safelist OR stored as an inline style property.
+**Rule:** Any new class dynamically applied by the builder must be added to the safelist OR stored as an inline style property. Spacing, dimensions, border-radius, border-width, and font-size are ALL written as `[Xpx]` arbitrary classes — never as scale tokens.
 
 ---
 

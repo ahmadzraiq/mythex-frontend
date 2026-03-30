@@ -10,27 +10,27 @@
       "_stateTag": "empty",
       "condition": "!collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.loading && !collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product",
       "props": {
-        "className": "container mx-auto px-4 py-16 text-center"
+        "className": "container mx-auto px-[16px] py-[64px] text-center"
       },
       "children": [
         {
           "type": "Heading",
           "props": {
-            "className": "text-2xl font-bold mb-4"
+            "className": "text-[24px] font-bold mb-[16px]"
           },
           "text": "Product Not Found"
         },
         {
           "type": "Text",
           "props": {
-            "className": "text-[var(--theme-muted-foreground)] mb-6"
+            "className": "text-[var(--theme-muted-foreground)] mb-[24px]"
           },
           "text": "The product you're looking for doesn't exist or has been removed."
         },
         {
           "type": "Box",
           "props": {
-            "className": "!bg-[var(--theme-primary)] hover:!bg-[var(--theme-primary)] !text-white flex flex-row items-center justify-center py-3 px-4 rounded-md"
+            "className": "!bg-[var(--theme-primary)] hover:!bg-[var(--theme-primary)] !text-white flex flex-row items-center justify-center py-[12px] px-[16px] rounded-[6px]"
           },
           "children": [
             {
@@ -54,43 +54,43 @@
       "_stateTag": "loading",
       "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.loading",
       "props": {
-        "className": "container mx-auto px-4 py-8 mt-16"
+        "className": "container mx-auto px-[16px] py-[32px] mt-[64px]"
       },
       "children": [
         {
           "type": "Box",
           "props": {
-            "className": "grid grid-cols-1 lg:grid-cols-2 gap-8 animate-pulse"
+            "className": "grid grid-cols-1 lg:grid-cols-2 gap-[32px] animate-pulse"
           },
           "children": [
             {
               "type": "Box",
               "props": {
-                "className": "aspect-square bg-[var(--theme-muted)] rounded-lg"
+                "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px]"
               }
             },
             {
               "type": "Box",
               "props": {
-                "className": "space-y-4"
+                "className": "space-y-[16px]"
               },
               "children": [
                 {
                   "type": "Box",
                   "props": {
-                    "className": "h-10 bg-[var(--theme-muted)] rounded w-3/4"
+                    "className": "h-[40px] bg-[var(--theme-muted)] rounded-[4px] w-3/4"
                   }
                 },
                 {
                   "type": "Box",
                   "props": {
-                    "className": "h-6 bg-[var(--theme-muted)] rounded w-1/4"
+                    "className": "h-[24px] bg-[var(--theme-muted)] rounded-[4px] w-1/4"
                   }
                 },
                 {
                   "type": "Box",
                   "props": {
-                    "className": "h-32 bg-[var(--theme-muted)] rounded"
+                    "className": "h-[128px] bg-[var(--theme-muted)] rounded-[4px]"
                   }
                 }
               ]
@@ -107,19 +107,19 @@
         {
           "type": "Box",
           "props": {
-            "className": "container mx-auto px-4 py-8 mt-16"
+            "className": "container mx-auto px-[16px] py-[32px] mt-[64px]"
           },
           "children": [
             {
               "type": "Box",
               "props": {
-                "className": "grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12"
+                "className": "grid grid-cols-1 lg:grid-cols-2 gap-[32px] lg:gap-[48px]"
               },
               "children": [
                 {
                   "type": "Box",
                   "props": {
-                    "className": "lg:sticky lg:top-20 lg:self-start"
+                    "className": "lg:sticky lg:top-[80px] lg:self-start"
                   },
                   "children": [
                     {
@@ -142,45 +142,45 @@
         {
           "type": "Box",
           "props": {
-            "className": "py-16 mt-12"
+            "className": "py-[64px] mt-[48px]"
           },
           "children": [
             {
               "type": "Box",
               "props": {
-                "className": "container mx-auto px-4"
+                "className": "container mx-auto px-[16px]"
               },
               "children": [
                 {
                   "type": "Heading",
                   "props": {
-                    "className": "text-2xl font-bold text-center mb-8"
+                    "className": "text-[24px] font-bold text-center mb-[32px]"
                   },
                   "text": "Why Choose Us"
                 },
                 {
                   "type": "Box",
                   "props": {
-                    "className": "grid md:grid-cols-3 gap-8 text-center"
+                    "className": "grid md:grid-cols-3 gap-[32px] text-center"
                   },
                   "children": [
                     {
                       "type": "Box",
                       "props": {
-                        "className": "space-y-3 flex flex-col items-center"
+                        "className": "space-y-[12px] flex flex-col items-center"
                       },
                       "children": [
                         {
                           "type": "Box",
                           "props": {
-                            "className": "w-12 h-12 bg-[#7c3aed]/10 rounded-full flex items-center justify-center"
+                            "className": "w-[48px] h-[48px] bg-[#7c3aed]/10 rounded-[9999px] flex items-center justify-center"
                           },
                           "children": [
                             {
                               "type": "Icon",
                               "props": {
                                 "icon": "lucide:star",
-                                "className": "w-6 h-6 text-[#7c3aed]"
+                                "className": "w-[24px] h-[24px] text-[#7c3aed]"
                               }
                             }
                           ]
@@ -188,7 +188,7 @@
                         {
                           "type": "Heading",
                           "props": {
-                            "className": "text-xl font-semibold text-center"
+                            "className": "text-[20px] font-semibold text-center"
                           },
                           "text": "Premium Quality"
                         },
@@ -204,20 +204,20 @@
                     {
                       "type": "Box",
                       "props": {
-                        "className": "space-y-3 flex flex-col items-center"
+                        "className": "space-y-[12px] flex flex-col items-center"
                       },
                       "children": [
                         {
                           "type": "Box",
                           "props": {
-                            "className": "w-12 h-12 bg-[#7c3aed]/10 rounded-full flex items-center justify-center"
+                            "className": "w-[48px] h-[48px] bg-[#7c3aed]/10 rounded-[9999px] flex items-center justify-center"
                           },
                           "children": [
                             {
                               "type": "Icon",
                               "props": {
                                 "icon": "lucide:globe",
-                                "className": "w-6 h-6 text-[#7c3aed]"
+                                "className": "w-[24px] h-[24px] text-[#7c3aed]"
                               }
                             }
                           ]
@@ -225,7 +225,7 @@
                         {
                           "type": "Heading",
                           "props": {
-                            "className": "text-xl font-semibold text-center"
+                            "className": "text-[20px] font-semibold text-center"
                           },
                           "text": "Eco-Friendly"
                         },
@@ -241,20 +241,20 @@
                     {
                       "type": "Box",
                       "props": {
-                        "className": "space-y-3 flex flex-col items-center"
+                        "className": "space-y-[12px] flex flex-col items-center"
                       },
                       "children": [
                         {
                           "type": "Box",
                           "props": {
-                            "className": "w-12 h-12 bg-[#7c3aed]/10 rounded-full flex items-center justify-center"
+                            "className": "w-[48px] h-[48px] bg-[#7c3aed]/10 rounded-[9999px] flex items-center justify-center"
                           },
                           "children": [
                             {
                               "type": "Icon",
                               "props": {
                                 "icon": "lucide:shield-check",
-                                "className": "w-6 h-6 text-[#7c3aed]"
+                                "className": "w-[24px] h-[24px] text-[#7c3aed]"
                               }
                             }
                           ]
@@ -262,7 +262,7 @@
                         {
                           "type": "Heading",
                           "props": {
-                            "className": "text-xl font-semibold text-center"
+                            "className": "text-[20px] font-semibold text-center"
                           },
                           "text": "Satisfaction Guaranteed"
                         },
@@ -284,19 +284,19 @@
         {
           "type": "Box",
           "props": {
-            "className": "py-16"
+            "className": "py-[64px]"
           },
           "children": [
             {
               "type": "Box",
               "props": {
-                "className": "container mx-auto px-4 max-w-3xl"
+                "className": "container mx-auto px-[16px] max-w-3xl"
               },
               "children": [
                 {
                   "type": "Heading",
                   "props": {
-                    "className": "text-2xl font-bold text-center mb-8"
+                    "className": "text-[24px] font-bold text-center mb-[32px]"
                   },
                   "text": "Frequently Asked Questions"
                 },
@@ -321,7 +321,7 @@
                             {
                               "type": "AccordionTrigger",
                               "props": {
-                                "className": "flex flex-row justify-between items-center w-full py-4 text-left text-sm font-medium hover:underline"
+                                "className": "flex flex-row justify-between items-center w-full py-[16px] text-left text-[14px] font-medium hover:underline"
                               },
                               "children": [
                                 {
@@ -334,7 +334,7 @@
                                 {
                                   "type": "Icon",
                                   "props": {
-                                    "className": "!text-[var(--theme-muted-foreground)] h-4 w-4 shrink-0"
+                                    "className": "!text-[var(--theme-muted-foreground)] h-[16px] w-[16px] shrink-0"
                                   }
                                 }
                               ]
@@ -344,7 +344,7 @@
                         {
                           "type": "AccordionContent",
                           "props": {
-                            "className": "pt-0 pb-4 overflow-hidden text-sm"
+                            "className": "pt-0 pb-[16px] overflow-hidden text-[14px]"
                           },
                           "children": [
                             {
@@ -371,7 +371,7 @@
                             {
                               "type": "AccordionTrigger",
                               "props": {
-                                "className": "flex flex-row justify-between items-center w-full py-4 text-left text-sm font-medium hover:underline"
+                                "className": "flex flex-row justify-between items-center w-full py-[16px] text-left text-[14px] font-medium hover:underline"
                               },
                               "children": [
                                 {
@@ -384,7 +384,7 @@
                                 {
                                   "type": "Icon",
                                   "props": {
-                                    "className": "!text-[var(--theme-muted-foreground)] h-4 w-4 shrink-0"
+                                    "className": "!text-[var(--theme-muted-foreground)] h-[16px] w-[16px] shrink-0"
                                   }
                                 }
                               ]
@@ -394,7 +394,7 @@
                         {
                           "type": "AccordionContent",
                           "props": {
-                            "className": "pt-0 pb-4 overflow-hidden text-sm"
+                            "className": "pt-0 pb-[16px] overflow-hidden text-[14px]"
                           },
                           "children": [
                             {
@@ -421,7 +421,7 @@
                             {
                               "type": "AccordionTrigger",
                               "props": {
-                                "className": "flex flex-row justify-between items-center w-full py-4 text-left text-sm font-medium hover:underline"
+                                "className": "flex flex-row justify-between items-center w-full py-[16px] text-left text-[14px] font-medium hover:underline"
                               },
                               "children": [
                                 {
@@ -434,7 +434,7 @@
                                 {
                                   "type": "Icon",
                                   "props": {
-                                    "className": "!text-[var(--theme-muted-foreground)] h-4 w-4 shrink-0"
+                                    "className": "!text-[var(--theme-muted-foreground)] h-[16px] w-[16px] shrink-0"
                                   }
                                 }
                               ]
@@ -444,7 +444,7 @@
                         {
                           "type": "AccordionContent",
                           "props": {
-                            "className": "pt-0 pb-4 overflow-hidden text-sm"
+                            "className": "pt-0 pb-[16px] overflow-hidden text-[14px]"
                           },
                           "children": [
                             {
@@ -471,7 +471,7 @@
                             {
                               "type": "AccordionTrigger",
                               "props": {
-                                "className": "flex flex-row justify-between items-center w-full py-4 text-left text-sm font-medium hover:underline"
+                                "className": "flex flex-row justify-between items-center w-full py-[16px] text-left text-[14px] font-medium hover:underline"
                               },
                               "children": [
                                 {
@@ -484,7 +484,7 @@
                                 {
                                   "type": "Icon",
                                   "props": {
-                                    "className": "!text-[var(--theme-muted-foreground)] h-4 w-4 shrink-0"
+                                    "className": "!text-[var(--theme-muted-foreground)] h-[16px] w-[16px] shrink-0"
                                   }
                                 }
                               ]
@@ -494,7 +494,7 @@
                         {
                           "type": "AccordionContent",
                           "props": {
-                            "className": "pt-0 pb-4 overflow-hidden text-sm"
+                            "className": "pt-0 pb-[16px] overflow-hidden text-[14px]"
                           },
                           "children": [
                             {
@@ -520,19 +520,19 @@
             "expr": "length(filterExcludeByFieldAndSlice(collections['f6a7b8c9-d0e1-2345-fabc-456789012345']?.data?.search?.items, 'productId', collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.id, 12)) > 0"
           },
           "props": {
-            "className": "py-12 md:py-16"
+            "className": "py-[48px] md:py-[64px]"
           },
           "children": [
             {
               "type": "Box",
               "props": {
-                "className": "container mx-auto px-4"
+                "className": "container mx-auto px-[16px]"
               },
               "children": [
                 {
                   "type": "Heading",
                   "props": {
-                    "className": "text-3xl md:text-4xl font-bold mb-8"
+                    "className": "text-[30px] md:text-[36px] font-bold mb-[32px]"
                   },
                   "text": "Related Products"
                 },

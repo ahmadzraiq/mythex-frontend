@@ -2343,17 +2343,28 @@ function ChangeVariableValueConfig({
               </span>
             </span>
           ) : rawPathSelected ? (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }} title={rawPathSelected}>
-              <span style={{ fontSize: 9, color: '#9ca3af', fontFamily: 'monospace',
-                background: 'rgba(255,255,255,0.07)', border: '1px solid #374151',
-                borderRadius: 3, padding: '0 4px', flexShrink: 0 }}>path</span>
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#d1d5db' }}>
-                {rawPathSelected.split('.').pop()}
+            /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(rawPathSelected) ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }} title={rawPathSelected}>
+                <span style={{ fontSize: 9, color: '#f87171', fontFamily: 'monospace',
+                  background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+                  borderRadius: 3, padding: '0 4px', flexShrink: 0 }}>!</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#f87171', fontSize: 11 }}>
+                  Unknown variable
+                </span>
               </span>
-              <span style={{ color: '#4b5563', fontSize: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                {rawPathSelected.split('.').slice(0, -1).join('.')}
+            ) : (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }} title={rawPathSelected}>
+                <span style={{ fontSize: 9, color: '#9ca3af', fontFamily: 'monospace',
+                  background: 'rgba(255,255,255,0.07)', border: '1px solid #374151',
+                  borderRadius: 3, padding: '0 4px', flexShrink: 0 }}>path</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#d1d5db' }}>
+                  {rawPathSelected.split('.').pop()}
+                </span>
+                <span style={{ color: '#4b5563', fontSize: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                  {rawPathSelected.split('.').slice(0, -1).join('.')}
+                </span>
               </span>
-            </span>
+            )
           ) : (
             <span style={{ color: '#4b5563' }}>Choose a variable</span>
           )}

@@ -61,7 +61,7 @@ export const NextImage = React.forwardRef<HTMLDivElement, NextImageProps>(
 
     // Wrapper div owns dimensions; img fills it with object-fit: cover by default
     return (
-      <div ref={ref} style={{ display: 'inline-block', overflow: 'hidden', ...style }} className={className}>
+      <div ref={ref} style={{ display: 'block', overflow: 'hidden', ...style }} className={className}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={src}

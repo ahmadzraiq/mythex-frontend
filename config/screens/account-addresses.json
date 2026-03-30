@@ -19,7 +19,7 @@
   "content": {
     "type": "Box",
     "props": {
-      "className": "space-y-6 flex flex-col"
+      "className": "space-y-[24px] flex flex-col"
     },
     "children": [
       {
@@ -34,14 +34,14 @@
               {
                 "type": "Heading",
                 "props": {
-                  "className": "text-3xl font-bold"
+                  "className": "text-[30px] font-bold"
                 },
                 "text": "Addresses"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[var(--theme-muted-foreground)] mt-2"
+                  "className": "text-[var(--theme-muted-foreground)] mt-[8px]"
                 },
                 "text": "Manage your saved shipping and billing addresses"
               }
@@ -50,7 +50,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
+              "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] flex flex-row items-center justify-center py-[12px] px-[16px] rounded-[6px]"
             },
             "children": [
               {
@@ -72,33 +72,33 @@
       {
         "type": "Box",
         "props": {
-          "className": "p-6"
+          "className": "p-[24px]"
         },
         "condition": "get('showAddForm')",
         "children": [
           {
             "type": "Heading",
             "props": {
-              "className": "text-lg font-semibold mb-4"
+              "className": "text-[18px] font-semibold mb-[16px]"
             },
             "text": "Add New Address"
           },
           {
             "type": "Box",
             "props": {
-              "className": "space-y-4 flex flex-col"
+              "className": "space-y-[16px] flex flex-col"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "space-y-2"
+                  "className": "space-y-[8px]"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm font-medium"
+                      "className": "text-[14px] font-medium"
                     },
                     "text": "Full name"
                   },
@@ -115,13 +115,13 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "space-y-2"
+                  "className": "space-y-[8px]"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm font-medium"
+                      "className": "text-[14px] font-medium"
                     },
                     "text": "Street address"
                   },
@@ -138,19 +138,19 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "grid grid-cols-2 gap-4"
+                  "className": "grid grid-cols-2 gap-[16px]"
                 },
                 "children": [
                   {
                     "type": "Box",
                     "props": {
-                      "className": "space-y-2"
+                      "className": "space-y-[8px]"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm font-medium"
+                          "className": "text-[14px] font-medium"
                         },
                         "text": "City"
                       },
@@ -167,13 +167,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "space-y-2"
+                      "className": "space-y-[8px]"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm font-medium"
+                          "className": "text-[14px] font-medium"
                         },
                         "text": "Postal code"
                       },
@@ -192,13 +192,13 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "space-y-2"
+                  "className": "space-y-[8px]"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm font-medium"
+                      "className": "text-[14px] font-medium"
                     },
                     "text": "Country code"
                   },
@@ -215,13 +215,13 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "flex gap-2 flex-row"
+                  "className": "flex gap-[8px] flex-row"
                 },
                 "children": [
                   {
                     "type": "Box",
                     "props": {
-                      "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
+                      "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] flex flex-row items-center justify-center py-[12px] px-[16px] rounded-[6px]"
                     },
                     "children": [
                       {
@@ -241,7 +241,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "border border-[var(--theme-border)] bg-[var(--theme-card)] text-[var(--theme-foreground)] hover:bg-[var(--theme-muted)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
+                      "className": "border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] text-[var(--theme-foreground)] hover:bg-[var(--theme-muted)] flex flex-row items-center justify-center py-[12px] px-[16px] rounded-[6px]"
                     },
                     "children": [
                       {
@@ -267,7 +267,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "text-center py-12"
+          "className": "text-center py-[48px]"
         },
         "condition": "(collections['a9b0c1d2-e3f4-5678-abcd-789012345678']?.data?.activeCustomer?.addresses?.length || 0) === 0",
         "children": [
@@ -283,7 +283,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+          "className": "grid grid-cols-1 md:grid-cols-2 gap-[16px]"
         },
         "map": "collections.a9b0c1d2-e3f4-5678-abcd-789012345678.data.activeCustomer.addresses",
         "key": "addressCard",
@@ -294,7 +294,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "p-4"
+                  "className": "p-[16px]"
                 },
                 "children": [
                   {
@@ -307,34 +307,34 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-[var(--theme-muted-foreground)] mt-1"
+                      "className": "text-[14px] text-[var(--theme-muted-foreground)] mt-[4px]"
                     },
                     "text": "{{context.item.data.streetLine1}}"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-[var(--theme-muted-foreground)]"
+                      "className": "text-[14px] text-[var(--theme-muted-foreground)]"
                     },
                     "text": "{{context.item.data.city}}, {{context.item.data.postalCode}}"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-[var(--theme-muted-foreground)]"
+                      "className": "text-[14px] text-[var(--theme-muted-foreground)]"
                     },
                     "text": "{{context.item.data.country.name}}"
                   },
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex gap-2 mt-3 flex-row"
+                      "className": "flex gap-[8px] mt-[12px] flex-row"
                     },
                     "children": [
                       {
                         "type": "Box",
                         "props": {
-                          "className": "border border-[var(--theme-border)] bg-[var(--theme-card)] text-[var(--theme-foreground)] hover:bg-[var(--theme-muted)] text-xs h-8 px-3 flex flex-row items-center justify-center rounded-md"
+                          "className": "border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] text-[var(--theme-foreground)] hover:bg-[var(--theme-muted)] text-[12px] h-[32px] px-[12px] flex flex-row items-center justify-center rounded-[6px]"
                         },
                         "children": [
                           {
@@ -349,7 +349,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "border border-red-400 text-red-500 hover:bg-red-50 text-xs h-8 px-3 flex flex-row items-center justify-center rounded-md"
+                          "className": "border-[1px] border-red-400 text-red-500 hover:bg-red-50 text-[12px] h-[32px] px-[12px] flex flex-row items-center justify-center rounded-[6px]"
                         },
                         "children": [
                           {
@@ -372,7 +372,7 @@
               }
             ],
             "props": {
-              "className": "border rounded-xl bg-[var(--theme-card)] shadow-sm"
+              "className": "border-[1px] rounded-[12px] bg-[var(--theme-card)] shadow-sm"
             }
           }
         ]

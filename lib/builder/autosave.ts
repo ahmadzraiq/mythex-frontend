@@ -39,11 +39,12 @@ function serializeProjectMeta(store: BuilderStore): Record<string, unknown> | un
   // Only include if at least one field is non-default
   if (!store.projectMood && !store.projectDescription && !store.projectAppName) return undefined;
   return {
-    mood:           store.projectMood,
-    animationLevel: store.projectAnimationLevel,
-    description:    store.projectDescription,
-    appName:        store.projectAppName,
-    category:       store.projectCategory,
+    mood:            store.projectMood,
+    animationLevel:  store.projectAnimationLevel,
+    layoutStructure: store.projectLayoutStructure,
+    description:     store.projectDescription,
+    appName:         store.projectAppName,
+    category:        store.projectCategory,
   };
 }
 

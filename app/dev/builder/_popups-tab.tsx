@@ -89,7 +89,7 @@ const STARTER_CONTENT: Record<string, Record<string, unknown>> = {
         type: 'Box',
         name: 'Content',
         actions: [{ stopPropagation: true }],
-        props: { className: 'bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 w-80' },
+        props: { className: 'bg-white dark:bg-gray-900 rounded-[16px] shadow-xl p-[24px] w-[320px]' },
         children: [],
       },
     ],
@@ -100,27 +100,27 @@ const STARTER_CONTENT: Record<string, Record<string, unknown>> = {
     name: 'Backdrop',
     animation: { enter: { type: 'fade', duration: 150 }, exit: { type: 'fade', duration: 200 } },
     actions: [{ action: 'closeAllPopups' }],
-    props: { className: 'w-full h-screen flex items-center justify-center p-4 bg-black/55' },
+    props: { className: 'w-full h-screen flex items-center justify-center p-[16px] bg-black/55' },
     children: [{
       type: 'Box',
       name: 'Modal',
       animation: { enter: { type: 'zoomIn', duration: 220 }, exit: { type: 'zoomOut', duration: 200 } },
       actions: [{ stopPropagation: true }],
-      props: { className: 'w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-xl overflow-hidden flex flex-col' },
+      props: { className: 'w-full max-w-[448px] bg-white dark:bg-gray-900 rounded-[16px] shadow-xl overflow-hidden flex flex-col' },
       children: [
         {
           type: 'Box',
-          props: { className: 'px-6 pt-6 pb-2' },
-          children: [{ type: 'Text', props: { className: 'text-lg font-semibold text-gray-900 dark:text-white' }, text: 'Modal title' }],
+          props: { className: 'px-[24px] pt-[24px] pb-[8px]' },
+          children: [{ type: 'Text', props: { className: 'text-[18px] font-semibold text-gray-900 dark:text-white' }, text: 'Modal title' }],
         },
         {
           type: 'Box',
-          props: { className: 'px-6 py-4 flex-1' },
-          children: [{ type: 'Text', props: { className: 'text-sm text-gray-500' }, text: 'Content goes here.' }],
+          props: { className: 'px-[24px] py-[16px] flex-1' },
+          children: [{ type: 'Text', props: { className: 'text-[14px] text-gray-500' }, text: 'Content goes here.' }],
         },
         {
           type: 'Box',
-          props: { className: 'px-6 py-4 flex flex-row gap-3 justify-end border-t border-gray-100 dark:border-gray-800' },
+          props: { className: 'px-[24px] py-[16px] flex flex-row gap-[12px] justify-end border-t border-gray-100 dark:border-gray-800' },
           children: [
             { type: 'Button', actions: [{ action: 'closeAllPopups' }], props: { action: 'outline' }, children: [{ type: 'ButtonText', text: 'Cancel' }] },
             { type: 'Button', actions: [{ action: 'closeAllPopups' }], props: { action: 'primary' }, children: [{ type: 'ButtonText', text: 'Confirm' }] },
@@ -145,17 +145,17 @@ const STARTER_CONTENT: Record<string, Record<string, unknown>> = {
       name: 'Sheet',
       animation: { enter: { type: 'slideInRight', duration: 260 }, exit: { type: 'slideOutRight', duration: 220 } },
       actions: [{ stopPropagation: true }],
-      props: { className: 'w-80 h-screen bg-white dark:bg-gray-900 shadow-2xl flex flex-col' },
+      props: { className: 'w-[320px] h-screen bg-white dark:bg-gray-900 shadow-2xl flex flex-col' },
       children: [
         {
           type: 'Box',
-          props: { className: 'px-4 py-4 flex flex-row items-center justify-between border-b border-gray-100 dark:border-gray-800' },
+          props: { className: 'px-[16px] py-[16px] flex flex-row items-center justify-between border-b border-gray-100 dark:border-gray-800' },
           children: [
-            { type: 'Text', props: { className: 'text-base font-semibold text-gray-900 dark:text-white' }, text: 'Sheet title' },
+            { type: 'Text', props: { className: 'text-[16px] font-semibold text-gray-900 dark:text-white' }, text: 'Sheet title' },
             { type: 'Button', actions: [{ action: 'closeAllPopups' }], props: { action: 'link', size: 'sm' }, children: [{ type: 'Icon', props: { icon: 'lucide:x', size: 18, color: '#6b7280' } }] },
           ],
         },
-        { type: 'Box', props: { className: 'flex-1 px-4 py-6' }, children: [] },
+        { type: 'Box', props: { className: 'flex-1 px-[16px] py-[24px]' }, children: [] },
       ],
     }],
   },
@@ -171,36 +171,36 @@ const STARTER_CONTENT: Record<string, Record<string, unknown>> = {
     // Full-screen flex shell. Change items-*/justify-* to move the stack to a
     // different corner (e.g. items-start justify-start = top-left).
     // Change p-* to control the edge padding.
-    props: { className: 'w-full h-screen flex flex-col items-end justify-end p-4 pointer-events-none' },
+    props: { className: 'w-full h-screen flex flex-col items-end justify-end p-[16px] pointer-events-none' },
     children: [{
       type: 'Box',
       name: 'StackContainer',
       // Normal-flow child — content-sized because parent has items-end.
       // Change gap-* to space cards. Change flex-col-reverse to reverse stack order.
-      props: { className: 'flex flex-col gap-2 pointer-events-none' },
+      props: { className: 'flex flex-col gap-[8px] pointer-events-none' },
       children: [{
         type: 'Box',
         name: 'Alert',
         animation: { enter: { type: 'slideInRight', duration: 200 }, exit: { type: 'slideOutRight', duration: 180 } },
-        props: { className: 'pointer-events-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg px-4 py-3 flex flex-row items-start gap-3 min-w-72 max-w-sm border border-gray-100 dark:border-gray-700' },
+        props: { className: 'pointer-events-auto bg-white dark:bg-gray-800 rounded-[12px] shadow-lg px-[16px] py-[12px] flex flex-row items-start gap-[12px] min-w-[288px] max-w-[384px] border border-gray-100 dark:border-gray-700' },
         children: [
           {
             type: 'Box',
-            props: { className: 'w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 items-center justify-center flex shrink-0 mt-0.5' },
+            props: { className: 'w-[32px] h-[32px] rounded-[9999px] bg-amber-100 dark:bg-amber-900/30 items-center justify-center flex shrink-0 mt-[2px]' },
             children: [{ type: 'Icon', props: { icon: 'lucide:alert-triangle', size: 16, color: '#f59e0b' } }],
           },
           {
             type: 'Box',
-            props: { className: 'flex-1 flex flex-col gap-0.5' },
+            props: { className: 'flex-1 flex flex-col gap-[2px]' },
             children: [
-              { type: 'Text', props: { className: 'text-sm font-semibold text-gray-900 dark:text-white' }, text: 'Alert title' },
-              { type: 'Text', props: { className: 'text-xs text-gray-500 dark:text-gray-400 leading-relaxed' }, text: 'Alert message goes here.' },
+              { type: 'Text', props: { className: 'text-[14px] font-semibold text-gray-900 dark:text-white' }, text: 'Alert title' },
+              { type: 'Text', props: { className: 'text-[12px] text-gray-500 dark:text-gray-400 leading-relaxed' }, text: 'Alert message goes here.' },
             ],
           },
           {
             type: 'Box',
             actions: [{ action: 'closePopup' }],
-            props: { className: 'shrink-0 mt-0.5 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700' },
+            props: { className: 'shrink-0 mt-[2px] p-[4px] rounded-[4px] hover:bg-gray-100 dark:hover:bg-gray-700' },
             children: [{ type: 'Icon', props: { icon: 'lucide:x', size: 14, color: '#9ca3af' } }],
           },
         ],
@@ -211,34 +211,34 @@ const STARTER_CONTENT: Record<string, Record<string, unknown>> = {
   StackedAlert: {
     type: 'Box',
     name: 'Backdrop',
-    props: { className: 'w-full h-screen flex flex-col items-end justify-end p-4 pointer-events-none' },
+    props: { className: 'w-full h-screen flex flex-col items-end justify-end p-[16px] pointer-events-none' },
     children: [{
       type: 'Box',
       name: 'StackContainer',
-      props: { className: 'flex flex-col gap-2 pointer-events-none' },
+      props: { className: 'flex flex-col gap-[8px] pointer-events-none' },
       children: [{
         type: 'Box',
         name: 'Toast',
         animation: { enter: { type: 'slideInRight', duration: 200 }, exit: { type: 'slideOutRight', duration: 180 } },
-        props: { className: 'pointer-events-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg px-4 py-3 flex flex-row items-start gap-3 min-w-72 max-w-sm border border-gray-100 dark:border-gray-700' },
+        props: { className: 'pointer-events-auto bg-white dark:bg-gray-800 rounded-[12px] shadow-lg px-[16px] py-[12px] flex flex-row items-start gap-[12px] min-w-[288px] max-w-[384px] border border-gray-100 dark:border-gray-700' },
         children: [
           {
             type: 'Box',
-            props: { className: 'w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 items-center justify-center flex shrink-0 mt-0.5' },
+            props: { className: 'w-[32px] h-[32px] rounded-[9999px] bg-blue-100 dark:bg-blue-900/30 items-center justify-center flex shrink-0 mt-[2px]' },
             children: [{ type: 'Icon', props: { icon: 'lucide:bell', size: 16, color: '#3b82f6' } }],
           },
           {
             type: 'Box',
-            props: { className: 'flex-1 flex flex-col gap-0.5' },
+            props: { className: 'flex-1 flex flex-col gap-[2px]' },
             children: [
-              { type: 'Text', props: { className: 'text-sm font-semibold text-gray-900 dark:text-white' }, text: 'Notification title' },
-              { type: 'Text', props: { className: 'text-xs text-gray-500 dark:text-gray-400' }, text: 'Notification message' },
+              { type: 'Text', props: { className: 'text-[14px] font-semibold text-gray-900 dark:text-white' }, text: 'Notification title' },
+              { type: 'Text', props: { className: 'text-[12px] text-gray-500 dark:text-gray-400' }, text: 'Notification message' },
             ],
           },
           {
             type: 'Box',
             actions: [{ action: 'closePopup' }],
-            props: { className: 'shrink-0 mt-0.5 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700' },
+            props: { className: 'shrink-0 mt-[2px] p-[4px] rounded-[4px] hover:bg-gray-100 dark:hover:bg-gray-700' },
             children: [{ type: 'Icon', props: { icon: 'lucide:x', size: 14, color: '#9ca3af' } }],
           },
         ],

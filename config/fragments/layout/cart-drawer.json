@@ -16,13 +16,13 @@
     {
       "type": "DrawerContent",
       "props": {
-        "className": "w-full max-w-sm"
+        "className": "w-full max-w-[384px]"
       },
       "children": [
         {
           "type": "DrawerHeader",
           "props": {
-            "className": "border-b border-[var(--theme-border)] pb-4"
+            "className": "border-b border-[var(--theme-border)] pb-[16px]"
           },
           "children": [
             {
@@ -34,14 +34,14 @@
                 {
                   "type": "Heading",
                   "props": {
-                    "className": "text-lg font-bold"
+                    "className": "text-[18px] font-bold"
                   },
                   "text": "Shopping Cart"
                 },
                 {
                   "type": "DrawerCloseButton",
                   "props": {
-                    "className": "h-8 w-8 rounded-md border-0 bg-transparent hover:bg-[var(--theme-muted)] flex items-center justify-center"
+                    "className": "h-[32px] w-[32px] rounded-[6px] border-[0px] bg-transparent hover:bg-[var(--theme-muted)] flex items-center justify-center"
                   },
                   "actions": [
                     {
@@ -56,13 +56,13 @@
         {
           "type": "DrawerBody",
           "props": {
-            "className": "overflow-y-auto flex-1 py-4"
+            "className": "overflow-y-auto flex-1 py-[16px]"
           },
           "children": [
             {
               "type": "Box",
               "props": {
-                "className": "flex flex-col items-center justify-center py-12 text-center"
+                "className": "flex flex-col items-center justify-center py-[48px] text-center"
               },
               "condition": "(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity || 0) === 0",
               "children": [
@@ -70,7 +70,7 @@
                   "type": "Icon",
                   "props": {
                     "icon": "lucide:shopping-bag",
-                    "className": "h-12 w-12 text-[var(--theme-muted-foreground)] mb-4"
+                    "className": "h-[48px] w-[48px] text-[var(--theme-muted-foreground)] mb-[16px]"
                   }
                 },
                 {
@@ -85,7 +85,7 @@
             {
               "type": "Box",
               "props": {
-                "className": "space-y-3 flex flex-col"
+                "className": "space-y-[12px] flex flex-col"
               },
               "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity > 0",
               "map": "collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.lines",
@@ -94,7 +94,7 @@
                 {
                   "type": "Box",
                   "props": {
-                    "className": "flex gap-3 items-start flex-row"
+                    "className": "flex gap-[12px] items-start flex-row"
                   },
                   "children": [
                     {
@@ -104,7 +104,7 @@
                         "alt": "{{context.item.data.productVariant.product.name}}",
                         "width": 64,
                         "height": 64,
-                        "className": "rounded-md object-cover w-16 h-16 flex-shrink-0 border border-[var(--theme-border)]"
+                        "className": "rounded-[6px] object-cover w-[64px] h-[64px] flex-shrink-0 border-[1px] border-[var(--theme-border)]"
                       }
                     },
                     {
@@ -116,34 +116,34 @@
                         {
                           "type": "Text",
                           "props": {
-                            "className": "text-sm font-medium truncate"
+                            "className": "text-[14px] font-medium truncate"
                           },
                           "text": "{{context.item.data.productVariant.product.name}}"
                         },
                         {
                           "type": "Text",
                           "props": {
-                            "className": "text-xs text-[var(--theme-muted-foreground)] mt-0.5"
+                            "className": "text-[12px] text-[var(--theme-muted-foreground)] mt-[2px]"
                           },
                           "text": "{{context.item.data.productVariant.name}}"
                         },
                         {
                           "type": "Box",
                           "props": {
-                            "className": "flex items-center justify-between mt-2 flex-row"
+                            "className": "flex items-center justify-between mt-[8px] flex-row"
                           },
                           "children": [
                             {
                               "type": "Text",
                               "props": {
-                                "className": "text-sm"
+                                "className": "text-[14px]"
                               },
                               "text": "Qty: {{context.item.data.quantity}}"
                             },
                             {
                               "type": "Text",
                               "props": {
-                                "className": "text-sm font-medium"
+                                "className": "text-[14px] font-medium"
                               },
                               "text": {
                                 "expr": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
@@ -156,7 +156,7 @@
                     {
                       "type": "Box",
                       "props": {
-                        "className": "text-[var(--theme-muted-foreground)] hover:text-red-500 transition-colors p-1"
+                        "className": "text-[var(--theme-muted-foreground)] hover:text-red-500 transition-colors p-[4px]"
                       },
                       "actions": [
                         {
@@ -167,7 +167,7 @@
                         {
                           "type": "Text",
                           "props": {
-                            "className": "text-sm"
+                            "className": "text-[14px]"
                           },
                           "text": "✕"
                         }
@@ -182,20 +182,20 @@
         {
           "type": "DrawerFooter",
           "props": {
-            "className": "border-t border-[var(--theme-border)] pt-4 space-y-3"
+            "className": "border-t border-[var(--theme-border)] pt-[16px] space-y-[12px]"
           },
           "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity > 0",
           "children": [
             {
               "type": "Box",
               "props": {
-                "className": "flex justify-between items-center mb-2 flex-row"
+                "className": "flex justify-between items-center mb-[8px] flex-row"
               },
               "children": [
                 {
                   "type": "Text",
                   "props": {
-                    "className": "text-sm text-[var(--theme-muted-foreground)]"
+                    "className": "text-[14px] text-[var(--theme-muted-foreground)]"
                   },
                   "text": "Subtotal"
                 },
@@ -213,7 +213,7 @@
             {
               "type": "Box",
               "props": {
-                "className": "w-full bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] h-11 font-medium flex flex-row items-center justify-center rounded-md"
+                "className": "w-full bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] h-[44px] font-medium flex flex-row items-center justify-center rounded-[6px]"
               },
               "children": [
                 {
@@ -233,7 +233,7 @@
             {
               "type": "Box",
               "props": {
-                "className": "w-full border border-[var(--theme-border)] bg-[var(--theme-card)] text-[var(--theme-foreground)] hover:bg-[var(--theme-muted)] h-10 flex flex-row items-center justify-center rounded-md"
+                "className": "w-full border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] text-[var(--theme-foreground)] hover:bg-[var(--theme-muted)] h-[40px] flex flex-row items-center justify-center rounded-[6px]"
               },
               "children": [
                 {

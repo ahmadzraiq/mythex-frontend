@@ -11,7 +11,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full flex-1 flex flex-col min-h-screen pt-16 bg-transparent"
+          "className": "w-full flex-1 flex flex-col min-h-screen pt-[64px] bg-transparent"
         },
         "children": [
           {

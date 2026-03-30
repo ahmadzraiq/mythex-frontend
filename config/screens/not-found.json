@@ -12,40 +12,40 @@
       {
         "type": "Box",
         "props": {
-          "className": "flex-1 flex items-center justify-center px-4 py-16"
+          "className": "flex-1 flex items-center justify-center px-[16px] py-[64px]"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "text-center space-y-6 max-w-md"
+              "className": "text-center space-y-[24px] max-w-[448px]"
             },
             "children": [
               {
                 "type": "Heading",
                 "props": {
-                  "className": "text-8xl font-bold text-[var(--theme-muted-foreground)]"
+                  "className": "text-[96px] font-bold text-[var(--theme-muted-foreground)]"
                 },
                 "text": "404"
               },
               {
                 "type": "Heading",
                 "props": {
-                  "className": "text-3xl font-bold"
+                  "className": "text-[30px] font-bold"
                 },
                 "text": "Page Not Found"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[var(--theme-muted-foreground)] text-lg"
+                  "className": "text-[var(--theme-muted-foreground)] text-[18px]"
                 },
                 "text": "Sorry, we couldn't find the page you're looking for."
               },
               {
                 "type": "Box",
                 "props": {
-                  "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] px-8 h-11 flex flex-row items-center justify-center rounded-md"
+                  "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] px-[32px] h-[44px] flex flex-row items-center justify-center rounded-[6px]"
                 },
                 "children": [
                   {

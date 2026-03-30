@@ -8,7 +8,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "border-b border-[var(--theme-border)] bg-[var(--theme-background)] px-6 py-4"
+          "className": "border-b border-[var(--theme-border)] bg-[var(--theme-background)] px-[24px] py-[16px]"
         },
         "children": [
           {
@@ -28,7 +28,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-xl font-bold text-[var(--theme-foreground)]"
+                      "className": "text-[20px] font-bold text-[var(--theme-foreground)]"
                     },
                     "text": "Store"
                   }
@@ -45,7 +45,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-[var(--theme-muted-foreground)]"
+                      "className": "text-[14px] text-[var(--theme-muted-foreground)]"
                     },
                     "text": "Back to cart"
                   }
@@ -58,7 +58,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "flex-1 w-full max-w-5xl mx-auto px-4 py-8"
+          "className": "flex-1 w-full max-w-5xl mx-auto px-[16px] py-[32px]"
         },
         "children": [
           {

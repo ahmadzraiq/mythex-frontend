@@ -425,7 +425,11 @@ export function useAiChat() {
       return null;
     };
 
-    const selectedNodesDetails = selectedNodeIds
+    // Merge manually-pinned chips with currently canvas-selected nodes (deduped)
+    const canvasSelectedIds = store.selectedIds ?? [];
+    const mergedSelectedIds = [...new Set([...selectedNodeIds, ...canvasSelectedIds])];
+
+    const selectedNodesDetails = mergedSelectedIds
       .map(id => findNodeById(store.pageNodes, id))
       .filter(Boolean);
 
@@ -436,13 +440,15 @@ export function useAiChat() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: text,
-          selectedNodeIds,
+          selectedNodeIds: mergedSelectedIds,
           selectedNodesDetails,
           pageTreeSnapshot,
           pageId: store.currentPageId,
           pages: store.pages.map(p => ({ id: p.id, name: p.name, route: p.route })),
           theme: { ...THEME_DEFAULTS, ...store.themeOverrides },
           mood: store.projectMood,
+          animationLevel: store.projectAnimationLevel,
+          layoutStructure: store.projectLayoutStructure,
           appName: store.projectAppName,
           description: store.projectDescription,
           category: store.projectCategory,
@@ -629,6 +635,8 @@ export function useAiChat() {
         pages: store.pages.map(p => ({ id: p.id, name: p.name, route: p.route })),
         theme: { ...THEME_DEFAULTS, ...store.themeOverrides },
         mood: store.projectMood,
+        animationLevel: store.projectAnimationLevel,
+        layoutStructure: store.projectLayoutStructure,
         appName: store.projectAppName,
         description: store.projectDescription,
         category: store.projectCategory,

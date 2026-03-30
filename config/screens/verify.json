@@ -6,19 +6,19 @@
   "ui": {
     "type": "Box",
     "props": {
-      "className": "flex min-h-screen items-center justify-center px-4"
+      "className": "flex min-h-screen items-center justify-center px-[16px]"
     },
     "children": [
       {
         "type": "Box",
         "props": {
-          "className": "w-full max-w-md text-center space-y-6"
+          "className": "w-full max-w-[448px] text-center space-y-[24px]"
         },
         "children": [
           {
             "type": "Heading",
             "props": {
-              "className": "text-3xl font-bold"
+              "className": "text-[30px] font-bold"
             },
             "text": "Verifying Email..."
           },
@@ -38,7 +38,7 @@
               {
                 "type": "Spinner",
                 "props": {
-                  "className": "h-8 w-8 text-[#7c3aed]"
+                  "className": "h-[32px] w-[32px] text-[#7c3aed]"
                 }
               }
             ]

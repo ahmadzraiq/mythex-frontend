@@ -70,8 +70,11 @@ function uuid(): string {
   return crypto.randomUUID();
 }
 
-function isUUID(id: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+// Strict hex-only UUID format check — matches the server-side validator in route.ts.
+// The server rejects non-hex UUIDs before they reach the client, so this is a second
+// safety net for any edge cases where a node ID is set without going through the server.
+function isUUIDFormat(id: string): boolean {
+  return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
 }
 
 // ─── Assign UUIDs to all nodes in a tree ─────────────────────────────────────
@@ -120,6 +123,22 @@ function findNode(nodes: SDUINode[], id: string): SDUINode | null {
       const found = findNode(n.children as SDUINode[], id);
       if (found) return found;
     }
+  }
+  return null;
+}
+
+// ─── Require a node to exist — used by all setter tools ──────────────────────
+
+function requireNode(
+  store: BuilderStore,
+  nodeId: string | undefined,
+): { success: false; error: string } | null {
+  if (!nodeId) return { success: false, error: 'nodeId is required.' };
+  if (!findNode(store.pageNodes as SDUINode[], nodeId)) {
+    return {
+      success: false,
+      error: `Node "${nodeId}" not found on the current page. Call get_page_tree first to get valid node IDs, or check whether a prior add_component step failed.`,
+    };
   }
   return null;
 }
@@ -212,10 +231,10 @@ function getNodeStyle(store: BuilderStore, nodeId: string): Record<string, unkno
 
 // Helper: write back inline style, dropping any keys that are now empty strings.
 // This mirrors the builder right panel's behaviour: setting a property to '' removes it.
-function patchNodeStyle(store: BuilderStore, nodeId: string, patch: Record<string, string>): void {
+function patchNodeStyle(store: BuilderStore, nodeId: string, patch: Record<string, unknown>): void {
   const existing = getNodeStyle(store, nodeId);
   const merged = { ...existing, ...patch };
-  const clean = Object.fromEntries(Object.entries(merged).filter(([, v]) => v !== '' && v != null));
+  const clean = Object.fromEntries(Object.entries(merged).filter(([, v]) => v !== '' && v != null && v !== undefined));
   store.patchProp(nodeId, 'props.style', clean);
 }
 
@@ -250,12 +269,20 @@ function resolveColorClass(value: string, prefix: 'bg' | 'text' | 'border'): str
   if (THEME_NAMES[value]) return THEME_NAMES[value];
   // Already a full class with this prefix
   if (value.startsWith(`${prefix}-`)) return value;
-  // CSS variable or rgb() — wrap in arbitrary
-  if (value.startsWith('var(') || value.startsWith('rgb(') || value.startsWith('hsl(')) {
+  // CSS variable, rgb(), rgba(), hsl(), hsla() — wrap in arbitrary
+  if (value.startsWith('var(') || value.startsWith('rgb(') || value.startsWith('rgba(') || value.startsWith('hsl(') || value.startsWith('hsla(')) {
     return `${prefix}-[${value}]`;
   }
-  // Hex value — wrap in arbitrary
-  if (value.startsWith('#')) return `${prefix}-[${value}]`;
+  // Hex value — possibly with Tailwind opacity modifier (#000000/40 → bg-[#000000]/40)
+  if (value.startsWith('#')) {
+    const slashIdx = value.indexOf('/');
+    if (slashIdx !== -1) {
+      const hex = value.slice(0, slashIdx);
+      const opacity = value.slice(slashIdx); // includes the "/"
+      return `${prefix}-[${hex}]${opacity}`;
+    }
+    return `${prefix}-[${value}]`;
+  }
   // Tailwind color token like "blue-600", "gray-900"
   return `${prefix}-${value}`;
 }
@@ -263,19 +290,22 @@ function resolveColorClass(value: string, prefix: 'bg' | 'text' | 'border'): str
 // Remove text color tokens while preserving size, alignment, and decoration tokens.
 function stripTextColorTokens(cls: string): string {
   const TEXT_NON_COLOR = /^text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl|left|center|right|justify|start|end|inherit|current|transparent|wrap|nowrap|balance|pretty|ellipsis|clip|truncate)$/;
+  // Preserve arbitrary size tokens like text-[72px], text-[1.5rem], text-[18px]
+  const TEXT_SIZE_ARBITRARY = /^text-\[[\d.]+(?:px|rem|em|vw|vh|%|ch|ex|lh|dvh|svh)\]$/;
   return cls
     .split(/\s+/)
     .filter(t => {
       const bare = t.startsWith('!') ? t.slice(1) : t;
       if (!bare.startsWith('text-')) return true;
-      return TEXT_NON_COLOR.test(bare);
+      return TEXT_NON_COLOR.test(bare) || TEXT_SIZE_ARBITRARY.test(bare);
     })
     .join(' ');
 }
 
 // Strip border color tokens while preserving width/style tokens.
 function stripBorderColorTokens(cls: string): string {
-  const BORDER_NON_COLOR = /^border(-[0-9]+|-solid|-dashed|-dotted|-double|-none|-[xytrblse](-[0-9]+)?|(-[xytrblse])?-opacity-[0-9]+)?$/;
+  // Preserve width tokens (scale AND arbitrary e.g. border-[1px] border-[2px])
+  const BORDER_NON_COLOR = /^border(-[0-9]+|-\[[0-9]+px\]|-solid|-dashed|-dotted|-double|-none|-[xytrblse](-[0-9]+)?|(-[xytrblse])?-opacity-[0-9]+)?$/;
   return cls
     .split(/\s+/)
     .filter(t => {
@@ -307,6 +337,16 @@ function replaceTokenGroup(cls: string, patterns: string[], newToken: string): s
     result = removeExactToken(result, p);
   }
   return newToken ? `${result} ${newToken}`.replace(/\s+/g, ' ').trim() : result.replace(/\s+/g, ' ').trim();
+}
+
+// Remove ALL tokens sharing a prefix — both scale tokens (z-10) and arbitrary (z-[10]).
+// Used when replacing a property that is now stored as an arbitrary-value class.
+function removeAllWithPrefix(cls: string, prefix: string): string {
+  const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return cls
+    .replace(new RegExp(`(^|\\s)${escaped}\\S+`, 'g'), ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 const TEXT_SIZE_PREFIXES = ['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl', 'text-3xl', 'text-4xl', 'text-5xl', 'text-6xl', 'text-7xl', 'text-8xl', 'text-9xl'];
@@ -464,13 +504,16 @@ const handlers: Record<string, Handler> = {
       return { success: false, error: `Unknown component label: "${label}". Available: ${Object.keys(COMPONENT_SCHEMA).join(', ')}` };
     }
 
-    const requestedId = (input.nodeId as string | undefined)
-      ?? (input._assignedNodeId as string | undefined);
-    // Use the requested id only when it is a valid UUID (canonical path). Non-UUID strings
-    // fall back to assignIds; executeTools may map alias → real id for same-batch parentId
-    // resolution, but prompts should use real UUIDs for nodeId/parentId.
-    if (requestedId && isUUID(requestedId)) {
+    // Server validates the nodeId and passes rawInput unchanged — read nodeId directly.
+    // _assignedNodeId is no longer injected by the server for add_component.
+    const requestedId = input.nodeId as string | undefined;
+    if (requestedId && isUUIDFormat(requestedId)) {
       (template as unknown as Record<string, unknown>).id = requestedId;
+    }
+
+    // Apply the optional name (Layers-panel label) if provided, avoiding a separate rename_node call.
+    if (input.name && typeof input.name === 'string') {
+      (template as unknown as Record<string, unknown>).name = input.name;
     }
 
     // Defensive: models often pass src with add_component("Image"); apply it so the URL is not dropped.
@@ -588,10 +631,14 @@ const handlers: Record<string, Handler> = {
   move_node(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
-    const targetParentId = input.targetParentId as string;
+    // Treat absent or page-ID values as null → insertNode places node at root level.
+    // A page ID (e.g. "page-1774821895009") is NOT a node in the tree; passing it to
+    // patchNodeById silently no-ops, so the node is removed but never reinserted.
+    const rawParent = input.targetParentId as string | undefined;
+    const targetParentId = rawParent && !rawParent.startsWith('page-') ? rawParent : null;
     const atIndex = (input.atIndex as number | undefined) ?? 0;
     store.moveNode(nodeId, targetParentId, atIndex);
-    return { success: true, data: { message: `Moved node to "${targetParentId}" at index ${atIndex}` } };
+    return { success: true, data: { message: `Moved node to "${targetParentId ?? 'page root'}" at index ${atIndex}` } };
   },
 
   wrap_in_container(input, getStore) {
@@ -599,8 +646,8 @@ const handlers: Record<string, Handler> = {
     const ids = input.nodeIds as string[];
     const direction = (input.direction as string) || 'column';
     const cls = direction === 'row'
-      ? 'flex flex-row items-center gap-4 w-full'
-      : 'flex flex-col gap-4 w-full';
+      ? 'flex flex-row items-center gap-[16px] w-full'
+      : 'flex flex-col gap-[16px] w-full';
     store.groupNodes(ids);
     const wrapperId = store.selectedIds[0];
     if (wrapperId) {
@@ -614,6 +661,8 @@ const handlers: Record<string, Handler> = {
   set_text(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
     const text = input.text as string;
 
     const TEXT_CHILD_TYPES = new Set(['Text', 'RadioLabel', 'CheckboxLabel']);
@@ -675,6 +724,8 @@ const handlers: Record<string, Handler> = {
 
   set_icon(input, getStore) {
     const store = getStore();
+    const nodeErr = requireNode(store, input.nodeId as string);
+    if (nodeErr) return nodeErr;
     store.patchProp(input.nodeId as string, 'props.icon', input.icon);
     if (input.size) {
       store.patchProp(input.nodeId as string, 'props.width', input.size);
@@ -701,10 +752,20 @@ const handlers: Record<string, Handler> = {
   set_background(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
     let cls = getNodeClassName(store, nodeId);
 
     if (input.bg != null) {
       const bgVal = input.bg as string;
+      if (bgVal.startsWith('rgba(')) {
+        return { success: false, error: `rgba() is not supported by set_background. Use Tailwind opacity notation instead: "black/40", "white/20", "#000000/40". Example: set_background(id, {bg:"black/40"}) for a 40% black overlay.` };
+      }
+      // Detect formula/if() expressions — set_background only accepts static token names or hex values.
+      // if(condition, 'primary', 'card') produces the literal invalid class "bg-if(...)" which does nothing.
+      if (bgVal.startsWith('if(') || bgVal.startsWith('context') || (bgVal.includes('?') && bgVal.includes(':'))) {
+        return { success: false, error: `set_background does not support formula expressions. bg must be a static token ("primary", "card", "background", "#hex", "blue-600") — not an if() or context expression. For conditional card backgrounds based on repeat-item data (e.g. mostPopular card), use two sibling container nodes each with set_condition, one with the highlighted background and one with the default.` };
+      }
       const bgClass = resolveColorClass(bgVal, 'bg');
       cls = replaceTwToken(cls, 'bg-', bgClass);
       // Remove any residual inline backgroundColor — class is the single source of truth
@@ -718,7 +779,17 @@ const handlers: Record<string, Handler> = {
   set_text_color(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
-    const colorClass = resolveColorClass(input.color as string, 'text');
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
+    const colorVal = input.color as string;
+    // Detect formula/if() expressions — same limitation as set_background.
+    if (colorVal.startsWith('if(') || colorVal.startsWith('context') || (colorVal.includes('?') && colorVal.includes(':'))) {
+      return { success: false, error: `set_text_color does not support formula expressions. color must be a static token ("foreground", "primary-foreground", "muted-foreground", "#hex") — not an if() or context expression. For conditional text colors based on repeat-item data, use set_condition on separate Text nodes.` };
+    }
+    // Always use ! prefix so Gluestack's default typography color tokens (text-typography-900 etc.)
+    // don't override the explicitly requested color on Heading/Text components.
+    const rawColorClass = resolveColorClass(colorVal, 'text');
+    const colorClass = rawColorClass.startsWith('!') ? rawColorClass : `!${rawColorClass}`;
 
     // Apply color to the text child when the node itself has no `text` property
     // (handles button-like Box wrappers, etc.)
@@ -749,9 +820,16 @@ const handlers: Record<string, Handler> = {
   set_typography(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
     let cls = getNodeClassName(store, nodeId);
 
-    if (input.size)     cls = replaceTokenGroup(cls, TEXT_SIZE_PREFIXES, `text-${input.size}`);
+    if (input.size != null) {
+      const sizePx = Number(input.size);
+      cls = replaceTokenGroup(cls, TEXT_SIZE_PREFIXES, ''); // strip scale tokens
+      cls = removeAllWithPrefix(cls, 'text-[');             // strip existing arbitrary text-[Xpx]
+      if (!Number.isNaN(sizePx) && sizePx > 0) cls = `${cls} text-[${sizePx}px]`.trim();
+    }
     if (input.weight)   cls = replaceTokenGroup(cls, FONT_WEIGHT_PREFIXES, `font-${input.weight}`);
     if (input.align)    cls = replaceTokenGroup(cls, TEXT_ALIGN_PREFIXES, `text-${input.align}`);
     if (input.leading)  cls = replaceTokenGroup(cls, LEADING_PREFIXES, `leading-${input.leading}`);
@@ -776,12 +854,15 @@ const handlers: Record<string, Handler> = {
   set_border(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
     let cls = getNodeClassName(store, nodeId);
 
     if (input.width != null) {
-      const w = String(input.width);
-      const token = w === '0' ? 'border-0' : w === '1' ? 'border' : `border-${w}`;
-      cls = replaceTokenGroup(cls, BORDER_WIDTH_PREFIXES, token);
+      const widthPx = Number(input.width);
+      cls = replaceTokenGroup(cls, BORDER_WIDTH_PREFIXES, ''); // strip scale tokens
+      cls = removeAllWithPrefix(cls, 'border-[');              // strip existing arbitrary border-[Xpx]
+      if (!Number.isNaN(widthPx) && widthPx > 0) cls = `${cls} border-[${widthPx}px]`.trim();
     }
     if (input.style) {
       cls = replaceTokenGroup(cls, BORDER_STYLE_PREFIXES, `border-${input.style}`);
@@ -791,23 +872,29 @@ const handlers: Record<string, Handler> = {
       cls = stripBorderColorTokens(cls);
       cls = `${cls} ${borderColorClass}`.replace(/\s+/g, ' ').trim();
     }
-    if (input.radius) {
-      const r = input.radius as string;
-      const token = r === 'none' ? 'rounded-none' : r === 'default' ? 'rounded' : `rounded-${r}`;
-      cls = replaceTokenGroup(cls, ROUNDED_PREFIXES, token);
+    if (input.radius != null) {
+      const radiusPx = Number(input.radius);
+      // Remove all rounded tokens (scale + arbitrary, global + per-corner)
+      cls = replaceTokenGroup(cls, ROUNDED_PREFIXES, '');
+      cls = removeAllWithPrefix(cls, 'rounded-tl-');
+      cls = removeAllWithPrefix(cls, 'rounded-tr-');
+      cls = removeAllWithPrefix(cls, 'rounded-br-');
+      cls = removeAllWithPrefix(cls, 'rounded-bl-');
+      cls = removeAllWithPrefix(cls, 'rounded-[');
+      if (!Number.isNaN(radiusPx) && radiusPx >= 0) cls = `${cls} rounded-[${radiusPx}px]`.trim();
     }
-    // Per-corner radii
-    const corners = [
-      ['radiusTL', 'rounded-tl'],
-      ['radiusTR', 'rounded-tr'],
-      ['radiusBR', 'rounded-br'],
-      ['radiusBL', 'rounded-bl'],
-    ] as const;
-    for (const [key, prefix] of corners) {
-      if (input[key]) {
-        const val = input[key] as string;
-        const token = val === 'none' ? `${prefix}-none` : val === 'default' ? prefix : `${prefix}-${val}`;
-        cls = replaceTwToken(cls, `${prefix}-`, token);
+    // Per-corner radii — accept number (px)
+    const cornerMap: [string, string][] = [
+      ['radiusTL', 'rounded-tl-'],
+      ['radiusTR', 'rounded-tr-'],
+      ['radiusBR', 'rounded-br-'],
+      ['radiusBL', 'rounded-bl-'],
+    ];
+    for (const [key, prefix] of cornerMap) {
+      if (input[key] != null) {
+        const cornerPx = Number(input[key]);
+        cls = removeAllWithPrefix(cls, prefix); // strip scale + arbitrary
+        if (!Number.isNaN(cornerPx) && cornerPx >= 0) cls = `${cls} ${prefix}[${cornerPx}px]`.trim();
       }
     }
 
@@ -818,6 +905,8 @@ const handlers: Record<string, Handler> = {
   set_shadow(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
     let cls = getNodeClassName(store, nodeId);
     const shadow = input.shadow as string;
     const token = shadow === 'none' ? '' : shadow === 'default' ? 'shadow' : `shadow-${shadow}`;
@@ -829,10 +918,13 @@ const handlers: Record<string, Handler> = {
   set_opacity(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
     let cls = getNodeClassName(store, nodeId);
     const value = Math.min(100, Math.max(0, Number(input.opacity)));
-    // Write to style.opacity (0–1 float) — matches the builder panel's patchStyle behaviour
-    const opacityFloat = value >= 100 ? '' : String(value / 100);
+    // Write to style.opacity as a number (0–1 float) — React Native requires a numeric opacity.
+    // Use undefined for 100% so the key is removed from style (fully visible is the default).
+    const opacityFloat: number | undefined = value >= 100 ? undefined : value / 100;
     // Clear any Tailwind opacity-* class that would conflict
     cls = cls.split(' ').filter(t => !/^opacity-/.test(t)).join(' ').replace(/\s+/g, ' ').trim();
     patchNodeStyle(store, nodeId, { opacity: opacityFloat });
@@ -843,6 +935,8 @@ const handlers: Record<string, Handler> = {
   set_spacing(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
     let cls = getNodeClassName(store, nodeId);
 
     const toPx = (n: number) => `${n}px`;
@@ -925,6 +1019,8 @@ const handlers: Record<string, Handler> = {
   set_size(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
     let cls = getNodeClassName(store, nodeId);
 
     if (input.width != null) {
@@ -1004,21 +1100,34 @@ const handlers: Record<string, Handler> = {
   set_position(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
     let cls = getNodeClassName(store, nodeId);
 
     if (input.position) cls = replaceTokenGroup(cls, POSITION_TOKENS, input.position as string);
-    if (input.zIndex) {
-      const zVal = String(input.zIndex);
-      const twZScale = new Set(['0', '10', '20', '30', '40', '50', 'auto']);
-      const zCls = twZScale.has(zVal) ? `z-${zVal}` : `z-[${zVal}]`;
-      cls = replaceTokenGroup(cls, Z_PREFIXES, zCls);
+    if (input.zIndex != null) {
+      const zNum = Number(input.zIndex);
+      cls = replaceTokenGroup(cls, Z_PREFIXES, ''); // strip scale tokens (z-0, z-10, …)
+      cls = removeAllWithPrefix(cls, 'z-[');        // strip existing arbitrary z-[N]
+      if (!Number.isNaN(zNum)) cls = `${cls} z-[${Math.round(zNum)}]`.trim();
     }
 
     // Inset: write as arbitrary Tailwind classes, not inline style
-    if (input.top    != null) { cls = cls.split(' ').filter(t => !/^top-/.test(t)).join(' ').trim();    cls = `${cls} top-[${input.top}px]`.trim(); }
-    if (input.right  != null) { cls = cls.split(' ').filter(t => !/^right-/.test(t)).join(' ').trim();  cls = `${cls} right-[${input.right}px]`.trim(); }
-    if (input.bottom != null) { cls = cls.split(' ').filter(t => !/^bottom-/.test(t)).join(' ').trim(); cls = `${cls} bottom-[${input.bottom}px]`.trim(); }
-    if (input.left   != null) { cls = cls.split(' ').filter(t => !/^left-/.test(t)).join(' ').trim();   cls = `${cls} left-[${input.left}px]`.trim(); }
+    // Strip px: prefix if AI mistakenly passes "px:40" style (set_size format) — extract the number only
+    const parseInset = (v: unknown): number | null => {
+      if (v == null) return null;
+      if (typeof v === 'number') return v;
+      const n = Number(String(v).replace(/^px:/, ''));
+      return Number.isNaN(n) ? null : n;
+    };
+    const topVal    = parseInset(input.top);
+    const rightVal  = parseInset(input.right);
+    const bottomVal = parseInset(input.bottom);
+    const leftVal   = parseInset(input.left);
+    if (topVal    != null) { cls = cls.split(' ').filter(t => !/^top-/.test(t)).join(' ').trim();    cls = `${cls} top-[${topVal}px]`.trim(); }
+    if (rightVal  != null) { cls = cls.split(' ').filter(t => !/^right-/.test(t)).join(' ').trim();  cls = `${cls} right-[${rightVal}px]`.trim(); }
+    if (bottomVal != null) { cls = cls.split(' ').filter(t => !/^bottom-/.test(t)).join(' ').trim(); cls = `${cls} bottom-[${bottomVal}px]`.trim(); }
+    if (leftVal   != null) { cls = cls.split(' ').filter(t => !/^left-/.test(t)).join(' ').trim();   cls = `${cls} left-[${leftVal}px]`.trim(); }
 
     // Strip any residual inline inset styles
     removeNodeStyleKeys(store, nodeId, ['top', 'right', 'bottom', 'left']);
@@ -1029,6 +1138,8 @@ const handlers: Record<string, Handler> = {
   set_transform(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
     let cls = getNodeClassName(store, nodeId);
     const stylePatch: Record<string, string> = {};
 
@@ -1065,6 +1176,8 @@ const handlers: Record<string, Handler> = {
   set_overflow(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
     let cls = getNodeClassName(store, nodeId);
     if (input.clip) {
       if (!cls.includes('overflow-hidden')) cls = `${cls} overflow-hidden`.trim();
@@ -1078,6 +1191,8 @@ const handlers: Record<string, Handler> = {
   set_display(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
     let cls = getNodeClassName(store, nodeId);
 
     if (input.display)  cls = replaceTokenGroup(cls, DISPLAY_TOKENS, input.display as string);
@@ -1128,6 +1243,8 @@ const handlers: Record<string, Handler> = {
   set_layout(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
     const node = findNode(store.pageNodes, nodeId);
     const current = (node?.props as { className?: string })?.className ?? '';
     let updated = buildLayoutClass(input, current);
@@ -1241,6 +1358,8 @@ const handlers: Record<string, Handler> = {
   set_animation(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
 
     // Read existing animation to merge (preserve unspecified fields)
     const node = findNode(store.pageNodes as SDUINode[], nodeId);
@@ -1251,7 +1370,13 @@ const handlers: Record<string, Handler> = {
       if (input.enter === 'none') {
         delete animation.enter;
       } else {
-        animation.enter = { type: input.enter, duration: Number(input.enterDuration ?? 300) };
+        const enterCfg: Record<string, unknown> = {
+          type: input.enter,
+          duration: Number(input.enterDuration ?? 300),
+        };
+        if (input.enterDelay !== undefined) enterCfg.delay = Number(input.enterDelay);
+        if (input.enterStagger !== undefined) enterCfg.stagger = Number(input.enterStagger);
+        animation.enter = enterCfg;
       }
     }
 
@@ -1267,7 +1392,14 @@ const handlers: Record<string, Handler> = {
       if (input.loop === 'none') {
         delete animation.loop;
       } else {
-        animation.loop = { type: input.loop, duration: 1500, repeatCount: -1, direction: 'alternate' };
+        const loopCfg: Record<string, unknown> = {
+          type: input.loop,
+          duration: Number(input.loopDuration ?? 1500),
+          repeatCount: -1,
+          direction: 'alternate',
+        };
+        if (input.loopColor !== undefined) loopCfg.color = input.loopColor;
+        animation.loop = loopCfg;
       }
     }
 
@@ -1275,9 +1407,10 @@ const handlers: Record<string, Handler> = {
       if (input.hover === 'none') {
         delete animation.hover;
       } else {
+        // HoverConfig fields: scale, opacity, y, duration, easing — no "type" or "value"
         const hoverType = input.hover as string;
-        if (hoverType === 'scale') animation.hover = { type: 'scale', value: 1.05, duration: 200 };
-        else if (hoverType === 'lift') animation.hover = { type: 'translateY', value: -4, duration: 200 };
+        if (hoverType === 'scale') animation.hover = { scale: 1.05, duration: 200 };
+        else if (hoverType === 'lift') animation.hover = { y: -4, duration: 200 };
       }
     }
 
@@ -1285,9 +1418,10 @@ const handlers: Record<string, Handler> = {
       if (input.press === 'none') {
         delete animation.press;
       } else {
+        // PressConfig fields: scale, opacity, x, y, duration, easing — no "type" or "value"
         const pressType = input.press as string;
-        if (pressType === 'scale') animation.press = { type: 'scale', value: 0.95, duration: 100 };
-        else if (pressType === 'bounce') animation.press = { type: 'scale', value: 0.9, duration: 100 };
+        if (pressType === 'scale') animation.press = { scale: 0.95, duration: 100 };
+        else if (pressType === 'bounce') animation.press = { scale: 0.9, duration: 100 };
       }
     }
 
@@ -1296,6 +1430,14 @@ const handlers: Record<string, Handler> = {
         delete animation.scroll;
       } else {
         animation.scroll = { type: input.scroll, duration: 400 };
+      }
+    }
+
+    if (input.shimmer !== undefined) {
+      if (input.shimmer === false || input.shimmer === 'none') {
+        delete animation.shimmer;
+      } else {
+        animation.shimmer = { baseColor: '#e5e7eb', highlightColor: '#f9fafb', duration: 1500 };
       }
     }
 
@@ -1328,6 +1470,8 @@ const handlers: Record<string, Handler> = {
 
   rename_node(input, getStore) {
     const store = getStore();
+    const nodeErr = requireNode(store, input.nodeId as string);
+    if (nodeErr) return nodeErr;
     store.patchNodeField(input.nodeId as string, 'name', input.name as string);
     return { success: true, data: { message: `Renamed node to "${input.name}"` } };
   },
@@ -1509,47 +1653,20 @@ export async function executeTool(
 
 /** Execute multiple tool calls in sequence.
  *
- * When add_component receives a non-UUID nodeId, the tree stores a generated UUID; aliasMap
- * maps that provisional string to the real id so same-batch parentId still resolves.
- * Preferred: pass UUID nodeIds everywhere (see builder knowledge) — then aliasMap is unused.
+ * The AI generates its own UUIDs for nodeId on every add_component call and uses
+ * those same UUIDs as parentId for children in the same batch. No alias resolution
+ * needed — UUIDs pass through directly.
  */
 export async function executeTools(
   toolCalls: Array<{ name: string; input: ToolInput; id: string }>,
   getStore: StoreGetter,
 ): Promise<Array<{ id: string; result: ToolResult }>> {
-  // Maps AI-provided short aliases → actual UUID stored in the tree
-  const aliasMap = new Map<string, string>();
-
   const results: Array<{ id: string; result: ToolResult }> = [];
   for (const call of toolCalls) {
-    // Resolve any aliased string values in this call's input before executing
-    const resolvedInput = resolveAliases(call.input, aliasMap);
-    const result = await executeTool(call.name, resolvedInput, getStore);
-
-    // After add_component / add_icon / add_image / add_video — if the AI passed
-    // a short non-UUID nodeId, record the alias → actual UUID mapping so later
-    // calls in this batch can use it as parentId.
-    if (result.success && resolvedInput.nodeId && typeof resolvedInput.nodeId === 'string') {
-      const originalId = call.input.nodeId as string | undefined;
-      const actualId = (result.data as { nodeId?: string } | undefined)?.nodeId;
-      if (originalId && actualId && originalId !== actualId && !isUUID(originalId)) {
-        aliasMap.set(originalId, actualId);
-      }
-    }
-
+    const result = await executeTool(call.name, call.input, getStore);
     results.push({ id: call.id, result });
   }
   return results;
-}
-
-/** Replace any aliased string values in a tool input with their resolved UUIDs. */
-function resolveAliases(input: ToolInput, aliasMap: Map<string, string>): ToolInput {
-  if (!aliasMap.size) return input;
-  const out: ToolInput = {};
-  for (const [key, val] of Object.entries(input)) {
-    out[key] = (typeof val === 'string' && aliasMap.has(val)) ? aliasMap.get(val)! : val;
-  }
-  return out;
 }
 
 /** Format tool results as Anthropic tool_result content blocks. */

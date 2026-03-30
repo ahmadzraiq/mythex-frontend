@@ -20,7 +20,7 @@ See `ai-builder-knowledge.mdc` for the full alignment philosophy and audit proce
 
 **When to write to `props.className` (Tailwind arbitrary-value class):**
 - Pixel-value controls (`NumberInput`): write as `pt-[Npx]`, `gap-[Npx]`, `max-w-[Npx]`, `top-[Npx]`, etc. — always strip the corresponding `style.*` key
-- Token-value controls (`SelectInput`): write as a standard Tailwind utility like `shadow-lg`, `rounded-xl`, `font-bold`
+- Token-value controls (`SelectInput`): write as a standard Tailwind utility like `shadow-lg`, `font-bold` — note that border-radius, border-width, and font-size are now `NumberInput`s writing arbitrary-px (e.g. `rounded-[12px]`, `border-[2px]`, `text-[20px]`), not SelectInputs
 - Colors: write as `bg-[#hex]`, `bg-[var(--...)]`, `text-[#hex]`, `border-[#hex]`, etc.
 
 **When to write to `style.*` (inline style) — exceptions only:**
@@ -60,7 +60,7 @@ See `ai-builder-knowledge.mdc` for the full alignment philosophy and audit proce
 ### `set_position` inset (top/right/bottom/left)
 - Writes `top-[Npx]`, `right-[Npx]`, `bottom-[Npx]`, `left-[Npx]` to `props.className`
 - Strips corresponding `style.*` keys (`top`, `right`, `bottom`, `left`)
-- position type and zIndex still use standard Tailwind token classes (`absolute`, `z-10`, etc.)
+- `zIndex` is now a **number** (integer px); written as `z-[N]` arbitrary class (e.g. `z-[10]`, `z-[50]`). Strips all `z-0/z-10/z-20…` scale tokens AND any existing `z-[N]` before writing the new one.
 - **Why classes:** Same migration as `set_spacing` — panel writes arbitrary-value classes, not `style.*`
 
 ### `set_transform` rotate
@@ -76,10 +76,15 @@ See `ai-builder-knowledge.mdc` for the full alignment philosophy and audit proce
 - `px:N` exact width/height → **double-write**: `w-[Npx]` class AND `style.width = "Npx"` (guards against stale defaultNode inline styles)
 - **Why classes for min/max:** Same migration as `set_spacing`
 
-### `set_border` radius
-- `"default"` → `rounded` (bare default Tailwind border-radius token)
-- Per-corner `"default"` → bare `rounded-tl` / `rounded-tr` / etc.
-- **Why:** The panel's `ROUNDED_TOKENS` array includes the bare `"rounded"` token
+### `set_border` radius and width
+- `radius` is now a **number** (pixels); written as `rounded-[Xpx]` arbitrary class (e.g. `rounded-[8px]`, `rounded-[9999px]` for pill). Strips all scale tokens (`rounded-md`, `rounded-xl`, etc.) AND all per-corner tokens AND any existing `rounded-[Xpx]` before writing.
+- `radiusTL/TR/BR/BL` are numbers (pixels); written as `rounded-tl-[Xpx]` etc. Strips existing scale and arbitrary per-corner tokens.
+- `width` is now a **number** (pixels); written as `border-[Xpx]` arbitrary class. Pass `0` to remove the border. Strips scale tokens (`border-0`, `border-2`, `border-4`, `border-8`, bare `border`) AND any existing `border-[Xpx]`.
+- **Why:** Design panel now uses NumberInput (px) for all four corners and border width, writing via `patchStyle → styleToClassName → rounded-[Xpx]`
+
+### `set_typography` size
+- `size` is now a **number** (pixels); written as `text-[Xpx]` arbitrary class (e.g. `text-[14px]`, `text-[24px]`). Strips all scale tokens (`text-xs`, `text-sm`, `text-base`, `text-lg`, `text-xl`, `text-2xl`, etc.) AND any existing `text-[Xpx]` before writing.
+- **Why:** Design panel now uses a NumberInput (px) for font size, writing via `patchStyle → styleToClassName → text-[Xpx]`
 
 ### `set_shadow`
 - `"default"` → `shadow` (bare default Tailwind shadow token, between none and sm)
@@ -134,8 +139,8 @@ removeNodeStyleKeys(store, nodeId, ['paddingTop']);
 // Strip shorthand when setting individual sides
 cls = cls.split(' ').filter(t => !/^p-/.test(t)).join(' ').trim(); // removes p-4, p-8, etc.
 
-// Write class AND strip old token
-cls = replaceTokenGroup(cls, ROUNDED_PREFIXES, 'rounded-xl');
+// Write arbitrary-px class AND strip all old scale tokens
+cls = replaceTokenGroup(cls, ROUNDED_PREFIXES, 'rounded-[8px]');
 // (borderRadius is not written inline — the class alone is authoritative)
 ```
 

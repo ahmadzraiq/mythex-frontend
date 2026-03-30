@@ -1206,16 +1206,18 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
 
   projectMood: '',
   projectAnimationLevel: 2,
+  projectLayoutStructure: 2,
   projectDescription: '',
   projectAppName: '',
   projectCategory: 'general',
 
   setProjectContext: (ctx) => set(s => ({
-    projectMood:           ctx.mood           ?? s.projectMood,
-    projectAnimationLevel: ctx.animationLevel  ?? s.projectAnimationLevel,
-    projectDescription:    ctx.description    ?? s.projectDescription,
-    projectAppName:        ctx.appName        ?? s.projectAppName,
-    projectCategory:       ctx.category       ?? s.projectCategory,
+    projectMood:            ctx.mood            ?? s.projectMood,
+    projectAnimationLevel:  ctx.animationLevel  ?? s.projectAnimationLevel,
+    projectLayoutStructure: ctx.layoutStructure ?? s.projectLayoutStructure,
+    projectDescription:     ctx.description     ?? s.projectDescription,
+    projectAppName:         ctx.appName         ?? s.projectAppName,
+    projectCategory:        ctx.category        ?? s.projectCategory,
   })),
 
   toggleAiMode: () => set(s => ({ aiMode: !s.aiMode })),
@@ -1906,12 +1908,13 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
             if (saved?.themeOverrides) next.themeOverrides = saved.themeOverrides as typeof s.themeOverrides;
             if (saved?.themeDarkOverrides) next.themeDarkOverrides = saved.themeDarkOverrides as typeof s.themeDarkOverrides;
             if (saved?.projectMeta && typeof saved.projectMeta === 'object') {
-              const pm = saved.projectMeta as { mood?: string; animationLevel?: number; description?: string; appName?: string; category?: string };
-              if (pm.mood)           next.projectMood           = pm.mood;
-              if (pm.animationLevel) next.projectAnimationLevel = pm.animationLevel;
-              if (pm.description)    next.projectDescription    = pm.description;
-              if (pm.appName)        next.projectAppName        = pm.appName;
-              if (pm.category)       next.projectCategory       = pm.category;
+              const pm = saved.projectMeta as { mood?: string; animationLevel?: number; layoutStructure?: number; description?: string; appName?: string; category?: string };
+              if (pm.mood)                           next.projectMood            = pm.mood;
+              if (pm.animationLevel != null)         next.projectAnimationLevel  = pm.animationLevel;
+              if (pm.layoutStructure != null)        next.projectLayoutStructure = pm.layoutStructure;
+              if (pm.description)                    next.projectDescription     = pm.description;
+              if (pm.appName)                        next.projectAppName         = pm.appName;
+              if (pm.category)                       next.projectCategory        = pm.category;
             }
             return next;
           });

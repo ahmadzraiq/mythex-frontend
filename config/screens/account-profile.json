@@ -17,7 +17,7 @@
   "content": {
     "type": "Box",
     "props": {
-      "className": "space-y-6 flex flex-col"
+      "className": "space-y-[24px] flex flex-col"
     },
     "children": [
       {
@@ -26,14 +26,14 @@
           {
             "type": "Heading",
             "props": {
-              "className": "text-3xl font-bold"
+              "className": "text-[30px] font-bold"
             },
             "text": "Profile"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-[var(--theme-muted-foreground)] mt-2"
+              "className": "text-[var(--theme-muted-foreground)] mt-[8px]"
             },
             "text": "Manage your account information"
           }
@@ -45,38 +45,38 @@
           {
             "type": "Box",
             "props": {
-              "className": "p-6"
+              "className": "p-[24px]"
             },
             "children": [
               {
                 "type": "Heading",
                 "props": {
-                  "className": "text-lg font-semibold mb-4"
+                  "className": "text-[18px] font-semibold mb-[16px]"
                 },
                 "text": "Personal Information"
               },
               {
                 "type": "Box",
                 "props": {
-                  "className": "space-y-4 flex flex-col"
+                  "className": "space-y-[16px] flex flex-col"
                 },
                 "children": [
                   {
                     "type": "Box",
                     "props": {
-                      "className": "grid grid-cols-2 gap-4"
+                      "className": "grid grid-cols-2 gap-[16px]"
                     },
                     "children": [
                       {
                         "type": "Box",
                         "props": {
-                          "className": "space-y-2"
+                          "className": "space-y-[8px]"
                         },
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-sm font-medium"
+                              "className": "text-[14px] font-medium"
                             },
                             "text": "First name"
                           },
@@ -93,13 +93,13 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "space-y-2"
+                          "className": "space-y-[8px]"
                         },
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-sm font-medium"
+                              "className": "text-[14px] font-medium"
                             },
                             "text": "Last name"
                           },
@@ -118,13 +118,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "space-y-2"
+                      "className": "space-y-[8px]"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm font-medium"
+                          "className": "text-[14px] font-medium"
                         },
                         "text": "Phone number"
                       },
@@ -142,7 +142,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
+                      "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] flex flex-row items-center justify-center py-[12px] px-[16px] rounded-[6px]"
                     },
                     "children": [
                       {
@@ -165,7 +165,7 @@
           }
         ],
         "props": {
-          "className": "border rounded-xl bg-[var(--theme-card)] shadow-sm"
+          "className": "border-[1px] rounded-[12px] bg-[var(--theme-card)] shadow-sm"
         }
       },
       {
@@ -174,32 +174,32 @@
           {
             "type": "Box",
             "props": {
-              "className": "p-6"
+              "className": "p-[24px]"
             },
             "children": [
               {
                 "type": "Heading",
                 "props": {
-                  "className": "text-lg font-semibold mb-4"
+                  "className": "text-[18px] font-semibold mb-[16px]"
                 },
                 "text": "Email Address"
               },
               {
                 "type": "Box",
                 "props": {
-                  "className": "space-y-4 flex flex-col"
+                  "className": "space-y-[16px] flex flex-col"
                 },
                 "children": [
                   {
                     "type": "Box",
                     "props": {
-                      "className": "space-y-2"
+                      "className": "space-y-[8px]"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm font-medium"
+                          "className": "text-[14px] font-medium"
                         },
                         "text": "Email"
                       },
@@ -217,7 +217,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
+                      "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] flex flex-row items-center justify-center py-[12px] px-[16px] rounded-[6px]"
                     },
                     "children": [
                       {
@@ -240,7 +240,7 @@
           }
         ],
         "props": {
-          "className": "border rounded-xl bg-[var(--theme-card)] shadow-sm"
+          "className": "border-[1px] rounded-[12px] bg-[var(--theme-card)] shadow-sm"
         }
       },
       {
@@ -249,32 +249,32 @@
           {
             "type": "Box",
             "props": {
-              "className": "p-6"
+              "className": "p-[24px]"
             },
             "children": [
               {
                 "type": "Heading",
                 "props": {
-                  "className": "text-lg font-semibold mb-4"
+                  "className": "text-[18px] font-semibold mb-[16px]"
                 },
                 "text": "Change Password"
               },
               {
                 "type": "Box",
                 "props": {
-                  "className": "space-y-4 flex flex-col"
+                  "className": "space-y-[16px] flex flex-col"
                 },
                 "children": [
                   {
                     "type": "Box",
                     "props": {
-                      "className": "space-y-2"
+                      "className": "space-y-[8px]"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm font-medium"
+                          "className": "text-[14px] font-medium"
                         },
                         "text": "Current password"
                       },
@@ -292,13 +292,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "space-y-2"
+                      "className": "space-y-[8px]"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm font-medium"
+                          "className": "text-[14px] font-medium"
                         },
                         "text": "New password"
                       },
@@ -316,7 +316,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] flex flex-row items-center justify-center py-3 px-4 rounded-md"
+                      "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] flex flex-row items-center justify-center py-[12px] px-[16px] rounded-[6px]"
                     },
                     "children": [
                       {
@@ -339,7 +339,7 @@
           }
         ],
         "props": {
-          "className": "border rounded-xl bg-[var(--theme-card)] shadow-sm"
+          "className": "border-[1px] rounded-[12px] bg-[var(--theme-card)] shadow-sm"
         }
       }
     ]

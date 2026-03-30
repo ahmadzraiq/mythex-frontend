@@ -16,6 +16,12 @@ export const STYLE_TO_CLASS_KEYS = new Set([
   'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
   'gap', 'opacity',
   'top', 'right', 'bottom', 'left',
+  // Numeric properties stored as arbitrary Tailwind classes (e.g. rounded-[8px], z-[10])
+  'borderRadius',
+  'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius',
+  'zIndex',
+  'borderWidth',
+  'fontSize',
 ]);
 
 // ─── Token tables (JIT-scannable) ────────────────────────────────────────────
@@ -219,6 +225,50 @@ export function twToPx(token: string): number {
 }
 
 /**
+ * Named border-radius token → px value lookup (Tailwind v3 defaults).
+ * e.g. 'rounded-md' → 6, 'rounded-lg' → 8
+ */
+const ROUNDED_TOKEN_PX: Record<string, number> = {
+  'rounded-none': 0,
+  'rounded-sm':   2,
+  'rounded':      4,
+  'rounded-md':   6,
+  'rounded-lg':   8,
+  'rounded-xl':   12,
+  'rounded-2xl':  16,
+  'rounded-3xl':  24,
+  'rounded-full': 9999,
+};
+
+/**
+ * Read the px value of a named rounded token in a className string.
+ * Checks corner tokens (prefix = 'rounded-tl-' etc.) and global tokens.
+ * Returns undefined when neither an arbitrary nor a named token is found.
+ * e.g. parseRoundedNamedTokenPx('rounded-md', 'rounded-') → 6
+ *      parseRoundedNamedTokenPx('rounded-tl-lg', 'rounded-tl-') → 8
+ *      parseRoundedNamedTokenPx('rounded', 'rounded-') → 4
+ */
+export function parseRoundedNamedTokenPx(className: string, prefix: string): number | undefined {
+  // Special case: plain 'rounded' token (no suffix) when looking for the global 'rounded-' prefix.
+  // The standard regex below requires at least one char after the dash, so 'rounded' alone won't match.
+  if (prefix === 'rounded-') {
+    const plainMatch = className.match(/(?:^|(?<=\s))(rounded)(?!\S)/);
+    if (plainMatch) return ROUNDED_TOKEN_PX['rounded']; // 4px
+  }
+  const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = className.match(new RegExp(`(?:^|(?<=\\s))(${escaped}\\S*)`));
+  if (!match) return undefined;
+  const token = match[1];
+  // For corner tokens (e.g. 'rounded-tl-lg'), map to the global equivalent
+  const global = token.startsWith('rounded-tl-') ? 'rounded' + token.slice('rounded-tl'.length)
+    : token.startsWith('rounded-tr-') ? 'rounded' + token.slice('rounded-tr'.length)
+    : token.startsWith('rounded-br-') ? 'rounded' + token.slice('rounded-br'.length)
+    : token.startsWith('rounded-bl-') ? 'rounded' + token.slice('rounded-bl'.length)
+    : token;
+  return ROUNDED_TOKEN_PX[global];
+}
+
+/**
  * Extract the numeric px value from an arbitrary-value Tailwind token.
  * e.g. parseTwArbitrary("flex w-[320px] h-[180px]", "w-") → 320
  * Returns null if the token is not present or is not an arbitrary pixel value.
@@ -227,6 +277,28 @@ export function parseTwArbitrary(className: string, prefix: string): number | nu
   const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const match = className.match(new RegExp(`\\b${escaped}\\[(\\d+(?:\\.\\d+)?)px\\]`));
   return match ? parseFloat(match[1]) : null;
+}
+
+/**
+ * Extract the px number from an arbitrary-value class with a px unit.
+ * e.g. parseTwArbitraryPx("rounded-[8px] border-[2px]", "rounded-") → 8
+ * Returns undefined if not found. Used by the design panel to read stored values.
+ */
+export function parseTwArbitraryPx(className: string, prefix: string): number | undefined {
+  const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const m = className.match(new RegExp(`\\b${escaped}\\[(\\d+(?:\\.\\d+)?)px\\]`));
+  return m ? parseFloat(m[1]) : undefined;
+}
+
+/**
+ * Extract the unitless number from an arbitrary-value class (no px).
+ * e.g. parseTwArbitraryNum("z-[10] opacity-[0.5]", "z-") → 10
+ * Returns undefined if not found. Used by the design panel to read stored values.
+ */
+export function parseTwArbitraryNum(className: string, prefix: string): number | undefined {
+  const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const m = className.match(new RegExp(`\\b${escaped}\\[(\\d+(?:\\.\\d+)?)\\]`));
+  return m ? parseFloat(m[1]) : undefined;
 }
 
 /**
@@ -364,6 +436,66 @@ export function styleToClassName(
       const p = px(style[side]);
       if (p) cls = `${cls} ${side}-[${p}]`.trim();
     }
+  }
+
+  // ── Border radius (uniform) ───────────────────────────────────────────────────
+  // Removes ALL rounded tokens (global + per-corner) so a uniform radius wins.
+  if (style.borderRadius !== undefined) {
+    cls = cls
+      .replace(/\brounded-(?:tl|tr|br|bl)-\S+/g, '')
+      .replace(/\brounded-(?:tl|tr|br|bl)\b/g, '')
+      .replace(/\brounded-\S+/g, '')
+      .replace(/\brounded\b/g, '')
+      .replace(/\s+/g, ' ').trim();
+    const p = px(style.borderRadius);
+    if (p) cls = `${cls} rounded-[${p}]`.trim();
+  }
+
+  // ── Border radius (per-corner) ────────────────────────────────────────────────
+  const cornerRadiusMap: [string, string][] = [
+    ['borderTopLeftRadius',     'rounded-tl-'],
+    ['borderTopRightRadius',    'rounded-tr-'],
+    ['borderBottomRightRadius', 'rounded-br-'],
+    ['borderBottomLeftRadius',  'rounded-bl-'],
+  ];
+  for (const [key, cornerPrefix] of cornerRadiusMap) {
+    if (style[key] !== undefined) {
+      cls = removeTwToken(cls, cornerPrefix);
+      const p = px(style[key]);
+      if (p) cls = `${cls} ${cornerPrefix}[${p}]`.trim();
+    }
+  }
+
+  // ── Z-index ───────────────────────────────────────────────────────────────────
+  if (style.zIndex !== undefined) {
+    cls = removeTwToken(cls, 'z-');
+    const z = parseInt(style.zIndex);
+    if (!Number.isNaN(z)) cls = `${cls} z-[${z}]`.trim();
+  }
+
+  // ── Border width ──────────────────────────────────────────────────────────────
+  // Only removes border-width tokens (0/2/4/8 scale and arbitrary px).
+  // Does NOT remove border-style (border-solid), border-color, or inset-border tokens.
+  if (style.borderWidth !== undefined) {
+    cls = cls
+      .replace(/\bborder-(?:0|2|4|8)\b/g, '')
+      .replace(/\bborder-\[\d+(?:\.\d+)?px\]/g, '')
+      .replace(/(?:^| )border(?= |$)/g, ' ')
+      .replace(/\s+/g, ' ').trim();
+    const p = px(style.borderWidth);
+    if (p) cls = `${cls} border-[${p}]`.trim();
+  }
+
+  // ── Font size ─────────────────────────────────────────────────────────────────
+  // Only removes text-size tokens. Does NOT remove text-color (text-[#hex], text-gray-*)
+  // or text-alignment (text-left, text-center, etc.) tokens.
+  if (style.fontSize !== undefined) {
+    cls = cls
+      .replace(/\btext-(?:xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)\b/g, '')
+      .replace(/\btext-\[\d+(?:\.\d+)?px\]/g, '')
+      .replace(/\s+/g, ' ').trim();
+    const p = px(style.fontSize);
+    if (p) cls = `${cls} text-[${p}]`.trim();
   }
 
   return cls.replace(/\s+/g, ' ').trim();
@@ -587,7 +719,7 @@ export function extractColors(node: { props?: unknown; children?: unknown }): st
   function walk(n: { props?: unknown; children?: unknown }) {
     const rawCls = (n.props as { className?: unknown } | undefined)?.className ?? '';
     const cls = typeof rawCls === 'string' ? rawCls : '';
-    const matches = cls.match(hex) ?? [];
+    const matches: string[] = cls.match(hex) ?? [];
     matches.forEach(m => found.add(m.toLowerCase()));
     const kids = n.children;
     if (Array.isArray(kids)) kids.forEach(k => walk(k as { props?: unknown; children?: unknown }));

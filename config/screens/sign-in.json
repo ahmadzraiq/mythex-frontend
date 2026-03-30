@@ -9,25 +9,25 @@
   "content": {
     "type": "Box",
     "props": {
-      "className": "flex flex-1 w-full items-center justify-center px-4"
+      "className": "flex flex-1 w-full items-center justify-center px-[16px]"
     },
     "children": [
       {
         "type": "Box",
         "props": {
-          "className": "w-full max-w-md min-w-0 space-y-6 flex flex-col"
+          "className": "w-full max-w-[448px] min-w-0 space-y-[24px] flex flex-col"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "space-y-2 text-center"
+              "className": "space-y-[8px] text-center"
             },
             "children": [
               {
                 "type": "Heading",
                 "props": {
-                  "className": "text-3xl font-bold text-center"
+                  "className": "text-[30px] font-bold text-center"
                 },
                 "text": "Sign In"
               },
@@ -43,7 +43,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-card)] py-6 shadow-sm"
+              "className": "w-full rounded-[12px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] py-[24px] shadow-sm"
             },
             "children": [
               {
@@ -54,7 +54,7 @@
                     "username": "",
                     "password": ""
                   },
-                  "className": "px-6 space-y-4"
+                  "className": "px-[24px] space-y-[16px]"
                 },
                 "actions": [
                   {
@@ -65,13 +65,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "space-y-1"
+                      "className": "space-y-[4px]"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm font-medium leading-none"
+                          "className": "text-[14px] font-medium leading-none"
                         },
                         "text": "Email"
                       },
@@ -113,7 +113,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-xs text-red-500 dark:text-red-400"
+                              "className": "text-[12px] text-red-500 dark:text-red-400"
                             },
                             "text": "{{local.data.form.fields.username.isValid}}"
                           }
@@ -124,7 +124,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "space-y-1"
+                      "className": "space-y-[4px]"
                     },
                     "children": [
                       {
@@ -136,7 +136,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-sm font-medium leading-none"
+                              "className": "text-[14px] font-medium leading-none"
                             },
                             "text": "Password"
                           },
@@ -151,7 +151,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] text-sm"
+                                  "className": "text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] text-[14px]"
                                 },
                                 "text": "Forgot password?"
                               }
@@ -193,7 +193,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-xs text-red-500 dark:text-red-400"
+                              "className": "text-[12px] text-red-500 dark:text-red-400"
                             },
                             "text": "{{local.data.form.fields.password.isValid}}"
                           }
@@ -211,7 +211,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-red-500 dark:text-red-400"
+                          "className": "text-[14px] text-red-500 dark:text-red-400"
                         },
                         "text": "{{variables['f2a3b4c5-d6e7-8901-fabc-012345678901']}}"
                       }
@@ -222,7 +222,7 @@
                     "name": "Submit",
                     "props": {
                       "type": "submit",
-                      "className": "flex flex-row items-center justify-center cursor-pointer px-4 py-2 rounded-md w-full !bg-[var(--theme-primary)] hover:!bg-[var(--theme-primary)]"
+                      "className": "flex flex-row items-center justify-center cursor-pointer px-[16px] py-[8px] rounded-[6px] w-full !bg-[var(--theme-primary)] hover:!bg-[var(--theme-primary)]"
                     },
                     "children": [
                       {
@@ -241,13 +241,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "px-6 mt-6 flex flex-row items-center justify-center"
+              "className": "px-[24px] mt-[24px] flex flex-row items-center justify-center"
             },
             "children": [
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[var(--theme-muted-foreground)] text-sm text-center"
+                  "className": "text-[var(--theme-muted-foreground)] text-[14px] text-center"
                 },
                 "text": "Don't have an account? "
               },
@@ -262,7 +262,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-[var(--theme-primary)] underline hover:opacity-80 text-center"
+                      "className": "text-[14px] text-[var(--theme-primary)] underline hover:opacity-80 text-center"
                     },
                     "text": "Register"
                   }

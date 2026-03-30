@@ -12,15 +12,15 @@
  *   6.  Auto Layout         — flex dir, wrap, gap (inline style.gap), space-between (containers only)
  *   7.  Padding             — Exact px via inline style.paddingLeft/Right/Top/Bottom (not Tailwind scale)
  *   8.  Margin              — Exact px via inline style.marginLeft/Right/Top/Bottom (not Tailwind scale)
- *   9.  Display & Interaction — display class + cursor-* class
- *   10. Clip content        — overflow-hidden toggle
- *   11. Fill                — inline style.backgroundColor + bg-opacity slider
- *   12. Stroke              — inline style.borderColor, border-* width/style classes
- *   13. Effects             — shadow-* class
- *   14. Typography          — size/weight/leading/tracking selects, text-align icons, decoration/transform,
+ *   9.  Typography          — size/weight/leading/tracking selects, text-align icons, decoration/transform,
  *                             inline style.color (text/heading/ButtonText nodes only)
- *   15. Border Radius       — 4-corner selects; equal → global token, mixed → per-corner tokens
- *   16. Opacity             — inline style.opacity (0–1); never opacity-N class (NativeWind can't compile dynamic)
+ *   10. Display & Interaction — display class + cursor-* class
+ *   11. Clip content        — overflow-hidden toggle
+ *   12. Fill & Opacity      — inline style.backgroundColor + bg-opacity + style.opacity (merged)
+ *   13. Stroke              — inline style.borderColor, border-* width/style classes
+ *   14. Border Radius       — 4-corner selects; equal → global token, mixed → per-corner tokens
+ *   15. Effects             — shadow-* class
+ *   16. Animation           — AnimationInDesign component (collapsible category groups)
  *   17. Selection colors    — extracted hex swatches from className
  *   18. Layout Guide        — grid overlay toggle
  *
@@ -39,11 +39,12 @@ import { oneDark } from '@codemirror/theme-one-dark';
 const CodeMirror = lazy(() => import('@uiw/react-codemirror'));
 import {
   PANEL_STYLE, SECTION_STYLE, LABEL_STYLE,
-  SectionHeader, NumberInput, SelectInput, ColorInput, ToggleBtn,
+  SectionHeader, NumberInput, SelectInput, ColorInput, ToggleBtn, MiniPreview,
 } from './_panel-primitives';
 import { SettingsTab, AlignDistributePanel } from './_panel-right-settings';
 import { PreviewDataEditor, ElementWorkflowsTab } from './_panel-right-workflows';
 import { AnimationInDesign } from './_animation-panel';
+import { SpacingDiagram, CornerRadiusDiagram, InsetDiagram } from './_spatial-controls';
 import { useBuilderStore, findParentNode } from './_store';
 import { findNode } from './_store-node-helpers';
 import { updatePopup as updatePopupData } from '@/lib/builder/popup-data';
@@ -64,23 +65,21 @@ import {
   STYLE_TO_CLASS_KEYS,
   parseTwToken,
   parseTwArbitrary,
+  parseTwArbitraryPx,
+  parseTwArbitraryNum,
   replaceTwToken,
   removeTwToken,
   styleToClassName,
-  TEXT_SIZE_TOKENS,
   FONT_WEIGHT_TOKENS,
   LEADING_TOKENS,
   TRACKING_TOKENS,
-  ROUNDED_TOKENS,
   SHADOW_TOKENS,
-  BORDER_WIDTH_TOKENS,
   BORDER_STYLE_TOKENS,
   ROTATE_TOKENS,
   TEXT_ALIGN_TOKENS,
   TEXT_DECORATION_TOKENS,
   TEXT_TRANSFORM_TOKENS,
   POSITION_TOKENS,
-  Z_INDEX_TOKENS,
   CURSOR_TOKENS,
   DISPLAY_TOKENS,
   GRID_COLS_TOKENS,
@@ -89,12 +88,11 @@ import {
   applyPadding,
   expandMargin,
   applyMargin,
-  applyBorderRadius,
-  expandBorderRadius,
   applyAlignment,
   getAlignCellIndex,
   pxToTw,
   extractColors,
+  parseRoundedNamedTokenPx,
 } from './_tw-utils';
 
 // ─── Module-level constants ───────────────────────────────────────────────────
@@ -538,14 +536,14 @@ function DesignTab({ node }: { node: SDUINode }) {
   // ── Parsed tokens ─────────────────────────────────────────────────────────────
 
   const padding     = expandPadding(cls);
-  const corners     = expandBorderRadius(cls);
   const flexDir     = parseTwToken(cls, 'flex-') ?? 'flex-col';
   const isRow       = flexDir === 'flex-row';
   const activeCell  = getAlignCellIndex(cls, isRow);
   const gapToken    = parseTwToken(cls, 'gap-') ?? 'gap-0';
   // parseTwArbitrary handles gap-[12px]; scale tokens fall back to the 4px grid
   const gapPx       = parseTwArbitrary(cls, 'gap-') ?? (parseInt(gapToken.replace('gap-', '') || '0') * 4);
-  const textSize    = parseTwToken(cls, 'text-') ?? 'text-base';
+  // Font size stored as text-[Xpx] arbitrary class
+  const fontSizePx  = parseTwArbitraryPx(cls, 'text-') ?? 0;
   const fontWeight  = parseTwToken(cls, 'font-') ?? 'font-normal';
   const leading     = parseTwToken(cls, 'leading-') ?? 'leading-normal';
   const tracking    = parseTwToken(cls, 'tracking-') ?? 'tracking-normal';
@@ -562,9 +560,10 @@ function DesignTab({ node }: { node: SDUINode }) {
     // Scale token: opacity-50
     return parseInt(token.replace('opacity-', '') || '100');
   })();
-  const shadowToken = parseTwToken(cls, 'shadow') ?? 'shadow-none';
-  const borderWidth = parseTwToken(cls, 'border') ?? 'border-0';
-  const borderStyle = BORDER_STYLE_TOKENS.find(t => cls.includes(t)) ?? 'border-solid';
+  const shadowToken   = parseTwToken(cls, 'shadow') ?? 'shadow-none';
+  // Border width stored as border-[Xpx] arbitrary class
+  const borderWidthPx = parseTwArbitraryPx(cls, 'border-') ?? 0;
+  const borderStyle   = BORDER_STYLE_TOKENS.find(t => cls.includes(t)) ?? 'border-solid';
   // Rotation is stored as inline style.transform for reliable visual rendering
   const styleTransform = (node.props as { style?: Record<string, string> })?.style?.transform ?? '';
   const rotateDeg = (() => {
@@ -586,11 +585,11 @@ function DesignTab({ node }: { node: SDUINode }) {
 
   // Margin (outer spacing)
   const margin      = expandMargin(cls);
-  const [marginMode, setMarginMode] = useState<'combined' | 'individual'>('combined');
 
   // Position & layer
   const positionToken = POSITION_TOKENS.find(t => cls.includes(t)) ?? 'static';
-  const zIndexToken   = parseTwToken(cls, 'z-') ?? 'z-0';
+  // Z-index stored as z-[N] arbitrary class (unitless integer)
+  const zIndexPx      = parseTwArbitraryNum(cls, 'z-') ?? 0;
   const cursorToken   = parseTwToken(cls, 'cursor-') ?? 'cursor-default';
   const displayToken  = DISPLAY_TOKENS.find(t => {
     // Avoid matching 'hidden' as part of another class; check for exact token
@@ -603,7 +602,7 @@ function DesignTab({ node }: { node: SDUINode }) {
   const textDecor  = TEXT_DECORATION_TOKENS.find(t => cls.includes(t)) ?? 'no-underline';
   const textTransform = TEXT_TRANSFORM_TOKENS.find(t => cls.includes(t)) ?? 'normal-case';
 
-  const [padMode, setPadMode] = useState<'combined' | 'individual'>('individual');
+  // padMode/marginMode no longer used — replaced by SpacingDiagram
 
   // ── Selection colors ─────────────────────────────────────────────────────────
 
@@ -716,14 +715,12 @@ function DesignTab({ node }: { node: SDUINode }) {
               }}
             />
           </FieldWithBinding>
-          <FieldWithBinding label="zIndex" displayLabel="Z-Index" hint="e.g. z-10, z-50, z-auto" value={(classFormulas?.['zIndex'] as FormulaValue) ?? zIndexToken} onChange={v => bindOrPatchCls('zIndex', evaluated => patchCls(replaceTwToken(cls, 'z-', evaluated)), v)} expectedType="string">
-            <SelectInput
-              label="Z-Index"
-              value={zIndexToken}
-              options={Z_INDEX_TOKENS}
-              onChange={v => patchCls(replaceTwToken(cls, 'z-', v))}
-            />
-          </FieldWithBinding>
+          <NumberInput
+            label="Z-Index"
+            testId="input-zindex"
+            value={zIndexPx}
+            onChange={v => patchStyle({ zIndex: String(v) })}
+          />
         </div>
         <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
           <NumberInput label="X" testId="input-pos-x" value={domMetrics.x} onChange={() => {}} />
@@ -780,23 +777,18 @@ function DesignTab({ node }: { node: SDUINode }) {
 
         {/* ── Inset controls (shown when position is absolute / fixed / sticky) ── */}
         {(positionToken === 'absolute' || positionToken === 'fixed' || positionToken === 'sticky') && (
-          <>
-            <div style={{ marginTop: 6, marginBottom: 2, fontSize: 10, color: '#6b7280' }}>Inset</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-              {(['top','right','bottom','left'] as const).map(side => (
-                <FieldWithBinding key={side} label={side} displayLabel={side.charAt(0).toUpperCase() + side.slice(1)} hint="e.g. 0, 16px, auto" value={(nodeStyle[side] ?? '') as FormulaValue} onChange={v => bindOrPatch(side, v)}>
-                  <NumberInput
-                    label={side.charAt(0).toUpperCase() + side.slice(1)}
-                    testId={`input-inset-${side}`}
-                    value={(parseTwArbitrary(cls, `${side}-`) ?? parseInt(nodeStyle[side] ?? '')) || 0}
-                    onChange={px => {
-                      patchStyle({ [side]: `${px}px` });
-                    }}
-                  />
-                </FieldWithBinding>
-              ))}
-            </div>
-          </>
+          <div style={{ marginTop: 10 }}>
+            <div style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Inset</div>
+            <InsetDiagram
+              values={{
+                top:    (parseTwArbitrary(cls, 'top-')    ?? parseInt(nodeStyle.top    ?? '')) || 0,
+                right:  (parseTwArbitrary(cls, 'right-')  ?? parseInt(nodeStyle.right  ?? '')) || 0,
+                bottom: (parseTwArbitrary(cls, 'bottom-') ?? parseInt(nodeStyle.bottom ?? '')) || 0,
+                left:   (parseTwArbitrary(cls, 'left-')   ?? parseInt(nodeStyle.left   ?? '')) || 0,
+              }}
+              onChange={(side, px) => patchStyle({ [side]: `${px}px` })}
+            />
+          </div>
         )}
       </div>
 
@@ -907,20 +899,25 @@ function DesignTab({ node }: { node: SDUINode }) {
           <>
             <div style={{ display: 'flex', gap: 4 }}>
               {([
-                ['self-start',   '⇤',  'Start (left)'],
-                ['self-center',  '↔',  'Center'],
-                ['self-end',     '⇥',  'End (right)'],
-                ['self-stretch', '⇔',  'Stretch (fill width)'],
-                ['self-auto',    '∅',  'Auto (inherit from parent)'],
-              ] as const).map(([token, icon, label]) => (
+                ['self-start',   'Start (left)'],
+                ['self-center',  'Center'],
+                ['self-end',     'End (right)'],
+                ['self-stretch', 'Stretch (fill width)'],
+                ['self-auto',    'Auto (inherit from parent)'],
+              ] as const).map(([token, label]) => (
                 <ToggleBtn
                   key={token}
                   active={selfToken === token}
                   title={label}
                   data-testid={`self-align-${token}`}
                   onClick={() => patchCls(replaceTwToken(removeTwToken(cls, 'self-'), 'self-', token === 'self-auto' ? '' : token).trim())}
+                  style={{ padding: '4px 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
-                  {icon}
+                  {token === 'self-start' && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><rect x="1" y="0" width="1.2" height="10" fill="currentColor" rx="0.5"/><path d="M3.5 5h7M8 2.5l2.5 2.5L8 7.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  {token === 'self-center' && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><rect x="5.4" y="0" width="1.2" height="10" fill="currentColor" rx="0.5"/><path d="M2 5h8M9 2.5l2.5 2.5L9 7.5M3 2.5L.5 5 3 7.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  {token === 'self-end' && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><rect x="9.8" y="0" width="1.2" height="10" fill="currentColor" rx="0.5"/><path d="M8.5 5H1.5M4 2.5L1.5 5 4 7.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  {token === 'self-stretch' && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><rect x="0" y="0" width="1.2" height="10" fill="currentColor" rx="0.5"/><rect x="10.8" y="0" width="1.2" height="10" fill="currentColor" rx="0.5"/><path d="M2.5 5h7M8 2.5l2.5 2.5L8 7.5M4 2.5L1.5 5 4 7.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  {token === 'self-auto' && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><circle cx="6" cy="5" r="3.5" stroke="currentColor" strokeWidth="1.2"/><line x1="6" y1="2" x2="6" y2="8" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.5"/><line x1="3" y1="5" x2="9" y2="5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.5"/></svg>}
                 </ToggleBtn>
               ))}
             </div>
@@ -948,12 +945,16 @@ function DesignTab({ node }: { node: SDUINode }) {
             />
           </FieldWithBinding>
           <div style={{ display: 'flex', gap: 4 }}>
-            <ToggleBtn active={isFlipH} title="Flip horizontal" onClick={() => {
+            <ToggleBtn active={isFlipH} title="Flip horizontal" style={{ padding: '4px 7px', display: 'flex', alignItems: 'center' }} onClick={() => {
               patchCls(isFlipH ? removeTwToken(cls, '-scale-x-') : `${cls} -scale-x-100`.trim());
-            }}>⇔</ToggleBtn>
-            <ToggleBtn active={isFlipV} title="Flip vertical" onClick={() => {
+            }}>
+              <svg width="14" height="12" viewBox="0 0 14 12" fill="none"><path d="M6 1v10M2.5 4L1 6l1.5 2M11.5 4L13 6l-1.5 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><line x1="1" y1="6" x2="5.5" y2="6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="8.5" y1="6" x2="13" y2="6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+            </ToggleBtn>
+            <ToggleBtn active={isFlipV} title="Flip vertical" style={{ padding: '4px 7px', display: 'flex', alignItems: 'center' }} onClick={() => {
               patchCls(isFlipV ? removeTwToken(cls, '-scale-y-') : `${cls} -scale-y-100`.trim());
-            }}>⇕</ToggleBtn>
+            }}>
+              <svg width="12" height="14" viewBox="0 0 12 14" fill="none"><path d="M1 6h10M4 2.5L6 1l2 1.5M4 11.5L6 13l2-1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><line x1="6" y1="1" x2="6" y2="5.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="6" y1="8.5" x2="6" y2="13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+            </ToggleBtn>
           </div>
         </div>
       </div>
@@ -1022,10 +1023,10 @@ function DesignTab({ node }: { node: SDUINode }) {
             {/* Flow direction — 4 icons */}
             <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
               {([
-                ['flex-row',         '→', 'Row'],
-                ['flex-col',         '↓', 'Column'],
-                ['flex-row flex-wrap','↩', 'Row wrap'],
-                ['grid',             '⊞', 'Grid'],
+                ['flex-row',          'row', 'Row'],
+                ['flex-col',          'col', 'Column'],
+                ['flex-row flex-wrap','wrap', 'Row wrap'],
+                ['grid',              'grid', 'Grid'],
               ] as const).map(([token, icon, label]) => {
                 const active = token === 'flex-row flex-wrap'
                   ? (flexDir === 'flex-row' && isFlexWrap)
@@ -1033,14 +1034,17 @@ function DesignTab({ node }: { node: SDUINode }) {
                   ? isGrid
                   : flexDir === token && !isFlexWrap && !isGrid;
                 return (
-                  <ToggleBtn key={token} active={active} title={label} onClick={() => {
+                  <ToggleBtn key={token} active={active} title={label} style={{ padding: '4px 7px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => {
                     let next = removeTwToken(removeTwToken(removeTwToken(cls, 'flex-'), 'grid'), 'flex-wrap');
                     if (token === 'flex-row flex-wrap') next = `${next} flex flex-row flex-wrap`.trim();
                     else if (token === 'grid')          next = `${next} grid`.trim();
                     else                                next = `${next} flex ${token}`.trim();
                     patchCls(next);
                   }}>
-                    {icon}
+                    {icon === 'row'  && <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><rect x="1" y="2" width="3.5" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="5.5" y="2" width="3.5" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="10" y="2" width="3" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/></svg>}
+                    {icon === 'col'  && <svg width="10" height="14" viewBox="0 0 10 14" fill="none"><rect x="2" y="1" width="6" height="3.5" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="2" y="5.5" width="6" height="3.5" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="2" y="10" width="6" height="3" rx="1" stroke="currentColor" strokeWidth="1.2"/></svg>}
+                    {icon === 'wrap' && <svg width="14" height="12" viewBox="0 0 14 12" fill="none"><rect x="1" y="1" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><rect x="6" y="1" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><rect x="1" y="7" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><path d="M11 5l1.5-1.5L14 5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                    {icon === 'grid' && <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><rect x="7" y="1" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><rect x="1" y="7" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><rect x="7" y="7" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/></svg>}
                   </ToggleBtn>
                 );
               })}
@@ -1063,7 +1067,9 @@ function DesignTab({ node }: { node: SDUINode }) {
               <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Mode</span>
               <div style={{ display: 'flex', gap: 2 }}>
                 <ToggleBtn active={!isSpaceBetween} onClick={() => patchCls(removeTwToken(cls, 'justify-between'))}>Fixed</ToggleBtn>
-                <ToggleBtn data-testid="gap-mode-space-between" active={isSpaceBetween} onClick={() => patchCls(replaceTwToken(cls, 'justify-', 'justify-between'))}>⇔</ToggleBtn>
+                <ToggleBtn data-testid="gap-mode-space-between" active={isSpaceBetween} style={{ padding: '4px 7px', display: 'flex', alignItems: 'center' }} onClick={() => patchCls(replaceTwToken(cls, 'justify-', 'justify-between'))}>
+                  <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><rect x="1" y="1" width="3" height="8" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><rect x="10" y="1" width="3" height="8" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><path d="M4.5 5h5M3 3l-1.5 2L3 7M11 3l1.5 2L11 7" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </ToggleBtn>
               </div>
             </div>
           </div>
@@ -1105,96 +1111,152 @@ function DesignTab({ node }: { node: SDUINode }) {
       {/* ── Padding (hidden for raw text nodes) ── */}
       {showPadding && (
         <div data-testid="section-padding" style={SECTION_STYLE}>
-          <SectionHeader title="Padding">
-            <button
-              data-testid="padding-mode-toggle"
-              data-pad-mode={padMode}
-              style={{ fontSize: 9, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', padding: '1px 4px' }}
-              onClick={() => setPadMode(m => m === 'combined' ? 'individual' : 'combined')}
-            >
-              {padMode === 'combined' ? '⊞' : '□'}
-            </button>
-          </SectionHeader>
-          {padMode === 'combined' ? (
-            <div style={{ display: 'flex', gap: 6 }}>
-              <FieldWithBinding label="paddingInline" displayLabel="H (px/py)" hint="e.g. 8px, 1rem (sets left + right)" value={(nodeStyle.paddingLeft ?? '') as FormulaValue} onChange={v => bindOrPatchBoth('paddingLeft', 'paddingRight', v)}>
-                <NumberInput label="H (px/py)" testId="input-pad-h"
-                  value={padding.left}
-                  onChange={px => {
-                    patchStyle({ paddingLeft: `${px}px`, paddingRight: `${px}px`, paddingInline: undefined as unknown as string });
-                  }} />
-              </FieldWithBinding>
-              <FieldWithBinding label="paddingBlock" displayLabel="V (pt/pb)" hint="e.g. 8px, 1rem (sets top + bottom)" value={(nodeStyle.paddingTop ?? '') as FormulaValue} onChange={v => bindOrPatchBoth('paddingTop', 'paddingBottom', v)}>
-                <NumberInput label="V (pt/pb)" testId="input-pad-v"
-                  value={padding.top}
-                  onChange={px => {
-                    patchStyle({ paddingTop: `${px}px`, paddingBottom: `${px}px`, paddingBlock: undefined as unknown as string });
-                  }} />
-              </FieldWithBinding>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-              <FieldWithBinding label="paddingTop" displayLabel="Top" hint="e.g. 8px, 1rem" value={(nodeStyle.paddingTop ?? '') as FormulaValue} onChange={v => bindOrPatch('paddingTop', v)}>
-                <NumberInput label="Top" testId="input-pad-top" value={padding.top} onChange={px => patchStyle({ paddingTop: `${px}px` })} />
-              </FieldWithBinding>
-              <FieldWithBinding label="paddingRight" displayLabel="Right" hint="e.g. 8px, 1rem" value={(nodeStyle.paddingRight ?? '') as FormulaValue} onChange={v => bindOrPatch('paddingRight', v)}>
-                <NumberInput label="Right" testId="input-pad-right" value={padding.right} onChange={px => patchStyle({ paddingRight: `${px}px` })} />
-              </FieldWithBinding>
-              <FieldWithBinding label="paddingBottom" displayLabel="Bottom" hint="e.g. 8px, 1rem" value={(nodeStyle.paddingBottom ?? '') as FormulaValue} onChange={v => bindOrPatch('paddingBottom', v)}>
-                <NumberInput label="Bottom" testId="input-pad-bottom" value={padding.bottom} onChange={px => patchStyle({ paddingBottom: `${px}px` })} />
-              </FieldWithBinding>
-              <FieldWithBinding label="paddingLeft" displayLabel="Left" hint="e.g. 8px, 1rem" value={(nodeStyle.paddingLeft ?? '') as FormulaValue} onChange={v => bindOrPatch('paddingLeft', v)}>
-                <NumberInput label="Left" testId="input-pad-left" value={padding.left} onChange={px => patchStyle({ paddingLeft: `${px}px` })} />
-              </FieldWithBinding>
-            </div>
-          )}
+          <SpacingDiagram
+            label="padding"
+            values={{ top: padding.top, right: padding.right, bottom: padding.bottom, left: padding.left }}
+            onChange={(side, px) => {
+              const cap = side.charAt(0).toUpperCase() + side.slice(1);
+              patchStyle({ [`padding${cap}`]: `${px}px` });
+            }}
+            onChangeAll={px => patchStyle({
+              paddingTop: `${px}px`, paddingRight: `${px}px`,
+              paddingBottom: `${px}px`, paddingLeft: `${px}px`,
+            })}
+            formulaValues={{
+              top:    (nodeStyle.paddingTop    ?? '') as FormulaValue,
+              right:  (nodeStyle.paddingRight  ?? '') as FormulaValue,
+              bottom: (nodeStyle.paddingBottom ?? '') as FormulaValue,
+              left:   (nodeStyle.paddingLeft   ?? '') as FormulaValue,
+            }}
+            onFormulaChange={(side, v) => {
+              const cap = side.charAt(0).toUpperCase() + side.slice(1);
+              bindOrPatch(`padding${cap}`, v);
+            }}
+            testIdPrefix="pad"
+          />
         </div>
       )}
 
       {/* ── Margin ── */}
       <div style={SECTION_STYLE}>
-        <SectionHeader title="Margin">
-          <button
-            style={{ fontSize: 9, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', padding: '1px 4px' }}
-            onClick={() => setMarginMode(m => m === 'combined' ? 'individual' : 'combined')}
-          >
-            {marginMode === 'combined' ? '⊞' : '□'}
-          </button>
-        </SectionHeader>
-        {marginMode === 'combined' ? (
-          <div style={{ display: 'flex', gap: 6 }}>
-            <FieldWithBinding label="marginInline" displayLabel="H (mx)" hint="e.g. 8px, auto (sets left + right)" value={(nodeStyle.marginLeft ?? '') as FormulaValue} onChange={v => bindOrPatchBoth('marginLeft', 'marginRight', v)}>
-              <NumberInput label="H (mx)"
-                value={margin.left}
-                onChange={px => {
-                  patchStyle({ marginLeft: `${px}px`, marginRight: `${px}px`, marginInline: undefined as unknown as string });
-                }} />
-            </FieldWithBinding>
-            <FieldWithBinding label="marginBlock" displayLabel="V (my)" hint="e.g. 8px, auto (sets top + bottom)" value={(nodeStyle.marginTop ?? '') as FormulaValue} onChange={v => bindOrPatchBoth('marginTop', 'marginBottom', v)}>
-              <NumberInput label="V (my)"
-                value={margin.top}
-                onChange={px => {
-                  patchStyle({ marginTop: `${px}px`, marginBottom: `${px}px`, marginBlock: undefined as unknown as string });
-                }} />
-            </FieldWithBinding>
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-            <FieldWithBinding label="marginTop" displayLabel="Top" hint="e.g. 8px, auto" value={(nodeStyle.marginTop ?? '') as FormulaValue} onChange={v => bindOrPatch('marginTop', v)}>
-              <NumberInput label="Top" value={margin.top} onChange={px => patchStyle({ marginTop: `${px}px` })} />
-            </FieldWithBinding>
-            <FieldWithBinding label="marginRight" displayLabel="Right" hint="e.g. 8px, auto" value={(nodeStyle.marginRight ?? '') as FormulaValue} onChange={v => bindOrPatch('marginRight', v)}>
-              <NumberInput label="Right" value={margin.right} onChange={px => patchStyle({ marginRight: `${px}px` })} />
-            </FieldWithBinding>
-            <FieldWithBinding label="marginBottom" displayLabel="Bottom" hint="e.g. 8px, auto" value={(nodeStyle.marginBottom ?? '') as FormulaValue} onChange={v => bindOrPatch('marginBottom', v)}>
-              <NumberInput label="Bottom" value={margin.bottom} onChange={px => patchStyle({ marginBottom: `${px}px` })} />
-            </FieldWithBinding>
-            <FieldWithBinding label="marginLeft" displayLabel="Left" hint="e.g. 8px, auto" value={(nodeStyle.marginLeft ?? '') as FormulaValue} onChange={v => bindOrPatch('marginLeft', v)}>
-              <NumberInput label="Left" value={margin.left} onChange={px => patchStyle({ marginLeft: `${px}px` })} />
-            </FieldWithBinding>
-          </div>
-        )}
+        <SpacingDiagram
+          label="margin"
+          values={{ top: margin.top, right: margin.right, bottom: margin.bottom, left: margin.left }}
+          onChange={(side, px) => {
+            const cap = side.charAt(0).toUpperCase() + side.slice(1);
+            patchStyle({ [`margin${cap}`]: `${px}px` });
+          }}
+          onChangeAll={px => patchStyle({
+            marginTop: `${px}px`, marginRight: `${px}px`,
+            marginBottom: `${px}px`, marginLeft: `${px}px`,
+          })}
+          formulaValues={{
+            top:    (nodeStyle.marginTop    ?? '') as FormulaValue,
+            right:  (nodeStyle.marginRight  ?? '') as FormulaValue,
+            bottom: (nodeStyle.marginBottom ?? '') as FormulaValue,
+            left:   (nodeStyle.marginLeft   ?? '') as FormulaValue,
+          }}
+          onFormulaChange={(side, v) => {
+            const cap = side.charAt(0).toUpperCase() + side.slice(1);
+            bindOrPatch(`margin${cap}`, v);
+          }}
+          testIdPrefix="margin"
+        />
       </div>
+
+      {/* ── Typography (text nodes only) ── */}
+      {isTextNode && (
+        <div style={SECTION_STYLE}>
+          <SectionHeader title="Typography">
+            <MiniPreview
+              style={{ width: 36, background: 'transparent', border: '1px solid #374151', borderRadius: 3 }}
+              title={`${fontSizePx}px · ${fontWeight}`}
+            >
+              <span style={{ fontSize: Math.max(8, Math.min(fontSizePx, 13)), color: computedTextColor || '#d1d5db', fontFamily: 'serif', lineHeight: 1, userSelect: 'none' }}>Aa</span>
+            </MiniPreview>
+          </SectionHeader>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 6, marginTop: 4 }}>
+            <NumberInput
+              label="Size"
+              testId="input-text-size"
+              value={fontSizePx}
+              onChange={px => patchStyle({ fontSize: `${px}px` })}
+            />
+            <FieldWithBinding label="fontWeightClass" displayLabel="Weight" hint="e.g. font-bold, font-semibold, font-normal" value={(classFormulas?.['fontWeightClass'] as FormulaValue) ?? fontWeight} onChange={v => bindOrPatchCls('fontWeightClass', evaluated => patchCls(replaceTwToken(cls, 'font-', evaluated)), v)} expectedType="string">
+              <SelectInput label="Weight" testId="select-font-weight" value={fontWeight} options={FONT_WEIGHT_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'font-', v))} />
+            </FieldWithBinding>
+          </div>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+            <FieldWithBinding label="leading" displayLabel="Leading" hint="e.g. leading-tight, leading-relaxed, leading-6" value={(classFormulas?.['leading'] as FormulaValue) ?? leading} onChange={v => bindOrPatchCls('leading', evaluated => patchCls(replaceTwToken(cls, 'leading-', evaluated)), v)} expectedType="string">
+              <SelectInput label="Leading" testId="select-leading" value={leading} options={LEADING_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'leading-', v))} />
+            </FieldWithBinding>
+            <FieldWithBinding label="tracking" displayLabel="Tracking" hint="e.g. tracking-wide, tracking-tight, tracking-normal" value={(classFormulas?.['tracking'] as FormulaValue) ?? tracking} onChange={v => bindOrPatchCls('tracking', evaluated => patchCls(replaceTwToken(cls, 'tracking-', evaluated)), v)} expectedType="string">
+              <SelectInput label="Tracking" testId="select-tracking" value={tracking} options={TRACKING_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'tracking-', v))} />
+            </FieldWithBinding>
+          </div>
+          {/* Text alignment — 4 icon buttons with formula binding */}
+          <FieldWithBinding label="textAlign" displayLabel="Align" hint='e.g. "text-left", "text-center", "text-right", "text-justify"' value={(classFormulas?.['textAlign'] as FormulaValue) ?? textAlign} onChange={v => bindOrPatchCls('textAlign', evaluated => {
+            let next = cls;
+            TEXT_ALIGN_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+            patchCls(evaluated === 'text-left' || !evaluated ? next : `${next} ${evaluated}`.trim());
+          }, v)} expectedType="string" stackLayout>
+            <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
+              {([['text-left','left'],['text-center','center'],['text-right','right'],['text-justify','justify']] as const).map(([token, icon]) => (
+                <ToggleBtn key={token} active={textAlign === token} style={{ padding: '4px 6px', display: 'flex', alignItems: 'center' }} onClick={() => {
+                  let next = cls;
+                  TEXT_ALIGN_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                  patchCls(token === 'text-left' ? next : `${next} ${token}`.trim());
+                }}>
+                  {icon === 'left'    && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><line x1="1" y1="2" x2="11" y2="2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="1" y1="5" x2="8" y2="5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="1" y1="8" x2="10" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>}
+                  {icon === 'center'  && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><line x1="1" y1="2" x2="11" y2="2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="2.5" y1="5" x2="9.5" y2="5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="1" y1="8" x2="11" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>}
+                  {icon === 'right'   && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><line x1="1" y1="2" x2="11" y2="2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="4" y1="5" x2="11" y2="5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="2" y1="8" x2="11" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>}
+                  {icon === 'justify' && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><line x1="1" y1="2" x2="11" y2="2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="1" y1="5" x2="11" y2="5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="1" y1="8" x2="11" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>}
+                </ToggleBtn>
+              ))}
+            </div>
+          </FieldWithBinding>
+          {/* Text decoration & transform */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+            <FieldWithBinding label="textDecoration" displayLabel="Decoration" hint="e.g. underline, line-through, no-underline" value={(classFormulas?.['textDecoration'] as FormulaValue) ?? textDecor} onChange={v => bindOrPatchCls('textDecoration', evaluated => {
+              let next = cls;
+              TEXT_DECORATION_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+              patchCls(evaluated === 'no-underline' ? next : `${next} ${evaluated}`.trim());
+            }, v)} expectedType="string">
+              <SelectInput label="Decoration" value={textDecor} options={TEXT_DECORATION_TOKENS} onChange={v => {
+                let next = cls;
+                TEXT_DECORATION_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                patchCls(v === 'no-underline' ? next : `${next} ${v}`.trim());
+              }} />
+            </FieldWithBinding>
+            <FieldWithBinding label="textTransform" displayLabel="Transform" hint="e.g. uppercase, lowercase, capitalize, normal-case" value={(classFormulas?.['textTransform'] as FormulaValue) ?? textTransform} onChange={v => bindOrPatchCls('textTransform', evaluated => {
+              let next = cls;
+              TEXT_TRANSFORM_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+              patchCls(evaluated === 'normal-case' ? next : `${next} ${evaluated}`.trim());
+            }, v)} expectedType="string">
+              <SelectInput label="Transform" value={textTransform} options={TEXT_TRANSFORM_TOKENS} onChange={v => {
+                let next = cls;
+                TEXT_TRANSFORM_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                patchCls(v === 'normal-case' ? next : `${next} ${v}`.trim());
+              }} />
+            </FieldWithBinding>
+          </div>
+          <div>
+            <FieldWithBinding label="color" displayLabel="Color" hint="CSS color: e.g. red, #333333, rgba(0,0,0,0.8)" value={(nodeStyle.color as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('color', v)}>
+              <div>
+                <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Color</span>
+                <FigmaColorPicker
+                  testId="input-text-color"
+                  value={computedTextColor}
+                  onChange={(hex, cssVar) => cssVar
+                    ? patchColorAsThemeVar('color', 'props.style.color', 'text', cssVar)
+                    : patchStyle({ color: hex || '' })
+                  }
+                />
+              </div>
+            </FieldWithBinding>
+          </div>
+        </div>
+      )}
 
       {/* ── Display & Cursor ── */}
       <div style={SECTION_STYLE}>
@@ -1249,9 +1311,16 @@ function DesignTab({ node }: { node: SDUINode }) {
         }, v)}
       />
 
-      {/* ── Fill ── */}
+      {/* ── Fill & Opacity ── */}
       <div style={SECTION_STYLE}>
-        <SectionHeader title="Fill" />
+        <SectionHeader title="Fill & Opacity">
+          {computedBgColor && computedBgColor !== 'rgba(0, 0, 0, 0)' && (
+            <MiniPreview
+              style={{ background: computedBgColor, opacity: opacityVal / 100 }}
+              title={`bg: ${computedBgColor}`}
+            />
+          )}
+        </SectionHeader>
         <div style={{ marginTop: 4 }}>
           <FieldWithBinding label="backgroundColor" displayLabel="Background" hint="CSS color: e.g. red, #ff0000, rgba(0,0,0,0.5)" value={(nodeStyle.backgroundColor as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('backgroundColor', v)}>
             <div>
@@ -1268,7 +1337,7 @@ function DesignTab({ node }: { node: SDUINode }) {
           </FieldWithBinding>
         </div>
         <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 9, color: '#6b7280' }}>Opacity</span>
+          <span style={{ fontSize: 9, color: '#6b7280', minWidth: 60 }}>Fill opacity</span>
           <input
             type="range" min={0} max={100} step={5}
             data-testid="bg-opacity-slider"
@@ -1280,12 +1349,51 @@ function DesignTab({ node }: { node: SDUINode }) {
             {parseTwToken(cls, 'bg-opacity-')?.replace('bg-opacity-', '') ?? '100'}%
           </span>
         </div>
+        <div style={{ marginTop: 6 }}>
+          <FieldWithBinding label="opacity" displayLabel="Opacity" hint="number 0–1 e.g. 0.5, 0.8, 1 (no quotes)" value={(nodeStyle.opacity ?? '') as FormulaValue} onChange={v => bindOrPatch('opacity', v)}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 9, color: '#6b7280', minWidth: 60 }}>Element opacity</span>
+              <input
+                type="range" min={5} max={100} step={5}
+                key={nodeId}
+                defaultValue={opacityVal < 5 ? 5 : opacityVal}
+                data-testid="input-opacity-slider"
+                onChange={e => {
+                  const val = parseInt(e.target.value);
+                  const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
+                  if (el) el.style.opacity = val >= 100 ? '' : String(val / 100);
+                  const label = e.target.closest('[data-field="opacity"]')?.querySelector('[data-opacity-label]') as HTMLElement | null;
+                  if (label) label.textContent = `${val}%`;
+                }}
+                onMouseUp={e => {
+                  const val = parseInt((e.target as HTMLInputElement).value);
+                  if (val >= 100) {
+                    patchStyle({ opacity: undefined as unknown as string });
+                    const cleaned = removeTwToken(cls, 'opacity-');
+                    if (cleaned !== cls) patchCls(cleaned);
+                  } else {
+                    patchStyle({ opacity: String(val / 100) });
+                  }
+                }}
+                style={{ flex: 1 }}
+              />
+              <span data-opacity-label style={{ fontSize: 10, color: '#d1d5db', minWidth: 28 }}>{opacityVal}%</span>
+            </div>
+          </FieldWithBinding>
+        </div>
       </div>
 
       {/* ── Stroke ── */}
       <div style={SECTION_STYLE}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-          <SectionHeader title="Stroke" />
+          <SectionHeader title="Stroke">
+            {borderWidthPx > 0 && (
+              <MiniPreview
+                style={{ background: 'transparent', border: `${Math.min(borderWidthPx, 4)}px solid ${computedBorderColor || '#6b7280'}` }}
+                title={`${borderWidthPx}px ${borderStyle}`}
+              />
+            )}
+          </SectionHeader>
           <FieldWithBinding label="borderWidth" displayLabel="Border W" hint="e.g. 1px, 2px, 0" value={(nodeStyle.borderWidth ?? '') as FormulaValue} onChange={v => bindOrPatch('borderWidth', v)} expectedType="string">
             <span />
           </FieldWithBinding>
@@ -1306,15 +1414,12 @@ function DesignTab({ node }: { node: SDUINode }) {
           </FieldWithBinding>
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-          <FieldWithBinding label="borderWidthClass" displayLabel="Width" hint="e.g. border, border-2, border-0" value={(classFormulas?.['borderWidthClass'] as FormulaValue) ?? borderWidth} onChange={v => bindOrPatchCls('borderWidthClass', evaluated => patchCls(replaceTwToken(cls, 'border', evaluated)), v)} expectedType="string">
-            <SelectInput
-              label="Width"
-              testId="select-border-width"
-              value={borderWidth}
-              options={BORDER_WIDTH_TOKENS}
-              onChange={v => patchCls(replaceTwToken(cls, 'border', v))}
-            />
-          </FieldWithBinding>
+          <NumberInput
+            label="Width"
+            testId="input-border-width"
+            value={borderWidthPx}
+            onChange={px => patchStyle({ borderWidth: `${px}px` })}
+          />
           <FieldWithBinding label="borderStyle" displayLabel="Style" hint="e.g. border-solid, border-dashed, border-dotted" value={(classFormulas?.['borderStyle'] as FormulaValue) ?? borderStyle} onChange={v => bindOrPatchCls('borderStyle', evaluated => {
             let next = cls;
             BORDER_STYLE_TOKENS.forEach(t => { next = removeTwToken(next, t); });
@@ -1334,9 +1439,57 @@ function DesignTab({ node }: { node: SDUINode }) {
         </div>
       </div>
 
+      {/* ── Border Radius ── */}
+      {(() => {
+        const tlPx = parseTwArbitraryPx(cls, 'rounded-tl-') ?? parseTwArbitraryPx(cls, 'rounded-') ?? parseRoundedNamedTokenPx(cls, 'rounded-tl-') ?? parseRoundedNamedTokenPx(cls, 'rounded-') ?? 0;
+        const trPx = parseTwArbitraryPx(cls, 'rounded-tr-') ?? tlPx;
+        const brPx = parseTwArbitraryPx(cls, 'rounded-br-') ?? tlPx;
+        const blPx = parseTwArbitraryPx(cls, 'rounded-bl-') ?? tlPx;
+        return (
+          <div style={SECTION_STYLE}>
+            <span style={LABEL_STYLE}>Border Radius</span>
+            <CornerRadiusDiagram
+              values={{ tl: tlPx, tr: trPx, br: brPx, bl: blPx }}
+              onChange={(corner, px) => {
+                const styleMap = {
+                  tl: 'borderTopLeftRadius',
+                  tr: 'borderTopRightRadius',
+                  br: 'borderBottomRightRadius',
+                  bl: 'borderBottomLeftRadius',
+                } as const;
+                patchStyle({ [styleMap[corner]]: `${px}px` });
+              }}
+              onChangeAll={px => patchStyle({
+                borderTopLeftRadius:     `${px}px`,
+                borderTopRightRadius:    `${px}px`,
+                borderBottomRightRadius: `${px}px`,
+                borderBottomLeftRadius:  `${px}px`,
+              })}
+            />
+          </div>
+        );
+      })()}
+
       {/* ── Effects (Shadow) ── */}
       <div style={SECTION_STYLE}>
-        <SectionHeader title="Effects" />
+        <SectionHeader title="Effects">
+          {shadowToken && shadowToken !== 'shadow-none' && (() => {
+            const shadowMap: Record<string, string> = {
+              'shadow-sm':  '0 1px 2px rgba(0,0,0,0.55)',
+              'shadow':     '0 2px 6px rgba(0,0,0,0.55)',
+              'shadow-md':  '0 4px 10px rgba(0,0,0,0.6)',
+              'shadow-lg':  '0 8px 18px rgba(0,0,0,0.65)',
+              'shadow-xl':  '0 12px 28px rgba(0,0,0,0.7)',
+              'shadow-2xl': '0 20px 40px rgba(0,0,0,0.75)',
+            };
+            return (
+              <MiniPreview
+                style={{ background: '#374151', boxShadow: shadowMap[shadowToken] ?? '0 2px 6px rgba(0,0,0,0.55)' }}
+                title={shadowToken}
+              />
+            );
+          })()}
+        </SectionHeader>
         <div style={{ marginTop: 4 }}>
           <FieldWithBinding label="shadow" displayLabel="Drop shadow" hint="e.g. shadow, shadow-md, shadow-lg, shadow-none" value={(classFormulas?.['shadow'] as FormulaValue) ?? shadowToken} onChange={v => bindOrPatchCls('shadow', evaluated => patchCls(replaceTwToken(removeTwToken(cls, 'shadow'), 'shadow', evaluated)), v)} expectedType="string">
             <SelectInput
@@ -1357,147 +1510,6 @@ function DesignTab({ node }: { node: SDUINode }) {
         store={store}
         commitHistory={commitHistory}
       />
-
-      {/* ── Typography (text nodes only) ── */}
-      {isTextNode && (
-        <div style={SECTION_STYLE}>
-          <SectionHeader title="Typography" />
-          <div style={{ display: 'flex', gap: 6, marginBottom: 6, marginTop: 4 }}>
-            <FieldWithBinding label="textSize" displayLabel="Size" hint="e.g. text-sm, text-xl, text-base" value={(classFormulas?.['textSize'] as FormulaValue) ?? textSize} onChange={v => bindOrPatchCls('textSize', evaluated => patchCls(replaceTwToken(cls, 'text-', evaluated)), v)} expectedType="string">
-              <SelectInput label="Size" testId="select-text-size" value={textSize} options={TEXT_SIZE_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'text-', v))} />
-            </FieldWithBinding>
-            <FieldWithBinding label="fontWeightClass" displayLabel="Weight" hint="e.g. font-bold, font-semibold, font-normal" value={(classFormulas?.['fontWeightClass'] as FormulaValue) ?? fontWeight} onChange={v => bindOrPatchCls('fontWeightClass', evaluated => patchCls(replaceTwToken(cls, 'font-', evaluated)), v)} expectedType="string">
-              <SelectInput label="Weight" testId="select-font-weight" value={fontWeight} options={FONT_WEIGHT_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'font-', v))} />
-            </FieldWithBinding>
-          </div>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-            <FieldWithBinding label="leading" displayLabel="Leading" hint="e.g. leading-tight, leading-relaxed, leading-6" value={(classFormulas?.['leading'] as FormulaValue) ?? leading} onChange={v => bindOrPatchCls('leading', evaluated => patchCls(replaceTwToken(cls, 'leading-', evaluated)), v)} expectedType="string">
-              <SelectInput label="Leading" testId="select-leading" value={leading} options={LEADING_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'leading-', v))} />
-            </FieldWithBinding>
-            <FieldWithBinding label="tracking" displayLabel="Tracking" hint="e.g. tracking-wide, tracking-tight, tracking-normal" value={(classFormulas?.['tracking'] as FormulaValue) ?? tracking} onChange={v => bindOrPatchCls('tracking', evaluated => patchCls(replaceTwToken(cls, 'tracking-', evaluated)), v)} expectedType="string">
-              <SelectInput label="Tracking" testId="select-tracking" value={tracking} options={TRACKING_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'tracking-', v))} />
-            </FieldWithBinding>
-          </div>
-          {/* Text alignment — 4 icon buttons with formula binding */}
-          <FieldWithBinding label="textAlign" displayLabel="Align" hint='e.g. "text-left", "text-center", "text-right", "text-justify"' value={(classFormulas?.['textAlign'] as FormulaValue) ?? textAlign} onChange={v => bindOrPatchCls('textAlign', evaluated => {
-            let next = cls;
-            TEXT_ALIGN_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-            patchCls(evaluated === 'text-left' || !evaluated ? next : `${next} ${evaluated}`.trim());
-          }, v)} expectedType="string" stackLayout>
-            <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
-              {([['text-left','⬅'],['text-center','⬌'],['text-right','➡'],['text-justify','☰']] as const).map(([token, icon]) => (
-                <ToggleBtn key={token} active={textAlign === token} onClick={() => {
-                  let next = cls;
-                  TEXT_ALIGN_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-                  patchCls(token === 'text-left' ? next : `${next} ${token}`.trim());
-                }}>{icon}</ToggleBtn>
-              ))}
-            </div>
-          </FieldWithBinding>
-          {/* Text decoration & transform */}
-          <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-            <FieldWithBinding label="textDecoration" displayLabel="Decoration" hint="e.g. underline, line-through, no-underline" value={(classFormulas?.['textDecoration'] as FormulaValue) ?? textDecor} onChange={v => bindOrPatchCls('textDecoration', evaluated => {
-              let next = cls;
-              TEXT_DECORATION_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-              patchCls(evaluated === 'no-underline' ? next : `${next} ${evaluated}`.trim());
-            }, v)} expectedType="string">
-              <SelectInput label="Decoration" value={textDecor} options={TEXT_DECORATION_TOKENS} onChange={v => {
-                let next = cls;
-                TEXT_DECORATION_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-                patchCls(v === 'no-underline' ? next : `${next} ${v}`.trim());
-              }} />
-            </FieldWithBinding>
-            <FieldWithBinding label="textTransform" displayLabel="Transform" hint="e.g. uppercase, lowercase, capitalize, normal-case" value={(classFormulas?.['textTransform'] as FormulaValue) ?? textTransform} onChange={v => bindOrPatchCls('textTransform', evaluated => {
-              let next = cls;
-              TEXT_TRANSFORM_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-              patchCls(evaluated === 'normal-case' ? next : `${next} ${evaluated}`.trim());
-            }, v)} expectedType="string">
-              <SelectInput label="Transform" value={textTransform} options={TEXT_TRANSFORM_TOKENS} onChange={v => {
-                let next = cls;
-                TEXT_TRANSFORM_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-                patchCls(v === 'normal-case' ? next : `${next} ${v}`.trim());
-              }} />
-            </FieldWithBinding>
-          </div>
-          <div>
-            <FieldWithBinding label="color" displayLabel="Color" hint="CSS color: e.g. red, #333333, rgba(0,0,0,0.8)" value={(nodeStyle.color as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('color', v)}>
-              <div>
-                <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Color</span>
-                <FigmaColorPicker
-                  testId="input-text-color"
-                  value={computedTextColor}
-                  onChange={(hex, cssVar) => cssVar
-                    ? patchColorAsThemeVar('color', 'props.style.color', 'text', cssVar)
-                    : patchStyle({ color: hex || '' })
-                  }
-                />
-              </div>
-            </FieldWithBinding>
-          </div>
-        </div>
-      )}
-
-      {/* ── Border Radius ── */}
-      <div style={SECTION_STYLE}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-          <SectionHeader title="Border Radius" />
-          <FieldWithBinding label="borderRadius" displayLabel="Radius" hint="e.g. 4px, 8px, 50%, 9999px" value={(nodeStyle.borderRadius ?? '') as FormulaValue} onChange={v => bindOrPatch('borderRadius', v)} expectedType="string">
-            <span />
-          </FieldWithBinding>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-          {(['tl', 'tr', 'br', 'bl'] as const).map(corner => (
-            <FieldWithBinding key={corner} label={`corner-${corner}`} displayLabel={corner.toUpperCase()} hint="e.g. rounded, rounded-lg, rounded-full, rounded-none" value={(classFormulas?.[`corner-${corner}`] as FormulaValue) ?? (corners[corner] ?? '')} onChange={v => bindOrPatchCls(`corner-${corner}`, evaluated => patchCls(applyBorderRadius(cls, { ...corners, [corner]: evaluated })), v)} expectedType="string">
-              <SelectInput
-                label={corner.toUpperCase()}
-                testId={`select-corner-${corner}`}
-                value={corners[corner]} options={ROUNDED_TOKENS}
-                onChange={v => patchCls(applyBorderRadius(cls, { ...corners, [corner]: v }))}
-              />
-            </FieldWithBinding>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Opacity ── */}
-      <div style={SECTION_STYLE}>
-        <SectionHeader title="Opacity" />
-        <div style={{ marginTop: 6 }}>
-          <FieldWithBinding label="opacity" displayLabel="Opacity" hint="number 0–1 e.g. 0.5, 0.8, 1 (no quotes)" value={(nodeStyle.opacity ?? '') as FormulaValue} onChange={v => bindOrPatch('opacity', v)}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input
-                type="range" min={5} max={100} step={5}
-                key={nodeId}
-                defaultValue={opacityVal < 5 ? 5 : opacityVal}
-                data-testid="input-opacity-slider"
-                onChange={e => {
-                  // Update canvas DOM immediately — no React re-render / Zustand commit during drag.
-                  // Using defaultValue (uncontrolled) lets the browser move the thumb natively.
-                  const val = parseInt(e.target.value);
-                  const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
-                  if (el) el.style.opacity = val >= 100 ? '' : String(val / 100);
-                  // Update the display label imperatively
-                  const label = e.target.closest('[data-field="opacity"]')?.querySelector('[data-opacity-label]') as HTMLElement | null;
-                  if (label) label.textContent = `${val}%`;
-                }}
-                onMouseUp={e => {
-                  // Commit to Zustand + history only when drag ends
-                  const val = parseInt((e.target as HTMLInputElement).value);
-                  if (val >= 100) {
-                    patchStyle({ opacity: undefined as unknown as string });
-                    const cleaned = removeTwToken(cls, 'opacity-');
-                    if (cleaned !== cls) patchCls(cleaned);
-                  } else {
-                    patchStyle({ opacity: String(val / 100) });
-                  }
-                }}
-                style={{ flex: 1 }}
-              />
-              <span data-opacity-label style={{ fontSize: 11, color: '#d1d5db', minWidth: 30, textAlign: 'right' }}>{opacityVal}%</span>
-            </div>
-          </FieldWithBinding>
-        </div>
-      </div>
 
       {/* ── Selection colors ── */}
       {selectionColors.length > 0 && (

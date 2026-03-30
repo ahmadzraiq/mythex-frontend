@@ -595,23 +595,23 @@ test.describe('BF – Builder Features', () => {
     expect(cls).toContain('items-center');
   });
 
-  // BF-26 — Heading drops with text-2xl (no forced w-full; sizes to content)
-  test('BF-26: Heading drops with text-2xl class', async () => {
+  // BF-26 — Heading drops with text-[24px] (no forced w-full; sizes to content)
+  test('BF-26: Heading drops with text-[24px] class', async () => {
     const page = sharedPage;
     await dropComponent(page, 'Heading');
     const store = await getBuilderStore(page) as { pageNodes: Array<{ props?: { className?: string } }> } | null;
     const cls = store?.pageNodes?.[0]?.props?.className ?? '';
-    expect(cls).toContain('text-2xl');
+    expect(cls).toContain('text-[24px]');
     expect(cls).not.toContain('w-full');
   });
 
-  // BF-27 — Text drops with text-base (no forced w-full; sizes to content)
-  test('BF-27: Text drops with text-base class', async () => {
+  // BF-27 — Text drops with text-[16px] (no forced w-full; sizes to content)
+  test('BF-27: Text drops with text-[16px] class', async () => {
     const page = sharedPage;
     await dropComponent(page, 'Text');
     const store = await getBuilderStore(page) as { pageNodes: Array<{ props?: { className?: string } }> } | null;
     const cls = store?.pageNodes?.[0]?.props?.className ?? '';
-    expect(cls).toContain('text-base');
+    expect(cls).toContain('text-[16px]');
     expect(cls).not.toContain('w-full');
   });
 
@@ -626,15 +626,15 @@ test.describe('BF – Builder Features', () => {
     expect(node?.props?.size).toBe('md');
   });
 
-  // BF-29 — Image (NextImage) drops with rounded-md; default has style width/height
-  test('BF-29: Image drops with w-full, h-48 and rounded-md classes', async () => {
+  // BF-29 — Image (NextImage) drops with rounded-[6px]; default has style width/height
+  test('BF-29: Image drops with rounded-[6px] class', async () => {
     const page = sharedPage;
     await dropComponent(page, 'Image');
     const store = await getBuilderStore(page) as { pageNodes: Array<{ type?: string; props?: { className?: string } }> } | null;
     const node = store?.pageNodes?.find(n => n.type === 'NextImage');
     expect(node).toBeDefined();
     const cls = node?.props?.className ?? '';
-    expect(cls).toContain('rounded-md');
+    expect(cls).toContain('rounded-[6px]');
   });
 
   // BF-30 — Btn Solid (Pressable) drops with no w-full (natural auto size)

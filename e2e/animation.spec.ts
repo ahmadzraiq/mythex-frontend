@@ -1192,7 +1192,7 @@ test('AN-P9-05: Masonry grid (CSS columns via Box style) renders cards', async (
   const columns = await grid.evaluate((el) => window.getComputedStyle(el).columnCount);
   expect(Number(columns)).toBeGreaterThanOrEqual(2);
   // Has card children
-  const cards = grid.locator('[class*="rounded-xl"]');
+  const cards = grid.locator('[class*="rounded-"]');
   const count = await cards.count();
   expect(count).toBeGreaterThanOrEqual(4);
 });

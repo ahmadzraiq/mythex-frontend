@@ -29,6 +29,11 @@ import { ALL_BUILDER_TOOLS } from '@/lib/ai/builder-tools';
 import { buildChatSystemPrompt } from '@/lib/ai/builder-knowledge';
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+// Strict hex-only UUID validation — rejects non-hex chars (g-z) and short aliases.
+// The AI is instructed to generate proper UUIDs; if it doesn't, we fail fast so it self-corrects.
+const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+function isUUIDFormat(s: string): boolean { return UUID_RE.test(s); }
+
 // Max tool-call rounds to prevent infinite loops.
 // Complex tasks (create page → switch → structure → configure → style → text) need many rounds;
 // 100 gives full budget for the most complex multi-section builds.
@@ -47,6 +52,8 @@ interface ChatRequestBody {
   pages?: Array<{ id: string; name: string; route: string }>;
   theme?: Record<string, string>;
   mood?: string;
+  animationLevel?: number;
+  layoutStructure?: number;
   appName?: string;
   description?: string;
   category?: string;
@@ -93,7 +100,7 @@ function buildPaletteSnapshot(themeOverrides: Record<string, string>): string {
   for (const [sourceVar, themeVar, label] of THEME_VAR_MAP) {
     const hex = themeOverrides[sourceVar];
     if (hex) {
-      lines.push(`  var(${themeVar})${' '.repeat(Math.max(1, 36 - themeVar.length))}= ${hex}  (${label})`);
+      lines.push(`  ${sourceVar}${' '.repeat(Math.max(1, 28 - sourceVar.length))}= ${hex}  (${label})`);
     }
   }
   return lines.length ? lines.join('\n') : '(no theme palette — user has not applied a theme)';
@@ -106,9 +113,12 @@ export async function POST(req: NextRequest) {
     selectedNodeIds = [],
     selectedNodesDetails = [],
     pageTreeSnapshot = [],
+    pageId,
     pages = [],
     theme = {},
     mood,
+    animationLevel,
+    layoutStructure,
     appName,
     description,
     category,
@@ -127,22 +137,18 @@ export async function POST(req: NextRequest) {
 
   // ── Build system prompt ─────────────────────────────────────────────────────
 
-  const currentPage = pages[0] ?? { id: 'home', name: 'Home', route: '/' };
-  const selectedNodeSummary = selectedNodesDetails.length > 0
-    ? selectedNodesDetails.map((n: unknown) => {
-        const node = n as { type?: string; id?: string; name?: string };
-        return `${node.type ?? 'Node'} (id: ${node.id ?? '?'}, name: ${node.name ?? 'untitled'})`;
-      }).join(', ')
-    : undefined;
+  const currentPage = (pageId ? pages.find(p => p.id === pageId) : undefined) ?? pages[0] ?? { id: 'home', name: 'Home', route: '/' };
 
   const paletteSnapshot = buildPaletteSnapshot(theme);
 
   const systemPrompt = buildChatSystemPrompt({
     pages,
     currentPageName: currentPage.name,
-    selectedNodeSummary,
+    currentPageRoute: currentPage.route,
     paletteSnapshot,
     mood,
+    animationLevel,
+    layoutStructure,
     appName,
     description,
     category,
@@ -161,13 +167,21 @@ export async function POST(req: NextRequest) {
   }
 
   // Add context about selected nodes and page tree as a system note
+  const fmtInitial = (val: unknown): string => {
+    if (Array.isArray(val)) return `array (${val.length} items)`;
+    if (typeof val === 'object' && val !== null) return 'object';
+    return String(val);
+  };
+
   const contextNote = [
-    selectedNodeIds.length > 0 ? `Currently selected nodes: ${selectedNodeIds.join(', ')}` : null,
+    selectedNodesDetails.length > 0
+      ? `Selected: ${selectedNodesDetails.map((n: unknown) => { const node = n as { type?: string; id?: string; name?: string }; return `${node.type ?? 'Node'} "${node.name ?? 'untitled'}" (id: ${node.id ?? '?'})`; }).join(', ')}`
+      : `Nothing selected`,
     pageTreeSnapshot.length > 0
-      ? `Current page node tree (use these IDs directly — no need to call get_page_tree):\n${printTree(pageTreeSnapshot as SnapNode[])}`
-      : null,
+      ? `Current page has ${pageTreeSnapshot.length} top-level section(s). Use search_nodes(query) to find a node by name/type/text, or get_page_tree() to inspect the full structure.`
+      : `Current page is empty — no nodes yet.`,
     variables.length > 0
-      ? `Variables: ${variables.map(v => `${v.label ?? v.name}${v.id ? ` (id: ${v.id}, path: variables['${v.id}'])` : ''}`).join(', ')}`
+      ? `Variables: ${variables.map(v => `${v.label ?? v.name}${v.type ? ` — ${v.type}` : ''}${v.initialValue != null ? `, initial: ${fmtInitial(v.initialValue)}` : ''}${v.id ? ` (id: ${v.id}, path: variables['${v.id}'])` : ''}`).join(', ')}`
       : null,
     workflows.length > 0 ? `Workflows: ${workflows.map(w => `${w.name} (trigger: ${w.trigger})`).join(', ')}` : null,
     dataSources.length > 0 ? `DataSources: ${dataSources.map(d => `${d.label} → ${d.path}`).join(', ')}` : null,
@@ -328,61 +342,71 @@ export async function POST(req: NextRequest) {
         if (toolUseBlocks.length > 0) {
           const toolResultsForNextRound: Anthropic.Messages.ToolResultBlockParam[] = [];
 
-          // Maps AI-provided short aliases (e.g. "hero-box") → real UUIDs so that
-          // parentId / nodeId references in later tool calls in this batch resolve correctly.
-          const serverAliasMap = new Map<string, string>();
-          const resolveAlias = (val: unknown) =>
-            typeof val === 'string' && serverAliasMap.has(val) ? serverAliasMap.get(val)! : val;
-
           for (const tool of toolUseBlocks) {
             // For read-only tools, execute server-side and return results
             // For mutation tools, the client executes them
-            const isReadTool = ['get_page_tree', 'get_node_details', 'get_theme', 'get_variables', 'get_pages', 'get_formula_context', 'get_workflows', 'get_data_sources'].includes(tool.name);
+            const isReadTool = ['get_page_tree', 'get_node_details', 'get_theme', 'get_variables', 'get_pages', 'get_formula_context', 'get_workflows', 'get_data_sources', 'search_nodes'].includes(tool.name);
             const isSearchTool = ['search_images', 'search_videos', 'search_icons'].includes(tool.name);
-            // Node-creating tools — pre-assign a UUID so Claude can reference the new node immediately
-            const isNodeCreateTool = ['add_component', 'add_icon', 'add_image', 'add_video'].includes(tool.name);
-            // Variable-creating tool — pre-assign a UUID so Claude can use it in templates/workflows
+            // add_component: AI provides its own hex UUID for nodeId — validate it strictly.
+            const isAddComponentTool = tool.name === 'add_component';
+            // Media node tools: AI does not provide nodeId — server generates one.
+            const isMediaNodeTool = ['add_icon', 'add_image', 'add_video'].includes(tool.name);
+            // Variable-creating tool — always generate a server UUID so variable IDs stay stable
             const isVarCreateTool = tool.name === 'add_variable';
             // Page-creating tool — pre-assign a page ID so Claude can use it in switch_page immediately
             const isPageCreateTool = tool.name === 'add_page';
 
-            // Resolve any aliased fields in this tool's input using the running serverAliasMap.
-            // This converts short aliases like "hero-section" → the UUID assigned in a prior call.
             const rawInput = tool.input as Record<string, unknown>;
-            const resolvedInput: Record<string, unknown> = {};
-            for (const [k, v] of Object.entries(rawInput)) resolvedInput[k] = resolveAlias(v);
 
             let toolResult: string;
-            // input sent to client — may have _assignedNodeId injected for node-create tools
-            let clientInput: Record<string, unknown> = resolvedInput;
+            // input sent to client
+            let clientInput: Record<string, unknown> = rawInput;
+            // When true, skip sending tool_executed to the client (nothing was created server-side)
+            let skipClientExecution = false;
 
-            if (isNodeCreateTool) {
-              // If the AI already provided a valid UUID, use it as-is — no need to replace it.
-              // This lets the AI use its own UUID directly in subsequent set_text/set_*/rename calls
-              // without relying on the aliasMap. If the AI used a short alias, generate a fresh UUID
-              // and map alias → UUID so same-batch refs resolve.
-              const aiAlias = rawInput.nodeId as string | undefined;
-              const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-              const assignedNodeId = (aiAlias && UUID_RE.test(aiAlias))
-                ? aiAlias                  // AI gave a valid UUID — keep it
-                : crypto.randomUUID();     // AI gave a short alias — generate a fresh UUID
-              if (aiAlias) serverAliasMap.set(aiAlias, assignedNodeId);
-              // Override nodeId with the final UUID so add_component on the client uses it directly.
-              clientInput = { ...resolvedInput, nodeId: assignedNodeId, _assignedNodeId: assignedNodeId };
-              toolResult = JSON.stringify({
-                success: true,
-                data: {
-                  nodeId: assignedNodeId,
-                  type: rawInput.label ?? 'node',
-                  message: `Added ${rawInput.label ?? 'component'}. nodeId="${assignedNodeId}". Use as parentId for children or in set_text/set_class/rename_node.`,
-                },
-              });
+            if (isAddComponentTool) {
+              // Validate that the AI provided a proper hex UUID. If not, fail immediately and
+              // do NOT send tool_executed to the client — prevents phantom node creation.
+              // The AI sees the error and self-corrects; no duplicate node is left on canvas.
+              const nodeId = rawInput.nodeId as string | undefined;
+              if (!nodeId || !isUUIDFormat(nodeId)) {
+                skipClientExecution = true;
+                toolResult = JSON.stringify({
+                  success: false,
+                  error: `nodeId "${nodeId ?? '(missing)'}" is not a valid UUID. ` +
+                    `Generate a proper hex UUID (e.g. "a1b2c3d4-e5f6-7890-abcd-ef1234567890") and retry this tool call. ` +
+                    `Do NOT call any other tools that reference this nodeId as parentId until this is fixed.`,
+                });
+              } else {
+                // nodeId is valid — pass rawInput directly (nodeId is already in it, no _assignedNodeId needed)
+                clientInput = rawInput;
+                const placement = rawInput.parentId
+                  ? `placed under parentId: ${rawInput.parentId}`
+                  : `placed at ROOT of page (no parentId)`;
+                toolResult = JSON.stringify({
+                  success: true,
+                  data: {
+                    nodeId,
+                    type: rawInput.label ?? 'node',
+                    message: `Added ${rawInput.label ?? 'component'} (${placement}). nodeId="${nodeId}". Use as parentId for children or in set_text/set_class/rename_node.`,
+                  },
+                });
+              }
+            } else if (isMediaNodeTool) {
+              // AI doesn't provide nodeId for icon/image/video — server generates one so the
+              // client executor has a stable ID to use.
+              const assignedNodeId = crypto.randomUUID();
+              clientInput = { ...rawInput, _assignedNodeId: assignedNodeId };
+              toolResult = JSON.stringify({ ok: true, pending: 'client_execution' });
             } else if (isVarCreateTool) {
-              // Always generate a real UUID. Map the AI's short alias so same-batch refs resolve.
-              const aiVarAlias = rawInput.variableId as string | undefined;
-              const assignedVarId = crypto.randomUUID();
-              if (aiVarAlias) serverAliasMap.set(aiVarAlias, assignedVarId);
-              clientInput = { ...resolvedInput, variableId: assignedVarId, _assignedVarId: assignedVarId };
+              // Respect the AI's variableId if it is a valid hex UUID (same pattern as add_component).
+              // This allows batching: AI pre-assigns a UUID, uses it in create_workflow variableName
+              // in the same round without a round-trip. Only generate a server UUID as fallback.
+              const aiVarId = rawInput.variableId as string | undefined;
+              const assignedVarId = (aiVarId && isUUIDFormat(aiVarId))
+                ? aiVarId
+                : crypto.randomUUID();
+              clientInput = { ...rawInput, variableId: assignedVarId, _assignedVarId: assignedVarId };
               const varName = String(rawInput.name ?? 'variable');
               toolResult = JSON.stringify({
                 success: true,
@@ -396,24 +420,36 @@ export async function POST(req: NextRequest) {
                 },
               });
             } else if (isPageCreateTool) {
-              // Pre-assign page ID so Claude can reference it in switch_page immediately
-              const assignedPageId = `page-${Date.now()}`;
-              const aiPageAlias = rawInput.pageId as string | undefined;
-              if (aiPageAlias) serverAliasMap.set(aiPageAlias, assignedPageId);
-              clientInput = { ...resolvedInput, pageId: assignedPageId, _assignedPageId: assignedPageId };
-              toolResult = JSON.stringify({
-                success: true,
-                data: {
-                  pageId: assignedPageId,
-                  route: rawInput.route,
-                  name: rawInput.name,
-                  message: `Created page "${rawInput.name}" at route "${rawInput.route}". pageId="${assignedPageId}". Use this exact pageId in switch_page to navigate to this page.`,
-                },
-              });
+              // Check if a page with this route already exists before generating a fake success.
+              // If the client's addPage silently no-ops (duplicate route), the AI would receive
+              // "success" with a ghost pageId and switch_page would navigate nowhere.
+              const existingPage = pages.find((p: { id: string; route?: string; name?: string }) =>
+                p.route === (rawInput.route as string)
+              );
+              if (existingPage) {
+                clientInput = rawInput; // nothing to execute on the client
+                toolResult = JSON.stringify({
+                  success: false,
+                  error: `A page with route "${rawInput.route}" already exists (pageId: "${existingPage.id}", name: "${existingPage.name}"). Use switch_page with pageId="${existingPage.id}" to navigate to it instead of creating a duplicate.`,
+                });
+              } else {
+                // Pre-assign page ID so Claude can reference it in switch_page immediately
+                const assignedPageId = `page-${Date.now()}`;
+                clientInput = { ...rawInput, pageId: assignedPageId, _assignedPageId: assignedPageId };
+                toolResult = JSON.stringify({
+                  success: true,
+                  data: {
+                    pageId: assignedPageId,
+                    route: rawInput.route,
+                    name: rawInput.name,
+                    message: `Created page "${rawInput.name}" at route "${rawInput.route}". pageId="${assignedPageId}". Use this exact pageId in switch_page to navigate to this page.`,
+                  },
+                });
+              }
             } else if (isReadTool) {
               // Serve real data from the request context
               if (tool.name === 'get_page_tree') {
-                const depth = Math.min(Number(resolvedInput.depth ?? 2), 4);
+                const depth = Math.min(Number(rawInput.depth ?? 2), 4);
                 const summarize = (n: Record<string, unknown>, d: number): unknown => {
                   const base: Record<string, unknown> = {
                     id: n.id, type: n.type, name: n.name,
@@ -428,7 +464,7 @@ export async function POST(req: NextRequest) {
                 const tree = pageTreeSnapshot.map(n => summarize(n as Record<string, unknown>, depth));
                 toolResult = JSON.stringify({ pageName: currentPage.name, sections: tree });
               } else if (tool.name === 'get_node_details') {
-                const ids = (resolvedInput.nodeIds as string[]) || [];
+                const ids = (rawInput.nodeIds as string[]) || [];
                 // Search selected nodes first, then fall back to full page tree snapshot
                 const findInTree = (nodes: unknown[], targetId: string): unknown | null => {
                   for (const n of nodes) {
@@ -476,14 +512,54 @@ export async function POST(req: NextRequest) {
                 toolResult = JSON.stringify(workflows);
               } else if (tool.name === 'get_data_sources') {
                 toolResult = JSON.stringify(dataSources);
+              } else if (tool.name === 'search_nodes') {
+                // Search the current page's node tree by substring match on name/type/text/id.
+                // Returns all matches with breadcrumb paths so the AI can reference node IDs.
+                const query = String(rawInput.query ?? '').toLowerCase();
+                const filterType = rawInput.nodeType ? String(rawInput.nodeType).toLowerCase() : undefined;
+
+                type SearchNode = { id?: string; type?: string; name?: string; text?: string; children?: unknown[] };
+                const results: Array<{ id: string | undefined; name: string | undefined; type: string | undefined; text: string | undefined; breadcrumb: string; parentId: string | undefined }> = [];
+
+                const walk = (nodes: SearchNode[], breadcrumb: string[], parentId: string | undefined) => {
+                  for (const n of nodes) {
+                    const crumb = [...breadcrumb, n.name ?? n.type ?? 'Node'];
+                    const matchesType = !filterType || (n.type ?? '').toLowerCase() === filterType;
+                    const matchesQuery =
+                      (n.name ?? '').toLowerCase().includes(query) ||
+                      (n.type ?? '').toLowerCase().includes(query) ||
+                      (typeof n.text === 'string' ? n.text : '').toLowerCase().includes(query) ||
+                      (n.id ?? '').toLowerCase().includes(query);
+                    if (matchesQuery && matchesType) {
+                      results.push({
+                        id: n.id,
+                        name: n.name ?? n.type,
+                        type: n.type,
+                        text: typeof n.text === 'string' ? n.text.slice(0, 80) : undefined,
+                        breadcrumb: crumb.join(' > '),
+                        parentId,
+                      });
+                    }
+                    if (Array.isArray(n.children) && n.children.length > 0) {
+                      walk(n.children as SearchNode[], crumb, n.id);
+                    }
+                  }
+                };
+
+                walk(pageTreeSnapshot as SearchNode[], [], undefined);
+                toolResult = JSON.stringify(
+                  results.length > 0
+                    ? results
+                    : { note: `No nodes found matching "${rawInput.query}"${filterType ? ` with type "${rawInput.nodeType}"` : ''}. Try a broader query or call get_page_tree() to see all nodes.` }
+                );
               } else {
                 toolResult = JSON.stringify({ note: 'Data from client context' });
               }
             } else if (isSearchTool && tool.name === 'search_images') {
               // Execute server-side image search
               try {
-                const q = encodeURIComponent(String(resolvedInput.query ?? ''));
-                const count = Number(resolvedInput.count ?? 5);
+                const q = encodeURIComponent(String(rawInput.query ?? ''));
+                const count = Number(rawInput.count ?? 5);
                 const apiKey = process.env.UNSPLASH_ACCESS_KEY;
                 if (apiKey) {
                   const r = await fetch(`https://api.unsplash.com/search/photos?query=${q}&per_page=${count}&client_id=${apiKey}`);
@@ -507,8 +583,8 @@ export async function POST(req: NextRequest) {
             } else if (isSearchTool && tool.name === 'search_videos') {
               // Execute server-side video search via Pexels
               try {
-                const q = encodeURIComponent(String(resolvedInput.query ?? ''));
-                const count = Number(resolvedInput.count ?? 4);
+                const q = encodeURIComponent(String(rawInput.query ?? ''));
+                const count = Number(rawInput.count ?? 4);
                 const apiKey = process.env.PEXELS_API_KEY;
                 if (apiKey) {
                   const url = q
@@ -534,9 +610,9 @@ export async function POST(req: NextRequest) {
             } else if (isSearchTool && tool.name === 'search_icons') {
               // Execute server-side icon search via Iconify
               try {
-                const q = encodeURIComponent(String(resolvedInput.query ?? ''));
-                const count = Number(resolvedInput.count ?? 10);
-                const prefix = resolvedInput.prefix ? `&prefix=${resolvedInput.prefix}` : '';
+                const q = encodeURIComponent(String(rawInput.query ?? ''));
+                const count = Number(rawInput.count ?? 10);
+                const prefix = rawInput.prefix ? `&prefix=${rawInput.prefix}` : '';
                 const r = await fetch(`https://api.iconify.design/search?query=${q}&limit=${count}${prefix}`);
                 if (r.ok) {
                   const d = await r.json() as { icons?: string[] };
@@ -553,19 +629,22 @@ export async function POST(req: NextRequest) {
               toolResult = JSON.stringify({ ok: true, pending: 'client_execution' });
             }
 
-            // Send tool execution event to client with final (possibly enriched) input
-            send({
-              type: 'tool_executed',
-              id: tool.id,
-              name: tool.name,
-              input: clientInput,
-            });
+            // Send tool execution event to client — skipped when validation failed so the
+            // client never creates a phantom node that the AI will then duplicate on retry.
+            if (!skipClientExecution) {
+              send({
+                type: 'tool_executed',
+                id: tool.id,
+                name: tool.name,
+                input: clientInput,
+              });
 
-            allExecutedTools.push({
-              name: tool.name,
-              input: clientInput,
-              result: toolResult,
-            });
+              allExecutedTools.push({
+                name: tool.name,
+                input: clientInput,
+                result: toolResult,
+              });
+            }
 
             toolResultsForNextRound.push({
               type: 'tool_result',

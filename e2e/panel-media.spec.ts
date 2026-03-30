@@ -185,15 +185,16 @@ test.describe('PM — Image', () => {
     await sharedPage.waitForSelector('[data-builder-id="test-image"]', { timeout: 8_000 });
     await selectFirstNodeViaLayers(sharedPage);
 
-    await scrollTo(sharedPage, 'select-corner-tl');
+    await scrollTo(sharedPage, 'input-corner-tl');
     for (const corner of ['tl', 'tr', 'br', 'bl']) {
-      await sharedPage.locator(`[data-testid="select-corner-${corner}"]`).selectOption('rounded-full');
+      await sharedPage.locator(`[data-testid="input-corner-${corner}"]`).fill('9999');
+      await sharedPage.locator(`[data-testid="input-corner-${corner}"]`).press('Tab');
       await sharedPage.waitForTimeout(100);
     }
 
     const props = await getNodeProps(sharedPage, 'test-image');
-    expect((props.className as string)).toContain('rounded-full');
-    console.log('✅ Image rounded-full applied to className');
+    expect((props.className as string)).toContain('rounded-tl-[9999px]');
+    console.log('✅ Image rounded full (9999px) applied to className');
   });
 });
 

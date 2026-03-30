@@ -593,14 +593,16 @@ All components from `@/components/ui/*` are supported. Use `type` in JSON to ref
 
 ## 12. Node Animation (`props.animation`)
 
-Any SDUI node can be animated by adding an `animation` object to its `props`. The renderer wraps the node in an `AnimatedNode` that drives all animation via React Native Reanimated.
+Any SDUI node can be animated by adding an `animation` object to its `props`. The renderer wraps it in an `AnimatedNode` driven by React Native Reanimated.
+
+> **Builder rule:** In the AI builder, always use the `set_animation` tool — never write raw animation JSON. The tool merges into existing config so only pass what you want to change.
 
 ```json
 {
   "type": "Box",
   "props": {
-    "className": "w-16 h-16 rounded-full bg-yellow-400",
-    "animation": { ... }
+    "className": "w-[64px] h-[64px] rounded-[9999px] bg-yellow-400",
+    "animation": { "enter": { "type": "fadeIn", "duration": 400 } }
   }
 }
 ```
@@ -609,110 +611,98 @@ Any SDUI node can be animated by adding an `animation` object to its `props`. Th
 
 Plays once when the node mounts.
 
+| Field | Description | Default |
+|---|---|---|
+| `type` | Enter type (see full list below) | — |
+| `duration` | ms | `300` |
+| `delay` | ms before starting | `0` |
+| `stagger` | ms per-child offset for mapped lists (set on the container) | `0` |
+| `easing` | CSS easing string | `"ease"` |
+| `spring` | boolean — use spring physics instead of timing | `false` |
+
+**All enter types:**
+`fadeIn`, `slideInUp`, `slideInDown`, `slideInLeft`, `slideInLeftSubtle`, `slideInRight`,
+`riseFade`, `dropIn`, `zoomIn`, `expandIn`, `bounceIn`,
+`flipInX`, `flipInY`, `flipIn3D`, `tiltIn`, `skewIn`, `skewInY`,
+`blurIn`, `glowIn`, `rollIn`, `revealUp`, `charFall`, `charBounce`
+
+Unknown types fall back to `opacity: 0 → 1`.
+
+### Stagger (mapped lists)
+
+Set `enter.stagger` on the **parent container** node. Each child's delay is automatically offset by `stagger × $index`. Do NOT set stagger on individual child nodes.
+
 ```json
 "animation": {
-  "enter": {
-    "type": "fadeUp",
-    "duration": 400,
-    "delay": 0,
-    "easing": "spring"
-  }
+  "enter": { "type": "slideInUp", "duration": 400, "stagger": 80 }
 }
 ```
-
-| Field | Values | Default |
-|---|---|---|
-| `type` | `"fade"`, `"fadeUp"`, `"fadeDown"`, `"fadeLeft"`, `"fadeRight"`, `"scale"`, `"scaleUp"`, `"slideUp"`, `"slideDown"`, `"flipX"`, `"flipY"` | — |
-| `duration` | ms | `400` |
-| `delay` | ms | `0` |
-| `easing` | `"spring"`, `"ease"`, `"easeIn"`, `"easeOut"`, `"easeInOut"`, `"bounce"` | `"ease"` |
 
 ### Exit animation
 
-Plays when the node unmounts (requires conditional rendering).
+Plays when the node unmounts (requires conditional rendering via `condition`).
 
-```json
-"animation": {
-  "exit": { "type": "fadeDown", "duration": 300 }
-}
-```
+| Field | Description |
+|---|---|
+| `type` | Exit type (confirmed-working, see list below) |
+| `duration` | ms (default `300`) |
 
-Same `type` options as enter.
+**Confirmed-working exit types:**
+`fadeOut`, `slideOutUp`, `slideOutDown`, `slideOutLeft`, `slideOutRight`,
+`zoomOut`, `shrinkOut`, `blurOut`, `skewOut`
 
 ### Loop animation
 
 Continuously repeats while the node is mounted.
 
-```json
-"animation": {
-  "loop": {
-    "type": "breathe",
-    "duration": 2000,
-    "repeatCount": -1,
-    "direction": "alternate"
-  }
-}
-```
-
 | Field | Description | Default |
 |---|---|---|
-| `type` | See loop type table below | — |
-| `duration` | ms per cycle | `1000` |
-| `delay` | ms before first cycle | `0` |
+| `type` | Loop type (see table below) | — |
+| `duration` | ms per cycle | `1500` |
 | `repeatCount` | number of repeats; `-1` = infinite | `-1` |
-| `direction` | `"normal"` or `"alternate"` (reverse on even cycles) | `"normal"` |
-| `color` | CSS color string for shadow-based types (`glowPulse`, `ripple`) | purple-500 |
+| `direction` | `"normal"` or `"alternate"` | `"alternate"` |
+| `color` | CSS color for shadow-based types (`glowPulse`, `ripple`) | `"#a855f7"` |
 
-**Loop types:**
+**All loop types:**
 
 | `type` | Effect |
 |---|---|
-| `breathe` | Scale 1 → 1.08, alternate |
-| `float` | TranslateY 0 → -8px, alternate |
-| `wiggle` | Small left/right wiggle sequence |
-| `shake` | Fast shake sequence then pause |
+| `pulse` | Opacity 1 → 0.6, alternate |
+| `breathe` | Scale 1 → 1.06, alternate |
+| `float` | TranslateY 0 → -10px, alternate |
+| `flash` | Opacity 1 → 0, alternate |
+| `shake` | Fast left/right shake burst |
+| `wiggle` | Gentle left/right wiggle |
+| `wobble` | Side-to-side arc |
+| `swing` | Rotate ±15°, alternate |
 | `spin` | Continuous 360° rotation |
 | `ticker` | Same as spin |
-| `flash` | Opacity 1 → 0.4, alternate |
-| `swing` | Rotate ±15°, alternate |
-| `rubber` | Scale squash/stretch sequence |
-| `tada` | Combined scale + rotation burst |
+| `bounce` | TranslateY bounce |
 | `heartbeat` | Fast double-pulse scale |
-| `glowPulse` | Expanding box-shadow halo using `color`. Put `"outerStyle": { "borderRadius": N }` to match inner shape. |
-| `ripple` | Shadow ring expands outward and fades, using `color`. Put `"outerStyle": { "borderRadius": N }` to match inner shape. |
-| `gradientDrift` | Drifts `backgroundPosition` left ↔ right. **Requires** the gradient on `animation.outerStyle` (not `props.style`) — see example below. |
+| `ripple` | Shadow ring expands outward and fades. Requires `color`. |
+| `glowPulse` | Expanding box-shadow halo. Requires `color`. Add `outerStyle: { borderRadius: N }` to match inner shape. |
+| `gradientDrift` | Drifts `backgroundPosition` left ↔ right. **Requires** gradient on `animation.outerStyle` — see below. |
 
-**`glowPulse` and `ripple` example (circular element):**
-
+**`glowPulse` example:**
 ```json
 {
   "type": "Box",
   "props": {
-    "className": "w-16 h-16 rounded-full bg-yellow-400",
+    "className": "w-[64px] h-[64px] rounded-[9999px] bg-yellow-400",
     "animation": {
       "outerStyle": { "borderRadius": 9999 },
-      "loop": {
-        "type": "glowPulse",
-        "duration": 1500,
-        "repeatCount": -1,
-        "direction": "alternate",
-        "color": "#facc15"
-      }
+      "loop": { "type": "glowPulse", "duration": 1500, "repeatCount": -1, "direction": "alternate", "color": "#facc15" }
     }
   }
 }
 ```
 
-- `color` must contrast with its background (default purple-500 works on both light and dark backgrounds)
-- `outerStyle.borderRadius` makes the shadow follow the inner element's shape
-
 **`gradientDrift` example:**
-
 ```json
 {
   "type": "Box",
   "props": {
-    "className": "w-24 h-16 rounded-lg flex items-center justify-center",
+    "className": "rounded-[8px] flex items-center justify-center",
     "animation": {
       "outerStyle": {
         "backgroundImage": "linear-gradient(to right, #667eea, #764ba2, #f64f59, #c471ed, #667eea)",
@@ -720,47 +710,119 @@ Continuously repeats while the node is mounted.
         "backgroundRepeat": "no-repeat",
         "borderRadius": 8
       },
-      "loop": {
-        "type": "gradientDrift",
-        "duration": 3000,
-        "repeatCount": -1
-      }
+      "loop": { "type": "gradientDrift", "duration": 3000, "repeatCount": -1 }
     }
   }
 }
 ```
 
-**Why `outerStyle` for the gradient:** Reanimated animates `backgroundPosition` on the `Animated.View` wrapper. For the animation to work, the gradient background must be on the **same element** that Reanimated controls — i.e. `animation.outerStyle`, not `props.style`. Using `props.style` puts the gradient on the inner element, which Reanimated cannot reach.
+**Why `outerStyle` for gradientDrift:** Reanimated animates `backgroundPosition` on the `Animated.View` wrapper. The gradient must be on the same element Reanimated controls (`animation.outerStyle`), not on `props.style` (the inner element).
 
 ### Hover animation
 
+Fields on `HoverConfig`: `scale`, `opacity`, `y`, `duration`, `easing`. No `type` or `value` fields.
+
 ```json
 "animation": {
-  "hover": { "scale": 1.05, "opacity": 1.0, "y": -4, "duration": 200 }
+  "hover": { "scale": 1.05, "duration": 200 }
 }
 ```
 
 ### Press animation
 
-```json
-"animation": {
-  "press": { "scale": 0.95, "opacity": 0.85, "duration": 100 }
-}
-```
-
-### Stagger children
-
-Staggers the enter animation of each direct child:
+Fields on `PressConfig`: `scale`, `opacity`, `x`, `y`, `duration`, `easing`. No `type` or `value` fields.
 
 ```json
 "animation": {
-  "staggerChildren": { "delay": 80, "startDelay": 0 }
+  "press": { "scale": 0.95, "duration": 100 }
 }
 ```
+
+### Scroll-triggered enter
+
+Fires the enter animation when the element scrolls into the viewport.
+
+```json
+"animation": {
+  "scroll": { "type": "slideInUp", "duration": 400, "threshold": 0.2, "once": true }
+}
+```
+
+### Shimmer
+
+Loading skeleton shimmer sweep effect.
+
+```json
+"animation": {
+  "shimmer": { "baseColor": "#e5e7eb", "highlightColor": "#f9fafb", "duration": 1500 }
+}
+```
+
+### Imperative trigger
+
+Re-plays a one-shot animation whenever a variable changes. Useful for shaking an input on validation error.
+
+```json
+"animation": {
+  "imperativeTrigger": {
+    "type": "shake",
+    "watchVar": "variables['UUID']",
+    "duration": 500
+  }
+}
+```
+
+- `watchVar` is a **formula expression** (not a template string) — e.g. `"variables['UUID']"`.
+- Use `changeVariableValue` with `formula: "Date.now()"` to guarantee a new value on every trigger.
+
+### States machine
+
+Animates smoothly between named visual states. Powers carousels, tabs, and any multi-state element.
+
+```json
+"animation": {
+  "states": {
+    "watchVar": "variables['UUID']",
+    "defaultState": "idle",
+    "duration": 300,
+    "easing": "ease",
+    "states": {
+      "idle":   { "opacity": "1", "scale": "1" },
+      "active": { "opacity": "1", "scale": "1.05", "backgroundColor": "#7c3aed" },
+      "hidden": { "opacity": "0", "scale": "0.8" }
+    }
+  }
+}
+```
+
+- `watchVar` is a formula expression that resolves to the current state name string.
+- State values are CSS-like strings: `opacity`, `scale`, `translateX`, `translateY`, `backgroundColor`, `borderRadius`, `width`, `height`.
+
+### Split text
+
+Animates text character-by-character, word-by-word, or line-by-line. The renderer auto-fills `text` and `className` from the node if not set.
+
+```json
+"animation": {
+  "splitText": {
+    "split": "char",
+    "type": "charFall",
+    "duration": 400,
+    "stagger": 30,
+    "delay": 0
+  }
+}
+```
+
+| `split` | Effect |
+|---|---|
+| `"char"` | Animate each character |
+| `"word"` | Animate each word |
+| `"line"` | Animate each line |
 
 ### Outer style / class
 
-Applied to the `Animated.View` wrapper (not the inner component). Required for `gradientDrift`, `glowPulse` shape-matching, and any CSS property Reanimated should own:
+Applied to the `Animated.View` wrapper (not the inner component). Required for `gradientDrift`, `glowPulse` shape-matching, and CSS properties Reanimated should own.
 
 ```json
 "animation": {

@@ -647,7 +647,7 @@ test.describe('Fix-4: NumberInput commits on blur without Enter', () => {
     await page.waitForTimeout(300);
 
     const cls = await getNodeClassName(page, nodeId);
-    expect(cls).toContain('gap-4');
+    expect(cls).toContain('gap-[16px]');
   });
 
   test('Fix-4e: Padding Top commits via Tab/blur', async () => {

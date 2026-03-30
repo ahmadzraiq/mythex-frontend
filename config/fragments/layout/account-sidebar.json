@@ -1,32 +1,32 @@
 {
   "type": "Box",
   "props": {
-    "className": "w-64 flex-shrink-0"
+    "className": "w-[256px] flex-shrink-0"
   },
   "children": [
     {
       "type": "Box",
       "props": {
-        "className": "rounded-lg border border-[var(--theme-border)] bg-[var(--theme-card)] p-4 sticky top-20"
+        "className": "rounded-[8px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] p-[16px] sticky top-[80px]"
       },
       "children": [
         {
           "type": "Text",
           "props": {
-            "className": "text-xs font-semibold uppercase tracking-wider text-[var(--theme-muted-foreground)] mb-3 px-2"
+            "className": "text-[12px] font-semibold uppercase tracking-wider text-[var(--theme-muted-foreground)] mb-[12px] px-[8px]"
           },
           "text": "Account"
         },
         {
           "type": "Box",
           "props": {
-            "className": "space-y-0.5 flex flex-col"
+            "className": "space-y-[2px] flex flex-col"
           },
           "children": [
             {
               "type": "Box",
               "props": {
-                "className": "flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm font-medium hover:bg-[var(--theme-muted)] hover:text-[var(--theme-foreground)] transition-colors text-[var(--theme-foreground)]"
+                "className": "flex items-center gap-[12px] w-full px-[12px] py-[8px] rounded-[6px] text-[14px] font-medium hover:bg-[var(--theme-muted)] hover:text-[var(--theme-foreground)] transition-colors text-[var(--theme-foreground)]"
               },
               "actions": [
                 {
@@ -38,7 +38,7 @@
                   "type": "Icon",
                   "props": {
                     "icon": "lucide:share",
-                    "className": "h-4 w-4"
+                    "className": "h-[16px] w-[16px]"
                   }
                 },
                 {
@@ -50,7 +50,7 @@
             {
               "type": "Box",
               "props": {
-                "className": "flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm font-medium hover:bg-[var(--theme-muted)] hover:text-[var(--theme-foreground)] transition-colors text-[var(--theme-foreground)]"
+                "className": "flex items-center gap-[12px] w-full px-[12px] py-[8px] rounded-[6px] text-[14px] font-medium hover:bg-[var(--theme-muted)] hover:text-[var(--theme-foreground)] transition-colors text-[var(--theme-foreground)]"
               },
               "actions": [
                 {
@@ -62,7 +62,7 @@
                   "type": "Icon",
                   "props": {
                     "icon": "lucide:globe",
-                    "className": "h-4 w-4"
+                    "className": "h-[16px] w-[16px]"
                   }
                 },
                 {
@@ -74,7 +74,7 @@
             {
               "type": "Box",
               "props": {
-                "className": "flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm font-medium hover:bg-[var(--theme-muted)] hover:text-[var(--theme-foreground)] transition-colors text-[var(--theme-foreground)]"
+                "className": "flex items-center gap-[12px] w-full px-[12px] py-[8px] rounded-[6px] text-[14px] font-medium hover:bg-[var(--theme-muted)] hover:text-[var(--theme-foreground)] transition-colors text-[var(--theme-foreground)]"
               },
               "actions": [
                 {
@@ -86,7 +86,7 @@
                   "type": "Icon",
                   "props": {
                     "icon": "lucide:user",
-                    "className": "h-4 w-4"
+                    "className": "h-[16px] w-[16px]"
                   }
                 },
                 {
@@ -98,13 +98,13 @@
             {
               "type": "Box",
               "props": {
-                "className": "border-t border-[var(--theme-border)] my-1"
+                "className": "border-t border-[var(--theme-border)] my-[4px]"
               }
             },
             {
               "type": "Box",
               "props": {
-                "className": "flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm font-medium text-red-500 hover:bg-red-50 transition-colors"
+                "className": "flex items-center gap-[12px] w-full px-[12px] py-[8px] rounded-[6px] text-[14px] font-medium text-red-500 hover:bg-red-50 transition-colors"
               },
               "actions": [
                 {
@@ -116,7 +116,7 @@
                   "type": "Icon",
                   "props": {
                     "icon": "lucide:menu",
-                    "className": "h-4 w-4"
+                    "className": "h-[16px] w-[16px]"
                   }
                 },
                 {

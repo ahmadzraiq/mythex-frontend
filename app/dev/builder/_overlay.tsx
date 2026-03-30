@@ -269,11 +269,25 @@ function SelectionBox({ rect, nodeId, onResizeStart, zoom, ringRef }: {
   const w = Math.round(rect.w / zoom);
   const h = Math.round(rect.h / zoom);
 
+  // Read border-radius from the data-builder-id element so the selection ring
+  // follows the node's actual rounded corners. Works for both animated nodes
+  // (outer wrapper carries border-radius via outerStyle) and plain nodes
+  // (element itself has the rounded class → getComputedStyle returns the value).
+  const selectionBorderRadius = (() => {
+    const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
+    if (!el) return '2px';
+    const inlineR = el.style.borderRadius;
+    if (inlineR && inlineR !== '0px' && inlineR !== '0') return inlineR;
+    const computed = getComputedStyle(el).borderRadius;
+    if (computed && computed !== '0px' && computed !== '0') return computed;
+    return '2px';
+  })();
+
   return (
     <div
       ref={ringRef}
       data-testid="selection-ring"
-      style={{ position: 'absolute', left: rect.x, top: rect.y, width: rect.w, height: rect.h, boxShadow: '0 0 0 2px #3b82f6', pointerEvents: 'none', boxSizing: 'border-box' }}
+      style={{ position: 'absolute', left: rect.x, top: rect.y, width: rect.w, height: rect.h, boxShadow: '0 0 0 2px #3b82f6', borderRadius: selectionBorderRadius, pointerEvents: 'none', boxSizing: 'border-box' }}
     >
       {handles.map(handle => (
         <div
@@ -1073,6 +1087,14 @@ export default function BuilderOverlay({
       {aiMode && aiSelectedNodeIds.map(id => {
         const r = getCanvasRect(id, canvasEl);
         if (!r) return null;
+        const aiEl = canvasEl?.querySelector(`[data-builder-id="${id}"]`) as HTMLElement | null;
+        const aiRadius = (() => {
+          if (!aiEl) return '2px';
+          const inlineR = aiEl.style.borderRadius;
+          if (inlineR && inlineR !== '0px' && inlineR !== '0') return inlineR;
+          const computed = getComputedStyle(aiEl).borderRadius;
+          return (computed && computed !== '0px' && computed !== '0') ? computed : '2px';
+        })();
         return (
           <div
             key={`ai-sel-${id}`}
@@ -1083,7 +1105,7 @@ export default function BuilderOverlay({
               width: r.w + 4,
               height: r.h + 4,
               boxShadow: '0 0 0 2px #7c3aed, 0 0 8px 1px rgba(124,58,237,0.4)',
-              borderRadius: 2,
+              borderRadius: aiRadius,
               pointerEvents: 'none',
               boxSizing: 'border-box',
             }}

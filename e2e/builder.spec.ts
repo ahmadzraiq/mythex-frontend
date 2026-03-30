@@ -1181,7 +1181,7 @@ test.describe('Group J — Right Panel: Auto Layout', () => {
     expect(cls).toContain('flex-col');
   });
 
-  test('J3. Setting Gap=16 applies gap-4 to className', async () => {
+  test('J3. Setting Gap=16 applies gap-[16px] to className', async () => {
     await dropComponent(sharedPage, 'Box');
     await selectFirstRootNode(sharedPage);
     const nodeId = await getFirstRootNodeId(sharedPage);
@@ -1191,7 +1191,7 @@ test.describe('Group J — Right Panel: Auto Layout', () => {
     await sharedPage.waitForTimeout(300);
 
     const cls = await getNodeClassName(sharedPage, nodeId);
-    expect(cls).toContain('gap-4');
+    expect(cls).toContain('gap-[16px]');
   });
 });
 
@@ -1285,12 +1285,13 @@ test.describe('Group M — Right Panel: Padding', () => {
 test.describe('Group N — Right Panel: Border Radius', () => {
   test.beforeEach(async () => { await resetBuilder(sharedPage); });
 
-  test('N1. Changing TL corner to rounded-lg applies rounded-tl-lg', async () => {
-    await injectNodes(sharedPage, [{ type: 'Box', id: 'n1-box', props: { className: 'w-32 h-32' }, children: [] }]);
+  test('N1. Changing TL corner to 8px applies rounded-tl-[8px]', async () => {
+    await injectNodes(sharedPage, [{ type: 'Box', id: 'n1-box', props: { className: 'w-[128px] h-[128px]' }, children: [] }]);
     await selectFirstRootNode(sharedPage);
     const nodeId = await getFirstRootNodeId(sharedPage);
 
-    await sharedPage.locator('[data-testid="select-corner-tl"]').selectOption('rounded-lg');
+    await sharedPage.locator('[data-testid="input-corner-tl"]').fill('8');
+    await sharedPage.locator('[data-testid="input-corner-tl"]').press('Tab');
     await sharedPage.waitForTimeout(300);
 
     const cls = await getNodeClassName(sharedPage, nodeId);
@@ -1303,16 +1304,17 @@ test.describe('Group N — Right Panel: Border Radius', () => {
 test.describe('Group O — Right Panel: Border Width', () => {
   test.beforeEach(async () => { await resetBuilder(sharedPage); });
 
-  test('O1. Changing border width to border-2 applies border-2', async () => {
+  test('O1. Changing border width to 2px applies border-[2px]', async () => {
     await dropComponent(sharedPage, 'Box');
     await selectFirstRootNode(sharedPage);
     const nodeId = await getFirstRootNodeId(sharedPage);
 
-    await sharedPage.locator('[data-testid="select-border-width"]').selectOption('border-2');
+    await sharedPage.locator('[data-testid="input-border-width"]').fill('2');
+    await sharedPage.locator('[data-testid="input-border-width"]').press('Tab');
     await sharedPage.waitForTimeout(300);
 
     const cls = await getNodeClassName(sharedPage, nodeId);
-    expect(cls).toContain('border-2');
+    expect(cls).toContain('border-[2px]');
   });
 });
 
@@ -1376,16 +1378,17 @@ test.describe('Group R — Right Panel: Typography', () => {
     await expect(sharedPage.getByTestId('panel-right').getByText('Typography')).toBeVisible();
   });
 
-  test('R2. Changing text size to text-xl applies text-xl', async () => {
+  test('R2. Changing text size to 20px applies text-[20px]', async () => {
     await dropComponent(sharedPage, 'Text');
     await selectFirstRootNode(sharedPage);
     const nodeId = await getFirstRootNodeId(sharedPage);
 
-    await sharedPage.locator('[data-testid="select-text-size"]').selectOption('text-xl');
+    await sharedPage.locator('[data-testid="input-text-size"]').fill('20');
+    await sharedPage.locator('[data-testid="input-text-size"]').press('Tab');
     await sharedPage.waitForTimeout(300);
 
     const cls = await getNodeClassName(sharedPage, nodeId);
-    expect(cls).toContain('text-xl');
+    expect(cls).toContain('text-[20px]');
   });
 
   test('R3. Changing font weight to font-bold applies font-bold', async () => {

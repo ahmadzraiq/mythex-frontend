@@ -11,19 +11,19 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full flex-1 pt-16"
+          "className": "w-full flex-1 pt-[64px]"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "w-full max-w-screen-xl mx-auto px-4 py-8"
+              "className": "w-full max-w-screen-xl mx-auto px-[16px] py-[32px]"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "flex flex-row gap-8"
+                  "className": "flex flex-row gap-[32px]"
                 },
                 "children": [
                   {

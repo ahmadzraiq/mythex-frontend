@@ -2,20 +2,20 @@
   "type": "Box",
   "_stateTag": "loading",
   "props": {
-    "className": "grid grid-cols-1 lg:grid-cols-4 gap-8 animate-pulse"
+    "className": "grid grid-cols-1 lg:grid-cols-4 gap-[32px] animate-pulse"
   },
   "condition": "collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.loading",
   "children": [
     {
       "type": "Box",
       "props": {
-        "className": "lg:col-span-1 h-64 bg-[var(--theme-muted)] rounded-lg"
+        "className": "lg:col-span-1 h-[256px] bg-[var(--theme-muted)] rounded-[8px]"
       }
     },
     {
       "type": "Box",
       "props": {
-        "className": "lg:col-span-3 space-y-6"
+        "className": "lg:col-span-3 space-y-[24px]"
       },
       "children": [
         {
@@ -27,13 +27,13 @@
             {
               "type": "Box",
               "props": {
-                "className": "h-5 bg-[var(--theme-muted)] rounded w-24"
+                "className": "h-[20px] bg-[var(--theme-muted)] rounded-[4px] w-[96px]"
               }
             },
             {
               "type": "Box",
               "props": {
-                "className": "h-9 bg-[var(--theme-muted)] rounded w-44 flex-shrink-0"
+                "className": "h-[36px] bg-[var(--theme-muted)] rounded-[4px] w-[176px] flex-shrink-0"
               }
             }
           ]
@@ -41,43 +41,43 @@
         {
           "type": "Box",
           "props": {
-            "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[24px]"
           },
           "children": [
             {
               "type": "Box",
               "props": {
-                "className": "aspect-square bg-[var(--theme-muted)] rounded-lg"
+                "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px]"
               }
             },
             {
               "type": "Box",
               "props": {
-                "className": "aspect-square bg-[var(--theme-muted)] rounded-lg"
+                "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px]"
               }
             },
             {
               "type": "Box",
               "props": {
-                "className": "aspect-square bg-[var(--theme-muted)] rounded-lg"
+                "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px]"
               }
             },
             {
               "type": "Box",
               "props": {
-                "className": "aspect-square bg-[var(--theme-muted)] rounded-lg hidden sm:block"
+                "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] hidden sm:block"
               }
             },
             {
               "type": "Box",
               "props": {
-                "className": "aspect-square bg-[var(--theme-muted)] rounded-lg hidden sm:block"
+                "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] hidden sm:block"
               }
             },
             {
               "type": "Box",
               "props": {
-                "className": "aspect-square bg-[var(--theme-muted)] rounded-lg hidden lg:block"
+                "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] hidden lg:block"
               }
             }
           ]

@@ -1,13 +1,13 @@
 {
   "type": "Box",
   "props": {
-    "className": "w-full py-12 border-t border-[var(--border)]"
+    "className": "w-full py-[48px] border-t border-[var(--border)]"
   },
   "children": [
     {
       "type": "Box",
       "props": {
-        "className": "w-full max-w-screen-xl mx-auto px-4 flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm text-[var(--theme-muted-foreground)]"
+        "className": "w-full max-w-screen-xl mx-auto px-[16px] flex flex-wrap justify-center gap-x-[32px] gap-y-[8px] text-[14px] text-[var(--theme-muted-foreground)]"
       },
       "children": [
         {

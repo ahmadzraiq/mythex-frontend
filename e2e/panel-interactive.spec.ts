@@ -465,20 +465,22 @@ test.describe('Pressable Button — all right-panel controls', () => {
     expect(style.borderColor).toBe('#ef4444');
   });
 
-  test('BP-26: Border width border-2 — button stays visible', async ({ page }) => {
-    await scrollTo(page, 'select-border-width');
-    await page.locator('[data-testid="select-border-width"]').selectOption('border-2');
+  test('BP-26: Border width 2px — button stays visible', async ({ page }) => {
+    await scrollTo(page, 'input-border-width');
+    await page.locator('[data-testid="input-border-width"]').fill('2');
+    await page.locator('[data-testid="input-border-width"]').press('Tab');
     await page.waitForTimeout(200);
-    await assertButtonVisible(page, nodeId, 'border-2');
+    await assertButtonVisible(page, nodeId, 'border-[2px]');
     const cls = await getNodeClassName(page, nodeId);
-    expect(cls).toContain('border-2');
+    expect(cls).toContain('border-[2px]');
   });
 
-  test('BP-27: Border width border-4 — button stays visible', async ({ page }) => {
-    await scrollTo(page, 'select-border-width');
-    await page.locator('[data-testid="select-border-width"]').selectOption('border-4');
+  test('BP-27: Border width 4px — button stays visible', async ({ page }) => {
+    await scrollTo(page, 'input-border-width');
+    await page.locator('[data-testid="input-border-width"]').fill('4');
+    await page.locator('[data-testid="input-border-width"]').press('Tab');
     await page.waitForTimeout(200);
-    await assertButtonVisible(page, nodeId, 'border-4');
+    await assertButtonVisible(page, nodeId, 'border-[4px]');
   });
 
   // ── Effects ───────────────────────────────────────────────────────────────────
@@ -501,56 +503,49 @@ test.describe('Pressable Button — all right-panel controls', () => {
 
   // ── Border Radius ─────────────────────────────────────────────────────────────
 
-  test('BP-30: All corners rounded-lg — button stays visible', async ({ page }) => {
-    await scrollTo(page, 'select-corner-tl');
+  test('BP-30: All corners 8px — button stays visible', async ({ page }) => {
+    await scrollTo(page, 'input-corner-tl');
     for (const corner of ['tl', 'tr', 'br', 'bl']) {
-      await page.locator(`[data-testid="select-corner-${corner}"]`).selectOption('rounded-lg');
+      await page.locator(`[data-testid="input-corner-${corner}"]`).fill('8');
+      await page.locator(`[data-testid="input-corner-${corner}"]`).press('Tab');
       await page.waitForTimeout(150);
     }
-    await assertButtonVisible(page, nodeId, 'all corners rounded-lg');
+    await assertButtonVisible(page, nodeId, 'all corners 8px');
     const cls = await getNodeClassName(page, nodeId);
-    expect(cls).toContain('rounded-lg');
+    expect(cls).toContain('rounded-tl-[8px]');
   });
 
-  test('BP-31: All corners rounded-full — button stays visible', async ({ page }) => {
-    await scrollTo(page, 'select-corner-tl');
+  test('BP-31: All corners 9999px (full) — button stays visible', async ({ page }) => {
+    await scrollTo(page, 'input-corner-tl');
     for (const corner of ['tl', 'tr', 'br', 'bl']) {
-      await page.locator(`[data-testid="select-corner-${corner}"]`).selectOption('rounded-full');
+      await page.locator(`[data-testid="input-corner-${corner}"]`).fill('9999');
+      await page.locator(`[data-testid="input-corner-${corner}"]`).press('Tab');
       await page.waitForTimeout(150);
     }
-    await assertButtonVisible(page, nodeId, 'all corners rounded-full');
+    await assertButtonVisible(page, nodeId, 'all corners full');
   });
 
-  test('BP-32: Mixed corners — generates per-corner tokens, button stays visible', async ({ page }) => {
-    await scrollTo(page, 'select-corner-tl');
-    await page.locator('[data-testid="select-corner-tl"]').selectOption('rounded-lg');
+  test('BP-32: Mixed corners — generates per-corner arbitrary-px tokens, button stays visible', async ({ page }) => {
+    await scrollTo(page, 'input-corner-tl');
+    await page.locator('[data-testid="input-corner-tl"]').fill('8');
+    await page.locator('[data-testid="input-corner-tl"]').press('Tab');
     await page.waitForTimeout(100);
-    await page.locator('[data-testid="select-corner-tr"]').selectOption('rounded-none');
+    await page.locator('[data-testid="input-corner-tr"]').fill('0');
+    await page.locator('[data-testid="input-corner-tr"]').press('Tab');
     await page.waitForTimeout(100);
-    await page.locator('[data-testid="select-corner-br"]').selectOption('rounded-xl');
+    await page.locator('[data-testid="input-corner-br"]').fill('12');
+    await page.locator('[data-testid="input-corner-br"]').press('Tab');
     await page.waitForTimeout(100);
-    await page.locator('[data-testid="select-corner-bl"]').selectOption('rounded-sm');
+    await page.locator('[data-testid="input-corner-bl"]').fill('2');
+    await page.locator('[data-testid="input-corner-bl"]').press('Tab');
     await page.waitForTimeout(150);
     await assertButtonVisible(page, nodeId, 'mixed corners');
 
-    // Verify per-corner tokens are used (not global tokens like 'rounded-lg rounded-none ...')
+    // Verify per-corner arbitrary-px tokens are used
     const cls = await getNodeClassName(page, nodeId);
-    expect(cls).toContain('rounded-tl-lg');
-    expect(cls).toContain('rounded-tr-none');
-    expect(cls).toContain('rounded-br-xl');
-    expect(cls).toContain('rounded-bl-sm');
-
-    // Uniform corner: set all to rounded-lg and verify single global token
-    await page.locator('[data-testid="select-corner-tl"]').selectOption('rounded-lg');
-    await page.locator('[data-testid="select-corner-tr"]').selectOption('rounded-lg');
-    await page.locator('[data-testid="select-corner-br"]').selectOption('rounded-lg');
-    await page.locator('[data-testid="select-corner-bl"]').selectOption('rounded-lg');
-    await page.waitForTimeout(200);
-    await assertButtonVisible(page, nodeId, 'all corners rounded-lg');
-    const cls2 = await getNodeClassName(page, nodeId);
-    // Should use single global token, not 4 per-corner tokens
-    expect(cls2).toContain('rounded-lg');
-    expect(cls2).not.toContain('rounded-tl-');
+    expect(cls).toContain('rounded-tl-[8px]');
+    expect(cls).toContain('rounded-br-[12px]');
+    expect(cls).toContain('rounded-bl-[2px]');
   });
 
   // ── Opacity ───────────────────────────────────────────────────────────────────
@@ -631,21 +626,23 @@ test.describe('Pressable Button — all right-panel controls', () => {
     await assertButtonVisible(page, nodeId, 'after bg red');
 
     // Border
-    await page.locator('[data-testid="select-border-width"]').selectOption('border-2');
+    await page.locator('[data-testid="input-border-width"]').fill('2');
+    await page.locator('[data-testid="input-border-width"]').press('Tab');
     await page.waitForTimeout(150);
-    await assertButtonVisible(page, nodeId, 'after border-2');
+    await assertButtonVisible(page, nodeId, 'after border-[2px]');
 
     // Shadow
     await page.locator('[data-testid="select-shadow"]').selectOption('shadow-lg');
     await page.waitForTimeout(150);
     await assertButtonVisible(page, nodeId, 'after shadow-lg');
 
-    // Rounded
+    // Rounded (12px = xl equivalent)
     for (const c of ['tl', 'tr', 'br', 'bl']) {
-      await page.locator(`[data-testid="select-corner-${c}"]`).selectOption('rounded-xl');
+      await page.locator(`[data-testid="input-corner-${c}"]`).fill('12');
+      await page.locator(`[data-testid="input-corner-${c}"]`).press('Tab');
       await page.waitForTimeout(100);
     }
-    await assertButtonVisible(page, nodeId, 'after rounded-xl all corners');
+    await assertButtonVisible(page, nodeId, 'after rounded-[12px] all corners');
 
     // Rotate
     await page.locator('[data-testid="input-rotate"]').fill('15');

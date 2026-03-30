@@ -1,33 +1,33 @@
 {
   "type": "Box",
   "props": {
-    "className": "py-12 md:py-16"
+    "className": "py-[48px] md:py-[64px]"
   },
   "children": [
     {
       "type": "Box",
       "props": {
-        "className": "container mx-auto px-8"
+        "className": "container mx-auto px-[32px]"
       },
       "children": [
         {
           "type": "Heading",
           "props": {
-            "className": "text-3xl md:text-4xl font-bold mb-8 text-[var(--theme-card-foreground)]"
+            "className": "text-[30px] md:text-[36px] font-bold mb-[32px] text-[var(--theme-card-foreground)]"
           },
           "text": "Featured Products"
         },
         {
           "type": "Box",
           "props": {
-            "className": "flex flex-col items-center gap-4 py-20"
+            "className": "flex flex-col items-center gap-[16px] py-[80px]"
           },
           "condition": "!collections['c3d4e5f6-a7b8-9012-cdef-123456789012']?.data?.search?.items?.0",
           "children": [
             {
               "type": "Text",
               "props": {
-                "className": "text-5xl"
+                "className": "text-[48px]"
               },
               "text": "🛍️"
             },
@@ -42,7 +42,7 @@
             {
               "type": "Text",
               "props": {
-                "className": "text-center text-[var(--theme-muted-foreground)] max-w-sm"
+                "className": "text-center text-[var(--theme-muted-foreground)] max-w-[384px]"
               },
               "text": "Connect your store to start displaying featured products here."
             }
@@ -67,7 +67,7 @@
                 {
                   "type": "Box",
                   "props": {
-                    "className": "group w-full text-left bg-[var(--theme-card)] rounded-lg overflow-hidden border border-[var(--border)] hover:shadow-lg transition-shadow duration-150"
+                    "className": "group w-full text-left bg-[var(--theme-card)] rounded-[8px] overflow-hidden border-[1px] border-[var(--border)] hover:shadow-lg transition-shadow duration-150"
                   },
                   "actions": [
                     {
@@ -101,7 +101,7 @@
                             {
                               "type": "Text",
                               "props": {
-                                "className": "text-[var(--theme-muted-foreground)] text-sm"
+                                "className": "text-[var(--theme-muted-foreground)] text-[14px]"
                               },
                               "text": "No image"
                             }
@@ -112,7 +112,7 @@
                     {
                       "type": "Box",
                       "props": {
-                        "className": "p-4 space-y-2"
+                        "className": "p-[16px] space-y-[8px]"
                       },
                       "children": [
                         {
@@ -126,7 +126,7 @@
                         {
                           "type": "Text",
                           "props": {
-                            "className": "text-lg font-bold text-[var(--theme-card-foreground)]"
+                            "className": "text-[18px] font-bold text-[var(--theme-card-foreground)]"
                           },
                           "text": {
                             "expr": "context?.item?.data?.priceWithTax?.__typename === 'SinglePrice' ? formatCurrency(context?.item?.data?.priceWithTax?.value, context?.item?.data?.currencyCode) : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min, context?.item?.data?.currencyCode)"

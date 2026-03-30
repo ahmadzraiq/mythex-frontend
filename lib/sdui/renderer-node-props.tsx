@@ -30,7 +30,17 @@ export const SUBMIT_BUTTON_TYPES = new Set<string>(['Box', 'HStack', 'VStack', '
 export const INTERACTIVE_TYPES = new Set(['Input', 'Select', 'InputField']);
 
 /** Components that are already clickable — no transparent click-wrapper div needed */
-export const ALREADY_CLICKABLE = new Set(['MenuItem', 'MenuItemLabel', 'FormContainer']);
+export const ALREADY_CLICKABLE = new Set([
+  'MenuItem',
+  'MenuItemLabel',
+  'FormContainer',
+  // Layout primitives render as div (web) / View — they receive bubbled clicks directly.
+  // Wrapping them duplicates onClick on an outer display:contents div → double workflow runs.
+  'Box',
+  'HStack',
+  'VStack',
+  'Center',
+]);
 
 // ── Standalone React component ────────────────────────────────────────────────
 

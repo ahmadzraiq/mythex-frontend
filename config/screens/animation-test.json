@@ -7,13 +7,13 @@
   "content": {
     "type": "Box",
     "props": {
-      "className": "w-full max-w-3xl mx-auto px-4 py-10 flex flex-col gap-8"
+      "className": "w-full max-w-3xl mx-auto px-[16px] py-[40px] flex flex-col gap-[32px]"
     },
     "children": [
       {
         "type": "Box",
         "props": {
-          "className": "flex flex-col gap-2"
+          "className": "flex flex-col gap-[8px]"
         },
         "children": [
           {
@@ -34,7 +34,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-xs text-gray-400 dark:text-gray-500",
+              "className": "text-[12px] text-gray-400 dark:text-gray-500",
               "data-testid": "anim-ready"
             },
             "text": "ready"
@@ -44,14 +44,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-6",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[24px]",
           "data-testid": "card-p9"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -65,7 +65,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "3D CSS flip cards driven by animation.flip config on a Box."
               }
@@ -74,7 +74,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-row flex-wrap gap-6 items-start"
+              "className": "flex flex-row flex-wrap gap-[24px] items-start"
             },
             "children": [
               {
@@ -96,7 +96,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-2 bg-indigo-500",
+                      "className": "absolute inset-0 rounded-[12px] flex flex-col items-center justify-center gap-[8px] bg-indigo-500",
                       "style": {
                         "backfaceVisibility": "hidden"
                       }
@@ -105,14 +105,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-white font-bold text-lg text-center"
+                          "className": "text-white font-bold text-[18px] text-center"
                         },
                         "text": "Hover to flip!"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-indigo-100 text-sm text-center"
+                          "className": "text-indigo-100 text-[14px] text-center"
                         },
                         "text": "Front face"
                       }
@@ -121,7 +121,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-2 bg-gray-900",
+                      "className": "absolute inset-0 rounded-[12px] flex flex-col items-center justify-center gap-[8px] bg-gray-900",
                       "style": {
                         "backfaceVisibility": "hidden",
                         "transform": "rotateY(180deg)"
@@ -131,14 +131,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-white font-bold text-lg text-center"
+                          "className": "text-white font-bold text-[18px] text-center"
                         },
                         "text": "Back face!"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-gray-300 text-sm text-center"
+                          "className": "text-gray-300 text-[14px] text-center"
                         },
                         "text": "Revealed"
                       }
@@ -165,7 +165,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-2 bg-pink-500",
+                      "className": "absolute inset-0 rounded-[12px] flex flex-col items-center justify-center gap-[8px] bg-pink-500",
                       "style": {
                         "backfaceVisibility": "hidden"
                       }
@@ -174,14 +174,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-white font-bold text-lg text-center"
+                          "className": "text-white font-bold text-[18px] text-center"
                         },
                         "text": "Click to flip!"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-pink-100 text-sm text-center"
+                          "className": "text-pink-100 text-[14px] text-center"
                         },
                         "text": "Front face"
                       }
@@ -190,7 +190,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-2 bg-slate-800",
+                      "className": "absolute inset-0 rounded-[12px] flex flex-col items-center justify-center gap-[8px] bg-slate-800",
                       "style": {
                         "backfaceVisibility": "hidden",
                         "transform": "rotateY(180deg)"
@@ -200,14 +200,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-white font-bold text-lg text-center"
+                          "className": "text-white font-bold text-[18px] text-center"
                         },
                         "text": "You found it!"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-slate-300 text-sm text-center"
+                          "className": "text-slate-300 text-[14px] text-center"
                         },
                         "text": "Click again to flip back"
                       }
@@ -222,14 +222,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-stagger"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -243,7 +243,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "Items fan in sequentially — each delayed 100ms after the previous."
               }
@@ -254,13 +254,13 @@
             "map": "variables['anim-0000-0000-0000-000000000003']",
             "key": "context.item.data.id",
             "props": {
-              "className": "flex flex-col gap-2"
+              "className": "flex flex-col gap-[8px]"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 flex flex-row items-center gap-3",
+                  "className": "w-full px-[16px] py-[12px] rounded-[8px] bg-gray-50 dark:bg-gray-800 flex flex-row items-center gap-[12px]",
                   "data-testid": "stagger-item",
                   "animation": {
                     "enter": {
@@ -274,7 +274,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-8 h-8 rounded-full flex items-center justify-center",
+                      "className": "w-[32px] h-[32px] rounded-[9999px] flex items-center justify-center",
                       "style": {
                         "backgroundColor": "{{context.item.data.color}}"
                       }
@@ -283,7 +283,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-white text-sm font-bold"
+                          "className": "text-white text-[14px] font-bold"
                         },
                         "text": "{{context.item.data.index}}"
                       }
@@ -305,14 +305,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-p5"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -326,7 +326,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "SVG path-draw animation via stroke-dashoffset, and Lottie animation via dotlottie-react."
               }
@@ -335,13 +335,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-row flex-wrap gap-6 items-start"
+              "className": "flex flex-row flex-wrap gap-[24px] items-start"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "flex flex-col items-center gap-2",
+                  "className": "flex flex-col items-center gap-[8px]",
                   "data-testid": "p5-svg-stroke",
                   "animation": {
                     "svgStroke": {
@@ -379,7 +379,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-600 dark:text-gray-400"
+                      "className": "text-[14px] text-gray-600 dark:text-gray-400"
                     },
                     "text": "SVG stroke draw (2s)"
                   }
@@ -388,7 +388,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "flex flex-col items-center gap-2"
+                  "className": "flex flex-col items-center gap-[8px]"
                 },
                 "children": [
                   {
@@ -405,7 +405,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-600 dark:text-gray-400"
+                      "className": "text-[14px] text-gray-600 dark:text-gray-400"
                     },
                     "text": "Lottie (loop)"
                   }
@@ -414,7 +414,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "flex flex-col items-center gap-2"
+                  "className": "flex flex-col items-center gap-[8px]"
                 },
                 "children": [
                   {
@@ -431,7 +431,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-600 dark:text-gray-400"
+                      "className": "text-[14px] text-gray-600 dark:text-gray-400"
                     },
                     "text": "Lottie (no loop)"
                   }
@@ -444,14 +444,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-p4"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -465,7 +465,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "Text split into units and staggered via animation.splitText config on a Box."
               }
@@ -474,13 +474,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-6"
+              "className": "flex flex-col gap-[24px]"
             },
             "children": [
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-3xl font-bold text-gray-900 dark:text-gray-100",
+                  "className": "text-[30px] font-bold text-gray-900 dark:text-gray-100",
                   "animation": {
                     "splitText": {
                       "split": "char",
@@ -498,7 +498,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-xl text-indigo-600 dark:text-indigo-400",
+                  "className": "text-[20px] text-indigo-600 dark:text-indigo-400",
                   "animation": {
                     "splitText": {
                       "split": "word",
@@ -516,7 +516,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-lg font-mono text-gray-700 dark:text-gray-300",
+                  "className": "text-[18px] font-mono text-gray-700 dark:text-gray-300",
                   "animation": {
                     "splitText": {
                       "split": "char",
@@ -537,14 +537,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-spring"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -558,7 +558,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "Three boxes with different spring configurations — snappy, wobbly, and heavy."
               }
@@ -567,13 +567,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-row gap-4 flex-wrap"
+              "className": "flex flex-row gap-[16px] flex-wrap"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "flex-1 min-w-[120px] rounded-xl bg-sky-500 flex items-center justify-center px-6 py-10",
+                  "className": "flex-1 min-w-[120px] rounded-[12px] bg-sky-500 flex items-center justify-center px-[24px] py-[40px]",
                   "data-testid": "spring-stiff",
                   "animation": {
                     "enter": {
@@ -588,7 +588,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-sm font-semibold text-center"
+                      "className": "text-white text-[14px] font-semibold text-center"
                     },
                     "text": "Stiff\n400/12"
                   }
@@ -597,7 +597,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "flex-1 min-w-[120px] rounded-xl bg-violet-500 flex items-center justify-center px-6 py-10",
+                  "className": "flex-1 min-w-[120px] rounded-[12px] bg-violet-500 flex items-center justify-center px-[24px] py-[40px]",
                   "data-testid": "spring-loose",
                   "animation": {
                     "enter": {
@@ -613,7 +613,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-sm font-semibold text-center"
+                      "className": "text-white text-[14px] font-semibold text-center"
                     },
                     "text": "Loose\n80/8"
                   }
@@ -622,7 +622,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "flex-1 min-w-[120px] rounded-xl bg-rose-500 flex items-center justify-center px-6 py-10",
+                  "className": "flex-1 min-w-[120px] rounded-[12px] bg-rose-500 flex items-center justify-center px-[24px] py-[40px]",
                   "data-testid": "spring-heavy",
                   "animation": {
                     "enter": {
@@ -639,7 +639,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-sm font-semibold text-center"
+                      "className": "text-white text-[14px] font-semibold text-center"
                     },
                     "text": "Heavy\nm=3"
                   }
@@ -652,14 +652,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-p1-enter"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -673,7 +673,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "New enter types: skewIn, blurIn, glowIn, flipIn3D, tiltIn, riseFade, dropIn, expandIn."
               }
@@ -682,13 +682,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-row flex-wrap gap-3"
+              "className": "flex flex-row flex-wrap gap-[12px]"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-20 h-14 rounded-lg bg-sky-500 flex items-center justify-center",
+                  "className": "w-[80px] h-[56px] rounded-[8px] bg-sky-500 flex items-center justify-center",
                   "data-testid": "p1-skewIn",
                   "animation": {
                     "enter": {
@@ -701,7 +701,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "skew"
                   }
@@ -710,7 +710,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-20 h-14 rounded-lg bg-violet-500 flex items-center justify-center",
+                  "className": "w-[80px] h-[56px] rounded-[8px] bg-violet-500 flex items-center justify-center",
                   "data-testid": "p1-blurIn",
                   "animation": {
                     "enter": {
@@ -724,7 +724,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "blur"
                   }
@@ -733,7 +733,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-20 h-14 rounded-lg bg-yellow-500 flex items-center justify-center",
+                  "className": "w-[80px] h-[56px] rounded-[8px] bg-yellow-500 flex items-center justify-center",
                   "data-testid": "p1-glowIn",
                   "animation": {
                     "enter": {
@@ -747,7 +747,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "glow"
                   }
@@ -756,7 +756,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-20 h-14 rounded-lg bg-rose-500 flex items-center justify-center",
+                  "className": "w-[80px] h-[56px] rounded-[8px] bg-rose-500 flex items-center justify-center",
                   "data-testid": "p1-flipIn3D",
                   "animation": {
                     "enter": {
@@ -770,7 +770,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "flip3D"
                   }
@@ -779,7 +779,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-20 h-14 rounded-lg bg-teal-500 flex items-center justify-center",
+                  "className": "w-[80px] h-[56px] rounded-[8px] bg-teal-500 flex items-center justify-center",
                   "data-testid": "p1-tiltIn",
                   "animation": {
                     "enter": {
@@ -793,7 +793,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "tilt"
                   }
@@ -802,7 +802,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-20 h-14 rounded-lg bg-orange-500 flex items-center justify-center",
+                  "className": "w-[80px] h-[56px] rounded-[8px] bg-orange-500 flex items-center justify-center",
                   "data-testid": "p1-riseFade",
                   "animation": {
                     "enter": {
@@ -816,7 +816,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "rise"
                   }
@@ -825,7 +825,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-20 h-14 rounded-lg bg-green-500 flex items-center justify-center",
+                  "className": "w-[80px] h-[56px] rounded-[8px] bg-green-500 flex items-center justify-center",
                   "data-testid": "p1-dropIn",
                   "animation": {
                     "enter": {
@@ -839,7 +839,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "drop"
                   }
@@ -848,7 +848,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-20 h-14 rounded-lg bg-pink-500 flex items-center justify-center",
+                  "className": "w-[80px] h-[56px] rounded-[8px] bg-pink-500 flex items-center justify-center",
                   "data-testid": "p1-expandIn",
                   "animation": {
                     "enter": {
@@ -865,7 +865,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "expand"
                   }
@@ -878,14 +878,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-p1-loop"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -899,7 +899,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "New loop types: breathe, float, wiggle, glowPulse, ripple, gradientDrift."
               }
@@ -908,13 +908,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-row flex-wrap gap-3"
+              "className": "flex flex-row flex-wrap gap-[12px]"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-16 h-16 rounded-lg bg-sky-500 flex items-center justify-center",
+                  "className": "w-[64px] h-[64px] rounded-[8px] bg-sky-500 flex items-center justify-center",
                   "data-testid": "p1-breathe",
                   "animation": {
                     "loop": {
@@ -928,7 +928,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs"
+                      "className": "text-white text-[12px]"
                     },
                     "text": "breathe"
                   }
@@ -937,7 +937,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-16 h-16 rounded-lg bg-violet-500 flex items-center justify-center",
+                  "className": "w-[64px] h-[64px] rounded-[8px] bg-violet-500 flex items-center justify-center",
                   "data-testid": "p1-float",
                   "animation": {
                     "loop": {
@@ -952,7 +952,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs"
+                      "className": "text-white text-[12px]"
                     },
                     "text": "float"
                   }
@@ -961,7 +961,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-16 h-16 rounded-lg bg-rose-500 flex items-center justify-center",
+                  "className": "w-[64px] h-[64px] rounded-[8px] bg-rose-500 flex items-center justify-center",
                   "data-testid": "p1-wiggle",
                   "animation": {
                     "loop": {
@@ -975,7 +975,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs"
+                      "className": "text-white text-[12px]"
                     },
                     "text": "wiggle"
                   }
@@ -984,7 +984,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-16 h-16 rounded-full bg-yellow-400 flex items-center justify-center",
+                  "className": "w-[64px] h-[64px] rounded-[9999px] bg-yellow-400 flex items-center justify-center",
                   "data-testid": "p1-glowPulse",
                   "animation": {
                     "outerStyle": {
@@ -1003,7 +1003,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs"
+                      "className": "text-white text-[12px]"
                     },
                     "text": "glow"
                   }
@@ -1012,7 +1012,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-16 h-16 rounded-full bg-teal-500 flex items-center justify-center",
+                  "className": "w-[64px] h-[64px] rounded-[9999px] bg-teal-500 flex items-center justify-center",
                   "data-testid": "p1-ripple",
                   "animation": {
                     "outerStyle": {
@@ -1030,7 +1030,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs"
+                      "className": "text-white text-[12px]"
                     },
                     "text": "ripple"
                   }
@@ -1039,7 +1039,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-24 h-16 rounded-lg flex items-center justify-center",
+                  "className": "w-[96px] h-[64px] rounded-[8px] flex items-center justify-center",
                   "data-testid": "p1-gradientDrift",
                   "animation": {
                     "outerStyle": {
@@ -1059,7 +1059,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "gradient"
                   }
@@ -1072,14 +1072,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-p2"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -1093,7 +1093,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "New animation categories: CSS filter blur, 3D tilt on mouse, cursor parallax, blob border-radius."
               }
@@ -1102,13 +1102,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-row flex-wrap gap-4"
+              "className": "flex flex-row flex-wrap gap-[16px]"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-28 h-20 rounded-lg bg-indigo-500 flex items-center justify-center",
+                  "className": "w-[112px] h-[80px] rounded-[8px] bg-indigo-500 flex items-center justify-center",
                   "data-testid": "p2-filter",
                   "animation": {
                     "filter": {
@@ -1123,7 +1123,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "filter glow"
                   }
@@ -1132,7 +1132,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-28 h-20 rounded-lg bg-teal-500 flex items-center justify-center cursor-pointer",
+                  "className": "w-[112px] h-[80px] rounded-[8px] bg-teal-500 flex items-center justify-center cursor-pointer",
                   "data-testid": "p2-tilt",
                   "animation": {
                     "tilt": {
@@ -1148,7 +1148,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "hover to tilt"
                   }
@@ -1157,7 +1157,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-28 h-20 rounded-lg bg-rose-500 flex items-center justify-center",
+                  "className": "w-[112px] h-[80px] rounded-[8px] bg-rose-500 flex items-center justify-center",
                   "data-testid": "p2-mouse-parallax",
                   "animation": {
                     "mouseParallax": {
@@ -1171,7 +1171,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "mouse parallax"
                   }
@@ -1180,7 +1180,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-36 h-36 bg-gradient-to-br from-violet-500 via-fuchsia-500 to-pink-500 flex items-center justify-center",
+                  "className": "w-[144px] h-[144px] bg-gradient-to-br from-violet-500 via-fuchsia-500 to-pink-500 flex items-center justify-center",
                   "data-testid": "p2-morph",
                   "animation": {
                     "morphShape": {
@@ -1203,7 +1203,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center font-medium"
+                      "className": "text-white text-[12px] text-center font-medium"
                     },
                     "text": "morph blob"
                   }
@@ -1216,14 +1216,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-p3"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -1237,7 +1237,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "Scroll down — the box below fades in (opacity 0→1) linked to scroll progress through the viewport."
               }
@@ -1246,7 +1246,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full h-32 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 flex items-center justify-center",
+              "className": "w-full h-[128px] rounded-[12px] bg-gradient-to-r from-sky-500 to-blue-600 flex items-center justify-center",
               "data-testid": "p3-scroll-progress",
               "animation": {
                 "scrollProgress": {
@@ -1270,7 +1270,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full h-24 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center mt-4",
+              "className": "w-full h-[96px] rounded-[12px] bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center mt-[16px]",
               "data-testid": "p3-scroll-progress-translate",
               "animation": {
                 "scrollProgress": {
@@ -1296,14 +1296,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-enter"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -1317,7 +1317,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "All enter types run on page load. Each box shows a different animation."
               }
@@ -1326,13 +1326,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-row flex-wrap gap-3"
+              "className": "flex flex-row flex-wrap gap-[12px]"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-20 h-14 rounded-lg bg-blue-500 flex items-center justify-center",
+                  "className": "w-[80px] h-[56px] rounded-[8px] bg-blue-500 flex items-center justify-center",
                   "data-testid": "enter-fadeIn",
                   "animation": {
                     "enter": {
@@ -1345,7 +1345,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "fade"
                   }
@@ -1354,7 +1354,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-20 h-14 rounded-lg bg-indigo-500 flex items-center justify-center",
+                  "className": "w-[80px] h-[56px] rounded-[8px] bg-indigo-500 flex items-center justify-center",
                   "data-testid": "enter-slideInUp",
                   "animation": {
                     "enter": {
@@ -1368,7 +1368,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "slideUp"
                   }
@@ -1377,7 +1377,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-20 h-14 rounded-lg bg-purple-500 flex items-center justify-center",
+                  "className": "w-[80px] h-[56px] rounded-[8px] bg-purple-500 flex items-center justify-center",
                   "data-testid": "enter-slideInDown",
                   "animation": {
                     "enter": {
@@ -1391,7 +1391,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "slideDown"
                   }
@@ -1400,7 +1400,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-20 h-14 rounded-lg bg-pink-500 flex items-center justify-center",
+                  "className": "w-[80px] h-[56px] rounded-[8px] bg-pink-500 flex items-center justify-center",
                   "data-testid": "enter-slideInLeft",
                   "animation": {
                     "enter": {
@@ -1414,7 +1414,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "slideLeft"
                   }
@@ -1423,7 +1423,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-20 h-14 rounded-lg bg-rose-500 flex items-center justify-center",
+                  "className": "w-[80px] h-[56px] rounded-[8px] bg-rose-500 flex items-center justify-center",
                   "data-testid": "enter-slideInRight",
                   "animation": {
                     "enter": {
@@ -1437,7 +1437,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "slideRight"
                   }
@@ -1446,7 +1446,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-20 h-14 rounded-lg bg-orange-500 flex items-center justify-center",
+                  "className": "w-[80px] h-[56px] rounded-[8px] bg-orange-500 flex items-center justify-center",
                   "data-testid": "enter-zoomIn",
                   "animation": {
                     "enter": {
@@ -1460,7 +1460,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "zoom"
                   }
@@ -1469,7 +1469,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-20 h-14 rounded-lg bg-yellow-500 flex items-center justify-center",
+                  "className": "w-[80px] h-[56px] rounded-[8px] bg-yellow-500 flex items-center justify-center",
                   "data-testid": "enter-bounceIn",
                   "animation": {
                     "enter": {
@@ -1484,7 +1484,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "bounce"
                   }
@@ -1493,7 +1493,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-20 h-14 rounded-lg bg-green-500 flex items-center justify-center",
+                  "className": "w-[80px] h-[56px] rounded-[8px] bg-green-500 flex items-center justify-center",
                   "data-testid": "enter-flipInX",
                   "animation": {
                     "enter": {
@@ -1507,7 +1507,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "flipX"
                   }
@@ -1516,7 +1516,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-20 h-14 rounded-lg bg-teal-500 flex items-center justify-center",
+                  "className": "w-[80px] h-[56px] rounded-[8px] bg-teal-500 flex items-center justify-center",
                   "data-testid": "enter-flipInY",
                   "animation": {
                     "enter": {
@@ -1530,7 +1530,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "flipY"
                   }
@@ -1539,7 +1539,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-20 h-14 rounded-lg bg-cyan-500 flex items-center justify-center",
+                  "className": "w-[80px] h-[56px] rounded-[8px] bg-cyan-500 flex items-center justify-center",
                   "data-testid": "enter-rollIn",
                   "animation": {
                     "enter": {
@@ -1553,7 +1553,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs text-center"
+                      "className": "text-white text-[12px] text-center"
                     },
                     "text": "roll"
                   }
@@ -1566,14 +1566,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-exit"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -1587,7 +1587,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "Toggle visibility to trigger enter/exit animations."
               }
@@ -1596,14 +1596,14 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-row gap-3 flex-wrap"
+              "className": "flex flex-row gap-[12px] flex-wrap"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
                   "data-testid": "btn-exit-hide",
-                  "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 active:opacity-80 px-4 py-2 rounded-md"
+                  "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 active:opacity-80 px-[16px] py-[8px] rounded-[6px]"
                 },
                 "actions": [
                   {
@@ -1615,7 +1615,7 @@
                     "type": "Text",
                     "text": "Hide",
                     "props": {
-                      "className": "text-sm text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
                     }
                   }
                 ]
@@ -1624,7 +1624,7 @@
                 "type": "Box",
                 "props": {
                   "data-testid": "btn-exit-show",
-                  "className": "flex flex-row items-center justify-center cursor-pointer border border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-4 py-2 rounded-md"
+                  "className": "flex flex-row items-center justify-center cursor-pointer border-[1px] border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-[16px] py-[8px] rounded-[6px]"
                 },
                 "actions": [
                   {
@@ -1636,7 +1636,7 @@
                     "type": "Text",
                     "text": "Show",
                     "props": {
-                      "className": "text-sm text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
                     }
                   }
                 ]
@@ -1647,7 +1647,7 @@
             "type": "Box",
             "condition": "variables?.['anim-0000-0000-0000-000000000001']",
             "props": {
-              "className": "w-full h-20 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 flex items-center justify-center",
+              "className": "w-full h-[80px] rounded-[12px] bg-gradient-to-r from-violet-500 to-purple-600 flex items-center justify-center",
               "data-testid": "exit-target",
               "data-sub": "{{variables['anim-0000-0000-0000-000000000001']}}",
               "animation": {
@@ -1676,14 +1676,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-loop"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -1697,7 +1697,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "Continuous animations — all running simultaneously."
               }
@@ -1706,13 +1706,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-row flex-wrap gap-3"
+              "className": "flex flex-row flex-wrap gap-[12px]"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-16 h-16 rounded-lg bg-blue-500 flex items-center justify-center",
+                  "className": "w-[64px] h-[64px] rounded-[8px] bg-blue-500 flex items-center justify-center",
                   "data-testid": "loop-pulse",
                   "animation": {
                     "loop": {
@@ -1726,7 +1726,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs"
+                      "className": "text-white text-[12px]"
                     },
                     "text": "pulse"
                   }
@@ -1735,7 +1735,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-16 h-16 rounded-lg bg-red-500 flex items-center justify-center",
+                  "className": "w-[64px] h-[64px] rounded-[8px] bg-red-500 flex items-center justify-center",
                   "data-testid": "loop-shake",
                   "animation": {
                     "loop": {
@@ -1749,7 +1749,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs"
+                      "className": "text-white text-[12px]"
                     },
                     "text": "shake"
                   }
@@ -1758,7 +1758,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-16 h-16 rounded-lg bg-yellow-500 flex items-center justify-center",
+                  "className": "w-[64px] h-[64px] rounded-[8px] bg-yellow-500 flex items-center justify-center",
                   "data-testid": "loop-spin",
                   "animation": {
                     "loop": {
@@ -1772,7 +1772,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs"
+                      "className": "text-white text-[12px]"
                     },
                     "text": "spin"
                   }
@@ -1781,7 +1781,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-16 h-16 rounded-lg bg-green-500 flex items-center justify-center",
+                  "className": "w-[64px] h-[64px] rounded-[8px] bg-green-500 flex items-center justify-center",
                   "data-testid": "loop-bounce",
                   "animation": {
                     "loop": {
@@ -1795,7 +1795,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs"
+                      "className": "text-white text-[12px]"
                     },
                     "text": "bounce"
                   }
@@ -1804,7 +1804,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-16 h-16 rounded-lg bg-pink-500 flex items-center justify-center",
+                  "className": "w-[64px] h-[64px] rounded-[8px] bg-pink-500 flex items-center justify-center",
                   "data-testid": "loop-heartbeat",
                   "animation": {
                     "loop": {
@@ -1818,7 +1818,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs"
+                      "className": "text-white text-[12px]"
                     },
                     "text": "heart"
                   }
@@ -1827,7 +1827,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-16 h-16 rounded-lg bg-orange-500 flex items-center justify-center",
+                  "className": "w-[64px] h-[64px] rounded-[8px] bg-orange-500 flex items-center justify-center",
                   "data-testid": "loop-flash",
                   "animation": {
                     "loop": {
@@ -1842,7 +1842,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs"
+                      "className": "text-white text-[12px]"
                     },
                     "text": "flash"
                   }
@@ -1851,7 +1851,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-16 h-16 rounded-lg bg-teal-500 flex items-center justify-center",
+                  "className": "w-[64px] h-[64px] rounded-[8px] bg-teal-500 flex items-center justify-center",
                   "data-testid": "loop-swing",
                   "animation": {
                     "loop": {
@@ -1865,7 +1865,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs"
+                      "className": "text-white text-[12px]"
                     },
                     "text": "swing"
                   }
@@ -1874,7 +1874,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-16 h-16 rounded-lg bg-indigo-500 flex items-center justify-center",
+                  "className": "w-[64px] h-[64px] rounded-[8px] bg-indigo-500 flex items-center justify-center",
                   "data-testid": "loop-wobble",
                   "animation": {
                     "loop": {
@@ -1888,7 +1888,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-xs"
+                      "className": "text-white text-[12px]"
                     },
                     "text": "wobble"
                   }
@@ -1901,14 +1901,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-press"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -1922,7 +1922,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "Press and hold the box — it scales down and becomes semi-transparent."
               }
@@ -1931,7 +1931,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full h-24 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center",
+              "className": "w-full h-[96px] rounded-[12px] bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center",
               "data-testid": "press-target",
               "animation": {
                 "press": {
@@ -1956,14 +1956,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-hover"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -1977,7 +1977,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "Move your mouse over the box — it lifts and scales up."
               }
@@ -1986,7 +1986,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full h-24 rounded-xl bg-gradient-to-r from-teal-400 to-cyan-500 flex items-center justify-center cursor-pointer",
+              "className": "w-full h-[96px] rounded-[12px] bg-gradient-to-r from-teal-400 to-cyan-500 flex items-center justify-center cursor-pointer",
               "data-testid": "hover-target",
               "animation": {
                 "hover": {
@@ -2012,14 +2012,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-scroll"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -2033,7 +2033,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "The box below fades in when it enters the viewport."
               }
@@ -2042,7 +2042,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full h-24 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 flex items-center justify-center",
+              "className": "w-full h-[96px] rounded-[12px] bg-gradient-to-r from-emerald-500 to-green-600 flex items-center justify-center",
               "data-testid": "scroll-target",
               "animation": {
                 "scroll": {
@@ -2069,14 +2069,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4 overflow-hidden",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px] overflow-hidden",
           "data-testid": "card-parallax"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -2090,7 +2090,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "Scroll the page — the gradient box moves at 40% of scroll speed."
               }
@@ -2099,7 +2099,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full h-32 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 flex items-center justify-center",
+              "className": "w-full h-[128px] rounded-[12px] bg-gradient-to-r from-violet-600 to-fuchsia-600 flex items-center justify-center",
               "data-testid": "parallax-target",
               "animation": {
                 "parallax": {
@@ -2125,14 +2125,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-drag"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -2146,7 +2146,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "Drag the box anywhere on both axes — it springs back when released."
               }
@@ -2155,7 +2155,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-28 h-28 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center cursor-grab",
+              "className": "w-[112px] h-[112px] rounded-[12px] bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center cursor-grab",
               "data-testid": "drag-target",
               "animation": {
                 "drag": {
@@ -2170,7 +2170,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-white font-semibold text-center text-sm"
+                  "className": "text-white font-semibold text-center text-[14px]"
                 },
                 "text": "Drag me!"
               }
@@ -2181,14 +2181,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-color"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -2202,7 +2202,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "Background color cycles blue → red → blue continuously."
               }
@@ -2211,7 +2211,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full h-24 rounded-xl flex items-center justify-center",
+              "className": "w-full h-[96px] rounded-[12px] flex items-center justify-center",
               "data-testid": "color-target",
               "animation": {
                 "color": {
@@ -2239,14 +2239,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-layout"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -2260,7 +2260,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "Add/remove items — the list reflows with a spring animation."
               }
@@ -2269,14 +2269,14 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-row gap-3"
+              "className": "flex flex-row gap-[12px]"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
                   "data-testid": "btn-layout-add",
-                  "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 active:opacity-80 px-4 py-2 rounded-md"
+                  "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 active:opacity-80 px-[16px] py-[8px] rounded-[6px]"
                 },
                 "actions": [
                   {
@@ -2288,7 +2288,7 @@
                     "type": "Text",
                     "text": "+ Add item",
                     "props": {
-                      "className": "text-sm text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
                     }
                   }
                 ]
@@ -2297,7 +2297,7 @@
                 "type": "Box",
                 "props": {
                   "data-testid": "btn-layout-remove",
-                  "className": "flex flex-row items-center justify-center cursor-pointer border border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-4 py-2 rounded-md"
+                  "className": "flex flex-row items-center justify-center cursor-pointer border-[1px] border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-[16px] py-[8px] rounded-[6px]"
                 },
                 "actions": [
                   {
@@ -2309,7 +2309,7 @@
                     "type": "Text",
                     "text": "− Remove last",
                     "props": {
-                      "className": "text-sm text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
                     }
                   }
                 ]
@@ -2319,7 +2319,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-2",
+              "className": "flex flex-col gap-[8px]",
               "data-count": "{{variables['anim-0000-0000-0000-000000000002'].length}}",
               "animation": {
                 "layout": {
@@ -2335,13 +2335,13 @@
                 "map": "variables['anim-0000-0000-0000-000000000002']",
                 "key": "context.item.data.id",
                 "props": {
-                  "className": "flex flex-col gap-2"
+                  "className": "flex flex-col gap-[8px]"
                 },
                 "children": [
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 flex flex-row items-center justify-between",
+                      "className": "w-full px-[16px] py-[12px] rounded-[8px] bg-gray-100 dark:bg-gray-800 flex flex-row items-center justify-between",
                       "data-testid": "layout-item-{{context.item.data.id}}",
                       "animation": {
                         "enter": {
@@ -2375,14 +2375,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-sequence"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -2396,7 +2396,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "Click the button to imperatively trigger a shake animation on the target."
               }
@@ -2406,7 +2406,7 @@
             "type": "Box",
             "props": {
               "data-testid": "btn-sequence-run",
-              "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 active:opacity-80 px-4 py-2 rounded-md"
+              "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 active:opacity-80 px-[16px] py-[8px] rounded-[6px]"
             },
             "actions": [
               {
@@ -2418,7 +2418,7 @@
                 "type": "Text",
                 "text": "Shake it!",
                 "props": {
-                  "className": "text-sm text-[var(--theme-background)] font-medium"
+                  "className": "text-[14px] text-[var(--theme-background)] font-medium"
                 }
               }
             ]
@@ -2426,7 +2426,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full h-24 rounded-xl bg-gradient-to-r from-fuchsia-500 to-pink-500 flex items-center justify-center",
+              "className": "w-full h-[96px] rounded-[12px] bg-gradient-to-r from-fuchsia-500 to-pink-500 flex items-center justify-center",
               "data-testid": "sequence-target",
               "animation": {
                 "enter": {
@@ -2455,14 +2455,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-p6"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -2476,7 +2476,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "HTML5 Canvas particle network via animation.particles and SVG feTurbulence grain via animation.noise on a Box."
               }
@@ -2485,13 +2485,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-4"
+              "className": "flex flex-col gap-[16px]"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "rounded-xl w-full",
+                  "className": "rounded-[12px] w-full",
                   "style": {
                     "height": 220
                   },
@@ -2512,7 +2512,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "rounded-xl bg-indigo-950 w-full flex items-center justify-center",
+                  "className": "rounded-[12px] bg-indigo-950 w-full flex items-center justify-center",
                   "style": {
                     "height": 160
                   },
@@ -2532,7 +2532,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white font-semibold text-lg"
+                      "className": "text-white font-semibold text-[18px]"
                     },
                     "text": "Noise Texture (animated seed)"
                   }
@@ -2545,14 +2545,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-p7"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -2566,7 +2566,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "HTML5 Video element as background. Use a Box with position:relative + Video + absolute overlay Boxes for hero sections — all composable from JSON in the builder."
               }
@@ -2575,13 +2575,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-4"
+              "className": "flex flex-col gap-[16px]"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "rounded-xl overflow-hidden",
+                  "className": "rounded-[12px] overflow-hidden",
                   "style": {
                     "position": "relative",
                     "width": "100%",
@@ -2639,7 +2639,7 @@
                         "width": "100%",
                         "height": "100%"
                       },
-                      "className": "flex flex-col items-center justify-center gap-2"
+                      "className": "flex flex-col items-center justify-center gap-[8px]"
                     },
                     "children": [
                       {
@@ -2653,7 +2653,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-white/80 text-sm"
+                          "className": "text-white/80 text-[14px]"
                         },
                         "text": "Video + overlay Box + gradient Box + content Box — all JSON config"
                       }
@@ -2668,14 +2668,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-950 p-6 flex flex-col gap-6",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-gray-950 p-[24px] flex flex-col gap-[24px]",
           "data-testid": "card-p10"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -2689,7 +2689,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-400"
+                  "className": "text-[14px] text-gray-400"
                 },
                 "text": "Frosted-glass panel using Box + style.backdropFilter, shimmer skeleton loaders, and a declarative timeline animation."
               }
@@ -2698,7 +2698,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "relative flex items-center justify-center h-48 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-700",
+              "className": "relative flex items-center justify-center h-[192px] rounded-[12px] bg-gradient-to-br from-indigo-600 to-purple-700",
               "style": {
                 "overflow": "clip"
               }
@@ -2711,26 +2711,26 @@
                     "backdropFilter": "blur(18px)",
                     "WebkitBackdropFilter": "blur(18px)",
                     "background": "rgba(255,255,255,0.12)",
-                    "border": "1px solid rgba(255,255,255,0.25)",
+                    "border-[1px]": "1px solid rgba(255,255,255,0.25)",
                     "borderRadius": 14,
                     "padding": 24,
                     "boxShadow": "0 8px 32px rgba(0,0,0,0.3)"
                   },
-                  "className": "flex flex-col gap-1",
+                  "className": "flex flex-col gap-[4px]",
                   "data-testid": "p10-backdrop-blur"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white font-bold text-lg"
+                      "className": "text-white font-bold text-[18px]"
                     },
                     "text": "Frosted Glass"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white/70 text-sm"
+                      "className": "text-white/70 text-[14px]"
                     },
                     "text": "backdrop-filter: blur(18px)"
                   }
@@ -2741,13 +2741,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-row flex-wrap gap-6"
+              "className": "flex flex-row flex-wrap gap-[24px]"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "flex flex-col gap-3 rounded-xl overflow-hidden p-3",
+                  "className": "flex flex-col gap-[12px] rounded-[12px] overflow-hidden p-[12px]",
                   "style": {
                     "width": 220
                   },
@@ -2757,7 +2757,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "rounded-lg h-28 w-full",
+                      "className": "rounded-[8px] h-[112px] w-full",
                       "animation": {
                         "shimmer": {
                           "baseColor": "#1e293b",
@@ -2770,7 +2770,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "rounded-md h-4 w-3/4 mt-1",
+                      "className": "rounded-[6px] h-[16px] w-3/4 mt-[4px]",
                       "animation": {
                         "shimmer": {
                           "baseColor": "#1e293b",
@@ -2783,7 +2783,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "rounded-md h-4 w-1/2",
+                      "className": "rounded-[6px] h-[16px] w-1/2",
                       "animation": {
                         "shimmer": {
                           "baseColor": "#1e293b",
@@ -2798,7 +2798,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "flex flex-col gap-3 rounded-xl overflow-hidden p-3",
+                  "className": "flex flex-col gap-[12px] rounded-[12px] overflow-hidden p-[12px]",
                   "style": {
                     "width": 240
                   },
@@ -2808,13 +2808,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex flex-row items-center gap-3"
+                      "className": "flex flex-row items-center gap-[12px]"
                     },
                     "children": [
                       {
                         "type": "Box",
                         "props": {
-                          "className": "rounded-full w-10 h-10 flex-shrink-0",
+                          "className": "rounded-[9999px] w-[40px] h-[40px] flex-shrink-0",
                           "animation": {
                             "shimmer": {
                               "baseColor": "#1e293b",
@@ -2827,7 +2827,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "flex-1 rounded-md h-4",
+                          "className": "flex-1 rounded-[6px] h-[16px]",
                           "animation": {
                             "shimmer": {
                               "baseColor": "#1e293b",
@@ -2842,13 +2842,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex flex-row items-center gap-3"
+                      "className": "flex flex-row items-center gap-[12px]"
                     },
                     "children": [
                       {
                         "type": "Box",
                         "props": {
-                          "className": "rounded-full w-10 h-10 flex-shrink-0",
+                          "className": "rounded-[9999px] w-[40px] h-[40px] flex-shrink-0",
                           "animation": {
                             "shimmer": {
                               "baseColor": "#1e293b",
@@ -2861,7 +2861,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "flex-1 rounded-md h-4",
+                          "className": "flex-1 rounded-[6px] h-[16px]",
                           "animation": {
                             "shimmer": {
                               "baseColor": "#1e293b",
@@ -2876,13 +2876,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex flex-row items-center gap-3"
+                      "className": "flex flex-row items-center gap-[12px]"
                     },
                     "children": [
                       {
                         "type": "Box",
                         "props": {
-                          "className": "rounded-full w-10 h-10 flex-shrink-0",
+                          "className": "rounded-[9999px] w-[40px] h-[40px] flex-shrink-0",
                           "animation": {
                             "shimmer": {
                               "baseColor": "#1e293b",
@@ -2895,7 +2895,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "flex-1 rounded-md h-4",
+                          "className": "flex-1 rounded-[6px] h-[16px]",
                           "animation": {
                             "shimmer": {
                               "baseColor": "#1e293b",
@@ -2912,7 +2912,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "flex flex-row items-center gap-3 rounded-xl p-3",
+                  "className": "flex flex-row items-center gap-[12px] rounded-[12px] p-[12px]",
                   "style": {
                     "width": 220
                   },
@@ -2922,7 +2922,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "rounded-full w-12 h-12 flex-shrink-0",
+                      "className": "rounded-[9999px] w-[48px] h-[48px] flex-shrink-0",
                       "animation": {
                         "shimmer": {
                           "baseColor": "#1e293b",
@@ -2935,13 +2935,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex flex-col gap-2 flex-1 w-full min-w-0"
+                      "className": "flex flex-col gap-[8px] flex-1 w-full min-w-0"
                     },
                     "children": [
                       {
                         "type": "Box",
                         "props": {
-                          "className": "rounded-md h-4 w-full",
+                          "className": "rounded-[6px] h-[16px] w-full",
                           "animation": {
                             "shimmer": {
                               "baseColor": "#1e293b",
@@ -2954,7 +2954,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "rounded-md h-3 w-2/3",
+                          "className": "rounded-[6px] h-[12px] w-2/3",
                           "animation": {
                             "shimmer": {
                               "baseColor": "#1e293b",
@@ -2973,7 +2973,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full h-16 rounded-xl bg-indigo-900 flex items-center justify-center",
+              "className": "w-full h-[64px] rounded-[12px] bg-indigo-900 flex items-center justify-center",
               "data-testid": "p10-timeline-box",
               "animation": {
                 "timeline": [
@@ -3017,14 +3017,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-p11"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -3038,7 +3038,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "Declarative `states` config drives CSS transitions as a state machine: idle → loading → success → error."
               }
@@ -3047,17 +3047,17 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-4 w-full",
+              "className": "flex flex-col gap-[16px] w-full",
               "data-testid": "p11-state-machine"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-full px-6 py-5 flex flex-row items-center justify-between gap-4",
+                  "className": "w-full px-[24px] py-[20px] flex flex-row items-center justify-between gap-[16px]",
                   "data-testid": "p11-state-machine-box",
                   "animation": {
-                    "outerClassName": "w-full rounded-xl",
+                    "outerClassName": "w-full rounded-[12px]",
                     "states": {
                       "watchVar": "variables?.['anim-0000-0000-0000-00000000p011']",
                       "defaultState": "idle",
@@ -3091,20 +3091,20 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex flex-col gap-1"
+                      "className": "flex flex-col gap-[4px]"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-white font-bold text-lg"
+                          "className": "text-white font-bold text-[18px]"
                         },
                         "text": "State Machine Box"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-white/70 text-sm"
+                          "className": "text-white/70 text-[14px]"
                         },
                         "text": "Current: {{variables['anim-0000-0000-0000-00000000p011']}}"
                       }
@@ -3113,25 +3113,25 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex flex-row gap-2"
+                      "className": "flex flex-row gap-[8px]"
                     },
                     "children": [
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-3 h-3 rounded-full bg-white/30"
+                          "className": "w-[12px] h-[12px] rounded-[9999px] bg-white/30"
                         }
                       },
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-3 h-3 rounded-full bg-white/30"
+                          "className": "w-[12px] h-[12px] rounded-[9999px] bg-white/30"
                         }
                       },
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-3 h-3 rounded-full bg-white/30"
+                          "className": "w-[12px] h-[12px] rounded-[9999px] bg-white/30"
                         }
                       }
                     ]
@@ -3141,7 +3141,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "px-5 py-2.5 rounded-lg bg-gray-700 hover:bg-gray-600",
+                  "className": "px-[20px] py-[10px] rounded-[8px] bg-gray-700 hover:bg-gray-600",
                   "data-testid": "p11-state-machine-next"
                 },
                 "actions": [
@@ -3153,7 +3153,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white font-medium text-sm"
+                      "className": "text-white font-medium text-[14px]"
                     },
                     "text": "Cycle State →"
                   }
@@ -3166,14 +3166,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-p12"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -3187,7 +3187,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "Linear color cycle, radial pulse, and conic angle rotation via GradientAnimationConfig."
               }
@@ -3196,13 +3196,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-row gap-4 flex-wrap"
+              "className": "flex flex-row gap-[16px] flex-wrap"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "rounded-xl p-4 flex flex-col items-center justify-center gap-2",
+                  "className": "rounded-[12px] p-[16px] flex flex-col items-center justify-center gap-[8px]",
                   "style": {
                     "width": 140,
                     "height": 100
@@ -3229,7 +3229,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white font-semibold text-xs text-center"
+                      "className": "text-white font-semibold text-[12px] text-center"
                     },
                     "text": "Linear cycle"
                   }
@@ -3238,7 +3238,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "rounded-xl p-4 flex flex-col items-center justify-center gap-2",
+                  "className": "rounded-[12px] p-[16px] flex flex-col items-center justify-center gap-[8px]",
                   "style": {
                     "width": 140,
                     "height": 100
@@ -3263,7 +3263,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white font-semibold text-xs text-center"
+                      "className": "text-white font-semibold text-[12px] text-center"
                     },
                     "text": "Radial pulse"
                   }
@@ -3272,7 +3272,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "rounded-xl p-4 flex flex-col items-center justify-center gap-2",
+                  "className": "rounded-[12px] p-[16px] flex flex-col items-center justify-center gap-[8px]",
                   "style": {
                     "width": 140,
                     "height": 100
@@ -3300,7 +3300,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white font-semibold text-xs text-center"
+                      "className": "text-white font-semibold text-[12px] text-center"
                     },
                     "text": "Conic rotate"
                   }
@@ -3313,14 +3313,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-p13"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -3334,7 +3334,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "Clip-path reveal on hover + mask wipe on enter."
               }
@@ -3343,13 +3343,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-row gap-4 flex-wrap"
+              "className": "flex flex-row gap-[16px] flex-wrap"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "rounded-xl bg-indigo-500 p-4 flex items-center justify-center cursor-pointer",
+                  "className": "rounded-[12px] bg-indigo-500 p-[16px] flex items-center justify-center cursor-pointer",
                   "style": {
                     "width": 160,
                     "height": 80
@@ -3370,7 +3370,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white font-semibold text-sm"
+                      "className": "text-white font-semibold text-[14px]"
                     },
                     "text": "Hover to reveal →"
                   }
@@ -3379,7 +3379,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 p-4 flex items-center justify-center",
+                  "className": "rounded-[12px] bg-gradient-to-r from-pink-500 to-purple-600 p-[16px] flex items-center justify-center",
                   "style": {
                     "width": 160,
                     "height": 80
@@ -3399,7 +3399,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white font-semibold text-sm"
+                      "className": "text-white font-semibold text-[14px]"
                     },
                     "text": "Mask wipe"
                   }
@@ -3412,14 +3412,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-p14"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -3433,7 +3433,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "SVG path morphing via SMIL animate — compose any SVG from json svg/path/animate nodes in the builder."
               }
@@ -3442,7 +3442,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-row gap-6 flex-wrap items-center"
+              "className": "flex flex-row gap-[24px] flex-wrap items-center"
             },
             "children": [
               {
@@ -3523,14 +3523,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-p15"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -3544,7 +3544,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "::before/::after driven by injected scoped <style> tags — animated underline, highlight overlay."
               }
@@ -3553,13 +3553,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-row gap-6 flex-wrap items-center"
+              "className": "flex flex-row gap-[24px] flex-wrap items-center"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "relative inline-flex self-start px-6 py-3 font-semibold text-indigo-600 cursor-pointer",
+                  "className": "relative inline-flex self-start px-[24px] py-[12px] font-semibold text-indigo-600 cursor-pointer",
                   "data-testid": "p15-underline",
                   "animation": {
                     "pseudoElement": {
@@ -3589,7 +3589,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "relative inline-flex self-start px-6 py-3 rounded-lg bg-emerald-100 font-semibold cursor-pointer",
+                  "className": "relative inline-flex self-start px-[24px] py-[12px] rounded-[8px] bg-emerald-100 font-semibold cursor-pointer",
                   "data-testid": "p15-overlay",
                   "animation": {
                     "pseudoElement": {
@@ -3623,14 +3623,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-4",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]",
           "data-testid": "card-p17"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -3644,7 +3644,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "Drag / swipe left or right to change slides. Track follows your finger live (dragFeedback) and springs back if you release without completing a swipe."
               }
@@ -3653,13 +3653,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-4 w-full"
+              "className": "flex flex-col gap-[16px] w-full"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-full rounded-2xl overflow-hidden shadow-lg select-none",
+                  "className": "w-full rounded-[16px] overflow-hidden shadow-lg select-none",
                   "style": {
                     "height": 260
                   },
@@ -3712,7 +3712,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "h-full flex flex-col items-center justify-center gap-4 flex-shrink-0 bg-gradient-to-br from-[#6366f1] to-[#8b5cf6]",
+                          "className": "h-full flex flex-col items-center justify-center gap-[16px] flex-shrink-0 bg-gradient-to-br from-[#6366f1] to-[#8b5cf6]",
                           "style": {
                             "width": "25%"
                           }
@@ -3721,7 +3721,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "w-16 h-16 rounded-full bg-white/20 flex items-center justify-center"
+                              "className": "w-[64px] h-[64px] rounded-[9999px] bg-white/20 flex items-center justify-center"
                             },
                             "children": [
                               {
@@ -3737,14 +3737,14 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-white font-bold text-2xl text-center"
+                              "className": "text-white font-bold text-[24px] text-center"
                             },
                             "text": "Getting Started"
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-white/70 text-sm text-center px-8"
+                              "className": "text-white/70 text-[14px] text-center px-[32px]"
                             },
                             "text": "Swipe left to explore →"
                           }
@@ -3753,7 +3753,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "h-full flex flex-col items-center justify-center gap-4 flex-shrink-0 bg-gradient-to-br from-[#06b6d4] to-[#0284c7]",
+                          "className": "h-full flex flex-col items-center justify-center gap-[16px] flex-shrink-0 bg-gradient-to-br from-[#06b6d4] to-[#0284c7]",
                           "style": {
                             "width": "25%"
                           }
@@ -3762,7 +3762,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "w-16 h-16 rounded-full bg-white/20 flex items-center justify-center"
+                              "className": "w-[64px] h-[64px] rounded-[9999px] bg-white/20 flex items-center justify-center"
                             },
                             "children": [
                               {
@@ -3778,14 +3778,14 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-white font-bold text-2xl text-center"
+                              "className": "text-white font-bold text-[24px] text-center"
                             },
                             "text": "Fast & Smooth"
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-white/70 text-sm text-center px-8"
+                              "className": "text-white/70 text-[14px] text-center px-[32px]"
                             },
                             "text": "60fps CSS animations, no libraries"
                           }
@@ -3794,7 +3794,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "h-full flex flex-col items-center justify-center gap-4 flex-shrink-0 bg-gradient-to-br from-[#10b981] to-[#059669]",
+                          "className": "h-full flex flex-col items-center justify-center gap-[16px] flex-shrink-0 bg-gradient-to-br from-[#10b981] to-[#059669]",
                           "style": {
                             "width": "25%"
                           }
@@ -3803,7 +3803,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "w-16 h-16 rounded-full bg-white/20 flex items-center justify-center"
+                              "className": "w-[64px] h-[64px] rounded-[9999px] bg-white/20 flex items-center justify-center"
                             },
                             "children": [
                               {
@@ -3819,14 +3819,14 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-white font-bold text-2xl text-center"
+                              "className": "text-white font-bold text-[24px] text-center"
                             },
                             "text": "JSON-Driven"
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-white/70 text-sm text-center px-8"
+                              "className": "text-white/70 text-[14px] text-center px-[32px]"
                             },
                             "text": "Configure everything in JSON"
                           }
@@ -3835,7 +3835,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "h-full flex flex-col items-center justify-center gap-4 flex-shrink-0 bg-gradient-to-br from-[#f59e0b] to-[#ef4444]",
+                          "className": "h-full flex flex-col items-center justify-center gap-[16px] flex-shrink-0 bg-gradient-to-br from-[#f59e0b] to-[#ef4444]",
                           "style": {
                             "width": "25%"
                           }
@@ -3844,7 +3844,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "w-16 h-16 rounded-full bg-white/20 flex items-center justify-center"
+                              "className": "w-[64px] h-[64px] rounded-[9999px] bg-white/20 flex items-center justify-center"
                             },
                             "children": [
                               {
@@ -3860,14 +3860,14 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-white font-bold text-2xl text-center"
+                              "className": "text-white font-bold text-[24px] text-center"
                             },
                             "text": "Gesture-Powered"
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-white/70 text-sm text-center px-8"
+                              "className": "text-white/70 text-[14px] text-center px-[32px]"
                             },
                             "text": "Swipe right to go back ←"
                           }
@@ -3880,13 +3880,13 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "flex flex-row items-center justify-between gap-4"
+                  "className": "flex flex-row items-center justify-between gap-[16px]"
                 },
                 "children": [
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700",
+                      "className": "w-[40px] h-[40px] rounded-[9999px] bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700",
                       "data-testid": "p17-prev"
                     },
                     "actions": [
@@ -3908,14 +3908,14 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex flex-row gap-2 items-center",
+                      "className": "flex flex-row gap-[8px] items-center",
                       "data-testid": "p17-dots"
                     },
                     "children": [
                       {
                         "type": "Box",
                         "props": {
-                          "className": "h-2 rounded-full",
+                          "className": "h-[8px] rounded-[9999px]",
                           "animation": {
                             "states": {
                               "watchVar": "(!variables?.['anim-0000-0000-0000-00000000p017'] || variables?.['anim-0000-0000-0000-00000000p017'] === 0) ? 'active' : 'inactive'",
@@ -3940,7 +3940,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "h-2 rounded-full",
+                          "className": "h-[8px] rounded-[9999px]",
                           "animation": {
                             "states": {
                               "watchVar": "variables?.['anim-0000-0000-0000-00000000p017'] === 1 ? 'active' : 'inactive'",
@@ -3965,7 +3965,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "h-2 rounded-full",
+                          "className": "h-[8px] rounded-[9999px]",
                           "animation": {
                             "states": {
                               "watchVar": "variables?.['anim-0000-0000-0000-00000000p017'] === 2 ? 'active' : 'inactive'",
@@ -3990,7 +3990,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "h-2 rounded-full",
+                          "className": "h-[8px] rounded-[9999px]",
                           "animation": {
                             "states": {
                               "watchVar": "variables?.['anim-0000-0000-0000-00000000p017'] === 3 ? 'active' : 'inactive'",
@@ -4017,7 +4017,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700",
+                      "className": "w-[40px] h-[40px] rounded-[9999px] bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700",
                       "data-testid": "p17-next"
                     },
                     "actions": [
@@ -4045,14 +4045,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-6",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[24px]",
           "data-testid": "card-p18"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -4066,7 +4066,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "Both columns are w-full inside flex-row. Left has an enter animation (AnimatedNode wrapper). Both columns must be roughly equal width — the animated column must not collapse its sibling."
               }
@@ -4075,13 +4075,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full flex flex-row gap-4"
+              "className": "w-full flex flex-row gap-[16px]"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-full rounded-xl bg-blue-100 dark:bg-blue-900 p-4 flex flex-col gap-2",
+                  "className": "w-full rounded-[12px] bg-blue-100 dark:bg-blue-900 p-[16px] flex flex-col gap-[8px]",
                   "data-testid": "p18-col-left",
                   "animation": {
                     "enter": {
@@ -4101,7 +4101,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-xs text-blue-600 dark:text-blue-400"
+                      "className": "text-[12px] text-blue-600 dark:text-blue-400"
                     },
                     "text": "Has enter animation + w-full"
                   }
@@ -4110,7 +4110,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-full rounded-xl bg-green-100 dark:bg-green-900 p-4 flex flex-col gap-2",
+                  "className": "w-full rounded-[12px] bg-green-100 dark:bg-green-900 p-[16px] flex flex-col gap-[8px]",
                   "data-testid": "p18-col-right"
                 },
                 "children": [
@@ -4124,7 +4124,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-xs text-green-600 dark:text-green-400"
+                      "className": "text-[12px] text-green-600 dark:text-green-400"
                     },
                     "text": "No animation + w-full"
                   }
@@ -4137,14 +4137,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 flex flex-col gap-6",
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[24px]",
           "data-testid": "card-p19"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "flex flex-col gap-1"
+              "className": "flex flex-col gap-[4px]"
             },
             "children": [
               {
@@ -4158,7 +4158,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
                 },
                 "text": "Exact replica of the AI builder hero. Left column has no animation but animated children; right column has enter animation on the container itself. Both must be roughly equal width."
               }
@@ -4181,13 +4181,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-fit inline-flex flex-row items-center px-2.5 py-0.5 rounded-full bg-gray-800"
+                      "className": "w-fit inline-flex flex-row items-center px-[10px] py-[2px] rounded-[9999px] bg-gray-800"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-xs font-medium text-white"
+                          "className": "text-[12px] font-medium text-white"
                         },
                         "text": "Productivity Reimagined"
                       }
@@ -4202,7 +4202,7 @@
                   {
                     "type": "Heading",
                     "props": {
-                      "className": "text-3xl font-bold leading-tight text-gray-900 dark:text-gray-100"
+                      "className": "text-[30px] font-bold leading-tight text-gray-900 dark:text-gray-100"
                     },
                     "text": "Work flows like water.",
                     "animation": {
@@ -4215,7 +4215,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-base leading-relaxed text-gray-600 dark:text-gray-400"
+                      "className": "text-[16px] leading-relaxed text-gray-600 dark:text-gray-400"
                     },
                     "text": "Manage projects, collaborate with teams, and ship faster.",
                     "animation": {
@@ -4234,13 +4234,13 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "flex flex-row items-center justify-center px-5 py-2.5 rounded-md bg-gray-900"
+                          "className": "flex flex-row items-center justify-center px-[20px] py-[10px] rounded-[6px] bg-gray-900"
                         },
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-sm font-medium text-white"
+                              "className": "text-[14px] font-medium text-white"
                             },
                             "text": "Start Free Trial"
                           }
@@ -4249,13 +4249,13 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "flex flex-row items-center justify-center px-5 py-2.5 rounded-md border border-gray-700"
+                          "className": "flex flex-row items-center justify-center px-[20px] py-[10px] rounded-[6px] border-[1px] border-gray-700"
                         },
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-sm font-medium text-gray-800 dark:text-gray-200"
+                              "className": "text-[14px] font-medium text-gray-800 dark:text-gray-200"
                             },
                             "text": "Watch Demo"
                           }
@@ -4274,14 +4274,14 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "flex flex-col p-4 gap-4 w-full h-fit border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden shadow-lg",
+                  "className": "flex flex-col p-[16px] gap-[16px] w-full h-fit border-[1px] border-gray-200 dark:border-gray-700 rounded-[16px] overflow-hidden shadow-lg",
                   "data-testid": "p19-col-image"
                 },
                 "children": [
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-full rounded-xl h-[160px] bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center"
+                      "className": "w-full rounded-[12px] h-[160px] bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center"
                     },
                     "children": [
                       {
@@ -4302,6 +4302,111 @@
                 }
               }
             ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "flex flex-col gap-[8px]"
+        },
+        "children": [
+          {
+            "type": "Heading",
+            "props": { "size": "xl", "className": "font-bold text-gray-900 dark:text-gray-100" },
+            "text": "Absolute Positioned Animated Images — Builder Selection Test"
+          },
+          {
+            "type": "Text",
+            "props": { "className": "text-gray-500 dark:text-gray-400 text-sm" },
+            "text": "Three absolutely-positioned images with enter+hover and loop animations. Verify each image is selectable in the builder canvas."
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "id": "abs-img-test-container",
+        "props": {
+          "className": "w-full h-[600px] relative bg-gray-50 dark:bg-gray-900 rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 overflow-hidden",
+          "data-testid": "abs-img-container"
+        },
+        "children": [
+          {
+            "id": "abs-img-primary",
+            "type": "Image",
+            "src": "https://images.unsplash.com/photo-1515355252367-42ae86cb92f9?w=400&q=80",
+            "props": {
+              "alt": "Primary absolute image",
+              "className": "w-[320px] min-w-[0px] h-[400px] absolute z-[5] top-[40px] right-[60px] rounded-[12px] shadow-2xl",
+              "style": {
+                "transform": "rotate(-3deg)"
+              },
+              "data-testid": "abs-img-primary"
+            },
+            "name": "Primary Image",
+            "animation": {
+              "enter": {
+                "type": "slideInRight",
+                "duration": 900,
+                "delay": 300
+              },
+              "hover": {
+                "y": -4,
+                "duration": 200
+              }
+            }
+          },
+          {
+            "id": "abs-img-secondary",
+            "type": "Image",
+            "src": "https://images.unsplash.com/photo-1764406327615-556aeeada2e5?w=300&q=80",
+            "props": {
+              "alt": "Secondary absolute image",
+              "className": "w-[240px] min-w-[0px] h-[280px] absolute z-[6] top-[200px] right-[330px] rounded-[10px] shadow-xl",
+              "style": {
+                "transform": "rotate(4deg)"
+              },
+              "data-testid": "abs-img-secondary"
+            },
+            "name": "Secondary Image",
+            "animation": {
+              "enter": {
+                "type": "slideInLeft",
+                "duration": 900,
+                "delay": 500
+              },
+              "hover": {
+                "y": -4,
+                "duration": 200
+              }
+            }
+          },
+          {
+            "id": "abs-img-overlay",
+            "type": "Image",
+            "src": "https://images.unsplash.com/photo-1767473907132-9e52351d023a?w=250&q=80",
+            "props": {
+              "alt": "Overlay absolute image",
+              "className": "w-[180px] min-w-[0px] h-[180px] absolute z-[4] top-[100px] right-[110px] rounded-[8px] shadow-lg",
+              "style": {
+                "transform": "rotate(-2deg)"
+              },
+              "data-testid": "abs-img-overlay"
+            },
+            "name": "Overlay Image",
+            "animation": {
+              "enter": {
+                "type": "zoomIn",
+                "duration": 800,
+                "delay": 600
+              },
+              "loop": {
+                "type": "float",
+                "duration": 4000,
+                "repeatCount": -1,
+                "direction": "alternate"
+              }
+            }
           }
         ]
       }

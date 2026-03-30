@@ -6,26 +6,26 @@
   "ui": {
     "type": "Box",
     "props": {
-      "className": "flex min-h-screen items-center justify-center px-4"
+      "className": "flex min-h-screen items-center justify-center px-[16px]"
     },
     "children": [
       {
         "type": "Box",
         "props": {
-          "className": "w-full max-w-md text-center space-y-6"
+          "className": "w-full max-w-[448px] text-center space-y-[24px]"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "w-16 h-16 mx-auto rounded-full bg-[var(--theme-primary)]/10 flex items-center justify-center"
+              "className": "w-[64px] h-[64px] mx-auto rounded-[9999px] bg-[var(--theme-primary)]/10 flex items-center justify-center"
             },
             "children": [
               {
                 "type": "Icon",
                 "props": {
                   "icon": "lucide:globe",
-                  "className": "h-8 w-8 text-[#7c3aed]"
+                  "className": "h-[32px] w-[32px] text-[#7c3aed]"
                 }
               }
             ]
@@ -33,21 +33,21 @@
           {
             "type": "Heading",
             "props": {
-              "className": "text-3xl font-bold"
+              "className": "text-[30px] font-bold"
             },
             "text": "Check Your Email"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-[var(--theme-muted-foreground)] text-lg"
+              "className": "text-[var(--theme-muted-foreground)] text-[18px]"
             },
             "text": "We've sent a verification link to your email address. Please click the link to verify your account."
           },
           {
             "type": "Box",
             "props": {
-              "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] px-8 flex flex-row items-center justify-center py-3 rounded-md"
+              "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] px-[32px] flex flex-row items-center justify-center py-[12px] rounded-[6px]"
             },
             "children": [
               {

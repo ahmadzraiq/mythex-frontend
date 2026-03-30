@@ -6,25 +6,29 @@ alwaysApply: false
 
 # AI Builder Knowledge Base (`lib/ai/builder-knowledge.ts`)
 
-## Four-Category Principle — What the AI Needs vs What Is Leakage
+## Tool Manual Principle — What the AI Needs vs What Is Leakage
 
-There are exactly **four things** the AI needs to know. Everything else is implementation leakage and must be kept out of `builder-knowledge.ts`, `builder-tools.ts`, and any `.cursor/rules` doc:
+The system prompt is a **tool manual**, not a design guide. Claude already knows how to design. The four things the AI needs to know are system-specific facts it cannot derive from general knowledge:
 
 | Category | Examples | Where it lives |
 |---|---|---|
-| **1. Design intent & principles** | Contrast rules, structural wrapper pattern, sizing modes | `builder-knowledge.ts` knowledge blocks |
-| **2. Tool names + input parameters** | `set_size(id, {width: "full"})`, `set_opacity(id, {opacity: 80})` | `builder-tools.ts` schema + quick-ref |
-| **3. Template / formula syntax** | `{{variables['UUID']}}`, `variables['UUID'] === 'active'`, `context?.item?.data.*` | `JSON_SCHEMA_RULES` |
-| **4. Component labels** | `"Box"`, `"Btn Solid"`, `"Card"` — exactly as shown in the left panel | component label list |
+| **1. Tool names + input parameters** | `set_size(id, {width: "full"})`, `set_opacity(id, {opacity: N})` | `builder-tools.ts` schema + quick-ref |
+| **2. System-specific behavior** | Our token names, batch nodeId system, formula syntax (`{{variables['UUID']}}`), sizing mode strings | `JSON_SCHEMA_RULES`, knowledge blocks |
+| **3. Component labels + structure** | `"Box"`, `"Btn Solid"`, `"Card"` — exactly as shown in the left panel; aiRef structure | component label list + `buildComponentStructureRef()` |
+| **4. System quirks** | Non-obvious tool behaviors Claude can't predict (e.g. maxWidth alone doesn't center, align ≠ justify in set_layout) | knowledge blocks |
+
+**Diagnostic rule:** When AI output is wrong, the fix is either (a) extend the tool to support the capability, or (b) add one system-specific fact to the prompt. **Never add design guidance** — Claude already knows how to design.
 
 **What is leakage (never put in what the AI sees):**
+- General design principles (contrast theory, layout patterns, when to use rounded corners)
 - Tailwind class names (`flex-col`, `w-full`, `text-gray-900`, `rounded-lg`, `p-4`, …)
 - Raw JSON node structure (`className`, `style`, `props`, `children` keys)
 - CSS concept terminology (`align-items`, `justify-content`, `flex-1`, `h-screen`, …)
 - Internal prop names (`props.src`, `props.poster`, `props.icon`, `props.type`)
 - Tool write targets (`→ style.opacity`, `→ style.transform`, `→ props.className`, …)
+- Implementation details about how tools store values internally
 
-**Rule for new content:** Before adding anything to `builder-knowledge.ts` or a cursor rule, ask: "Is this one of the four categories above?" If not, it belongs only in `tool-executor.ts` (implementation) or `_panel-right.tsx` (panel source of truth).
+**Rule for new content:** Before adding anything to `builder-knowledge.ts`, ask: "Is this something Claude cannot know without being told?" If Claude can derive it from general design/CSS/engineering knowledge, it does not belong in the system prompt.
 
 ---
 
@@ -94,15 +98,21 @@ When a new fix is discovered (e.g. video controls being wrong, or spacing using 
 
 **Pattern:**
 - Specific: "Dark hero sections need white button borders" ❌
-- Generic: "When using a custom dark background, all children that use theme foreground tokens will lose contrast — override with explicit light colors upfront" ✅
+- Generic: "All spacing tools (set_spacing, set_layout) accept pixels — not Tailwind scale values" ✅ (system-specific: Claude doesn't know our units)
 
 - Specific: "Video controls should be false in hero sections" ❌
-- Generic: "Video ambient defaults (autoPlay=true, loop=true, muted=true, controls=false) apply everywhere — only override when the user explicitly requests a media player" ✅
+- Generic: "Video ambient defaults (autoPlay=true, loop=true, muted=true, controls=false) apply everywhere — only override when the user explicitly requests a media player" ✅ (system-specific: these are OUR component's default props)
+
+- Specific: "Build pricing cards dynamically" ❌
+- Generic: "Any repeated structure (cards, rows, list items) → set_repeat + ONE template node; never N static copies" ✅ (system-specific: the set_repeat tool and context.item.data.* binding syntax are not general knowledge — Claude cannot infer that our system supports a repeat mechanism or what the exact call signature is)
+
+- Specific: "Tell Claude to check contrast before finishing a section" ❌
+- Correct: nothing — Claude has the live palette hex values and knows how to design ✅
 
 - Specific: "The hero's gap should be 16px" ❌
-- Generic: "All spacing tools (set_spacing, set_layout) accept pixels — not Tailwind scale values" ✅
+- Correct: nothing — specific pixel values are design decisions Claude makes ✅
 
-**Rule for adding a new rule:** Ask "will this apply to any other context?" If yes, write the principle. If it's truly app-specific, don't add it to the knowledge base at all.
+**Rule for adding a new rule:** Ask "is this something Claude cannot know without being told?" If Claude can derive it from general design, CSS, or engineering knowledge — don't add it. Only add system-specific facts: our token names, our tool params, our quirks, our formula syntax.
 
 ---
 
@@ -119,71 +129,32 @@ When a new fix is discovered (e.g. video controls being wrong, or spacing using 
 **Injection order:**
 ```
 1. Project context (appName, description, category, mood)
-2. Contrast Rule
-3. Builder Context (current page, selected node)
-4. Core Philosophy (no raw Tailwind, no set_class)
-5. Tool Strategy (build incrementally, pre-assign IDs)
-6. Section building patterns and examples
-7. Width/Height sizing model
-8. Quick reference table
-9. Component list (auto-generated)
-10. Component structure reference (from aiRef)
-11. Formula function library (auto-generated)
-12. Tool reference table
+2. Builder Context (current page, selected node)
+3. Core Philosophy (no raw Tailwind, no set_class)
+4. Tool Strategy (build incrementally, pre-assign IDs)
+5. Section building patterns and examples
+6. Width/Height sizing model
+7. Quick reference table
+8. Component list (auto-generated)
+9. Component structure reference (from aiRef)
+10. Formula function library (auto-generated)
+11. Tool reference table
 ```
 
 **Never hardcode theme values** — they come from `paletteSnapshot` at runtime.
 
 ---
 
-## Contrast Rule
+## Contrast — Claude's Responsibility, Not the System Prompt's
 
-Theme tokens contrast each other automatically — no adjustment needed when using only theme tokens.
+Claude receives the live theme palette with real hex values at runtime. He can judge contrast himself using that palette — the system prompt does not teach contrast.
 
-Rule only applies when the AI picks a **custom color** (hex, rgb, plain Tailwind shade):
-- Custom dark bg → light text/borders (white, gray-100, gray-300) for children
-- Custom light bg → dark text/borders (gray-900, gray-200) for children
+**Architectural decision:** The executor must NOT silently rewrite button/border colors when `set_background` is called — that would break pages where the user deliberately set element colors. Contrast is Claude's design judgment, applied upfront when he picks colors.
 
-**Key decision:** This is the AI's responsibility, not a code-level auto-fix. The executor must NOT silently rewrite button/border colors when `set_background` is called — that would break pages where the user deliberately set element colors and just wants to change the section background.
-
-The AI handles contrast **upfront** — "dark background" in the prompt is enough signal.
+**What this means for `builder-knowledge.ts`:** Do not add contrast checklists, contrast rules, or "verify contrast before finishing" instructions. If the AI makes a contrast mistake, the fix is to check whether the palette injection is working (see Class of Bug 3), not to add more design guidance.
 
 ---
 
-## Contrast on Custom-Colored Sections — Checklist
-
-When you set a custom background color on a section (any hex, rgb, or named color you explicitly choose), you MUST immediately check every child element for contrast in the same batch:
-
-| Child element | Dark custom bg | Light custom bg |
-|---|---|---|
-| Any text | set_text_color → light/white value | set_text_color → dark value |
-| Any bordered/outline component | set_border → light color + set_text_color → light value | set_border → dark color + set_text_color → dark value |
-| Any filled component | verify its fill contrasts the bg | same |
-
-**Critical:** Any component with a border or outline placed inside a dark custom section MUST have its border and text color explicitly set to a light value. The default border color uses the theme foreground, which may be dark — making it invisible on a dark background.
-
-**Make the contrast decision upfront** when you set the background color — choose text and border colors in the same batch. Then do a final scan before finishing to catch anything missed. Never skip this scan when the section has a custom background color.
-
----
-
-## Section Layout Pattern — Two Layers Always
-
-Every section must use two layers:
-1. **Outer section container** — `width: "full"` + background + vertical/horizontal padding. Never set `maxWidth` here.
-2. **Inner content container** — `width: "full"` + an appropriate `maxWidth` in pixels to constrain readable content.
-
-The outer container must be `width: "full"` so the background bleeds edge-to-edge on all screen sizes. Putting `maxWidth` on the outer container breaks this — the background only fills a narrow column on wide screens. `maxWidth` belongs on the inner container only.
-
-**Never use `width:"fit"` for the inner container.** `w-fit` shrinks to content width — combined with `maxWidth`, a child with `w-full` creates a circular dependency that browsers resolve unpredictably. The correct pattern is always `width:"full"` + `maxWidth` on the inner container:
-
-```
-set_size("section-inner", {width:"full", maxWidth:900, height:"fit"})  ✅
-set_size("section-inner", {width:"fit",  maxWidth:900, height:"fit"})  ❌ — breaks centering
-```
-
-**Observed during audit:** The AI used `width:"fit"` for the inner hero container, which causes layout issues on wide screens where the `w-full` video child creates a circular flex-sizing dependency.
-
----
 
 ## Design Judgment — Defaults Are Starting Points, Not Decisions
 
@@ -231,26 +202,6 @@ Never hardcode a Pexels/Unsplash URL or icon name directly. The search tools are
 
 ---
 
-## `Btn Outline` Default Classes
-
-Default class includes `border-[var(--theme-foreground)]` and `text-[var(--theme-foreground)]`.
-These are correct for light sections. On dark custom sections, the AI must override:
-- `set_border(id, { color: "white" })`
-- `set_text_color(id, { color: "white" })`
-
----
-
-## `Btn Solid` on Dark Custom Sections
-
-Default class includes `bg-[var(--theme-foreground)]`. On most palettes `--theme-foreground` is a **dark** color (e.g. `#1A1F36`). On a custom dark section background the button is nearly invisible — same failure mode as Btn Outline but on the fill instead of the border.
-
-When a Btn Solid is placed inside a custom dark section, immediately call:
-- `set_background(id, { bg: "primary" })` — uses the brand accent (typically a saturated color) OR
-- `set_background(id, { bg: "white" })` — maximum contrast
-
-**Observed during audit:** AI built a dark hero (`#0f172a`) and correctly fixed Btn Outline contrast but silently left Btn Solid with `bg-[var(--theme-foreground)]` = `#1A1F36` — nearly identical to the section background. The button was invisible. Fixed by adding the dark-section warning to Component Defaults for Btn Solid (matching the existing Btn Outline warning).
-
----
 
 ## Adding Rules to the Knowledge Base
 

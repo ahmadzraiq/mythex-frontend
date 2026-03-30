@@ -527,6 +527,8 @@ export interface BuilderStore {
   projectMood: string;
   /** Animation level 0-3 selected in wizard */
   projectAnimationLevel: number;
+  /** Layout structure complexity 0-4 selected in wizard */
+  projectLayoutStructure: number;
   /** Business description from wizard */
   projectDescription: string;
   /** App name from wizard */
@@ -536,6 +538,7 @@ export interface BuilderStore {
   setProjectContext: (ctx: {
     mood?: string;
     animationLevel?: number;
+    layoutStructure?: number;
     description?: string;
     appName?: string;
     category?: string;

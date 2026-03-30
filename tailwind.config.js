@@ -27,6 +27,13 @@ module.exports = {
     { pattern: /^opacity-\d+$/ },
     { pattern: /^rounded(-none|-sm|-md|-lg|-xl|-2xl|-3xl|-full)?$/ },
     { pattern: /^rounded-(tl|tr|br|bl)(-none|-sm|-md|-lg|-xl|-2xl|-3xl|-full)?$/ },
+    // Arbitrary-pixel border radius — covers AI-generated and builder-written classes
+    { pattern: /^rounded-\[\d+(\.\d+)?px\]$/ },
+    { pattern: /^rounded-(tl|tr|br|bl)-\[\d+(\.\d+)?px\]$/ },
+    // Arbitrary-pixel text/font size
+    { pattern: /^text-\[\d+(\.\d+)?px\]$/ },
+    // Arbitrary-pixel border width
+    { pattern: /^border(-[trbl])?-\[\d+(\.\d+)?px\]$/ },
     { pattern: /^text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)$/ },
     { pattern: /^font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)$/ },
     { pattern: /^leading-(none|tight|snug|normal|relaxed|loose|\d+)$/ },

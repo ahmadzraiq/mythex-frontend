@@ -686,7 +686,10 @@ function clamp(v: number, lo?: number | null, hi?: number | null) {
 }
 
 // ─── Border-radius helper for shimmer overlay ─────────────────────────────────
-// Ordered most-specific first so 'rounded-xl' is matched before 'rounded'
+// Shimmer draws a full-bleed overlay; we mirror the node's radius so corners match.
+// 1) Arbitrary px (migrated config): rounded-[8px], rounded-[9999px]
+// 2) Per-corner arbitrary: rounded-tl-[8px] … take max (uniform shimmer clip)
+// 3) Legacy scale tokens (older JSON)
 const ROUNDED_TOKENS: [string, number][] = [
   ['rounded-full', 9999],
   ['rounded-3xl', 24],
@@ -699,8 +702,15 @@ const ROUNDED_TOKENS: [string, number][] = [
 ];
 function pickBorderRadius(className?: string): number | undefined {
   if (!className) return undefined;
+  const globalPx = className.match(/\brounded-\[(\d+(?:\.\d+)?)px\]/);
+  if (globalPx) return Math.round(parseFloat(globalPx[1]));
+  let maxCorner = 0;
+  for (const abbr of ['tl', 'tr', 'br', 'bl'] as const) {
+    const m = className.match(new RegExp(`\\brounded-${abbr}-\\[(\\d+(?:\\.\\d+)?)px\\]`));
+    if (m) maxCorner = Math.max(maxCorner, Math.round(parseFloat(m[1])));
+  }
+  if (maxCorner > 0) return maxCorner;
   for (const [token, value] of ROUNDED_TOKENS) {
-    // Match whole word only (surrounded by space or string boundary)
     if (new RegExp(`(^|\\s)${token}(\\s|$)`).test(className)) return value;
   }
   return undefined;
@@ -728,13 +738,25 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // ── Animated ref (for measure on native) ───────────────────────────────────
   const animatedRef = useAnimatedRef<Animated.View>();
 
+  // ── Builder annotation — set data-builder-id on the outer Animated.View ──
+  // Passing data-* as a JSX prop does NOT work: Reanimated's createAnimatedComponent
+  // and RNW's View cssInterop chain both strip unknown data-* props before they
+  // reach the DOM. A ref-based setAttribute is the only reliable path.
+  useEffect(() => {
+    if (!builderMode || !nodeId || Platform.OS !== 'web') return;
+    const el = animatedRef.current as unknown as HTMLElement | null;
+    if (!el || typeof el.setAttribute !== 'function') return;
+    el.setAttribute('data-builder-id', nodeId);
+    el.setAttribute('data-builder-type', nodeType ?? 'Box');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [builderMode, nodeId, nodeType]);
+
   // ── Reanimated shared values ────────────────────────────────────────────────
   // Enter / exit
   // Only start at 0 if the animation type actually includes an opacity from-value.
   // Types like slideInLeftSubtle only translate and should NOT start invisible.
-  // In builder mode elements appear at final state; animation only plays via "▶ Preview" button
   const enterOpacity    = useSharedValue(
-    !builderMode && enter?.type && enter.type !== 'none' && !scroll?.enabled &&
+    enter?.type && enter.type !== 'none' && !scroll?.enabled &&
     (ENTER_FROM[enter.type]?.opacity ?? null) != null ? 0 : 1
   );
   const enterTranslateX = useSharedValue(0);
@@ -885,8 +907,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // ── Enter animation ────────────────────────────────────────────────────────
   useEffect(() => {
     const type = enter?.type;
-    // In builder mode, skip auto-play; use "▶ Preview animation" button instead
-    if (!type || type === 'none' || scroll?.enabled || builderMode) return;
+    if (!type || type === 'none' || scroll?.enabled) return;
     const delay     = (enter?.delay ?? 0) + staggerIndex * (enter?.stagger ?? 0);
     const dur       = enter?.duration ?? 400;
     const easing    = rnEase(enter?.easing ?? 'easeOut');
@@ -907,7 +928,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     if (from.rotateY     != null) { enterRotateY.value    = from.rotateY;    enterRotateY.value    = anim(from.rotateY,    0); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enter?.type, enter?.duration, enter?.delay, enter?.easing, enter?.stagger,
-      enter?.spring, enter?.stiffness, enter?.damping, enter?.mass, staggerIndex, scroll?.enabled, builderMode]);
+      enter?.spring, enter?.stiffness, enter?.damping, enter?.mass, staggerIndex, scroll?.enabled]);
 
   // ── Builder "Preview animation" button — postMessage replay ───────────────
   // The animation panel posts { type: 'sdui-preview-animation', nodeId } to the iframe.
@@ -982,7 +1003,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
 
   // ── Loop animation — cross-platform (Reanimated) ──────────────────────────
   useEffect(() => {
-    if (!loop?.type || loop.type === 'none' || builderMode) return;
+    if (!loop?.type || loop.type === 'none') return;
     const dur   = loop.duration ?? 1000;
     const count = loop.repeatCount != null && loop.repeatCount !== -1 ? loop.repeatCount : -1;
     const delay = loop.delay ?? 0;
@@ -1102,14 +1123,14 @@ export const AnimatedNode = React.memo(function AnimatedNode({
       cancelAnimation(loopRotate);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loop?.type, loop?.duration, loop?.delay, loop?.repeatCount, loop?.direction, builderMode]);
+  }, [loop?.type, loop?.duration, loop?.delay, loop?.repeatCount, loop?.direction]);
 
   // ── Imperative trigger — watchVar change replays animation ─────────────────
   const prevTriggerVal = useRef<unknown>(undefined);
   useEffect(() => {
     const triggerVal = imperativeTrigger?.watchVar;
     const type = imperativeTrigger?.type;
-    if (!type || type === 'none' || builderMode) return;
+    if (!type || type === 'none') return;
     if (prevTriggerVal.current === undefined) { prevTriggerVal.current = triggerVal; return; }
     if (triggerVal === prevTriggerVal.current) return;
     prevTriggerVal.current = triggerVal;
@@ -1192,12 +1213,12 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // On web, only predefined animation classes (with a `presetName`) are supported.
   // The parent container must have overflow-hidden to clip translateY movement.
   const exitingAnimation = useMemo(() => {
-    if (!exit?.type || exit.type === 'none' || builderMode) return undefined;
+    if (!exit?.type || exit.type === 'none') return undefined;
     const AnimClass = REANIMATED_EXIT_MAP[exit.type];
     if (!AnimClass) return undefined;
     const dur = exit.duration ?? 250;
     return (AnimClass as typeof FadeOut).duration(dur);
-  }, [exit?.type, exit?.duration, builderMode]);
+  }, [exit?.type, exit?.duration]);
 
   // ── Exit animation triggered by states machine watchVar ────────────────────
   // When exit.stateTrigger is set and statesMachine.watchVar matches it,
@@ -1496,7 +1517,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // useLayoutEffect so the starting corner values are applied before first paint —
   // avoids the sharp-square flash that would appear with useEffect.
   useLayoutEffect(() => {
-    if (!morphShape?.enabled || builderMode) return;
+    if (!morphShape?.enabled) return;
 
     const dur    = morphShape.duration ?? (morphShape.loop ? 3000 : 600);
     const easing = rnEase(morphShape.easing ?? 'easeInOut');
@@ -1577,7 +1598,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   }, [morphShape?.enabled, morphShape?.from, morphShape?.to,
       // eslint-disable-next-line react-hooks/exhaustive-deps
       JSON.stringify(morphShape?.steps),
-      morphShape?.duration, morphShape?.easing, morphShape?.loop, builderMode]);
+      morphShape?.duration, morphShape?.easing, morphShape?.loop]);
 
   // ── Shimmer animation ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -2643,8 +2664,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   };
 
   // ── Content: splitText or flip or children ─────────────────────────────────
-  // splitText is suppressed in builder mode so edits don't re-trigger the animation
-  const innerContent = !builderMode && splitText?.text
+  const innerContent = splitText?.text
     ? <SplitTextNative
         units={splitText.split === 'word' ? splitText.text.split(/(\s+)/) : splitText.split === 'line' ? splitText.text.split(/\n/) : splitText.text.split('')}
         config={splitText}
@@ -2709,8 +2729,8 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     transform: [{ translateX: shimmerX.value * 400 }],
   }), [shimmerX]);
 
-  // Extract border-radius from outerClassName (e.g. "rounded-lg") so the shimmer
-  // overlay clips to rounded corners without relying on CSS overflow cascade.
+  // Extract border-radius from outerClassName (rounded-[8px], rounded-lg, etc.) so the
+  // shimmer overlay clips to rounded corners without relying on CSS overflow cascade.
   const shimmerBorderRadius = pickBorderRadius(outerClassName);
 
   const shimmerOverlay = shimmer ? (
@@ -2746,39 +2766,13 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   ) : null;
 
   // ── Return ─────────────────────────────────────────────────────────────────
-  // In builder mode on web, use a plain View (not Animated.View) as the outer wrapper.
-  // Animations are suppressed in builder mode (enter useEffect bails early when builderMode
-  // is true) so Animated.View provides no benefit. Using a plain View means direct
-  // el.style.height DOM writes during canvas drag-resize are never overwritten by
-  // Reanimated's createAnimatedComponent style reconciliation — live drag works correctly.
+  // Always use Animated.View so animatedStyle is applied and animations run in all modes.
   // For hover-flip on web, wrap the entire GestureDetector in a plain div so
   // mouseenter/mouseleave fire at the outer card boundary — not on the Reanimated
   // Animated.View which may have timing issues, and not on a 3D-transformed child.
   const gestureContent = (
     <GestureDetector gesture={composedGesture}>
-      {builderMode && nodeId && Platform.OS === 'web' ? (
-        <View
-          className={outerClassName ?? undefined}
-          style={[mergedStyle as object, outerStyle as object]}
-          ref={(el) => {
-            // RNW forwards the ref to the underlying DOM div — use setAttribute
-            // so the builder's querySelector('[data-builder-id]') always finds it.
-            const dom = el as unknown as Element | null;
-            if (dom?.setAttribute) {
-              dom.setAttribute('data-builder-id', nodeId!);
-              dom.setAttribute('data-builder-type', nodeType ?? 'Box');
-            }
-          }}
-        >
-          {pseudoBeforeView}
-          {wrapWithMask(innerContent)}
-          {pseudoAfterView}
-          {gradientOverlay}
-          {shimmerOverlay}
-          {particlesOverlay}
-          {noiseOverlay}
-        </View>
-      ) : (
+      {(
         <Animated.View
           ref={animatedRef}
           className={outerClassName ?? undefined}
