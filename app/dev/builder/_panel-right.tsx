@@ -59,6 +59,7 @@ import { FormulaEditor } from './_formula-editor';
 import { evaluateFormula } from '@/lib/sdui/formula-evaluator';
 import { useSduiStore } from '@/store/sdui-store';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
+import { THEME_OBJ } from '@/lib/sdui/engine-static-data';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import { FigmaColorPicker } from './_color-picker';
 import {
@@ -273,7 +274,7 @@ function DesignTab({ node }: { node: SDUINode }) {
       if (formulaStr) {
         const zustandData = useSduiStore.getState().data;
         const vs = getGlobalVariableStore().getState().getFullState() as Record<string, unknown>;
-        const { value } = evaluateFormula(formulaStr, { ...zustandData, ...vs });
+        const { value } = evaluateFormula(formulaStr, { ...zustandData, ...vs, theme: THEME_OBJ });
         if (value != null && typeof value !== 'object') {
           const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
           if (el) (el.style as unknown as Record<string, string>)[cssKey] = toCssValue(cssKey, value);
@@ -298,7 +299,7 @@ function DesignTab({ node }: { node: SDUINode }) {
       if (formulaStr) {
         const zustandData = useSduiStore.getState().data;
         const vs = getGlobalVariableStore().getState().getFullState() as Record<string, unknown>;
-        const { value } = evaluateFormula(formulaStr, { ...zustandData, ...vs });
+        const { value } = evaluateFormula(formulaStr, { ...zustandData, ...vs, theme: THEME_OBJ });
         if (value != null && typeof value !== 'object') {
           const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
           if (el) {
@@ -324,7 +325,7 @@ function DesignTab({ node }: { node: SDUINode }) {
     const formulaStr = (v as { formula?: string }).formula ?? '';
     const zustandData = useSduiStore.getState().data;
     const vs = getGlobalVariableStore().getState().getFullState() as Record<string, unknown>;
-    const { value, error } = evaluateFormula(formulaStr, { ...zustandData, ...vs });
+    const { value, error } = evaluateFormula(formulaStr, { ...zustandData, ...vs, theme: THEME_OBJ });
     if (error) return formulaStr; // fallback: raw string works as a Tailwind token
     return value != null && typeof value !== 'object' ? String(value) : formulaStr;
   }, []);
@@ -348,7 +349,7 @@ function DesignTab({ node }: { node: SDUINode }) {
       const formulaStr = (v as { formula?: string }).formula ?? '';
       const zustandData = useSduiStore.getState().data;
       const vs = getGlobalVariableStore().getState().getFullState() as Record<string, unknown>;
-      const { value } = evaluateFormula(formulaStr, { ...zustandData, ...vs });
+      const { value } = evaluateFormula(formulaStr, { ...zustandData, ...vs, theme: THEME_OBJ });
       if (typeof value === 'string' && value) applyFn(value);
       commitHistory();
     } else {
@@ -613,10 +614,7 @@ function DesignTab({ node }: { node: SDUINode }) {
   // For Button find the first ButtonText child; for other containers (Box-based buttons)
   // find the first Text/Heading child so primitive buttons get a Content section too.
   const hasDirectText = isTextNode && (node as { text?: string }).text !== undefined;
-  const buttonTextChild = isContainer
-    ? (node.children as SDUINode[] | undefined)?.find(c => c.type === 'Text' || c.type === 'Heading')
-    : null;
-  const hasContent = hasDirectText || !!buttonTextChild;
+  const hasContent = hasDirectText;
 
   // Convert a stored text string → FormulaValue for FieldWithBinding.
   // A whole-string template expression like "{{variables['UUID']}}" or "{{collections['X'].data.y}}"
@@ -652,12 +650,8 @@ function DesignTab({ node }: { node: SDUINode }) {
           <SectionHeader title="Content" />
           <div style={{ marginTop: 6 }}>
             {(() => {
-              const rawText = buttonTextChild
-                ? ((buttonTextChild as { text?: string }).text ?? '')
-                : ((node as { text?: string }).text ?? '');
-              const targetId = buttonTextChild
-                ? (buttonTextChild as { id?: string }).id ?? ''
-                : nodeId;
+              const rawText = (node as { text?: string }).text ?? '';
+              const targetId = nodeId;
               const displayValue = textToFormulaValue(rawText);
               return (
                 <FieldWithBinding

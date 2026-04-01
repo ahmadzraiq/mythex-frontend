@@ -70,8 +70,14 @@ export function SDUIEngine({
   };
 
   const computeMergedState = useCallback(
-    (state: { data: Record<string, unknown>; loading: Record<string, boolean>; error: Record<string, string | null> }) =>
-      computeMergedStateFn(state, config as { state?: Record<string, unknown>; meta?: Record<string, unknown> }, []),
+    (state: { data: Record<string, unknown>; loading: Record<string, boolean>; error: Record<string, string | null> }) => ({
+      ...computeMergedStateFn(state, config as { state?: Record<string, unknown>; meta?: Record<string, unknown> }, []),
+      // Always inject static theme + pages so every subscription update preserves them.
+      // Without this, any setMerged call derived from computeMergedState would strip theme,
+      // making theme?.['colors']?.['x'] formulas resolve to undefined after data fetches.
+      theme: THEME_OBJ,
+      pages: PAGES_MAP,
+    }),
     [config]
   );
 
@@ -94,6 +100,11 @@ export function SDUIEngine({
     if (previewData && Object.keys(previewData).length > 0) {
       initial = mergeDataPaths(initial, previewData);
     }
+    // Always include static theme and pages in the initial merged state.
+    // The globalContext+theme useEffect runs AFTER the mount-only useEffect that resets
+    // merged state, so without pre-seeding here, theme would be absent on the very first
+    // render and any formula like theme?.['colors']?.['primary'] would return undefined.
+    initial = { ...initial, theme: THEME_OBJ, pages: PAGES_MAP };
     return create<{
       merged: Record<string, unknown>;
       setMerged: (m: Record<string, unknown> | ((prev: Record<string, unknown>) => Record<string, unknown>)) => void;
@@ -208,7 +219,11 @@ export function SDUIEngine({
     const base = computeMergedState(useSduiStore.getState());
     const vs = store.getState().getFullState();
     const withVs = finalizeMergedWithVariableStore(base, vs);
-    mergedStore.getState().setMerged(builderMode ? applyBuilderPatches(withVs) : withVs);
+    // Preserve static theme + pages so they are never lost when this effect replaces
+    // the full merged state (they were already pre-seeded in useMemo but this effect
+    // runs last on mount and would overwrite them without the spread below).
+    const withStatic = { ...withVs, theme: THEME_OBJ, pages: PAGES_MAP };
+    mergedStore.getState().setMerged(builderMode ? applyBuilderPatches(withStatic) : withStatic);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -223,7 +238,7 @@ export function SDUIEngine({
       if (typeof requestAnimationFrame === 'undefined') {
         // SSR / test env: update synchronously
         const vs = store.getState().getFullState();
-        const next = finalizeMergedWithVariableStore(store.getState().getFullState(), vs);
+        const next = { ...finalizeMergedWithVariableStore(mergedStore.getState().merged, vs), theme: THEME_OBJ, pages: PAGES_MAP };
         mergedStore.getState().setMerged(builderMode ? applyBuilderPatches(next) : next);
         return;
       }
@@ -242,6 +257,21 @@ export function SDUIEngine({
       unsubscribe();
     };
   }, [store, mergedStore, applyBuilderPatches]);
+
+  // Re-inject theme into merged state whenever patchThemeColors() fires (live theme tab updates).
+  // patchThemeColors replaces THEME_OBJ.colors with a new object; this effect propagates that
+  // new reference into mergedStore so formula expressions like theme?.['colors']?.['primary-foreground']
+  // reflect the updated hex value without a full page remount.
+  useEffect(() => {
+    const handler = () => {
+      mergedStore.getState().setMerged((prev) => ({
+        ...prev,
+        theme: { ...THEME_OBJ },
+      }));
+    };
+    window.addEventListener('sdui:theme-colors-patched', handler);
+    return () => window.removeEventListener('sdui:theme-colors-patched', handler);
+  }, [mergedStore]);
 
   useEffect(() => {
     return useSduiStore.subscribe(() => {

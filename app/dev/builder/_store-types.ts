@@ -67,6 +67,22 @@ export interface AiChatMessage {
   imageResults?: AiImageResult[];
   /** Icon search results from search_icons tool */
   iconResults?: AiIconResult[];
+  /** Build mode progress — current phase */
+  buildPhase?: 'planning' | 'editing' | 'building' | 'wiring';
+  /** Total number of sections/units in the current build */
+  buildTotal?: number;
+  /** How many sections have been completed so far */
+  buildDone?: number;
+  /** Name of the section currently being inserted */
+  buildCurrentName?: string;
+  /** Ordered log of all build_phase events with human-readable messages (for debug) */
+  phaseLog?: Array<{ phase: string; message: string; at: number }>;
+  /** How many Anthropic API round-trips were made for this assistant turn (for debug) */
+  roundCount?: number;
+  /** Ordered log of all section_progress events (for debug) */
+  sectionsLog?: Array<{ done: number; total: number; name: string }>;
+  /** AI's build plan — sections decided before structure phase (for debug) */
+  buildPlanUnits?: Array<{ name: string; description: string; pageRoute: string; sectionCount?: number }>;
 }
 
 // ─── Viewport ─────────────────────────────────────────────────────────────────

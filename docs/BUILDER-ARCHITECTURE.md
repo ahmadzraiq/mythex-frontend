@@ -268,9 +268,89 @@ The builder has an AI assistant that calls semantic builder actions via Anthropi
 - Passed to `buildChatSystemPrompt` as `paletteSnapshot`
 - The prompt renders this as the live "Current Theme Palette" section so the AI makes informed color choices using actual project values
 
+### `generate_structure` — Full Tree in One Call
+
+`generate_structure` is the primary tool for creating new multi-component sections. Instead of N sequential `add_component` calls, the AI describes the full nested tree in a single call.
+
+**Server side (`route.ts`):**
+- `assignTreeIds` recursively walks the input tree and calls `crypto.randomUUID()` on every node that lacks an `id`.
+- The server sends the resolved tree (with all UUIDs pre-assigned), `parentId`, and `atIndex` back to the client via a `tool_executed` SSE event.
+- The server also returns a `name→nodeId` map to Claude so subsequent tool calls (set_repeat, create_workflow, set_text) can reference the inserted nodes by name.
+
+**Client side (`tool-executor.ts`):**
+- `materialize(node)` walks the server-resolved tree. For each node, `getTemplate(node.label)` loads the component's default template from `COMPONENT_SCHEMA`.
+- Components are inserted with their **default styles only** — no custom styles are applied during materialization.
+- The materialized tree is inserted via `store.addNode(tree, parentId, atIndex)` (current page) or `store.insertNodeIntoPage(targetPageId, tree)` (parallel build targeting another page).
+
+**Tree node shape — structure only:**
+```
+{ label, name?, text?, src?, children?: [...] }
+  label = palette component name ("Box", "Heading", "Text", "Button", "Image", etc.)
+  name  = layers panel label + key in the returned "nodes" map
+  text  = text content shortcut
+  src   = image or video URL
+```
+
+`generate_structure` is intentionally **structure-only**. It never carries styling parameters. All custom styling is applied in Phase 3 using the returned node IDs with `set_spacing`, `set_layout`, `set_background`, `set_border`, `set_typography`, `bulk_apply`, etc. — the AI never writes raw Tailwind anywhere.
+
+---
+
+### `bulk_apply` — Batch Style Operations
+
+`bulk_apply` applies the same style tool to multiple nodes in a single call. Pattern: `search_nodes` → collect IDs → `bulk_apply(nodeIds, tool, params)`.
+
+```ts
+bulk_apply({ nodeIds: ["uuid-1", "uuid-2", "uuid-3"], tool: "set_spacing", params: { py: 96 } })
+```
+
+Supported tools: `set_spacing`, `set_border`, `set_background`, `set_typography`, `set_opacity`, `set_size`, `set_position`.
+
+The executor iterates `nodeIds` and delegates to the named handler for each, returning a combined error if any node fails.
+
+---
+
+### Build Mode & Parallel Orchestration
+
+For requests involving multiple pages or sections, the AI system runs in one of three modes determined by a lightweight planning phase.
+
+**Phase 0 — Classification (`classifyRequest`)**
+A fast haiku call analyzes the user's message and returns a `BuildPlan`:
+```ts
+{ mode: 'build' | 'edit' | 'mixed', buildUnits: [...], relations: [...], editOps: [...] }
+```
+
+**Mode: `edit`**
+Standard sequential tool loop — no change from the baseline behavior.
+
+**Mode: `build`** (new page(s)/section(s) only)
+1. New pages are created sequentially via `add_page` (with `crypto.randomUUID()` IDs to prevent collision).
+2. **Phase 2** — `Promise.all(buildUnits.map(runBuildUnit))` — parallel haiku calls, each building one section via `generate_structure`. Structure only, no styling.
+3. Results are inserted **sequentially** via SSE events (prevents Zustand race conditions).
+4. **Phase 3 (always runs)** — the orchestrator collects all created `name → nodeId` mappings from Phase 2, constructs a new user message containing the original request + node ID list (+ any `relations` to wire), and returns `true` to signal the standard AI loop to continue. The full-capability model then calls `set_spacing`, `set_layout`, `set_background`, `set_border`, `set_typography`, `set_animation`, `bulk_apply`, etc. to style the newly created nodes.
+
+**Mode: `mixed`** (edits + new builds in one prompt)
+1. **Phase 1** — A focused edit loop runs first (sequential) with a `build_phase: 'editing'` SSE event.
+2. **Phase 2** — Parallel builds execute as in `build` mode (structure only).
+3. **Phase 3 (always runs)** — Styling + wiring, same as `build` mode.
+
+**SSE progress events streamed to client:**
+```ts
+{ type: 'build_phase', phase: 'planning' | 'editing' | 'building' | 'wiring' }
+{ type: 'section_progress', done: number, total: number, name: string }
+```
+
+**`AiChatMessage` progress fields** (in `_store-types.ts`):
+- `buildPhase` — current phase string
+- `buildTotal` / `buildDone` — section count for progress bar
+- `buildCurrentName` — name of section currently being inserted
+
+The AI chat panel (`_ai-chat-panel.tsx`) displays a progress bar and status label during `building` phase.
+
+---
+
 ### Adding a New Tool
 
-1. Add the Anthropic tool definition to the appropriate array in `lib/ai/builder-tools.ts` (e.g. `semanticDesignTools`, `logicTools`, `variableTools`, `dataTools`, `pageTools`)
+1. Add the Anthropic tool definition to the appropriate array in `lib/ai/builder-tools.ts` (e.g. `semanticDesignTools`, `logicTools`, `variableTools`, `dataTools`, `pageTools`, `batchTools`)
 2. Add the executor handler to `handlers` in `lib/ai/tool-executor.ts`
 3. Add the tool name to `CLIENT_SIDE_TOOLS` set in `tool-executor.ts` (all tools that need Zustand store access are client-side)
 4. If server-side only (generation, search), handle it in the SSE loop in `route.ts`

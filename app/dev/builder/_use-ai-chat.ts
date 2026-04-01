@@ -49,6 +49,9 @@ type BuilderChatSSE =
   | { type: 'tool_executed'; id: string; name: string; input: Record<string, unknown>; result?: unknown; error?: string }
   | { type: 'image_results'; images: Array<{ url: string; thumb: string; alt: string; credit: string; photographer?: string }> }
   | { type: 'icon_results'; icons: Array<{ id: string; name: string; prefix: string }> }
+  | { type: 'build_phase'; phase: 'planning' | 'editing' | 'building' | 'wiring'; total?: number; message: string; buildUnits?: Array<{ name: string; description: string; pageRoute: string; sectionCount?: number }> }
+  | { type: 'section_progress'; done: number; total: number; name: string }
+  | { type: 'phase3_started' }
   | { type: 'done'; tools: Array<{ name: string; input: Record<string, unknown>; result?: unknown }> }
   | { type: 'error'; message: string };
 
@@ -64,6 +67,10 @@ export function useAiChat() {
   const [loadingMoreThreads, setLoadingMoreThreads] = useState(false);
   const [deletingThreadId, setDeletingThreadId] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // Tracks whether the current streaming session has entered Phase 3 (styling).
+  // Passed as isPhase3Continuation in any subsequent requests so the server can
+  // restore PHASE3_BUILDER_TOOLS tool restrictions across HTTP request boundaries.
+  const isInPhase3Ref = useRef(false);
 
   const THREADS_PAGE = 10;
 
@@ -344,6 +351,9 @@ export function useAiChat() {
   const sendMessage = useCallback(async (text: string, selectedNodeIds: string[] = []) => {
     if (store.aiGenerating) return;
 
+    // Reset Phase 3 tracking for each new user message
+    isInPhase3Ref.current = false;
+
     // Show the user message and streaming placeholder in the UI immediately —
     // before any network calls so there is zero perceived delay.
     const userMsg: AiChatMessage = {
@@ -561,11 +571,47 @@ export function useAiChat() {
                   : [],
                 streaming: true,
               });
+            } else if (ev.type === 'build_phase') {
+              accPhaseLog.push({ phase: ev.phase, message: ev.message, at: Date.now() });
+              const buildPhaseUpdate: Parameters<typeof store.updateLastAiMessage>[0] = {
+                content: fullContent || ev.message,
+                buildPhase: ev.phase,
+                buildTotal: ev.total,
+                isThinking: ev.phase === 'planning',
+                phaseLog: [...accPhaseLog],
+                streaming: true,
+              };
+              // Capture the AI's build plan when the 'building' phase starts.
+              if (ev.phase === 'building' && ev.buildUnits) {
+                buildPhaseUpdate.buildPlanUnits = ev.buildUnits;
+              }
+              store.updateLastAiMessage(buildPhaseUpdate);
+            } else if (ev.type === 'section_progress') {
+              accSectionsLog.push({ done: ev.done, total: ev.total, name: ev.name });
+              store.updateLastAiMessage({
+                buildDone: ev.done,
+                buildTotal: ev.total,
+                buildCurrentName: ev.name,
+                sectionsLog: [...accSectionsLog],
+                streaming: true,
+              });
+            } else if (ev.type === 'phase3_started') {
+              // Server has switched to Phase 3 styling mode. Track this so any
+              // subsequent requests (e.g. continuation with toolResults) can restore
+              // PHASE3_BUILDER_TOOLS restrictions on the server side.
+              isInPhase3Ref.current = true;
             } else if (ev.type === 'done') {
               store.setAiCurrentTool(null);
+              // Read current buildPlanUnits so it is preserved in the final update
+              const lastMsg = store.aiChatHistory[store.aiChatHistory.length - 1];
+              const existingBuildPlanUnits = lastMsg?.buildPlanUnits;
               store.updateLastAiMessage({
                 content: fullContent,
                 toolCalls: allToolCalls.length ? allToolCalls : undefined,
+                roundCount: accRoundCount || undefined,
+                phaseLog: accPhaseLog.length ? accPhaseLog : undefined,
+                sectionsLog: accSectionsLog.length ? accSectionsLog : undefined,
+                buildPlanUnits: existingBuildPlanUnits,
                 streaming: false,
               });
 
@@ -604,8 +650,17 @@ export function useAiChat() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Get system prompt (for copy-to-clipboard debugging) ──────────────────
-  const getSystemPrompt = useCallback(async (): Promise<string> => {
+  // ── Get full debug info (all phase prompts + tool lists) ─────────────────
+  type DebugInfo = {
+    systemPrompt: string;
+    phase2Prompt: string;
+    phase3Prompt: string;
+    phase2Tools: string[];
+    phase3Tools: string[];
+    mainTools: string[];
+  };
+
+  const getDebugInfo = useCallback(async (): Promise<DebugInfo> => {
     const summarizeNode = (n: unknown, depth: number): unknown => {
       const node = n as Record<string, unknown>;
       const base: Record<string, unknown> = {
@@ -654,9 +709,22 @@ export function useAiChat() {
         systemPromptOnly: true,
       }),
     });
-    const data = await res.json() as { systemPrompt?: string };
-    return data.systemPrompt ?? '(no system prompt)';
+    const data = await res.json() as Partial<DebugInfo>;
+    return {
+      systemPrompt: data.systemPrompt ?? '(no system prompt)',
+      phase2Prompt: data.phase2Prompt ?? '(unavailable)',
+      phase3Prompt: data.phase3Prompt ?? '(unavailable)',
+      phase2Tools: data.phase2Tools ?? [],
+      phase3Tools: data.phase3Tools ?? [],
+      mainTools: data.mainTools ?? [],
+    };
   }, [store]);
+
+  // Convenience wrapper that returns only the main system prompt string (used by copy-prompt button)
+  const getSystemPrompt = useCallback(async (): Promise<string> => {
+    const info = await getDebugInfo();
+    return info.systemPrompt;
+  }, [getDebugInfo]);
 
   return {
     threads,
@@ -667,6 +735,7 @@ export function useAiChat() {
     deletingThreadId,
     sendMessage,
     getSystemPrompt,
+    getDebugInfo,
     startNewChat,
     createThread,
     deleteThread,

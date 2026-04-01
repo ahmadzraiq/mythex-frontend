@@ -1628,23 +1628,14 @@ delete cleanProps.style; // inner loses inline style fallback
 
 ---
 
-## Background Media — Always Remove Default Border-Radius
+## Background Media — No Default Border-Radius (Changed)
 
-**Problem:** `Video` and `Image` components ship with rounded corners by default (`rounded-[6px]` on Video, `rounded-[8px]` on Image). When used as full-screen background layers (absolute, w-screen, h-screen), these rounded corners create visible clipped edges at the viewport boundary.
+`Image` and `Video` components no longer ship with a default `rounded-[6px]`. There is no cleanup step needed when using them as background layers.
 
-**Fix:** After placing any Video or Image as a full-screen absolute background layer, immediately call `set_border(nodeId, {radius: 0})`.
+Use `set_border(id, {radius: N})` only when you explicitly want rounded corners on an inline image or video — it is never needed for background use.
 
-```ts
-// ✅ After set_position(videoId, {position: "absolute", top: 0, left: 0, zIndex: 0})
-set_border(videoId, { radius: 0 });  // remove default rounded-[6px]
-```
+## Hero Container — No Default Padding on Box/VStack (Changed)
 
-**Rule:** The `aiRef` for Video and Image explicitly documents this requirement. It is enforced as a "Derived rule" in the builder system prompt — any tool that adds a Video or Image as a background layer must always pair it with `set_border({radius: 0})`.
+`Box`, `Row`, `VStack`, `HStack`, and `Center` no longer ship with `p-[16px] gap-[16px]`. There is no padding to clear on these containers.
 
-## Hero Container — Remove Default Padding When All Children Are Absolute
-
-**Problem:** Default Box/VStack templates ship with `p-[16px] gap-[16px]`. When a container's sole purpose is to stack absolute-positioned children (video layer, overlay layer, content layer), this padding creates invisible dead space that shifts the absolute coordinate origin.
-
-**Fix:** After creating a container whose children will ALL be absolutely positioned, call `set_spacing(containerId, {p: 0, gap: 0})`.
-
-**Rule:** Applies to hero section wrappers, full-screen overlay roots, and any container that only holds absolute children. Enforced as a "Derived rule" in the builder system prompt.
+If a hero wrapper or overlay root container picks up unwanted spacing, it is coming from a component that intentionally has padding (e.g. `Card`, `Alert`) — not from a generic layout container.

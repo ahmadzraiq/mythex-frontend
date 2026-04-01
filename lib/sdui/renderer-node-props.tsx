@@ -29,6 +29,11 @@ export const SUBMIT_BUTTON_TYPES = new Set<string>(['Box', 'HStack', 'VStack', '
 /** Interactive components that receive a `disabled` prop for preview-state dimming */
 export const INTERACTIVE_TYPES = new Set(['Input', 'Select', 'InputField']);
 
+/** Components that legitimately accept onChangeText (React Native TextInput-based).
+ *  All other components strip it to avoid React's "Unknown event handler property" warning
+ *  when they render as <div> on web. */
+export const CHANGE_TEXT_TYPES = new Set(['Input', 'InputField', 'TextareaInput']);
+
 /** Components that are already clickable — no transparent click-wrapper div needed */
 export const ALREADY_CLICKABLE = new Set([
   'MenuItem',

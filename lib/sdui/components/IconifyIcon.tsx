@@ -86,7 +86,7 @@ function useResolvedColor(color: string | undefined): string {
   return resolved;
 }
 
-export default function IconifyIcon({ icon, size = 24, color, className, style, ...rest }: IconifyIconProps) {
+export default function IconifyIcon({ icon, size = 24, color, className, style, children: _children, ...rest }: IconifyIconProps) {
   // Resolve CSS variables reactively — updates when the theme changes CSS vars on :root
   const resolvedColor = useResolvedColor(color);
 

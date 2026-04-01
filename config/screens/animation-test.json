@@ -4409,6 +4409,274 @@
             }
           }
         ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full flex flex-col gap-[8px]"
+        },
+        "children": [
+          {
+            "type": "Heading",
+            "props": {
+              "size": "lg",
+              "className": "font-bold text-gray-900 dark:text-gray-100"
+            },
+            "text": "Theme Formula Text Color Test"
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-gray-500 dark:text-gray-400 text-[14px]"
+            },
+            "text": "These headings test formula-driven text color. Each should show in its theme color."
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full flex flex-row gap-[16px] flex-wrap"
+        },
+        "children": [
+          {
+            "id": "theme-text-color-1",
+            "type": "Box",
+            "props": {
+              "className": "flex-1 min-w-[160px] rounded-[12px] border-[1px] border-gray-200 dark:border-gray-700 p-[20px] flex flex-col gap-[6px] bg-white dark:bg-gray-900"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "md",
+                  "style": {
+                    "color": {
+                      "formula": "theme?.['colors']?.['destructive']"
+                    }
+                  }
+                },
+                "text": "Destructive"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-gray-400 text-[11px] font-mono"
+                },
+                "text": "{{theme.colors.destructive}}"
+              }
+            ]
+          },
+          {
+            "id": "theme-text-color-2",
+            "type": "Box",
+            "props": {
+              "className": "flex-1 min-w-[160px] rounded-[12px] border-[1px] border-gray-200 dark:border-gray-700 p-[20px] flex flex-col gap-[6px] bg-white dark:bg-gray-900"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "md",
+                  "style": {
+                    "color": {
+                      "formula": "theme?.['colors']?.['primary']"
+                    }
+                  }
+                },
+                "text": "Primary"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-gray-400 text-[11px] font-mono"
+                },
+                "text": "{{theme.colors.primary}}"
+              }
+            ]
+          },
+          {
+            "id": "theme-text-color-3",
+            "type": "Box",
+            "props": {
+              "className": "flex-1 min-w-[160px] rounded-[12px] border-[1px] border-gray-200 dark:border-gray-700 p-[20px] flex flex-col gap-[6px] bg-white dark:bg-gray-900"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "md",
+                  "style": {
+                    "color": {
+                      "formula": "theme?.['colors']?.['mutedForeground']"
+                    }
+                  }
+                },
+                "text": "Muted"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-gray-400 text-[11px] font-mono"
+                },
+                "text": "{{theme.colors.mutedForeground}}"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full flex flex-col gap-[8px]"
+        },
+        "children": [
+          {
+            "type": "Heading",
+            "props": {
+              "size": "lg",
+              "className": "font-bold text-gray-900 dark:text-gray-100"
+            },
+            "text": "Theme Formula Background Test"
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-gray-500 dark:text-gray-400 text-[14px]"
+            },
+            "text": "The three cards below test dynamic bg color using theme formula in style.backgroundColor. They should all show the same color."
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full flex flex-row gap-[16px] flex-wrap"
+        },
+        "children": [
+          {
+            "id": "theme-formula-card-1",
+            "type": "Box",
+            "props": {
+              "className": "flex-1 min-w-[200px] rounded-[12px] p-[24px] flex flex-col gap-[8px]",
+              "style": {
+                "backgroundColor": {
+                  "formula": "theme?.['colors']?.['destructive']"
+                }
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "font-semibold text-white text-[14px]"
+                },
+                "text": "Formula bg (destructive)"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-white/70 text-[12px]"
+                },
+                "text": "theme?.['colors']?.['destructive']"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-white text-[12px] font-mono mt-[4px]"
+                },
+                "text": "resolved: {{theme.colors.destructive}}"
+              }
+            ]
+          },
+          {
+            "id": "theme-formula-card-2",
+            "type": "Box",
+            "props": {
+              "className": "flex-1 min-w-[200px] rounded-[12px] p-[24px] flex flex-col gap-[8px]",
+              "style": {
+                "backgroundColor": {
+                  "formula": "theme?.['colors']?.['primary']"
+                }
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "font-semibold text-white text-[14px]"
+                },
+                "text": "Primary formula bg"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-white/70 text-[12px]"
+                },
+                "text": "theme?.['colors']?.['primary']"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-white text-[12px] font-mono mt-[4px]"
+                },
+                "text": "{{theme.colors.primary}}"
+              }
+            ]
+          },
+          {
+            "id": "theme-formula-card-3",
+            "type": "Box",
+            "props": {
+              "className": "flex-1 min-w-[200px] rounded-[12px] p-[24px] flex flex-col gap-[8px]"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "font-semibold text-gray-900 dark:text-gray-100 text-[14px]"
+                },
+                "text": "Static ref (control)"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-gray-500 text-[12px]"
+                },
+                "text": "No bg formula — shows theme values as text only"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col gap-[4px] mt-[4px]"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300"
+                    },
+                    "text": "secondaryForeground: {{theme.colors.secondaryForeground}}"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300"
+                    },
+                    "text": "primary: {{theme.colors.primary}}"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300"
+                    },
+                    "text": "secondary: {{theme.colors.secondary}}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       }
     ]
   }

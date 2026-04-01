@@ -13,6 +13,7 @@ import type { SDUINode } from '@/lib/sdui/types/node';
 
 import appConfig from '@/config/app';
 import variablesJson from '@/config/variables.json';
+import { patchThemeColors } from '@/lib/sdui/engine-static-data';
 import { buildSyncDefsFromVariables } from '@/lib/sdui/search-param-sync';
 
 const AUTH_USER_PATH = 'auth.user';
@@ -118,6 +119,11 @@ function applyBuilderTheme(light: Record<string, string>, dark: Record<string, s
 
   const darkVars = Object.entries(dark).map(([k, v]) => `  --${k}: ${hexToRgbTriplet(v)};`).join('\n');
   getOrCreate('builder-live-dark').textContent = darkVars ? `html.dark {\n${darkVars}\n}` : '';
+
+  // Keep THEME_OBJ.colors in sync so formula expressions like
+  // theme?.['colors']?.['primary-foreground'] resolve to the server-loaded hex value.
+  patchThemeColors(light, 'light');
+  patchThemeColors(dark, 'dark');
 }
 
 function buildLiveActionsConfig(cfg: BuilderLiveConfig): ActionsConfig {

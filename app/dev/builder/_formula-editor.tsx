@@ -632,22 +632,35 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
         if (node.map) {
           // map is like "collections.UUID.data.search.items" or a variable store path
           const mapPath = node.map as string;
-          const parts = mapPath.split('.');
-          // Try progressively longer flat key prefixes in zustandData
-          for (let i = 1; i <= parts.length; i++) {
-            const flatKey = parts.slice(0, i).join('.');
-            const flatVal = zustandData[flatKey];
-            if (flatVal !== undefined) {
-              // Navigate remaining path segments
-              let val: unknown = flatVal;
-              for (let j = i; j < parts.length; j++) {
-                if (val && typeof val === 'object' && !Array.isArray(val)) {
-                  val = (val as Record<string, unknown>)[parts[j]];
-                } else { val = undefined; break; }
+
+          // Handle bracket-notation variable paths like "variables['UUID']"
+          const bracketMatch = mapPath.match(/^variables\s*\[['"]([^'"]+)['"]\]/);
+          if (bracketMatch) {
+            const vsVal = (vs as Record<string, unknown>)?.[bracketMatch[1]];
+            if (Array.isArray(vsVal) && vsVal.length > 0) contextItem = vsVal[0] as Record<string, unknown>;
+            else if (vsVal && typeof vsVal === 'object' && !Array.isArray(vsVal)) contextItem = vsVal as Record<string, unknown>;
+          } else {
+            const parts = mapPath.split('.');
+            // Try progressively longer flat key prefixes in zustandData.
+            // Skip missing path segments to handle responsePath-stripped prefixes
+            // (e.g. responsePath="data" means zustandData["collections.UUID"] already
+            // has the inner data, so navigating ["data","search","items"] must skip "data").
+            for (let i = 1; i <= parts.length; i++) {
+              const flatKey = parts.slice(0, i).join('.');
+              const flatVal = zustandData[flatKey];
+              if (flatVal !== undefined) {
+                let val: unknown = flatVal;
+                for (let j = i; j < parts.length; j++) {
+                  if (val && typeof val === 'object' && !Array.isArray(val)) {
+                    const next = (val as Record<string, unknown>)[parts[j]];
+                    if (next !== undefined) val = next;
+                    // else: skip this segment (responsePath may have already stripped it)
+                  } else { break; }
+                }
+                if (Array.isArray(val) && val.length > 0) { contextItem = val[0] as Record<string, unknown>; break; }
+                else if (val && typeof val === 'object' && !Array.isArray(val)) { contextItem = val as Record<string, unknown>; break; }
+                // Traversal failed for this prefix — try a longer prefix key
               }
-              if (Array.isArray(val) && val.length > 0) { contextItem = val[0] as Record<string, unknown>; }
-              else if (val && typeof val === 'object' && !Array.isArray(val)) { contextItem = val as Record<string, unknown>; }
-              break;
             }
           }
           break;

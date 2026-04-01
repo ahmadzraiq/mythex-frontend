@@ -67,13 +67,13 @@ const readTools: BuilderTool[] = [
   },
   {
     name: 'get_formula_context',
-    description: 'Returns all formula paths available for a given node — exactly what the builder\'s formula picker shows. Includes: custom variables (label → variables[\'UUID\'] path), data sources (label → collections[\'UUID\'].data path), repeat context if the node is inside a repeated container (context.item.data.*), and standard paths (route.*, auth.*, _workflow.*). Call this BEFORE writing any condition, set_repeat mapPath, or text binding so you use the correct paths.',
+    description: 'Returns the repeat context for a node — which ancestor `map` bindings exist and which path prefix to use (`context.item.data.*` for the innermost map, `context.item.parent.data.*` for the parent map). Variables, data sources, and all formula scopes are already in your context — do NOT call this tool to look those up. Call this ONLY when writing a formula for a node that may be inside a `map`, passing its `nodeId`, to discover how many repeat levels exist and which access paths to use.',
     input_schema: {
       type: 'object',
       properties: {
         nodeId: {
           type: 'string',
-          description: 'Optional — pass the node you are about to write a formula for, so repeat context is detected from its ancestors.',
+          description: 'The ID of the node you are about to write a formula for. Used to walk ancestors and detect map bindings.',
         },
       },
     },
@@ -331,7 +331,7 @@ const textTools: BuilderTool[] = [
       type: 'object',
       properties: {
         nodeId: { type: 'string' },
-        text: { type: 'string', description: 'New text. Can include {{variable}} template syntax.' },
+        text: { type: 'string', description: 'Literal text ("Get Started") or a plain formula expression ("variables[\'UUID\']", "context.item.data.title", "\'$\' + context.item.data.price"). CRITICAL: String literals inside formula expressions MUST use single quotes (\'$\', \'/month\', \'active\'). NEVER use double quotes inside formula strings — they cause Invalid formula errors.' },
       },
       required: ['nodeId', 'text'],
     },
@@ -394,16 +394,22 @@ const textTools: BuilderTool[] = [
   },
   {
     name: 'set_icon',
-    description: 'Change the icon on an Icon node.',
+    description: 'Change the icon name and/or color on an Icon node. Pass icon, color, or both — at least one must be provided. Both accept formula expression strings for per-item variation inside repeat templates.',
     input_schema: {
       type: 'object',
       properties: {
         nodeId: { type: 'string' },
-        icon: { type: 'string', description: 'New Iconify icon name, e.g. "lucide:home", "heroicons:star".' },
+        icon: {
+          type: 'string',
+          description: 'Iconify icon name (static) or a formula expression string (conditional). Static: "lucide:home", "heroicons:star", "tabler:check", "ph:arrow-right", etc. Conditional: pass result.expression with a ternary, e.g. "context?.item?.data?.[\'featured\'] ? \'lucide:check-circle\' : \'lucide:check\'". Omit to keep the current icon and only update size/color.',
+        },
         size: { type: 'number', description: 'Optional new size in px.' },
-        color: { type: 'string', description: 'Optional new color.' },
+        color: {
+          type: 'string',
+          description: 'Icon color (static) or formula expression (conditional). Static: "#hex", "currentColor", or theme token name (e.g. "primary", "muted-foreground"). Conditional: pass a ternary expression string. Omit to keep the current color.',
+        },
       },
-      required: ['nodeId', 'icon'],
+      required: ['nodeId'],
     },
   },
 ];
@@ -423,7 +429,7 @@ const semanticDesignTools: BuilderTool[] = [
         nodeId: { type: 'string' },
         bg: {
           type: 'string',
-          description: 'Background color. Theme names: "primary", "card", "background", "muted", "secondary", "accent", "destructive", "foreground". Or: "transparent", "#hex", "blue-600", "var(--theme-*)".',
+          description: 'Background color (static) or formula expression (conditional). Static: theme name ("primary", "card", "background", "muted", "secondary", "accent", "destructive", "foreground"), or "#hex", "transparent". Conditional: pass result.expression with a ternary.',
         },
       },
       required: ['nodeId'],
@@ -438,7 +444,7 @@ const semanticDesignTools: BuilderTool[] = [
         nodeId: { type: 'string' },
         color: {
           type: 'string',
-          description: 'Text color. Theme names: "foreground", "primary", "primary-foreground", "muted-foreground", "card-foreground", "secondary-foreground", "accent-foreground", "destructive". Or: "white", "gray-900", "#hex".',
+          description: 'Text color (static) or formula expression (conditional). Static: theme name ("foreground", "primary", "primary-foreground", "muted-foreground", "card-foreground", "secondary-foreground", "accent-foreground", "destructive"), or "white", "gray-900", "#hex". Conditional: pass result.expression with a ternary.',
         },
       },
       required: ['nodeId', 'color'],
@@ -446,7 +452,7 @@ const semanticDesignTools: BuilderTool[] = [
   },
   {
     name: 'set_typography',
-    description: 'Set text styling — font size, weight, alignment, line height, letter spacing, decoration, and transform. Only pass the properties you want to change; others remain unchanged.',
+    description: 'Set typographic styling on a node — font size, weight, text-align, line height, letter spacing, decoration, and transform. Only pass the properties you want to change; others remain unchanged. NOTE: this tool has NO color param — to change text color use set_text_color. NOTE: this tool only affects how text renders within the node — it does NOT position or align child nodes in a flex container. To center or align child nodes inside a container, use set_layout.',
     input_schema: {
       type: 'object',
       properties: {
@@ -463,7 +469,7 @@ const semanticDesignTools: BuilderTool[] = [
         align: {
           type: 'string',
           enum: ['left', 'center', 'right', 'justify'],
-          description: 'Text alignment.',
+          description: 'CSS text-align for text content rendered inside this node (left/center/right/justify). This does NOT center child nodes in a flex container — use set_layout({align:"center"}) for that.',
         },
         leading: {
           type: 'string',
@@ -508,7 +514,7 @@ const semanticDesignTools: BuilderTool[] = [
         },
         color: {
           type: 'string',
-          description: 'Border color. Theme names: "border", "primary", "muted". Or: "gray-200", "#hex".',
+          description: 'Border color (static) or formula expression (conditional). Static: theme name ("border", "primary", "muted"), or "gray-200", "#hex". Conditional: pass result.expression with a ternary.',
         },
         radius: {
           type: 'number',
@@ -531,8 +537,7 @@ const semanticDesignTools: BuilderTool[] = [
         nodeId: { type: 'string' },
         shadow: {
           type: 'string',
-          enum: ['none', 'sm', 'default', 'md', 'lg', 'xl', '2xl', 'inner'],
-          description: '"none" removes the shadow. "default" = medium standard shadow (matches Design panel).',
+          description: 'Shadow token (static) or formula expression (conditional). Static values: "none", "sm", "default", "md", "lg", "xl", "2xl". "none" removes the shadow. Conditional: pass result.expression with a ternary, e.g. "context?.item?.data?.[\'highlight\'] ? \'lg\' : \'none\'".',
         },
       },
       required: ['nodeId', 'shadow'],
@@ -585,8 +590,14 @@ const semanticDesignTools: BuilderTool[] = [
       type: 'object',
       properties: {
         nodeId: { type: 'string' },
-        width: { type: 'string', description: 'Width mode: "fill" grows to take remaining space in the parent container (use for expanding columns in row/horizontal layouts), "full" is 100% of parent width, "fit" shrinks to content size, "screen" is full viewport width, "px:N" sets an exact pixel width (e.g. "px:320"). In multi-column row layouts, at least one column should use "fill" — not "fit" on every column.' },
-        height: { type: 'string', description: 'Height mode: "fill" grows to fill remaining space in the parent flex container (use for sidebars, cards — does NOT work on position:absolute nodes), "screen" is full viewport height (use for full-page sections and ALL position:absolute background/overlay layers), "fit" shrinks to content, "px:N" for exact pixels (e.g. "px:400"), "vh:N" for viewport-relative height (e.g. "vh:90"). Use "min-screen" for sections that need at least full viewport height.' },
+        width: {
+          type: 'string',
+          description: 'Width (static) or formula expression (conditional). Static: "fill" (expand in parent), "full" (100%), "fit" (shrink), "screen" (viewport), "px:N" (exact pixels, e.g. "px:320"). Conditional: pass result.expression with a ternary.',
+        },
+        height: {
+          type: 'string',
+          description: 'Height (static) or formula expression (conditional). Static: "fill" (flex grow), "screen" (viewport), "fit" (shrink), "px:N" (exact pixels), "vh:N" (viewport-relative), "min-screen". Conditional: pass result.expression with a ternary.',
+        },
         maxWidth:  { type: 'number', description: 'Max-width constraint in pixels (e.g. 800). Matches the builder panel Max W field.' },
         minWidth:  { type: 'number', description: 'Min-width constraint in pixels. Matches the builder panel Min W field.' },
         maxHeight: { type: 'number', description: 'Max-height constraint in pixels. Matches the builder panel Max H field.' },
@@ -734,14 +745,14 @@ const semanticDesignTools: BuilderTool[] = [
 const layoutTools: BuilderTool[] = [
   {
     name: 'set_layout',
-    description: 'Update the flex layout of a container node — direction, alignment, gap, padding. Convenient for layout-only changes without touching other style properties.',
+    description: 'Update the flex layout of a container node — controls how children are positioned and distributed (direction, alignment, gap). Use this to center or align child nodes inside a container. Convenient for layout-only changes without touching other style properties.',
     input_schema: {
       type: 'object',
       properties: {
         nodeId: { type: 'string' },
         direction: { type: 'string', enum: ['row', 'column'], description: '"row" lays children side by side; "column" stacks them top to bottom.' },
-        align: { type: 'string', enum: ['start', 'center', 'end', 'stretch', 'baseline'], description: 'Cross-axis alignment of children (e.g. center = vertically centered in a row).' },
-        justify: { type: 'string', enum: ['start', 'center', 'end', 'between', 'around', 'evenly'], description: 'Main-axis distribution of children (e.g. between = space evenly between, center = grouped in center).' },
+        align: { type: 'string', enum: ['start', 'center', 'end', 'stretch', 'baseline'], description: 'Cross-axis alignment of children (items-*). In a row: aligns children vertically. In a column: aligns children horizontally — use align:"center" on a column container to horizontally center its children.' },
+        justify: { type: 'string', enum: ['start', 'center', 'end', 'between', 'around', 'evenly'], description: 'Main-axis distribution of children (justify-*). In a row: horizontal distribution. In a column: vertical distribution.' },
         gap: { type: 'number', description: 'Gap between children in pixels.' },
       },
       required: ['nodeId'],
@@ -816,11 +827,33 @@ STEP TYPES (use exactly these type strings — same as the builder's Type dropdo
 
 Each step must have a unique "id" plus "type" and "config". Examples:
 - changeVariableValue: { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "UUID", "value": { "formula": "expr" } } }
-  formula examples: "variables['UUID'] + 1"  /  "!variables['UUID']"  /  "'active'"  /  "max(0, variables['UUID'] - 1)"
+  formula examples: "variables['UUID'] + 1"  /  "not(variables['UUID'])"  /  "'active'"  /  "max(0, variables['UUID'] - 1)"
+  CRITICAL: For negation use not(value) — NEVER !value. String literals MUST use single quotes: 'active', not "active".
   Use formula functions (max, min, floor, ceil, clamp, abs, etc.) — the tool validates syntax automatically.
 - navigateTo:  { "id": "s1", "type": "navigateTo", "config": { "path": "/route" } }
 - timeDelay:   { "id": "s1", "type": "timeDelay", "config": { "ms": 500 } }
-- branch:      { "id": "s1", "type": "branch", "config": { "condition": "variables['UUID'] > 0" }, "trueBranch": [...], "falseBranch": [...] }`,
+- branch:      { "id": "s1", "type": "branch", "config": { "condition": "variables['UUID'] > 0" }, "trueBranch": [...], "falseBranch": [...] }
+- multiOptionBranch: { "id": "s1", "type": "multiOptionBranch", "config": { "condition": "variables['UUID']" }, "branches": [{ "label": "option-a", "steps": [...] }, { "label": "option-b", "steps": [...] }], "defaultBranch": [...] }
+  The condition must evaluate to one of the branch label strings. defaultBranch runs when no label matches.
+- forEach:     { "id": "s1", "type": "forEach", "config": { "listPath": "UUID" } }  ← listPath = variable UUID (resolves to array at runtime)
+  OR:          { "id": "s1", "type": "forEach", "config": { "list": ["A","B","C"] } }  ← inline literal array
+  Inside loopBody, access current item: context.item.data.value, current index: context.item.data.index
+  forEach takes a "loopBody" array of steps (not "config.loopBody") — parallel to the step, not nested inside config.
+- graphql:     { "id": "s1", "type": "graphql", "config": { "query": "query { ... }", "variables": { "id": "variables['UUID']" }, "storeIn": "myData" } }
+  The result is stored at collections['storeIn'].data. Use dot-notation field names in variables values.
+- fetchData:   { "id": "s1", "type": "fetchData", "config": { "url": "https://api.example.com/endpoint", "method": "GET", "storeIn": "myData" } }
+  For POST/PUT/PATCH, add: "body": "{ \\"key\\": \\"value\\" }" (JSON string).
+  Result stored at collections['storeIn'].data.
+- openPopup:   { "id": "s1", "type": "openPopup", "config": { "popupId": "popup-node-uuid" } }
+  popupId must be the nodeId of a Popup/Modal component node already in the tree.
+- closeAllPopups: { "id": "s1", "type": "closeAllPopups", "config": {} }
+- updateCollection: { "id": "s1", "type": "updateCollection", "config": { "collectionId": "UUID", "updateType": "insert", "data": "{...}", "position": 0 } }
+  updateType options:
+    "insert"   — inserts item at position (default end). Requires "data" (JSON string).
+    "update"   — merges into item matched by idKey/idValue. Requires "data", "findBy": "id", "idKey": "id", "idValue": "UUID".
+    "delete"   — removes item matched by idKey/idValue. Requires "findBy": "id", "idKey": "id", "idValue": "UUID".
+    "replaceAll" with data — replaces array entirely. Requires "data" (JSON string).
+    "replaceAll" without data — triggers a real API refetch for that collection.`,
     input_schema: {
       type: 'object',
       properties: {
@@ -937,7 +970,7 @@ Each step must have a unique "id" plus "type" and "config". Examples:
   },
   {
     name: 'rename_node',
-    description: 'Set the display name of a node — visible in the Layers panel on the left. Always call this after creating a section container (Box) so it has a meaningful label like "Hero Section" or "Pricing Grid".',
+    description: 'Set the display name of a node — visible in the Layers panel on the left.',
     input_schema: {
       type: 'object',
       properties: {
@@ -984,7 +1017,7 @@ Each step must have a unique "id" plus "type" and "config". Examples:
 const variableTools: BuilderTool[] = [
   {
     name: 'add_variable',
-    description: 'Create a new project variable. Variables are referenced as variables[\'UUID\'] in conditions and {{variables[\'UUID\']}} in text.\n\nBATCH TIP: Pre-assign a hex UUID for variableId so you can immediately use variables[\'UUID\'] in set_text, set_condition, and create_workflow variableName in the same batch — no round-trip needed.',
+    description: 'Create a new project variable. Variables are referenced as variables[\'UUID\'] in all tools — conditions, set_text, formulas, etc.\n\nBATCH TIP: Pre-assign a hex UUID for variableId so you can immediately use variables[\'UUID\'] in set_text, set_condition, and create_workflow variableName in the same batch — no round-trip needed.',
     input_schema: {
       type: 'object',
       properties: {
@@ -1209,12 +1242,91 @@ const assetTools: BuilderTool[] = [
   },
 ];
 
+// ─── Batch Structure (build entire tree in one call) ─────────────────────────
+
+const batchTools: BuilderTool[] = [
+  {
+    name: 'generate_structure',
+    description: `Build a complete UI section by describing the full nested tree in ONE call.
+Use for any new content with more than 1-2 components. Server assigns real UUIDs and returns a name→nodeId map.
+Use the returned node IDs for set_repeat, add_variable, create_workflow, set_text in subsequent calls.
+
+Each tree node shape: { label, name?, text?, src?, children?: [...] }
+  label    = palette component name, exactly as listed in the Component Structure Reference.
+             Examples: "Box", "Row", "Card", "Heading", "Text", "Btn Solid", "Btn Outline", "Image", "Icon".
+             NEVER use React/Gluestack component names like "Button", "ButtonText", "View" — they are not palette labels.
+  name     = layers panel label — also the key in the returned "nodes" map; use it to reference the node ID
+  text     = text content (shortcut for set_text after creation)
+  src      = image or video URL
+  children = nested child nodes
+
+Components are created with their default styles. Use the returned node IDs with set_spacing, set_layout,
+set_background, set_border, etc. in the next turn to apply custom styling.`,
+    input_schema: {
+      type: 'object',
+      properties: {
+        tree: {
+          type: 'object',
+          description: 'Root node of the section tree. Describe the full nested structure.',
+        },
+        parentId: {
+          type: 'string',
+          description: 'UUID of existing node to insert under. Omit to add at the page root.',
+        },
+        atIndex: {
+          type: 'number',
+          description: 'Position within the parent children. Omit to append at end.',
+        },
+      },
+      required: ['tree'],
+    },
+  },
+];
+
+// ─── Bulk Operations (apply same op to multiple nodes) ───────────────────────
+
+const bulkTools: BuilderTool[] = [
+  {
+    name: 'bulk_apply',
+    description: `Apply the same style operation to multiple nodes at once.
+Use after search_nodes returns several IDs that all need the same change (e.g. "all sections", "all buttons").
+Pattern: search_nodes → bulk_apply(nodeIds, tool, params).
+Never manually loop with N separate setter calls — use this instead.
+
+Supported tools: set_spacing, set_border, set_background, set_typography, set_opacity, set_size, set_position, set_layout, set_icon, set_text_color, set_animation.`,
+    input_schema: {
+      type: 'object',
+      properties: {
+        nodeIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of node IDs returned by search_nodes.',
+        },
+        tool: {
+          type: 'string',
+          enum: ['set_spacing', 'set_border', 'set_background', 'set_typography', 'set_opacity', 'set_size', 'set_position', 'set_layout', 'set_icon', 'set_text_color', 'set_animation'],
+          description: 'Name of the style tool to apply to every node.',
+        },
+        params: {
+          type: 'object',
+          description: 'Params to pass to the tool — same as calling it directly (nodeId is injected automatically).',
+        },
+      },
+      required: ['nodeIds', 'tool', 'params'],
+    },
+  },
+];
+
 // ─── All Tools (in priority order) ───────────────────────────────────────────
 
 /** Tools for the builder chat AI — excludes generationTools (raw JSON pipeline removed) */
 export const ALL_BUILDER_TOOLS: BuilderTool[] = [
   // Context first — AI reads before acting
   ...readTools,
+  // Batch structure — build full tree in one call
+  ...batchTools,
+  // Bulk ops — apply same style to multiple nodes
+  ...bulkTools,
   // Structure — add / remove / reorder / reparent
   ...addTools,
   ...structureTools,
@@ -1243,3 +1355,22 @@ export const TOOL_NAMES = ALL_BUILDER_TOOLS.map(t => t.name);
 export function getBuilderTool(name: string): BuilderTool | undefined {
   return ALL_BUILDER_TOOLS.find(t => t.name === name);
 }
+
+/** Filtered tool list for Phase 3 (post-build styling only).
+ *  Structural tools are intentionally excluded so the constraint is architectural,
+ *  not just instructional. Phase 3 only needs to apply visual styles on nodes whose
+ *  IDs it already has from the generate_structure results. */
+export const PHASE3_BUILDER_TOOLS: BuilderTool[] = [
+  // Page switching (needed when build units span multiple pages)
+  ...pageTools.filter(t => t.name === 'switch_page'),
+  // All semantic design tools (set_background, set_text_color, set_typography, etc.)
+  ...semanticDesignTools,
+  // Layout (set_layout)
+  ...layoutTools,
+  // Logic tools needed for styling + wiring: set_condition, set_animation, create_workflow, bind_action
+  ...logicTools.filter(t => ['set_condition', 'set_animation', 'create_workflow', 'bind_action'].includes(t.name)),
+  // Text/icon content tools needed in Phase 3
+  ...textTools.filter(t => ['set_text', 'set_icon', 'set_placeholder'].includes(t.name)),
+  // Bulk operations
+  ...bulkTools,
+];

@@ -145,13 +145,30 @@ When a new fix is discovered (e.g. video controls being wrong, or spacing using 
 
 ---
 
+## Phase 2 — Variable Reuse Rule
+
+Phase 2 runs a mini-model to scaffold repeated structures. It receives a list of existing array variables so it can reuse them instead of creating duplicates.
+
+**Critical rule in `buildPhase2SysPrompt()`:**
+
+- If an existing variable **exactly matches** the data needed → skip `add_variable`, use the existing UUID directly.
+- If the existing variable does **NOT match** (different fields or data) → create a new variable with a **fresh UUID**. NEVER call `add_variable` with an existing variable's UUID — variables are global, and overwriting one corrupts every page that uses it.
+
+**Why this matters:** A pricing page built on page A has `Pricing Plans` variable with fields `{ name, price, features }`. Page B also wants pricing plans but adds `highlighted` and `borderAccent`. Reusing the page A UUID overwrites the global variable, breaking page A silently. The fix is always a fresh UUID when the data shape differs.
+
+**Where it lives:** `buildPhase2SysPrompt()` in `app/api/ai/builder-chat/route.ts`, STEP 1. The existing variable list is injected at runtime by `buildPhase2SysPrompt()` reading the store's variable registry.
+
+---
+
 ## Contrast — Claude's Responsibility, Not the System Prompt's
 
 Claude receives the live theme palette with real hex values at runtime. He can judge contrast himself using that palette — the system prompt does not teach contrast.
 
 **Architectural decision:** The executor must NOT silently rewrite button/border colors when `set_background` is called — that would break pages where the user deliberately set element colors. Contrast is Claude's design judgment, applied upfront when he picks colors.
 
-**What this means for `builder-knowledge.ts`:** Do not add contrast checklists, contrast rules, or "verify contrast before finishing" instructions. If the AI makes a contrast mistake, the fix is to check whether the palette injection is working (see Class of Bug 3), not to add more design guidance.
+**What this means for `builder-knowledge.ts`:** Do not add general contrast checklists or "verify contrast before finishing" instructions. If the AI makes a contrast mistake, the fix is to check whether the palette injection is working (see Class of Bug 3), not to add more design guidance.
+
+**Exception — system-specific ternary propagation (the CONTRAST RULE):** When a container background is set via a ternary/formula, descendants must ALSO use ternary formulas — not static colors. This is a system quirk Claude cannot derive from general knowledge (it's a consequence of our repeat-template rendering model). This is why `builder-knowledge.ts` includes a CONTRAST RULE block. The rule was extended to also cover conditionally-visible nodes: a node shown via `set_condition` based on the same flag always appears against one specific background, so its static colors must contrast against that background.
 
 ---
 
@@ -164,16 +181,13 @@ When adding any component, evaluate whether its default values fit the user's in
 
 This applies universally: dimensions, typography, spacing, color, behavior, or any other property.
 
-### Structural Layout Containers — Always Clear Default Padding AND Min-Height
+### Structural Layout Containers — No Default Padding (Changed)
 
-Some components ship with default padding and a minimum height. When used as a **structural wrapper** (its only job is grouping or aligning children), both defaults are wrong and must be cleared in the same batch as `add_component`:
+`Box`, `Row`, `VStack`, `HStack`, and `Center` no longer ship with default padding or gap. There is nothing to clear when using them as structural wrappers — they start empty.
 
-- `set_spacing(id, { p: 0, gap: 0 })` — removes default padding AND gap
-- `set_size(id, { height: "fit" })` — removes the fixed min-height
+Add spacing explicitly with `set_spacing` only when the design calls for it. The only containers that still have intentional default padding are `Card`, `Alert`, `Accordion`, `Modal`, `AlertDialog`, and similar visible UI surfaces.
 
-**Never skip `set_size({height: "fit"})`** on structural wrappers — missing it leaves an invisible gap equal to the default min-height even after padding is cleared.
-
-**How to decide:** Is this component's job to group/align children? → structural wrapper → clear both. Is it a visible UI block the user sees as a unit? → keep defaults.
+**Min-height:** If a layout container still shows unexpected height, call `set_size(id, { height: "fit" })` to ensure it wraps its content.
 
 ### Fixed Dimension Defaults Need Contextual Evaluation
 

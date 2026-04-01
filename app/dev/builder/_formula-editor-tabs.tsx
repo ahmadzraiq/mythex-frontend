@@ -1175,6 +1175,7 @@ export function ItemContextGroup({
   const selectedIds = useBuilderStore(s => s.selectedIds);
   const pageNodes = useBuilderStore(s => s.pageNodes);
   const zustandData = useSduiStore(s => s.data);
+  const vsData = getGlobalVariableStore()(state => state.data);
 
   // Find the nearest map ancestor (for inner repeat) and outer map ancestor (for nested repeat)
   const { innerMap, outerMap } = useMemo(() => {
@@ -1194,25 +1195,52 @@ export function ItemContextGroup({
     return { innerMap: inner, outerMap: outer };
   }, [selectedIds, pageNodes]);
 
-  // Extract first item from a map binding path (e.g. "collections.UUID.data.search.items")
+  // Extract first item from a map binding path (e.g. "collections.UUID.data.search.items").
+  // Handles two tricky cases:
+  // 1. responsePath stripping: when a datasource uses responsePath="data", the stored flat key
+  //    "collections.UUID" already has the inner data; navigating "data.search.items" must skip
+  //    the "data" segment since it no longer exists in the stored value.
+  // 2. Variable store paths: "variables['UUID']" uses bracket notation not dot notation.
   const resolveFirstItem = useCallback((mapBinding: string | null): Record<string, unknown> | null => {
     if (!mapBinding) return null;
+
+    // Handle bracket-notation variable paths like "variables['UUID']"
+    const bracketMatch = mapBinding.match(/^variables\s*\[['"]([^'"]+)['"]\]/);
+    if (bracketMatch) {
+      const vsVal = vsData?.[bracketMatch[1]];
+      if (Array.isArray(vsVal) && vsVal.length > 0) return vsVal[0] as Record<string, unknown>;
+      if (vsVal && typeof vsVal === 'object' && !Array.isArray(vsVal)) return vsVal as Record<string, unknown>;
+      return null;
+    }
+
     const parts = mapBinding.split('.');
-    for (let i = 2; i <= parts.length; i++) {
+    for (let i = 1; i <= parts.length; i++) {
       const key = parts.slice(0, i).join('.');
       if (zustandData[key] !== undefined) {
         let val: unknown = zustandData[key];
         for (let j = i; j < parts.length; j++) {
           if (val && typeof val === 'object' && !Array.isArray(val)) {
-            val = (val as Record<string, unknown>)[parts[j]];
+            const next = (val as Record<string, unknown>)[parts[j]];
+            if (next !== undefined) val = next;
+            // else: skip this segment — responsePath may have already stripped it
           } else { break; }
         }
         if (Array.isArray(val) && val.length > 0) return val[0] as Record<string, unknown>;
         if (val && typeof val === 'object' && !Array.isArray(val)) return val as Record<string, unknown>;
+        // Traversal failed for this prefix length — try a longer prefix key
       }
     }
+
+    // Fallback: check variable store for dot-notation paths like "variables.UUID"
+    if (mapBinding.startsWith('variables.')) {
+      const vsKey = mapBinding.slice('variables.'.length);
+      const vsVal = vsData?.[vsKey];
+      if (Array.isArray(vsVal) && vsVal.length > 0) return vsVal[0] as Record<string, unknown>;
+      if (vsVal && typeof vsVal === 'object' && !Array.isArray(vsVal)) return vsVal as Record<string, unknown>;
+    }
+
     return null;
-  }, [zustandData]);
+  }, [zustandData, vsData]);
 
   const itemData = useMemo(() => resolveFirstItem(innerMap), [resolveFirstItem, innerMap]);
   const parentData = useMemo(() => resolveFirstItem(outerMap), [resolveFirstItem, outerMap]);

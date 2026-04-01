@@ -13,7 +13,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useBuilderStore, findParentNode } from './_store';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import { SECTION_STYLE, LABEL_STYLE, SectionHeader, ToggleBtn } from './_panel-primitives';
-import { FieldWithBinding, BindingIcon, type FormulaValue, closeAllEditors, registerEditorClose } from './_formula-panel';
+import { FieldWithBinding, BindingIcon, isBoundValue, type FormulaValue, closeAllEditors, registerEditorClose } from './_formula-panel';
 import { FormulaEditor } from './_formula-editor';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 import { FigmaColorPicker } from './_color-picker';
@@ -241,9 +241,12 @@ function resolveCssVarToHex(color: string): string {
 
 function IconifySettings({ nodeId, nodeProps }: { nodeId: string; nodeProps: Record<string, unknown> }) {
   const store = useBuilderStore();
-  const iconValue = (nodeProps.icon as string | undefined) ?? '';
+  const isBoundIcon = isBoundValue(nodeProps.icon as FormulaValue);
+  const iconValue = (!isBoundIcon && typeof nodeProps.icon === 'string') ? nodeProps.icon : '';
   // 'currentColor' means inherit surrounding CSS color
-  const rawColor  = (nodeProps.color as string | undefined) ?? 'currentColor';
+  // Guard against formula objects — if color is bound, fall back to 'currentColor'
+  const isBoundColor = isBoundValue(nodeProps.color as FormulaValue);
+  const rawColor = (!isBoundColor && typeof nodeProps.color === 'string') ? nodeProps.color : 'currentColor';
   // Resolve to hex for FigmaColorPicker display (it only accepts hex)
   const resolvedHex = (rawColor === 'currentColor' || !rawColor) ? '#6b7280' : resolveCssVarToHex(rawColor);
   // For the Iconify preview thumbnail
@@ -280,7 +283,7 @@ function IconifySettings({ nodeId, nodeProps }: { nodeId: string; nodeProps: Rec
     return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
   }, [searchQuery, doSearch]);
 
-  const svgPreviewUrl = iconValue.includes(':')
+  const svgPreviewUrl = (!isBoundIcon && iconValue.includes(':'))
     ? `${ICONIFY_API_BASE}/${iconValue.split(':')[0]}/${iconValue.split(':')[1]}.svg?color=${encodeURIComponent(previewColor)}`
     : null;
 

@@ -28,7 +28,7 @@ import { useBuilderMode } from './builder-context';
 import { InputParentContext, useParentInputId } from './input-parent-context';
 import { PARENT_CONTEXT_PROVIDER_TYPES } from './controlled-component-registry';
 import {
-  PRESS_ONLY_TYPES,
+  PRESS_ONLY_TYPES, CHANGE_TEXT_TYPES,
   applyFormContextBindings, applyStateOverrides, applyClassFormulas, applyAutofill,
   injectControlledProps, applyBuilderAnnotation,
   wrapWithClickHandler, renderWithDisabledOverlay,
@@ -331,6 +331,9 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
           //   existing context.item?.['productName'] formulas still resolve.
           const dataCtx = {
             ...(typeof item === 'object' && item !== null ? (item as object) : {}),
+            // For primitive items (string, number) expose the raw value under "value" so
+            // {{context.item.data.value}} works for string-array repeats (e.g. feature lists).
+            ...(typeof item !== 'object' || item === null ? { value: item } : {}),
             index,
             repeatIndex: index,
             isACopy: false,
@@ -449,6 +452,44 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
   // onPress accidentally ends up in cleanProps (e.g. from node.props JSON or any other path).
   if (!PRESS_ONLY_TYPES.has(node.type as string)) {
     delete cleanProps.onPress;
+  }
+
+  // Guard: strip onChangeText from non-input components.
+  // action-binding sets onChangeText for every "change" trigger regardless of component type.
+  // Box/div (and other layout components) don't support it, causing React's
+  // "Unknown event handler property `onChangeText`" warning on every render.
+  if (!CHANGE_TEXT_TYPES.has(node.type as string)) {
+    delete cleanProps.onChangeText;
+  }
+
+  // If style.icon is a resolved string (from a formula binding on the icon name),
+  // promote it to props.icon so the IconifyIcon component receives the dynamic name.
+  // resolveProps evaluates { formula: "..." } objects recursively, so style.icon will
+  // already be a plain string by the time we reach here.
+  const resolvedStyleIcon = (cleanProps.style as Record<string, unknown> | undefined)?.icon;
+  if (typeof resolvedStyleIcon === 'string' && resolvedStyleIcon) {
+    cleanProps.icon = resolvedStyleIcon;
+    // Remove icon from the style object — it is not a valid CSS property.
+    const styleObj = { ...(cleanProps.style as Record<string, unknown>) };
+    delete styleObj.icon;
+    cleanProps.style = styleObj;
+  }
+
+  // If style.color is a resolved hex/rgb string (from a formula or direct style binding),
+  // also inject it as !text-[color] into className so NativeWind's cssInterop on Heading/Text
+  // components honours it — Gluestack's headingStyle base includes text-typography-900 which
+  // can win over a plain inline style when cssInterop converts className to style internally.
+  // The !important prefix ensures the injected class beats the typography token.
+  // classToInlineStyle below then converts it back to inline style as a fallback for
+  // arbitrary values that NativeWind JIT doesn't compile from JSON config.
+  const resolvedStyleColor = (cleanProps.style as Record<string, unknown> | undefined)?.color;
+  if (typeof resolvedStyleColor === 'string' && resolvedStyleColor) {
+    const existing = (cleanProps.className as string | undefined) ?? '';
+    // Strip only existing text-COLOR arbitrary classes (hex / CSS color functions) to avoid
+    // duplicates. Must NOT strip text-SIZE classes like text-[20px] or text-[1.5rem].
+    // Colors start with # or a CSS function name (rgb, rgba, hsl, hsla, var).
+    const stripped = existing.replace(/\s*!?text-\[(?:#[0-9a-fA-F]{3,8}|rgba?\([^)]+\)|hsla?\([^)]+\)|var\([^)]+\))\]/g, '').trim();
+    cleanProps.className = `${stripped} !text-[${resolvedStyleColor}]`.trim();
   }
 
   // Apply inline style fallback for arbitrary-value classes (e.g. w-[1228px], pt-[120px]).

@@ -19,6 +19,7 @@
 
 import type { SDUINode } from '@/lib/sdui/types/node';
 import { FORM_REGISTERABLE_TYPES } from '@/lib/sdui/controlled-component-registry';
+import { patchThemeColors } from '@/lib/sdui/engine-static-data';
 
 /**
  * Nodes that must always remain inside a specific parent type.
@@ -177,6 +178,9 @@ export function _applyLightOverrides(overrides: Record<string, string>) {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('builder:css-vars-updated'));
   }
+  // Keep THEME_OBJ.colors in sync so formula expressions like
+  // theme?.['colors']?.['primary-foreground'] resolve to the live hex value.
+  patchThemeColors(overrides, 'light');
 }
 
 /**
@@ -199,6 +203,7 @@ export function _applyDarkOverrides(overrides: Record<string, string>) {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('builder:css-vars-updated'));
   }
+  patchThemeColors(overrides, 'dark');
 }
 
 /**

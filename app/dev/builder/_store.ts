@@ -1793,13 +1793,12 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   addCustomVar: (v) => {
     const id = v.id ?? crypto.randomUUID();
     const varWithId: CustomVar = { ...v, id };
-    // Seed the initial value into the global variable store so formula
-    // evaluation (variables['uuid']) resolves immediately after creation.
+    // Always seed/refresh the runtime value in the global variable store so
+    // formula evaluation (variables['uuid']) reflects the current initialValue.
+    // Without this, rebuilding with the same UUID but a new data schema would
+    // leave the old array in the store and all bound formulas would return undefined.
     const vs = getGlobalVariableStore().getState();
-    const fullState = vs.getFullState() as Record<string, unknown>;
-    if (fullState[id] === undefined) {
-      vs.setState((prev: Record<string, unknown>) => ({ ...prev, [id]: varWithId.initialValue ?? null }));
-    }
+    vs.setState((prev: Record<string, unknown>) => ({ ...prev, [id]: varWithId.initialValue ?? null }));
     set(s => ({
       customVars: [
         ...s.customVars.filter(x => x.name !== v.name),
