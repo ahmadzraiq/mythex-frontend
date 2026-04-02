@@ -218,7 +218,8 @@ The builder has an AI assistant that calls semantic builder actions via Anthropi
 | File | Purpose |
 |---|---|
 | `app/api/ai/builder-chat/route.ts` | POST endpoint — builds system prompt with live theme palette + project context, runs the Anthropic multi-round tool loop, streams SSE events |
-| `lib/ai/builder-knowledge.ts` | `buildChatSystemPrompt()` — the full system prompt. Accepts `paletteSnapshot`, `mood`, `appName`, `description`. Auto-generates formula function reference from `FUNCTION_LIBRARY`. |
+| `lib/ai/builder-knowledge.ts` | `buildChatSystemPrompt()` — the edit-mode system prompt. Accepts `paletteSnapshot`, `mood`, `appName`, `description`. Auto-generates formula function reference from `FUNCTION_LIBRARY`. |
+| `lib/ai/builder-knowledge-v2.ts` | Phase-specific system prompts for parallel build: `buildPhase2SysPrompt` (structure), `buildPhase3SystemPrompt` (styling), `buildPhaseWSysPrompt` (workflows). Contains anti-hallucination rules and concept blocks (`CONCEPT_REPEAT`, `CONCEPT_COLORS`, `CONCEPT_FORMULA`). |
 | `lib/ai/builder-tools.ts` | `ALL_BUILDER_TOOLS` — all Anthropic `tool_use` tool definitions (add_component, create_workflow, set_text, etc.) |
 | `lib/ai/tool-executor.ts` | `executeTool()` — maps AI tool calls to Zustand store mutations client-side. Contains `validateFormula()` for formula linting. |
 | `lib/ai/sdui-component-schema.ts` | Maps component labels to default JSON node templates |
@@ -233,7 +234,7 @@ The builder has an AI assistant that calls semantic builder actions via Anthropi
 - `set_text_color(nodeId, {color})` — text/foreground color
 - `set_typography(nodeId, {size, weight, align, …})` — font styling
 - `set_border(nodeId, {width, radius, color, …})` — border properties
-- `set_shadow / set_opacity / set_spacing / set_size / set_position / set_transform / set_display` — mirror each design panel section
+- `set_shadow / set_opacity / set_spacing / set_size / set_position / set_transform / set_layout` — mirror each design panel section
 - `set_submit / set_input_props` — component-specific controls
 
 **Tool validation, not prompt rules.** Constraints are enforced by tools returning errors, not by "NEVER do X" instructions in the prompt. Example: `create_workflow` calls `validateFormula()` before storing; if a formula uses `Math.max`, the tool returns `{ success: false, error: "..." }` and the AI self-corrects on the next attempt.
@@ -323,20 +324,90 @@ A fast haiku call analyzes the user's message and returns a `BuildPlan`:
 Standard sequential tool loop — no change from the baseline behavior.
 
 **Mode: `build`** (new page(s)/section(s) only)
-1. New pages are created sequentially via `add_page` (with `crypto.randomUUID()` IDs to prevent collision).
-2. **Phase 2** — `Promise.all(buildUnits.map(runBuildUnit))` — parallel haiku calls, each building one section via `generate_structure`. Structure only, no styling.
-3. Results are inserted **sequentially** via SSE events (prevents Zustand race conditions).
-4. **Phase 3 (always runs)** — the orchestrator collects all created `name → nodeId` mappings from Phase 2, constructs a new user message containing the original request + node ID list (+ any `relations` to wire), and returns `true` to signal the standard AI loop to continue. The full-capability model then calls `set_spacing`, `set_layout`, `set_background`, `set_border`, `set_typography`, `set_animation`, `bulk_apply`, etc. to style the newly created nodes.
+
+The build pipeline is a multi-tier parallel system. The agreed architecture and the implementation target is:
+
+```
+Phase 0 (~300ms)
+  classifyRequest → BuildPlan { buildUnits, descriptions }
+
+Tier 0 — Media Pre-fetch (starts immediately, runs in parallel with Phase 2)
+  searchUnsplash(unit.description) + searchPexels(unit.description) per unit
+
+Phase 2a — Structure (~2s, all units in parallel)
+  runBuildUnit per unit (claude-haiku, tools: generate_structure / add_variable)
+  → onStructureReady callback fires per unit when generate_structure returns
+  → canvas renders skeleton IMMEDIATELY at ~2s
+  → allStructuresReadyPromise resolves when last unit fires onStructureReady
+
+After allStructuresReadyPromise resolves — three branches run in parallel:
+
+  ┌─────────────────────┬──────────────────────┬──────────────────────┐
+  │  Phase 2b           │  Phase 3 — Styling   │  Phase W — Workflows │
+  │  (Binding)          │                      │                      │
+  │  set_repeat         │  set_background      │  create_workflow     │
+  │  set_text           │  set_spacing         │  bind_action         │
+  │  +                  │  set_typography      │  switch_page         │
+  │  Media Injection    │  set_animation       │                      │
+  │  set_src (Tier 0    │  set_border          │  claude-haiku        │
+  │  pre-fetched URLs)  │  set_size            │  PHASE_W_TOOLS only  │
+  │                     │  set_layout          │                      │
+  │  unitResultsPromise │  set_condition       │                      │
+  │  .then(mediaInject) │  set_icon            │                      │
+  │                     │                      │                      │
+  │                     │  claude-haiku        │                      │
+  │                     │  PHASE3_STYLING_TOOLS│                      │
+  └─────────────────────┴──────────────────────┴──────────────────────┘
+
+Promise.all([phase2bAndMedia, phase3, phaseW]) → done (~4-5s total)
+```
+
+**Key dependency rules (why three-way parallel is correct):**
+- Phase 3 needs: node IDs (from `generate_structure`) + variable UUIDs (from `add_variable`) — both available when `allStructuresReadyPromise` resolves
+- Phase 3 does NOT need: `set_repeat`, `set_text`, or media injection to complete first
+- Phase W needs: same node IDs + variable UUIDs — also available immediately
+- Phase 2b (`set_repeat`, `set_text`) and media injection have no downstream dependencies — they can run alongside Phase 3 + Phase W
+
+**`runBuildUnit` internal flow:**
+- `add_variable` → `generate_structure` → fires `onStructureReady(varEvents, tree)` immediately when structure resolves
+- `set_repeat` / `set_text` continue running after `onStructureReady` fires and are returned when the unit promise resolves
+- `onStructureReady` increments a counter; when all units have fired, `allStructuresReadyPromise` resolves
+
+**`syntheticMessages` for Phase 3 + Phase W:**
+Only `add_variable` and `generate_structure` results are included. Wiring events (`set_repeat`, `set_text`) are excluded — neither phase has those tools in their tool list, and the exclusion allows Phase 3 + Phase W to start without waiting for Phase 2b.
+
+**Phase-tagged SSE events:**
+Every `tool_executed` SSE event carries a `phase` field so the chat panel can render grouped sections:
+- `'structure'` — `add_page`, `add_variable`, `generate_structure`, `set_repeat`, `set_text`
+- `'media'` — `set_src` (injected from Tier 0 pre-fetched URLs)
+- `'styling'` — all Phase 3 setter calls
+- `'workflows'` — all Phase W calls
+
+**Timeline comparison:**
+```
+BEFORE — fully sequential, ~14s total
+  [classify][var+structure][set_repeat/text][img-search][styling+workflows]
+  User sees NOTHING until ~12s
+
+AFTER — parallel, ~4-5s total
+  [classify ~300ms]
+  [img pre-fetch ─────────────────────]
+  [var + generate_structure] → canvas skeleton at ~2s ✓
+  [set_repeat + set_text + set_src ───┐
+  [Phase 3 styling ───────────────────┤ → all done at ~4-5s ✓
+  [Phase W workflows ─────────────────┘
+```
 
 **Mode: `mixed`** (edits + new builds in one prompt)
 1. **Phase 1** — A focused edit loop runs first (sequential) with a `build_phase: 'editing'` SSE event.
-2. **Phase 2** — Parallel builds execute as in `build` mode (structure only).
-3. **Phase 3 (always runs)** — Styling + wiring, same as `build` mode.
+2. **Phase 2a** — Parallel structure builds execute for all new units.
+3. **Phase 2b + Phase 3 + Phase W** — Three-way parallel after all structures are ready.
 
 **SSE progress events streamed to client:**
 ```ts
 { type: 'build_phase', phase: 'planning' | 'editing' | 'building' | 'wiring' }
 { type: 'section_progress', done: number, total: number, name: string }
+{ type: 'tool_executed', name: string, input: {...}, phase: 'structure' | 'media' | 'styling' | 'workflows' }
 ```
 
 **`AiChatMessage` progress fields** (in `_store-types.ts`):
@@ -344,7 +415,66 @@ Standard sequential tool loop — no change from the baseline behavior.
 - `buildTotal` / `buildDone` — section count for progress bar
 - `buildCurrentName` — name of section currently being inserted
 
-The AI chat panel (`_ai-chat-panel.tsx`) displays a progress bar and status label during `building` phase.
+**`AiToolCall.phase` field** (in `_store-types.ts`):
+- `'structure'` | `'media'` | `'styling'` | `'workflows'` — populated from the SSE event
+- Used by `ToolCallsGroup` in `_ai-chat-panel.tsx` to render phase-grouped collapsible sections instead of a flat list
+
+The AI chat panel (`_ai-chat-panel.tsx`) displays a progress bar during `building` phase and groups completed tool calls into labelled phase sections (Structure / Media / Styling / Workflows) for clarity.
+
+---
+
+### Anti-Hallucination Architecture
+
+The multi-phase AI build system is prone to specific hallucination patterns. This section documents the **proven approaches** for preventing them — every fix follows one of two principles.
+
+#### Principle 1 — Server-Side Guards (Tool Errors > Prompt Rules)
+
+Prompt-level "NEVER do X" instructions are unreliable. When the AI must not do something, **enforce it in `route.ts`** by intercepting the tool call and returning `{ success: false, error: "..." }`. The AI reads the error and self-corrects on the next round.
+
+**Implemented guards:**
+
+| Guard | Location | What it catches |
+|---|---|---|
+| `isCustomJsDomWorkflow` | `runHaikuAgentLoop` | Phase W creating `customJavaScript` workflows for visual effects (hover/press animations, DOM manipulation). Returns error directing AI to `set_animation`. |
+| `requireNode` | `tool-executor.ts` | Any setter tool (`set_text`, `set_icon`, `set_background`, etc.) targeting a `nodeId` that doesn't exist on the page. Returns error telling AI to call `get_page_tree`. |
+| `validateFormula` | `tool-executor.ts` | `create_workflow` steps using `Math.*` instead of SDUI formula functions. Returns error with correct function name. |
+| `assignTreeIds` cleanup | `route.ts` | Strips `condition: "true"` (literal boolean true) from generated tree nodes — a common Phase 2 hallucination that adds no-op conditions. |
+
+**Pattern for adding a new guard:**
+1. Identify the hallucination from build debug output
+2. Add a detection function (regex, tree scan, etc.) in `route.ts`
+3. In the appropriate loop (`runHaikuAgentLoop`, `runBuildUnit`), intercept the tool call before execution
+4. Return `{ success: false, error: "<actionable message>" }` — tell the AI what to do instead
+5. Add the prompt-level note as a secondary reinforcement (belt + suspenders)
+
+#### Principle 2 — Dynamic Context Injection (Computed Hints > Static Rules)
+
+Generic prompt rules ("use parent.data for nested repeats") are often ignored when the AI has many nodes to process. **Compute specific context** from the generated tree and inject it into the user message for later phases.
+
+**Implemented injections:**
+
+| Injection | Phase | What it provides |
+|---|---|---|
+| `detectNestedRepeatNodes` | Phase 3 user message | Scans `collectedTrees` for nested repeats. Injects exact node IDs and a reminder: "Node X is inside a nested repeat — use `context?.item?.parent?.data?.field` for outer-item fields." |
+| `detectTernaryContrastNodes` | Phase 3 user message | Scans `collectedTrees` + `addVarEventsCollected` for repeat templates with boolean fields. Lists ALL descendant node IDs that need matching ternary text/icon colors when the template gets a ternary bg. Fixes the "styled nested repeat but forgot outer children" pattern. |
+| `sectionCount` limit | Phase 2 user message | From planner output. Injects: "SECTION LIMIT: Build EXACTLY N section(s). Do NOT add extra sections..." |
+| `wiringEventsCollected` | Phase 3 user message | Counts already-bound `set_text`, `set_repeat`, `set_icon`, `set_condition` from Phase 2. Tells Phase 3 how many bindings exist so it doesn't duplicate them. |
+| `existingVarsNote` | Phase 2 system (dynamic block) | Lists existing array variables so Phase 2 reuses them instead of creating duplicates. |
+
+**Pattern for adding a new injection:**
+1. Identify which phase needs the context (e.g., Phase 3 needs to know about nested repeats)
+2. Write a helper that scans `collectedTrees`, `variableEvents`, or planner output
+3. Produce a short, specific string (prefer node IDs and concrete instructions over abstract rules)
+4. Append to the appropriate user message in `runBuildOrMixedMode` or `runBuildUnit`
+
+#### Principle 3 — Generic Prompt Design
+
+Prompt rules in `builder-knowledge-v2.ts` must be **abstract and tool-oriented**. Never use domain-specific examples (pricing cards, featured badges, team members). Use generic terms:
+- "cards, list items, entries" instead of "pricing cards, feature lists, testimonials"
+- "an item boolean field that changes appearance" instead of "featured vs normal"
+- `context?.item?.data?.boolField` instead of `context?.item?.data?.featured`
+
+Domain-specific examples cause the AI to hallucinate those exact patterns into unrelated builds. The prompt teaches tool mechanics; the planner description provides domain context.
 
 ---
 
@@ -377,4 +507,5 @@ When working on a specific area, read ONLY the relevant file:
 | Work on StateBar / state preview | `_state-bar.tsx`, `lib/sdui/builder-preview.ts`, `_canvas-helpers.tsx` |
 | Work on inactive page rendering | `_canvas-helpers.tsx` (`InactivePageEngine`, `InactivePagesGrid`) |
 | Add / modify `_stateTag` behaviour | `lib/sdui/builder-preview.ts` (`applyStateTagOverrides`), `_panel-right-design-sections.tsx` (StateTagPicker), `_layers-panel.tsx` (badges) |
-| Work on AI chat / tools | `lib/ai/tool-executor.ts`, `lib/ai/builder-knowledge.ts`, `lib/ai/builder-tools.ts`, `app/api/ai/builder-chat/route.ts` |
+| Work on AI chat / tools | `lib/ai/tool-executor.ts`, `lib/ai/builder-knowledge.ts`, `lib/ai/builder-knowledge-v2.ts`, `lib/ai/builder-tools.ts`, `app/api/ai/builder-chat/route.ts` |
+| Fix AI hallucinations | `app/api/ai/builder-chat/route.ts` (server guards + dynamic injection), `lib/ai/builder-knowledge-v2.ts` (phase prompts). See "Anti-Hallucination Architecture" above. |

@@ -89,9 +89,12 @@ These three files are the wiring layer. Nothing renders without them. Create the
 
 ## 3. State & Paths
 
-- [ ] **Screen-scoped paths** – Aliases (form, errors, reviewForm, etc.) from `engineConventions.screenScopedAliases` in store.json; use `{{form.password}}` (alias) or `{{screens.signup.form.password}}` (cross-screen)
-- [ ] **Global state** – `layout.*`, `auth.*`, `cart.*` from store.json
-- [ ] **Workflow** – `{{_workflow.lastAction}}`, `{{_workflow.lastError}}` for last action (null if success)
+- [ ] **Variables** – Declare all mutable state in `config/variables.json` with UUIDs. Access as `variables['UUID']` in formulas, `{{variables['UUID']}}` in text templates.
+- [ ] **Form state** – `local.data.form.formData.*` (auto-tracked via `name` prop). Validation: `local.data.form.fields.*.isValid`. Scoped per `FormContainer`.
+- [ ] **Datasource data** – `collections['UUID'].data.*` for fetched data. Always use full UUID paths.
+- [ ] **Global state** – `layout.*`, `auth.*`, `cart.*`, `route.*` from store.json
+- [ ] **Workflow** – `_workflow.lastAction`, `_workflow.lastError` for last action (null if success)
+- [ ] **No `screens.*` paths** – These are dead. Never use `screens.{name}.form.*` or `screens.{name}.errors.*`.
 
 ---
 

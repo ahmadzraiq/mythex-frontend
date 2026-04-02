@@ -1,0 +1,271 @@
+{
+  "meta": {
+    "title": "Pricing Card Test"
+  },
+  "ui": {
+    "id": "pricing-card-test-root",
+    "type": "Box",
+    "props": {
+      "className": "w-full min-h-screen flex flex-col items-center justify-center bg-[var(--theme-background)] py-[60px]"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "flex flex-col gap-y-[24px] items-stretch justify-between border-[2px] border-[var(--theme-primary)] rounded-[12px] relative pt-[32px] pr-[32px] pb-[32px] pl-[32px] w-[340px]",
+          "style": {
+            "boxShadow": "0px 12px 24px -4px #7c3aed40",
+            "shadowColor": "#7c3aed40",
+            "shadowOffset": { "width": 0, "height": 12 },
+            "shadowRadius": 24,
+            "shadowOpacity": 1,
+            "elevation": 12,
+            "backgroundColor": "var(--theme-card)"
+          }
+        },
+        "id": "fd81cc4c-c147-442f-8ba7-c1eed5b9c135",
+        "name": "Professional Plan (Featured)",
+        "animation": {
+          "outerStyle": {
+            "borderRadius": 12
+          },
+          "enter": {
+            "type": "slideInUp",
+            "duration": 600,
+            "delay": 100,
+            "spring": true,
+            "stiffness": 180,
+            "damping": 18
+          },
+          "loop": {
+            "type": "glowPulse",
+            "duration": 3000,
+            "repeatCount": -1,
+            "direction": "alternate",
+            "color": "#7c3aed"
+          },
+          "hover": {
+            "y": -4,
+            "duration": 300
+          }
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row mb-[8px] justify-center"
+            },
+            "id": "3390bb08-f2e8-4060-92bd-3447f2b4b1a1",
+            "name": "Featured Badge",
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-fit inline-flex flex-row items-center !bg-[var(--theme-primary)] pl-[12px] pr-[12px] pt-[4px] pb-[4px] rounded-[9999px]"
+                },
+                "id": "8c2caead-6717-4a58-86a5-e64f1e70a1d9",
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[12px] font-bold uppercase !text-[var(--theme-primary-foreground)]"
+                    },
+                    "text": "Most Popular",
+                    "id": "c99ea77a-d7a8-4233-8bd1-26b01bb5cc87",
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-y-[8px]"
+            },
+            "id": "c7d247b1-c7ec-493d-ab9f-396c05bdf331",
+            "children": [
+              {
+                "type": "Heading",
+                "text": "Professional",
+                "props": {
+                  "className": "text-[24px] font-bold !text-[var(--theme-foreground)]"
+                },
+                "id": "e740fcae-15ce-4fb9-ab5f-dd664a506344",
+                "children": []
+              },
+              {
+                "type": "Text",
+                "text": "For growing teams",
+                "props": {
+                  "className": "text-[14px] !text-[var(--theme-muted-foreground)]"
+                },
+                "id": "395aa903-8fad-4e9c-91d9-fb4b0cc62d6f",
+                "children": []
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row gap-x-[4px] items-baseline mt-[8px]"
+                },
+                "id": "a95461d3-4e43-4664-9f12-a0d06a53daa1",
+                "children": [
+                  {
+                    "type": "Heading",
+                    "text": "$79",
+                    "props": {
+                      "className": "text-[36px] font-bold !text-[var(--theme-primary)]"
+                    },
+                    "id": "62b4d930-62f9-4bea-ba9c-f587f99ec1de",
+                    "children": []
+                  },
+                  {
+                    "type": "Text",
+                    "text": "/month",
+                    "props": {
+                      "className": "text-[14px] !text-[var(--theme-muted-foreground)]"
+                    },
+                    "id": "6fe28dc7-039b-455c-bf87-cce437c128f6",
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col gap-y-[12px] mt-[8px]"
+                },
+                "id": "6b078c11-4259-437b-a8e3-399452fb4b37",
+                "name": "Features List",
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center gap-[8px]" },
+                    "id": "f9e81bb1-d894-4e3b-af5b-138a0357a70a",
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": { "icon": "lucide:check", "size": 16, "color": "var(--theme-primary)" },
+                        "id": "9c24dadd-49ea-45a6-9654-b3fd7076aa69",
+                        "children": []
+                      },
+                      {
+                        "type": "Text",
+                        "text": "Unlimited projects",
+                        "props": { "className": "text-[14px] !text-[var(--theme-card-foreground)]" },
+                        "id": "56fe13cb-ca78-4666-acd2-a2162d7ee3a8",
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center gap-[8px]" },
+                    "id": "8da4780c-c536-4555-9ea2-162fe2238050",
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": { "icon": "lucide:check", "size": 16, "color": "var(--theme-primary)" },
+                        "id": "97bbd082-984e-4870-b32d-3296ebf844ba",
+                        "children": []
+                      },
+                      {
+                        "type": "Text",
+                        "text": "Advanced analytics",
+                        "props": { "className": "text-[14px] !text-[var(--theme-card-foreground)]" },
+                        "id": "c58c9b91-4138-4e6d-ab8b-2b3e9cb9bd89",
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center gap-[8px]" },
+                    "id": "71022acf-b336-4df8-89bd-51641768942e",
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": { "icon": "lucide:check", "size": 16, "color": "var(--theme-primary)" },
+                        "id": "26322ff4-4394-4b31-8de0-0c88431e7c8e",
+                        "children": []
+                      },
+                      {
+                        "type": "Text",
+                        "text": "Priority support",
+                        "props": { "className": "text-[14px] !text-[var(--theme-card-foreground)]" },
+                        "id": "97b7dc05-5a06-4d86-96bd-104fbf61fac8",
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center gap-[8px]" },
+                    "id": "5ee46daf-4643-4274-a7d8-e8a47c6c4032",
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": { "icon": "lucide:check", "size": 16, "color": "var(--theme-primary)" },
+                        "id": "79bf2c9f-87ac-4472-a253-a82fdd8a5e39",
+                        "children": []
+                      },
+                      {
+                        "type": "Text",
+                        "text": "Team collaboration",
+                        "props": { "className": "text-[14px] !text-[var(--theme-card-foreground)]" },
+                        "id": "9728e22c-0462-4623-b5a1-cd35d6f6b570",
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center gap-[8px]" },
+                    "id": "604335e3-5328-43c9-a7d5-d926bb27dbc3",
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": { "icon": "lucide:check", "size": 16, "color": "var(--theme-primary)" },
+                        "id": "48d20ac6-ea8f-4af4-87e1-e9471f81605d",
+                        "children": []
+                      },
+                      {
+                        "type": "Text",
+                        "text": "Custom integrations",
+                        "props": { "className": "text-[14px] !text-[var(--theme-card-foreground)]" },
+                        "id": "e7e44939-bce8-41ef-9d1d-9456fab0bb21",
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center justify-center px-[20px] py-[10px] rounded-[6px] bg-[var(--theme-primary)] hover:opacity-90 active:opacity-80 w-full mt-[8px]"
+                },
+                "id": "3e8f13c9-2f70-4fb7-8b52-55ea9d15ed36",
+                "animation": {
+                  "hover": { "scale": 1.03, "duration": 200 },
+                  "press": { "scale": 0.97, "duration": 100 }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[14px] font-medium text-[var(--theme-primary-foreground)]"
+                    },
+                    "text": "Start Free Trial",
+                    "id": "9523b40a-55ce-46e1-b833-3c4cfc46329e",
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

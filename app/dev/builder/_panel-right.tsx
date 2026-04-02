@@ -46,6 +46,7 @@ import { PreviewDataEditor, ElementWorkflowsTab } from './_panel-right-workflows
 import { AnimationInDesign } from './_animation-panel';
 import { SpacingDiagram, CornerRadiusDiagram, InsetDiagram } from './_spatial-controls';
 import { useBuilderStore, findParentNode } from './_store';
+import type { BuilderStore } from './_store-types';
 import { findNode } from './_store-node-helpers';
 import { updatePopup as updatePopupData } from '@/lib/builder/popup-data';
 import { usePopupStore } from '@/lib/sdui/popup-store';
@@ -82,7 +83,6 @@ import {
   TEXT_TRANSFORM_TOKENS,
   POSITION_TOKENS,
   CURSOR_TOKENS,
-  DISPLAY_TOKENS,
   GRID_COLS_TOKENS,
   GRID_ROWS_TOKENS,
   expandPadding,
@@ -114,6 +114,428 @@ const DIMENSION_CSS_KEYS = new Set([
   'borderWidth','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth',
   'fontSize','lineHeight','letterSpacing','wordSpacing','outlineWidth',
 ]);
+
+// ─── Effects Section (Shadow, Blur, Backdrop Blur) ────────────────────────────
+
+/** Parse "Xpx Ypx Bpx Spx #color" → components, returns null when no shadow. */
+function parseBoxShadow(s: string): { x: number; y: number; blur: number; spread: number; color: string } | null {
+  if (!s) return null;
+  const m = s.match(/^(-?[\d.]+)px\s+(-?[\d.]+)px\s+([\d.]+)px\s+(-?[\d.]+)px\s+(.+)$/);
+  if (!m) return null;
+  return { x: parseFloat(m[1]), y: parseFloat(m[2]), blur: parseFloat(m[3]), spread: parseFloat(m[4]), color: m[5].trim() };
+}
+
+// ─── FillBackgroundSection — Solid / Gradient toggle ─────────────────────────
+
+function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgColor, patchColorAsThemeVar, patchStyle }: {
+  nodeId: string;
+  node: SDUINode;
+  store: BuilderStore;
+  commitHistory: () => void;
+  computedBgColor: string;
+  patchColorAsThemeVar: (styleKey: string, propPath: string, twPrefix: string, cssVar: string) => void;
+  patchStyle: (patch: Record<string, string>) => void;
+}) {
+  const animCfg     = ((node as unknown as Record<string, unknown>).animation ?? {}) as Record<string, unknown>;
+  const outerSt     = (animCfg.outerStyle ?? {}) as Record<string, unknown>;
+  const loopCfg     = (animCfg.loop ?? {}) as Record<string, unknown>;
+  const bgImageRaw  = outerSt.backgroundImage;
+  const isGradientFormula = isBoundValue(bgImageRaw as FormulaValue);
+
+  const existingGradientColors = React.useMemo(() => {
+    const bg = typeof bgImageRaw === 'string' ? bgImageRaw : '';
+    if (!bg) return [] as string[];
+    const inner = bg.replace(/^linear-gradient\([^,]+,\s*/, '').replace(/\)$/, '');
+    const parts = inner.split(',').map((s: string) => s.trim()).filter(Boolean);
+    if (parts.length > 1 && parts[parts.length - 1] === parts[0]) parts.pop();
+    return parts;
+  }, [bgImageRaw]);
+
+  const hasGradient       = existingGradientColors.length >= 2 || isGradientFormula;
+  const isGradientAnimated = loopCfg.type === 'gradientDrift';
+  const mode              = hasGradient ? 'gradient' : 'solid';
+
+  const [gradientColors, setGradientColors] = React.useState<string[]>(
+    existingGradientColors.length >= 2 ? existingGradientColors : ['#667eea', '#764ba2'],
+  );
+  const [gradientEditorOpen, setGradientEditorOpen] = React.useState(false);
+  // Saves the solid backgroundColor so it can be restored when switching back from gradient mode
+  const savedSolidBgRef = React.useRef<string>('');
+
+  React.useEffect(() => {
+    if (existingGradientColors.length >= 2) setGradientColors(existingGradientColors);
+    savedSolidBgRef.current = ''; // reset save when node changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodeId]);
+
+  React.useEffect(() => {
+    if (!gradientEditorOpen) return;
+    const closeSelf = () => setGradientEditorOpen(false);
+    return registerEditorClose(closeSelf);
+  }, [gradientEditorOpen]);
+
+  const applyGradient = React.useCallback((colors: string[], animate: boolean) => {
+    if (colors.length < 2) return;
+    const gradient = `linear-gradient(to right, ${[...colors, colors[0]].join(', ')})`;
+    const existing = ((node as unknown as Record<string, unknown>).animation ?? {}) as Record<string, unknown>;
+    const nextAnim: Record<string, unknown> = {
+      ...existing,
+      outerStyle: { ...(existing.outerStyle as Record<string, unknown> ?? {}), backgroundImage: gradient, backgroundSize: '300% 100%', backgroundRepeat: 'no-repeat' },
+    };
+    if (animate) nextAnim.loop = { type: 'gradientDrift', duration: 3000, repeatCount: -1, direction: 'alternate' };
+    else if ((existing.loop as Record<string, unknown>)?.type === 'gradientDrift') delete nextAnim.loop;
+    store.patchNodeField(nodeId, 'animation', nextAnim);
+    commitHistory();
+  }, [nodeId, node, store, commitHistory]);
+
+  const removeGradient = React.useCallback(() => {
+    const existing = ((node as unknown as Record<string, unknown>).animation ?? {}) as Record<string, unknown>;
+    const nextOuter = { ...(existing.outerStyle as Record<string, unknown> ?? {}) };
+    delete nextOuter.backgroundImage; delete nextOuter.backgroundSize; delete nextOuter.backgroundRepeat;
+    const nextAnim: Record<string, unknown> = { ...existing, outerStyle: Object.keys(nextOuter).length ? nextOuter : undefined };
+    if ((existing.loop as Record<string, unknown>)?.type === 'gradientDrift') delete nextAnim.loop;
+    store.patchNodeField(nodeId, 'animation', nextAnim);
+    commitHistory();
+  }, [nodeId, node, store, commitHistory]);
+
+  const onGradientBinding = React.useCallback((v: FormulaValue) => {
+    const existing = ((node as unknown as Record<string, unknown>).animation ?? {}) as Record<string, unknown>;
+    if (typeof v === 'object' && v !== null) {
+      const nextOuter = { ...(existing.outerStyle as Record<string, unknown> ?? {}), backgroundImage: v, backgroundSize: '300% 100%', backgroundRepeat: 'no-repeat' };
+      store.patchNodeField(nodeId, 'animation', { ...existing, outerStyle: nextOuter });
+      commitHistory();
+    } else {
+      removeGradient();
+    }
+  }, [nodeId, node, store, commitHistory, removeGradient]);
+
+  const switchToSolid = () => {
+    const style = (node.props as { style?: Record<string, string> })?.style ?? {};
+    // Restore the saved solid color (if user had one before switching to gradient)
+    const { backgroundColor: _transparent, ...restStyle } = style;
+    const restoredStyle = savedSolidBgRef.current
+      ? { ...restStyle, backgroundColor: savedSolidBgRef.current }
+      : restStyle;
+    store.patchProp(nodeId, 'props.style', restoredStyle);
+    savedSolidBgRef.current = '';
+    removeGradient();
+  };
+
+  const switchToGradient = () => {
+    const style = (node.props as { style?: Record<string, string> })?.style ?? {};
+    // Save the current solid color so it can be restored on switchToSolid
+    savedSolidBgRef.current = style.backgroundColor ?? '';
+    // Override backgroundColor with transparent via inline style (wins over any bg-* class)
+    store.patchProp(nodeId, 'props.style', { ...style, backgroundColor: 'transparent' });
+    applyGradient(gradientColors, false);
+  };
+
+  const TAB_BASE: React.CSSProperties = { fontSize: 9, fontWeight: 600, padding: '3px 10px', borderRadius: 4, border: 'none', cursor: 'pointer', transition: 'background 0.1s, color 0.1s' };
+  const TAB_ACTIVE:   React.CSSProperties = { ...TAB_BASE, background: '#374151', color: '#f3f4f6' };
+  const TAB_INACTIVE: React.CSSProperties = { ...TAB_BASE, background: 'none', color: '#6b7280' };
+  const BTN_REMOVE = { fontSize: 9, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' } as const;
+  const BTN_ADD    = { fontSize: 9, color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' } as const;
+
+  return (
+    <div>
+      {/* Solid | Gradient tabs */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2, marginBottom: 8 }}>
+        <span style={{ fontSize: 9, color: '#6b7280', marginRight: 4, minWidth: 36 }}>Background</span>
+        <div style={{ display: 'flex', background: '#111827', borderRadius: 5, padding: 2, gap: 1 }}>
+          <button style={mode === 'solid' ? TAB_ACTIVE : TAB_INACTIVE} onClick={() => { if (mode !== 'solid') switchToSolid(); }}>Solid</button>
+          <button style={mode === 'gradient' ? TAB_ACTIVE : TAB_INACTIVE} onClick={() => { if (mode !== 'gradient') switchToGradient(); }}>Gradient</button>
+        </div>
+      </div>
+
+      {/* ── Solid mode ── */}
+      {mode === 'solid' && (
+        <FieldWithBinding label="backgroundColor" displayLabel="" hint="CSS color: e.g. #ff0000, rgba(0,0,0,0.5)" value={(((node.props as { style?: Record<string, unknown> })?.style ?? {}).backgroundColor as unknown as FormulaValue) ?? ''} onChange={v => {
+          if (typeof v === 'object' && v !== null) {
+            store.patchProp(nodeId, 'props.style.backgroundColor', v);
+            commitHistory();
+          } else {
+            patchStyle({ backgroundColor: (v as string) || '' });
+          }
+        }}>
+          <FigmaColorPicker
+            testId="input-bg-color"
+            value={computedBgColor}
+            onChange={(hex, cssVar) => cssVar
+              ? patchColorAsThemeVar('backgroundColor', 'props.style.backgroundColor', 'bg', cssVar)
+              : patchStyle({ backgroundColor: hex || '' })
+            }
+          />
+        </FieldWithBinding>
+      )}
+
+      {/* ── Gradient mode ── */}
+      {mode === 'gradient' && (
+        <div style={{ position: 'relative' }}>
+          {/* Formula editor */}
+          {gradientEditorOpen && (
+            <FormulaEditor
+              label="backgroundImage"
+              value={(isGradientFormula ? bgImageRaw : '') as FormulaValue}
+              expectedType="string"
+              hint="CSS gradient or formula — e.g. true ? 'linear-gradient(to right, #667eea, #764ba2)' : 'linear-gradient(to right, #f64f59, #c471ed)'"
+              anchor="right"
+              onChange={v => { onGradientBinding(v); setGradientEditorOpen(false); }}
+              onClose={() => setGradientEditorOpen(false)}
+            />
+          )}
+
+          {/* Gradient header row: bind icon + Remove */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+            <span style={{ flex: 1, fontSize: 9, color: '#6b7280' }}>
+              {isGradientFormula ? 'Formula bound' : `${gradientColors.length} stops`}
+            </span>
+            <BindingIcon isBound={isGradientFormula} onClick={() => { closeAllEditors(); setGradientEditorOpen(true); }} />
+            <button onClick={switchToSolid} style={BTN_REMOVE}>Remove</button>
+          </div>
+
+          {isGradientFormula ? (
+            <button data-testid="edit-gradient-formula-btn"
+              onClick={() => { closeAllEditors(); setGradientEditorOpen(true); }}
+              style={{ width: '100%', padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed', borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}>
+              ƒ Edit formula
+            </button>
+          ) : (
+            <>
+              {/* Live gradient preview bar */}
+              <div style={{ height: 20, borderRadius: 4, marginBottom: 8, background: `linear-gradient(to right, ${gradientColors.join(', ')})`, border: '1px solid #374151' }} />
+
+              {/* Color stops list */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {gradientColors.map((color, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <FigmaColorPicker
+                      testId={`input-gradient-color-${i}`}
+                      value={color}
+                      onChange={hex => {
+                        const next = [...gradientColors]; next[i] = hex || '#000000';
+                        setGradientColors(next); applyGradient(next, isGradientAnimated);
+                      }}
+                    />
+                    <span style={{ fontSize: 9, color: '#6b7280', fontFamily: 'monospace', flex: 1 }}>{color}</span>
+                    {gradientColors.length > 2 && (
+                      <button style={{ fontSize: 9, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}
+                        onClick={() => { const next = gradientColors.filter((_, j) => j !== i); setGradientColors(next); applyGradient(next, isGradientAnimated); }}>✕</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+                <button onClick={() => { const next = [...gradientColors, '#f64f59']; setGradientColors(next); applyGradient(next, isGradientAnimated); }}
+                  style={BTN_ADD}>+ Add color</button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <input type="checkbox" id={`gd-anim-${nodeId}`} checked={isGradientAnimated}
+                    onChange={e => applyGradient(gradientColors, e.target.checked)} style={{ cursor: 'pointer' }} />
+                  <label htmlFor={`gd-anim-${nodeId}`} style={{ fontSize: 9, color: '#9ca3af', cursor: 'pointer' }}>Animate</label>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── EffectsSection ───────────────────────────────────────────────────────────
+
+function EffectsSection({ nodeId, node, store, commitHistory }: {
+  nodeId: string;
+  node: SDUINode;
+  store: BuilderStore;
+  commitHistory: () => void;
+}) {
+  const nodeStyle = (node.props as { style?: Record<string, unknown> })?.style ?? {};
+  const animCfg = ((node as unknown as Record<string, unknown>).animation ?? {}) as Record<string, unknown>;
+  const filterCfg = (animCfg.filter ?? {}) as Record<string, unknown>;
+
+  // ── Shadow state ─────────────────────────────────────────────────────────────
+  const boxShadowRaw = nodeStyle.boxShadow;
+  const isShadowFormula = isBoundValue(boxShadowRaw as FormulaValue);
+  const rawBoxShadow = typeof boxShadowRaw === 'string' ? boxShadowRaw : '';
+  const parsed = parseBoxShadow(rawBoxShadow);
+  const hasShadow = !!parsed || isShadowFormula;
+
+  const [shadowColor,  setShadowColor]  = React.useState(parsed?.color  ?? '#000000');
+  const [shadowBlur,   setShadowBlur]   = React.useState(parsed?.blur   ?? 20);
+  const [shadowSpread, setShadowSpread] = React.useState(parsed?.spread ?? 0);
+  const [shadowX,      setShadowX]      = React.useState(parsed?.x      ?? 0);
+  const [shadowY,      setShadowY]      = React.useState(parsed?.y      ?? 4);
+
+  // Formula editor open state
+  const [shadowEditorOpen, setShadowEditorOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    const p = parseBoxShadow(rawBoxShadow);
+    setShadowColor(p?.color  ?? '#000000');
+    setShadowBlur(p?.blur    ?? 20);
+    setShadowSpread(p?.spread ?? 0);
+    setShadowX(p?.x          ?? 0);
+    setShadowY(p?.y          ?? 4);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodeId]);
+
+  React.useEffect(() => {
+    if (!shadowEditorOpen) return;
+    const closeSelf = () => setShadowEditorOpen(false);
+    const cleanup = registerEditorClose(closeSelf);
+    return cleanup;
+  }, [shadowEditorOpen]);
+
+  const applyShadow = React.useCallback((color: string, blur: number, spread: number, x: number, y: number) => {
+    const boxShadow = `${x}px ${y}px ${blur}px ${spread}px ${color}`;
+    store.patchProp(nodeId, 'props.style', {
+      ...(node.props as { style?: Record<string, unknown> })?.style,
+      boxShadow,
+      shadowColor: color,
+      shadowOffset: { width: x, height: y },
+      shadowRadius: blur,
+      shadowOpacity: 1,
+      elevation: Math.max(0, Math.round(blur / 2)),
+    });
+    commitHistory();
+  }, [nodeId, node, store, commitHistory]);
+
+  const removeShadow = React.useCallback(() => {
+    const s = { ...(node.props as { style?: Record<string, unknown> })?.style };
+    delete s.boxShadow; delete s.shadowColor; delete s.shadowOffset;
+    delete s.shadowRadius; delete s.shadowOpacity; delete s.elevation;
+    store.patchProp(nodeId, 'props.style', s);
+    commitHistory();
+  }, [nodeId, node, store, commitHistory]);
+
+  const onShadowBinding = React.useCallback((v: FormulaValue) => {
+    if (typeof v === 'object' && v !== null) {
+      store.patchProp(nodeId, 'props.style.boxShadow', v);
+      commitHistory();
+    } else {
+      const existing = (node.props as { style?: Record<string, unknown> })?.style ?? {};
+      const { boxShadow: _old, ...rest } = existing;
+      store.patchProp(nodeId, 'props.style', rest);
+      commitHistory();
+    }
+  }, [nodeId, node, store, commitHistory]);
+
+  // ── Element blur state ────────────────────────────────────────────────────────
+  const filterBlurRaw = filterCfg.blur;
+  const isBlurFormula = isBoundValue(filterBlurRaw as FormulaValue);
+  const filterBlurVal = typeof filterBlurRaw === 'number' ? filterBlurRaw : 0;
+
+  const patchFilterField = React.useCallback((field: string, v: FormulaValue) => {
+    const existingAnim = ((node as unknown as Record<string, unknown>).animation ?? {}) as Record<string, unknown>;
+    const existingFilter = (existingAnim.filter ?? {}) as Record<string, unknown>;
+    let nextFilter: Record<string, unknown>;
+    if (typeof v === 'object' && v !== null) {
+      nextFilter = { ...existingFilter, enabled: true, [field]: v };
+    } else {
+      const numVal = Number(v);
+      nextFilter = { ...existingFilter, enabled: true, [field]: numVal || undefined };
+      const hasValues = Object.entries(nextFilter).some(([k, val]) => k !== 'enabled' && val != null && val !== 0);
+      if (!hasValues) { nextFilter = {}; }
+    }
+    store.patchNodeField(nodeId, 'animation', { ...existingAnim, filter: Object.keys(nextFilter).length ? nextFilter : undefined });
+    commitHistory();
+  }, [nodeId, node, store, commitHistory]);
+
+  const patchFilter = React.useCallback((patch: Record<string, unknown>) => {
+    const existingAnim = ((node as unknown as Record<string, unknown>).animation ?? {}) as Record<string, unknown>;
+    const existingFilter = (existingAnim.filter ?? {}) as Record<string, unknown>;
+    const nextFilter = { ...existingFilter, ...patch, enabled: true };
+    const hasValues = Object.entries(nextFilter).some(([k, v]) => k !== 'enabled' && v != null && (typeof v !== 'number' || v !== 0));
+    store.patchNodeField(nodeId, 'animation', { ...existingAnim, filter: hasValues ? nextFilter : undefined });
+    commitHistory();
+  }, [nodeId, node, store, commitHistory]);
+
+  const BTN_REMOVE = { fontSize: 9, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' } as const;
+  const BTN_ADD    = { fontSize: 9, color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' } as const;
+  const SUB_HEADER = { fontSize: 10, color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.06em', flex: 1 };
+
+  return (
+    <div style={SECTION_STYLE}>
+
+      {/* ── Drop Shadow ── */}
+      <div style={{ position: 'relative' }}>
+        {/* Section header row: DROP SHADOW | [preview] | [bind] | [+ Add / Remove] */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: hasShadow ? 8 : 0 }}>
+          <span style={SUB_HEADER}>Drop shadow</span>
+          <BindingIcon isBound={isShadowFormula} onClick={() => { closeAllEditors(); setShadowEditorOpen(true); }} />
+          {!isShadowFormula && (parsed ? (
+            <button onClick={removeShadow} style={BTN_REMOVE}>Remove</button>
+          ) : (
+            <button onClick={() => applyShadow(shadowColor, shadowBlur, shadowSpread, shadowX, shadowY)} style={BTN_ADD}>+ Add</button>
+          ))}
+        </div>
+
+        {/* Formula editor popover */}
+        {shadowEditorOpen && (
+          <FormulaEditor
+            label="boxShadow"
+            value={(isShadowFormula ? boxShadowRaw : rawBoxShadow) as FormulaValue}
+            expectedType="string"
+            hint="CSS boxShadow string or formula, e.g. '0px 0px 20px 6px #a855f7' or ternary"
+            anchor="right"
+            onChange={v => { onShadowBinding(v); setShadowEditorOpen(false); }}
+            onClose={() => setShadowEditorOpen(false)}
+          />
+        )}
+
+        {/* Formula bound — show edit button */}
+        {isShadowFormula && (
+          <button data-testid="edit-formula-btn" onClick={() => { closeAllEditors(); setShadowEditorOpen(true); }}
+            style={{ width: '100%', padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed', borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}>
+            ƒ Edit formula
+          </button>
+        )}
+
+        {/* Shadow controls (not formula) */}
+        {!isShadowFormula && hasShadow && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+              <span style={{ fontSize: 9, color: '#6b7280', minWidth: 36 }}>Color</span>
+              <FigmaColorPicker
+                testId="input-shadow-color"
+                value={shadowColor}
+                onChange={hex => { const c = hex || '#000000'; setShadowColor(c); if (parsed) applyShadow(c, shadowBlur, shadowSpread, shadowX, shadowY); }}
+              />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+              <NumberInput label="Blur"   testId="input-shadow-blur"   value={shadowBlur}   onChange={v => { setShadowBlur(v);   if (parsed) applyShadow(shadowColor, v, shadowSpread, shadowX, shadowY); }} />
+              <NumberInput label="Spread" testId="input-shadow-spread" value={shadowSpread} onChange={v => { setShadowSpread(v); if (parsed) applyShadow(shadowColor, shadowBlur, v, shadowX, shadowY); }} />
+              <NumberInput label="X"      testId="input-shadow-x"      value={shadowX}      onChange={v => { setShadowX(v);      if (parsed) applyShadow(shadowColor, shadowBlur, shadowSpread, v, shadowY); }} />
+              <NumberInput label="Y"      testId="input-shadow-y"      value={shadowY}      onChange={v => { setShadowY(v);      if (parsed) applyShadow(shadowColor, shadowBlur, shadowSpread, shadowX, v); }} />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Element Blur ── */}
+      <div style={{ marginTop: 10, borderTop: '1px solid #1f2937', paddingTop: 10 }}>
+        <FieldWithBinding
+          label="filterBlur"
+          displayLabel="Element blur"
+          hint="Blur amount in px, e.g. 8. Formula: e.g. variables['UUID'] ? 8 : 0"
+          value={(isBlurFormula ? filterBlurRaw : filterBlurVal) as FormulaValue}
+          onChange={v => patchFilterField('blur', v)}
+          expectedType="number"
+          stackLayout
+        >
+          <NumberInput
+              label=""
+              testId="input-filter-blur"
+              value={filterBlurVal}
+              onChange={v => patchFilter({ blur: v || undefined })}
+            />
+        </FieldWithBinding>
+      </div>
+
+    </div>
+  );
+}
 
 // ─── Design Tab ───────────────────────────────────────────────────────────────
 
@@ -565,8 +987,12 @@ function DesignTab({ node }: { node: SDUINode }) {
   // Border width stored as border-[Xpx] arbitrary class
   const borderWidthPx = parseTwArbitraryPx(cls, 'border-') ?? 0;
   const borderStyle   = BORDER_STYLE_TOKENS.find(t => cls.includes(t)) ?? 'border-solid';
-  // Rotation is stored as inline style.transform for reliable visual rendering
-  const styleTransform = (node.props as { style?: Record<string, string> })?.style?.transform ?? '';
+  // Rotation stays in props.style.transform (rotation only — no translate mixed in).
+  // Guard against formula objects: only treat it as a string for parsing.
+  const styleTransform = (() => {
+    const t = (node.props as { style?: Record<string, unknown> })?.style?.transform;
+    return typeof t === 'string' ? t : '';
+  })();
   const rotateDeg = (() => {
     // Try inline style first: "rotate(16deg)" → 16
     const styleMatch = styleTransform.match(/rotate\(([-\d.]+)deg\)/);
@@ -574,6 +1000,19 @@ function DesignTab({ node }: { node: SDUINode }) {
     // Fall back to className token for backwards compat: rotate-[16deg] → 16
     const clsToken = parseTwToken(cls, 'rotate-') ?? parseTwToken(cls, '-rotate-') ?? '';
     return parseInt(clsToken.replace(/-?rotate-\[?/, '').replace('deg]', '') || '0');
+  })();
+  // Translate X/Y live in separate props.style.translateX / .translateY keys (not mixed into transform).
+  const translateXPx = (() => {
+    const t = nodeStyle.translateX;
+    if (typeof t !== 'string' || !t) return 0;
+    const m = t.match(/^([-\d.]+)/);
+    return m ? parseFloat(m[1]) : 0;
+  })();
+  const translateYPx = (() => {
+    const t = nodeStyle.translateY;
+    if (typeof t !== 'string' || !t) return 0;
+    const m = t.match(/^([-\d.]+)/);
+    return m ? parseFloat(m[1]) : 0;
   })();
   const isFlipH     = cls.includes('-scale-x-100');
   const isFlipV     = cls.includes('-scale-y-100');
@@ -592,12 +1031,6 @@ function DesignTab({ node }: { node: SDUINode }) {
   // Z-index stored as z-[N] arbitrary class (unitless integer)
   const zIndexPx      = parseTwArbitraryNum(cls, 'z-') ?? 0;
   const cursorToken   = parseTwToken(cls, 'cursor-') ?? 'cursor-default';
-  const displayToken  = DISPLAY_TOKENS.find(t => {
-    // Avoid matching 'hidden' as part of another class; check for exact token
-    const re = new RegExp(`(?:^|\\s)${t}(?:\\s|$)`);
-    return re.test(cls);
-  }) ?? '';
-
   // Typography extras
   const textAlign  = TEXT_ALIGN_TOKENS.find(t => cls.includes(t)) ?? 'text-left';
   const textDecor  = TEXT_DECORATION_TOKENS.find(t => cls.includes(t)) ?? 'no-underline';
@@ -933,8 +1366,7 @@ function DesignTab({ node }: { node: SDUINode }) {
               value={rotateDeg}
               min={-180} max={180}
               onChange={deg => {
-                const newTransform = deg !== 0 ? `rotate(${deg}deg)` : '';
-                patchStyle({ transform: newTransform });
+                patchStyle({ transform: deg !== 0 ? `rotate(${deg}deg)` : '' });
               }}
             />
           </FieldWithBinding>
@@ -950,6 +1382,96 @@ function DesignTab({ node }: { node: SDUINode }) {
               <svg width="12" height="14" viewBox="0 0 12 14" fill="none"><path d="M1 6h10M4 2.5L6 1l2 1.5M4 11.5L6 13l2-1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><line x1="6" y1="1" x2="6" y2="5.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="6" y1="8.5" x2="6" y2="13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
             </ToggleBtn>
           </div>
+        </div>
+        {/* Translate X / Y — stored as separate props.style.translateX / .translateY keys.
+            The renderer combines them with props.style.transform (rotation) at render time.
+            translateX/Y are NOT valid CSS property names, so we use the CSS `translate` property
+            for immediate DOM preview (Chrome 104+ / builder always targets modern browsers). */}
+        <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+          <FieldWithBinding
+            label="translateX"
+            displayLabel="Translate X"
+            hint="px offset, e.g. 20, -50. Formula should return a number or px string, e.g. variables['uuid']"
+            value={(nodeStyle.translateX ?? '') as FormulaValue}
+            onChange={v => {
+              if (typeof v === 'object' && v !== null) {
+                store.patchProp(nodeId, 'props.style.translateX', v);
+                const formulaStr = (v as { formula?: string }).formula;
+                if (formulaStr) {
+                  const zustandData = useSduiStore.getState().data;
+                  const vs = getGlobalVariableStore().getState().getFullState() as Record<string, unknown>;
+                  const { value: fval } = evaluateFormula(formulaStr, { ...zustandData, ...vs, theme: THEME_OBJ });
+                  if (fval != null && typeof fval !== 'object') {
+                    const px = parseFloat(String(fval)) || 0;
+                    const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
+                    if (el) (el.style as unknown as Record<string, string>).translate = `${px}px ${translateYPx}px`;
+                  }
+                }
+                commitHistory();
+              } else {
+                const px = parseFloat((v as string) || '0') || 0;
+                store.patchProp(nodeId, 'props.style.translateX', px !== 0 ? `${px}px` : '');
+                const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
+                if (el) (el.style as unknown as Record<string, string>).translate = `${px}px ${translateYPx}px`;
+                commitHistory();
+              }
+            }}
+          >
+            <NumberInput
+              label="Translate X"
+              testId="input-translate-x"
+              value={translateXPx}
+              min={-1000} max={1000}
+              onChange={tx => {
+                store.patchProp(nodeId, 'props.style.translateX', tx !== 0 ? `${tx}px` : '');
+                const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
+                if (el) (el.style as unknown as Record<string, string>).translate = `${tx}px ${translateYPx}px`;
+                commitHistory();
+              }}
+            />
+          </FieldWithBinding>
+          <FieldWithBinding
+            label="translateY"
+            displayLabel="Translate Y"
+            hint="px offset, e.g. 20, -50. Formula should return a number or px string, e.g. variables['uuid']"
+            value={(nodeStyle.translateY ?? '') as FormulaValue}
+            onChange={v => {
+              if (typeof v === 'object' && v !== null) {
+                store.patchProp(nodeId, 'props.style.translateY', v);
+                const formulaStr = (v as { formula?: string }).formula;
+                if (formulaStr) {
+                  const zustandData = useSduiStore.getState().data;
+                  const vs = getGlobalVariableStore().getState().getFullState() as Record<string, unknown>;
+                  const { value: fval } = evaluateFormula(formulaStr, { ...zustandData, ...vs, theme: THEME_OBJ });
+                  if (fval != null && typeof fval !== 'object') {
+                    const py = parseFloat(String(fval)) || 0;
+                    const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
+                    if (el) (el.style as unknown as Record<string, string>).translate = `${translateXPx}px ${py}px`;
+                  }
+                }
+                commitHistory();
+              } else {
+                const py = parseFloat((v as string) || '0') || 0;
+                store.patchProp(nodeId, 'props.style.translateY', py !== 0 ? `${py}px` : '');
+                const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
+                if (el) (el.style as unknown as Record<string, string>).translate = `${translateXPx}px ${py}px`;
+                commitHistory();
+              }
+            }}
+          >
+            <NumberInput
+              label="Translate Y"
+              testId="input-translate-y"
+              value={translateYPx}
+              min={-1000} max={1000}
+              onChange={ty => {
+                store.patchProp(nodeId, 'props.style.translateY', ty !== 0 ? `${ty}px` : '');
+                const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
+                if (el) (el.style as unknown as Record<string, string>).translate = `${translateXPx}px ${ty}px`;
+                commitHistory();
+              }}
+            />
+          </FieldWithBinding>
         </div>
       </div>
 
@@ -1252,30 +1774,10 @@ function DesignTab({ node }: { node: SDUINode }) {
         </div>
       )}
 
-      {/* ── Display & Cursor ── */}
+      {/* ── Interaction ── */}
       <div style={SECTION_STYLE}>
-        <SectionHeader title="Display & Interaction" />
+        <SectionHeader title="Interaction" />
         <div style={{ display: 'flex', gap: 6 }}>
-          <FieldWithBinding label="display" displayLabel="Display" hint="e.g. flex, block, grid, none" value={(classFormulas?.['display'] as FormulaValue) ?? displayToken} onChange={v => bindOrPatchCls('display', evaluated => {
-            let next = cls;
-            DISPLAY_TOKENS.forEach(t => {
-              next = next.replace(new RegExp(`(?:^|\\s)${t}(?=\\s|$)`, 'g'), ' ').replace(/\s+/g, ' ').trim();
-            });
-            patchCls(evaluated ? `${next} ${evaluated}`.trim() : next);
-          }, v)} expectedType="string">
-            <SelectInput
-              label="Display"
-              value={displayToken}
-              options={['', ...DISPLAY_TOKENS]}
-              onChange={v => {
-                let next = cls;
-                DISPLAY_TOKENS.forEach(t => {
-                  next = next.replace(new RegExp(`(?:^|\\s)${t}(?=\\s|$)`, 'g'), ' ').replace(/\s+/g, ' ').trim();
-                });
-                patchCls(v ? `${next} ${v}`.trim() : next);
-              }}
-            />
-          </FieldWithBinding>
           <FieldWithBinding label="cursor" displayLabel="Cursor" hint="e.g. cursor-pointer, cursor-default" value={(classFormulas?.['cursor'] as FormulaValue) ?? cursorToken} onChange={v => bindOrPatchCls('cursor', evaluated => patchCls(replaceTwToken(cls, 'cursor-', evaluated)), v)} expectedType="string">
             <SelectInput
               label="Cursor"
@@ -1307,28 +1809,17 @@ function DesignTab({ node }: { node: SDUINode }) {
 
       {/* ── Fill & Opacity ── */}
       <div style={SECTION_STYLE}>
-        <SectionHeader title="Fill & Opacity">
-          {computedBgColor && computedBgColor !== 'rgba(0, 0, 0, 0)' && (
-            <MiniPreview
-              style={{ background: computedBgColor, opacity: opacityVal / 100 }}
-              title={`bg: ${computedBgColor}`}
-            />
-          )}
-        </SectionHeader>
+        <SectionHeader title="Fill & Opacity" />
         <div style={{ marginTop: 4 }}>
-          <FieldWithBinding label="backgroundColor" displayLabel="Background" hint="CSS color: e.g. red, #ff0000, rgba(0,0,0,0.5)" value={(nodeStyle.backgroundColor as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('backgroundColor', v)}>
-            <div>
-              <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Background</span>
-              <FigmaColorPicker
-                testId="input-bg-color"
-                value={computedBgColor}
-                onChange={(hex, cssVar) => cssVar
-                  ? patchColorAsThemeVar('backgroundColor', 'props.style.backgroundColor', 'bg', cssVar)
-                  : patchStyle({ backgroundColor: hex || '' })
-                }
-              />
-            </div>
-          </FieldWithBinding>
+          <FillBackgroundSection
+            nodeId={nodeId}
+            node={node}
+            store={store}
+            commitHistory={commitHistory}
+            computedBgColor={computedBgColor}
+            patchColorAsThemeVar={patchColorAsThemeVar}
+            patchStyle={patchStyle as (patch: Record<string, string>) => void}
+          />
         </div>
         <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ fontSize: 9, color: '#6b7280', minWidth: 60 }}>Fill opacity</span>
@@ -1464,38 +1955,8 @@ function DesignTab({ node }: { node: SDUINode }) {
         );
       })()}
 
-      {/* ── Effects (Shadow) ── */}
-      <div style={SECTION_STYLE}>
-        <SectionHeader title="Effects">
-          {shadowToken && shadowToken !== 'shadow-none' && (() => {
-            const shadowMap: Record<string, string> = {
-              'shadow-sm':  '0 1px 2px rgba(0,0,0,0.55)',
-              'shadow':     '0 2px 6px rgba(0,0,0,0.55)',
-              'shadow-md':  '0 4px 10px rgba(0,0,0,0.6)',
-              'shadow-lg':  '0 8px 18px rgba(0,0,0,0.65)',
-              'shadow-xl':  '0 12px 28px rgba(0,0,0,0.7)',
-              'shadow-2xl': '0 20px 40px rgba(0,0,0,0.75)',
-            };
-            return (
-              <MiniPreview
-                style={{ background: '#374151', boxShadow: shadowMap[shadowToken] ?? '0 2px 6px rgba(0,0,0,0.55)' }}
-                title={shadowToken}
-              />
-            );
-          })()}
-        </SectionHeader>
-        <div style={{ marginTop: 4 }}>
-          <FieldWithBinding label="shadow" displayLabel="Drop shadow" hint="e.g. shadow, shadow-md, shadow-lg, shadow-none" value={(classFormulas?.['shadow'] as FormulaValue) ?? shadowToken} onChange={v => bindOrPatchCls('shadow', evaluated => patchCls(replaceTwToken(removeTwToken(cls, 'shadow'), 'shadow', evaluated)), v)} expectedType="string">
-            <SelectInput
-              label="Drop shadow"
-              testId="select-shadow"
-              value={shadowToken}
-              options={SHADOW_TOKENS}
-              onChange={v => patchCls(replaceTwToken(removeTwToken(cls, 'shadow'), 'shadow', v))}
-            />
-          </FieldWithBinding>
-        </div>
-      </div>
+      {/* ── Effects (Shadow, Blur, Backdrop) ── */}
+      <EffectsSection nodeId={nodeId} node={node} store={store} commitHistory={commitHistory} />
 
       {/* ── Animation ── */}
       <AnimationInDesign

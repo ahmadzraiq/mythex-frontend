@@ -114,6 +114,19 @@ function ToolRow({ tool, stepNumber }: { tool: AiToolCall; stepNumber: number })
         {isDone && (
           <span style={{ fontSize: 9, color: '#34d399', flexShrink: 0, animation: 'toolDotPop 0.35s ease-out' }}>✓</span>
         )}
+        {/* AI blind badge — tool failed client-side but AI was told "ok" */}
+        {tool.aiBlind && (
+          <span
+            title="AI unaware — this tool failed on the client but the AI was told it succeeded"
+            style={{
+              fontSize: 8, color: '#fbbf24', background: '#422006',
+              borderRadius: 3, padding: '1px 4px', flexShrink: 0,
+              fontWeight: 600, letterSpacing: 0.3,
+            }}
+          >
+            BLIND
+          </span>
+        )}
       </button>
       {open && (
         <pre style={{
@@ -123,6 +136,141 @@ function ToolRow({ tool, stepNumber }: { tool: AiToolCall; stepNumber: number })
         }}>
           {JSON.stringify({ input: tool.input, result: tool.result }, null, 2)}
         </pre>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Phase grouping helpers
+// ---------------------------------------------------------------------------
+
+const PHASE_ORDER: Array<AiToolCall['phase'] | undefined> = ['planning', 'structure', 'binding', 'media', 'styling', 'styling:layout', 'styling:colors', 'styling:typo', 'workflows', undefined];
+const PHASE_LABELS: Record<string, string> = {
+  planning: 'Planning',
+  structure: 'Structure',
+  binding: 'Binding',
+  media: 'Media',
+  styling: 'Styling',
+  'styling:layout': 'Layout',
+  'styling:colors': 'Colors',
+  'styling:typo': 'Typo + Anim',
+  workflows: 'Workflows',
+};
+
+function groupToolsByPhase(tools: AiToolCall[]) {
+  return PHASE_ORDER
+    .map(p => ({
+      phase: p,
+      label: p ? (PHASE_LABELS[p] ?? p) : 'Other',
+      tools: tools.filter(t => t.phase === p),
+    }))
+    .filter(g => g.tools.length > 0);
+}
+
+// ---------------------------------------------------------------------------
+// RoundDivider — subtle separator between Anthropic API rounds
+// ---------------------------------------------------------------------------
+
+function RoundDivider({ round }: { round: number }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 6,
+      padding: '3px 0', margin: '2px 0',
+    }}>
+      <div style={{ flex: 1, height: 1, background: '#1e293b' }} />
+      <span style={{ fontSize: 9, color: '#475569', whiteSpace: 'nowrap', fontWeight: 500 }}>
+        Round {round}
+      </span>
+      <div style={{ flex: 1, height: 1, background: '#1e293b' }} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// PhaseGroupSection — one collapsible phase (Structure / Media / Styling / Workflows)
+// ---------------------------------------------------------------------------
+
+function PhaseGroupSection({ label, tools, active }: {
+  label: string;
+  tools: AiToolCall[];
+  active: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [liveElapsed, setLiveElapsed] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const hasError = tools.some(t => t.status === 'error');
+  const blindCount = tools.filter(t => t.aiBlind).length;
+  const n = tools.length;
+
+  useEffect(() => {
+    if (active) {
+      const startTs = tools[0]?.timestamp ?? Date.now();
+      timerRef.current = setInterval(
+        () => setLiveElapsed(Math.floor((Date.now() - startTs) / 1000)),
+        500,
+      );
+    } else {
+      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
+
+  const firstTs = tools[0]?.timestamp;
+  const lastTs = tools[tools.length - 1]?.timestamp;
+  const doneLabel = (!active && firstTs && lastTs && lastTs > firstTs)
+    ? `${((lastTs - firstTs) / 1000).toFixed(1)}s`
+    : null;
+  const timeDisplay = active ? `${liveElapsed}s` : doneLabel;
+
+  const dotColor = active
+    ? '#4f46e5'
+    : hasError ? '#ef4444' : blindCount > 0 ? '#fbbf24' : '#34d399';
+  const dotAnim = active ? 'toolDotSpin 1.4s linear infinite' : 'none';
+
+  return (
+    <div style={{ marginBottom: 4 }}>
+      <button
+        onClick={() => setExpanded(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6, width: '100%',
+          padding: '2px 0', border: 'none', background: 'transparent',
+          fontSize: 11, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
+        }}
+      >
+        <span style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0, background: dotColor, animation: dotAnim }} />
+        <span style={{ color: '#94a3b8', fontWeight: 500, flex: 1 }}>
+          {label}
+        </span>
+        {active ? (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ color: '#334155', fontSize: 10 }}>{liveElapsed}s</span>
+            <AnimatedDots />
+          </span>
+        ) : (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#334155', fontSize: 10 }}>
+            {n} step{n !== 1 ? 's' : ''}{doneLabel ? ` · ${doneLabel}` : ''}
+            {blindCount > 0 && (
+              <span style={{ color: '#fbbf24', fontSize: 8, fontWeight: 600 }}>{blindCount} blind</span>
+            )}
+            {expanded ? ' ▲' : ' ▼'}
+          </span>
+        )}
+      </button>
+      {expanded && (
+        <div style={{ borderLeft: '1px solid #1e293b', paddingLeft: 8, paddingRight: 14, marginTop: 3, maxHeight: 180, overflowY: 'auto' }}>
+          {tools.map((t, i) => {
+            const prevRound = i > 0 ? tools[i - 1].round : undefined;
+            const showRoundDivider = t.round !== undefined && prevRound !== undefined && t.round !== prevRound;
+            return (
+              <React.Fragment key={i}>
+                {showRoundDivider && <RoundDivider round={t.round!} />}
+                <ToolRow tool={t} stepNumber={i + 1} />
+              </React.Fragment>
+            );
+          })}
+        </div>
       )}
     </div>
   );
@@ -162,13 +310,45 @@ function ToolCallsGroup({ tools, streaming, isThinking }: { tools: AiToolCall[];
 
   const timeLabel = totalMs !== null ? `${(totalMs / 1000).toFixed(1)}s` : null;
 
+  // Check whether any tool has a phase tag — if so use grouped display
+  const hasPhases = tools.some(t => t.phase !== undefined);
+  const groups = hasPhases ? groupToolsByPhase(tools) : null;
+  // The "active" phase is the phase of the last received tool call (while streaming)
+  const activePhase = streaming ? (tools[tools.length - 1]?.phase) : undefined;
+
   // ── Streaming state ──────────────────────────────────────────────────────
   if (streaming) {
+    if (groups) {
+      // Phase-grouped streaming view
+      return (
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            <AnimatedDots />
+            <span style={{ fontSize: 11, color: '#475569' }}>
+              {isThinking
+                ? <span style={{ color: '#334155', fontStyle: 'italic' }}>Planning next steps…</span>
+                : <>{n} step{n !== 1 ? 's' : ''}</>
+              }
+            </span>
+          </div>
+          <div style={{ borderLeft: '1px solid #1e293b', paddingLeft: 8 }}>
+            {groups.map(g => (
+              <PhaseGroupSection
+                key={g.phase ?? 'other'}
+                label={g.label}
+                tools={g.tools}
+                active={streaming && g.phase === activePhase}
+              />
+            ))}
+          </div>
+        </div>
+      );
+    }
+    // Flat streaming view (no phase tags — edit mode or main loop)
     const live = tools.slice(-LIVE_MAX);
     const hidden = n - live.length;
     return (
       <div style={{ marginBottom: 10 }}>
-        {/* Live header: animated dots + count, or "Planning…" between rounds */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
           <AnimatedDots />
           <span style={{ fontSize: 11, color: '#475569' }}>
@@ -178,7 +358,6 @@ function ToolCallsGroup({ tools, streaming, isThinking }: { tools: AiToolCall[];
             }
           </span>
         </div>
-        {/* Rows — paddingRight leaves room so scrollbar never covers step numbers */}
         <div ref={listRef}
           style={{ borderLeft: '1px solid #1e293b', paddingLeft: 8, paddingRight: 14, maxHeight: 130, overflowY: 'auto' }}>
           {hidden > 0 && (
@@ -193,7 +372,6 @@ function ToolCallsGroup({ tools, streaming, isThinking }: { tools: AiToolCall[];
   }
 
   // ── Done state ───────────────────────────────────────────────────────────
-  // Status dot: green = success, red = has errors
   const doneDotColor = hasError ? '#ef4444' : '#34d399';
   return (
     <div style={{ marginBottom: 10 }}>
@@ -217,13 +395,226 @@ function ToolCallsGroup({ tools, streaming, isThinking }: { tools: AiToolCall[];
         <span style={{ fontSize: 9, color: '#334155' }}>{expanded ? '▲' : '▼'}</span>
       </button>
 
-      {/* Expanded list — paddingRight prevents scrollbar overlap */}
+      {/* Expanded: phase-grouped or flat */}
       {expanded && (
         <div style={{
           borderLeft: '1px solid #1e293b', paddingLeft: 8, paddingRight: 14,
-          marginTop: 5, maxHeight: 220, overflowY: 'auto',
+          marginTop: 5, maxHeight: 320, overflowY: 'auto',
         }}>
-          {tools.map((t, i) => <ToolRow key={i} tool={t} stepNumber={i + 1} />)}
+          {groups
+            ? groups.map(g => (
+                <PhaseGroupSection
+                  key={g.phase ?? 'other'}
+                  label={g.label}
+                  tools={g.tools}
+                  active={false}
+                />
+              ))
+            : tools.map((t, i) => {
+                const prevRound = i > 0 ? tools[i - 1].round : undefined;
+                const showRoundDivider = t.round !== undefined && prevRound !== undefined && t.round !== prevRound;
+                return (
+                  <React.Fragment key={i}>
+                    {showRoundDivider && <RoundDivider round={t.round!} />}
+                    <ToolRow tool={t} stepNumber={i + 1} />
+                  </React.Fragment>
+                );
+              })
+          }
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// BuildStats — collapsible summary of rounds, blind failures, and build plan
+// ---------------------------------------------------------------------------
+
+const AGENT_COLORS: Record<string, string> = {
+  structure: '#60a5fa',
+  binding: '#34d399',
+  styling: '#f472b6',
+  'styling:layout': '#e879f9',
+  'styling:colors': '#f472b6',
+  'styling:typo': '#c084fc',
+  workflows: '#fbbf24',
+  media: '#fb923c',
+};
+
+function BuildStats({ msg }: { msg: AiChatMessage }) {
+  const [expanded, setExpanded] = useState(false);
+  const [expandedAgents, setExpandedAgents] = useState<Set<string>>(new Set());
+  const tools = msg.toolCalls ?? [];
+  const blindCount = tools.filter(t => t.aiBlind).length;
+  const errorCount = tools.filter(t => t.status === 'error').length;
+  const maxRound = tools.reduce((m, t) => Math.max(m, t.round ?? 0), 0);
+  const rounds = msg.roundCount ?? maxRound;
+  const plan = msg.buildPlanUnits;
+  const agents = msg.agentDebugInfo;
+  const agentList = agents ? Object.values(agents) : [];
+
+  const hasStats = rounds > 0 || blindCount > 0 || (plan && plan.length > 0) || agentList.length > 0;
+  if (!hasStats) return null;
+
+  const toggleAgent = (name: string) => {
+    setExpandedAgents(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      return next;
+    });
+  };
+
+  const totalDuration = agentList.length > 0
+    ? Math.max(...agentList.map(a => (a.endedAt ?? a.startedAt) - a.startedAt))
+    : 0;
+  const earliestStart = agentList.length > 0
+    ? Math.min(...agentList.map(a => a.startedAt))
+    : 0;
+
+  return (
+    <div style={{ marginTop: 4, marginBottom: 6 }}>
+      <button
+        onClick={() => setExpanded(o => !o)}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 5,
+          padding: 0, border: 'none', background: 'transparent',
+          fontFamily: 'inherit', cursor: 'pointer',
+          fontSize: 10, color: '#475569',
+        }}
+      >
+        <span style={{ color: '#334155' }}>
+          {agentList.length > 0 ? `${agentList.length} agents` : rounds > 0 ? `${rounds} round${rounds !== 1 ? 's' : ''}` : ''}
+          {errorCount > 0 ? ` · ${errorCount} error${errorCount !== 1 ? 's' : ''}` : ''}
+          {blindCount > 0 ? ` · ${blindCount} blind` : ''}
+          {totalDuration > 0 ? ` · ${(totalDuration / 1000).toFixed(1)}s` : ''}
+        </span>
+        <span style={{ fontSize: 9, color: blindCount > 0 ? '#fbbf24' : '#334155' }}>
+          {expanded ? '▲ Stats' : '▼ Stats'}
+        </span>
+      </button>
+      {expanded && (
+        <div style={{
+          marginTop: 4, padding: '6px 8px', borderRadius: 5,
+          background: '#0f172a', border: '1px solid #1e293b',
+          fontSize: 10, color: '#94a3b8',
+        }}>
+          {errorCount > 0 && (
+            <div style={{ marginBottom: 4 }}>
+              <span style={{ color: '#64748b' }}>Errors: </span>
+              <span style={{ color: '#ef4444' }}>{errorCount}</span>
+              {blindCount > 0 && (
+                <span style={{ color: '#fbbf24', marginLeft: 6 }}>
+                  ({blindCount} blind — AI unaware)
+                </span>
+              )}
+            </div>
+          )}
+          {msg.phaseLog && msg.phaseLog.length > 0 && (
+            <div style={{ marginBottom: 4 }}>
+              <span style={{ color: '#64748b' }}>Phases: </span>
+              {msg.phaseLog.map((p, i) => (
+                <span key={i} style={{ color: '#94a3b8' }}>
+                  {i > 0 && ' → '}
+                  {p.phase}
+                </span>
+              ))}
+            </div>
+          )}
+          {plan && plan.length > 0 && (
+            <div style={{ marginBottom: 6 }}>
+              <span style={{ color: '#64748b' }}>Build plan: </span>
+              {plan.map((u, i) => (
+                <div key={i} style={{ paddingLeft: 8, color: '#94a3b8' }}>
+                  {u.name}
+                  {u.sectionCount ? ` (${u.sectionCount} section${u.sectionCount !== 1 ? 's' : ''})` : ''}
+                  <span style={{ color: '#475569' }}> — {u.pageRoute}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {/* Per-agent timeline bars */}
+          {agentList.length > 0 && totalDuration > 0 && (
+            <div style={{ marginBottom: 6 }}>
+              <div style={{ color: '#64748b', marginBottom: 3 }}>Agent Timeline:</div>
+              {agentList.map(a => {
+                const offsetPct = earliestStart > 0 ? ((a.startedAt - earliestStart) / totalDuration) * 100 : 0;
+                const widthPct = a.duration ? (a.duration / totalDuration) * 100 : 5;
+                const color = AGENT_COLORS[a.agent] ?? '#94a3b8';
+                return (
+                  <div key={a.agent} style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+                    <span style={{ width: 60, textAlign: 'right', color, fontSize: 9, flexShrink: 0 }}>{a.agent}</span>
+                    <div style={{ flex: 1, height: 8, background: '#1e293b', borderRadius: 3, position: 'relative', overflow: 'hidden' }}>
+                      <div style={{
+                        position: 'absolute', left: `${offsetPct}%`, width: `${Math.max(widthPct, 2)}%`,
+                        height: '100%', background: color, borderRadius: 3, opacity: 0.8,
+                      }} />
+                    </div>
+                    <span style={{ fontSize: 9, color: '#64748b', width: 40, flexShrink: 0 }}>
+                      {a.duration ? `${(a.duration / 1000).toFixed(1)}s` : '...'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {/* Per-agent details */}
+          {agentList.map(a => {
+            const isExpanded = expandedAgents.has(a.agent);
+            const color = AGENT_COLORS[a.agent] ?? '#94a3b8';
+            const agentErrors = a.toolCalls.filter(t => t.status === 'error').length;
+            return (
+              <div key={a.agent} style={{ marginBottom: 4, borderLeft: `2px solid ${color}`, paddingLeft: 6 }}>
+                <button
+                  onClick={() => toggleAgent(a.agent)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    padding: 0, border: 'none', background: 'transparent',
+                    fontFamily: 'inherit', cursor: 'pointer', fontSize: 10,
+                    color, width: '100%',
+                  }}
+                >
+                  <span style={{ fontWeight: 600 }}>{a.agent}</span>
+                  <span style={{ color: '#64748b', fontSize: 9 }}>
+                    {a.rounds != null ? `${a.rounds}r` : ''} · {a.toolCalls.length} tools
+                    {a.duration ? ` · ${(a.duration / 1000).toFixed(1)}s` : ''}
+                    {agentErrors > 0 ? ` · ${agentErrors} err` : ''}
+                  </span>
+                  <span style={{ marginLeft: 'auto', fontSize: 8, color: '#475569' }}>
+                    {isExpanded ? '▲' : '▼'}
+                  </span>
+                </button>
+                {isExpanded && (
+                  <div style={{ paddingLeft: 4, paddingTop: 3, fontSize: 9, color: '#64748b' }}>
+                    <div style={{ marginBottom: 3 }}>
+                      <span style={{ color: '#475569' }}>Tools: </span>
+                      {a.tools.join(', ')}
+                    </div>
+                    <details style={{ marginBottom: 3 }}>
+                      <summary style={{ cursor: 'pointer', color: '#475569' }}>
+                        System prompt ({a.systemPrompt.length} chars)
+                      </summary>
+                      <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: '#64748b', maxHeight: 200, overflow: 'auto', fontSize: 8, marginTop: 2, padding: 4, background: '#020617', borderRadius: 3 }}>
+                        {a.systemPrompt}
+                      </pre>
+                    </details>
+                    {a.toolCalls.length > 0 && (
+                      <div>
+                        <span style={{ color: '#475569' }}>Tool calls:</span>
+                        {a.toolCalls.map((tc, i) => (
+                          <div key={i} style={{ paddingLeft: 6, color: tc.status === 'error' ? '#fca5a5' : '#94a3b8' }}>
+                            <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: tc.status === 'error' ? '#ef4444' : tc.aiBlind ? '#fbbf24' : '#22c55e', marginRight: 3, verticalAlign: 'middle' }} />
+                            {tc.name}({tc.input.nodeId ? String(tc.input.nodeId).slice(0, 8) + '...' : ''})
+                            {tc.aiBlind ? ' BLIND' : ''}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -578,6 +969,7 @@ function MessageBubble({
       {!isUser && msg.toolCalls && msg.toolCalls.length > 0 && (
         <div style={{ width: '100%', paddingLeft: 32 }}>
           <ToolCallsGroup tools={msg.toolCalls} streaming={isThisStreaming} isThinking={msg.isThinking} />
+          {!isThisStreaming && <BuildStats msg={msg} />}
           {!isThisStreaming && (
             <CopyMsgLogBtn msg={msg} />
           )}
@@ -920,39 +1312,95 @@ export function AiChatPanel() {
     if (copyToolsLabel === 'loading') return;
     setCopyToolsLabel('loading');
     try {
-      // Phase prompts & tool lists from server
       const info = await getDebugInfo();
 
-      // Conversation history with tool calls
-      const conversation = aiChatHistory.map(m => ({
-        role: m.role,
-        content: m.content ?? '',
-        ...(m.buildPhase  ? { buildPhase: m.buildPhase }   : {}),
-        ...(m.roundCount  ? { roundCount: m.roundCount }   : {}),
-        ...(m.phaseLog?.length ? { phaseLog: m.phaseLog }  : {}),
-        ...(m.toolCalls?.length
-          ? { tools: m.toolCalls.map(t => ({ name: t.name, status: t.status, input: t.input, result: t.result })) }
-          : {}),
-      }));
+      const allToolCalls = aiChatHistory.flatMap(m => m.toolCalls ?? []);
+      const lastMsg = aiChatHistory[aiChatHistory.length - 1];
+      const agentInfo = lastMsg?.agentDebugInfo;
 
-      const output = {
-        prompts: {
-          main:   info.systemPrompt,
-          phase2: info.phase2Prompt,
-          phase3: info.phase3Prompt,
-        },
-        tools: {
-          main:   info.mainTools,
-          phase2: info.phase2Tools,
-          phase3: info.phase3Tools,
-        },
-        conversation,
+      // If we have per-agent debug info (parallel architecture), use it directly
+      if (agentInfo && Object.keys(agentInfo).length > 0) {
+        const agents: Record<string, unknown> = {};
+        for (const [name, a] of Object.entries(agentInfo)) {
+          agents[name] = {
+            rounds: a.rounds,
+            toolCallCount: a.toolCallCount,
+            duration: a.duration ? `${(a.duration / 1000).toFixed(1)}s` : null,
+            tools: a.tools,
+            systemPrompt: a.systemPrompt,
+            toolCalls: a.toolCalls.map(t => ({
+              name: t.name, status: t.status, input: t.input, result: t.result,
+              round: t.round, aiBlind: t.aiBlind || undefined,
+            })),
+          };
+        }
+
+        const blindTotal = allToolCalls.filter(t => t.aiBlind).length;
+        const stats = {
+          totalTools: allToolCalls.length,
+          agents: Object.keys(agentInfo).length,
+          blindFailures: blindTotal,
+        };
+
+        const output = { stats, agents };
+        await navigator.clipboard.writeText(JSON.stringify(output, null, 2));
+        setCopyToolsLabel('copied');
+        setTimeout(() => setCopyToolsLabel('idle'), 2000);
+        return;
+      }
+
+      // Fallback: legacy phase-based log
+      const phaseContext: Record<string, { systemPrompt: string; tools: string[] }> = {
+        planning:   { systemPrompt: info.planningPrompt ?? '', tools: [] },
+        structure:  { systemPrompt: info.phase2Prompt ?? '', tools: info.phase2Tools ?? [] },
+        media:      { systemPrompt: '', tools: ['set_src'] },
+        styling:    { systemPrompt: info.phase3Prompt ?? '', tools: info.phase3Tools ?? [] },
+        workflows:  { systemPrompt: info.phaseWPrompt ?? '', tools: info.phaseWTools ?? [] },
+        other:      { systemPrompt: info.systemPrompt ?? '', tools: info.mainTools ?? [] },
       };
+
+      const phases: Record<string, { systemPrompt: string; tools: string[]; calls: unknown[] }> = {};
+      const phaseKeys = ['planning', 'structure', 'media', 'styling', 'workflows', 'other'] as const;
+
+      for (const key of phaseKeys) {
+        const calls = allToolCalls
+          .filter(t => (t.phase ?? 'other') === key)
+          .map(t => ({
+            name: t.name, status: t.status, input: t.input, result: t.result,
+            round: t.round, aiBlind: t.aiBlind || undefined,
+          }));
+        if (calls.length > 0 || phaseContext[key].systemPrompt) {
+          phases[key] = { ...phaseContext[key], calls };
+        }
+      }
+
+      const PHASES_WITH_PROMPTS = new Set(['planning', 'structure', 'styling', 'workflows']);
+      const health: Record<string, string> = {};
+      for (const [key, ctx] of Object.entries(phaseContext)) {
+        if (!PHASES_WITH_PROMPTS.has(key)) continue;
+        if (!ctx.systemPrompt) {
+          health[key] = 'MISSING — prompt returned empty string';
+        } else if (ctx.systemPrompt.startsWith('(ERROR:')) {
+          health[key] = ctx.systemPrompt;
+        }
+      }
+
+      const blindTotal = allToolCalls.filter(t => t.aiBlind).length;
+      const roundMax = allToolCalls.reduce((m, t) => Math.max(m, t.round ?? 0), 0);
+      const stats = { totalTools: allToolCalls.length, rounds: roundMax, blindFailures: blindTotal };
+
+      const output = Object.keys(health).length > 0 ? { health, stats, phases } : { stats, phases };
 
       await navigator.clipboard.writeText(JSON.stringify(output, null, 2));
       setCopyToolsLabel('copied');
       setTimeout(() => setCopyToolsLabel('idle'), 2000);
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      try {
+        await navigator.clipboard.writeText(`DEBUG LOG FAILED\n\n${msg}`);
+      } catch {
+        // clipboard blocked
+      }
       setCopyToolsLabel('idle');
     }
   }, [copyToolsLabel, getDebugInfo, aiChatHistory]);

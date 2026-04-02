@@ -136,6 +136,18 @@
       "config": "popupTest",
       "auth": false,
       "layout": "full"
+    },
+    {
+      "path": "/hero-showcase",
+      "config": "heroShowcase",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/pricing-card-test",
+      "config": "pricingCardTest",
+      "auth": false,
+      "layout": "full"
     }
   ]
 }

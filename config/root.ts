@@ -29,6 +29,8 @@ import notFound from './screens/not-found.json';
 import workflowTest from './screens/workflow-test.json';
 import animationTest from './screens/animation-test.json';
 import popupTest from './screens/popup-test.json';
+import heroShowcase from './screens/hero-showcase.json';
+import pricingCardTest from './screens/pricing-card-test.json';
 
 // Layouts
 import storeLayout from './layouts/store.json';
@@ -89,6 +91,8 @@ const screens = {
   workflowTest,
   animationTest,
   popupTest,
+  heroShowcase,
+  pricingCardTest,
 };
 
 const layouts = {

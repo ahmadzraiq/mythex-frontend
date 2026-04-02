@@ -46,12 +46,14 @@ type BuilderChatSSE =
   | { type: 'text_delta'; content: string }
   | { type: 'thinking_delta'; content: string }
   | { type: 'round_start'; round: number }
-  | { type: 'tool_executed'; id: string; name: string; input: Record<string, unknown>; result?: unknown; error?: string }
+  | { type: 'tool_executed'; id: string; name: string; input: Record<string, unknown>; result?: unknown; error?: string; phase?: 'structure' | 'media' | 'styling' | 'styling:layout' | 'styling:colors' | 'styling:typo' | 'workflows' | 'binding' }
   | { type: 'image_results'; images: Array<{ url: string; thumb: string; alt: string; credit: string; photographer?: string }> }
   | { type: 'icon_results'; icons: Array<{ id: string; name: string; prefix: string }> }
-  | { type: 'build_phase'; phase: 'planning' | 'editing' | 'building' | 'wiring'; total?: number; message: string; buildUnits?: Array<{ name: string; description: string; pageRoute: string; sectionCount?: number }> }
+  | { type: 'build_phase'; phase: 'planning' | 'editing' | 'building' | 'wiring' | 'structure' | 'parallel'; total?: number; message: string; buildUnits?: Array<{ name: string; description: string; pageRoute: string; sectionCount?: number }> }
   | { type: 'section_progress'; done: number; total: number; name: string }
   | { type: 'phase3_started' }
+  | { type: 'agent_context'; agent: string; systemPrompt: string; tools: string[]; syntheticMessageCount: number; startedAt: number }
+  | { type: 'agent_complete'; agent: string; rounds: number; toolCallCount: number; duration: number; endedAt: number }
   | { type: 'done'; tools: Array<{ name: string; input: Record<string, unknown>; result?: unknown }> }
   | { type: 'error'; message: string };
 
@@ -491,7 +493,11 @@ export function useAiChat() {
       let buf = '';
       let fullContent = '';
       let accThinking = '';
+      let accRoundCount = 0;
+      const accPhaseLog: Array<{ phase: string; message: string; at: number }> = [];
+      const accSectionsLog: Array<{ done: number; total: number; name: string }> = [];
       const allToolCalls: AiChatMessage['toolCalls'] = [];
+      const accAgentDebugInfo: Record<string, import('./_store-types').AgentDebugInfo> = {};
 
       while (true) {
         const { done, value } = await reader.read();
@@ -510,6 +516,7 @@ export function useAiChat() {
 
             if (ev.type === 'round_start') {
               // New Anthropic call starting — show "Planning…" between rounds (round > 1 only)
+              accRoundCount = Math.max(accRoundCount, ev.round ?? 1);
               if (ev.round > 1) {
                 store.updateLastAiMessage({ isThinking: true, streaming: true });
               }
@@ -546,9 +553,17 @@ export function useAiChat() {
                   input: ev.input,
                   result: execResult,
                   status: execStatus,
+                  phase: ev.phase,
+                  timestamp: Date.now(),
+                  round: accRoundCount || 1,
+                  aiBlind: CLIENT_SIDE_TOOLS.has(ev.name) && execStatus === 'error',
                 };
                 allToolCalls.push(tc);
-                store.updateLastAiMessage({ toolCalls: [...allToolCalls], isThinking: false, streaming: true });
+                // Group tool call into its agent's debug info
+                if (ev.phase && accAgentDebugInfo[ev.phase]) {
+                  accAgentDebugInfo[ev.phase].toolCalls.push(tc);
+                }
+                store.updateLastAiMessage({ toolCalls: [...allToolCalls], agentDebugInfo: { ...accAgentDebugInfo }, isThinking: false, streaming: true });
               }
             } else if (ev.type === 'image_results') {
               store.updateLastAiMessage({
@@ -595,10 +610,26 @@ export function useAiChat() {
                 sectionsLog: [...accSectionsLog],
                 streaming: true,
               });
+            } else if (ev.type === 'agent_context') {
+              accAgentDebugInfo[ev.agent] = {
+                agent: ev.agent,
+                systemPrompt: ev.systemPrompt,
+                tools: ev.tools,
+                syntheticMessageCount: ev.syntheticMessageCount,
+                startedAt: ev.startedAt,
+                toolCalls: [],
+              };
+              store.updateLastAiMessage({ agentDebugInfo: { ...accAgentDebugInfo }, streaming: true });
+            } else if (ev.type === 'agent_complete') {
+              const info = accAgentDebugInfo[ev.agent];
+              if (info) {
+                info.endedAt = ev.endedAt;
+                info.rounds = ev.rounds;
+                info.toolCallCount = ev.toolCallCount;
+                info.duration = ev.duration;
+              }
+              store.updateLastAiMessage({ agentDebugInfo: { ...accAgentDebugInfo }, streaming: true });
             } else if (ev.type === 'phase3_started') {
-              // Server has switched to Phase 3 styling mode. Track this so any
-              // subsequent requests (e.g. continuation with toolResults) can restore
-              // PHASE3_BUILDER_TOOLS restrictions on the server side.
               isInPhase3Ref.current = true;
             } else if (ev.type === 'done') {
               store.setAiCurrentTool(null);
@@ -612,6 +643,7 @@ export function useAiChat() {
                 phaseLog: accPhaseLog.length ? accPhaseLog : undefined,
                 sectionsLog: accSectionsLog.length ? accSectionsLog : undefined,
                 buildPlanUnits: existingBuildPlanUnits,
+                agentDebugInfo: Object.keys(accAgentDebugInfo).length ? accAgentDebugInfo : undefined,
                 streaming: false,
               });
 
@@ -653,10 +685,13 @@ export function useAiChat() {
   // ── Get full debug info (all phase prompts + tool lists) ─────────────────
   type DebugInfo = {
     systemPrompt: string;
+    planningPrompt: string;
     phase2Prompt: string;
     phase3Prompt: string;
+    phaseWPrompt: string;
     phase2Tools: string[];
     phase3Tools: string[];
+    phaseWTools: string[];
     mainTools: string[];
   };
 
@@ -709,13 +744,27 @@ export function useAiChat() {
         systemPromptOnly: true,
       }),
     });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => `HTTP ${res.status}`);
+      throw new Error(`Debug endpoint returned ${res.status}: ${errText.slice(0, 400)}`);
+    }
     const data = await res.json() as Partial<DebugInfo>;
+
+    // Surface any undefined / empty prompts so the debug log shows them as errors
+    const check = (val: string | undefined, label: string): string => {
+      if (!val || val === '(unavailable)') return `(ERROR: ${label} is undefined — likely an import error in builder-knowledge-v2.ts)`;
+      return val;
+    };
+
     return {
-      systemPrompt: data.systemPrompt ?? '(no system prompt)',
-      phase2Prompt: data.phase2Prompt ?? '(unavailable)',
-      phase3Prompt: data.phase3Prompt ?? '(unavailable)',
+      systemPrompt: check(data.systemPrompt, 'main prompt'),
+      planningPrompt: check(data.planningPrompt, 'planning prompt'),
+      phase2Prompt: check(data.phase2Prompt, 'phase2 prompt'),
+      phase3Prompt: check(data.phase3Prompt, 'phase3 prompt'),
+      phaseWPrompt: check(data.phaseWPrompt, 'phaseW prompt'),
       phase2Tools: data.phase2Tools ?? [],
       phase3Tools: data.phase3Tools ?? [],
+      phaseWTools: data.phaseWTools ?? [],
       mainTools: data.mainTools ?? [],
     };
   }, [store]);

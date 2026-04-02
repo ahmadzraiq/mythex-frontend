@@ -4677,6 +4677,369 @@
             ]
           }
         ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[24px]",
+          "data-testid": "card-effects"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[4px]" },
+            "children": [
+              {
+                "type": "Heading",
+                "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-100" },
+                "text": "Phase Effects — Gradient, Blur, Backdrop, Shadow"
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-[14px] text-gray-500 dark:text-gray-400" },
+                "text": "Four sub-cards testing engine support for the new effect capabilities."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row flex-wrap gap-[24px] items-start" },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex-1 min-w-[200px] h-[120px] rounded-[12px] bg-transparent flex flex-col items-center justify-center gap-[8px]",
+                  "data-testid": "effect-gradient-drift"
+                },
+                "animation": {
+                  "outerStyle": {
+                    "backgroundImage": "linear-gradient(to right, #667eea, #764ba2, #f64f59, #c471ed, #667eea)",
+                    "backgroundSize": "300% 100%",
+                    "backgroundRepeat": "no-repeat",
+                    "borderRadius": 12
+                  },
+                  "loop": {
+                    "type": "gradientDrift",
+                    "duration": 3000,
+                    "repeatCount": -1,
+                    "direction": "alternate"
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white font-semibold text-[14px]" },
+                    "text": "gradientDrift"
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white/70 text-[11px]" },
+                    "text": "Animated flowing gradient"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex-1 min-w-[200px] h-[120px] rounded-[12px] bg-purple-500 flex flex-col items-center justify-center gap-[8px]",
+                  "data-testid": "effect-filter-blur"
+                },
+                "animation": {
+                  "filter": {
+                    "enabled": true,
+                    "blur": 4
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white font-semibold text-[14px]" },
+                    "text": "filterBlur"
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white/70 text-[11px]" },
+                    "text": "Element blur 4px"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex-1 min-w-[200px] h-[120px] rounded-[12px] relative overflow-hidden",
+                  "data-testid": "effect-backdrop-blur"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "absolute inset-0",
+                      "style": {
+                        "background": "linear-gradient(135deg, #667eea, #f64f59, #764ba2)"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "absolute inset-0 flex flex-col items-center justify-center gap-[6px] rounded-[12px]",
+                      "style": { "backgroundColor": "rgba(255,255,255,0.15)" }
+                    },
+                    "animation": {
+                      "filter": {
+                        "enabled": true,
+                        "backdropBlur": 12
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-white font-semibold text-[14px]" },
+                        "text": "backdropBlur"
+                      },
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-white/80 text-[11px]" },
+                        "text": "Glassmorphism 12px"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex-1 min-w-[200px] h-[120px] rounded-[12px] bg-gray-800 flex flex-col items-center justify-center gap-[8px]",
+                  "style": {
+                    "boxShadow": "0px 0px 30px 8px #a855f7",
+                    "shadowColor": "#a855f7",
+                    "shadowOffset": { "width": 0, "height": 0 },
+                    "shadowRadius": 30,
+                    "shadowOpacity": 1,
+                    "elevation": 15
+                  },
+                  "data-testid": "effect-custom-shadow"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white font-semibold text-[14px]" },
+                    "text": "Custom Shadow"
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white/70 text-[11px]" },
+                    "text": "Purple glow #a855f7"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex-1 min-w-[200px] h-[120px] rounded-[12px] bg-gray-900 flex flex-col items-center justify-center gap-[8px]",
+                  "style": {
+                    "boxShadow": { "formula": "true ? '0px 0px 20px 6px #3b82f6' : 'none'" }
+                  },
+                  "data-testid": "effect-formula-shadow"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white font-semibold text-[14px]" },
+                    "text": "Formula Shadow"
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white/70 text-[11px]" },
+                    "text": "boxShadow: formula binding"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex-1 min-w-[200px] h-[120px] rounded-[12px] bg-purple-500 relative overflow-hidden flex flex-col items-center justify-center gap-[8px]"
+                },
+                "animation": {
+                  "filter": {
+                    "enabled": true,
+                    "blur": { "formula": "2 + 2" }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white font-semibold text-[14px]" },
+                    "text": "Formula filterBlur"
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white/70 text-[11px]" },
+                    "text": "blur: formula 2+2=4px"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex-1 min-w-[200px] h-[120px] rounded-[12px] bg-transparent flex flex-col items-center justify-center gap-[8px]",
+                  "data-testid": "effect-formula-gradient"
+                },
+                "animation": {
+                  "outerStyle": {
+                    "backgroundImage": { "formula": "true ? 'linear-gradient(to right, #667eea, #764ba2)' : 'linear-gradient(to right, #f64f59, #c471ed)'" },
+                    "backgroundSize": "300% 100%",
+                    "backgroundRepeat": "no-repeat",
+                    "borderRadius": 12
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white font-semibold text-[14px]" },
+                    "text": "Formula Gradient"
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white/70 text-[11px]" },
+                    "text": "backgroundImage: formula binding"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[24px]",
+          "data-testid": "card-p20"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[4px]" },
+            "children": [
+              {
+                "type": "Heading",
+                "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-100" },
+                "text": "Phase 20 — Static Translate"
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-[14px] text-gray-500 dark:text-gray-400" },
+                "text": "translateX / translateY stored as separate style keys; renderer combines with transform (rotation)."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row flex-wrap gap-[24px] items-start" },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-[120px] h-[80px] rounded-[10px] bg-blue-500 flex flex-col items-center justify-center gap-[4px]",
+                  "style": { "translateX": "40px" },
+                  "data-testid": "p20-translate-x"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white font-semibold text-[13px]" },
+                    "text": "Translate X"
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white/80 text-[11px]" },
+                    "text": "translateX(40px)"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-[120px] h-[80px] rounded-[10px] bg-green-500 flex flex-col items-center justify-center gap-[4px]",
+                  "style": { "translateY": "30px" },
+                  "data-testid": "p20-translate-y"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white font-semibold text-[13px]" },
+                    "text": "Translate Y"
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white/80 text-[11px]" },
+                    "text": "translateY(30px)"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-[120px] h-[80px] rounded-[10px] bg-purple-500 flex flex-col items-center justify-center gap-[4px]",
+                  "style": { "translateX": "20px", "translateY": "20px" },
+                  "data-testid": "p20-translate-xy"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white font-semibold text-[13px]" },
+                    "text": "Translate X+Y"
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white/80 text-[11px]" },
+                    "text": "X(20px) Y(20px)"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-[120px] h-[80px] rounded-[10px] bg-orange-500 flex flex-col items-center justify-center gap-[4px]",
+                  "style": { "translateX": "10px", "transform": "rotate(15deg)" },
+                  "data-testid": "p20-translate-rotate"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white font-semibold text-[13px]" },
+                    "text": "Translate+Rotate"
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white/80 text-[11px]" },
+                    "text": "X(10px) R(15deg)"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-[120px] h-[80px] rounded-[10px] bg-pink-500 flex flex-col items-center justify-center gap-[4px]",
+                  "style": { "translateX": { "formula": "true ? '50px' : '0px'" } },
+                  "data-testid": "p20-translate-formula"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white font-semibold text-[13px]" },
+                    "text": "Formula Translate"
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-white/80 text-[11px]" },
+                    "text": "formula→translateX(50px)"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       }
     ]
   }

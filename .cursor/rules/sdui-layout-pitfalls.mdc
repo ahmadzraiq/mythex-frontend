@@ -1634,8 +1634,17 @@ delete cleanProps.style; // inner loses inline style fallback
 
 Use `set_border(id, {radius: N})` only when you explicitly want rounded corners on an inline image or video — it is never needed for background use.
 
-## Hero Container — No Default Padding on Box/VStack (Changed)
+## Layout Containers — Minimal Defaults (Changed)
 
-`Box`, `Row`, `VStack`, `HStack`, and `Center` no longer ship with `p-[16px] gap-[16px]`. There is no padding to clear on these containers.
+`Box`, `Row`, `VStack`, `HStack`, `Center`, and `Grid` ship with only identity classes (flex direction, alignment). No `w-full`, no `gap-*`, no `grid-cols-*`. The AI sets width, gap, and grid columns explicitly via tools (`set_size`, `set_spacing`, `set_layout`).
 
-If a hero wrapper or overlay root container picks up unwanted spacing, it is coming from a component that intentionally has padding (e.g. `Card`, `Alert`) — not from a generic layout container.
+- `Box`: `flex flex-col`
+- `Row`: `flex flex-row items-center`
+- `VStack`: `flex flex-col`
+- `HStack`: `flex flex-row items-center`
+- `Center`: `flex flex-col items-center justify-center`
+- `Grid`: `grid`
+
+CSS flexbox `align-items: stretch` (the default) makes children fill parent width automatically — `w-full` is not needed and was removed because it broke centering in `items-center` parents.
+
+If a container picks up unwanted spacing, it is coming from a component that intentionally has padding (e.g. `Card`, `Alert`) — not from a generic layout container.

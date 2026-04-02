@@ -187,6 +187,7 @@ export interface ImperativeTriggerConfig {
 export interface FilterConfig {
   enabled?: boolean;
   blur?: number;
+  backdropBlur?: number;
   brightness?: number;
   contrast?: number;
   grayscale?: number;
@@ -2528,6 +2529,13 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     }
   }, [filter?.enabled, filter?.blur, filter?.brightness, filter?.contrast, filter?.grayscale, filter?.saturate, filter?.hueRotate]);
 
+  // ── Backdrop blur — web only (not supported on React Native native) ──────────
+  const backdropStyle = useMemo(() => {
+    if (Platform.OS !== 'web') return {};
+    if (!filter?.backdropBlur || filter.backdropBlur === 0) return {};
+    return { backdropFilter: `blur(${filter.backdropBlur}px)` } as React.CSSProperties;
+  }, [filter?.backdropBlur]);
+
   // ── Clip-path style — web only (SVG ClipPath in innerContent handles native) ──
   const clipPathStyle = useMemo((): CSSProperties => {
     if (Platform.OS !== 'web') return {};
@@ -2555,6 +2563,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     ...scrollCssStyle,
     ...scrollProgressCssStyle,
     ...filterStyle,
+    ...backdropStyle,
     ...clipPathStyle,
     ...maskCssStyle,
     // Gradient: keep background-size hint on wrapper so tests/CSS inspectors detect it
@@ -2574,7 +2583,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     ...(Platform.OS === 'web' && focus?.enabled ? { outline: 'none' } as CSSProperties : {}),
     ...(flip ? { transformStyle: 'preserve-3d' } as CSSProperties : {}),
     ...(statesMachine?.defaultState && !statesMachine.watchVar ? statesMachine.states[statesMachine.defaultState] ?? {} : {}),
-  }), [scrollCssStyle, scrollProgressCssStyle, filterStyle, clipPathStyle, maskCssStyle,
+  }), [scrollCssStyle, scrollProgressCssStyle, filterStyle, backdropStyle, clipPathStyle, maskCssStyle,
        parallax?.enabled, drag?.enabled, noise, particles, scrollProgress?.pin, focus?.enabled,
        flip, statesMachine, morphShape?.enabled, gesture?.enabled, outerClassName]);
 

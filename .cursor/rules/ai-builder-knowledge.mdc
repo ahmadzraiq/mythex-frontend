@@ -82,8 +82,7 @@ When adding or modifying a tool, open `_panel-right.tsx` and find the panel cont
 | `set_size` | `props.className` for all values: width/height modes + max-w-[Npx], min-w-[Npx], etc. + strips `style.*`; `px:N` double-writes class AND `style.*` | pixels / mode strings |
 | `set_position` | `props.className` for position/zIndex + top-[Npx]/right-[Npx]/etc. for inset + strips `style.*` | pixels for inset |
 | `set_transform` | `style.transform` for rotate; `props.className` for flip/cursor/overflow/self | degrees for rotate |
-| `set_layout` | `props.className` for direction/align/justify + gap-[Npx] for gap + strips `style.gap` | pixels for gap |
-| `set_display` | `props.className` (display/grid classes) | Tailwind tokens |
+| `set_layout` | `props.className` for direction/align/justify + gap-[Npx] for gap + gridCols/gridRows/colSpan/flexWrap + strips `style.gap` | pixels for gap |
 | `set_submit` | `props.type` = `"submit"` or null | boolean |
 | `set_input_props` | `props.type`, `props.step`, `props.multiline`, etc. | typed values |
 | `set_animation` | `node.animation.*` object | enum strings matching panel |
@@ -246,7 +245,7 @@ The Builder AI's behavior is entirely driven by what it receives at runtime: the
 
 **How to verify:** Open `lib/ai/builder-tools.ts` and check that the tool name exists as a registered tool. If it's not there, it's a dead reference.
 
-**Observed during audit:** `set_class` was referenced in 4 `aiRef` strings (Box, Grid, Btn Solid, Toggle). `set_grid` was referenced in the old component-defaults block in `builder-knowledge.ts`. Both tools were removed. Fixed by replacing with the correct tools (`set_layout`, `set_display`, `set_background`, `set_text_color`, `set_condition`).
+**Observed during audit:** `set_class` was referenced in 4 `aiRef` strings (Box, Grid, Btn Solid, Toggle). `set_grid` was referenced in the old component-defaults block in `builder-knowledge.ts`. Both tools were removed. Fixed by replacing with the correct tools (`set_layout`, `set_background`, `set_text_color`, `set_condition`).
 
 ---
 

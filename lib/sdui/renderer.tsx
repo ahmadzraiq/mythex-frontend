@@ -53,7 +53,7 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
   if (!className) return {};
   const style: Record<string, string> = {};
 
-  // Handle non-arbitrary position keywords first (no [value] suffix).
+  // Handle non-arbitrary position and inset keywords (no [value] suffix).
   // These are bare Tailwind utilities compiled by JIT for source files but NOT for
   // JSON config — so we convert them to inline styles here as a fallback.
   const POSITION_KW: Record<string, string> = {
@@ -61,7 +61,12 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
     fixed: 'fixed', sticky: 'sticky', static: 'static',
   };
   for (const tok of className.split(/\s+/)) {
-    if (POSITION_KW[tok]) { style.position = POSITION_KW[tok]; break; }
+    const clean = tok.startsWith('!') ? tok.slice(1) : tok;
+    if (POSITION_KW[clean]) { style.position = POSITION_KW[clean]; }
+    // inset-0 / inset-x-0 / inset-y-0 bare keywords → top/right/bottom/left = 0
+    else if (clean === 'inset-0')   { style.top = style.right = style.bottom = style.left = '0px'; }
+    else if (clean === 'inset-x-0') { style.left = style.right = '0px'; }
+    else if (clean === 'inset-y-0') { style.top  = style.bottom = '0px'; }
   }
 
   for (const token of className.split(/\s+/)) {
@@ -105,6 +110,9 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
       case 'right':   if (isNumeric) { style.right         = value; } break;
       case 'bottom':  if (isNumeric) { style.bottom        = value; } break;
       case 'left':    if (isNumeric) { style.left          = value; } break;
+      case 'inset':   if (isNumeric) { style.top = style.right = style.bottom = style.left = value; } break;
+      case 'inset-x': if (isNumeric) { style.left = style.right = value; } break;
+      case 'inset-y': if (isNumeric) { style.top  = style.bottom = value; } break;
       case 'opacity':     if (isNumeric) { style.opacity               = value; } break;
       // ── Border radius — matches styleToClassName inverse ─────────────────────
       case 'rounded':     if (isNumeric) { style.borderRadius           = value; } break;
@@ -114,6 +122,9 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
       case 'rounded-bl':  if (isNumeric) { style.borderBottomLeftRadius = value; } break;
       // ── Z-index ───────────────────────────────────────────────────────────────
       case 'z':           if (isNumeric) { style.zIndex                 = value; } break;
+      // ── Translate — stored as separate properties, combined into transform by the renderer ──
+      case 'translate-x': if (isNumeric) { style.translateX = value; } break;
+      case 'translate-y': if (isNumeric) { style.translateY = value; } break;
 
       // ── Colors — hex, rgb(...), var(--...), etc. ─────────────────────────────
       // bg-[#hex], bg-[rgb(...)], bg-[var(--theme-...)]
@@ -492,6 +503,14 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
     cleanProps.className = `${stripped} !text-[${resolvedStyleColor}]`.trim();
   }
 
+  // Capture resolved node.props.style BEFORE arbStyles merge — used later for the outer
+  // Animated.View wrapper. node.props.style may contain raw formula objects ({ formula: "..." })
+  // that resolveProps has already evaluated into cleanProps.style. Reading node.props.style
+  // directly would leak unresolved formula objects into the DOM as [object Object] strings.
+  const resolvedNodeStyle = (cleanProps.style as Record<string, unknown> | undefined)
+    ? { ...(cleanProps.style as Record<string, unknown>) }
+    : {};
+
   // Apply inline style fallback for arbitrary-value classes (e.g. w-[1228px], pt-[120px]).
   // Tailwind JIT only compiles classes from scanned source files, not from JSON config —
   // so arbitrary values from the SDUI config need an inline style equivalent to render correctly.
@@ -518,6 +537,35 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
         if ('height' in contentStyles) (contentStyles as Record<string, unknown>).height = '100%';
       }
       cleanProps.style = { ...contentStyles, ...(cleanProps.style as Record<string, unknown> ?? {}) };
+      // Strip position-keyword and inset/z arbitrary-value classes from className so
+      // NativeWind does not re-apply them on the inner element. The outer Animated.View
+      // already owns position/insets via outerStyle — leaving them on className causes
+      // the inner element to be double-offset relative to the outer wrapper, pushing
+      // absolutely-positioned content completely outside its clipping boundary (blank box).
+      if (cleanProps.className) {
+        cleanProps.className = (cleanProps.className as string)
+          .split(/\s+/)
+          .filter(tok => !['absolute', 'fixed', 'sticky', 'relative', 'static', 'inset-0', 'inset-x-0', 'inset-y-0'].includes(tok))
+          .filter(tok => !/^!?(?:top|right|bottom|left|z|inset(?:-[xy])?)-\[/.test(tok))
+          .join(' ')
+          .trim();
+      }
+      // Remove transform from the inner element — the outer wrapper already receives it
+      // via _nodePropsStyleForOuter (below). Keeping it on both causes double-rotation.
+      if (cleanProps.style) {
+        const _s = cleanProps.style as Record<string, unknown>;
+        delete _s.transform;
+      }
+      // The inner element lost its absolute positioning (stripped above), so it's now in normal
+      // flow inside the outer Animated.View wrapper. Without explicit dimensions it collapses to
+      // content height, breaking flex-based centering (e.g. justify-center, items-center).
+      // Force it to fill the outer wrapper so layout props work as the author intended.
+      {
+        const _s = cleanProps.style as Record<string, unknown> ?? {};
+        if (!_s.width)  _s.width  = '100%';
+        if (!_s.height) _s.height = '100%';
+        cleanProps.style = _s;
+      }
     } else {
       // Same logic for non-offflow animated nodes that have explicit width/height.
       const innerStyles: Record<string, unknown> = { ...(arbStyles as Record<string, unknown>) };
@@ -526,6 +574,40 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
         if ('height' in innerStyles) innerStyles.height = '100%';
       }
       cleanProps.style = { ...innerStyles, ...(cleanProps.style as Record<string, unknown> ?? {}) };
+    }
+  }
+
+  // Compose translateX / translateY / transform (rotation-only) into a single CSS transform.
+  // translateX and translateY are stored as separate style keys (either as plain strings like
+  // "20px" or formula-evaluated values). This keeps rotation and translate independent so
+  // editing one never overwrites the other.
+  {
+    const sStyle = cleanProps.style as Record<string, unknown> | undefined;
+    if (sStyle) {
+      const txRaw = sStyle.translateX;
+      const tyRaw = sStyle.translateY;
+      if (txRaw !== undefined || tyRaw !== undefined) {
+        // Normalise a translate value to a CSS px string: 20 → "20px", "20px" → "20px", "" → ""
+        const toPx = (v: unknown): string => {
+          if (v === undefined || v === null || v === '') return '';
+          if (typeof v === 'number') return `${v}px`;
+          const s = String(v).trim();
+          if (!s) return '';
+          if (/^-?[\d.]+$/.test(s)) return `${s}px`;
+          return s;
+        };
+        const txStr = toPx(txRaw);
+        const tyStr = toPx(tyRaw);
+        const rotStr = (sStyle.transform as string | undefined) ?? '';
+        const parts = [
+          txStr ? `translateX(${txStr})` : '',
+          tyStr ? `translateY(${tyStr})` : '',
+          rotStr,
+        ].filter(Boolean);
+        sStyle.transform = parts.join(' ') || undefined;
+        delete sStyle.translateX;
+        delete sStyle.translateY;
+      }
     }
   }
 
@@ -658,6 +740,31 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
         },
       };
     }
+    if (_rawCfg.filter) {
+      resolvedAnimCfg = {
+        ...resolvedAnimCfg,
+        filter: {
+          ...(_rawCfg.filter),
+          blur:         resolveAnimNum(_rawCfg.filter.blur,         0) || undefined,
+          backdropBlur: resolveAnimNum(_rawCfg.filter.backdropBlur, 0) || undefined,
+        },
+      };
+    }
+    // Resolve formula objects inside outerStyle (e.g. backgroundImage: { formula: "..." })
+    if (_rawCfg.outerStyle) {
+      const outerSt = _rawCfg.outerStyle as Record<string, unknown>;
+      const bgImg = outerSt.backgroundImage;
+      if (bgImg != null && typeof bgImg === 'object' && 'formula' in bgImg) {
+        const resolved = evaluateFormula((bgImg as { formula: string }).formula, stateWithScope);
+        resolvedAnimCfg = {
+          ...resolvedAnimCfg,
+          outerStyle: {
+            ...outerSt,
+            backgroundImage: typeof resolved.value === 'string' ? resolved.value : '',
+          },
+        };
+      }
+    }
 
     const itCfg = resolvedAnimCfg.imperativeTrigger;
     if (itCfg && typeof itCfg.watchVar === 'string') {
@@ -722,15 +829,19 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
       for (const key of OUTER_PASSTHROUGH) {
         if (key in arbStyles) outerFromArb[key] = (arbStyles as Record<string, unknown>)[key];
       }
-      // node.props.style contains explicit tool writes (e.g. opacity from set_opacity).
-      // These must be on the outer wrapper (the selectable element) so they survive re-renders.
-      // Do NOT spread the full cleanProps.style here — that would include arbStyles padding.
-      const nodePropsStyle = ((node.props as Record<string, unknown> | undefined)?.style ?? {}) as Record<string, unknown>;
+      // resolvedNodeStyle contains the evaluated version of node.props.style (formulas resolved).
+      // Using this instead of raw node.props.style prevents formula objects from leaking into
+      // the DOM as [object Object] strings on the outer Animated.View wrapper.
+      const nodePropsStyle = resolvedNodeStyle;
       const styleForOuter: Record<string, unknown> = { ...outerFromArb, ...nodePropsStyle };
       // Position forwarding is handled universally by the sizeOverride block below (all modes).
       // This block only needs OUTER_PASSTHROUGH keys + nodePropsStyle for builder selection.
+      // MERGE into the existing outerStyle (don't overwrite) so animation.outerStyle values
+      // like backgroundImage (used by gradientDrift) are preserved alongside the builder's
+      // size/position overrides from arbStyles.
       if (Object.keys(styleForOuter).length > 0) {
-        resolvedAnimCfg = { ...resolvedAnimCfg, outerStyle: styleForOuter };
+        const existingOuterStyle = (resolvedAnimCfg.outerStyle as Record<string, unknown>) ?? {};
+        resolvedAnimCfg = { ...resolvedAnimCfg, outerStyle: { ...existingOuterStyle, ...styleForOuter } };
       }
       // Do NOT delete cleanProps.style — the inner element needs its arbStyles inline styles
       // so non-JIT-compiled arbitrary classes (from JSON nodes) still render correctly.
@@ -799,18 +910,23 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
           break;
         }
       }
-      // Also forward insets and zIndex so the outer wrapper is the positioned element.
-      for (const key of ['top', 'right', 'bottom', 'left', 'zIndex'] as const) {
+      // Forward insets, zIndex, and explicit size constraints from arbitrary classes so the outer
+      // wrapper matches the inner node's exact dimensions. Without this, the outer Animated.View
+      // collapses in preview mode for nodes like h-[120px] min-w-[200px] (no NativeWind class
+      // on the outer wrapper means no compiled CSS — only inline outerStyle is applied).
+      for (const key of ['top', 'right', 'bottom', 'left', 'zIndex', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight'] as const) {
         if ((arbStyles as Record<string, unknown>)[key] !== undefined) {
           sizeOverride[key] = (arbStyles as Record<string, unknown>)[key];
         }
       }
-      // Forward node.props.style (e.g. opacity from set_opacity) to the outer wrapper for ALL
-      // modes so visual properties apply to the Animated.View and its box-shadow effects.
+      // Forward resolved node.props.style (e.g. opacity from set_opacity) to the outer wrapper
+      // for ALL modes so visual properties apply to the Animated.View and its box-shadow effects.
       // Example: glowPulse on an opacity:0.15 blob should pulse at 15% opacity, not 100%.
       // In builder mode, resolvedAnimCfg.outerStyle (from animNodeOwnsId) already contains
       // nodePropsStyle and spreads LAST, so builder values always take precedence.
-      const _nodePropsStyleForOuter = ((node.props as Record<string, unknown> | undefined)?.style ?? {}) as Record<string, unknown>;
+      // Uses resolvedNodeStyle (formulas already evaluated) instead of raw node.props.style to
+      // prevent formula objects leaking as [object Object] into the outer Animated.View DOM.
+      const _nodePropsStyleForOuter = resolvedNodeStyle;
       const _outerBase = { ...sizeOverride, ..._nodePropsStyleForOuter };
       if (Object.keys(_outerBase).length > 0) {
         resolvedAnimCfg = {

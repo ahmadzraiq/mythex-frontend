@@ -25,88 +25,10 @@
 
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { ALL_BUILDER_TOOLS, PHASE3_BUILDER_TOOLS } from '@/lib/ai/builder-tools';
-import { buildChatSystemPrompt, buildPhase3SystemPrompt, buildComponentList } from '@/lib/ai/builder-knowledge';
+import { ALL_BUILDER_TOOLS, PHASE3_BUILDER_TOOLS, PHASE_W_TOOLS, STRUCTURE_AGENT_TOOLS, BINDING_AGENT_TOOLS, LAYOUT_AGENT_TOOLS, COLORS_AGENT_TOOLS, TYPO_ANIM_AGENT_TOOLS } from '@/lib/ai/builder-tools';
+import { buildChatSystemPrompt, buildPhase3SystemPrompt, PLAN_SYSTEM } from '@/lib/ai/builder-knowledge-v2';
+import { buildStructureAgentPrompt, buildBindingAgentPrompt, buildWorkflowsAgentPrompt, buildLayoutAgentPrompt, buildColorsAgentPrompt, buildTypoAnimAgentPrompt } from '@/lib/ai/agent-prompts';
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-// ── Phase 2 mini-model system prompt ─────────────────────────────────────────
-// Extracted to module level so it can be included in the debug capture response.
-// Pass existingVarsNote='' for the debug snapshot (no per-request context needed).
-function buildPhase2SysPrompt(existingVarsNote = ''): string {
-  return `You are a UI builder. Your job is: create variables, build structure, wire repeat, bind text — in that order.
-
-Available component labels (use exact label as the "label" field in generate_structure):
-${buildComponentList()}
-
-tree node shape: { label, name?, text?, children?: [...] }
-  label = exact component label from the list above
-  name  = layers panel label
-  text  = text content (for Heading/Text/Badge nodes only)
-
-STRUCTURE ONLY — the tree must contain ZERO style information:
-  - No icon names, color props, or any design values on any node.
-  - No style info. Phase 3 calls set_icon, set_background, set_text_color, etc.
-
-SCOPE: Generate ONLY the structure explicitly requested. Never add extra sections or supplementary content not mentioned in the request.
-
-The "tree" key is REQUIRED in generate_structure. Always pass the full nested structure under "tree".
-${existingVarsNote}
-STEP ORDER — follow this sequence for components with repeated items:
-
-STEP 1 — add_variable FIRST (before generate_structure):
-  Create the array variable with realistic demo data. Pre-assign a hex UUID as variableId:
-    add_variable("Items", "array", '[{"id":"1","title":"...","value":"..."},{"id":"2",...},{"id":"3",...}]', variableId:"<hex-uuid>")
-  Keys in the array objects must match the field names you will bind in STEP 4.
-  If an existing array variable (listed above) already matches the data you need, skip add_variable and use that variable's id directly in STEP 3.
-  If the existing variable does NOT match (different fields or data), create a new variable with a FRESH UUID — NEVER call add_variable with an existing variable's UUID, as this overwrites the global variable and corrupts every page that uses it.
-  CRITICAL UUID RULE: After add_variable returns, the tool result contains the confirmed UUID.
-  That UUID is the ONLY one you may use in ALL subsequent set_text and set_repeat calls.
-  NEVER invent a UUID that was not returned by add_variable.
-  Also create any non-array state variables (boolean, string, number) the component needs for interactive behavior — Phase 3 needs their UUIDs for set_condition formulas.
-
-STEP 2 — generate_structure (ONE template node):
-  Build EXACTLY ONE template wrapper named "*-template".
-  NEVER build N static copies. Styling differences between items are handled via formula expressions in Phase 3.
-  Only add an optional child node when it is structurally present but should be conditionally shown.
-
-  CRITICAL — what counts as "repeated items" (always use STEP 1-4):
-  - Pricing / plan cards (Basic / Pro / Premium — differences are DATA, not structure)
-  - Feature cards, testimonial cards, team member cards, blog post cards
-  - FAQ items, step items, service tiles, comparison table rows
-  - Any list of items that share the same visual shape, even if the copy differs
-
-STEP 3 — set_repeat immediately after generate_structure:
-  The tool result contains a "tree" object — the resolved structure with a server-assigned UUID in
-  every node's "id" field. Read the template node's id directly from that tree:
-    set_repeat("<id from tree.id or tree.children[N].id>", "variables['<variableId-from-step1>']", "id")
-  NEVER use the name field (e.g. "card-template") as a nodeId — always use the UUID from the id field.
-
-STEP 4 — set_text to bind data fields:
-  Read each child node's id from the returned tree and use it as nodeId:
-    set_text("<id from tree.children[N].id>", "context.item.data.title")
-  NEVER use a node's name as a nodeId — always use the UUID from the id field in the returned tree.
-
-NESTED REPEATS — for any inner list (sub-items, bullets, tags, etc.):
-  NEVER use a string array. ALWAYS use an object array: [{"id":"1","text":"..."},{"id":"2","text":"..."}]
-  This makes the text accessible as context.item.data.text in the inner repeat scope.
-  All node IDs come from the returned tree's id fields — read them from tree.children[N].id.
-  Bind inner item fields:  set_text("<inner-text-uuid from tree>", "context.item.data.text")
-  Wire inner repeat:       set_repeat("<inner-template-uuid from tree>", "context.item.data.items", "id")
-  Bind OUTER item fields (from inside the inner repeat): set_text("<uuid from tree>", "context.item.parent.data.field")
-  Use context.item.parent.data.* whenever an inner node needs a field from the outer (enclosing) repeat item.
-
-Phase 3 handles ALL visual styling (set_spacing, set_layout, set_background, set_border, etc.).
-Do NOT apply any styling here.
-
-For components WITHOUT repeated items: just call generate_structure. Skip STEP 1/3.
-
-STEP 5 — search and set src for media nodes:
-  After generate_structure, if the component includes any media nodes (images, videos), search for relevant content based on the request immediately — in the same round as set_repeat/set_text:
-    search_images("query") → set_src(nodeId, url)
-    search_videos("query") → set_src(nodeId, url)
-  Use the first result URL. Do not skip this step.
-`;
-}
 
 // ── Build-mode types ─────────────────────────────────────────────────────────
 
@@ -121,6 +43,8 @@ interface BuildUnit {
 
 interface BuildPlan {
   mode: 'edit' | 'build' | 'mixed';
+  /** When false, Phase 3 styling is skipped — components render with their defaultNode styles. */
+  needsStyling?: boolean;
   editSummary?: string;
   buildUnits?: BuildUnit[];
   relations?: string[];
@@ -131,6 +55,12 @@ interface CollectedTree {
   tree: Record<string, unknown>;
   pageId: string | null;
   atIndex?: number;
+  // Populated by onStructureReady via extractMediaFromTree — no post-hoc scanning
+  mediaManifest?: {
+    icons: Array<{ id: string; icon: string }>;
+    images: Array<{ id: string; searchQuery: string }>;
+    videos: Array<{ id: string; searchQuery: string }>;
+  };
 }
 
 // A non-structure tool call made by the mini-model during Phase 2 (add_variable, set_repeat, set_text).
@@ -157,38 +87,237 @@ function assignTreeIds(
   const children = Array.isArray(node.children)
     ? (node.children as Record<string, unknown>[]).map(c => assignTreeIds(c, seen))
     : [];
-  return { ...node, id, children };
+  const result: Record<string, unknown> = { ...node, id, children };
+  if (result.condition === 'true' || result.condition === true) {
+    delete result.condition;
+  }
+  // Auto-fix: Grid with repeat + single child → move repeat to the child
+  const label = (result.label as string ?? '').toLowerCase();
+  if (label === 'grid' && typeof result.repeat === 'string' && children.length === 1) {
+    const child = children[0] as Record<string, unknown>;
+    if (!child.repeat) {
+      child.repeat = result.repeat;
+      if (result.keyField) child.keyField = result.keyField;
+      delete result.repeat;
+      delete result.keyField;
+    }
+  }
+  // Auto-fix: Grid with _needsRepeat marker + single child → move marker to the child
+  if (label === 'grid' && result._needsRepeat && children.length === 1) {
+    const child = children[0] as Record<string, unknown>;
+    if (!child._needsRepeat) {
+      child._needsRepeat = result._needsRepeat;
+      if (result._needsRepeatKeyField) child._needsRepeatKeyField = result._needsRepeatKeyField;
+      delete result._needsRepeat;
+      delete result._needsRepeatKeyField;
+    }
+  }
+  return result;
+}
+
+/** Strip _needs* marker fields from a tree before sending to client.
+ *  Returns the markers extracted from the tree for use by hint detectors and the Binding agent. */
+function extractAndStripMarkers(tree: Record<string, unknown>): Array<{
+  nodeId: string;
+  _needsRepeat?: string | boolean;
+  _needsRepeatKeyField?: string;
+  _needsCondition?: string;
+}> {
+  const markers: Array<{
+    nodeId: string;
+    _needsRepeat?: string | boolean;
+    _needsRepeatKeyField?: string;
+    _needsCondition?: string;
+  }> = [];
+  const walk = (node: Record<string, unknown>) => {
+    const hasMarker = node._needsRepeat || node._needsCondition;
+    if (hasMarker) {
+      markers.push({
+        nodeId: node.id as string,
+        _needsRepeat: node._needsRepeat as string | boolean | undefined,
+        _needsRepeatKeyField: node._needsRepeatKeyField as string | undefined,
+        _needsCondition: node._needsCondition as string | undefined,
+      });
+      delete node._needsRepeat;
+      delete node._needsRepeatKeyField;
+      delete node._needsCondition;
+    }
+    for (const child of (Array.isArray(node.children) ? node.children as Record<string, unknown>[] : [])) {
+      walk(child);
+    }
+  };
+  walk(tree);
+  return markers;
+}
+
+const DOM_MANIPULATION_RE = /querySelector|querySelectorAll|getElementById|createElement|\.style\.|\.classList\.|event\.target|\.innerHTML|\.appendChild|window\.addEventListener|document\./;
+
+function isCustomJsDomWorkflow(input: Record<string, unknown>): boolean {
+  const steps = input.steps as Array<{ type?: string; config?: { code?: string } }> | undefined;
+  if (!Array.isArray(steps) || steps.length === 0) return false;
+  const jsSteps = steps.filter(s => s.type === 'customJavaScript');
+  if (jsSteps.length === 0) return false;
+  return jsSteps.every(s => DOM_MANIPULATION_RE.test(s.config?.code ?? ''));
+}
+
+function detectNestedRepeatNodes(trees: Array<{ tree: Record<string, unknown> }>): string {
+  const innerNodeIds: string[] = [];
+  const walk = (node: Record<string, unknown>, repeatDepth: number, outerRepeatPath: string | null) => {
+    const hasRepeat = (typeof node.repeat === 'string' && node.repeat.length > 0) || !!node._needsRepeat;
+    const newDepth = hasRepeat ? repeatDepth + 1 : repeatDepth;
+    const repeatPath = (node.repeat as string) ?? '';
+    const newOuterPath = hasRepeat && repeatDepth >= 1 ? repeatPath : outerRepeatPath;
+    if (newDepth >= 2 && !hasRepeat) {
+      innerNodeIds.push(node.id as string);
+    }
+    const children = node.children as Record<string, unknown>[] | undefined;
+    if (Array.isArray(children)) {
+      for (const child of children) walk(child, newDepth, newOuterPath);
+    }
+  };
+  for (const ct of trees) walk(ct.tree, 0, null);
+  if (innerNodeIds.length === 0) return '';
+  return `\nNESTED REPEAT SCOPE: Nodes [${innerNodeIds.join(', ')}] are inside an inner repeat. To access OUTER template fields from these nodes, use context?.item?.parent?.data?.FIELD. context?.item?.data on these nodes refers to the inner repeat item (use .value for primitives, .index for position).`;
+}
+
+/**
+ * Detect repeat templates that have boolean variant fields (e.g. "featured").
+ * When a template node will receive a ternary background, ALL descendant text/icon
+ * nodes need matching ternary colors for contrast. Phase 3 often styles nested
+ * repeat children but forgets the outer template's direct children.
+ *
+ * Returns a hint string listing the descendant node IDs that need contrast ternaries.
+ */
+function detectTernaryContrastNodes(
+  trees: Array<{ tree: Record<string, unknown> }>,
+  varEvents: Array<{ name: string; input: Record<string, unknown> }>,
+): string {
+  const arrayVarData = new Map<string, unknown[]>();
+  for (const ev of varEvents) {
+    if (ev.name === 'add_variable' && ev.input.type === 'array' && Array.isArray(ev.input.initialValue)) {
+      const id = String(ev.input.variableId ?? ev.input._assignedVarId ?? '');
+      if (id) arrayVarData.set(id, ev.input.initialValue as unknown[]);
+    }
+  }
+
+  const results: Array<{ templateId: string; templateName: string; boolField: string; descendants: Array<{ id: string; nested: boolean }> }> = [];
+
+  const walk = (node: Record<string, unknown>) => {
+    const inlineRepeat = node.repeat as string | undefined;
+    const markerRepeat = node._needsRepeat;
+    const hasRepeat = (typeof inlineRepeat === 'string' && inlineRepeat.length > 0) || !!markerRepeat;
+    if (hasRepeat) {
+      // Resolve array data: inline repeat has UUID in path, boolean marker matches any array variable with boolean fields
+      let arrData: unknown[] | undefined;
+      if (typeof inlineRepeat === 'string') {
+        const varIdMatch = inlineRepeat.match(/variables\['([^']+)'\]/);
+        const varId = varIdMatch ? varIdMatch[1] : inlineRepeat;
+        arrData = arrayVarData.get(varId);
+      } else {
+        // Boolean _needsRepeat: find first array variable that has boolean fields
+        for (const [, data] of arrayVarData) {
+          if (data.length > 0) {
+            const sample = data[0] as Record<string, unknown>;
+            if (Object.values(sample).some(v => typeof v === 'boolean')) { arrData = data; break; }
+          }
+        }
+        // Fallback: use any array variable
+        if (!arrData) { for (const [, data] of arrayVarData) { if (data.length > 0) { arrData = data; break; } } }
+      }
+      if (Array.isArray(arrData) && arrData.length > 0) {
+        const sample = arrData[0] as Record<string, unknown>;
+        const boolFields = Object.entries(sample)
+          .filter(([, v]) => typeof v === 'boolean')
+          .map(([k]) => k);
+        if (boolFields.length > 0) {
+          const descendants: Array<{ id: string; nested: boolean }> = [];
+          const collectDescendants = (n: Record<string, unknown>, repeatDepth: number) => {
+            const children = n.children as Record<string, unknown>[] | undefined;
+            if (!Array.isArray(children)) return;
+            for (const child of children) {
+              const hasInnerRepeat = (typeof child.repeat === 'string' && (child.repeat as string).length > 0) || !!child._needsRepeat;
+              const childDepth = hasInnerRepeat ? repeatDepth + 1 : repeatDepth;
+              const label = (child.label as string ?? '').toLowerCase();
+              if (['text', 'heading', 'label', 'caption', 'icon', 'btn solid', 'btn outline', 'btn ghost', 'btn destructive', 'btn + icon l', 'btn + icon r', 'divider'].includes(label) ||
+                  (child.children && Array.isArray(child.children))) {
+                if (child.id) descendants.push({ id: child.id as string, nested: childDepth >= 2 });
+              }
+              collectDescendants(child, childDepth);
+            }
+          };
+          collectDescendants(node, 1);
+          if (descendants.length > 0) {
+            results.push({
+              templateId: node.id as string,
+              templateName: (node.name as string) ?? 'template',
+              boolField: boolFields[0],
+              descendants,
+            });
+          }
+        }
+      }
+    }
+    const children = node.children as Record<string, unknown>[] | undefined;
+    if (Array.isArray(children)) {
+      for (const child of children) walk(child);
+    }
+  };
+  for (const ct of trees) walk(ct.tree);
+  if (results.length === 0) return '';
+
+  return results.map(r => {
+    const lines = r.descendants.map(d =>
+      d.nested
+        ? `  - ${d.id} (NESTED): context?.item?.parent?.data?.${r.boolField}`
+        : `  - ${d.id}: context?.item?.data?.${r.boolField}`
+    ).join('\n');
+    return `\nTERNARY CONTRAST REQUIRED: Template "${r.templateName}" (${r.templateId}) has boolean "${r.boolField}". Set ternary background on template, then set matching ternary text/icon colors on EACH descendant using EXACTLY the scope shown:\n${lines}`;
+  }).join('');
+}
+
+/**
+ * Detect repeat templates and their parent containers.
+ * Phase 3 frequently confuses these, applying ternary context?.item?.data formulas
+ * to the parent (which is OUTSIDE the repeat scope — resolves to undefined) and
+ * applying grid layout to the template (creating N grids instead of 1).
+ *
+ * Returns a hint string clearly identifying which node is the container vs template.
+ */
+function detectRepeatContainerPairs(trees: Array<{ tree: Record<string, unknown> }>): string {
+  const pairs: Array<{ containerId: string; containerName: string; templateId: string; templateName: string }> = [];
+  const walk = (node: Record<string, unknown>) => {
+    const children = node.children as Record<string, unknown>[] | undefined;
+    if (!Array.isArray(children)) return;
+    for (const child of children) {
+      const hasRepeat = (typeof child.repeat === 'string' && child.repeat.length > 0) || !!child._needsRepeat;
+      if (hasRepeat) {
+        pairs.push({
+          containerId: node.id as string,
+          containerName: (node.name as string) ?? 'container',
+          templateId: child.id as string,
+          templateName: (child.name as string) ?? 'template',
+        });
+      }
+      walk(child);
+    }
+  };
+  for (const ct of trees) walk(ct.tree);
+  if (pairs.length === 0) return '';
+  return pairs.map(p =>
+    `\nREPEAT LAYOUT RULE: "${p.containerName}" (${p.containerId}) is the CONTAINER — set grid/flex layout, gap, maxWidth, width on THIS node. "${p.templateName}" (${p.templateId}) is the TEMPLATE with repeat — set per-item styling (bg ternary, border ternary, shadow ternary, padding, hover animation, position offset) on THIS node. NEVER apply context?.item?.data formulas to the container (${p.containerId}) — it is outside the repeat scope and those formulas return undefined. NEVER apply set_layout(gridCols) to the template (${p.templateId}) — it creates N grids instead of 1.`
+  ).join('');
 }
 
 // ── Phase 0: classify the request ────────────────────────────────────────────
-
-const PLAN_SYSTEM = `You are a builder assistant planner. Analyze the user request and output ONLY a JSON object.
-
-Classify:
-- "edit" = modifying existing components (rename, restyle, move, delete, update workflows/variables)
-- "build" = creating new pages or sections from scratch (no edits to existing)
-- "mixed" = both editing existing AND creating new content
-
-For "build" or "mixed", extract every independent build unit (page or section).
-Each unit = one generate_structure call that creates one top-level section or page.
-
-Output format — ONLY valid JSON, no markdown, no explanation:
-{
-  "mode": "edit" | "build" | "mixed",
-  "editSummary": "one-line summary of the edit operations (omit for pure build)",
-  "buildUnits": [
-    { "name": "string", "pageRoute": "/route", "pageName": "Page Name", "description": "what to build", "sectionCount": 1, "layout": "optional layout hint" }
-  ],
-  "relations": ["optional: cross-section wiring needed after building"]
-}`;
 
 async function classifyRequest(
   message: string,
   pages: Array<{ id: string; name: string; route: string }>,
   modelId: string,
+  currentPageRoute?: string,
 ): Promise<BuildPlan> {
   const pageList = pages.map(p => `- "${p.name}" at ${p.route} (id: ${p.id})`).join('\n');
-  const prompt = `Current pages:\n${pageList || '(none)'}\n\nUser request:\n${message}`;
+  const prompt = `Current page: "${currentPageRoute ?? '/'}"\nAll pages:\n${pageList || '(none)'}\n\nUser request:\n${message}`;
   try {
     const res = await client.messages.create({
       model: 'claude-haiku-4-5',
@@ -205,229 +334,293 @@ async function classifyRequest(
   return { mode: 'edit' };
 }
 
-// ── Phase 1b: run one parallel build unit ────────────────────────────────────
+// ── Server-side media search helpers (Tier 0 pre-fetch) ──────────────────────
 
-async function runBuildUnit(
-  unit: BuildUnit,
-  assignedPageId: string | null,
-  existingVariables: Array<{ id?: string; label?: string; name?: string; type?: string; initialValue?: unknown }> = [],
-): Promise<{ trees: CollectedTree[]; toolEvents: ToolEvent[] }> {
-  const trees: CollectedTree[] = [];
-  // Non-structure tool calls (add_variable, set_repeat, set_text) collected here
-  // and streamed to the client in dependency order before Phase 3.
-  const toolEvents: ToolEvent[] = [];
-  // Track variable UUIDs created in this session so set_text can warn about hallucinated UUIDs.
-  const createdVarIds = new Set<string>();
+async function searchUnsplashServer(query: string, count = 5): Promise<Array<{ url: string; alt: string }>> {
+  try {
+    const apiKey = process.env.UNSPLASH_ACCESS_KEY;
+    if (!apiKey || !query) return [];
+    const r = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=${count}&client_id=${apiKey}`);
+    if (!r.ok) return [];
+    const d = await r.json() as { results?: Array<{ urls: { regular: string }; alt_description: string }> };
+    return (d.results ?? []).map(p => ({ url: p.urls.regular, alt: p.alt_description ?? '' }));
+  } catch { return []; }
+}
 
-  // Inject existing array variables so Phase 2 can reuse them instead of creating duplicates.
-  const arrayVars = existingVariables.filter(v => v.type === 'array' && v.id);
-  const existingVarsNote = arrayVars.length > 0
-    ? `\nExisting array variables (prefer reusing these for set_repeat before creating new ones):\n${arrayVars.map(v => `  - "${v.label ?? v.name}" id="${v.id}" → use variables['${v.id}'] in set_repeat`).join('\n')}\n`
-    : '';
+async function searchPexelsServer(query: string, count = 4): Promise<Array<{ src: string; poster: string }>> {
+  try {
+    const apiKey = process.env.PEXELS_API_KEY;
+    if (!apiKey) return [];
+    const q = encodeURIComponent(query || 'nature');
+    const r = await fetch(`https://api.pexels.com/videos/search?query=${q}&page=1&per_page=${count}`, { headers: { Authorization: apiKey }, next: { revalidate: 300 } });
+    if (!r.ok) return [];
+    const d = await r.json() as { videos?: Array<{ image: string; video_files: Array<{ quality: string; link: string }> }> };
+    return (d.videos ?? []).map(v => {
+      const sd = v.video_files.find(f => f.quality === 'sd') ?? v.video_files[0];
+      return { src: sd?.link ?? '', poster: v.image };
+    }).filter(v => v.src);
+  } catch { return []; }
+}
 
-  const sysPrompt = buildPhase2SysPrompt(existingVarsNote);
+/** Walk the resolved tree, extract icon/searchQuery media hints from Phase 2, strip them from tree.
+ *  Returns a manifest of media nodes to process server-side.
+ *  Tree is modified in place — icon/searchQuery fields are removed so they don't reach the client.
+ */
+function extractMediaFromTree(tree: Record<string, unknown>): {
+  icons: Array<{ id: string; icon: string }>;
+  images: Array<{ id: string; searchQuery: string }>;
+  videos: Array<{ id: string; searchQuery: string }>;
+} {
+  const manifest = {
+    icons: [] as Array<{ id: string; icon: string }>,
+    images: [] as Array<{ id: string; searchQuery: string }>,
+    videos: [] as Array<{ id: string; searchQuery: string }>,
+  };
 
-  const prompt = `Build: ${unit.name}
-Description: ${unit.description}
-${unit.sectionCount ? `Sections: ${unit.sectionCount}` : ''}
-${unit.layout ? `Layout: ${unit.layout}` : ''}`;
+  const walk = (node: Record<string, unknown>) => {
+    const label = String(node.label ?? '').toLowerCase();
+    const id = node.id as string | undefined;
 
-  let currentMessages: Anthropic.Messages.MessageParam[] = [{ role: 'user', content: prompt }];
-  let rounds = 0;
-
-  while (rounds < 10) {
-    rounds++;
-    const response = await client.messages.create({
-      model: 'claude-haiku-4-5',
-      max_tokens: 4096,
-      system: sysPrompt,
-      tools: ALL_BUILDER_TOOLS
-        .filter(t => ['generate_structure', 'add_variable', 'set_repeat', 'set_text',
-                      'search_images', 'search_videos', 'search_icons', 'set_src'].includes(t.name))
-        .map(t => ({ name: t.name, description: t.description, input_schema: t.input_schema })),
-      messages: currentMessages,
-    });
-
-    const toolResults: Anthropic.Messages.ToolResultBlockParam[] = [];
-    currentMessages.push({ role: 'assistant', content: response.content });
-
-    for (const block of response.content) {
-      if (block.type !== 'tool_use') continue;
-      const rawInput = block.input as Record<string, unknown>;
-
-      if (block.name === 'add_variable') {
-        // Accept the AI's pre-assigned variableId if valid hex UUID, otherwise generate one.
-        const aiVarId = rawInput.variableId as string | undefined;
-        const assignedVarId = (aiVarId && isUUIDFormat(aiVarId)) ? aiVarId : crypto.randomUUID();
-        const varName = String(rawInput.name ?? 'variable');
-        // Track so set_text can warn about hallucinated UUIDs in the same session.
-        createdVarIds.add(assignedVarId);
-        const clientInput = { ...rawInput, variableId: assignedVarId, _assignedVarId: assignedVarId };
-        toolEvents.push({ name: 'add_variable', input: clientInput, result: { success: true } });
-        toolResults.push({
-          type: 'tool_result',
-          tool_use_id: block.id,
-          content: JSON.stringify({
-            success: true,
-            data: {
-              id: assignedVarId,
-              name: varName,
-              message: `Created variable "${varName}" id="${assignedVarId}". ` +
-                `Use variables['${assignedVarId}'] in formulas and set_repeat mapPath.`,
-            },
-          }),
-        });
-
-      } else if (block.name === 'generate_structure') {
-        const treeInput = rawInput.tree as Record<string, unknown> | undefined | null;
-        if (!treeInput || typeof treeInput !== 'object') {
-          toolResults.push({
-            type: 'tool_result',
-            tool_use_id: block.id,
-            content: JSON.stringify({ success: false, error: 'Missing required "tree" property. Pass the nested node tree under the "tree" key.' }),
-          });
-          continue;
+    if (id) {
+      if (label === 'icon') {
+        const icon = node.icon as string | undefined;
+        if (icon) {
+          manifest.icons.push({ id, icon });
+          delete node.icon; // strip — not an SDUI prop
         }
-        const atIndex = rawInput.atIndex as number | undefined;
-        const resolvedTree = assignTreeIds(treeInput);
-        trees.push({ unitName: unit.name, tree: resolvedTree, pageId: assignedPageId, atIndex });
-        toolResults.push({
-          type: 'tool_result',
-          tool_use_id: block.id,
-          content: JSON.stringify({ success: true, data: { tree: resolvedTree, message: 'Structure created. Read the id field from each node in the returned tree to get its server-assigned UUID.' } }),
-        });
-
-      } else if (block.name === 'set_repeat') {
-        const srMapPath = rawInput.mapPath as string | undefined;
-        // Reject legacy/hallucinated params — same validation as tool-executor.ts
-        if (!srMapPath && (rawInput.dataSource || rawInput.collectionExpression || rawInput.itemName)) {
-          toolResults.push({
-            type: 'tool_result',
-            tool_use_id: block.id,
-            content: JSON.stringify({
-              success: false,
-              error: 'Unknown parameter(s). Use mapPath (e.g. "variables[\'UUID\']") and keyField. ' +
-                'Item scope is always context?.item?.data.* — never use custom aliases.',
-            }),
-          });
-        } else if (!srMapPath) {
-          toolResults.push({
-            type: 'tool_result',
-            tool_use_id: block.id,
-            content: JSON.stringify({ success: false, error: 'mapPath is required for set_repeat.' }),
-          });
-        } else {
-          toolEvents.push({ name: 'set_repeat', input: rawInput, result: { success: true } });
-          toolResults.push({
-            type: 'tool_result',
-            tool_use_id: block.id,
-            content: JSON.stringify({ success: true, message: `Repeat wired over "${srMapPath}".` }),
-          });
-        }
-
-      } else if (block.name === 'search_images') {
-        try {
-          const q = encodeURIComponent(String(rawInput.query ?? ''));
-          const count = Number(rawInput.count ?? 5);
-          const apiKey = process.env.UNSPLASH_ACCESS_KEY;
-          if (apiKey) {
-            const r = await fetch(`https://api.unsplash.com/search/photos?query=${q}&per_page=${count}&client_id=${apiKey}`);
-            if (r.ok) {
-              const d = await r.json() as { results?: Array<{ urls: { regular: string; small: string }; alt_description: string; user: { name: string } }> };
-              const photos = (d.results ?? []).map(p => ({ url: p.urls.regular, thumb: p.urls.small, alt: p.alt_description, credit: p.user.name }));
-              toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify(photos) });
-            } else {
-              toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify({ error: `Unsplash API error ${r.status}` }) });
-            }
-          } else {
-            toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify({ error: 'UNSPLASH_ACCESS_KEY not configured' }) });
-          }
-        } catch (e) {
-          toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify({ error: String(e) }) });
-        }
-
-      } else if (block.name === 'search_videos') {
-        try {
-          const q = encodeURIComponent(String(rawInput.query ?? ''));
-          const count = Number(rawInput.count ?? 4);
-          const apiKey = process.env.PEXELS_API_KEY;
-          if (apiKey) {
-            const url = q
-              ? `https://api.pexels.com/videos/search?query=${q}&page=1&per_page=${count}`
-              : `https://api.pexels.com/videos/popular?page=1&per_page=${count}`;
-            const r = await fetch(url, { headers: { Authorization: apiKey }, next: { revalidate: 300 } });
-            if (r.ok) {
-              const d = await r.json() as { videos?: Array<{ image: string; video_files: Array<{ quality: string; link: string }> }> };
-              const videos = (d.videos ?? []).map(v => {
-                const sd = v.video_files.find(f => f.quality === 'sd') ?? v.video_files[0];
-                return { src: sd?.link ?? '', poster: v.image };
-              }).filter(v => v.src);
-              toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify(videos) });
-            } else {
-              toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify({ error: `Pexels API error ${r.status}` }) });
-            }
-          } else {
-            toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify({ error: 'PEXELS_API_KEY not configured' }) });
-          }
-        } catch (e) {
-          toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify({ error: String(e) }) });
-        }
-
-      } else if (block.name === 'search_icons') {
-        try {
-          const q = encodeURIComponent(String(rawInput.query ?? ''));
-          const count = Number(rawInput.count ?? 10);
-          const prefix = rawInput.prefix ? `&prefix=${rawInput.prefix}` : '';
-          const r = await fetch(`https://api.iconify.design/search?query=${q}&limit=${count}${prefix}`);
-          if (r.ok) {
-            const d = await r.json() as { icons?: string[] };
-            toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify(d.icons ?? []) });
-          } else {
-            toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify({ error: `Iconify API error ${r.status}` }) });
-          }
-        } catch (e) {
-          toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify({ error: String(e) }) });
-        }
-
-      } else if (block.name === 'set_src') {
-        // Client-side mutation — record so the client executes it
-        toolEvents.push({ name: 'set_src', input: rawInput, result: { success: true } });
-        toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify({ success: true, message: 'src queued for client execution.' }) });
-
-      } else if (block.name === 'set_text') {
-        toolEvents.push({ name: 'set_text', input: rawInput, result: { success: true } });
-        // Warn if the text formula references a variables['UUID'] that was not created in this session.
-        // This catches the hallucination pattern where haiku invents a UUID instead of using the one
-        // returned by add_variable. The warning message tells the AI exactly which UUIDs are unknown
-        // so it can self-correct in the next tool call.
-        const textValue = String(rawInput.text ?? '');
-        const uuidMatches = [...textValue.matchAll(/variables\['([0-9a-fA-F-]{36})'\]/g)].map(m => m[1]);
-        const unknownUUIDs = uuidMatches.filter(id => !createdVarIds.has(id));
-        const warningMsg = unknownUUIDs.length > 0
-          ? ` ⚠️ WARNING: formula references variable UUID(s) not created in this session: [${unknownUUIDs.join(', ')}]. ` +
-            `Re-read your add_variable tool results and replace with the exact UUID that was returned. ` +
-            `Valid variable UUIDs in this session: [${[...createdVarIds].join(', ') || 'none yet'}].`
-          : '';
-        toolResults.push({
-          type: 'tool_result',
-          tool_use_id: block.id,
-          content: JSON.stringify({ success: true, message: `Text bound.${warningMsg}` }),
-        });
-
+      } else if (label === 'image') {
+        const searchQuery = node.searchQuery as string | undefined;
+        delete node.searchQuery; // strip
+        manifest.images.push({ id, searchQuery: searchQuery ?? '' });
+      } else if (label === 'video') {
+        const searchQuery = node.searchQuery as string | undefined;
+        delete node.searchQuery; // strip
+        manifest.videos.push({ id, searchQuery: searchQuery ?? '' });
       }
     }
 
-    // Stop when AI signals it is done
-    if (response.stop_reason === 'end_turn') break;
-    // Continue the conversation if there are tool results to feed back
-    if (toolResults.length > 0) {
-      currentMessages.push({ role: 'user', content: toolResults });
-    } else {
-      break; // no tools called and not end_turn — stop to avoid infinite loop
+    // Strip icon/searchQuery from any node type (defensive cleanup)
+    if ('icon' in node && label !== 'icon') delete node.icon;
+    if ('searchQuery' in node) delete node.searchQuery;
+
+    for (const child of (Array.isArray(node.children) ? node.children as Record<string, unknown>[] : [])) {
+      walk(child);
     }
+  };
+
+  walk(tree);
+  return manifest;
+}
+
+// ── Reusable Haiku agent loop (used by Phase 3 and Phase W) ──────────────────
+
+async function runHaikuAgentLoop(
+  messages: Anthropic.Messages.MessageParam[],
+  systemBlocks: Anthropic.Messages.TextBlockParam[],
+  tools: Array<{ name: string; description: string; input_schema: Record<string, unknown> }>,
+  readToolHandlers: Record<string, (input: Record<string, unknown>) => unknown>,
+  send: (event: Record<string, unknown>) => void,
+  allExecutedTools: Array<{ name: string; input: Record<string, unknown>; result?: unknown }>,
+  maxRounds = 15,
+  phase?: string,
+): Promise<void> {
+  let currentMessages = [...messages];
+  let rounds = 0;
+
+  // Build allowed tool set — any tool name NOT in this set gets an error back to the LLM
+  const allowedTools = new Set([
+    ...tools.map(t => t.name),
+    ...Object.keys(readToolHandlers),
+    'search_icons',
+  ]);
+
+  while (rounds < maxRounds) {
+    rounds++;
+
+    const response = client.messages.stream({
+      model: 'claude-haiku-4-5',
+      max_tokens: 16384,
+      system: systemBlocks,
+      tools,
+      messages: currentMessages,
+    } as Parameters<typeof client.messages.stream>[0]);
+
+    const toolUseBlocks: Array<{ id: string; name: string; input: Record<string, unknown> }> = [];
+    // Track tool IDs emitted during streaming so the post-stream loop doesn't double-emit.
+    const streamEmittedIds = new Set<string>();
+    let stopReason = '';
+    let currentToolBlock: { id: string; name: string; inputJson: string } | null = null;
+
+    for await (const event of response) {
+      if (event.type === 'content_block_start' && (event.content_block as { type: string }).type === 'tool_use') {
+        const tb = event.content_block as { id: string; name: string };
+        currentToolBlock = { id: tb.id, name: tb.name, inputJson: '' };
+      } else if (event.type === 'content_block_delta' && (event.delta as { type: string }).type === 'input_json_delta' && currentToolBlock) {
+        currentToolBlock.inputJson += (event.delta as { partial_json: string }).partial_json;
+      } else if (event.type === 'content_block_stop' && currentToolBlock) {
+        let parsedInput: Record<string, unknown> = {};
+        try {
+          parsedInput = JSON.parse(currentToolBlock.inputJson || '{}') as Record<string, unknown>;
+        } catch { parsedInput = {}; }
+        const toolBlock = { id: currentToolBlock.id, name: currentToolBlock.name, input: parsedInput };
+        toolUseBlocks.push(toolBlock);
+        // Only emit for known, non-read tools — unknown tools are rejected in the results loop
+        const isReadTool = !!readToolHandlers[toolBlock.name];
+        if (!isReadTool && allowedTools.has(toolBlock.name)) {
+          streamEmittedIds.add(toolBlock.id);
+          send({ type: 'tool_executed', id: toolBlock.id, name: toolBlock.name, input: toolBlock.input, phase });
+          allExecutedTools.push({ name: toolBlock.name, input: toolBlock.input });
+        }
+        currentToolBlock = null;
+      } else if (event.type === 'message_delta') {
+        stopReason = (event.delta as { stop_reason?: string }).stop_reason ?? '';
+      }
+    }
+
+    const finalMessage = await response.finalMessage();
+    stopReason = finalMessage.stop_reason ?? stopReason;
+
+    // Reconcile streamed toolUseBlocks with finalMessage.content.
+    // When max_tokens is hit mid-response, the last tool_use block may not receive a
+    // content_block_stop event, so it ends up in finalMessage.content but not in
+    // toolUseBlocks. Without this reconciliation, the assistant message has an orphaned
+    // tool_use block with no corresponding tool_result → Anthropic 400 on the next round.
+    {
+      const streamedIds = new Set(toolUseBlocks.map(t => t.id));
+      for (const block of finalMessage.content) {
+        if (block.type !== 'tool_use') continue;
+        const tb = block as { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> };
+        if (!streamedIds.has(tb.id)) {
+          toolUseBlocks.push({ id: tb.id, name: tb.name, input: tb.input ?? {} });
+        }
+      }
+    }
+
+    currentMessages.push({ role: 'assistant', content: finalMessage.content });
+
+    // No tools called → the agent is done
+    if (toolUseBlocks.length === 0) break;
+
+    const toolResults: Anthropic.Messages.ToolResultBlockParam[] = [];
+
+    for (const tool of toolUseBlocks) {
+      // Reject hallucinated tools that are not in this agent's schema
+      if (!allowedTools.has(tool.name)) {
+        toolResults.push({
+          type: 'tool_result',
+          tool_use_id: tool.id,
+          content: JSON.stringify({ error: `Unknown tool "${tool.name}". Your available tools are: ${tools.map(t => t.name).join(', ')}. Use ONLY these tools.` }),
+          is_error: true,
+        });
+        continue;
+      }
+      const readHandler = readToolHandlers[tool.name];
+      if (readHandler) {
+        const result = readHandler(tool.input);
+        const resultStr = result instanceof Promise ? JSON.stringify(await result) : JSON.stringify(result);
+        toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: resultStr });
+      } else if (tool.name === 'search_icons') {
+        try {
+          const q = encodeURIComponent(String(tool.input.query ?? ''));
+          const count = Number(tool.input.count ?? 10);
+          const prefix = tool.input.prefix ? `&prefix=${tool.input.prefix}` : '';
+          const r = await fetch(`https://api.iconify.design/search?query=${q}&limit=${count}${prefix}`);
+          const d = r.ok ? await r.json() as { icons?: string[] } : { icons: [] as string[] };
+          // Emit as 'media' phase so icon searches group with image/video searches in the chat log
+          send({ type: 'tool_executed', id: tool.id, name: tool.name, input: tool.input, phase: 'media' });
+          allExecutedTools.push({ name: tool.name, input: tool.input });
+          toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify(d.icons ?? []) });
+        } catch {
+          send({ type: 'tool_executed', id: tool.id, name: tool.name, input: tool.input, phase: 'media' });
+          allExecutedTools.push({ name: tool.name, input: tool.input });
+          toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify([]) });
+        }
+      } else if (tool.name === 'create_workflow' && isCustomJsDomWorkflow(tool.input)) {
+        toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify({
+          success: false,
+          error: 'customJavaScript with DOM manipulation is not supported in the SDUI engine. Visual effects (hover, press, entrance animations) are handled by set_animation in the styling phase. Only create workflows for state changes (toggle, tab switch, form submit, navigation). If no state logic is needed, stop.',
+        }) });
+      } else if (streamEmittedIds.has(tool.id)) {
+        // Already emitted during streaming — just add the tool result.
+        toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify({ ok: true, pending: 'client_execution' }) });
+      } else {
+        // Not emitted during streaming (e.g. max_tokens reconciliation path) — emit now.
+        send({ type: 'tool_executed', id: tool.id, name: tool.name, input: tool.input, phase });
+        allExecutedTools.push({ name: tool.name, input: tool.input });
+        toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify({ ok: true, pending: 'client_execution' }) });
+      }
+    }
+
+    currentMessages.push({ role: 'user', content: toolResults });
+
+    // Continue if the model wants more tool calls or was truncated (max_tokens).
+    // Only stop when the model explicitly ends the turn (end_turn).
+    if (stopReason !== 'tool_use' && stopReason !== 'max_tokens') break;
+  }
+}
+
+// ── Structure Agent: builds tree shape + declares variables in one call ───────
+
+async function runStructureAgent(
+  unit: BuildUnit,
+  assignedPageId: string | null,
+  existingVariables: Array<{ id?: string; label?: string; name?: string; type?: string }>,
+  send: (event: Record<string, unknown>) => void,
+  allExecutedTools: Array<{ name: string; input: Record<string, unknown>; result?: unknown }>,
+): Promise<{
+  tree: CollectedTree | null;
+  markers: Array<{ nodeId: string; _needsRepeat?: string | boolean; _needsRepeatKeyField?: string; _needsCondition?: string }>;
+  varEvents: ToolEvent[];
+}> {
+  const arrayVars = existingVariables.filter(v => v.type === 'array' && v.id);
+  const existingVarsNote = arrayVars.length > 0
+    ? `\nExisting array variables (prefer reusing these instead of creating duplicates):\n${arrayVars.map(v => `  - "${v.label ?? v.name}" id="${v.id}" type="${v.type}"`).join('\n')}\n`
+    : '';
+
+  const sysPrompt = buildStructureAgentPrompt(existingVarsNote || undefined);
+  const systemBlocks: Anthropic.Messages.TextBlockParam[] = [
+    { type: 'text', text: sysPrompt.static, cache_control: { type: 'ephemeral' } },
+    ...(sysPrompt.dynamic ? [{ type: 'text', text: sysPrompt.dynamic } as Anthropic.Messages.TextBlockParam] : []),
+  ];
+
+  const sectionLimit = `\nSECTION LIMIT: Build EXACTLY ${unit.sectionCount ?? 1} section(s). Do NOT add extra sections.`;
+  const prompt = `Build: ${unit.name}\nDescription: ${unit.description}${sectionLimit}\n${unit.layout ? `Layout: ${unit.layout}` : ''}\n\nDeclare all needed variables in the \`variables\` array and build the tree in one generate_structure call.`;
+
+    const response = await client.messages.create({
+      model: 'claude-haiku-4-5',
+    max_tokens: 16384,
+    system: systemBlocks,
+    tools: STRUCTURE_AGENT_TOOLS.map(t => ({ name: t.name, description: t.description, input_schema: t.input_schema })),
+    tool_choice: { type: 'tool' as const, name: 'generate_structure' },
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+    for (const block of response.content) {
+    if (block.type !== 'tool_use' || block.name !== 'generate_structure') continue;
+      const rawInput = block.input as Record<string, unknown>;
+        const treeInput = rawInput.tree as Record<string, unknown> | undefined | null;
+    if (!treeInput || typeof treeInput !== 'object') continue;
+
+        const atIndex = rawInput.atIndex as number | undefined;
+        const resolvedTree = assignTreeIds(treeInput);
+    const markers = extractAndStripMarkers(resolvedTree);
+        const collectedTree: CollectedTree = { unitName: unit.name, tree: resolvedTree, pageId: assignedPageId, atIndex };
+
+    const declaredVars = (Array.isArray(rawInput.variables) ? rawInput.variables : []) as Array<{ name: string; type: string; initialValue?: unknown; uuid: string }>;
+    const varEvents: ToolEvent[] = [];
+    for (const v of declaredVars) {
+      const assignedId = (v.uuid && isUUIDFormat(v.uuid)) ? v.uuid : crypto.randomUUID();
+      const varName = String(v.name ?? 'variable');
+      const clientInput: Record<string, unknown> = { name: varName, type: v.type, initialValue: v.initialValue, variableId: assignedId, _assignedVarId: assignedId };
+      varEvents.push({ name: 'add_variable', input: clientInput, result: { success: true } });
+      send({ type: 'tool_executed', id: `var-${varName.replace(/[^a-zA-Z0-9_-]/g, '-')}-${assignedId.slice(0, 8)}`, name: 'add_variable', input: clientInput, phase: 'structure' });
+      allExecutedTools.push({ name: 'add_variable', input: clientInput });
+    }
+
+    return { tree: collectedTree, markers, varEvents };
   }
 
-  return { trees, toolEvents };
+  return { tree: null, markers: [], varEvents: [] };
 }
 
 // Strict hex-only UUID validation — rejects non-hex chars (g-z) and short aliases.
@@ -546,7 +739,7 @@ export async function POST(req: NextRequest) {
 
   const paletteSnapshot = buildPaletteSnapshot(theme);
 
-  const systemPrompt = buildChatSystemPrompt({
+  const mainPromptParts = buildChatSystemPrompt({
     pages,
     currentPageName: currentPage.name,
     currentPageRoute: currentPage.route,
@@ -558,18 +751,6 @@ export async function POST(req: NextRequest) {
     description,
     category,
   });
-
-  // Recursive page tree printer — emits name (id) [type] for every node up to 3 levels deep.
-  // This gives Claude full visibility of nested node IDs so it can reference them directly
-  // on follow-up turns without needing to call get_page_tree() first.
-  type SnapNode = { id?: string; type?: string; name?: string; text?: string; children?: unknown[]; childCount?: number };
-  function printTree(nodes: SnapNode[], indent = ''): string {
-    return nodes.map(n => {
-      const label = `${indent}• ${n.name ?? n.type ?? 'Node'} (id:${n.id ?? '?'}) [${n.type ?? '?'}]${n.text ? ` "${n.text}"` : ''}`;
-      const kids = (n.children ?? []) as SnapNode[];
-      return kids.length ? label + '\n' + printTree(kids, indent + '  ') : label;
-    }).join('\n');
-  }
 
   // Add context about selected nodes and page tree as a system note
   const fmtInitial = (val: unknown): string => {
@@ -594,8 +775,9 @@ export async function POST(req: NextRequest) {
 
   // ── Early return for system prompt inspection ────────────────────────────────
   if (systemPromptOnly) {
-    const full = contextNote ? `${systemPrompt}\n\n[Builder Context]\n${contextNote}` : systemPrompt;
-    const phase3Prompt = buildPhase3SystemPrompt({
+    const mainFull = mainPromptParts.static + '\n\n' + mainPromptParts.dynamic;
+    const full = contextNote ? `${mainFull}\n\n[Builder Context]\n${contextNote}` : mainFull;
+    const phase3PromptParts = buildPhase3SystemPrompt({
       pages,
       currentPageName: currentPage.name,
       currentPageRoute: currentPage.route,
@@ -606,13 +788,17 @@ export async function POST(req: NextRequest) {
       description,
       category,
     });
+    const structurePromptParts = buildStructureAgentPrompt();
+    const workflowsPromptParts = buildWorkflowsAgentPrompt({ pages, currentPageName: currentPage.name, currentPageRoute: currentPage.route, appName, description });
     return Response.json({
-      systemPrompt: full,
-      phase2Prompt: buildPhase2SysPrompt(),
-      phase3Prompt,
-      phase2Tools: ['generate_structure', 'add_variable', 'set_repeat', 'set_text',
-                    'search_images', 'search_videos', 'search_icons', 'set_src'],
+      systemPrompt: mainFull,
+      planningPrompt: PLAN_SYSTEM,
+      structurePrompt: structurePromptParts.static + (structurePromptParts.dynamic ? '\n\n' + structurePromptParts.dynamic : ''),
+      phase3Prompt: phase3PromptParts.static + '\n\n' + phase3PromptParts.dynamic,
+      workflowsPrompt: workflowsPromptParts.static + '\n\n' + workflowsPromptParts.dynamic,
+      structureTools: STRUCTURE_AGENT_TOOLS.map(t => t.name),
       phase3Tools: PHASE3_BUILDER_TOOLS.map(t => t.name),
+      workflowsTools: PHASE_W_TOOLS.map(t => t.name),
       mainTools: ALL_BUILDER_TOOLS.map(t => t.name),
     });
   }
@@ -696,13 +882,12 @@ export async function POST(req: NextRequest) {
         await runEditLoop(editMsgs);
       }
 
-      // Phase 2: parallel build
       const units = plan.buildUnits ?? [];
       if (units.length === 0) { send({ type: 'done', tools: allExecutedTools }); return false; }
 
-      send({ type: 'build_phase', phase: 'building', total: units.length, message: `Building ${units.length} section${units.length !== 1 ? 's' : ''} in parallel...`, buildUnits: units.map(u => ({ name: u.name, description: u.description, pageRoute: u.pageRoute, sectionCount: u.sectionCount })) });
+      send({ type: 'build_phase', phase: 'building', total: units.length, message: `Building ${units.length} section${units.length !== 1 ? 's' : ''} with parallel agents...`, buildUnits: units.map(u => ({ name: u.name, description: u.description, pageRoute: u.pageRoute, sectionCount: u.sectionCount })) });
 
-      // Create new pages upfront (sequential — avoids ID/Zustand conflicts)
+      // ── Page creation (sequential) ──────────────────────────────────────────
       const pageIdMap: Record<string, string> = {};
       for (const unit of units) {
         const isCurrent = !unit.pageRoute || unit.pageRoute === '/' || unit.pageRoute === currentPage.route;
@@ -711,161 +896,388 @@ export async function POST(req: NextRequest) {
         if (existing) { pageIdMap[unit.pageRoute] = existing.id; continue; }
         const newPageId = `page-${crypto.randomUUID().slice(0, 8)}`;
         pageIdMap[unit.pageRoute] = newPageId;
-        send({ type: 'tool_executed', id: `page-create-${newPageId}`, name: 'add_page', input: { route: unit.pageRoute, name: unit.pageName, pageId: newPageId, _assignedPageId: newPageId } });
+        send({ type: 'tool_executed', id: `page-create-${newPageId}`, name: 'add_page', input: { route: unit.pageRoute, name: unit.pageName, pageId: newPageId, _assignedPageId: newPageId }, phase: 'structure' });
       }
 
-      // Run all unit builds in parallel (no store writes — just collect trees + tool events)
-      const unitResults = await Promise.all(units.map(unit => runBuildUnit(unit, pageIdMap[unit.pageRoute ?? '/'] ?? null, variables)));
+      // ── Phase 1: Structure (tree + variables in one LLM call) ─────────────────
+      send({ type: 'build_phase', phase: 'structure', message: 'Building structure & variables...' });
+      const structureStartedAt = Date.now();
+      send({ type: 'agent_context', agent: 'structure', systemPrompt: buildStructureAgentPrompt().static, tools: STRUCTURE_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: structureStartedAt });
 
-      // Sequential insertion — prevents concurrent Zustand writes.
-      // Dependency order per unit: add_variable → generate_structure → set_repeat/set_text
-      let done = 0;
-      for (const { trees, toolEvents: unitEvents } of unitResults) {
-        // 1. Stream add_variable events first (variable must exist before structure or set_repeat)
-        for (const event of unitEvents.filter(e => e.name === 'add_variable')) {
-          send({ type: 'tool_executed', id: `var-${done}-${Date.now()}`, name: event.name, input: event.input });
-          allExecutedTools.push({ name: event.name, input: event.input });
+      const imagePreFetches = new Map<string, Promise<Array<{ url: string; alt: string }>>>();
+      const videoPreFetches = new Map<string, Promise<Array<{ src: string; poster: string }>>>();
+
+      type StructureSubResult = {
+        result: Awaited<ReturnType<typeof runStructureAgent>>;
+        unit: BuildUnit;
+        index: number;
+        ctWithMedia?: CollectedTree;
+      };
+
+      const structureSubResults = await Promise.all(units.map(async (unit, i): Promise<StructureSubResult> => {
+        const assignedPid = pageIdMap[unit.pageRoute ?? '/'] ?? null;
+        const result = await runStructureAgent(unit, assignedPid, variables, send, allExecutedTools);
+
+        let ctWithMedia: CollectedTree | undefined;
+        if (result.tree) {
+          const ct = result.tree;
+          const mediaManifest = extractMediaFromTree(ct.tree);
+          ctWithMedia = { ...ct, mediaManifest };
+
+            if (mediaManifest.images.length > 0) {
+              const query = mediaManifest.images[0]?.searchQuery || unit.description;
+            imagePreFetches.set(ct.unitName, searchUnsplashServer(query, mediaManifest.images.length + 1));
+            }
+            if (mediaManifest.videos.length > 0) {
+              const query = mediaManifest.videos[0]?.searchQuery || unit.description;
+            videoPreFetches.set(ct.unitName, searchPexelsServer(query, mediaManifest.videos.length + 1));
+          }
         }
 
-        // 2. Stream generate_structure trees
-        for (const t of trees) {
-          const isCurrentPage = !t.pageId || t.pageId === (pageId ?? currentPage.id);
-          send({ type: 'tool_executed', id: `build-${t.unitName}-${done}`, name: 'generate_structure', input: { tree: t.tree, parentId: undefined, atIndex: t.atIndex, _pageId: isCurrentPage ? undefined : t.pageId } });
-          allExecutedTools.push({ name: 'generate_structure', input: { tree: t.tree } });
-        }
+        send({ type: 'section_progress', done: i + 1, total: units.length, name: unit.name });
+        return { result, unit, index: i, ctWithMedia };
+      }));
 
-        // 3. Stream set_repeat and set_text events (depend on node IDs from generate_structure)
-        for (const event of unitEvents.filter(e => e.name !== 'add_variable')) {
-          send({ type: 'tool_executed', id: `wire-${event.name}-${done}-${Date.now()}`, name: event.name, input: event.input });
-          allExecutedTools.push({ name: event.name, input: event.input });
-        }
+      // Collect variable events from all structure sub-results
+      const addVarEventsCollected = structureSubResults.flatMap(s => s.result.varEvents);
 
-        done++;
-        send({ type: 'section_progress', done, total: units.length, name: units[done - 1]?.name ?? '' });
+      const boolVarIds = addVarEventsCollected
+        .filter(e => (e.input as Record<string, unknown>).type === 'boolean')
+        .map(e => String((e.input as Record<string, unknown>).variableId ?? ''));
+
+      const collectedTrees: CollectedTree[] = [];
+      const allMarkers: Array<{ nodeId: string; _needsRepeat?: string | boolean; _needsRepeatKeyField?: string; _needsCondition?: string }>[] = [];
+
+      for (const sub of structureSubResults) {
+        if (sub.ctWithMedia) {
+          const ct = sub.ctWithMedia;
+          const isCurrentPage = !ct.pageId || ct.pageId === (pageId ?? currentPage.id);
+          collectedTrees.push(ct);
+          allMarkers.push(sub.result.markers);
+
+          send({ type: 'tool_executed', id: `build-${ct.unitName}-imm-${sub.index}`, name: 'generate_structure', input: { tree: ct.tree, parentId: undefined, atIndex: ct.atIndex, _pageId: isCurrentPage ? undefined : ct.pageId, _boolVarIds: boolVarIds }, phase: 'structure' });
+          allExecutedTools.push({ name: 'generate_structure', input: { tree: ct.tree } });
+        }
       }
 
-      // Phase 3: STYLING ONLY — variables and repeat wiring done above by mini-model
-      const allTrees = unitResults.flatMap(r => r.trees);
-      if (allTrees.length > 0) {
-        const relations = plan.relations ?? [];
-        const relationsNote = relations.length > 0
-          ? `\n\nAlso wire these connections:\n${relations.join('\n')}`
-          : '';
-        // Collect pages that are NOT the current page — the AI must switch to them first
-        const createdPageIds = [...new Set(
-          allTrees
-            .map(t => t.pageId)
-            .filter((id): id is string => !!id && id !== (pageId ?? currentPage.id))
-        )];
-        const pageContextNote = createdPageIds.length > 0
-          ? `\n\nIMPORTANT: The structure was built on page(s): ${createdPageIds.join(', ')}\nCall switch_page(pageId) FIRST, then apply styling using the UUIDs from the generate_structure results above.\n\nCRITICAL RULES — follow exactly:\n1. DO NOT call get_page_tree or search_nodes — all node IDs are in the generate_structure results above. Use them directly.\n2. DO NOT call add_page or generate_structure — the structure already exists.\n3. The system prompt may still show the old current page; that context is outdated. Ignore it and use the node IDs from the generate_structure results.`
-          : '';
+      send({ type: 'agent_complete', agent: 'structure', rounds: structureSubResults.length, toolCallCount: collectedTrees.length + addVarEventsCollected.length, duration: Date.now() - structureStartedAt, endedAt: Date.now() });
 
-        // Build synthetic conversation turns so Phase 3 sees add_variable + generate_structure
-        // tool results in the exact same format as normal sessions. This gives Phase 3 native
-        // access to the resolved tree (with UUID in each node's id field) AND the full variable
-        // definitions (field names, initial values) so it can use correct field names in formulas.
-        const syntheticMessages: Anthropic.Messages.MessageParam[] = [];
+      if (collectedTrees.length === 0 || plan.needsStyling === false) {
+        send({ type: 'done', tools: allExecutedTools });
+        return false;
+      }
 
-        // Inject add_variable events FIRST — Phase 3 must see the initialValue to know exact
-        // field names (e.g. "highlight" not "featured") before writing set_condition formulas.
-        const addVarEvents = unitResults.flatMap(r => r.toolEvents.filter(e => e.name === 'add_variable'));
-        for (const e of addVarEvents) {
-          const varName = String((e.input as Record<string, unknown>).name ?? 'variable');
-          const varId = String((e.input as Record<string, unknown>).variableId ?? '');
-          const toolUseId = `add-var-${varName.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
-          syntheticMessages.push({
-            role: 'assistant',
-            content: [{ type: 'tool_use', id: toolUseId, name: 'add_variable', input: e.input }],
-          });
-          syntheticMessages.push({
-            role: 'user',
-            content: [{
-              type: 'tool_result',
-              tool_use_id: toolUseId,
-              content: JSON.stringify({
-                success: true,
-                data: {
-                  id: varId,
-                  name: varName,
-                  message: `Created variable "${varName}" (${varId}). Use exact field names from initialValue in set_condition formulas and set_text bindings.`,
-                },
-              }),
-            }],
-          });
+      // ── Compute hints (between structure and parallel fan-out) ──────────────
+      // Hints are computed from the trees BEFORE markers are stripped (they're still on the trees at this point for hint detectors)
+      const nestedRepeatHint = detectNestedRepeatNodes(collectedTrees);
+      const ternaryContrastHint = detectTernaryContrastNodes(collectedTrees, addVarEventsCollected.map(e => ({ name: e.name, input: e.input as Record<string, unknown> })));
+      const repeatContainerHint = detectRepeatContainerPairs(collectedTrees);
+
+      const relations = plan.relations ?? [];
+      const relationsNote = relations.length > 0 ? `\n\nAlso wire these connections:\n${relations.join('\n')}` : '';
+      const createdPageIds = [...new Set(collectedTrees.map(t => t.pageId).filter((id): id is string => !!id && id !== (pageId ?? currentPage.id)))];
+      const pageContextNote = createdPageIds.length > 0
+        ? `\n\nNOTE: switch_page(${createdPageIds[0]}) has already been called. Do NOT call switch_page again.\n\nRULES: DO NOT call get_page_tree. DO NOT call generate_structure again.`
+        : '';
+
+      // ── Build compact text tree for downstream agents ────────────────────────
+      // Plain text tree summary replaces raw tool_use synthetic messages.
+      // This prevents downstream agents from hallucinating generate_structure calls
+      // and reduces input tokens significantly.
+      function buildCompactTreeText(
+        trees: CollectedTree[],
+        markers: Array<{ nodeId: string; _needsRepeat?: string | boolean; _needsRepeatKeyField?: string; _needsCondition?: string }>[],
+      ): string {
+        const markerMap = new Map<string, { repeat?: string; condition?: string }>();
+        for (const mks of markers) {
+          for (const m of mks) {
+            markerMap.set(m.nodeId, {
+              repeat: m._needsRepeat ? `REPEAT(key=${m._needsRepeatKeyField ?? 'id'})` : undefined,
+              condition: m._needsCondition ? `CONDITION(${m._needsCondition})` : undefined,
+            });
+          }
         }
 
-        for (const t of allTrees) {
-          const toolUseId = `gen-struct-${t.unitName.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
-          // Synthetic assistant turn: the AI "called" generate_structure with this tree
-          syntheticMessages.push({
-            role: 'assistant',
-            content: [{ type: 'tool_use', id: toolUseId, name: 'generate_structure', input: { tree: t.tree } }],
-          });
-          // Synthetic user turn: return resolved tree with server-assigned UUIDs in each id field
-          syntheticMessages.push({
-            role: 'user',
-            content: [{
-              type: 'tool_result',
-              tool_use_id: toolUseId,
-              content: JSON.stringify({
-                success: true,
-                data: {
-                  tree: t.tree,
-                  message: 'Structure created. Read the id field from each node in the returned tree to get its server-assigned UUID.',
-                },
-              }),
-            }],
-          });
+        // Build set of node IDs inside nested repeats (depth >= 2) for inline annotation
+        const nestedSet = new Set<string>();
+        const walkNested = (node: Record<string, unknown>, repeatDepth: number) => {
+          const hasRepeat = (typeof node.repeat === 'string' && node.repeat.length > 0) || !!node._needsRepeat || !!markerMap.get(node.id as string)?.repeat;
+          const newDepth = hasRepeat ? repeatDepth + 1 : repeatDepth;
+          if (newDepth >= 2 && !hasRepeat && node.id) nestedSet.add(node.id as string);
+          const children = node.children as Record<string, unknown>[] | undefined;
+          if (Array.isArray(children)) { for (const child of children) walkNested(child, newDepth); }
+        };
+        for (const ct of trees) walkNested(ct.tree, 0);
+
+        function walkNode(node: Record<string, unknown>, indent: string): string {
+          const nId = node.id as string ?? '?';
+          const nType = node.type as string ?? 'Box';
+          const nName = node.name as string ?? '';
+          const nText = node.text as string ?? '';
+          const mk = markerMap.get(nId);
+          const nested = nestedSet.has(nId) ? '(NESTED)' : '';
+          const tags = [mk?.repeat, mk?.condition, nested].filter(Boolean).join(' ');
+          const line = `${indent}[${nId}] ${nType}${nName ? ` "${nName}"` : ''}${nText ? ` text="${nText}"` : ''}${tags ? ` — ${tags}` : ''}`;
+          const kids = (Array.isArray(node.children) ? node.children : []) as Record<string, unknown>[];
+          return kids.length
+            ? line + '\n' + kids.map(c => walkNode(c, indent + '  ')).join('\n')
+            : line;
         }
+        return trees.map(t => {
+          const root = t.tree as Record<string, unknown>;
+          return `=== ${t.unitName} ===\n${walkNode(root, '')}`;
+        }).join('\n\n');
+      }
 
-        // Inject set_repeat and set_text events so Phase 3 sees the completed wiring.
-        // Without this, Phase 3 is told wiring is done but has no evidence — it tries to redo it.
-        const wiringEvents = unitResults.flatMap(r =>
-          r.toolEvents.filter(e =>
-            ['set_repeat', 'set_text', 'set_src', 'search_images', 'search_videos', 'search_icons'].includes(e.name)
-          )
-        );
-        for (const e of wiringEvents) {
-          const toolUseId = `wire-${e.name}-${(e.input as Record<string, unknown>).nodeId}`;
-          syntheticMessages.push({
-            role: 'assistant',
-            content: [{ type: 'tool_use', id: toolUseId, name: e.name, input: e.input }],
-          });
-          syntheticMessages.push({
-            role: 'user',
-            content: [{
-              type: 'tool_result',
-              tool_use_id: toolUseId,
-              content: JSON.stringify({ success: true, message: `${e.name} applied in Phase 2.` }),
-            }],
-          });
-        }
+      const compactTree = buildCompactTreeText(collectedTrees, allMarkers);
 
-        send({ type: 'build_phase', phase: 'wiring', message: 'Styling...' });
-        currentMessages = [
-          ...syntheticMessages,
-          {
-            role: 'user',
-            content: `${contextNote ? `[Context]\n${contextNote}\n\n` : ''}[Post-Build Styling and Wiring]
-Structure, variables, repeat wiring, and media src are complete. Now do two things:
-1. Apply all visual styling the request calls for.
-2. Create and bind any workflows needed for interactive behavior (toggles, navigation, form submissions, etc.).
+      // Emit switch_page for created pages (still needed for client-side execution)
+      if (createdPageIds.length > 0) {
+        const switchId = `auto-switch-${createdPageIds[0]}`;
+        send({ type: 'tool_executed', id: switchId, name: 'switch_page', input: { pageId: createdPageIds[0] }, phase: 'styling:layout' });
+        allExecutedTools.push({ name: 'switch_page', input: { pageId: createdPageIds[0] } });
+      }
 
-All node IDs are in the generate_structure results above — read the id field from each node in the returned tree to get its UUID.
-If a switch_page instruction is present, call it FIRST.
+      send({ type: 'build_phase', phase: 'parallel', message: 'Running Styling, Binding, Workflows, Media agents in parallel...' });
 
-Repeat template reminder: style ALL children (buttons, icons, text/headings) — no exceptions. When any boolean field exists in the repeat data, apply ternary expressions for background, text color, border, shadow, icon name, and icon color per item.
+      // ── Build markers summary for Binding agent ─────────────────────────────
+      const flatMarkers = allMarkers.flat();
+      const markersNote = flatMarkers.length > 0
+        ? `\nMarkers from structure (apply these bindings):\n${flatMarkers.map(m => {
+            const parts: string[] = [`  Node ${m.nodeId}:`];
+            if (m._needsRepeat) parts.push(`needs set_repeat (keyField: "${m._needsRepeatKeyField ?? 'id'}") — match to an array variable from the list below`);
+            if (m._needsCondition) parts.push(`set_condition(condition: "context?.item?.data?.${m._needsCondition}")`);
+            return parts.join(' ');
+          }).join('\n')}`
+        : '';
+
+      // ── Variable roster for downstream agents ───────────────────────────────
+      const varRoster = addVarEventsCollected.length > 0
+        ? `Available variables (ONLY these UUIDs are valid):\n${addVarEventsCollected.map(e => {
+            const inp = e.input as Record<string, unknown>;
+            const n = String(inp.name ?? '');
+            const id = String(inp.variableId ?? '');
+            const t = String(inp.type ?? 'string');
+            let fields = '';
+            if (t === 'array' && Array.isArray(inp.initialValue) && (inp.initialValue as unknown[]).length > 0) {
+              const firstItem = (inp.initialValue as unknown[])[0] as Record<string, unknown>;
+              const fieldDescs = Object.entries(firstItem).map(([k, v]) => {
+                if (Array.isArray(v) && v.length > 0 && typeof v[0] === 'object' && v[0] !== null) {
+                  return `${k}[{${Object.keys(v[0] as Record<string, unknown>).join(', ')}}]`;
+                }
+                return k;
+              });
+              fields = ` — fields: ${fieldDescs.join(', ')}`;
+            }
+            return `  "${n}" (${t}) → variables['${id}']${fields}`;
+          }).join('\n')}`
+        : `No variables were created. Do NOT reference variables['UUID'].`;
+
+      // ── Read handlers shared by Styling and Binding ─────────────────────────
+      const buildReadHandlers: Record<string, (input: Record<string, unknown>) => unknown> = {
+        get_page_tree: () => ({ pageName: currentPage.name, sections: pageTreeSnapshot }),
+        get_variables: () => variables,
+        get_pages: () => pages,
+        get_workflows: () => workflows,
+        get_formula_context: () => ({ variables, collections: [] }),
+        search_nodes: (inp) => {
+          const q = String(inp.query ?? '').toLowerCase();
+          type SN = { id?: string; type?: string; name?: string; children?: unknown[] };
+          const hits: Array<{ id: string | undefined; name: string | undefined; type: string | undefined }> = [];
+          const wk = (nodes: SN[]) => { for (const n of nodes) { if ((n.name ?? '').toLowerCase().includes(q) || (n.type ?? '').toLowerCase().includes(q)) hits.push({ id: n.id, name: n.name, type: n.type }); if (Array.isArray(n.children)) wk(n.children as SN[]); } };
+          wk(pageTreeSnapshot as SN[]);
+          return hits.length ? hits : { note: `No nodes found matching "${inp.query}"` };
+        },
+      };
+
+      // ── Binding Agent ───────────────────────────────────────────────────────
+      const bindingPromptParts = buildBindingAgentPrompt();
+      const bindingSystemBlocks: Anthropic.Messages.TextBlockParam[] = [
+        { type: 'text', text: bindingPromptParts.static, cache_control: { type: 'ephemeral' } },
+      ];
+      const bindingMessages: Anthropic.Messages.MessageParam[] = [
+        {
+          role: 'user',
+          content: `[Binding Agent] Connect data to all nodes. Apply set_repeat, set_text, set_condition based on the structure tree and variable data.
+
+[Page Tree — use exact node UUIDs]
+${compactTree}
+${markersNote}
+
+${varRoster}
+
+Bind ALL text nodes with their data fields from the variable initialValue.
+
+Original request:
+${message}`,
+        },
+      ];
+
+      // ── Styling Sub-Agents (3 parallel) ────────────────────────────────────
+      const stylingCtx = { pages, currentPageName: currentPage.name, currentPageRoute: currentPage.route, paletteSnapshot, mood, animationLevel, appName, description, category };
+
+      const layoutPromptParts = buildLayoutAgentPrompt(stylingCtx);
+      const layoutSystemBlocks: Anthropic.Messages.TextBlockParam[] = [
+        { type: 'text', text: layoutPromptParts.static, cache_control: { type: 'ephemeral' } },
+        { type: 'text', text: layoutPromptParts.dynamic },
+      ];
+      const layoutMessages: Anthropic.Messages.MessageParam[] = [
+        {
+          role: 'user',
+          content: `${contextNote ? `[Context]\n${contextNote}\n\n` : ''}[Layout Agent]
+The structure ALREADY EXISTS — do NOT create or modify structure. Apply spacing, sizing, layout alignment, grid columns, position offsets, and overflow. Do NOT set colors, typography, or animations — parallel agents handle those.
+
+[Page Tree — use exact node UUIDs]
+${compactTree}
+${repeatContainerHint}
 
 Original request:
 ${message}${relationsNote}${pageContextNote}`,
-          },
-        ];
-        // Signal caller to continue with standard loop for Phase 3 styling
-        // Phase 3 uses haiku — fast and cheap for mechanical styling operations
-        useHaikuForNextRound = true;
-        return true;
-      }
+        },
+      ];
+
+      const colorsPromptParts = buildColorsAgentPrompt(stylingCtx);
+      const colorsSystemBlocks: Anthropic.Messages.TextBlockParam[] = [
+        { type: 'text', text: colorsPromptParts.static, cache_control: { type: 'ephemeral' } },
+        { type: 'text', text: colorsPromptParts.dynamic },
+      ];
+      const colorsMessages: Anthropic.Messages.MessageParam[] = [
+        {
+          role: 'user',
+          content: `${contextNote ? `[Context]\n${contextNote}\n\n` : ''}[Colors Agent]
+Apply all colors, backgrounds, text colors, borders, shadows, opacity, and icon color/size. Apply TERNARY CONTRAST on all repeated template descendants. Do NOT set typography, spacing, or animations — parallel agents handle those.
+
+[Page Tree — use exact node UUIDs]
+${compactTree}
+
+${varRoster}
+${repeatContainerHint}${nestedRepeatHint}${ternaryContrastHint}
+Repeat template reminder: style ALL children (buttons, icons, text/headings). When boolean fields exist in repeat data, apply ternary expressions for background, text color, border, shadow.
+
+Original request:
+${message}${relationsNote}${pageContextNote}`,
+        },
+      ];
+
+      const typoAnimPromptParts = buildTypoAnimAgentPrompt(stylingCtx);
+      const typoAnimSystemBlocks: Anthropic.Messages.TextBlockParam[] = [
+        { type: 'text', text: typoAnimPromptParts.static, cache_control: { type: 'ephemeral' } },
+        { type: 'text', text: typoAnimPromptParts.dynamic },
+      ];
+      const typoAnimMessages: Anthropic.Messages.MessageParam[] = [
+        {
+          role: 'user',
+          content: `${contextNote ? `[Context]\n${contextNote}\n\n` : ''}[Typography + Animation Agent]
+Apply typography (size, weight, alignment) and all animations (enter, scroll, hover, press, loop). Use bulk_apply for sibling groups with identical typography. Do NOT set colors, spacing, or layout — parallel agents handle those.
+
+[Page Tree — use exact node UUIDs]
+${compactTree}
+
+Original request:
+${message}${relationsNote}${pageContextNote}`,
+        },
+      ];
+
+      // ── Workflows Agent ─────────────────────────────────────────────────────
+      const phaseWPromptParts = buildWorkflowsAgentPrompt({ pages, currentPageName: currentPage.name, currentPageRoute: currentPage.route, appName, description });
+      const phaseWSystemBlocks: Anthropic.Messages.TextBlockParam[] = [
+        { type: 'text', text: phaseWPromptParts.static, cache_control: { type: 'ephemeral' } },
+        { type: 'text', text: phaseWPromptParts.dynamic },
+      ];
+      const phaseWPageNote = createdPageIds.length > 0
+        ? `\n\nActive page: ${createdPageIds[0]} (switch_page already called).`
+        : '';
+      const phaseWMessages: Anthropic.Messages.MessageParam[] = [
+        {
+          role: 'user',
+          content: `[Workflows Agent]
+Create and bind all workflows needed for interactive behaviors.
+
+[Page Tree — use exact node UUIDs]
+${compactTree}
+
+${varRoster}
+
+Original request:
+${message}${relationsNote}${phaseWPageNote}`,
+        },
+      ];
+      const phaseWReadHandlers: Record<string, (input: Record<string, unknown>) => unknown> = {
+        get_variables: () => variables,
+        get_workflows: () => workflows,
+      };
+
+      // ── Media Agent (deterministic — no LLM) ───────────────────────────────
+      const mediaStartedAt = Date.now();
+      send({ type: 'agent_context', agent: 'media', systemPrompt: '(deterministic — icons from tree manifest, images/videos from search)', tools: ['set_icon', 'set_src'], syntheticMessageCount: 0, startedAt: mediaStartedAt });
+
+      const mediaInjectionPromise = (async () => {
+        for (const ct of collectedTrees) {
+          const manifest = ct.mediaManifest;
+          if (!manifest) continue;
+
+          for (const { id: iconId, icon: iconValue } of manifest.icons) {
+            const setInput = { nodeId: iconId, icon: iconValue };
+            send({ type: 'tool_executed', id: `icon-${iconId}`, name: 'set_icon', input: setInput, phase: 'media' });
+            allExecutedTools.push({ name: 'set_icon', input: setInput });
+          }
+
+          if (manifest.images.length > 0) {
+            const images = await (imagePreFetches.get(ct.unitName) ?? Promise.resolve([]));
+            if (images.length > 0) {
+              manifest.images.forEach((imageNode, idx) => {
+                const img = images[idx] ?? images[0];
+                if (!img) return;
+                const input = { nodeId: imageNode.id, src: img.url, alt: img.alt, objectFit: 'cover' };
+                send({ type: 'tool_executed', id: `src-img-${imageNode.id}`, name: 'set_src', input, phase: 'media' });
+                allExecutedTools.push({ name: 'set_src', input });
+              });
+            }
+          }
+
+          if (manifest.videos.length > 0) {
+            const videos = await (videoPreFetches.get(ct.unitName) ?? Promise.resolve([]));
+            if (videos.length > 0) {
+              manifest.videos.forEach((videoNode, idx) => {
+                const vid = videos[idx] ?? videos[0];
+                if (!vid) return;
+                const input = { nodeId: videoNode.id, src: vid.src, poster: vid.poster };
+                send({ type: 'tool_executed', id: `src-vid-${videoNode.id}`, name: 'set_src', input, phase: 'media' });
+                allExecutedTools.push({ name: 'set_src', input });
+              });
+            }
+          }
+        }
+        send({ type: 'agent_complete', agent: 'media', rounds: 0, toolCallCount: collectedTrees.reduce((sum, ct) => sum + (ct.mediaManifest?.icons.length ?? 0) + (ct.mediaManifest?.images.length ?? 0) + (ct.mediaManifest?.videos.length ?? 0), 0), duration: Date.now() - mediaStartedAt, endedAt: Date.now() });
+      })();
+
+      // ── Emit agent_context for LLM agents ───────────────────────────────────
+      send({ type: 'agent_context', agent: 'binding', systemPrompt: bindingPromptParts.static, tools: BINDING_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
+      send({ type: 'agent_context', agent: 'styling:layout', systemPrompt: layoutPromptParts.static + '\n\n' + layoutPromptParts.dynamic, tools: LAYOUT_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
+      send({ type: 'agent_context', agent: 'styling:colors', systemPrompt: colorsPromptParts.static + '\n\n' + colorsPromptParts.dynamic, tools: COLORS_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
+      send({ type: 'agent_context', agent: 'styling:typo', systemPrompt: typoAnimPromptParts.static + '\n\n' + typoAnimPromptParts.dynamic, tools: TYPO_ANIM_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
+      send({ type: 'agent_context', agent: 'workflows', systemPrompt: phaseWPromptParts.static + '\n\n' + phaseWPromptParts.dynamic, tools: PHASE_W_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
+
+      // Strip direction from set_layout for layout sub-agent (already embedded in structure)
+      const layoutToolsNoDirection = LAYOUT_AGENT_TOOLS.map(t => {
+        if (t.name !== 'set_layout') return t;
+        const { direction: _d, ...propsNoDir } = (t.input_schema as { properties: Record<string, unknown> }).properties;
+        void _d;
+        return { ...t, input_schema: { ...t.input_schema, properties: propsNoDir } };
+      });
+
+      const toToolParam = (t: { name: string; description: string; input_schema: unknown }) =>
+        ({ name: t.name, description: t.description, input_schema: t.input_schema as Record<string, unknown> });
+
+      // ── Launch all 6 agents in parallel ─────────────────────────────────────
+      await Promise.all([
+        runHaikuAgentLoop(bindingMessages, bindingSystemBlocks, BINDING_AGENT_TOOLS.map(toToolParam), {}, send, allExecutedTools, 10, 'binding'),
+        runHaikuAgentLoop(layoutMessages, layoutSystemBlocks, layoutToolsNoDirection.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, 'styling:layout'),
+        runHaikuAgentLoop(colorsMessages, colorsSystemBlocks, COLORS_AGENT_TOOLS.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, 'styling:colors'),
+        runHaikuAgentLoop(typoAnimMessages, typoAnimSystemBlocks, TYPO_ANIM_AGENT_TOOLS.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, 'styling:typo'),
+        runHaikuAgentLoop(phaseWMessages, phaseWSystemBlocks, PHASE_W_TOOLS.map(toToolParam), phaseWReadHandlers, send, allExecutedTools, 15, 'workflows'),
+        mediaInjectionPromise,
+      ]);
 
       send({ type: 'done', tools: allExecutedTools });
       return false;
@@ -879,7 +1291,10 @@ ${message}${relationsNote}${pageContextNote}`,
         send({ type: 'round_start', round: editRounds });
         const editResp = client.messages.stream({
           model: modelId, max_tokens: 4096,
-          system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
+          system: [
+            { type: 'text', text: mainPromptParts.static, cache_control: { type: 'ephemeral' } },
+            { type: 'text', text: mainPromptParts.dynamic },
+          ],
           tools: ALL_BUILDER_TOOLS.map(t => ({ name: t.name, description: t.description, input_schema: t.input_schema })),
           messages: editMsgs,
         } as Parameters<typeof client.messages.stream>[0]);
@@ -939,11 +1354,42 @@ ${message}${relationsNote}${pageContextNote}`,
       }
     }
 
+    // Pre-compute Phase 3 prompt parts once — static block is identical every round so
+    // Anthropic can serve it from cache; only the dynamic block (palette + project + page) is fresh.
+    const phase3PromptParts = buildPhase3SystemPrompt({
+      pages,
+      currentPageName: currentPage.name,
+      currentPageRoute: currentPage.route,
+      paletteSnapshot,
+      mood,
+      animationLevel,
+      appName,
+      description,
+      category,
+    });
+
+    // Phase 3 tool list with direction stripped from set_layout — direction is already embedded
+    // in the tree by generate_structure; passing it again is always a no-op and wastes calls.
+    const phase3ToolsNoDirection = PHASE3_BUILDER_TOOLS.map(t => {
+      if (t.name !== 'set_layout') return t;
+      const { direction: _dir, ...propsWithoutDirection } = (t.input_schema as { properties: Record<string, unknown> }).properties;
+      void _dir;
+      return { ...t, input_schema: { ...t.input_schema, properties: propsWithoutDirection } };
+    });
+
     try {
       // ── Phase 0: classify for build / mixed mode ──────────────────────────
       if (mightBeBuildRequest) {
         send({ type: 'build_phase', phase: 'planning', message: 'Planning your request...' });
-        const plan = await classifyRequest(message, pages, modelId);
+        const plan = await classifyRequest(message, pages, modelId, currentPage.route);
+        send({
+          type: 'tool_executed',
+          id: 'classify-request',
+          name: 'classify_request',
+          input: { message },
+          result: plan,
+          phase: 'planning',
+        });
 
         if (plan.mode === 'build' || plan.mode === 'mixed') {
           const needsWiring = await runBuildOrMixedMode(plan);
@@ -972,19 +1418,24 @@ ${message}${relationsNote}${pageContextNote}`,
         const isPhase3 = inPhase3Mode;
         const activeModel = isPhase3 ? 'claude-haiku-4-5' : modelId;
         const activeSupportsThinking = supportsThinking && activeModel === modelId;
-        // Phase 3 gets a focused styling-only system prompt; edit mode gets the full prompt
-        const activeSystemPrompt = isPhase3
-          ? buildPhase3SystemPrompt({ pages, currentPageName: currentPage.name, currentPageRoute: currentPage.route, paletteSnapshot, mood, animationLevel, appName, description, category })
-          : systemPrompt;
         // Phase 3 gets only styling tools — structure tools are architecturally excluded
-        const activeTools = isPhase3 ? PHASE3_BUILDER_TOOLS : ALL_BUILDER_TOOLS;
+        const activeTools = isPhase3 ? phase3ToolsNoDirection : ALL_BUILDER_TOOLS;
+        // Build system blocks: Phase 3 uses two-block split (static cached + dynamic fresh);
+        // main edit mode uses the full prompt in one cached block.
+        const activeSystemBlocks: Anthropic.Messages.TextBlockParam[] = isPhase3
+          ? [
+              { type: 'text', text: phase3PromptParts.static, cache_control: { type: 'ephemeral' } },
+              { type: 'text', text: phase3PromptParts.dynamic },
+            ]
+          : [
+              { type: 'text', text: mainPromptParts.static, cache_control: { type: 'ephemeral' } },
+              { type: 'text', text: mainPromptParts.dynamic },
+            ];
         const response = client.messages.stream({
           model: activeModel,
           // Thinking models need a higher token budget (thinking uses tokens too)
           max_tokens: 16000,
-          // Pass system prompt as an array block with cache_control so Anthropic caches
-          // the large prompt across rounds — cuts TTFB on rounds 2+ significantly
-          system: [{ type: 'text', text: activeSystemPrompt, cache_control: { type: 'ephemeral' } }],
+          system: activeSystemBlocks,
           ...(activeSupportsThinking ? { thinking: { type: 'enabled', budget_tokens: 8000 } } : {}),
           tools: activeTools.map(t => ({
             name: t.name,

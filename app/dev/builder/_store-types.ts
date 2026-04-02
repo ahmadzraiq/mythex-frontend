@@ -29,6 +29,27 @@ export interface AiToolCall {
   input: Record<string, unknown>;
   result?: unknown;
   status?: 'pending' | 'success' | 'error' | 'generating';
+  /** Which pipeline phase emitted this tool call — used for grouped display in the chat panel */
+  phase?: 'planning' | 'structure' | 'media' | 'styling' | 'styling:layout' | 'styling:colors' | 'styling:typo' | 'workflows' | 'binding';
+  /** client Date.now() when the event was received — used for per-phase duration display */
+  timestamp?: number;
+  /** Which Anthropic API round produced this tool (1-based) */
+  round?: number;
+  /** True when client-side execution failed but the AI was told "pending: ok" — AI is blind to this failure */
+  aiBlind?: boolean;
+}
+
+export interface AgentDebugInfo {
+  agent: string;
+  systemPrompt: string;
+  tools: string[];
+  syntheticMessageCount: number;
+  startedAt: number;
+  endedAt?: number;
+  rounds?: number;
+  toolCallCount?: number;
+  duration?: number;
+  toolCalls: AiToolCall[];
 }
 
 export type AiChatRole = 'user' | 'assistant' | 'system';
@@ -68,7 +89,7 @@ export interface AiChatMessage {
   /** Icon search results from search_icons tool */
   iconResults?: AiIconResult[];
   /** Build mode progress — current phase */
-  buildPhase?: 'planning' | 'editing' | 'building' | 'wiring';
+  buildPhase?: 'planning' | 'editing' | 'building' | 'wiring' | 'structure' | 'parallel';
   /** Total number of sections/units in the current build */
   buildTotal?: number;
   /** How many sections have been completed so far */
@@ -83,6 +104,8 @@ export interface AiChatMessage {
   sectionsLog?: Array<{ done: number; total: number; name: string }>;
   /** AI's build plan — sections decided before structure phase (for debug) */
   buildPlanUnits?: Array<{ name: string; description: string; pageRoute: string; sectionCount?: number }>;
+  /** Per-agent debug info — populated by agent_context and agent_complete SSE events */
+  agentDebugInfo?: Record<string, AgentDebugInfo>;
 }
 
 // ─── Viewport ─────────────────────────────────────────────────────────────────

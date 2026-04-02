@@ -82,12 +82,12 @@ config/store.json, screens/*.json, actions/*.json
 
 ### Resolution Order (createGet)
 
-1. Scope vars (`$item`, `$index`, `$parent`) when scope provided
+1. Scope vars (`context.item.data.*`, `context.item.parent.data.*`) when scope provided
 2. Merged state (Zustand + variable store overlay + store.json computed)
-3. Variable store (fallback)
+3. Variable store (fallback — `variables['UUID']`)
 4. undefined
 
-Screen-scoped paths (`form`, `errors`) resolve to `screens.{screenName}.{path}`.
+**`screens.*` paths are dead.** All mutable state uses `variables['UUID']` from `config/variables.json`. Form state lives at `local.data.form.*` (scoped per FormContainer).
 
 ### Adding a New Action Type
 

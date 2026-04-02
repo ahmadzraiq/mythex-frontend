@@ -5,7 +5,6 @@
  * - add_component("Card") → looks up COMPONENT_SCHEMA["Card"] → inserts template
  * - set_text(id, "Hello") → patchProp(id, "text", "Hello")
  * - set_background(id, {bg:"primary"}) → resolves to bg-[var(--theme-primary)], patches className
- * - generate_section(...) → signals the streaming generator (handled at API level)
  *
  * All node mutations auto-push to history via the store actions.
  */
@@ -59,6 +58,31 @@ function validateWorkflowFormulas(steps: Array<Record<string, unknown>>): string
     if (typeof value?.formula === 'string') {
       const err = validateFormula(value.formula);
       if (err) return `Step "${step.id ?? '?'}": ${err}`;
+    }
+  }
+  return null;
+}
+
+// Recursively checks all steps (including nested branches/loops) for prohibited types.
+function findProhibitedStep(steps: Array<Record<string, unknown>>, prohibited: Set<string>): string | null {
+  for (const step of steps) {
+    const t = step.type as string | undefined;
+    if (t && prohibited.has(t)) {
+      return `Step "${step.id ?? '?'}": type "${t}" is not supported. Use changeVariableValue, navigateTo, or other supported types instead.`;
+    }
+    for (const branch of ['trueBranch', 'falseBranch', 'loopBody', 'defaultBranch'] as const) {
+      if (Array.isArray(step[branch])) {
+        const err = findProhibitedStep(step[branch] as Array<Record<string, unknown>>, prohibited);
+        if (err) return err;
+      }
+    }
+    if (Array.isArray(step.branches)) {
+      for (const b of step.branches as Array<Record<string, unknown>>) {
+        if (Array.isArray(b.steps)) {
+          const err = findProhibitedStep(b.steps as Array<Record<string, unknown>>, prohibited);
+          if (err) return err;
+        }
+      }
     }
   }
   return null;
@@ -143,19 +167,63 @@ function requireNode(
   return null;
 }
 
-// ─── Check if a node has an ancestor with a map field (repeat context) ───────
+// ─── Return all map-bearing ancestors of a node (repeat context chain) ───────
 
-function checkAncestorHasMap(nodes: SDUINode[], targetId: string, ancestors: SDUINode[] = []): boolean {
+function getRepeatAncestors(nodes: SDUINode[], targetId: string, ancestors: SDUINode[] = []): SDUINode[] | null {
   for (const n of nodes) {
     const path = [...ancestors, n];
     if (n.id === targetId) {
-      return path.some(a => !!a.map);
+      return path.filter(a => !!(a as unknown as Record<string, unknown>).map);
     }
     if (n.children?.length) {
-      if (checkAncestorHasMap(n.children as SDUINode[], targetId, path)) return true;
+      const found = getRepeatAncestors(n.children as SDUINode[], targetId, path);
+      if (found !== null) return found;
     }
   }
-  return false;
+  return null;
+}
+
+function buildRepeatContext(ancestors: SDUINode[]): Array<{ level: number; path: string; note?: string }> | null {
+  if (ancestors.length === 0) return null;
+  return ancestors.map((_, i) => {
+    const level = ancestors.length - i;
+    if (level === 1) {
+      return { level: 1, path: 'context?.item?.data?.*' };
+    }
+    return { level, path: 'context?.item?.parent?.data?.*', note: `access outer repeat item (${level - 1} levels up)` };
+  });
+}
+
+// ─── Check if a node is inside a repeat scope ───────────────────────────────
+
+function isInsideRepeatScope(nodes: SDUINode[], targetId: string): boolean {
+  const ancestors = getRepeatAncestors(nodes, targetId);
+  return ancestors !== null && ancestors.length > 0;
+}
+
+function nodeHasRepeat(nodes: SDUINode[], nodeId: string): boolean {
+  const node = findNode(nodes, nodeId);
+  if (!node) return false;
+  return !!(node as unknown as Record<string, unknown>).map;
+}
+
+/**
+ * Returns an error if a formula uses context?.item?.data but the target node
+ * is NOT inside a repeat scope (neither has map itself nor has an ancestor with map).
+ * This prevents the AI from applying per-item ternaries to parent containers.
+ */
+function validateRepeatScopeFormula(
+  store: BuilderStore,
+  nodeId: string,
+  formula: string,
+): { success: false; error: string } | null {
+  if (!formula.includes('context?.item?.data') && !formula.includes("context?.item?.parent?.data")) return null;
+  if (nodeHasRepeat(store.pageNodes as SDUINode[], nodeId)) return null;
+  if (isInsideRepeatScope(store.pageNodes as SDUINode[], nodeId)) return null;
+  return {
+    success: false,
+    error: `Formula uses context?.item?.data but node "${nodeId}" is NOT inside a repeat scope — it has no repeat/map and no ancestor with repeat. context?.item?.data resolves to undefined on this node. You likely confused the CONTAINER (this node) with the TEMPLATE (the child node that has repeat). Call get_page_tree to identify which node has repeat, then apply the formula to THAT node instead.`,
+  };
 }
 
 // ─── Summarize node for context reads ────────────────────────────────────────
@@ -268,6 +336,8 @@ function isFormulaExpression(val: string): boolean {
 // Map friendly color names to CSS-variable Tailwind classes.
 // prefix: 'bg' | 'text' | 'border'
 function resolveColorClass(value: string, prefix: 'bg' | 'text' | 'border'): string {
+  // Strip 'theme:' prefix so AI can use 'theme:primary' interchangeably with 'primary' in static params
+  if (value.startsWith('theme:')) value = value.slice(6);
   const THEME_NAMES: Record<string, string> = {
     primary:              `${prefix}-[var(--theme-primary)]`,
     'primary-foreground': `${prefix}-[var(--theme-primary-foreground)]`,
@@ -359,16 +429,27 @@ function removeExactToken(cls: string, token: string): string {
  * Built-in pattern replacements (always applied before the static map):
  *   'px:N'  → 'Npx'   (e.g. 'px:360' → '360px')
  *   'vh:N'  → 'Nvh'   (e.g. 'vh:80'  → '80vh')
+ *   'theme:token' → theme?.['colors']?.['token']  (evaluator returns hex from THEME_OBJ)
  *
  * Then static map keys are replaced: e.g. { fill: '100%', fit: 'fit-content' }
  */
+const THEME_TOKEN_NAMES = new Set([
+  'primary', 'primary-foreground', 'secondary', 'secondary-foreground',
+  'card', 'card-foreground', 'background', 'foreground',
+  'muted', 'muted-foreground', 'accent', 'accent-foreground',
+  'destructive', 'destructive-foreground', 'border', 'transparent',
+  'input', 'ring',
+]);
+
 function resolveFormulaTokens(formula: string, staticMap: Record<string, string> = {}): string {
   return formula
     .replace(/'px:(\d+(?:\.\d+)?)'/g, "'$1px'")
     .replace(/'vh:(\d+(?:\.\d+)?)'/g, "'$1vh'")
-    .replace(/'([^']+)'/g, (match, token) =>
-      Object.prototype.hasOwnProperty.call(staticMap, token) ? `'${staticMap[token]}'` : match
-    );
+    .replace(/'theme:([a-z][a-z0-9-]*)'/g, "theme?.['colors']?.['$1']")
+    .replace(/(?<!\?\.\[)'([a-z][a-z0-9-]*)'/g, (match, token) => {
+      if (THEME_TOKEN_NAMES.has(token)) return `theme?.['colors']?.['${token}']`;
+      return Object.prototype.hasOwnProperty.call(staticMap, token) ? `'${staticMap[token]}'` : match;
+    });
 }
 
 const SIZE_WIDTH_TOKEN_MAP: Record<string, string> = {
@@ -409,7 +490,6 @@ const TRACKING_PREFIXES = ['tracking-tighter', 'tracking-tight', 'tracking-norma
 const DECORATION_TOKENS = ['underline', 'no-underline', 'line-through', 'overline'];
 const TRANSFORM_TOKENS = ['uppercase', 'lowercase', 'capitalize', 'normal-case'];
 const ITALIC_TOKENS = ['italic', 'not-italic'];
-const SHADOW_PREFIXES = ['shadow-none', 'shadow-sm', 'shadow-md', 'shadow-lg', 'shadow-xl', 'shadow-2xl', 'shadow-inner', 'shadow'];
 const OPACITY_PREFIXES = ['opacity-0', 'opacity-5', 'opacity-10', 'opacity-20', 'opacity-25', 'opacity-30', 'opacity-40', 'opacity-50', 'opacity-60', 'opacity-70', 'opacity-75', 'opacity-80', 'opacity-90', 'opacity-95', 'opacity-100'];
 const POSITION_TOKENS = ['static', 'relative', 'absolute', 'fixed', 'sticky'];
 const Z_PREFIXES = ['z-0', 'z-10', 'z-20', 'z-30', 'z-40', 'z-50', 'z-auto'];
@@ -472,19 +552,43 @@ const handlers: Record<string, Handler> = {
 
   get_formula_context(input, getStore) {
     const store = getStore();
+    // Support single nodeId or batch nodeIds array
     const nodeId = input.nodeId as string | undefined;
-    let repeatContext = null;
-    if (nodeId) {
-      const hasRepeat = checkAncestorHasMap(store.pageNodes, nodeId);
-      if (hasRepeat) {
-        repeatContext = [{ level: 'current', accessPath: 'context.item.data.*' }];
-      }
+    const nodeIds = input.nodeIds as string[] | undefined;
+    const ids = nodeIds ?? (nodeId ? [nodeId] : []);
+
+    if (ids.length === 0) {
+      return {
+        success: true,
+        data: {
+          note: 'Pass nodeId or nodeIds to get scope info. Variables and data sources are already in your context.',
+          nodes: [],
+        },
+      };
     }
+
+    const results: Record<string, { repeatDepth: number; scopePath: string; parentScopePath: string | null; repeatContext: Array<{ level: number; path: string; note?: string }> | null }> = {};
+    for (const id of ids) {
+      const ancestors = getRepeatAncestors(store.pageNodes as SDUINode[], id) ?? [];
+      const depth = ancestors.length;
+      const repeatContext = buildRepeatContext(ancestors);
+      results[id] = {
+        repeatDepth: depth,
+        scopePath: depth > 0 ? 'context?.item?.data?.*' : '(none — not inside any repeat)',
+        parentScopePath: depth >= 2 ? 'context?.item?.parent?.data?.*' : null,
+        repeatContext,
+      };
+    }
+
+    // If single node requested, also expose flat fields for convenience
+    const single = ids.length === 1 ? results[ids[0]] : null;
+
     return {
       success: true,
       data: {
-        note: 'Variables and data sources are already in your context. Only repeat context is returned here.',
-        repeatContext,
+        note: 'Use scopePath for this node\'s own fields. parentScopePath is only valid when repeatDepth >= 2 (nested repeat). Never use .parent.data.* when repeatDepth is 1.',
+        ...(single ?? {}),
+        nodes: results,
       },
     };
   },
@@ -515,16 +619,6 @@ const handlers: Record<string, Handler> = {
         path: `collections['${ds.id}'].data`,
       })),
     };
-  },
-
-  // ── Generation (signal to API layer — not executed client-side) ────────────
-
-  generate_section(input) {
-    return { success: true, data: { _generationRequest: 'generate_section', ...input } };
-  },
-
-  generate_app(input) {
-    return { success: true, data: { _generationRequest: 'generate_app', ...input } };
   },
 
   // ── Add component (palette-based, no JSON) ─────────────────────────────────
@@ -716,26 +810,6 @@ const handlers: Record<string, Handler> = {
     //   3. Literal text ("Get Started") or template strings — stored as-is.
     const storedText: unknown = toTextValue(text);
 
-    const TEXT_CHILD_TYPES = new Set(['Text', 'RadioLabel', 'CheckboxLabel']);
-    const node = findNode(store.pageNodes as SDUINode[], nodeId);
-    // Redirect to a single text-type child — handles button-like Box wrappers (Btn Solid, etc.)
-    // The !('text' in node) guard was intentionally removed: generate_structure may pre-populate
-    // `text` on the outer Box (e.g. "Get Started"), which would block the cascade and leave the
-    // inner Text child with a stale default color/class. We always prefer the inner Text child
-    // when exactly one exists, and clear any stale outer `text` property after cascading.
-    if (node && Array.isArray(node.children)) {
-      const textChildren = (node.children as SDUINode[]).filter(c => TEXT_CHILD_TYPES.has(c.type));
-      if (textChildren.length === 1 && textChildren[0].id) {
-        store.patchProp(textChildren[0].id, 'text', storedText);
-        // Clear the stale outer `text` property so future set_text_color cascade detects
-        // this as a wrapper node (not a leaf text node) and correctly targets the inner child.
-        if ('text' in (node as unknown as Record<string, unknown>)) {
-          store.patchProp(nodeId, 'text', null);
-        }
-        return { success: true, data: { message: `Set text to "${text.slice(0, 50)}" (via child ${textChildren[0].type})` } };
-      }
-    }
-
     store.patchProp(nodeId, 'text', storedText);
     return { success: true, data: { message: `Set text to "${text.slice(0, 50)}"` } };
   },
@@ -822,6 +896,8 @@ const handlers: Record<string, Handler> = {
         store.patchProp(nodeId, 'props.icon', input.icon);
         iconLabel = input.icon as string;
       }
+      // Clear any stale top-level text field left by Phase 2 set_text calls on Icon nodes.
+      store.patchProp(nodeId, 'text', undefined);
     }
 
     if (input.size) {
@@ -831,7 +907,8 @@ const handlers: Record<string, Handler> = {
 
     if (input.color) {
       if (isFormulaExpression(input.color as string)) {
-        store.patchProp(nodeId, 'props.color', { formula: input.color as string });
+        const sanitized = resolveFormulaTokens(input.color as string);
+        store.patchProp(nodeId, 'props.color', { formula: sanitized });
       } else {
         const resolved = ICON_THEME_VARS[input.color as string] ?? (input.color as string);
         store.patchProp(nodeId, 'props.color', resolved);
@@ -871,8 +948,11 @@ const handlers: Record<string, Handler> = {
       if (bgVal.startsWith('rgba(')) {
         return { success: false, error: `rgba() is not supported by set_background. Use Tailwind opacity notation instead: "black/40", "white/20", "#000000/40". Example: set_background(id, {bg:"black/40"}) for a 40% black overlay.` };
       }
+      const scopeErr = validateRepeatScopeFormula(store, nodeId, bgVal);
+      if (scopeErr) return scopeErr;
       if (isFormulaExpression(bgVal)) {
-        patchNodeStyle(store, nodeId, { backgroundColor: { formula: bgVal } });
+        const sanitized = resolveFormulaTokens(bgVal);
+        patchNodeStyle(store, nodeId, { backgroundColor: { formula: sanitized } });
         cls = replaceTwToken(cls, 'bg-', '');
         setNodeClassName(store, nodeId, cls);
         return { success: true, data: { message: 'Updated background (formula)' } };
@@ -887,6 +967,12 @@ const handlers: Record<string, Handler> = {
       removeNodeStyleKeys(store, nodeId, ['backgroundColor']);
     }
 
+    if (input.fillOpacity != null) {
+      const fo = Math.round(Math.min(100, Math.max(0, Number(input.fillOpacity))));
+      cls = cls.split(' ').filter(t => !/^bg-opacity-/.test(t)).join(' ').trim();
+      if (fo < 100) cls = `${cls} bg-opacity-${fo}`.trim();
+    }
+
     setNodeClassName(store, nodeId, cls);
     return { success: true, data: { message: 'Updated background' } };
   },
@@ -897,49 +983,15 @@ const handlers: Record<string, Handler> = {
     const nodeErr = requireNode(store, nodeId);
     if (nodeErr) return nodeErr;
     const colorVal = input.color as string;
-    // Resolve the inner Text child first — applies to both formula and static colors
-    // so button-type wrappers (Btn Solid, Btn Outline, etc.) always get color on the
-    // visible Text leaf, not just the outer Box.
-    // The !('text' in node) guard was intentionally removed: when set_text is called first
-    // on a button node it may populate `node.text`, which would block cascade here and leave
-    // the inner Text with its stale default color class (e.g. text-[var(--theme-background)]).
-    const WRAPPER_TEXT_CHILD_TYPES = new Set(['Text', 'RadioLabel', 'CheckboxLabel']);
-    const node = findNode(store.pageNodes as SDUINode[], nodeId);
-    const wrapperTextChild = (
-      node && Array.isArray(node.children)
-        ? (node.children as SDUINode[]).filter(c => WRAPPER_TEXT_CHILD_TYPES.has(c.type))
-        : []
-    );
-    const singleTextChild = wrapperTextChild.length === 1 ? wrapperTextChild[0] : null;
-
     if (isFormulaExpression(colorVal)) {
-      if (singleTextChild?.id) {
-        // Also strip any existing text-* class so the Tailwind class doesn't win over
-        // the formula-based inline style at render time.
-        let childCls = getNodeClassName(store, singleTextChild.id);
-        childCls = stripTextColorTokens(childCls);
-        setNodeClassName(store, singleTextChild.id, childCls);
-        patchNodeStyle(store, singleTextChild.id, { color: { formula: colorVal } });
-        return { success: true, data: { message: 'Set text color (formula)' } };
-      }
-      patchNodeStyle(store, nodeId, { color: { formula: colorVal } });
+      const sanitized = resolveFormulaTokens(colorVal);
+      patchNodeStyle(store, nodeId, { color: { formula: sanitized } });
       return { success: true, data: { message: 'Set text color (formula)' } };
     }
     // Always use ! prefix so Gluestack's default typography color tokens (text-typography-900 etc.)
     // don't override the explicitly requested color on Heading/Text components.
     const rawColorClass = resolveColorClass(colorVal, 'text');
     const colorClass = rawColorClass.startsWith('!') ? rawColorClass : `!${rawColorClass}`;
-
-    // Apply color to the text child when one exists (handles button-like Box wrappers, etc.)
-    if (singleTextChild?.id) {
-      const textChild = singleTextChild;
-      let childCls = getNodeClassName(store, textChild.id);
-      childCls = stripTextColorTokens(childCls);
-      childCls = `${childCls} ${colorClass}`.replace(/\s+/g, ' ').trim();
-      patchNodeStyle(store, textChild.id, { color: '' });
-      setNodeClassName(store, textChild.id, childCls);
-      return { success: true, data: { message: `Set text color to "${input.color}" (via child ${textChild.type})` } };
-    }
 
     let cls = getNodeClassName(store, nodeId);
     cls = stripTextColorTokens(cls);
@@ -964,7 +1016,16 @@ const handlers: Record<string, Handler> = {
       if (!Number.isNaN(sizePx) && sizePx > 0) cls = `${cls} text-[${sizePx}px]`.trim();
     }
     if (input.weight)   cls = replaceTokenGroup(cls, FONT_WEIGHT_PREFIXES, `font-${input.weight}`);
-    if (input.align)    cls = replaceTokenGroup(cls, TEXT_ALIGN_PREFIXES, `text-${input.align}`);
+    if (input.align) {
+      const alignRaw = input.align as string;
+      if (isFormulaExpression(alignRaw)) {
+        // Formula/ternary — write to inline style; left/center/right/justify are valid CSS text-align values
+        patchNodeStyle(store, nodeId, { textAlign: { formula: alignRaw } });
+        cls = replaceTokenGroup(cls, TEXT_ALIGN_PREFIXES, ''); // strip any existing text-left/center/right class
+      } else {
+        cls = replaceTokenGroup(cls, TEXT_ALIGN_PREFIXES, `text-${alignRaw}`);
+      }
+    }
     if (input.leading)  cls = replaceTokenGroup(cls, LEADING_PREFIXES, `leading-${input.leading}`);
     if (input.tracking) cls = replaceTokenGroup(cls, TRACKING_PREFIXES, `tracking-${input.tracking}`);
 
@@ -1012,7 +1073,8 @@ const handlers: Record<string, Handler> = {
       const isDivider = cls.split(' ').includes('h-px');
       if (isDivider) {
         if (isFormulaExpression(colorRaw)) {
-          patchNodeStyle(store, nodeId, { backgroundColor: { formula: colorRaw } });
+          const sanitized = resolveFormulaTokens(colorRaw);
+          patchNodeStyle(store, nodeId, { backgroundColor: { formula: sanitized } });
           removeNodeStyleKeys(store, nodeId, ['borderColor']);
         } else {
           const bgClass = resolveColorClass(colorRaw, 'bg');
@@ -1020,7 +1082,8 @@ const handlers: Record<string, Handler> = {
           removeNodeStyleKeys(store, nodeId, ['borderColor']);
         }
       } else if (isFormulaExpression(colorRaw)) {
-        patchNodeStyle(store, nodeId, { borderColor: { formula: colorRaw } });
+        const sanitized = resolveFormulaTokens(colorRaw);
+        patchNodeStyle(store, nodeId, { borderColor: { formula: sanitized } });
       } else {
         const borderColorClass = resolveColorClass(colorRaw, 'border');
         cls = stripBorderColorTokens(cls);
@@ -1062,20 +1125,65 @@ const handlers: Record<string, Handler> = {
     const nodeId = input.nodeId as string;
     const nodeErr = requireNode(store, nodeId);
     if (nodeErr) return nodeErr;
-    let cls = getNodeClassName(store, nodeId);
 
-    const shadow = input.shadow as string;
-    if (isFormulaExpression(shadow)) {
-      // Formula expression string — store as boxShadow formula.
-      patchNodeStyle(store, nodeId, { boxShadow: { formula: shadow } });
-      cls = replaceTokenGroup(cls, SHADOW_PREFIXES, '');
-      setNodeClassName(store, nodeId, cls);
-      return { success: true, data: { message: 'Set shadow (formula)' } };
+    if (input.remove) {
+      const node = findNode(store.pageNodes as SDUINode[], nodeId);
+      const currentStyle = { ...((node?.props as Record<string, unknown>)?.style as Record<string, unknown> ?? {}) };
+      delete currentStyle.boxShadow;
+      delete currentStyle.shadowColor;
+      delete currentStyle.shadowOffset;
+      delete currentStyle.shadowRadius;
+      delete currentStyle.shadowOpacity;
+      delete currentStyle.elevation;
+      store.patchProp(nodeId, 'props.style', currentStyle);
+      return { success: true, data: { message: 'Removed shadow' } };
     }
-    const token = shadow === 'none' ? '' : shadow === 'default' ? 'shadow' : `shadow-${shadow}`;
-    cls = replaceTokenGroup(cls, SHADOW_PREFIXES, token);
-    setNodeClassName(store, nodeId, cls);
-    return { success: true, data: { message: shadow === 'none' ? 'Removed shadow' : `Set shadow to "${shadow}"` } };
+
+    // boxShadow: full CSS string or formula/ternary expression
+    const boxShadowRaw = input.boxShadow as string | undefined;
+    if (boxShadowRaw) {
+      if (isFormulaExpression(boxShadowRaw)) {
+        const sanitized = resolveFormulaTokens(boxShadowRaw);
+        patchNodeStyle(store, nodeId, { boxShadow: { formula: sanitized } });
+        return { success: true, data: { message: 'Set shadow (formula)' } };
+      }
+      // Static CSS boxShadow string — parse x/y/blur/spread/color for RN shadow props
+      const m = boxShadowRaw.match(/^(-?[\d.]+)px\s+(-?[\d.]+)px\s+([\d.]+)px\s+(-?[\d.]+)px\s+(.+)$/);
+      if (m) {
+        const bx = parseFloat(m[1]), by = parseFloat(m[2]), bBlur = parseFloat(m[3]), bColor = m[5].trim();
+        patchNodeStyle(store, nodeId, {
+          boxShadow: boxShadowRaw,
+          shadowColor: bColor,
+          shadowOffset: { width: bx, height: by },
+          shadowRadius: bBlur,
+          shadowOpacity: 1,
+          elevation: Math.max(0, Math.round(bBlur / 2)),
+        });
+      } else {
+        patchNodeStyle(store, nodeId, { boxShadow: boxShadowRaw });
+      }
+      return { success: true, data: { message: `Set shadow: ${boxShadowRaw}` } };
+    }
+
+    // Raw values mode: compose CSS boxShadow from individual params
+    const color  = (input.color  as string)  || '#000000';
+    const blur   = Number(input.blur   ?? 20);
+    const spread = Number(input.spread ?? 0);
+    const x      = Number(input.x      ?? 0);
+    const y      = Number(input.y      ?? 4);
+    if (isNaN(blur) || isNaN(spread) || isNaN(x) || isNaN(y)) {
+      return { success: false, error: 'blur/spread/x/y must be plain integers. For per-item shadows use: set_shadow(id, { boxShadow: "ternary formula" })' };
+    }
+
+    patchNodeStyle(store, nodeId, {
+      boxShadow: `${x}px ${y}px ${blur}px ${spread}px ${color}`,
+      shadowColor: color,
+      shadowOffset: { width: x, height: y },
+      shadowRadius: blur,
+      shadowOpacity: 1,
+      elevation: Math.max(0, Math.round(blur / 2)),
+    });
+    return { success: true, data: { message: `Set shadow: blur=${blur}px spread=${spread}px color=${color}` } };
   },
 
   set_opacity(input, getStore) {
@@ -1096,6 +1204,9 @@ const handlers: Record<string, Handler> = {
   },
 
   set_spacing(input, getStore) {
+    if (input.gridCols !== undefined) {
+      return { success: false, error: 'gridCols is not a set_spacing param. Use set_layout(nodeId, { gridCols: N }) instead.' };
+    }
     const store = getStore();
     const nodeId = input.nodeId as string;
     const nodeErr = requireNode(store, nodeId);
@@ -1229,10 +1340,12 @@ const handlers: Record<string, Handler> = {
       }
       if (h === 'min-screen') {
         cls = replaceTwToken(cls, 'min-h-', 'min-h-screen');
-      } else if (h === 'fill' || h === 'full') {
-        // Fill = flex-1 (grows in flex parent, like Figma Fill)
+      } else       if (h === 'fill') {
         cls = removeTwToken(removeTwToken(removeTwToken(cls, 'h-'), 'flex-1'), 'min-h-');
         cls = `${cls} flex-1`.trim();
+      } else if (h === 'full') {
+        cls = removeTwToken(removeTwToken(removeTwToken(cls, 'h-'), 'flex-1'), 'min-h-');
+        cls = `${cls} h-full`.trim();
       } else if (h === 'screen') {
         cls = removeTwToken(removeTwToken(removeTwToken(cls, 'h-'), 'flex-1'), 'min-h-');
         cls = `${cls} h-screen`.trim();
@@ -1295,25 +1408,32 @@ const handlers: Record<string, Handler> = {
       if (!Number.isNaN(zNum)) cls = `${cls} z-[${Math.round(zNum)}]`.trim();
     }
 
-    // Inset: write as arbitrary Tailwind classes, not inline style
-    // Strip px: prefix if AI mistakenly passes "px:40" style (set_size format) — extract the number only
+    // Inset: formula values stored in props.style, plain integers as Tailwind classes
     const parseInset = (v: unknown): number | null => {
       if (v == null) return null;
       if (typeof v === 'number') return v;
       const n = Number(String(v).replace(/^px:/, ''));
       return Number.isNaN(n) ? null : n;
     };
-    const topVal    = parseInset(input.top);
-    const rightVal  = parseInset(input.right);
-    const bottomVal = parseInset(input.bottom);
-    const leftVal   = parseInset(input.left);
-    if (topVal    != null) { cls = cls.split(' ').filter(t => !/^top-/.test(t)).join(' ').trim();    cls = `${cls} top-[${topVal}px]`.trim(); }
-    if (rightVal  != null) { cls = cls.split(' ').filter(t => !/^right-/.test(t)).join(' ').trim();  cls = `${cls} right-[${rightVal}px]`.trim(); }
-    if (bottomVal != null) { cls = cls.split(' ').filter(t => !/^bottom-/.test(t)).join(' ').trim(); cls = `${cls} bottom-[${bottomVal}px]`.trim(); }
-    if (leftVal   != null) { cls = cls.split(' ').filter(t => !/^left-/.test(t)).join(' ').trim();   cls = `${cls} left-[${leftVal}px]`.trim(); }
-
-    // Strip any residual inline inset styles
-    removeNodeStyleKeys(store, nodeId, ['top', 'right', 'bottom', 'left']);
+    const insetStylePatch: Record<string, unknown> = {};
+    const insetKeysToRemoveFromStyle: string[] = [];
+    for (const [key, val] of [['top', input.top], ['right', input.right], ['bottom', input.bottom], ['left', input.left]] as [string, unknown][]) {
+      if (val == null) continue;
+      if (typeof val === 'string' && isFormulaExpression(val)) {
+        const sanitized = resolveFormulaTokens(val);
+        insetStylePatch[key] = { formula: sanitized };
+        cls = cls.split(' ').filter(t => !new RegExp(`^${key}-`).test(t)).join(' ').trim();
+      } else {
+        const px = parseInset(val);
+        if (px != null) {
+          cls = cls.split(' ').filter(t => !new RegExp(`^${key}-`).test(t)).join(' ').trim();
+          cls = `${cls} ${key}-[${px}px]`.trim();
+          insetKeysToRemoveFromStyle.push(key);
+        }
+      }
+    }
+    if (Object.keys(insetStylePatch).length > 0) patchNodeStyle(store, nodeId, insetStylePatch);
+    if (insetKeysToRemoveFromStyle.length > 0) removeNodeStyleKeys(store, nodeId, insetKeysToRemoveFromStyle);
     setNodeClassName(store, nodeId, cls);
     return { success: true, data: { message: 'Updated position' } };
   },
@@ -1345,23 +1465,28 @@ const handlers: Record<string, Handler> = {
       cls = `${cls} ${input.flipY ? '-scale-y-100' : 'scale-y-100'}`.trim();
       stylePatch.transform = '';
     }
-    if (input.cursor)    cls = replaceTokenGroup(cls, CURSOR_PREFIXES, `cursor-${input.cursor}`);
-    if (input.overflow)  cls = replaceTokenGroup(cls, OVERFLOW_PREFIXES, `overflow-${input.overflow}`);
-    if (input.overflowX) cls = replaceTokenGroup(cls, OVERFLOW_X_PREFIXES, `overflow-x-${input.overflowX}`);
-    if (input.overflowY) cls = replaceTokenGroup(cls, OVERFLOW_Y_PREFIXES, `overflow-y-${input.overflowY}`);
-    if (input.self) {
-      const selfVal = input.self as string;
-      if (isFormulaExpression(selfVal)) {
-        patchNodeStyle(store, nodeId, { alignSelf: { formula: selfVal } });
-        cls = cls.split(' ').filter(t => !/^self-/.test(t)).join(' ').trim();
+    if (input.translateX !== undefined) {
+      const txVal = input.translateX;
+      if (typeof txVal === 'string' && txVal.trim()) {
+        // Formula expression — write as FormulaValue object
+        patchNodeStyle(store, nodeId, { translateX: { formula: txVal } });
       } else {
-        cls = replaceTokenGroup(cls, SELF_PREFIXES, `self-${selfVal}`);
+        const n = Number(txVal);
+        patchNodeStyle(store, nodeId, { translateX: n === 0 ? '' : `${n}px` });
       }
     }
-
+    if (input.translateY !== undefined) {
+      const tyVal = input.translateY;
+      if (typeof tyVal === 'string' && tyVal.trim()) {
+        patchNodeStyle(store, nodeId, { translateY: { formula: tyVal } });
+      } else {
+        const n = Number(tyVal);
+        patchNodeStyle(store, nodeId, { translateY: n === 0 ? '' : `${n}px` });
+      }
+    }
     if (Object.keys(stylePatch).length > 0) patchNodeStyle(store, nodeId, stylePatch);
     setNodeClassName(store, nodeId, cls);
-    return { success: true, data: { message: 'Updated transform/display properties' } };
+    return { success: true, data: { message: 'Updated transform properties' } };
   },
 
   set_overflow(input, getStore) {
@@ -1370,33 +1495,26 @@ const handlers: Record<string, Handler> = {
     const nodeErr = requireNode(store, nodeId);
     if (nodeErr) return nodeErr;
     let cls = getNodeClassName(store, nodeId);
-    if (input.clip) {
-      if (!cls.includes('overflow-hidden')) cls = `${cls} overflow-hidden`.trim();
-    } else {
-      cls = cls.split(' ').filter(t => t !== 'overflow-hidden').join(' ').trim();
+    if (input.clip !== undefined) {
+      if (input.clip) {
+        if (!cls.includes('overflow-hidden')) cls = `${cls} overflow-hidden`.trim();
+      } else {
+        cls = cls.split(' ').filter(t => t !== 'overflow-hidden').join(' ').trim();
+      }
+    }
+    if (input.pointerEvents !== undefined) {
+      // Remove any existing pointer-events classes first
+      cls = cls.split(' ').filter(t => !t.startsWith('pointer-events-')).join(' ').trim();
+      if (input.pointerEvents === 'none') {
+        cls = `${cls} pointer-events-none`.trim();
+      }
+      // 'auto' = remove the class (browser default)
     }
     setNodeClassName(store, nodeId, cls);
-    return { success: true, data: { message: (input.clip as boolean) ? 'Clipping enabled (overflow-hidden)' : 'Clipping removed' } };
-  },
-
-  set_display(input, getStore) {
-    const store = getStore();
-    const nodeId = input.nodeId as string;
-    const nodeErr = requireNode(store, nodeId);
-    if (nodeErr) return nodeErr;
-    let cls = getNodeClassName(store, nodeId);
-
-    if (input.display)  cls = replaceTokenGroup(cls, DISPLAY_TOKENS, input.display as string);
-    if (input.gridCols) cls = replaceTwToken(cls, 'grid-cols-', `grid-cols-${input.gridCols}`);
-    if (input.gridRows) cls = replaceTwToken(cls, 'grid-rows-', `grid-rows-${input.gridRows}`);
-    if (input.colSpan) {
-      const span = input.colSpan as number;
-      cls = replaceTwToken(cls, 'col-span-', span > 12 ? 'col-span-full' : `col-span-${span}`);
-    }
-    if (input.flexWrap) cls = replaceTokenGroup(cls, ['flex-wrap', 'flex-nowrap', 'flex-wrap-reverse'], `flex-${input.flexWrap}`);
-
-    setNodeClassName(store, nodeId, cls);
-    return { success: true, data: { message: 'Updated display' } };
+    const msgs: string[] = [];
+    if (input.clip !== undefined) msgs.push((input.clip as boolean) ? 'clip:on' : 'clip:off');
+    if (input.pointerEvents !== undefined) msgs.push(`pointer-events:${input.pointerEvents as string}`);
+    return { success: true, data: { message: msgs.join(', ') || 'no changes' } };
   },
 
   set_submit(input, getStore) {
@@ -1426,6 +1544,24 @@ const handlers: Record<string, Handler> = {
     if (input.min != null) store.patchProp(targetId, 'props.min', input.min);
     if (input.max != null) store.patchProp(targetId, 'props.max', input.max);
     if (input.maxLength) store.patchProp(targetId, 'props.maxLength', input.maxLength);
+    // Form field settings
+    if (input.fieldName) store.patchNodeField(targetId, 'props.name', input.fieldName);
+    if (input.initialValue !== undefined) store.patchNodeField(targetId, '_initialValue', input.initialValue);
+    if (input.autocomplete !== undefined) store.patchProp(targetId, 'props.autoComplete', input.autocomplete ? 'on' : 'off');
+    if (input.validationTrigger !== undefined) {
+      // Read existing _validation and update trigger
+      const node = findNode(store.pageNodes as SDUINode[], targetId);
+      const existing = ((node as unknown as Record<string, unknown>)?._validation ?? {}) as Record<string, unknown>;
+      store.patchNodeField(targetId, '_validation', { ...existing, trigger: input.validationTrigger });
+    }
+    if (input.debounce !== undefined || input.debounceEnabled !== undefined) {
+      const node = findNode(store.pageNodes as SDUINode[], targetId);
+      const existingDebounce = ((node as unknown as Record<string, unknown>)?._debounce ?? {}) as Record<string, unknown>;
+      const newDebounce: Record<string, unknown> = { ...existingDebounce };
+      if (input.debounce !== undefined) newDebounce.delay = Number(input.debounce);
+      if (input.debounceEnabled !== undefined) newDebounce.enabled = input.debounceEnabled;
+      store.patchNodeField(targetId, '_debounce', newDebounce);
+    }
     return { success: true, data: { message: 'Updated input properties' } };
   },
 
@@ -1438,13 +1574,56 @@ const handlers: Record<string, Handler> = {
     if (nodeErr) return nodeErr;
     const node = findNode(store.pageNodes, nodeId);
     const current = (node?.props as { className?: string })?.className ?? '';
-    let updated = buildLayoutClass(input, current);
+
+    // Formula-expression guard: justify and align can receive ternary strings.
+    // buildLayoutClass would blindly concatenate them into "justify-<formula>" — invalid Tailwind.
+    // Intercept them before the class builder runs, then write to inline style instead.
+    const justifyVal = input.justify as string | undefined;
+    const alignVal   = input.align   as string | undefined;
+    const isJustifyFormula = !!justifyVal && isFormulaExpression(justifyVal);
+    const isAlignFormula   = !!alignVal   && isFormulaExpression(alignVal);
+    const layoutInput = {
+      ...input,
+      ...(isJustifyFormula ? { justify: undefined } : {}),
+      ...(isAlignFormula   ? { align:   undefined } : {}),
+    };
+    let updated = buildLayoutClass(layoutInput, current);
+
+    if (isJustifyFormula) {
+      patchNodeStyle(store, nodeId, { justifyContent: { formula: justifyVal } });
+      updated = updated.split(' ').filter(t => !/^justify-/.test(t)).join(' ').trim();
+    }
+    if (isAlignFormula) {
+      patchNodeStyle(store, nodeId, { alignItems: { formula: alignVal } });
+      updated = updated.split(' ').filter(t => !/^items-/.test(t)).join(' ').trim();
+    }
+
     // gap is a pixel number — write as arbitrary Tailwind class, not inline style
     if (input.gap != null) {
       updated = updated.split(' ').filter(t => !/^gap(-[xy])?-/.test(t)).join(' ').replace(/\s+/g, ' ').trim();
       updated = `${updated} gap-[${input.gap}px]`.trim();
       removeNodeStyleKeys(store, nodeId, ['gap', 'columnGap', 'rowGap']);
     }
+    if (input.self) {
+      const selfVal = input.self as string;
+      if (isFormulaExpression(selfVal)) {
+        patchNodeStyle(store, nodeId, { alignSelf: { formula: selfVal } });
+        updated = updated.split(' ').filter(t => !/^self-/.test(t)).join(' ').trim();
+      } else {
+        updated = replaceTokenGroup(updated, SELF_PREFIXES, `self-${selfVal}`);
+      }
+    }
+    if (input.cursor) updated = replaceTokenGroup(updated, CURSOR_PREFIXES, `cursor-${input.cursor}`);
+    if (input.gridCols) {
+      updated = replaceTokenGroup(updated, DISPLAY_TOKENS, 'grid');
+      updated = replaceTwToken(updated, 'grid-cols-', `grid-cols-${input.gridCols}`);
+    }
+    if (input.gridRows) updated = replaceTwToken(updated, 'grid-rows-', `grid-rows-${input.gridRows}`);
+    if (input.colSpan) {
+      const span = input.colSpan as number;
+      updated = replaceTwToken(updated, 'col-span-', span > 12 ? 'col-span-full' : `col-span-${span}`);
+    }
+    if (input.flexWrap) updated = replaceTokenGroup(updated, ['flex-wrap', 'flex-nowrap', 'flex-wrap-reverse'], `flex-${input.flexWrap}`);
     store.patchProp(nodeId, 'props.className', updated);
     return { success: true, data: { message: 'Updated layout' } };
   },
@@ -1454,19 +1633,10 @@ const handlers: Record<string, Handler> = {
   set_condition(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
-    // Guard: set_condition on a repeat node filters which items appear — it does NOT style them.
-    // The same pattern as the Math.* formula validator: return an error so the AI self-corrects.
-    const node = findNode(store.pageNodes as SDUINode[], nodeId);
-    const nodeAsAny = node as unknown as Record<string, unknown>;
-    if (node && nodeAsAny.map) {
-      return {
-        success: false,
-        error: `Cannot set_condition on a repeat node (node "${nodeId}" has map="${nodeAsAny.map}"). ` +
-          `set_condition on a repeat node filters which array items are visible — it does not add per-item styling. ` +
-          `Call set_condition on a CHILD node inside the template instead (e.g. a badge or variant box that should only appear for some items).`,
-      };
+    let condition = input.condition as string | undefined;
+    if (condition && condition.startsWith('!') && !condition.startsWith('!=')) {
+      condition = `not(${condition.slice(1)})`;
     }
-    const condition = input.condition as string | undefined;
     const condValue = condition ? (condition as unknown as object) : null;
     store.patchCondition(nodeId, condValue);
     return { success: true, data: { message: condition ? `Set condition` : 'Removed condition' } };
@@ -1474,8 +1644,14 @@ const handlers: Record<string, Handler> = {
 
   set_repeat(input, getStore) {
     const store = getStore();
-    const mapPath = input.mapPath as string | undefined;
-    store.patchMap(input.nodeId as string, mapPath || null, input.keyField as string | undefined);
+    // Accept `expression` as an alias for `mapPath` — Phase 3 Haiku may call with the wrong key.
+    // Guard against null/undefined path to prevent silently clearing an existing repeat binding.
+    const mapPath = (input.mapPath ?? input.expression) as string | undefined;
+    const keyField = (input.keyField as string | undefined) ?? 'id';
+    if (!mapPath) {
+      return { success: false, error: 'set_repeat requires mapPath — skipping to avoid clearing existing repeat binding.' };
+    }
+    store.patchMap(input.nodeId as string, mapPath, keyField);
     return { success: true, data: { message: `Set repeat over "${mapPath}"` } };
   },
 
@@ -1518,6 +1694,12 @@ const handlers: Record<string, Handler> = {
     const formulaError = validateWorkflowFormulas(steps);
     if (formulaError) {
       return { success: false, error: formulaError };
+    }
+
+    const PROHIBITED_STEP_TYPES = new Set(['customJavaScript', 'animate']);
+    const prohibitedError = findProhibitedStep(steps, PROHIBITED_STEP_TYPES);
+    if (prohibitedError) {
+      return { success: false, error: prohibitedError };
     }
 
     store.setPageWorkflow(name, steps);
@@ -1580,7 +1762,24 @@ const handlers: Record<string, Handler> = {
         };
         if (input.enterDelay !== undefined) enterCfg.delay = Number(input.enterDelay);
         if (input.enterStagger !== undefined) enterCfg.stagger = Number(input.enterStagger);
+        if (input.enterEasing !== undefined) enterCfg.easing = input.enterEasing;
+        if (input.enterSpring !== undefined) enterCfg.spring = input.enterSpring;
+        if (input.enterStiffness !== undefined) enterCfg.stiffness = Number(input.enterStiffness);
+        if (input.enterDamping !== undefined) enterCfg.damping = Number(input.enterDamping);
+        if (input.enterMass !== undefined) enterCfg.mass = Number(input.enterMass);
         animation.enter = enterCfg;
+      }
+    } else {
+      // Apply individual enter overrides if only modifier params provided (no enter type change)
+      if (animation.enter) {
+        const ec = animation.enter as Record<string, unknown>;
+        if (input.enterDuration !== undefined) ec.duration = Number(input.enterDuration);
+        if (input.enterDelay !== undefined) ec.delay = Number(input.enterDelay);
+        if (input.enterEasing !== undefined) ec.easing = input.enterEasing;
+        if (input.enterSpring !== undefined) ec.spring = input.enterSpring;
+        if (input.enterStiffness !== undefined) ec.stiffness = Number(input.enterStiffness);
+        if (input.enterDamping !== undefined) ec.damping = Number(input.enterDamping);
+        if (input.enterMass !== undefined) ec.mass = Number(input.enterMass);
       }
     }
 
@@ -1588,7 +1787,17 @@ const handlers: Record<string, Handler> = {
       if (input.exit === 'none') {
         delete animation.exit;
       } else {
-        animation.exit = { type: input.exit, duration: Number(input.exitDuration ?? 300) };
+        const exitCfg: Record<string, unknown> = { type: input.exit, duration: Number(input.exitDuration ?? 300) };
+        if (input.exitDelay !== undefined) exitCfg.delay = Number(input.exitDelay);
+        if (input.exitEasing !== undefined) exitCfg.easing = input.exitEasing;
+        animation.exit = exitCfg;
+      }
+    } else {
+      if (animation.exit) {
+        const ec = animation.exit as Record<string, unknown>;
+        if (input.exitDuration !== undefined) ec.duration = Number(input.exitDuration);
+        if (input.exitDelay !== undefined) ec.delay = Number(input.exitDelay);
+        if (input.exitEasing !== undefined) ec.easing = input.exitEasing;
       }
     }
 
@@ -1599,33 +1808,60 @@ const handlers: Record<string, Handler> = {
         const loopCfg: Record<string, unknown> = {
           type: input.loop,
           duration: Number(input.loopDuration ?? 1500),
-          repeatCount: -1,
-          direction: 'alternate',
+          repeatCount: input.loopRepeatCount !== undefined ? Number(input.loopRepeatCount) : -1,
+          direction: (input.loopDirection as string | undefined) ?? 'alternate',
         };
+        if (input.loopDelay !== undefined) loopCfg.delay = Number(input.loopDelay);
         if (input.loopColor !== undefined) loopCfg.color = input.loopColor;
         animation.loop = loopCfg;
       }
+    } else {
+      if (animation.loop) {
+        const lc = animation.loop as Record<string, unknown>;
+        if (input.loopDuration !== undefined) lc.duration = Number(input.loopDuration);
+        if (input.loopDelay !== undefined) lc.delay = Number(input.loopDelay);
+        if (input.loopRepeatCount !== undefined) lc.repeatCount = Number(input.loopRepeatCount);
+        if (input.loopDirection !== undefined) lc.direction = input.loopDirection;
+        if (input.loopColor !== undefined) lc.color = input.loopColor;
+      }
     }
 
-    if (input.hover !== undefined) {
+    if (input.hover !== undefined || input.hoverScale !== undefined || input.hoverOpacity !== undefined ||
+        input.hoverY !== undefined || input.hoverDuration !== undefined || input.hoverEasing !== undefined) {
       if (input.hover === 'none') {
         delete animation.hover;
       } else {
         // HoverConfig fields: scale, opacity, y, duration, easing — no "type" or "value"
-        const hoverType = input.hover as string;
-        if (hoverType === 'scale') animation.hover = { scale: 1.05, duration: 200 };
-        else if (hoverType === 'lift') animation.hover = { y: -4, duration: 200 };
+        const existingHover = (animation.hover as Record<string, unknown> | undefined) ?? {};
+        let hoverCfg: Record<string, unknown> = { ...existingHover };
+        if (input.hover === 'scale') hoverCfg = { scale: 1.05, duration: 200, ...hoverCfg };
+        else if (input.hover === 'lift') hoverCfg = { y: -4, duration: 200, ...hoverCfg };
+        if (input.hoverScale !== undefined) hoverCfg.scale = Number(input.hoverScale);
+        if (input.hoverOpacity !== undefined) hoverCfg.opacity = Number(input.hoverOpacity) / 100;
+        if (input.hoverY !== undefined) hoverCfg.y = Number(input.hoverY);
+        if (input.hoverDuration !== undefined) hoverCfg.duration = Number(input.hoverDuration);
+        if (input.hoverEasing !== undefined) hoverCfg.easing = input.hoverEasing;
+        if (Object.keys(hoverCfg).length) animation.hover = hoverCfg;
       }
     }
 
-    if (input.press !== undefined) {
+    if (input.press !== undefined || input.pressScale !== undefined || input.pressOpacity !== undefined ||
+        input.pressX !== undefined || input.pressY !== undefined || input.pressDuration !== undefined || input.pressEasing !== undefined) {
       if (input.press === 'none') {
         delete animation.press;
       } else {
         // PressConfig fields: scale, opacity, x, y, duration, easing — no "type" or "value"
-        const pressType = input.press as string;
-        if (pressType === 'scale') animation.press = { scale: 0.95, duration: 100 };
-        else if (pressType === 'bounce') animation.press = { scale: 0.9, duration: 100 };
+        const existingPress = (animation.press as Record<string, unknown> | undefined) ?? {};
+        let pressCfg: Record<string, unknown> = { ...existingPress };
+        if (input.press === 'scale') pressCfg = { scale: 0.95, duration: 100, ...pressCfg };
+        else if (input.press === 'bounce') pressCfg = { scale: 0.9, duration: 100, ...pressCfg };
+        if (input.pressScale !== undefined) pressCfg.scale = Number(input.pressScale);
+        if (input.pressOpacity !== undefined) pressCfg.opacity = Number(input.pressOpacity) / 100;
+        if (input.pressX !== undefined) pressCfg.x = Number(input.pressX);
+        if (input.pressY !== undefined) pressCfg.y = Number(input.pressY);
+        if (input.pressDuration !== undefined) pressCfg.duration = Number(input.pressDuration);
+        if (input.pressEasing !== undefined) pressCfg.easing = input.pressEasing;
+        if (Object.keys(pressCfg).length) animation.press = pressCfg;
       }
     }
 
@@ -1633,7 +1869,21 @@ const handlers: Record<string, Handler> = {
       if (input.scroll === 'none') {
         delete animation.scroll;
       } else {
-        animation.scroll = { type: input.scroll, duration: 400 };
+        const scrollCfg: Record<string, unknown> = { type: input.scroll, duration: Number(input.scrollDuration ?? 500) };
+        if (input.scrollDelay !== undefined) scrollCfg.delay = Number(input.scrollDelay);
+        if (input.scrollThreshold !== undefined) scrollCfg.threshold = Number(input.scrollThreshold);
+        if (input.scrollOnce !== undefined) scrollCfg.once = input.scrollOnce;
+        if (input.scrollEasing !== undefined) scrollCfg.easing = input.scrollEasing;
+        animation.scroll = scrollCfg;
+      }
+    } else {
+      if (animation.scroll) {
+        const sc = animation.scroll as Record<string, unknown>;
+        if (input.scrollDuration !== undefined) sc.duration = Number(input.scrollDuration);
+        if (input.scrollDelay !== undefined) sc.delay = Number(input.scrollDelay);
+        if (input.scrollThreshold !== undefined) sc.threshold = Number(input.scrollThreshold);
+        if (input.scrollOnce !== undefined) sc.once = input.scrollOnce;
+        if (input.scrollEasing !== undefined) sc.easing = input.scrollEasing;
       }
     }
 
@@ -1642,6 +1892,68 @@ const handlers: Record<string, Handler> = {
         delete animation.shimmer;
       } else {
         animation.shimmer = { baseColor: '#e5e7eb', highlightColor: '#f9fafb', duration: 1500 };
+      }
+    }
+
+    if (input.filterBlur !== undefined) {
+      const blurVal = Number(input.filterBlur);
+      const existingFilter = (animation.filter ?? {}) as Record<string, unknown>;
+      if (blurVal <= 0) {
+        const { blur: _b, ...restFilter } = existingFilter;
+        animation.filter = Object.keys(restFilter).length ? { ...restFilter, enabled: true } : undefined;
+      } else {
+        animation.filter = { ...existingFilter, enabled: true, blur: blurVal };
+      }
+    }
+
+    // Color/FX filters — write into animation.filter object
+    const filterKeys = ['filterBrightness', 'filterContrast', 'filterSaturate', 'filterGrayscale', 'filterHueRotate'] as const;
+    const filterFieldMap: Record<string, string> = {
+      filterBrightness: 'brightness',
+      filterContrast: 'contrast',
+      filterSaturate: 'saturate',
+      filterGrayscale: 'grayscale',
+      filterHueRotate: 'hueRotate',
+    };
+    for (const key of filterKeys) {
+      if (input[key] !== undefined) {
+        const existingFilter = (animation.filter ?? {}) as Record<string, unknown>;
+        animation.filter = { ...existingFilter, enabled: true, [filterFieldMap[key]]: Number(input[key]) };
+      }
+    }
+
+    if (input.backdropBlur !== undefined) {
+      const bdVal = Number(input.backdropBlur);
+      const existingFilter = (animation.filter ?? {}) as Record<string, unknown>;
+      if (bdVal <= 0) {
+        const { backdropBlur: _b, ...restFilter } = existingFilter;
+        animation.filter = Object.keys(restFilter).length ? { ...restFilter, enabled: true } : undefined;
+      } else {
+        animation.filter = { ...existingFilter, enabled: true, backdropBlur: bdVal };
+      }
+    }
+
+    if (input.gradientColors !== undefined) {
+      const colors = input.gradientColors as string[];
+      if (!colors || colors.length < 2) {
+        // Remove gradient
+        const { backgroundImage: _bi, backgroundSize: _bs, backgroundRepeat: _br, ...restOuter } = (animation.outerStyle ?? {}) as Record<string, unknown>;
+        animation.outerStyle = Object.keys(restOuter).length ? restOuter : undefined;
+        // Also remove gradientDrift loop if present
+        if ((animation.loop as Record<string, unknown>)?.type === 'gradientDrift') delete animation.loop;
+      } else {
+        // Repeat first color at end for seamless loop
+        const gradient = `linear-gradient(to right, ${[...colors, colors[0]].join(', ')})`;
+        animation.outerStyle = {
+          ...((animation.outerStyle ?? {}) as Record<string, unknown>),
+          backgroundImage: gradient,
+          backgroundSize: '300% 100%',
+          backgroundRepeat: 'no-repeat',
+        };
+        // Auto-enable gradientDrift loop if not already set
+        if (!(animation.loop as Record<string, unknown>)?.type) {
+          animation.loop = { type: 'gradientDrift', duration: 3000, repeatCount: -1, direction: 'alternate' };
+        }
       }
     }
 
@@ -1914,16 +2226,60 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
   // _pageId is set by parallel build mode to insert into a non-active page.
   const targetPageId = input._pageId as string | undefined;
 
+  // Deferred ops: repeat/condition collected during materialize, applied after addNode.
+  const deferredOps: Array<{ nodeId: string; repeat?: string; keyField?: string; condition?: string }> = [];
+  // Label tracking: nodeId → original label (for Switch auto-wiring).
+  const labelMap = new Map<string, string>();
+
   // Walk tree: materialize each node via getTemplate(label) + merge AI props over defaults.
   // Server has pre-assigned crypto.randomUUID() to every node.id — we preserve them.
-  function materialize(node: Record<string, unknown>): SDUINode {
+  //
+  // inheritedBase: when the parent compound component's defaultNode has a corresponding child at
+  // this position, that child object is passed as inheritedBase so this node inherits the compound
+  // parent's specific styling rather than the generic primitive's defaultNode.  This cascades
+  // recursively to any depth — each inherited base carries its own children array which becomes
+  // the source for the next level's inheritedBase values.
+  function materialize(node: Record<string, unknown>, inheritedBase?: Record<string, unknown>, repeatDepth = 0): SDUINode {
     const label = node.label as string | undefined;
-    const base: Record<string, unknown> = label
-      ? ((getTemplate(label) ?? { id: node.id, type: label, props: {} }) as unknown as Record<string, unknown>)
-      : { id: node.id, type: node.type ?? 'Box', props: {} };
+    const base: Record<string, unknown> = inheritedBase
+      ? { ...inheritedBase, props: { ...(inheritedBase.props as Record<string, unknown> ?? {}) } }
+      : label
+        ? ((getTemplate(label) ?? { id: node.id, type: label, props: {} }) as unknown as Record<string, unknown>)
+        : { id: node.id, type: node.type ?? 'Box', props: {} };
 
     // Preserve server-assigned UUID
     base.id = node.id;
+
+    // Track original label for Switch auto-wiring
+    if (label) labelMap.set(base.id as string, label);
+
+    // Strip no-op conditions before storing
+    if (node.condition === 'true' || node.condition === 'false') {
+      delete node.condition;
+    }
+
+    const childDepth = node.repeat ? repeatDepth + 1 : repeatDepth;
+
+    // Fix parent scope misuse — context?.item?.parent is only valid inside a nested repeat (depth >= 2).
+    // At depth < 2 there is no outer repeat, so parent resolves to undefined.
+    if (repeatDepth < 2) {
+      for (const field of ['text', 'icon'] as const) {
+        if (node[field] && typeof node[field] === 'string') {
+          node[field] = (node[field] as string).replace(
+            /context\?\.\s*item\?\.\s*parent\?\.\s*data/g,
+            'context?.item?.data',
+          );
+        }
+      }
+    }
+
+    // Collect inline repeat/condition for deferred application after addNode
+    if (node.repeat || node.condition) {
+      const op: { nodeId: string; repeat?: string; keyField?: string; condition?: string } = { nodeId: base.id as string };
+      if (node.repeat) { op.repeat = node.repeat as string; op.keyField = (node.keyField as string) ?? 'id'; }
+      if (node.condition) op.condition = node.condition as string;
+      deferredOps.push(op);
+    }
 
     // Auto-inject video defaults so Video nodes in generate_structure behave like add_video
     if (label === 'Video') {
@@ -1939,6 +2295,15 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
     // Apply name (layers label)
     if (node.name) base.name = node.name;
 
+    // Apply direction shortcut — "row" or "column" sets flex direction on this container.
+    // Expressed in the tree definition so no separate set_layout call is needed.
+    // We call buildLayoutClass directly because the node hasn't been inserted into the store yet.
+    if (node.direction === 'row' || node.direction === 'column') {
+      const currentCls = ((base.props as Record<string, unknown>)?.className as string) ?? '';
+      const newCls = buildLayoutClass({ direction: node.direction as string }, currentCls);
+      (base.props as Record<string, unknown>).className = newCls;
+    }
+
     // Apply text shortcut — apply formula detection so formula expressions are stored as
     // { formula: "..." } instead of literal strings (same logic as set_text handler).
     if (node.text) {
@@ -1950,10 +2315,14 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
     // Allow user-pasted src on Image nodes; strip from Video so AI is forced to call search_videos.
     if (node.src && label !== 'Video') base.src = node.src;
 
-    // Recurse: AI children override template children when provided
+    // Recurse: AI children override template children when provided.
+    // When base comes from a compound defaultNode (via inheritedBase), its children array holds
+    // the compound-specific defaults for each child position.  Pass each as inheritedBase so
+    // the child inherits the compound's styling instead of the generic primitive's defaultNode.
     const aiChildren = Array.isArray(node.children) ? node.children as Record<string, unknown>[] : null;
+    const baseChildren = Array.isArray(base.children) ? base.children as Record<string, unknown>[] : [];
     if (aiChildren && aiChildren.length > 0) {
-      base.children = aiChildren.map(c => materialize(c));
+      base.children = aiChildren.map((c, i) => materialize(c, baseChildren[i] as Record<string, unknown> | undefined, childDepth));
     } else if (!base.children) {
       base.children = [];
     }
@@ -1977,6 +2346,74 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
 
   const materializedTree = materialize(treeInput);
 
+  // ── Merge duplicate repeat siblings ──────────────────────────────────────────
+  // The AI sometimes creates two sibling templates with opposite conditions
+  // (e.g. Card with condition !featured + Card with condition featured) both
+  // repeating over the same array. This doubles styling work and renders items
+  // out of order. Detect and merge: keep the richer template, strip its
+  // root condition, remove the duplicate.
+  (function deduplicateRepeatSiblings(node: SDUINode) {
+    const children = node.children as SDUINode[] | undefined;
+    if (!Array.isArray(children) || children.length < 2) {
+      children?.forEach(c => deduplicateRepeatSiblings(c));
+      return;
+    }
+
+    // Group children by their repeat path (from deferredOps)
+    const repeatByChild = new Map<string, string>();
+    for (const op of deferredOps) {
+      if (op.repeat) repeatByChild.set(op.nodeId, op.repeat);
+    }
+
+    const groups = new Map<string, number[]>();
+    for (let i = 0; i < children.length; i++) {
+      const childId = (children[i] as { id?: string }).id;
+      if (!childId) continue;
+      const rp = repeatByChild.get(childId);
+      if (!rp) continue;
+      if (!groups.has(rp)) groups.set(rp, []);
+      groups.get(rp)!.push(i);
+    }
+
+    // Count total descendants for tie-breaking
+    function countNodes(n: SDUINode): number {
+      let c = 1;
+      if (Array.isArray(n.children)) for (const ch of n.children as SDUINode[]) c += countNodes(ch);
+      return c;
+    }
+
+    const removeIndices = new Set<number>();
+    for (const [, indices] of groups) {
+      if (indices.length < 2) continue;
+      // Keep the sibling with the most descendants (likely the "featured" variant with extra Badge)
+      indices.sort((a, b) => countNodes(children[b]) - countNodes(children[a]));
+      const keepIdx = indices[0];
+      const keepId = (children[keepIdx] as { id?: string }).id!;
+
+      // Strip root-level condition from the kept template so it shows for ALL items
+      const keepOp = deferredOps.find(op => op.nodeId === keepId);
+      if (keepOp) delete keepOp.condition;
+
+      for (let k = 1; k < indices.length; k++) removeIndices.add(indices[k]);
+    }
+
+    if (removeIndices.size > 0) {
+      const removedIds = new Set<string>();
+      const sorted = [...removeIndices].sort((a, b) => b - a);
+      for (const idx of sorted) {
+        const removedId = (children[idx] as { id?: string }).id;
+        if (removedId) removedIds.add(removedId);
+        children.splice(idx, 1);
+      }
+      // Purge deferredOps for removed nodes
+      for (let i = deferredOps.length - 1; i >= 0; i--) {
+        if (removedIds.has(deferredOps[i].nodeId)) deferredOps.splice(i, 1);
+      }
+    }
+
+    children.forEach(c => deduplicateRepeatSiblings(c));
+  })(materializedTree);
+
   if (targetPageId) {
     store.insertNodeIntoPage(targetPageId, materializedTree);
     // Switch the active page immediately so that set_text / set_repeat calls
@@ -1984,6 +2421,42 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
     store.navigatePage(targetPageId);
   } else {
     store.addNode(materializedTree, parentId, atIdx);
+  }
+
+  // Apply deferred inline repeat/condition from tree nodes
+  for (const op of deferredOps) {
+    if (op.repeat) {
+      const normalizedRepeat = op.repeat.replace(/\?\./g, '.');
+      store.patchMap(op.nodeId, normalizedRepeat, op.keyField ?? 'id');
+    }
+    if (op.condition) {
+      let cond = op.condition;
+      if (typeof cond === 'string' && cond.startsWith('!') && !cond.startsWith('!=')) {
+        cond = `not(${cond.slice(1)})`;
+      }
+      store.patchCondition(op.nodeId, cond as unknown as object);
+    }
+  }
+
+  // Auto-wire Switch/Switch On sibling pairs with boolean variable conditions
+  const boolVarIds = (input._boolVarIds ?? []) as string[];
+  if (boolVarIds.length > 0) {
+    const boolVarId = boolVarIds[0];
+    (function autoWireSwitchPairs(node: SDUINode) {
+      if (!Array.isArray(node.children)) return;
+      for (let i = 0; i < node.children.length; i++) {
+        const child = node.children[i] as SDUINode;
+        const next = node.children[i + 1] as SDUINode | undefined;
+        if (!child?.id || !next?.id) continue;
+        const childLabel = labelMap.get(child.id);
+        const nextLabel = labelMap.get(next.id);
+        if (childLabel === 'Switch' && nextLabel === 'Switch On') {
+          if (!child.condition) store.patchCondition(child.id, `not(variables['${boolVarId}'])` as unknown as object);
+          if (!next.condition) store.patchCondition(next.id, `variables['${boolVarId}']` as unknown as object);
+        }
+        autoWireSwitchPairs(child);
+      }
+    })(materializedTree);
   }
 
   return { success: true, data: { message: 'Structure inserted.' } };
@@ -2024,7 +2497,7 @@ export const CLIENT_SIDE_TOOLS = new Set([
   'delete_node', 'duplicate_node', 'move_node_up', 'move_node_down', 'move_node', 'wrap_in_container',
   'set_text', 'set_placeholder', 'set_href', 'set_src', 'set_icon', 'set_video_props',
   'set_background', 'set_text_color', 'set_typography', 'set_border', 'set_shadow',
-  'set_opacity', 'set_spacing', 'set_size', 'set_position', 'set_transform', 'set_overflow', 'set_display',
+  'set_opacity', 'set_spacing', 'set_size', 'set_position', 'set_transform', 'set_overflow',
   'set_submit', 'set_input_props',
   'set_layout',
   'set_condition', 'set_repeat', 'bind_action', 'unbind_action', 'create_workflow',

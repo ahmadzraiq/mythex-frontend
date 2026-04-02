@@ -1584,3 +1584,130 @@ test('AN-P17-05: Dot indicators are visible and contain 4 dots', async () => {
   const count  = await dotEls.count();
   expect(count).toBeGreaterThanOrEqual(4);
 });
+
+// ─── Phase Effects — Gradient formula ─────────────────────────────────────────
+
+test('AN-EFF-01: Formula gradient card is visible and not empty', async () => {
+  const page = sharedPage;
+  const card = page.locator('[data-testid="effect-formula-gradient"]');
+  await card.scrollIntoViewIfNeeded();
+  await expect(card).toBeVisible();
+  // The card should not be invisible (must have positive size)
+  const box = await card.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.width).toBeGreaterThan(50);
+  expect(box!.height).toBeGreaterThan(50);
+});
+
+test('AN-EFF-02: Formula gradient outer wrapper has backgroundImage set', async () => {
+  const page = sharedPage;
+  const card = page.locator('[data-testid="effect-formula-gradient"]');
+  await card.scrollIntoViewIfNeeded();
+  // The animated outer wrapper is the first parent div wrapping the card.
+  // Its backgroundImage should be resolved from the formula.
+  const bgImage = await card.evaluate((el: HTMLElement) => {
+    // Walk up to find the Animated.View wrapper (has data-builder-id or is the immediate parent)
+    let current: HTMLElement | null = el.parentElement;
+    for (let i = 0; i < 5; i++) {
+      if (!current) break;
+      const style = window.getComputedStyle(current);
+      if (style.backgroundImage && style.backgroundImage !== 'none') return style.backgroundImage;
+      current = current.parentElement;
+    }
+    return '';
+  });
+  // Formula evaluates true → linear-gradient(to right, #667eea, #764ba2)
+  expect(bgImage).toMatch(/linear-gradient|gradient/i);
+});
+
+test('AN-EFF-03: Static gradientDrift card is visible and has background', async () => {
+  const page = sharedPage;
+  const card = page.locator('[data-testid="effect-gradient-drift"]');
+  await card.scrollIntoViewIfNeeded();
+  await expect(card).toBeVisible();
+  const bgImage = await card.evaluate((el: HTMLElement) => {
+    let current: HTMLElement | null = el.parentElement;
+    for (let i = 0; i < 5; i++) {
+      if (!current) break;
+      const style = window.getComputedStyle(current);
+      if (style.backgroundImage && style.backgroundImage !== 'none') return style.backgroundImage;
+      current = current.parentElement;
+    }
+    return '';
+  });
+  expect(bgImage).toMatch(/linear-gradient|gradient/i);
+});
+
+// ─── AN-P20: Static Translate ─────────────────────────────────────────────────
+
+test('AN-P20-01: card-p20 is visible', async () => {
+  const page = sharedPage;
+  const card = page.locator('[data-testid="card-p20"]');
+  await card.scrollIntoViewIfNeeded();
+  await expect(card).toBeVisible({ timeout: 5_000 });
+});
+
+test('AN-P20-02: p20-translate-x box has translateX(40px) in its computed transform', async () => {
+  const page = sharedPage;
+  const box = page.locator('[data-testid="p20-translate-x"]');
+  await box.scrollIntoViewIfNeeded();
+  await expect(box).toBeVisible({ timeout: 5_000 });
+  const transform = await box.evaluate((el: HTMLElement) => window.getComputedStyle(el).transform);
+  // translateX(40px) → matrix(1,0,0,1,40,0) — e-column (index 4) ≈ 40
+  const m = transform.match(/matrix\([^)]+\)/);
+  if (m) {
+    const vals = m[0].replace('matrix(', '').replace(')', '').split(',').map(Number);
+    expect(Math.abs(vals[4] - 40)).toBeLessThan(2);
+  } else {
+    expect(transform).toMatch(/40/);
+  }
+});
+
+test('AN-P20-03: p20-translate-y box has translateY(30px) in its computed transform', async () => {
+  const page = sharedPage;
+  const box = page.locator('[data-testid="p20-translate-y"]');
+  await box.scrollIntoViewIfNeeded();
+  await expect(box).toBeVisible({ timeout: 5_000 });
+  const transform = await box.evaluate((el: HTMLElement) => window.getComputedStyle(el).transform);
+  // translateY(30px) → matrix(1,0,0,1,0,30) — f-column (index 5) ≈ 30
+  const m = transform.match(/matrix\([^)]+\)/);
+  if (m) {
+    const vals = m[0].replace('matrix(', '').replace(')', '').split(',').map(Number);
+    expect(Math.abs(vals[5] - 30)).toBeLessThan(2);
+  } else {
+    expect(transform).toMatch(/30/);
+  }
+});
+
+test('AN-P20-04: p20-translate-xy box computed transform contains both X and Y translation', async () => {
+  const page = sharedPage;
+  const box = page.locator('[data-testid="p20-translate-xy"]');
+  await box.scrollIntoViewIfNeeded();
+  await expect(box).toBeVisible({ timeout: 5_000 });
+  const transform = await box.evaluate((el: HTMLElement) => window.getComputedStyle(el).transform);
+  // translateX(20px) translateY(20px) → matrix with e=20, f=20
+  const m = transform.match(/matrix\([^)]+\)/);
+  if (m) {
+    const vals = m[0].replace('matrix(', '').replace(')', '').split(',').map(Number);
+    expect(Math.abs(vals[4] - 20)).toBeLessThan(2);
+    expect(Math.abs(vals[5] - 20)).toBeLessThan(2);
+  } else {
+    expect(transform).toMatch(/20/);
+  }
+});
+
+test('AN-P20-05: p20-translate-formula box — formula-driven translateX(50px) is applied', async () => {
+  const page = sharedPage;
+  const box = page.locator('[data-testid="p20-translate-formula"]');
+  await box.scrollIntoViewIfNeeded();
+  await expect(box).toBeVisible({ timeout: 5_000 });
+  const transform = await box.evaluate((el: HTMLElement) => window.getComputedStyle(el).transform);
+  // Formula evaluates to 'translateX(50px)' → matrix(1,0,0,1,50,0)
+  const m = transform.match(/matrix\([^)]+\)/);
+  if (m) {
+    const vals = m[0].replace('matrix(', '').replace(')', '').split(',').map(Number);
+    expect(Math.abs(vals[4] - 50)).toBeLessThan(2);
+  } else {
+    expect(transform).toMatch(/50/);
+  }
+});

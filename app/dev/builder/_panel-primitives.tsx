@@ -113,7 +113,7 @@ export function NumberInput({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-      <span style={{ fontSize: 9, color: '#6b7280' }}>{label}</span>
+      {label && <span style={{ fontSize: 9, color: '#6b7280' }}>{label}</span>}
       <input
         ref={inputRef}
         data-testid={testId}

@@ -73,14 +73,14 @@ Use this order on every UI node for predictable AI scanning:
 
 ## 3c. Section Patterns
 
-**Loading + content:** Screen with loading skeleton and main content as siblings, each with `condition`:
+**Loading + content:** Screen with loading skeleton and main content as siblings, each with `condition` (formula string, NOT JSON Logic):
 
 ```json
 "children": [
   { "$ref": "fragments/sections/collection-loading-skeleton" },
   {
     "type": "Box",
-    "condition": { "!": [{ "var": "collection.loading" }] },
+    "condition": "!collections?.['UUID']?.loading",
     "props": { "className": "grid ..." },
     "children": [...]
   }
@@ -92,7 +92,7 @@ Use this order on every UI node for predictable AI scanning:
 ```json
 {
   "type": "Box",
-  "map": "collection.search.items",
+  "map": "collections.UUID.data.search.items",
   "props": { "className": "contents" },
   "children": [{ "$ref": "fragments/cards/product-card" }]
 }
@@ -104,62 +104,79 @@ Use this order on every UI node for predictable AI scanning:
 
 | Path | Description |
 |------|-------------|
-| `screens.{screenName}.form.*` | Form values per screen |
-| `screens.{screenName}.errors.*` | Validation errors per screen |
+| `variables['UUID']` | Named variables declared in `config/variables.json` (mutable state) |
+| `collections['UUID'].data.*` | Datasource data fetched via `fetchCollection` / `graphql` |
+| `local.data.form.formData.*` | Form field values (auto-tracked by `FormContainer` via `name` prop) |
+| `local.data.form.fields.*.isValid` | Per-field validation errors |
+| `local.data.form.isSubmitting` / `isSubmitted` | Form lifecycle flags |
 | `auth.*`, `cart.*`, `route.*`, `layout.*` | Global state from store.json |
-| `{{form.field}}` | Alias for current screen's form (when `screenScopedAliases` includes `form`) |
-| `{{$item.field}}` | Current item in `map` loop |
-| `{{_workflow.lastAction}}`, `{{_workflow.lastError}}` | Last action name and error |
+| `context.item.data.*` | Current item fields inside a `map` / repeat loop |
+| `context.item.parent.data.*` | Outer item fields inside a nested repeat |
+| `_workflow.lastAction`, `_workflow.lastError` | Last action name and error (null if success) |
 
-**Condition paths** use full path: `screens.checkout.errors.form.emailAddress` (not alias).
+**`screens.*` paths are NOT supported.** All mutable state must be declared in `config/variables.json` with a UUID and accessed via `variables['UUID']`.
 
-**setState path** must be full: `screens.checkout.form.emailAddress` (not `form.emailAddress`).
+**Text templates** use `{{path}}`: `"text": "{{variables['UUID']}}"`, `"text": "{{collections['UUID'].data.product.name}}"`.
+
+**Formula expressions** (conditions, `{ "expr" }`, `{ "formula" }`) use direct JS: `"condition": "variables['UUID'] > 0"`, `"condition": "collections['UUID']?.data?.items?.length > 0"`.
 
 ---
 
 ## 4. Common Patterns
 
-### Form field + error + clear on change
+### Form field with validation (FormContainer)
 
 ```json
 {
-  "type": "Box",
+  "type": "FormContainer",
+  "id": "sign-in-form",
+  "actions": [{ "action": "submitSignIn" }],
   "children": [
     { "type": "Text", "text": "Email *" },
     {
       "type": "Input",
+      "id": "email-input",
+      "props": { "variant": "outline" },
       "children": [{
         "type": "InputField",
-        "props": { "value": "{{form.email}}" },
-        "actions": {
-          "change": {
-            "type": "runMultiple",
-            "actions": [
-              { "action": "setState", "payload": { "path": "screens.signIn.form.email", "value": "$event" } },
-              { "action": "setState", "payload": { "path": "screens.signIn.errors.form.email", "value": "" } }
-            ]
-          }
+        "props": { "name": "email", "placeholder": "Enter email" },
+        "_validation": {
+          "trigger": "submit",
+          "rules": [
+            { "type": "required", "message": "Email is required" },
+            { "type": "email", "message": "Please enter a valid email" }
+          ]
         }
       }]
     },
     {
-      "type": "Box",
-      "condition": { "var": ["screens.signIn.errors.form.email"] },
-      "children": [{ "type": "Text", "text": "{{errors.form.email}}" }]
+      "type": "Text",
+      "condition": "local?.data?.form?.fields?.email?.isValid",
+      "props": { "className": "text-xs text-red-500" },
+      "text": "{{local.data.form.fields.email.isValid}}"
     }
   ]
 }
 ```
 
-### Navigation
+### Navigation (always named workflows)
 
-- Static: `{ "action": "navigate", "payload": { "path": "/shop" } }`
-- Dynamic: `{ "action": "navigate", "payload": { "routeConfig": "product", "slug": { "var": "$item.slug" } } }`
+All navigation uses named workflows in `config/actions/layout.json`:
+```json
+"actions": [{ "action": "navigateToHome" }]
+"actions": [{ "action": "navigateToProduct" }]
+```
 
-### Actions
+Dynamic slugs from repeat scope use `{ "var": "context.item.data.slug" }` in the workflow step config.
 
-- Named: `{ "action": "login" }` or `{ "action": "fetchCollection" }`
-- Inline in runMultiple: `{ "type": "setVar", "path": "collectionSkip", "value": 0 }`
+### Actions (named workflow array format)
+
+```json
+"actions": [{ "action": "submitSignIn" }]
+"actions": [{ "action": "fetchCollection" }]
+```
+
+The `trigger` (click, submit, change, etc.) is defined in the workflow, not on the node. See `build-guide.mdc` for the full workflow step types reference.
 
 ---
 

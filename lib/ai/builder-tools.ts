@@ -9,7 +9,7 @@
  * Grouped by category to match the builder's left-panel organization.
  */
 
-export interface BuilderTool {
+interface BuilderTool {
   name: string;
   description: string;
   input_schema: {
@@ -20,6 +20,7 @@ export interface BuilderTool {
 }
 
 import { ALL_PRIMITIVES } from '@/lib/builder/primitive-components';
+import { TOOL_DESCRIPTIONS } from '@/lib/ai/builder-knowledge-v2';
 
 // ─── Component Labels (what the AI knows as palette labels) ───────────────────
 
@@ -31,7 +32,7 @@ export const COMPONENT_LABELS: string[] = ALL_PRIMITIVES.map(c => c.label);
 const readTools: BuilderTool[] = [
   {
     name: 'get_page_tree',
-    description: 'Read the current page structure — section names, IDs, and types. Call this first when you need to know what already exists on the page before making changes.',
+    description: TOOL_DESCRIPTIONS['get_page_tree'],
     input_schema: {
       type: 'object',
       properties: {
@@ -41,7 +42,7 @@ const readTools: BuilderTool[] = [
   },
   {
     name: 'get_node_details',
-    description: 'Get full details of one or more nodes — props, text, children, and other fields as stored in the builder. Use when you need the current state of a specific node before editing it.',
+    description: TOOL_DESCRIPTIONS['get_node_details'],
     input_schema: {
       type: 'object',
       properties: {
@@ -52,45 +53,50 @@ const readTools: BuilderTool[] = [
   },
   {
     name: 'get_pages',
-    description: 'List all pages in the project with their IDs, names, and routes.',
+    description: TOOL_DESCRIPTIONS['get_pages'],
     input_schema: { type: 'object', properties: {} },
   },
   {
     name: 'get_theme',
-    description: 'Get the current theme variable values (colors and fonts).',
+    description: TOOL_DESCRIPTIONS['get_theme'],
     input_schema: { type: 'object', properties: {} },
   },
   {
     name: 'get_variables',
-    description: 'List all custom variables defined in the project.',
+    description: TOOL_DESCRIPTIONS['get_variables'],
     input_schema: { type: 'object', properties: {} },
   },
   {
     name: 'get_formula_context',
-    description: 'Returns the repeat context for a node — which ancestor `map` bindings exist and which path prefix to use (`context.item.data.*` for the innermost map, `context.item.parent.data.*` for the parent map). Variables, data sources, and all formula scopes are already in your context — do NOT call this tool to look those up. Call this ONLY when writing a formula for a node that may be inside a `map`, passing its `nodeId`, to discover how many repeat levels exist and which access paths to use.',
+    description: TOOL_DESCRIPTIONS['get_formula_context'],
     input_schema: {
       type: 'object',
       properties: {
         nodeId: {
           type: 'string',
-          description: 'The ID of the node you are about to write a formula for. Used to walk ancestors and detect map bindings.',
+          description: 'Single node ID to check repeat nesting for.',
+        },
+        nodeIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Batch: array of node IDs to check in one call. Returns scope info for each.',
         },
       },
     },
   },
   {
     name: 'get_workflows',
-    description: 'List all named workflows available in this project (both page-scoped and global). Call this before bind_action to see what workflow names exist and what trigger they use.',
+    description: TOOL_DESCRIPTIONS['get_workflows'],
     input_schema: { type: 'object', properties: {} },
   },
   {
     name: 'get_data_sources',
-    description: 'List all configured data sources (API collections) in this project. Returns each source\'s id, label, and the path to use in formulas (e.g. "collections[\'UUID\'].data"). Use this before set_repeat or writing any formula that references collection data.',
+    description: TOOL_DESCRIPTIONS['get_data_sources'],
     input_schema: { type: 'object', properties: {} },
   },
   {
     name: 'search_nodes',
-    description: 'Search the current page tree for nodes matching a query string. Case-insensitive substring match against node name, type, text content, and id. Returns all matches with their IDs and breadcrumb paths so you can reference them in subsequent tool calls. Use this to find an existing node before modifying it, instead of loading the full tree. Scope: current page only — use switch_page first to search a different page.',
+    description: TOOL_DESCRIPTIONS['search_nodes'],
     input_schema: {
       type: 'object',
       properties: {
@@ -108,67 +114,12 @@ const readTools: BuilderTool[] = [
   },
 ];
 
-// ─── Section Generation (streaming, shows live building on canvas) ─────────────
-
-const generationTools: BuilderTool[] = [
-  {
-    name: 'generate_section',
-    description: 'Generate and stream a new section onto the current page using AI. The section builds live on the canvas — user sees it appearing piece by piece. Use this for any new content section (hero, features, pricing, testimonials, contact, footer, etc.).',
-    input_schema: {
-      type: 'object',
-      properties: {
-        name: {
-          type: 'string',
-          description: 'Section name, e.g. "Hero", "Pricing Plans", "Customer Testimonials", "Contact Form", "Footer".',
-        },
-        description: {
-          type: 'string',
-          description: 'What the section should contain and how it should look. Be specific about layout, content, and tone.',
-        },
-        components: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Optional: suggest which builder components to use. E.g. ["Box", "Image", "Heading", "Text", "Btn Solid"]. If omitted, AI chooses.',
-        },
-        tone: {
-          type: 'string',
-          description: 'Optional: 2-4 word visual tone for this specific section. E.g. "bold, impactful", "warm, inviting".',
-        },
-        layout: {
-          type: 'string',
-          description: 'Optional: brief layout hint. E.g. "full-width image background with centered overlay text", "3-column card grid".',
-        },
-        position: {
-          type: 'string',
-          enum: ['append', 'prepend'],
-          description: 'Where to place the section. "append" adds at the bottom (default), "prepend" at the top.',
-        },
-      },
-      required: ['name', 'description'],
-    },
-  },
-  {
-    name: 'generate_app',
-    description: 'Generate a complete multi-page app from scratch. Creates all pages with sections, applies a theme, and builds content for each page. Use when the user asks to build a full app or website.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        appName: { type: 'string', description: 'Name for the app.' },
-        description: { type: 'string', description: 'Full business description.' },
-        mood: { type: 'string', description: 'Design mood: modern, minimal, organic, bold, playful, elegant.' },
-        category: { type: 'string', description: 'Business category: restaurant, saas, portfolio, ecommerce, etc.' },
-      },
-      required: ['description'],
-    },
-  },
-];
-
 // ─── Component Addition (like dragging from the left panel) ───────────────────
 
 const addTools: BuilderTool[] = [
   {
     name: 'add_component',
-    description: 'Add a component to the page by its palette label — exactly like dragging it from the builder\'s left panel. The builder inserts the component template with proper defaults. AI never writes JSON. Do NOT use this tool for Image or Video — use add_image / add_video instead; those tools set src (and poster for video) correctly.\n\nBATCH TIP: Always generate a UUID for nodeId (e.g. "a1b2c3d4-e5f6-7890-abcd-ef1234567890"). Use that same UUID as parentId for children in the same batch. Set name on container/section nodes to label them in the Layers panel.',
+    description: TOOL_DESCRIPTIONS['add_component'],
     input_schema: {
       type: 'object',
       properties: {
@@ -199,7 +150,7 @@ const addTools: BuilderTool[] = [
   },
   {
     name: 'add_icon',
-    description: 'Add an icon to the page or inside a container. Use search_icons first to find the right icon name.',
+    description: TOOL_DESCRIPTIONS['add_icon'],
     input_schema: {
       type: 'object',
       properties: {
@@ -213,7 +164,7 @@ const addTools: BuilderTool[] = [
   },
   {
     name: 'add_image',
-    description: 'Add an image to the page. Use search_images first to find a URL, or provide a URL directly.',
+    description: TOOL_DESCRIPTIONS['add_image'],
     input_schema: {
       type: 'object',
       properties: {
@@ -228,16 +179,16 @@ const addTools: BuilderTool[] = [
   },
   {
     name: 'add_video',
-    description: 'Add a video to the page. Provide a direct video URL.',
+    description: TOOL_DESCRIPTIONS['add_video'],
     input_schema: {
       type: 'object',
       properties: {
         src: { type: 'string', description: 'Video URL (mp4, webm, etc.).' },
         poster: { type: 'string', description: 'Poster image URL shown before the video plays.' },
-        autoPlay: { type: 'boolean', description: 'Auto-play on load. Default false.' },
-        loop: { type: 'boolean', description: 'Loop the video. Default false.' },
+        autoPlay: { type: 'boolean', description: 'Auto-play on load. Default true.' },
+        loop: { type: 'boolean', description: 'Loop the video. Default true.' },
         muted: { type: 'boolean', description: 'Mute audio. Default true (required for autoPlay in browsers).' },
-        controls: { type: 'boolean', description: 'Show playback controls. Default true.' },
+        controls: { type: 'boolean', description: 'Show playback controls. Default false (background videos are usually silent and control-free).' },
         objectFit: { type: 'string', description: 'Object fit: cover | contain | fill. Default "cover".' },
         parentId: { type: 'string', description: 'Container to add into.' },
         className: { type: 'string', description: 'Optional layout override. Omit to use the default Video preset; prefer set_size after adding when possible.' },
@@ -252,7 +203,7 @@ const addTools: BuilderTool[] = [
 const structureTools: BuilderTool[] = [
   {
     name: 'delete_node',
-    description: 'Delete a node (and all its children) by ID.',
+    description: TOOL_DESCRIPTIONS['delete_node'],
     input_schema: {
       type: 'object',
       properties: {
@@ -263,40 +214,40 @@ const structureTools: BuilderTool[] = [
   },
   {
     name: 'duplicate_node',
-    description: 'Duplicate a node — creates an identical copy placed after the original.',
+    description: TOOL_DESCRIPTIONS['duplicate_node'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the node to duplicate.' },
       },
       required: ['nodeId'],
     },
   },
   {
     name: 'move_node_up',
-    description: 'Move a node one position up among its siblings (reorder within same parent).',
+    description: TOOL_DESCRIPTIONS['move_node_up'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the node to move.' },
       },
       required: ['nodeId'],
     },
   },
   {
     name: 'move_node_down',
-    description: 'Move a node one position down among its siblings (reorder within same parent).',
+    description: TOOL_DESCRIPTIONS['move_node_down'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the node to move.' },
       },
       required: ['nodeId'],
     },
   },
   {
     name: 'move_node',
-    description: 'Move a node to a different parent container, optionally at a specific index. Use this for cross-container moves; use move_node_up/move_node_down for same-parent reordering.',
+    description: TOOL_DESCRIPTIONS['move_node'],
     input_schema: {
       type: 'object',
       properties: {
@@ -309,7 +260,7 @@ const structureTools: BuilderTool[] = [
   },
   {
     name: 'wrap_in_container',
-    description: 'Wrap one or more nodes in a new Box container.',
+    description: TOOL_DESCRIPTIONS['wrap_in_container'],
     input_schema: {
       type: 'object',
       properties: {
@@ -326,11 +277,11 @@ const structureTools: BuilderTool[] = [
 const textTools: BuilderTool[] = [
   {
     name: 'set_text',
-    description: 'Set the text content of a Text, Heading, Button, or any node with a text field.',
+    description: TOOL_DESCRIPTIONS['set_text'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         text: { type: 'string', description: 'Literal text ("Get Started") or a plain formula expression ("variables[\'UUID\']", "context.item.data.title", "\'$\' + context.item.data.price"). CRITICAL: String literals inside formula expressions MUST use single quotes (\'$\', \'/month\', \'active\'). NEVER use double quotes inside formula strings — they cause Invalid formula errors.' },
       },
       required: ['nodeId', 'text'],
@@ -338,11 +289,11 @@ const textTools: BuilderTool[] = [
   },
   {
     name: 'set_placeholder',
-    description: 'Set the placeholder text on an InputField, Textarea, or Select.',
+    description: TOOL_DESCRIPTIONS['set_placeholder'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         placeholder: { type: 'string' },
       },
       required: ['nodeId', 'placeholder'],
@@ -350,11 +301,11 @@ const textTools: BuilderTool[] = [
   },
   {
     name: 'set_href',
-    description: 'Set the href/link destination on a Link node.',
+    description: TOOL_DESCRIPTIONS['set_href'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         href: { type: 'string', description: 'URL or route path, e.g. "/about" or "https://example.com".' },
       },
       required: ['nodeId', 'href'],
@@ -362,11 +313,11 @@ const textTools: BuilderTool[] = [
   },
   {
     name: 'set_src',
-    description: 'Set the source URL on an Image or Video node only (Box ignores src — use add_image / add_component Image for photo layers). Also objectFit, alt (Image), poster (Video). To change objectFit or poster on a Video without changing the URL, use set_video_props instead.',
+    description: TOOL_DESCRIPTIONS['set_src'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         src: { type: 'string', description: 'New image/video URL. Required — always include the URL when calling this tool.' },
         alt: { type: 'string', description: 'Alt text (Image only).' },
         objectFit: { type: 'string', description: 'Object fit: cover | contain | fill | none | scale-down.' },
@@ -377,11 +328,11 @@ const textTools: BuilderTool[] = [
   },
   {
     name: 'set_video_props',
-    description: 'Set playback and display properties on a Video node without changing the source URL. IMPORTANT: Video defaults are already correct for ambient/embedded use (autoPlay=true, loop=true, muted=true, controls=false). Only call this tool when the user explicitly asks to change playback behavior — do NOT call it just to add controls or disable autoPlay.',
+    description: TOOL_DESCRIPTIONS['set_video_props'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         poster: { type: 'string', description: 'Poster image URL shown before playback.' },
         autoPlay: { type: 'boolean', description: 'Auto-play on load.' },
         loop: { type: 'boolean', description: 'Loop the video.' },
@@ -394,11 +345,11 @@ const textTools: BuilderTool[] = [
   },
   {
     name: 'set_icon',
-    description: 'Change the icon name and/or color on an Icon node. Pass icon, color, or both — at least one must be provided. Both accept formula expression strings for per-item variation inside repeat templates.',
+    description: TOOL_DESCRIPTIONS['set_icon'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         icon: {
           type: 'string',
           description: 'Iconify icon name (static) or a formula expression string (conditional). Static: "lucide:home", "heroicons:star", "tabler:check", "ph:arrow-right", etc. Conditional: pass result.expression with a ternary, e.g. "context?.item?.data?.[\'featured\'] ? \'lucide:check-circle\' : \'lucide:check\'". Omit to keep the current icon and only update size/color.',
@@ -406,7 +357,7 @@ const textTools: BuilderTool[] = [
         size: { type: 'number', description: 'Optional new size in px.' },
         color: {
           type: 'string',
-          description: 'Icon color (static) or formula expression (conditional). Static: "#hex", "currentColor", or theme token name (e.g. "primary", "muted-foreground"). Conditional: pass a ternary expression string. Omit to keep the current color.',
+          description: 'Icon color (static) or formula expression (conditional). Static: "#hex", "currentColor", or theme token name (e.g. "primary", "muted-foreground"). Conditional: ternary using \'theme:tokenName\' for colors. Omit to keep the current color.',
         },
       },
       required: ['nodeId'],
@@ -422,14 +373,18 @@ const textTools: BuilderTool[] = [
 const semanticDesignTools: BuilderTool[] = [
   {
     name: 'set_background',
-    description: 'Set the background color of a node (solid / theme colors only). Use theme names ("primary", "card", "muted"), named palette shades the panel accepts (e.g. "blue-600"), or hex (e.g. "#1a1a1a"). For photos or full-bleed imagery use add_image or add_component Image + set_src, not this tool.',
+    description: TOOL_DESCRIPTIONS['set_background'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         bg: {
           type: 'string',
-          description: 'Background color (static) or formula expression (conditional). Static: theme name ("primary", "card", "background", "muted", "secondary", "accent", "destructive", "foreground"), or "#hex", "transparent". Conditional: pass result.expression with a ternary.',
+          description: 'Background color (static) or formula expression (conditional). Static: theme name ("primary", "card", "background", "muted", "secondary", "accent", "destructive", "foreground"), or "#hex", "transparent", or Tailwind opacity notation like "black/40". Conditional: ternary using \'theme:tokenName\' for colors (e.g. "variables[\'uuid\'] ? \'theme:primary\' : \'theme:card\'").',
+        },
+        fillOpacity: {
+          type: 'number',
+          description: 'Background fill opacity 0–100. Affects ONLY the background color, not child content (unlike set_opacity which affects the whole element). E.g. 50 = semi-transparent background. Only works with named/hex backgrounds, not with "black/40" opacity notation.',
         },
       },
       required: ['nodeId'],
@@ -437,14 +392,14 @@ const semanticDesignTools: BuilderTool[] = [
   },
   {
     name: 'set_text_color',
-    description: 'Set the text color of a node. Use theme names ("foreground", "primary", "muted-foreground"), named palette shades (e.g. "gray-900"), or hex.',
+    description: TOOL_DESCRIPTIONS['set_text_color'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         color: {
           type: 'string',
-          description: 'Text color (static) or formula expression (conditional). Static: theme name ("foreground", "primary", "primary-foreground", "muted-foreground", "card-foreground", "secondary-foreground", "accent-foreground", "destructive"), or "white", "gray-900", "#hex". Conditional: pass result.expression with a ternary.',
+          description: 'Text color (static) or formula expression (conditional). Static: theme name ("foreground", "primary", "primary-foreground", "muted-foreground", "card-foreground", "secondary-foreground", "accent-foreground", "destructive"), or "white", "gray-900", "#hex". Conditional: ternary using \'theme:tokenName\' for colors.',
         },
       },
       required: ['nodeId', 'color'],
@@ -452,11 +407,11 @@ const semanticDesignTools: BuilderTool[] = [
   },
   {
     name: 'set_typography',
-    description: 'Set typographic styling on a node — font size, weight, text-align, line height, letter spacing, decoration, and transform. Only pass the properties you want to change; others remain unchanged. NOTE: this tool has NO color param — to change text color use set_text_color. NOTE: this tool only affects how text renders within the node — it does NOT position or align child nodes in a flex container. To center or align child nodes inside a container, use set_layout.',
+    description: TOOL_DESCRIPTIONS['set_typography'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         size: {
           type: 'number',
           description: 'Font size in pixels. E.g. 12, 14, 16, 18, 20, 24, 30, 36, 48.',
@@ -498,11 +453,11 @@ const semanticDesignTools: BuilderTool[] = [
   },
   {
     name: 'set_border',
-    description: 'Set border width, style, color, and/or radius on a node. Only pass the properties you want to change.',
+    description: TOOL_DESCRIPTIONS['set_border'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         width: {
           type: 'number',
           description: 'Border width in pixels. E.g. 1, 2, 4. Pass 0 to remove border.',
@@ -514,7 +469,7 @@ const semanticDesignTools: BuilderTool[] = [
         },
         color: {
           type: 'string',
-          description: 'Border color (static) or formula expression (conditional). Static: theme name ("border", "primary", "muted"), or "gray-200", "#hex". Conditional: pass result.expression with a ternary.',
+          description: 'Border color (static) or formula expression (conditional). Static: theme name ("border", "primary", "muted"), or "gray-200", "#hex". Conditional: ternary using \'theme:tokenName\' for colors.',
         },
         radius: {
           type: 'number',
@@ -530,26 +485,29 @@ const semanticDesignTools: BuilderTool[] = [
   },
   {
     name: 'set_shadow',
-    description: 'Set the drop shadow on a node.',
+    description: TOOL_DESCRIPTIONS['set_shadow'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
-        shadow: {
-          type: 'string',
-          description: 'Shadow token (static) or formula expression (conditional). Static values: "none", "sm", "default", "md", "lg", "xl", "2xl". "none" removes the shadow. Conditional: pass result.expression with a ternary, e.g. "context?.item?.data?.[\'highlight\'] ? \'lg\' : \'none\'".',
-        },
+        nodeId:     { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
+        boxShadow:  { type: 'string', description: 'Full CSS box-shadow value OR a formula/ternary expression. Static: "0px 4px 20px 0px #000000". Formula for per-item shadow: "context?.item?.data?.featured ? \'0px 12px 25px -5px #7c3aed\' : \'0px 4px 8px 0px #00000026\'".' },
+        color:      { type: 'string', description: 'Shadow color as a hex string, e.g. "#000000", "#a855f7". Used with blur/spread/x/y params.' },
+        blur:       { type: 'number', description: 'Shadow blur radius in px. Default 20. Larger = softer/wider shadow.' },
+        spread:     { type: 'number', description: 'Shadow spread in px. Default 0. Positive = larger, negative = tighter (inner glow).' },
+        x:          { type: 'number', description: 'Horizontal offset in px. Default 0.' },
+        y:          { type: 'number', description: 'Vertical offset in px. Default 4.' },
+        remove:     { type: 'boolean', description: 'Pass true to remove the shadow entirely.' },
       },
-      required: ['nodeId', 'shadow'],
+      required: ['nodeId'],
     },
   },
   {
     name: 'set_opacity',
-    description: 'Set the opacity of a node (0–100). Matches the builder panel Opacity slider.',
+    description: TOOL_DESCRIPTIONS['set_opacity'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         opacity: { type: 'number', description: 'Opacity 0–100. E.g. 50 = half transparent, 100 = fully visible.' },
       },
       required: ['nodeId', 'opacity'],
@@ -557,11 +515,11 @@ const semanticDesignTools: BuilderTool[] = [
   },
   {
     name: 'set_spacing',
-    description: 'Set padding, margin, and/or gap on a node in pixels. Matches the builder panel Padding/Margin/Gap number inputs.',
+    description: TOOL_DESCRIPTIONS['set_spacing'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         p:  { type: 'number', description: 'Padding all sides in px.' },
         px: { type: 'number', description: 'Horizontal padding (left + right) in px.' },
         py: { type: 'number', description: 'Vertical padding (top + bottom) in px.' },
@@ -585,18 +543,18 @@ const semanticDesignTools: BuilderTool[] = [
   },
   {
     name: 'set_size',
-    description: 'Set width, height, or size constraints on a node. Mirrors the builder right panel Hug/Fill/Fixed controls and Min/Max W/H fields.',
+    description: TOOL_DESCRIPTIONS['set_size'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         width: {
           type: 'string',
-          description: 'Width (static) or formula expression (conditional). Static: "fill" (expand in parent), "full" (100%), "fit" (shrink), "screen" (viewport), "px:N" (exact pixels, e.g. "px:320"). Conditional: pass result.expression with a ternary.',
+          description: 'Width (static) or formula expression (conditional). Static: "fill" (expand to fill remaining space in parent), "full" (100% of parent — for absolutely-positioned covers), "fit" (shrink to content), "screen" (100vw — for top-level page sections), "px:N" (exact pixels, e.g. "px:320"). Conditional: pass a ternary expression string.',
         },
         height: {
           type: 'string',
-          description: 'Height (static) or formula expression (conditional). Static: "fill" (flex grow), "screen" (viewport), "fit" (shrink), "px:N" (exact pixels), "vh:N" (viewport-relative), "min-screen". Conditional: pass result.expression with a ternary.',
+          description: 'Height (static) or formula expression (conditional). Static: "fill" (flex grow), "full" (100% of parent — for absolutely-positioned covers), "screen" (100vh — for full-viewport sections), "fit" (shrink to content), "px:N" (exact pixels), "vh:N" (viewport-relative, e.g. "vh:80"). Conditional: pass a ternary expression string.',
         },
         maxWidth:  { type: 'number', description: 'Max-width constraint in pixels (e.g. 800). Matches the builder panel Max W field.' },
         minWidth:  { type: 'number', description: 'Min-width constraint in pixels. Matches the builder panel Min W field.' },
@@ -608,11 +566,11 @@ const semanticDesignTools: BuilderTool[] = [
   },
   {
     name: 'set_position',
-    description: 'Set position type, z-index, and inset (top/right/bottom/left) on a node.',
+    description: TOOL_DESCRIPTIONS['set_position'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         position: {
           type: 'string',
           enum: ['static', 'relative', 'absolute', 'fixed', 'sticky'],
@@ -622,48 +580,29 @@ const semanticDesignTools: BuilderTool[] = [
           type: 'number',
           description: 'Z-index as an integer. E.g. 0, 10, 20, 50, 100.',
         },
-        top:    { type: 'number', description: 'Top inset in pixels.' },
-        right:  { type: 'number', description: 'Right inset in pixels.' },
-        bottom: { type: 'number', description: 'Bottom inset in pixels.' },
-        left:   { type: 'number', description: 'Left inset in pixels.' },
+        top:    { description: 'Top inset — plain integer (px) or formula expression string for conditional positioning.' },
+        right:  { description: 'Right inset — plain integer (px) or formula expression string.' },
+        bottom: { description: 'Bottom inset — plain integer (px) or formula expression string.' },
+        left:   { description: 'Left inset — plain integer (px) or formula expression string.' },
       },
       required: ['nodeId'],
     },
   },
   {
     name: 'set_transform',
-    description: 'Set rotation, flip (mirror), cursor, overflow, or self-alignment on a node.',
+    description: TOOL_DESCRIPTIONS['set_transform'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         rotate: { type: 'number', description: 'Rotation in degrees (-180 to 180). Any degree value is supported.' },
         flipX: { type: 'boolean', description: 'Flip horizontally (mirror on X axis).' },
         flipY: { type: 'boolean', description: 'Flip vertically (mirror on Y axis).' },
-        cursor: {
-          type: 'string',
-          enum: ['auto', 'default', 'pointer', 'not-allowed', 'grab', 'move', 'text', 'crosshair'],
-          description: 'Cursor style on hover.',
+        translateX: {
+          description: 'Horizontal offset in pixels (positive = right, negative = left). Pass a number for a static offset, or a formula expression string for dynamic positioning.',
         },
-        overflow: {
-          type: 'string',
-          enum: ['auto', 'hidden', 'visible', 'scroll'],
-          description: 'Overflow for both axes.',
-        },
-        overflowX: {
-          type: 'string',
-          enum: ['auto', 'hidden', 'visible', 'scroll'],
-          description: 'Horizontal overflow only.',
-        },
-        overflowY: {
-          type: 'string',
-          enum: ['auto', 'hidden', 'visible', 'scroll'],
-          description: 'Vertical overflow only.',
-        },
-        self: {
-          type: 'string',
-          enum: ['auto', 'start', 'center', 'end', 'stretch', 'baseline'],
-          description: 'Self-alignment of this node within its parent flex container.',
+        translateY: {
+          description: 'Vertical offset in pixels (positive = down, negative = up). Pass a number for a static offset, or a formula expression string for dynamic positioning.',
         },
       },
       required: ['nodeId'],
@@ -671,47 +610,24 @@ const semanticDesignTools: BuilderTool[] = [
   },
   {
     name: 'set_overflow',
-    description: 'Clip (or unclip) a node\'s content — mirrors the "Clip content" toggle in the design panel. Use clip:true so child content is clipped to the box boundary; clip:false to remove clipping. Use this instead of set_transform when you only need to control clipping.',
+    description: TOOL_DESCRIPTIONS['set_overflow'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string', description: 'Node ID' },
-        clip: { type: 'boolean', description: 'true = clip content to box boundary, false = allow content to overflow' },
-      },
-      required: ['nodeId', 'clip'],
-    },
-  },
-  {
-    name: 'set_display',
-    description: 'Set display mode (flex, grid, block, hidden) and grid-specific properties on a node.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        nodeId: { type: 'string' },
-        display: {
-          type: 'string',
-          enum: ['block', 'inline-block', 'inline', 'flex', 'inline-flex', 'grid', 'hidden'],
-          description: '"hidden" hides the element completely.',
-        },
-        gridCols: { type: 'number', description: 'Number of grid columns (1–12). Only applies when display is "grid".' },
-        gridRows: { type: 'number', description: 'Number of grid rows (1–6). Only applies when display is "grid".' },
-        colSpan:  { type: 'number', description: 'How many columns this item spans (1–12). Pass 13 for "col-span-full".' },
-        flexWrap: {
-          type: 'string',
-          enum: ['wrap', 'nowrap', 'wrap-reverse'],
-          description: 'Flex wrap behavior.',
-        },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
+        clip: { type: 'boolean', description: 'true = clip content to box boundary (overflow-hidden), false = allow overflow.' },
+        pointerEvents: { type: 'string', enum: ['none', 'auto'], description: '"none" makes the element pass all pointer events through to elements beneath it (overlay pass-through). "auto" restores default behavior.' },
       },
       required: ['nodeId'],
     },
   },
   {
     name: 'set_submit',
-    description: 'Toggle the form-submit behavior of a Button. Matches the builder Settings panel "Submit" toggle — when enabled the button triggers FormContainer validation and submission.',
+    description: TOOL_DESCRIPTIONS['set_submit'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         submit: { type: 'boolean', description: 'true = button acts as a form submit trigger. false = regular button.' },
       },
       required: ['nodeId', 'submit'],
@@ -719,11 +635,11 @@ const semanticDesignTools: BuilderTool[] = [
   },
   {
     name: 'set_input_props',
-    description: 'Configure input-specific properties on an Input or InputField node (type, multiline, min/max, maxLength).',
+    description: TOOL_DESCRIPTIONS['set_input_props'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         type: {
           type: 'string',
           enum: ['text', 'email', 'password', 'number', 'decimal', 'tel'],
@@ -734,6 +650,16 @@ const semanticDesignTools: BuilderTool[] = [
         min: { type: 'number', description: 'Minimum value for number inputs.' },
         max: { type: 'number', description: 'Maximum value for number inputs.' },
         maxLength: { type: 'number', description: 'Maximum character length.' },
+        fieldName: { type: 'string', description: 'Form field tracking name — used to read the value at submit time via local.data.form.formData[fieldName]. Must be unique within the form.' },
+        validationTrigger: {
+          type: 'string',
+          enum: ['submit', 'change'],
+          description: 'When validation runs: "submit" = only on form submit (default), "change" = on every keystroke.',
+        },
+        initialValue: { description: 'Default value pre-filled in the field when the form first loads.' },
+        debounce: { type: 'number', description: 'Debounce delay in ms for the change event. E.g. 300 delays the action by 300ms after the user stops typing.' },
+        debounceEnabled: { type: 'boolean', description: 'Enable or disable debounce on the change event.' },
+        autocomplete: { type: 'boolean', description: 'Enable browser autocomplete/autofill on this field.' },
       },
       required: ['nodeId'],
     },
@@ -745,15 +671,29 @@ const semanticDesignTools: BuilderTool[] = [
 const layoutTools: BuilderTool[] = [
   {
     name: 'set_layout',
-    description: 'Update the flex layout of a container node — controls how children are positioned and distributed (direction, alignment, gap). Use this to center or align child nodes inside a container. Convenient for layout-only changes without touching other style properties.',
+    description: TOOL_DESCRIPTIONS['set_layout'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         direction: { type: 'string', enum: ['row', 'column'], description: '"row" lays children side by side; "column" stacks them top to bottom.' },
         align: { type: 'string', enum: ['start', 'center', 'end', 'stretch', 'baseline'], description: 'Cross-axis alignment of children (items-*). In a row: aligns children vertically. In a column: aligns children horizontally — use align:"center" on a column container to horizontally center its children.' },
-        justify: { type: 'string', enum: ['start', 'center', 'end', 'between', 'around', 'evenly'], description: 'Main-axis distribution of children (justify-*). In a row: horizontal distribution. In a column: vertical distribution.' },
+        justify: { type: 'string', enum: ['start', 'center', 'end', 'between', 'around', 'evenly'], description: 'Main-axis distribution of children (justify-*). In a row: horizontal distribution. In a column: vertical distribution. Accepts a ternary expression string for per-item variation inside repeat templates.' },
         gap: { type: 'number', description: 'Gap between children in pixels.' },
+        self: {
+          type: 'string',
+          enum: ['auto', 'start', 'center', 'end', 'stretch', 'baseline'],
+          description: 'Self-alignment of THIS node within its parent flex container (alignSelf). Only has effect when the node is NOT full-width. Accepts a ternary expression string for per-item variation inside repeat templates.',
+        },
+        cursor: {
+          type: 'string',
+          enum: ['auto', 'default', 'pointer', 'not-allowed', 'grab', 'move', 'text', 'crosshair'],
+          description: 'Cursor style on hover.',
+        },
+        gridCols: { type: 'number', description: 'Number of grid columns (1-12). Switches display to grid automatically.' },
+        gridRows: { type: 'number', description: 'Number of grid rows (1-6).' },
+        colSpan:  { type: 'number', description: 'How many columns this item spans (1-12). 13 = col-span-full.' },
+        flexWrap: { type: 'string', enum: ['wrap', 'nowrap', 'wrap-reverse'], description: 'Flex wrap behavior.' },
       },
       required: ['nodeId'],
     },
@@ -765,14 +705,14 @@ const layoutTools: BuilderTool[] = [
 const logicTools: BuilderTool[] = [
   {
     name: 'set_condition',
-    description: 'Set or remove a visibility condition on a node. The node is shown when the condition is truthy.',
+    description: TOOL_DESCRIPTIONS['set_condition'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         condition: {
           type: 'string',
-          description: 'JS formula string, e.g. "variables[\'UUID\'] === \'active\'" or "!variables[\'UUID\']". Pass empty string "" to remove.',
+          description: 'JS formula string, e.g. "variables[\'UUID\'] === \'active\'" or "context?.item?.data?.inStock". Pass "" to remove. NEVER pass "true" — that is a no-op; just omit set_condition if the node should always be visible.',
         },
       },
       required: ['nodeId', 'condition'],
@@ -780,11 +720,11 @@ const logicTools: BuilderTool[] = [
   },
   {
     name: 'set_repeat',
-    description: 'Make a node repeat over a list of items (like a for-loop in the builder). The node renders once per item.',
+    description: TOOL_DESCRIPTIONS['set_repeat'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         mapPath: { type: 'string', description: 'State path to the array, e.g. "variables[\'varId\']" or "collections.UUID.data.items". For nested repeat (sub-list inside an outer repeated item), use "context.item.data.fieldName". Pass "" to remove.' },
         keyField: { type: 'string', description: 'Field to use as React key, e.g. "id".' },
       },
@@ -793,11 +733,11 @@ const logicTools: BuilderTool[] = [
   },
   {
     name: 'bind_action',
-    description: 'Bind a named workflow to a node event (appends to existing bindings — does not replace them). Use get_workflows() first to see what workflow names exist.',
+    description: TOOL_DESCRIPTIONS['bind_action'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         workflowName: { type: 'string', description: 'Name of the workflow to bind, e.g. "onSubmitContactForm".' },
       },
       required: ['nodeId', 'workflowName'],
@@ -805,11 +745,11 @@ const logicTools: BuilderTool[] = [
   },
   {
     name: 'unbind_action',
-    description: 'Remove a specific workflow binding from a node without affecting other bindings on that node.',
+    description: TOOL_DESCRIPTIONS['unbind_action'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         workflowName: { type: 'string', description: 'Name of the workflow binding to remove.' },
       },
       required: ['nodeId', 'workflowName'],
@@ -817,43 +757,7 @@ const logicTools: BuilderTool[] = [
   },
   {
     name: 'create_workflow',
-    description: `Create a new named workflow and optionally bind it to a node. Use for ALL interactive behaviour: incrementing/decrementing counters, toggling state, navigating, showing/hiding elements, submitting forms.
-
-STEP TYPES (use exactly these type strings — same as the builder's Type dropdown):
-  changeVariableValue, navigateTo, navigatePrev, branch, multiOptionBranch, forEach, whileLoop,
-  breakLoop, continueLoop, setFormState, resetForm, fetchCollection, fetchCollectionsParallel,
-  updateCollection, resetVariableValue, timeDelay, graphql, fetchData, copyToClipboard,
-  openPopup, closeAllPopups, stopPropagation, customJavaScript, returnValue
-
-Each step must have a unique "id" plus "type" and "config". Examples:
-- changeVariableValue: { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "UUID", "value": { "formula": "expr" } } }
-  formula examples: "variables['UUID'] + 1"  /  "not(variables['UUID'])"  /  "'active'"  /  "max(0, variables['UUID'] - 1)"
-  CRITICAL: For negation use not(value) — NEVER !value. String literals MUST use single quotes: 'active', not "active".
-  Use formula functions (max, min, floor, ceil, clamp, abs, etc.) — the tool validates syntax automatically.
-- navigateTo:  { "id": "s1", "type": "navigateTo", "config": { "path": "/route" } }
-- timeDelay:   { "id": "s1", "type": "timeDelay", "config": { "ms": 500 } }
-- branch:      { "id": "s1", "type": "branch", "config": { "condition": "variables['UUID'] > 0" }, "trueBranch": [...], "falseBranch": [...] }
-- multiOptionBranch: { "id": "s1", "type": "multiOptionBranch", "config": { "condition": "variables['UUID']" }, "branches": [{ "label": "option-a", "steps": [...] }, { "label": "option-b", "steps": [...] }], "defaultBranch": [...] }
-  The condition must evaluate to one of the branch label strings. defaultBranch runs when no label matches.
-- forEach:     { "id": "s1", "type": "forEach", "config": { "listPath": "UUID" } }  ← listPath = variable UUID (resolves to array at runtime)
-  OR:          { "id": "s1", "type": "forEach", "config": { "list": ["A","B","C"] } }  ← inline literal array
-  Inside loopBody, access current item: context.item.data.value, current index: context.item.data.index
-  forEach takes a "loopBody" array of steps (not "config.loopBody") — parallel to the step, not nested inside config.
-- graphql:     { "id": "s1", "type": "graphql", "config": { "query": "query { ... }", "variables": { "id": "variables['UUID']" }, "storeIn": "myData" } }
-  The result is stored at collections['storeIn'].data. Use dot-notation field names in variables values.
-- fetchData:   { "id": "s1", "type": "fetchData", "config": { "url": "https://api.example.com/endpoint", "method": "GET", "storeIn": "myData" } }
-  For POST/PUT/PATCH, add: "body": "{ \\"key\\": \\"value\\" }" (JSON string).
-  Result stored at collections['storeIn'].data.
-- openPopup:   { "id": "s1", "type": "openPopup", "config": { "popupId": "popup-node-uuid" } }
-  popupId must be the nodeId of a Popup/Modal component node already in the tree.
-- closeAllPopups: { "id": "s1", "type": "closeAllPopups", "config": {} }
-- updateCollection: { "id": "s1", "type": "updateCollection", "config": { "collectionId": "UUID", "updateType": "insert", "data": "{...}", "position": 0 } }
-  updateType options:
-    "insert"   — inserts item at position (default end). Requires "data" (JSON string).
-    "update"   — merges into item matched by idKey/idValue. Requires "data", "findBy": "id", "idKey": "id", "idValue": "UUID".
-    "delete"   — removes item matched by idKey/idValue. Requires "findBy": "id", "idKey": "id", "idValue": "UUID".
-    "replaceAll" with data — replaces array entirely. Requires "data" (JSON string).
-    "replaceAll" without data — triggers a real API refetch for that collection.`,
+    description: TOOL_DESCRIPTIONS['create_workflow'],
     input_schema: {
       type: 'object',
       properties: {
@@ -881,7 +785,7 @@ Each step must have a unique "id" plus "type" and "config". Examples:
   },
   {
     name: 'delete_workflow',
-    description: 'Delete a named workflow from the project. Use get_workflows() to see existing workflow names.',
+    description: TOOL_DESCRIPTIONS['delete_workflow'],
     input_schema: {
       type: 'object',
       properties: {
@@ -892,11 +796,11 @@ Each step must have a unique "id" plus "type" and "config". Examples:
   },
   {
     name: 'set_animation',
-    description: 'Add or update animation on a node. Only pass the animation types you want to set; others remain unchanged. Pass "none" to clear a specific animation type.',
+    description: TOOL_DESCRIPTIONS['set_animation'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         enter: {
           type: 'string',
           enum: ['none', 'fadeIn', 'slideInUp', 'slideInDown', 'slideInLeft', 'slideInLeftSubtle', 'slideInRight', 'riseFade', 'dropIn', 'zoomIn', 'expandIn', 'bounceIn', 'flipInX', 'flipInY', 'flipIn3D', 'tiltIn', 'skewIn', 'skewInY', 'blurIn', 'glowIn', 'rollIn', 'revealUp', 'charFall', 'charBounce'],
@@ -904,7 +808,16 @@ Each step must have a unique "id" plus "type" and "config". Examples:
         },
         enterDuration: { type: 'number', description: 'Enter animation duration in ms. Default 300.' },
         enterDelay: { type: 'number', description: 'Delay before the enter animation starts (ms).' },
-        enterStagger: { type: 'number', description: 'Per-child stagger offset (ms) when this node is a mapped list container — each child enters after the previous by this amount.' },
+        enterStagger: { type: 'number', description: 'Per-child stagger offset (ms). Set this on the mapped LIST CONTAINER, not on individual child nodes — the engine distributes the delay automatically.' },
+        enterEasing: {
+          type: 'string',
+          enum: ['easeOut', 'easeIn', 'easeInOut', 'linear', 'circIn', 'circOut', 'circInOut', 'backIn', 'backOut', 'backInOut'],
+          description: 'Easing curve for the enter animation. Default "easeOut".',
+        },
+        enterSpring: { type: 'boolean', description: 'Use spring physics for the enter animation instead of duration-based easing.' },
+        enterStiffness: { type: 'number', description: 'Spring stiffness (10–1000). Only used when enterSpring is true. Default 200.' },
+        enterDamping: { type: 'number', description: 'Spring damping (1–100). Only used when enterSpring is true. Default 20.' },
+        enterMass: { type: 'number', description: 'Spring mass (0.1–10). Only used when enterSpring is true. Default 1.' },
         exit: {
           type: 'string',
           // bounceOut, flipOutX, flipOutY, flipOut3D, rollOut are NOT in REANIMATED_EXIT_MAP — removed
@@ -912,31 +825,105 @@ Each step must have a unique "id" plus "type" and "config". Examples:
           description: 'Exit animation (plays on unmount). "none" removes it.',
         },
         exitDuration: { type: 'number', description: 'Exit animation duration in ms. Default 300.' },
+        exitDelay: { type: 'number', description: 'Delay before the exit animation starts (ms).' },
+        exitEasing: {
+          type: 'string',
+          enum: ['easeIn', 'easeOut', 'easeInOut', 'linear', 'circIn', 'circOut', 'circInOut', 'backIn', 'backOut', 'backInOut'],
+          description: 'Easing curve for the exit animation. Default "easeIn".',
+        },
         loop: {
           type: 'string',
           enum: ['none', 'pulse', 'breathe', 'float', 'shake', 'wiggle', 'wobble', 'swing', 'spin', 'ticker', 'bounce', 'heartbeat', 'flash', 'ripple', 'glowPulse', 'gradientDrift'],
-          description: 'Continuous loop animation. "none" removes it.',
+          description: 'Continuous loop animation. "none" removes it. "gradientDrift" requires gradientColors to be set first.',
         },
         loopDuration: { type: 'number', description: 'Loop animation duration per cycle in ms. Default 1500.' },
+        loopDelay: { type: 'number', description: 'Delay before the loop animation starts (ms).' },
+        loopRepeatCount: { type: 'number', description: 'Number of loop repetitions. -1 = infinite (default). E.g. 3 = play 3 times then stop.' },
+        loopDirection: {
+          type: 'string',
+          enum: ['normal', 'alternate'],
+          description: 'Loop playback direction. "normal" = always forward. "alternate" = forward then backward (default for most types).',
+        },
         loopColor: { type: 'string', description: 'Glow/shadow color for glowPulse and ripple loop types (hex, e.g. "#a855f7"). Required for glowPulse to be visible on light backgrounds.' },
         hover: {
           type: 'string',
           enum: ['scale', 'lift', 'none'],
-          description: 'Hover animation. "scale" = grows slightly (scale: 1.05), "lift" = moves up (y: -4px).',
+          description: 'Hover animation preset. "scale" = grows slightly, "lift" = moves up. For fine control use hoverScale/hoverY/hoverOpacity/hoverDuration/hoverEasing.',
+        },
+        hoverScale: { type: 'number', description: 'Hover scale multiplier (e.g. 1.05 = 5% larger, 0.95 = slightly smaller). Overrides the preset scale.' },
+        hoverOpacity: { type: 'number', description: 'Hover opacity 0–100. Overrides preset opacity.' },
+        hoverY: { type: 'number', description: 'Hover vertical offset in px (negative = up, e.g. -4).' },
+        hoverDuration: { type: 'number', description: 'Hover animation duration in ms. Default 200.' },
+        hoverEasing: {
+          type: 'string',
+          enum: ['easeOut', 'easeIn', 'easeInOut', 'linear', 'circIn', 'circOut', 'circInOut', 'backIn', 'backOut', 'backInOut'],
+          description: 'Easing for the hover animation. Default "easeOut".',
         },
         press: {
           type: 'string',
           enum: ['scale', 'bounce', 'none'],
-          description: 'Press/tap animation. "scale" = shrinks on tap (scale: 0.95), "bounce" = deeper shrink (scale: 0.9).',
+          description: 'Press/tap animation preset. "scale" = shrinks on tap (scale: 0.95), "bounce" = deeper shrink (scale: 0.9). For fine control use pressScale/pressX/pressY/pressOpacity/pressDuration/pressEasing.',
+        },
+        pressScale: { type: 'number', description: 'Press scale multiplier (e.g. 0.95). Overrides the preset scale.' },
+        pressOpacity: { type: 'number', description: 'Press opacity 0–100. Overrides preset opacity.' },
+        pressX: { type: 'number', description: 'Press horizontal offset in px.' },
+        pressY: { type: 'number', description: 'Press vertical offset in px.' },
+        pressDuration: { type: 'number', description: 'Press animation duration in ms. Default 100.' },
+        pressEasing: {
+          type: 'string',
+          enum: ['easeOut', 'easeIn', 'easeInOut', 'linear', 'circIn', 'circOut', 'circInOut', 'backIn', 'backOut', 'backInOut'],
+          description: 'Easing for the press animation. Default "easeOut".',
         },
         scroll: {
           type: 'string',
           enum: ['none', 'fadeIn', 'slideInUp', 'slideInDown', 'slideInLeft', 'slideInRight', 'riseFade', 'dropIn', 'zoomIn', 'expandIn', 'bounceIn', 'blurIn'],
           description: 'Scroll-triggered enter animation — fires when the element scrolls into the viewport.',
         },
+        scrollDuration: { type: 'number', description: 'Scroll animation duration in ms. Default 500.' },
+        scrollDelay: { type: 'number', description: 'Delay before the scroll animation starts (ms).' },
+        scrollThreshold: { type: 'number', description: 'Fraction of element visible (0–1) before animation triggers. Default 0.2 (20% visible). Use 0 to trigger as soon as the top edge enters viewport.' },
+        scrollOnce: { type: 'boolean', description: 'Play the scroll animation only once (default true). Set false to replay every time the element re-enters the viewport.' },
+        scrollEasing: {
+          type: 'string',
+          enum: ['easeOut', 'easeIn', 'easeInOut', 'linear', 'circIn', 'circOut', 'circInOut', 'backIn', 'backOut', 'backInOut'],
+          description: 'Easing for the scroll-triggered animation. Default "easeOut".',
+        },
         shimmer: {
           type: 'boolean',
           description: 'Add a shimmer/skeleton-loading highlight sweep effect. Use on placeholder cards or loading states.',
+        },
+        filterBlur: {
+          type: 'number',
+          description: 'Apply a blur filter to the element itself (px). E.g. 8 = soft blur. Works cross-platform (CSS filter on web, RN 0.76+ filter array on native). 0 removes it.',
+        },
+        filterBrightness: {
+          type: 'number',
+          description: 'Brightness filter multiplier. 1 = normal, 0 = black, 2 = double brightness, 0.5 = half brightness. Range 0–5.',
+        },
+        filterContrast: {
+          type: 'number',
+          description: 'Contrast filter multiplier. 1 = normal, 0 = flat grey, 2 = high contrast. Range 0–5.',
+        },
+        filterSaturate: {
+          type: 'number',
+          description: 'Saturation filter multiplier. 1 = normal, 0 = grayscale, 2 = vivid. Range 0–5.',
+        },
+        filterGrayscale: {
+          type: 'number',
+          description: 'Grayscale amount. 0 = full color, 1 = fully gray. Range 0–1.',
+        },
+        filterHueRotate: {
+          type: 'number',
+          description: 'Hue rotation in degrees (-360 to 360). Shifts all colors around the color wheel.',
+        },
+        backdropBlur: {
+          type: 'number',
+          description: 'Apply a backdrop blur (glassmorphism) behind the element (px). E.g. 12. Web only — no-op on native. Pair with a semi-transparent background (e.g. set_background {bg:"white/10"}). 0 removes it.',
+        },
+        gradientColors: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of ≥2 hex colors for an animated flowing gradient background. Automatically sets loop to "gradientDrift". E.g. ["#667eea","#764ba2","#f64f59"]. Web only.',
         },
         imperativeTrigger: {
           type: 'object',
@@ -954,11 +941,11 @@ Each step must have a unique "id" plus "type" and "config". Examples:
   },
   {
     name: 'set_validation',
-    description: 'Add form validation rules to an InputField inside a FormContainer.',
+    description: TOOL_DESCRIPTIONS['set_validation'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string', description: 'InputField node ID.' },
+        nodeId: { type: 'string', description: 'UUID of the InputField node — from generate_structure or add_component result. Never a display name.' },
         rules: {
           type: 'array',
           description: 'Validation rules. E.g. [{"type":"required","message":"Required"},{"type":"email","message":"Invalid email"}].',
@@ -970,11 +957,11 @@ Each step must have a unique "id" plus "type" and "config". Examples:
   },
   {
     name: 'rename_node',
-    description: 'Set the display name of a node — visible in the Layers panel on the left.',
+    description: TOOL_DESCRIPTIONS['rename_node'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         name: { type: 'string', description: 'Display name, e.g. "Hero Section", "Pricing Card", "Nav Bar".' },
       },
       required: ['nodeId', 'name'],
@@ -982,13 +969,14 @@ Each step must have a unique "id" plus "type" and "config". Examples:
   },
   {
     name: 'set_disabled',
-    description: 'Set the disabled state on a node (e.g. a Button or Input). Pass a boolean or a JS formula string for conditional disabling.',
+    description: TOOL_DESCRIPTIONS['set_disabled'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         disabled: {
-          description: 'true, false, or a JS formula string e.g. "variables[\'uuid\'] === \'loading\'".',
+          type: ['boolean', 'string'],
+          description: 'true/false to statically disable, or a JS formula string e.g. "variables[\'uuid\'] === \'loading\'" for conditional disabling.',
         },
       },
       required: ['nodeId', 'disabled'],
@@ -996,11 +984,11 @@ Each step must have a unique "id" plus "type" and "config". Examples:
   },
   {
     name: 'set_loading_state',
-    description: 'Set the visibility state tag on a node. Used to show different content based on loading/empty/default states.',
+    description: TOOL_DESCRIPTIONS['set_loading_state'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the target node — from generate_structure or add_component result. Never a display name.' },
         state: {
           type: 'string',
           enum: ['Loading', 'Empty', 'Default', 'Custom', 'None'],
@@ -1017,7 +1005,7 @@ Each step must have a unique "id" plus "type" and "config". Examples:
 const variableTools: BuilderTool[] = [
   {
     name: 'add_variable',
-    description: 'Create a new project variable. Variables are referenced as variables[\'UUID\'] in all tools — conditions, set_text, formulas, etc.\n\nBATCH TIP: Pre-assign a hex UUID for variableId so you can immediately use variables[\'UUID\'] in set_text, set_condition, and create_workflow variableName in the same batch — no round-trip needed.',
+    description: TOOL_DESCRIPTIONS['add_variable'],
     input_schema: {
       type: 'object',
       properties: {
@@ -1034,7 +1022,7 @@ const variableTools: BuilderTool[] = [
   },
   {
     name: 'update_variable',
-    description: 'Update an existing variable\'s display name, type, or initial value. Use get_variables() to find the variable ID first.',
+    description: TOOL_DESCRIPTIONS['update_variable'],
     input_schema: {
       type: 'object',
       properties: {
@@ -1048,7 +1036,7 @@ const variableTools: BuilderTool[] = [
   },
   {
     name: 'delete_variable',
-    description: 'Delete a variable from the project. Make sure no workflows or conditions reference it first.',
+    description: TOOL_DESCRIPTIONS['delete_variable'],
     input_schema: {
       type: 'object',
       properties: {
@@ -1064,7 +1052,7 @@ const variableTools: BuilderTool[] = [
 const dataTools: BuilderTool[] = [
   {
     name: 'add_data_source',
-    description: 'Add a new REST or GraphQL data source to the project. After adding, use the returned id in formulas as collections[\'id\'].data. When trigger is "mount", data auto-fetches on page load.',
+    description: TOOL_DESCRIPTIONS['add_data_source'],
     input_schema: {
       type: 'object',
       properties: {
@@ -1083,7 +1071,7 @@ const dataTools: BuilderTool[] = [
   },
   {
     name: 'delete_data_source',
-    description: 'Remove a data source from the project. Use get_data_sources() to find the source ID.',
+    description: TOOL_DESCRIPTIONS['delete_data_source'],
     input_schema: {
       type: 'object',
       properties: {
@@ -1099,13 +1087,13 @@ const dataTools: BuilderTool[] = [
 const themeTools: BuilderTool[] = [
   {
     name: 'set_theme_color',
-    description: 'Update a theme CSS variable. All components using that variable update automatically.',
+    description: TOOL_DESCRIPTIONS['set_theme_color'],
     input_schema: {
       type: 'object',
       properties: {
         variable: {
           type: 'string',
-          description: 'CSS var name without --. E.g. "theme-primary", "theme-background", "theme-card", "font-heading".',
+          description: 'Theme token name. Color tokens: "primary", "primary-foreground", "background", "foreground", "card", "card-foreground", "muted", "muted-foreground", "secondary", "secondary-foreground", "accent", "accent-foreground", "destructive", "destructive-foreground", "border", "input", "ring", "popover", "popover-foreground". Font tokens: "font-heading", "font-body". Passed as-is to the theme store — do NOT prefix with "theme-".',
         },
         value: { type: 'string', description: 'New value, e.g. "#6366f1" or "Inter".' },
         mode: { type: 'string', enum: ['light', 'dark'], description: 'Which color mode. Default "light".' },
@@ -1120,7 +1108,7 @@ const themeTools: BuilderTool[] = [
 const pageTools: BuilderTool[] = [
   {
     name: 'add_page',
-    description: 'Add a new page to the project. The result contains the pageId — use it immediately in switch_page.',
+    description: TOOL_DESCRIPTIONS['add_page'],
     input_schema: {
       type: 'object',
       properties: {
@@ -1132,18 +1120,18 @@ const pageTools: BuilderTool[] = [
   },
   {
     name: 'switch_page',
-    description: 'Switch the builder canvas to a different page.',
+    description: TOOL_DESCRIPTIONS['switch_page'],
     input_schema: {
       type: 'object',
       properties: {
-        pageId: { type: 'string', description: 'Page ID to switch to.' },
+        pageId: { type: 'string', description: 'Page ID from the pages list (e.g. "440c9f08-8a0c-4a98-b4e1-75251aa14167" or "page-ec5c6347"). NEVER pass a node UUID — node UUIDs from generate_structure are NOT page IDs.' },
       },
       required: ['pageId'],
     },
   },
   {
     name: 'rename_page',
-    description: 'Rename a page.',
+    description: TOOL_DESCRIPTIONS['rename_page'],
     input_schema: {
       type: 'object',
       properties: {
@@ -1155,7 +1143,7 @@ const pageTools: BuilderTool[] = [
   },
   {
     name: 'remove_page',
-    description: 'Delete a page.',
+    description: TOOL_DESCRIPTIONS['remove_page'],
     input_schema: {
       type: 'object',
       properties: {
@@ -1166,7 +1154,7 @@ const pageTools: BuilderTool[] = [
   },
   {
     name: 'set_page_config',
-    description: 'Set SEO metadata (title, description, OG image) and/or on-mount workflow for the currently active page.',
+    description: TOOL_DESCRIPTIONS['set_page_config'],
     input_schema: {
       type: 'object',
       properties: {
@@ -1184,18 +1172,18 @@ const pageTools: BuilderTool[] = [
 const canvasTools: BuilderTool[] = [
   {
     name: 'select_node',
-    description: 'Select a node on the canvas to show the user what was just changed or created.',
+    description: TOOL_DESCRIPTIONS['select_node'],
     input_schema: {
       type: 'object',
       properties: {
-        nodeId: { type: 'string' },
+        nodeId: { type: 'string', description: 'UUID of the node to select.' },
       },
       required: ['nodeId'],
     },
   },
   {
     name: 'undo',
-    description: 'Undo the last action.',
+    description: TOOL_DESCRIPTIONS['undo'],
     input_schema: { type: 'object', properties: {} },
   },
 ];
@@ -1205,7 +1193,7 @@ const canvasTools: BuilderTool[] = [
 const assetTools: BuilderTool[] = [
   {
     name: 'search_images',
-    description: 'Search for stock photos from Unsplash. Returns a list of image URLs. Use the URL with add_image or set_src.',
+    description: TOOL_DESCRIPTIONS['search_images'],
     input_schema: {
       type: 'object',
       properties: {
@@ -1217,7 +1205,7 @@ const assetTools: BuilderTool[] = [
   },
   {
     name: 'search_videos',
-    description: 'Search for stock videos from the project asset library. Returns direct video file URLs. Always use this before add_video — never hardcode a video URL.',
+    description: TOOL_DESCRIPTIONS['search_videos'],
     input_schema: {
       type: 'object',
       properties: {
@@ -1229,7 +1217,7 @@ const assetTools: BuilderTool[] = [
   },
   {
     name: 'search_icons',
-    description: 'Search for icons from Iconify. Returns icon names like "lucide:coffee". Use with add_icon or set_icon.',
+    description: TOOL_DESCRIPTIONS['search_icons'],
     input_schema: {
       type: 'object',
       properties: {
@@ -1247,27 +1235,27 @@ const assetTools: BuilderTool[] = [
 const batchTools: BuilderTool[] = [
   {
     name: 'generate_structure',
-    description: `Build a complete UI section by describing the full nested tree in ONE call.
-Use for any new content with more than 1-2 components. Server assigns real UUIDs and returns a name→nodeId map.
-Use the returned node IDs for set_repeat, add_variable, create_workflow, set_text in subsequent calls.
-
-Each tree node shape: { label, name?, text?, src?, children?: [...] }
-  label    = palette component name, exactly as listed in the Component Structure Reference.
-             Examples: "Box", "Row", "Card", "Heading", "Text", "Btn Solid", "Btn Outline", "Image", "Icon".
-             NEVER use React/Gluestack component names like "Button", "ButtonText", "View" — they are not palette labels.
-  name     = layers panel label — also the key in the returned "nodes" map; use it to reference the node ID
-  text     = text content (shortcut for set_text after creation)
-  src      = image or video URL
-  children = nested child nodes
-
-Components are created with their default styles. Use the returned node IDs with set_spacing, set_layout,
-set_background, set_border, etc. in the next turn to apply custom styling.`,
+    description: TOOL_DESCRIPTIONS['generate_structure'],
     input_schema: {
       type: 'object',
       properties: {
         tree: {
           type: 'object',
-          description: 'Root node of the section tree. Describe the full nested structure.',
+          description: 'Root node of the section tree. Each node: { label, name?, text?, direction?: "row"|"column", icon?, searchQuery?, repeat?, keyField?, condition?, children? }. direction:"row" = horizontal layout. icon = Iconify name for Icon nodes (e.g. "lucide:check") or formula. searchQuery = Image/Video search. repeat = state path to array (e.g. "variables[\'UUID\']") — node is cloned per item. keyField = React key field (default "id"). condition = visibility formula (e.g. "context?.item?.data?.featured"). Switch/Switch On sibling pairs are auto-wired with boolean variable conditions.',
+        },
+        variables: {
+          type: 'array',
+          description: 'Variables this section needs. Pre-assign uuid as valid hex UUID (8-4-4-4-12). Include complete initialValue with realistic demo data.',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string', description: 'Display name, e.g. "Pricing Plans", "Is Featured".' },
+              type: { type: 'string', enum: ['string', 'number', 'boolean', 'object', 'array'], description: 'Variable type.' },
+              initialValue: { description: 'Initial value with realistic demo data. Arrays: 3-6 items with ALL display fields. Booleans: false. Strings: first option value.' },
+              uuid: { type: 'string', description: 'Pre-assigned hex UUID (8-4-4-4-12 format, hex chars only). Use this SAME UUID in repeat fields as variables[\'UUID\'].' },
+            },
+            required: ['name', 'type', 'uuid'],
+          },
         },
         parentId: {
           type: 'string',
@@ -1288,12 +1276,7 @@ set_background, set_border, etc. in the next turn to apply custom styling.`,
 const bulkTools: BuilderTool[] = [
   {
     name: 'bulk_apply',
-    description: `Apply the same style operation to multiple nodes at once.
-Use after search_nodes returns several IDs that all need the same change (e.g. "all sections", "all buttons").
-Pattern: search_nodes → bulk_apply(nodeIds, tool, params).
-Never manually loop with N separate setter calls — use this instead.
-
-Supported tools: set_spacing, set_border, set_background, set_typography, set_opacity, set_size, set_position, set_layout, set_icon, set_text_color, set_animation.`,
+    description: TOOL_DESCRIPTIONS['bulk_apply'],
     input_schema: {
       type: 'object',
       properties: {
@@ -1319,7 +1302,7 @@ Supported tools: set_spacing, set_border, set_background, set_typography, set_op
 
 // ─── All Tools (in priority order) ───────────────────────────────────────────
 
-/** Tools for the builder chat AI — excludes generationTools (raw JSON pipeline removed) */
+/** Tools for the builder chat AI */
 export const ALL_BUILDER_TOOLS: BuilderTool[] = [
   // Context first — AI reads before acting
   ...readTools,
@@ -1350,27 +1333,99 @@ export const ALL_BUILDER_TOOLS: BuilderTool[] = [
   ...assetTools,
 ];
 
-export const TOOL_NAMES = ALL_BUILDER_TOOLS.map(t => t.name);
-
-export function getBuilderTool(name: string): BuilderTool | undefined {
-  return ALL_BUILDER_TOOLS.find(t => t.name === name);
-}
-
-/** Filtered tool list for Phase 3 (post-build styling only).
- *  Structural tools are intentionally excluded so the constraint is architectural,
- *  not just instructional. Phase 3 only needs to apply visual styles on nodes whose
- *  IDs it already has from the generate_structure results. */
+/** Phase 3 styling-only tools.
+ *  Excluded (run in parallel phases or handled server-side):
+ *  - create_workflow / bind_action → Phase W (parallel)
+ *  - set_repeat → Phase 2b (wiring already done)
+ *  - search_icons / search_images / search_videos / set_src → media phase (server-side)
+ *  - set_submit → behavior/form wiring (not styling)
+ *  - set_input_props → input config/structure (not styling)
+ *  - set_icon icon param → icon name set by tree manifest; Phase 3 only adjusts size/color. */
 export const PHASE3_BUILDER_TOOLS: BuilderTool[] = [
-  // Page switching (needed when build units span multiple pages)
   ...pageTools.filter(t => t.name === 'switch_page'),
-  // All semantic design tools (set_background, set_text_color, set_typography, etc.)
-  ...semanticDesignTools,
-  // Layout (set_layout)
+  // Exclude set_submit (form behavior) and set_input_props (input structure) from styling phase
+  ...semanticDesignTools
+    .filter(t => !['set_submit', 'set_input_props'].includes(t.name)),
   ...layoutTools,
-  // Logic tools needed for styling + wiring: set_condition, set_animation, create_workflow, bind_action
-  ...logicTools.filter(t => ['set_condition', 'set_animation', 'create_workflow', 'bind_action'].includes(t.name)),
-  // Text/icon content tools needed in Phase 3
-  ...textTools.filter(t => ['set_text', 'set_icon', 'set_placeholder'].includes(t.name)),
-  // Bulk operations
+  ...logicTools.filter(t => ['set_condition', 'set_animation'].includes(t.name)),
+  // set_icon for Phase 3: size and color only (icon name stripped — set by tree manifest)
+  ...textTools.filter(t => t.name === 'set_icon').map(t => {
+    const { icon: _icon, ...propsWithoutIcon } =
+      (t.input_schema as { properties: Record<string, unknown> }).properties;
+    void _icon;
+    return {
+      ...t,
+      description: 'Adjust icon size and color. Icon name is already set by the tree manifest — do NOT pass the icon param.',
+      input_schema: { ...t.input_schema, properties: propsWithoutIcon },
+    };
+  }),
+  ...textTools.filter(t => ['set_text', 'set_placeholder'].includes(t.name)),
   ...bulkTools,
 ];
+
+/** Phase W (workflow) tools — runs in parallel with Phase 3 after structure is built. */
+export const PHASE_W_TOOLS: BuilderTool[] = [
+  ...pageTools.filter(t => t.name === 'switch_page'),
+  ...readTools.filter(t => ['get_variables', 'get_workflows'].includes(t.name)),
+  ...logicTools.filter(t => ['create_workflow', 'bind_action'].includes(t.name)),
+  // add_variable needed when Phase W creates boolean/string state variables for toggles, tabs, etc.
+  ...variableTools.filter(t => t.name === 'add_variable'),
+];
+
+// ─── Parallel Agent Tool Collections ─────────────────────────────────────────
+
+const stripIconName = (t: BuilderTool): BuilderTool => {
+  const { icon: _icon, ...propsWithoutIcon } =
+    (t.input_schema as { properties: Record<string, unknown> }).properties;
+  void _icon;
+  return {
+    ...t,
+    description: 'Adjust icon size and color. Icon name is set by the media agent — do NOT pass the icon param.',
+    input_schema: { ...t.input_schema, properties: propsWithoutIcon },
+  };
+};
+
+const stripIconColorSize = (t: BuilderTool): BuilderTool => {
+  const { color: _color, size: _size, ...propsWithoutColorSize } =
+    (t.input_schema as { properties: Record<string, unknown> }).properties;
+  void _color; void _size;
+  return {
+    ...t,
+    description: 'Set icon name (static or formula). Color/size are set by the Colors agent.',
+    input_schema: { ...t.input_schema, properties: propsWithoutColorSize },
+  };
+};
+
+/** Structure Agent — builds tree shape + declares variables in one call. */
+export const STRUCTURE_AGENT_TOOLS: BuilderTool[] = [
+  ...batchTools, // generate_structure (includes variables array)
+];
+
+/** Binding Agent — connects data to UI nodes (text, repeat, condition, disabled, icon name). */
+export const BINDING_AGENT_TOOLS: BuilderTool[] = [
+  ...textTools.filter(t => ['set_text'].includes(t.name)),
+  ...logicTools.filter(t => ['set_condition', 'set_repeat', 'set_disabled'].includes(t.name)),
+  ...textTools.filter(t => t.name === 'set_icon').map(stripIconColorSize),
+];
+
+// ─── Styling Sub-Agent Tool Collections (3-way parallel split) ───────────────
+
+/** Layout Sub-Agent — spacing, sizing, layout, position, overflow. */
+export const LAYOUT_AGENT_TOOLS: BuilderTool[] = [
+  ...semanticDesignTools.filter(t => ['set_spacing', 'set_size', 'set_position', 'set_overflow'].includes(t.name)),
+  ...layoutTools, // set_layout
+];
+
+/** Colors Sub-Agent — backgrounds, text color, borders, shadows, opacity, icon color/size. */
+export const COLORS_AGENT_TOOLS: BuilderTool[] = [
+  ...semanticDesignTools.filter(t => ['set_background', 'set_text_color', 'set_border', 'set_shadow', 'set_opacity'].includes(t.name)),
+  ...textTools.filter(t => t.name === 'set_icon').map(stripIconName),
+];
+
+/** Typography + Animation Sub-Agent — typography, animation, transform, bulk_apply. */
+export const TYPO_ANIM_AGENT_TOOLS: BuilderTool[] = [
+  ...semanticDesignTools.filter(t => ['set_typography', 'set_transform'].includes(t.name)),
+  ...logicTools.filter(t => t.name === 'set_animation'),
+  ...bulkTools,
+];
+
