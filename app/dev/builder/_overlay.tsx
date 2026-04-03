@@ -266,6 +266,34 @@ function SelectionBox({ rect, nodeId, onResizeStart, zoom, ringRef }: {
   ringRef?: React.Ref<HTMLDivElement>;
 }) {
   const handles: ResizeHandle[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+
+  // Detect formula-bound dimensions — show not-allowed cursor on locked-axis handles.
+  // Use two separate primitive selectors so Zustand's reference-equality check never
+  // sees a new object on every call (which would cause an infinite re-render loop).
+  function _findNode(nodes: SDUINode[], id: string): SDUINode | null {
+    for (const n of nodes) {
+      if (n.id === id) return n;
+      if (n.children?.length) { const f = _findNode(n.children as SDUINode[], id); if (f) return f; }
+    }
+    return null;
+  }
+  const formulaW = useBuilderStore(s => {
+    const style = (_findNode(s.pageNodes, nodeId)?.props as { style?: Record<string, unknown> })?.style ?? {};
+    return style.width !== null && style.width !== undefined && typeof style.width === 'object';
+  });
+  const formulaH = useBuilderStore(s => {
+    const style = (_findNode(s.pageNodes, nodeId)?.props as { style?: Record<string, unknown> })?.style ?? {};
+    return style.height !== null && style.height !== undefined && typeof style.height === 'object';
+  });
+
+  const xLocked = formulaW ?? false;
+  const yLocked = formulaH ?? false;
+  const handleCursor = (h: ResizeHandle): string => {
+    const affectsX = h.includes('e') || h.includes('w');
+    const affectsY = h.includes('n') || h.includes('s');
+    if ((affectsX && xLocked) || (affectsY && yLocked)) return 'not-allowed';
+    return HANDLE_STYLE[h].cursor as string;
+  };
   const w = Math.round(rect.w / zoom);
   const h = Math.round(rect.h / zoom);
 
@@ -294,7 +322,7 @@ function SelectionBox({ rect, nodeId, onResizeStart, zoom, ringRef }: {
           key={handle}
           data-testid="resize-handle"
           data-handle={handle}
-          style={{ position: 'absolute', width: 10, height: 10, background: '#fff', border: '2px solid #3b82f6', borderRadius: 2, pointerEvents: 'all', zIndex: 10, boxSizing: 'border-box', ...HANDLE_STYLE[handle] }}
+          style={{ position: 'absolute', width: 10, height: 10, background: '#fff', border: '2px solid #3b82f6', borderRadius: 2, pointerEvents: 'all', zIndex: 10, boxSizing: 'border-box', ...HANDLE_STYLE[handle], cursor: handleCursor(handle) }}
           onPointerDown={e => { e.stopPropagation(); onResizeStart(nodeId, handle, e); }}
         />
       ))}

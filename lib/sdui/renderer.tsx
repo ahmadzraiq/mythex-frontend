@@ -67,6 +67,31 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
     else if (clean === 'inset-0')   { style.top = style.right = style.bottom = style.left = '0px'; }
     else if (clean === 'inset-x-0') { style.left = style.right = '0px'; }
     else if (clean === 'inset-y-0') { style.top  = style.bottom = '0px'; }
+    // pointer-events
+    else if (clean === 'pointer-events-none') { (style as Record<string, string>).pointerEvents = 'none'; }
+    else if (clean === 'pointer-events-auto') { (style as Record<string, string>).pointerEvents = 'auto'; }
+    // word-break
+    else if (clean === 'break-all')    { (style as Record<string, string>).wordBreak = 'break-all'; }
+    else if (clean === 'break-words')  { (style as Record<string, string>).wordBreak = 'break-word'; }
+    else if (clean === 'break-normal') { (style as Record<string, string>).wordBreak = 'normal'; }
+    // white-space
+    else if (clean === 'whitespace-nowrap')   { (style as Record<string, string>).whiteSpace = 'nowrap'; }
+    else if (clean === 'whitespace-pre')      { (style as Record<string, string>).whiteSpace = 'pre'; }
+    else if (clean === 'whitespace-pre-wrap') { (style as Record<string, string>).whiteSpace = 'pre-wrap'; }
+    else if (clean === 'whitespace-normal')   { (style as Record<string, string>).whiteSpace = 'normal'; }
+    // text-overflow
+    else if (clean === 'truncate') {
+      (style as Record<string, string>).overflow = 'hidden';
+      (style as Record<string, string>).textOverflow = 'ellipsis';
+      (style as Record<string, string>).whiteSpace = 'nowrap';
+    }
+    else if (clean === 'text-ellipsis') { (style as Record<string, string>).textOverflow = 'ellipsis'; }
+    else if (clean === 'text-clip')     { (style as Record<string, string>).textOverflow = 'clip'; }
+    // flex-grow / flex-shrink bare keywords
+    else if (clean === 'grow')     { (style as Record<string, string>).flexGrow = '1'; }
+    else if (clean === 'grow-0')   { (style as Record<string, string>).flexGrow = '0'; }
+    else if (clean === 'shrink')   { (style as Record<string, string>).flexShrink = '1'; }
+    else if (clean === 'shrink-0') { (style as Record<string, string>).flexShrink = '0'; }
   }
 
   for (const token of className.split(/\s+/)) {
@@ -83,12 +108,50 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
 
     switch (prefix) {
       // ── Numeric layout ────────────────────────────────────────────────────────
-      case 'w':       if (isNumeric) { style.width        = value; } break;
-      case 'h':       if (isNumeric) { style.height       = value; } break;
-      case 'min-w':   if (isNumeric) { style.minWidth     = value; } break;
-      case 'max-w':   if (isNumeric) { style.maxWidth     = value; } break;
-      case 'min-h':   if (isNumeric) { style.minHeight    = value; } break;
-      case 'max-h':   if (isNumeric) { style.maxHeight    = value; } break;
+      // For vw/vh values, use CSS custom properties --builder-vw/--builder-vh
+      // so the builder preview uses the canvas frame dimensions instead of the
+      // browser window viewport. The fallback (1vw / 1vh) makes it correct in
+      // the deployed app where no custom property is set.
+      case 'w':
+        if (isNumeric) {
+          const n = parseFloat(value);
+          style.width = value.endsWith('vw')
+            ? `calc(${n} * var(--builder-vw, 1vw))`
+            : value;
+        }
+        break;
+      case 'h':
+        if (isNumeric) {
+          const n = parseFloat(value);
+          style.height = value.endsWith('vh')
+            ? `calc(${n} * var(--builder-vh, 1vh))`
+            : value;
+        }
+        break;
+      case 'min-w':
+        if (isNumeric) {
+          const n = parseFloat(value);
+          style.minWidth = value.endsWith('vw') ? `calc(${n} * var(--builder-vw, 1vw))` : value;
+        }
+        break;
+      case 'max-w':
+        if (isNumeric) {
+          const n = parseFloat(value);
+          style.maxWidth = value.endsWith('vw') ? `calc(${n} * var(--builder-vw, 1vw))` : value;
+        }
+        break;
+      case 'min-h':
+        if (isNumeric) {
+          const n = parseFloat(value);
+          style.minHeight = value.endsWith('vh') ? `calc(${n} * var(--builder-vh, 1vh))` : value;
+        }
+        break;
+      case 'max-h':
+        if (isNumeric) {
+          const n = parseFloat(value);
+          style.maxHeight = value.endsWith('vh') ? `calc(${n} * var(--builder-vh, 1vh))` : value;
+        }
+        break;
       case 'p':       if (isNumeric) { style.paddingTop = style.paddingRight = style.paddingBottom = style.paddingLeft = value; } break;
       case 'pt':      if (isNumeric) { style.paddingTop    = value; } break;
       case 'pr':      if (isNumeric) { style.paddingRight  = value; } break;
@@ -140,6 +203,53 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
       case 'border':
         if (isHexColor || isCssFn) style.borderColor = value;
         else if (isNumeric) style.borderWidth = value;
+        break;
+      // ── Per-side border ───────────────────────────────────────────────────────
+      case 'border-t':
+        if (isHexColor || isCssFn) style.borderTopColor = value;
+        else if (isNumeric) style.borderTopWidth = value;
+        break;
+      case 'border-r':
+        if (isHexColor || isCssFn) style.borderRightColor = value;
+        else if (isNumeric) style.borderRightWidth = value;
+        break;
+      case 'border-b':
+        if (isHexColor || isCssFn) style.borderBottomColor = value;
+        else if (isNumeric) style.borderBottomWidth = value;
+        break;
+      case 'border-l':
+        if (isHexColor || isCssFn) style.borderLeftColor = value;
+        else if (isNumeric) style.borderLeftWidth = value;
+        break;
+      // ── A4: Additional CSS properties ─────────────────────────────────────────
+      // aspect-ratio: aspect-[16/9] or aspect-[1]
+      case 'aspect':
+        if (value) style.aspectRatio = value;
+        break;
+      // flex-grow: grow-[2]
+      case 'grow':
+        if (isNumeric) (style as Record<string, string>).flexGrow = value;
+        break;
+      // flex-shrink: shrink-[2]
+      case 'shrink':
+        if (isNumeric) (style as Record<string, string>).flexShrink = value;
+        break;
+      // flex-basis: basis-[200px]
+      case 'basis':
+        if (isNumeric) (style as Record<string, string>).flexBasis = value;
+        break;
+      // line-clamp: line-clamp-[3]
+      case 'line-clamp':
+        if (isNumeric) {
+          (style as Record<string, string>).WebkitLineClamp = value;
+          (style as Record<string, string>).WebkitBoxOrient = 'vertical';
+          (style as Record<string, string>).display = '-webkit-box';
+          (style as Record<string, string>).overflow = 'hidden';
+        }
+        break;
+      // text-decoration-color: decoration-[#hex]
+      case 'decoration':
+        if (isHexColor || isCssFn) (style as Record<string, string>).textDecorationColor = value;
         break;
     }
   }

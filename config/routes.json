@@ -148,6 +148,24 @@
       "config": "pricingCardTest",
       "auth": false,
       "layout": "full"
+    },
+    {
+      "path": "/styling-test",
+      "config": "stylingTest",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/controls-showcase",
+      "config": "controlsShowcase",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/expr-css-test",
+      "config": "exprCssTest",
+      "auth": false,
+      "layout": "full"
     }
   ]
 }

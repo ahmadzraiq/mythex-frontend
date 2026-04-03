@@ -360,6 +360,9 @@ export const FUNCTION_LIBRARY: Record<string, FnDef[]> = {
     { name: 'isUrl', signature: 'isUrl(value)', description: 'Returns true if value is a valid URL.', returnType: 'boolean', insert: 'isUrl(' },
     { name: 'matchesPattern', signature: 'matchesPattern(value, pattern)', description: 'Returns true if value matches the given regular expression pattern.', returnType: 'boolean', insert: 'matchesPattern(' },
   ],
+  CSS: [
+    { name: 'calc', signature: 'calc(expression)', description: 'CSS calc() — mix units freely, e.g. calc(100% - 24px) or calc(50% + 8px - 2rem). Combine with variables: "calc(" + variables[\'UUID\'] + "px - 24px)". Web only — not supported in React Native.', returnType: 'string', insert: 'calc(' },
+  ],
 };
 
 export const OPERATORS: Array<{ label: string; insert: string; description: string; category: 'comparison' | 'logical' | 'math' | 'punct' }> = [

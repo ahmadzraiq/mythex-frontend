@@ -271,12 +271,27 @@ export function parseRoundedNamedTokenPx(className: string, prefix: string): num
 /**
  * Extract the numeric px value from an arbitrary-value Tailwind token.
  * e.g. parseTwArbitrary("flex w-[320px] h-[180px]", "w-") → 320
- * Returns null if the token is not present or is not an arbitrary pixel value.
+ * Also handles % values: parseTwArbitrary("w-[50%]", "w-") → 50
+ * Returns null if the token is not present or is not an arbitrary value.
  */
 export function parseTwArbitrary(className: string, prefix: string): number | null {
   const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = className.match(new RegExp(`\\b${escaped}\\[(\\d+(?:\\.\\d+)?)px\\]`));
+  // Match px, %, vh, and vw units
+  const match = className.match(new RegExp(`\\b${escaped}\\[(\\d+(?:\\.\\d+)?)(px|%|vh|vw)\\]`));
   return match ? parseFloat(match[1]) : null;
+}
+
+/**
+ * Extract the numeric value and unit from an arbitrary-value Tailwind token.
+ * e.g. parseTwArbitraryWithUnit("w-[50%]", "w-") → {value: 50, unit: '%'}
+ * e.g. parseTwArbitraryWithUnit("w-[320px]", "w-") → {value: 320, unit: 'px'}
+ * Returns null if not found.
+ */
+export function parseTwArbitraryWithUnit(className: string, prefix: string): { value: number; unit: string } | null {
+  const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = className.match(new RegExp(`\\b${escaped}\\[(\\d+(?:\\.\\d+)?)(px|%|vh|vw)\\]`));
+  if (match) return { value: parseFloat(match[1]), unit: match[2] };
+  return null;
 }
 
 /**
@@ -335,12 +350,12 @@ export function styleToClassName(
     cls = `${cls} bg-[${style.backgroundColor}]`.trim();
   }
   if (style.color) {
-    // Only replace arbitrary hex text colors; leave semantic text-* tokens alone
-    cls = cls.replace(/\btext-\[#[0-9a-fA-F]{3,8}\]/g, '').replace(/\s+/g, ' ').trim();
+    // Remove existing arbitrary color tokens (hex or color functions like rgba/rgb)
+    cls = cls.replace(/\btext-\[(?:#[0-9a-fA-F]{3,8}|rgba?\([^\]]*\))\]/g, '').replace(/\s+/g, ' ').trim();
     cls = `${cls} text-[${style.color}]`.trim();
   }
   if (style.borderColor) {
-    cls = cls.replace(/\bborder-\[#[0-9a-fA-F]{3,8}\]/g, '').replace(/\s+/g, ' ').trim();
+    cls = cls.replace(/\bborder-\[(?:#[0-9a-fA-F]{3,8}|rgba?\([^\]]*\))\]/g, '').replace(/\s+/g, ' ').trim();
     cls = `${cls} border-[${style.borderColor}]`.trim();
   }
 

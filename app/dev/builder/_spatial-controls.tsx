@@ -14,7 +14,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { isBoundValue, type FormulaValue } from './_formula-panel';
+import { isBoundValue, type FormulaValue, BindingIcon } from './_formula-panel';
 import { FormulaEditor } from './_formula-editor';
 
 // Suppress browser number spinner arrows via a globally-injected style block.
@@ -78,19 +78,19 @@ function ChainIcon({ bound }: { bound: boolean }) {
 // ─── PanelInput ───────────────────────────────────────────────────────────────
 
 export function PanelInput({
-  value, onChange, testId, min = -9999, max = 9999, step = 1, width = 44, bound = false,
+  value, onChange, testId, min = -9999, max = 9999, step = 1, width = 44, bound = false, noBorder = false,
 }: {
-  value: number; onChange: (v: number) => void;
-  testId?: string; min?: number; max?: number; step?: number; width?: number;
-  bound?: boolean;
+  value: number | null; onChange: (v: number) => void;
+  testId?: string; min?: number; max?: number; step?: number; width?: number | undefined;
+  bound?: boolean; noBorder?: boolean;
 }) {
-  const [local, setLocal] = useState(String(value));
-  const liveRef = useRef(Number(value));
+  const [local, setLocal] = useState(value === null ? '' : String(value));
+  const liveRef = useRef(value ?? 0);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const delayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const itvRef  = useRef<ReturnType<typeof setInterval>  | null>(null);
 
-  useEffect(() => { liveRef.current = Number(value); setLocal(String(value)); }, [value]);
+  useEffect(() => { liveRef.current = value ?? 0; setLocal(value === null ? '' : String(value)); }, [value]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => () => { clear(); }, []);
 
@@ -139,15 +139,16 @@ export function PanelInput({
         setLocal(String(live));
       }}
       style={{
-        width,
-        background: '#1f2937',
-        border: `1px solid ${bound ? '#6366f1' : '#374151'}`,
-        borderRadius: 4,
+        width: width ?? '100%',
+        background: noBorder ? 'transparent' : '#1f2937',
+        border: noBorder ? 'none' : `1px solid ${bound ? '#6366f1' : '#374151'}`,
+        borderRadius: noBorder ? 0 : 4,
         color: bound ? '#a5b4fc' : '#f3f4f6',
         fontSize: 11,
         padding: '3px 4px',
         textAlign: 'center',
         boxSizing: 'border-box',
+        outline: 'none',
       } as React.CSSProperties}
     />
   );
@@ -244,17 +245,20 @@ export function SpacingDiagram({
   const [linked, setLinked] = useState(
     values.top === values.right && values.right === values.bottom && values.bottom === values.left
   );
+  const [editorOpen, setEditorOpen] = useState(false);
+
+  const sides: SpacingSide[] = ['top', 'right', 'bottom', 'left'];
+  const anyBound = !!onFormulaChange && sides.some(s => formulaValues?.[s] !== undefined && isBoundValue(formulaValues[s]!));
 
   const handleChange = (side: SpacingSide, v: number) => {
     if (linked) {
       if (onChangeAll) { onChangeAll(v); return; }
-      (['top', 'right', 'bottom', 'left'] as SpacingSide[]).forEach(s => onChange(s, v));
+      sides.forEach(s => onChange(s, v));
     } else {
       onChange(side, v);
     }
   };
 
-  const sides: SpacingSide[] = ['top', 'right', 'bottom', 'left'];
   const icons: Record<SpacingSide, React.ReactNode> = {
     top: <ArrowUp />, right: <ArrowRight />, bottom: <ArrowDown />, left: <ArrowLeft />,
   };
@@ -267,11 +271,6 @@ export function SpacingDiagram({
       icon={icons[side]}
       isHoriz={isHoriz}
       onChange={v => handleChange(side, v)}
-      formulaValue={formulaValues?.[side]}
-      onFormulaChange={onFormulaChange ? (v) => {
-        if (linked) sides.forEach(s => onFormulaChange(s, v));
-        else onFormulaChange(side, v);
-      } : undefined}
       fieldLabel={label}
       testId={testIdPrefix ? `input-${testIdPrefix}-${side}` : undefined}
     />
@@ -279,9 +278,31 @@ export function SpacingDiagram({
 
   return (
     <div>
-      <span style={{ fontSize: 9, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 6 }}>
-        {label}
-      </span>
+      {/* Header row: label + bind button */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <span style={{ fontSize: 9, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+          {label}
+        </span>
+        {onFormulaChange && (
+          <div style={{ position: 'relative' }}>
+            <BindingIcon isBound={anyBound} onClick={() => setEditorOpen(o => !o)} />
+            {editorOpen && (
+              <FormulaEditor
+                label={label}
+                value={anyBound ? (formulaValues?.top ?? values.top) : values.top}
+                onChange={v => {
+                  sides.forEach(s => onFormulaChange(s, v));
+                  setEditorOpen(false);
+                }}
+                onClose={() => setEditorOpen(false)}
+                anchor="right"
+              />
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Compass layout */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'auto 1fr auto',
@@ -290,11 +311,9 @@ export function SpacingDiagram({
         alignItems: 'center',
         justifyItems: 'center',
       }}>
-        {/* Row 1 — top */}
         <div />
         {cell('top', false)}
         <div />
-        {/* Row 2 — left / center / right */}
         {cell('left', true)}
         <div style={{
           width: '100%', minHeight: 28,
@@ -306,7 +325,6 @@ export function SpacingDiagram({
           </span>
         </div>
         {cell('right', true)}
-        {/* Row 3 — bottom */}
         <div />
         {cell('bottom', false)}
         <div />
@@ -346,6 +364,33 @@ const CORNER_SVG_D: Record<CornerKey, string> = {
 };
 const CORNER_ORDER: CornerKey[] = ['tl', 'tr', 'bl', 'br'];
 
+function CornerCell({
+  corner, value, onChange, bound,
+}: {
+  corner: CornerKey; value: number;
+  onChange: (v: number) => void;
+  bound?: boolean;
+}) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 4,
+      background: '#1f2937', border: `1px solid ${bound ? '#6366f1' : '#374151'}`, borderRadius: 4, padding: '3px 6px',
+    }}>
+      <svg width={10} height={10} viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
+        <path d={CORNER_SVG_D[corner]} stroke="#4b5563" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+      </svg>
+      <PanelInput
+        value={value}
+        onChange={onChange}
+        testId={`input-corner-${corner}`}
+        width={36}
+        bound={!!bound}
+        noBorder
+      />
+    </div>
+  );
+}
+
 export function CornerRadiusDiagram({
   values, onChange, onChangeAll,
 }: {
@@ -357,9 +402,11 @@ export function CornerRadiusDiagram({
     values.tl === values.tr && values.tr === values.br && values.br === values.bl
   );
 
+  const corners: CornerKey[] = ['tl', 'tr', 'br', 'bl'];
+
   const handleChange = (corner: CornerKey, v: number) => {
     if (linked && onChangeAll) { onChangeAll(v); return; }
-    if (linked) { (['tl', 'tr', 'br', 'bl'] as CornerKey[]).forEach(c => onChange(c, v)); return; }
+    if (linked) { corners.forEach(c => onChange(c, v)); return; }
     onChange(corner, v);
   };
 
@@ -367,34 +414,12 @@ export function CornerRadiusDiagram({
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
         {CORNER_ORDER.map(corner => (
-          <div key={corner} style={{
-            display: 'flex', alignItems: 'center', gap: 4,
-            background: '#1f2937', border: '1px solid #374151', borderRadius: 4, padding: '4px 7px',
-          }}>
-            <svg width={10} height={10} viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
-              <path d={CORNER_SVG_D[corner]} stroke="#4b5563" strokeWidth="1.8" strokeLinecap="round" fill="none" />
-            </svg>
-            <input
-              className="spatial-input"
-              data-testid={`input-corner-${corner}`}
-              type="number" min={0} max={999} step={1}
-              defaultValue={values[corner]}
-              key={`${corner}-${values[corner]}`}
-              onChange={e => {
-                const n = Number(e.target.value);
-                if (!Number.isNaN(n)) handleChange(corner, n);
-              }}
-              onBlur={e => {
-                const n = Number(e.currentTarget.value);
-                if (!Number.isNaN(n)) handleChange(corner, n);
-              }}
-              style={{
-                flex: 1, minWidth: 0,
-                background: 'transparent', border: 'none', outline: 'none',
-                color: '#f3f4f6', fontSize: 11, padding: 0, textAlign: 'left',
-              } as React.CSSProperties}
-            />
-          </div>
+          <CornerCell
+            key={corner}
+            corner={corner}
+            value={values[corner]}
+            onChange={v => handleChange(corner, v)}
+          />
         ))}
       </div>
 
@@ -420,10 +445,12 @@ export function CornerRadiusDiagram({
 
 // ─── InsetDiagram ─────────────────────────────────────────────────────────────
 
+export type InsetValues = { top: number | null; right: number | null; bottom: number | null; left: number | null; };
+
 export function InsetDiagram({
   values, onChange, testIdPrefix = 'input-inset',
 }: {
-  values: SpacingValues;
+  values: InsetValues;
   onChange: (side: SpacingSide, v: number) => void;
   testIdPrefix?: string;
 }) {

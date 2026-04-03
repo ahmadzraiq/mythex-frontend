@@ -17,7 +17,7 @@
 import React, { useState } from 'react';
 import { useBuilderStore } from './_store';
 import type { SDUINode } from '@/lib/sdui/types/node';
-import { PRIMITIVE_COMPONENTS } from '@/lib/builder/primitive-components';
+import { PRIMITIVE_COMPONENTS, type PrimitiveComponent } from '@/lib/builder/primitive-components';
 import { Chevron } from './_layers-panel';
 
 // Re-export so existing imports of PRIMITIVE_COMPONENTS from this file keep working
@@ -76,7 +76,7 @@ export function SectionHeader({ label, collapsible, collapsed, onToggle }: { lab
   );
 }
 
-export function DraggablePrimitive({ primitive }: { primitive: { type: string; label: string; icon: string; defaultNode: object } }) {
+export function DraggablePrimitive({ primitive }: { primitive: PrimitiveComponent }) {
   return (
     <div
       draggable

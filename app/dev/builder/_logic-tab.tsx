@@ -203,7 +203,7 @@ function WorkflowRow({
 }
 
 function WorkflowsSection({ onOpenSlide }: { onOpenSlide: (id: string) => void }) {
-  const { pageWorkflows, setPageWorkflow, removePageWorkflow } = useBuilderStore();
+  const { pageWorkflows, pageWorkflowMeta, setPageWorkflow, removePageWorkflow } = useBuilderStore();
 
   const addWorkflow = () => {
     let name = 'Untitled workflow';
@@ -213,7 +213,9 @@ function WorkflowsSection({ onOpenSlide }: { onOpenSlide: (id: string) => void }
     onOpenSlide(name);
   };
 
-  const allWorkflows = Object.entries(pageWorkflows);
+  // Filter out system workflows
+  const allWorkflows = Object.entries(pageWorkflows)
+    .filter(([id]) => !pageWorkflowMeta[id]?.isSystem);
 
   return (
     <div>

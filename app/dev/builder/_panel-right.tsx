@@ -1,6 +1,18 @@
 'use client';
 
 /**
+ * Module-level registry so the canvas resize handler can flush any pending
+ * patchStyle dimension update before committing the drag result. Without this,
+ * a patchStyle debounce timer (e.g. from a unit-toggle) can fire after onUp
+ * and overwrite the resized className.
+ */
+let _cancelPendingDimensionFlush: (() => void) | null = null;
+/** Called by the canvas resize handler before capturing existingCls. */
+export function cancelPendingDimensionFlush() {
+  if (_cancelPendingDimensionFlush) _cancelPendingDimensionFlush();
+}
+
+/**
  * Builder Right Panel — Design | Props | JSON tabs
  *
  * Design tab sections (in render order):
@@ -44,7 +56,7 @@ import {
 import { SettingsTab, AlignDistributePanel } from './_panel-right-settings';
 import { PreviewDataEditor, ElementWorkflowsTab } from './_panel-right-workflows';
 import { AnimationInDesign } from './_animation-panel';
-import { SpacingDiagram, CornerRadiusDiagram, InsetDiagram } from './_spatial-controls';
+import { SpacingDiagram, CornerRadiusDiagram, InsetDiagram, PanelInput } from './_spatial-controls';
 import { useBuilderStore, findParentNode } from './_store';
 import type { BuilderStore } from './_store-types';
 import { findNode } from './_store-node-helpers';
@@ -69,13 +81,13 @@ import {
   parseTwArbitrary,
   parseTwArbitraryPx,
   parseTwArbitraryNum,
+  parseTwArbitraryWithUnit,
   replaceTwToken,
   removeTwToken,
   styleToClassName,
   FONT_WEIGHT_TOKENS,
   LEADING_TOKENS,
   TRACKING_TOKENS,
-  SHADOW_TOKENS,
   BORDER_STYLE_TOKENS,
   ROTATE_TOKENS,
   TEXT_ALIGN_TOKENS,
@@ -125,7 +137,22 @@ function parseBoxShadow(s: string): { x: number; y: number; blur: number; spread
   return { x: parseFloat(m[1]), y: parseFloat(m[2]), blur: parseFloat(m[3]), spread: parseFloat(m[4]), color: m[5].trim() };
 }
 
-// ─── FillBackgroundSection — Solid / Gradient toggle ─────────────────────────
+// ─── Gradient direction options ──────────────────────────────────────────────
+const GRADIENT_DIRS = [
+  { value: 'to right',        label: '→' },
+  { value: 'to bottom',       label: '↓' },
+  { value: 'to bottom right', label: '↘' },
+  { value: 'to top right',    label: '↗' },
+  { value: 'to left',         label: '←' },
+  { value: 'to top',          label: '↑' },
+] as const;
+
+function parseGradientDir(bg: string): string {
+  const m = bg.match(/linear-gradient\(([^,]+),/);
+  return m ? m[1].trim() : 'to right';
+}
+
+// ─── FillBackgroundSection — Solid / Gradient / Image ─────────────────────────
 
 function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgColor, patchColorAsThemeVar, patchStyle }: {
   nodeId: string;
@@ -141,30 +168,60 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
   const loopCfg     = (animCfg.loop ?? {}) as Record<string, unknown>;
   const bgImageRaw  = outerSt.backgroundImage;
   const isGradientFormula = isBoundValue(bgImageRaw as FormulaValue);
+  const nodeStyleAny = (node.props as { style?: Record<string, string> })?.style ?? {};
+  const propsBgImage = nodeStyleAny.backgroundImage ?? '';
 
   const existingGradientColors = React.useMemo(() => {
     const bg = typeof bgImageRaw === 'string' ? bgImageRaw : '';
     if (!bg) return [] as string[];
-    const inner = bg.replace(/^linear-gradient\([^,]+,\s*/, '').replace(/\)$/, '');
+    const inner = bg.replace(/^(?:linear|radial)-gradient\([^,]+,\s*/, '').replace(/\)$/, '');
     const parts = inner.split(',').map((s: string) => s.trim()).filter(Boolean);
     if (parts.length > 1 && parts[parts.length - 1] === parts[0]) parts.pop();
     return parts;
   }, [bgImageRaw]);
 
+  const existingDir = React.useMemo(() => {
+    const bg = typeof bgImageRaw === 'string' ? bgImageRaw : '';
+    return bg ? parseGradientDir(bg) : 'to right';
+  }, [bgImageRaw]);
+
+  const isRadialGradient = typeof bgImageRaw === 'string' && bgImageRaw.startsWith('radial-gradient');
   const hasGradient       = existingGradientColors.length >= 2 || isGradientFormula;
   const isGradientAnimated = loopCfg.type === 'gradientDrift';
-  const mode              = hasGradient ? 'gradient' : 'solid';
+  const hasImageBg        = 'backgroundImage' in nodeStyleAny && !hasGradient;
+  // Derive mode from data; keep as React state so clearing URL doesn't flip back to 'solid'
+  const derivedMode = hasGradient ? 'gradient' : hasImageBg ? 'image' : 'solid';
+  const [mode, setMode] = React.useState<'solid' | 'gradient' | 'image'>(derivedMode);
 
   const [gradientColors, setGradientColors] = React.useState<string[]>(
     existingGradientColors.length >= 2 ? existingGradientColors : ['#667eea', '#764ba2'],
   );
+  const [gradientDir, setGradientDir] = React.useState(existingDir);
+  const [isRadial, setIsRadial] = React.useState(isRadialGradient);
   const [gradientEditorOpen, setGradientEditorOpen] = React.useState(false);
-  // Saves the solid backgroundColor so it can be restored when switching back from gradient mode
-  const savedSolidBgRef = React.useRef<string>('');
+  // Saved solid bg: store whichever is set — inline style OR className bg token
+  const savedSolidBgRef  = React.useRef<string>('');
+  const savedSolidClsRef = React.useRef<string>(''); // stores the full bg-[...] class token if any
+
+  // Local state for image URL input — avoids Zustand debounce lag while typing
+  const stripUrl = (v: string) => v.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '');
+  const wrapUrl  = (v: string) => {
+    const trimmed = v.trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('url(')) return trimmed;
+    return `url(${trimmed})`;
+  };
+  const [localImageUrl, setLocalImageUrl] = React.useState(() => stripUrl(propsBgImage));
 
   React.useEffect(() => {
     if (existingGradientColors.length >= 2) setGradientColors(existingGradientColors);
-    savedSolidBgRef.current = ''; // reset save when node changes
+    if (existingDir) setGradientDir(existingDir);
+    setIsRadial(isRadialGradient);
+    savedSolidBgRef.current  = '';
+    savedSolidClsRef.current = '';
+    // Sync mode from data on node change; also reset local URL
+    setMode(hasGradient ? 'gradient' : hasImageBg ? 'image' : 'solid');
+    setLocalImageUrl(stripUrl(propsBgImage));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodeId]);
 
@@ -174,19 +231,29 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
     return registerEditorClose(closeSelf);
   }, [gradientEditorOpen]);
 
-  const applyGradient = React.useCallback((colors: string[], animate: boolean) => {
+  const applyGradient = React.useCallback((colors: string[], animate: boolean, dir?: string, radial?: boolean) => {
     if (colors.length < 2) return;
-    const gradient = `linear-gradient(to right, ${[...colors, colors[0]].join(', ')})`;
+    const d = dir ?? gradientDir;
+    const r = radial ?? isRadial;
+    const colorList = animate ? [...colors, colors[0]].join(', ') : colors.join(', ');
+    const gradient = r
+      ? `radial-gradient(circle at center, ${colorList})`
+      : `linear-gradient(${d}, ${colorList})`;
+    const bgSize = animate ? '300% 100%' : undefined;
     const existing = ((node as unknown as Record<string, unknown>).animation ?? {}) as Record<string, unknown>;
-    const nextAnim: Record<string, unknown> = {
-      ...existing,
-      outerStyle: { ...(existing.outerStyle as Record<string, unknown> ?? {}), backgroundImage: gradient, backgroundSize: '300% 100%', backgroundRepeat: 'no-repeat' },
+    const outerPatch: Record<string, unknown> = {
+      ...(existing.outerStyle as Record<string, unknown> ?? {}),
+      backgroundImage: gradient,
+      backgroundRepeat: 'no-repeat',
     };
+    if (bgSize) outerPatch.backgroundSize = bgSize;
+    else delete outerPatch.backgroundSize;
+    const nextAnim: Record<string, unknown> = { ...existing, outerStyle: outerPatch };
     if (animate) nextAnim.loop = { type: 'gradientDrift', duration: 3000, repeatCount: -1, direction: 'alternate' };
     else if ((existing.loop as Record<string, unknown>)?.type === 'gradientDrift') delete nextAnim.loop;
     store.patchNodeField(nodeId, 'animation', nextAnim);
     commitHistory();
-  }, [nodeId, node, store, commitHistory]);
+  }, [nodeId, node, store, commitHistory, gradientDir, isRadial]);
 
   const removeGradient = React.useCallback(() => {
     const existing = ((node as unknown as Record<string, unknown>).animation ?? {}) as Record<string, unknown>;
@@ -209,41 +276,90 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
     }
   }, [nodeId, node, store, commitHistory, removeGradient]);
 
+  // Helper: extract the current bg class token from className (e.g. 'bg-[#ff0]' or 'bg-[var(--theme-primary)]')
+  const extractBgClassToken = () => {
+    const cls = ((node.props as { className?: string })?.className ?? '');
+    return [...cls.matchAll(/\bbg-\[[^\]]+\]/g)].pop()?.[0] ?? '';
+  };
+
   const switchToSolid = () => {
     const style = (node.props as { style?: Record<string, string> })?.style ?? {};
-    // Restore the saved solid color (if user had one before switching to gradient)
-    const { backgroundColor: _transparent, ...restStyle } = style;
-    const restoredStyle = savedSolidBgRef.current
-      ? { ...restStyle, backgroundColor: savedSolidBgRef.current }
-      : restStyle;
-    store.patchProp(nodeId, 'props.style', restoredStyle);
-    savedSolidBgRef.current = '';
+    const { backgroundColor: _t, backgroundImage: _i, backgroundSize: _s, backgroundPosition: _p, backgroundRepeat: _r, ...restStyle } = style;
+    // Restore saved solid color — could be a className token or an inline style value
+    if (savedSolidClsRef.current) {
+      // Restore className bg token
+      const cls = (node.props as { className?: string })?.className ?? '';
+      const cleanCls = cls.replace(/\bbg-\[[^\]]+\]/g, '').replace(/\s+/g, ' ').trim();
+      store.patchProp(nodeId, 'props.className', [cleanCls, savedSolidClsRef.current].filter(Boolean).join(' '));
+      store.patchProp(nodeId, 'props.style', restStyle);
+    } else if (savedSolidBgRef.current) {
+      store.patchProp(nodeId, 'props.style', { ...restStyle, backgroundColor: savedSolidBgRef.current });
+    } else {
+      store.patchProp(nodeId, 'props.style', restStyle);
+    }
+    savedSolidBgRef.current  = '';
+    savedSolidClsRef.current = '';
+    setMode('solid');
     removeGradient();
   };
 
   const switchToGradient = () => {
     const style = (node.props as { style?: Record<string, string> })?.style ?? {};
-    // Save the current solid color so it can be restored on switchToSolid
-    savedSolidBgRef.current = style.backgroundColor ?? '';
-    // Override backgroundColor with transparent via inline style (wins over any bg-* class)
-    store.patchProp(nodeId, 'props.style', { ...style, backgroundColor: 'transparent' });
+    // Save solid color from both inline style and className
+    savedSolidBgRef.current  = style.backgroundColor ?? '';
+    savedSolidClsRef.current = extractBgClassToken();
+    // Remove any existing bg class token
+    const cls = (node.props as { className?: string })?.className ?? '';
+    const cleanCls = cls.replace(/\bbg-\[[^\]]+\]/g, '').replace(/\s+/g, ' ').trim();
+    if (cleanCls !== cls) store.patchProp(nodeId, 'props.className', cleanCls);
+    const { backgroundImage: _i, backgroundSize: _s, backgroundPosition: _p, backgroundRepeat: _r, ...restStyle } = style;
+    store.patchProp(nodeId, 'props.style', { ...restStyle, backgroundColor: 'transparent' });
+    setMode('gradient');
     applyGradient(gradientColors, false);
   };
 
-  const TAB_BASE: React.CSSProperties = { fontSize: 9, fontWeight: 600, padding: '3px 10px', borderRadius: 4, border: 'none', cursor: 'pointer', transition: 'background 0.1s, color 0.1s' };
+  const switchToImage = () => {
+    const style = (node.props as { style?: Record<string, string> })?.style ?? {};
+    // Save solid color from both inline style and className
+    savedSolidBgRef.current  = style.backgroundColor ?? '';
+    savedSolidClsRef.current = extractBgClassToken();
+    // Remove any existing bg class token
+    const cls = (node.props as { className?: string })?.className ?? '';
+    const cleanCls = cls.replace(/\bbg-\[[^\]]+\]/g, '').replace(/\s+/g, ' ').trim();
+    if (cleanCls !== cls) store.patchProp(nodeId, 'props.className', cleanCls);
+    removeGradient();
+    setLocalImageUrl('');
+    setMode('image');
+    store.patchProp(nodeId, 'props.style', {
+      ...style,
+      backgroundColor: 'transparent',
+      backgroundImage: style.backgroundImage ?? '',
+      backgroundSize: style.backgroundSize ?? 'cover',
+      backgroundPosition: style.backgroundPosition ?? 'center',
+      backgroundRepeat: style.backgroundRepeat ?? 'no-repeat',
+    });
+    commitHistory();
+  };
+
+  const TAB_BASE: React.CSSProperties = { fontSize: 9, fontWeight: 600, padding: '3px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', transition: 'background 0.1s, color 0.1s' };
   const TAB_ACTIVE:   React.CSSProperties = { ...TAB_BASE, background: '#374151', color: '#f3f4f6' };
   const TAB_INACTIVE: React.CSSProperties = { ...TAB_BASE, background: 'none', color: '#6b7280' };
   const BTN_REMOVE = { fontSize: 9, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' } as const;
   const BTN_ADD    = { fontSize: 9, color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' } as const;
 
+  const bgSizeVal = nodeStyleAny.backgroundSize ?? 'cover';
+  const bgPosVal  = nodeStyleAny.backgroundPosition ?? 'center';
+  const bgRepeatVal = nodeStyleAny.backgroundRepeat ?? 'no-repeat';
+
   return (
     <div>
-      {/* Solid | Gradient tabs */}
+      {/* Solid | Gradient | Image tabs */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 2, marginBottom: 8 }}>
         <span style={{ fontSize: 9, color: '#6b7280', marginRight: 4, minWidth: 36 }}>Background</span>
         <div style={{ display: 'flex', background: '#111827', borderRadius: 5, padding: 2, gap: 1 }}>
-          <button style={mode === 'solid' ? TAB_ACTIVE : TAB_INACTIVE} onClick={() => { if (mode !== 'solid') switchToSolid(); }}>Solid</button>
+          <button style={mode === 'solid'    ? TAB_ACTIVE : TAB_INACTIVE} onClick={() => { if (mode !== 'solid')    switchToSolid(); }}>Solid</button>
           <button style={mode === 'gradient' ? TAB_ACTIVE : TAB_INACTIVE} onClick={() => { if (mode !== 'gradient') switchToGradient(); }}>Gradient</button>
+          <button style={mode === 'image'    ? TAB_ACTIVE : TAB_INACTIVE} onClick={() => { if (mode !== 'image')    switchToImage(); }}>Image</button>
         </div>
       </div>
 
@@ -260,9 +376,9 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
           <FigmaColorPicker
             testId="input-bg-color"
             value={computedBgColor}
-            onChange={(hex, cssVar) => cssVar
+            onChange={(color, cssVar) => cssVar
               ? patchColorAsThemeVar('backgroundColor', 'props.style.backgroundColor', 'bg', cssVar)
-              : patchStyle({ backgroundColor: hex || '' })
+              : patchStyle({ backgroundColor: color || '' })
             }
           />
         </FieldWithBinding>
@@ -271,20 +387,18 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
       {/* ── Gradient mode ── */}
       {mode === 'gradient' && (
         <div style={{ position: 'relative' }}>
-          {/* Formula editor */}
           {gradientEditorOpen && (
             <FormulaEditor
               label="backgroundImage"
               value={(isGradientFormula ? bgImageRaw : '') as FormulaValue}
               expectedType="string"
-              hint="CSS gradient or formula — e.g. true ? 'linear-gradient(to right, #667eea, #764ba2)' : 'linear-gradient(to right, #f64f59, #c471ed)'"
+              hint="CSS gradient or formula"
               anchor="right"
               onChange={v => { onGradientBinding(v); setGradientEditorOpen(false); }}
               onClose={() => setGradientEditorOpen(false)}
             />
           )}
 
-          {/* Gradient header row: bind icon + Remove */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
             <span style={{ flex: 1, fontSize: 9, color: '#6b7280' }}>
               {isGradientFormula ? 'Formula bound' : `${gradientColors.length} stops`}
@@ -301,18 +415,38 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
             </button>
           ) : (
             <>
-              {/* Live gradient preview bar */}
-              <div style={{ height: 20, borderRadius: 4, marginBottom: 8, background: `linear-gradient(to right, ${gradientColors.join(', ')})`, border: '1px solid #374151' }} />
+              {/* Direction chips (only for linear) */}
+              {!isRadial && (
+                <div style={{ display: 'flex', gap: 3, marginBottom: 8, flexWrap: 'wrap' }}>
+                  {GRADIENT_DIRS.map(({ value, label }) => (
+                    <ToggleBtn key={value} active={gradientDir === value} style={{ padding: '3px 7px', fontSize: 12 }}
+                      onClick={() => { setGradientDir(value); applyGradient(gradientColors, isGradientAnimated, value, false); }}>
+                      {label}
+                    </ToggleBtn>
+                  ))}
+                </div>
+              )}
 
-              {/* Color stops list */}
+              {/* Radial toggle */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <span style={{ fontSize: 9, color: '#6b7280', flex: 1 }}>Radial</span>
+                <ToggleBtn active={isRadial} onClick={() => { const next = !isRadial; setIsRadial(next); applyGradient(gradientColors, isGradientAnimated, gradientDir, next); }}>
+                  {isRadial ? 'On' : 'Off'}
+                </ToggleBtn>
+              </div>
+
+              {/* Preview bar */}
+              <div style={{ height: 20, borderRadius: 4, marginBottom: 8, background: isRadial ? `radial-gradient(circle at center, ${gradientColors.join(', ')})` : `linear-gradient(${gradientDir}, ${gradientColors.join(', ')})`, border: '1px solid #374151' }} />
+
+              {/* Color stops */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {gradientColors.map((color, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <FigmaColorPicker
                       testId={`input-gradient-color-${i}`}
                       value={color}
-                      onChange={hex => {
-                        const next = [...gradientColors]; next[i] = hex || '#000000';
+                      onChange={c => {
+                        const next = [...gradientColors]; next[i] = c || '#000000';
                         setGradientColors(next); applyGradient(next, isGradientAnimated);
                       }}
                     />
@@ -336,6 +470,68 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* ── Image mode ── */}
+      {mode === 'image' && (
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+            <span style={{ flex: 1, fontSize: 9, color: '#6b7280' }}>Image URL</span>
+            <button onClick={switchToSolid} style={BTN_REMOVE}>Remove</button>
+          </div>
+          <FieldWithBinding
+            label="backgroundImage" displayLabel="" hint="URL or formula returning a URL string"
+            value={(nodeStyleAny.backgroundImage as unknown as FormulaValue) ?? ''}
+            onChange={v => {
+              if (typeof v === 'object' && v !== null) {
+                store.patchProp(nodeId, 'props.style.backgroundImage', v); commitHistory();
+              } else {
+                const url = wrapUrl((v as string) || '');
+                setLocalImageUrl(stripUrl((v as string) || ''));
+                patchStyle({ backgroundImage: url });
+              }
+            }}
+          >
+            <input
+              value={localImageUrl}
+              placeholder="https://example.com/image.jpg"
+              onChange={e => {
+                const raw = e.target.value;
+                setLocalImageUrl(raw);
+                patchStyle({ backgroundImage: wrapUrl(raw) });
+              }}
+              style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '4px 8px', width: '100%', boxSizing: 'border-box' } as React.CSSProperties}
+            />
+          </FieldWithBinding>
+
+          <div style={{ display: 'flex', gap: 4, marginTop: 8, flexWrap: 'wrap' }}>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 3 }}>Size</span>
+              <div style={{ display: 'flex', gap: 2 }}>
+                {(['cover', 'contain', 'auto'] as const).map(v => (
+                  <ToggleBtn key={v} active={bgSizeVal === v} style={{ fontSize: 9, padding: '2px 5px' }}
+                    onClick={() => patchStyle({ backgroundSize: v })}>{v}</ToggleBtn>
+                ))}
+              </div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 3 }}>Position</span>
+              <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                {(['center', 'top', 'bottom', 'left', 'right'] as const).map(v => (
+                  <ToggleBtn key={v} active={bgPosVal === v} style={{ fontSize: 9, padding: '2px 5px' }}
+                    onClick={() => patchStyle({ backgroundPosition: v })}>{v}</ToggleBtn>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+            <span style={{ fontSize: 9, color: '#6b7280', flex: 1 }}>Repeat</span>
+            <ToggleBtn active={bgRepeatVal === 'repeat'} onClick={() => patchStyle({ backgroundRepeat: bgRepeatVal === 'repeat' ? 'no-repeat' : 'repeat' })}>
+              {bgRepeatVal === 'repeat' ? 'On' : 'Off'}
+            </ToggleBtn>
+          </div>
         </div>
       )}
     </div>
@@ -558,10 +754,29 @@ function DesignTab({ node }: { node: SDUINode }) {
     [node]
   );
 
-  // Derive current unit from inline style (px / vh / vw).
-  // Only relevant when the dimension is in Fixed mode (controlled by inline style).
-  const wUnit: 'px' | 'vh' | 'vw' = String(nodeStyle.width ?? '').endsWith('vh') ? 'vh' : String(nodeStyle.width ?? '').endsWith('vw') ? 'vw' : 'px';
-  const hUnit: 'px' | 'vh' | 'vw' = String(nodeStyle.height ?? '').endsWith('vh') ? 'vh' : String(nodeStyle.height ?? '').endsWith('vw') ? 'vw' : 'px';
+  // Derive current unit from inline style (px / % / vh / vw) or arbitrary class.
+  const wUnit: 'px' | '%' | 'vh' | 'vw' = (() => {
+    const styleW = String(nodeStyle.width ?? '');
+    if (styleW.endsWith('%')) return '%';
+    if (styleW.endsWith('vh')) return 'vh';
+    if (styleW.endsWith('vw')) return 'vw';
+    const clsUnit = parseTwArbitraryWithUnit(cls, 'w-');
+    if (clsUnit?.unit === '%') return '%';
+    if (clsUnit?.unit === 'vh') return 'vh';
+    if (clsUnit?.unit === 'vw') return 'vw';
+    return 'px';
+  })();
+  const hUnit: 'px' | '%' | 'vh' | 'vw' = (() => {
+    const styleH = String(nodeStyle.height ?? '');
+    if (styleH.endsWith('%')) return '%';
+    if (styleH.endsWith('vh')) return 'vh';
+    if (styleH.endsWith('vw')) return 'vw';
+    const clsUnit = parseTwArbitraryWithUnit(cls, 'h-');
+    if (clsUnit?.unit === '%') return '%';
+    if (clsUnit?.unit === 'vh') return 'vh';
+    if (clsUnit?.unit === 'vw') return 'vw';
+    return 'px';
+  })();
 
   // Remove height-mode tokens (h-fit, h-screen, any h-* class) AND flex-1 from a className.
   // Used when switching between H modes so old mode tokens don't linger.
@@ -578,6 +793,24 @@ function DesignTab({ node }: { node: SDUINode }) {
   const pendingNodeIdRef  = useRef<string>(nodeId);
   const rafSyncRef        = useRef<number | null>(null);
   const styleFlushTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Register a cancellation function so the canvas can flush dimension-related
+  // pending styles before a resize begins (prevents timer revert after drag).
+  useEffect(() => {
+    _cancelPendingDimensionFlush = () => {
+      const RESIZE_KEYS: readonly string[] = ['width', 'height', 'minWidth', 'minHeight', 'maxWidth', 'maxHeight'];
+      let hadDimension = false;
+      for (const k of RESIZE_KEYS) {
+        if (k in pendingStyleRef.current) { delete pendingStyleRef.current[k]; hadDimension = true; }
+      }
+      // If pending is now empty, cancel the timer entirely
+      if (hadDimension && Object.keys(pendingStyleRef.current).length === 0 && styleFlushTimer.current) {
+        clearTimeout(styleFlushTimer.current);
+        styleFlushTimer.current = null;
+      }
+    };
+    return () => { _cancelPendingDimensionFlush = null; };
+  }, []); // refs are stable — no deps needed
   // When user blurs an input by clicking another element, React may re-render with the NEW
   // selection before blur fires. We capture the node on focus; delay the nodeId-sync so
   // blur-triggered commits use the correct (pre-focus) node.
@@ -836,9 +1069,10 @@ function DesignTab({ node }: { node: SDUINode }) {
     clsPrefix: 'bg' | 'text' | 'border',
     cssVar: string,
   ) => {
-    // CSS vars in this project are stored as R G B triplets (e.g. --destructive: 239 68 68),
-    // so they must be wrapped with rgb() to produce a valid color value.
-    const cssVarValue = `rgb(var(--${cssVar}))`;
+    // Use var(--theme-X) which always holds the full color value (hex or rgba).
+    // This handles both opaque hex colors AND semi-transparent rgba values correctly.
+    // --theme-X is kept in sync by _applyLightOverrides / _applyDarkOverrides.
+    const cssVarValue = `var(--theme-${cssVar})`;
     // 1. Immediate DOM update (setProperty handles CSS functions correctly)
     const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
     if (el) {
@@ -919,29 +1153,70 @@ function DesignTab({ node }: { node: SDUINode }) {
 
     const bgVal = nodeStyle.backgroundColor as unknown;
     if (!bgVal || isColorBound(bgVal)) {
-      const hex = rgbToHex(s.backgroundColor);
-      // rgba(0,0,0,0) = transparent — keep the default so we don't show black
-      if (hex && s.backgroundColor !== 'rgba(0, 0, 0, 0)') setComputedBgColor(hex);
-      else setComputedBgColor('#ffffff');
+      // Check className first — bg-[rgba(...)] or bg-[#hex] preserves original format
+      // Use last match in case of duplicates (most recently written wins)
+      const bgToken = [...cls.matchAll(/\bbg-\[([^\]]+)\]/g)].pop()?.[1];
+      if (bgToken && bgToken !== 'transparent') {
+        setComputedBgColor(bgToken);
+      } else {
+        // Fall back to getComputedStyle — preserve alpha if present
+        const cssBg = s.backgroundColor;
+        if (cssBg && cssBg !== 'rgba(0, 0, 0, 0)') {
+          const rgbaM = cssBg.match(/rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([0-9.]+)\s*\)/);
+          if (rgbaM && parseFloat(rgbaM[4]) < 1) {
+            // Preserve semi-transparent rgba as-is
+            setComputedBgColor(cssBg);
+          } else {
+            const hex = rgbToHex(cssBg);
+            if (hex) setComputedBgColor(hex);
+            else setComputedBgColor('#ffffff');
+          }
+        } else {
+          setComputedBgColor('#ffffff');
+        }
+      }
     } else {
       setComputedBgColor(bgVal as string);
     }
+    // Helper: preserve rgba if alpha < 1, otherwise convert to hex
+    const resolveComputedColor = (cssProp: string, fallback: string): string => {
+      if (cssProp && cssProp !== 'rgba(0, 0, 0, 0)') {
+        const rgbaM = cssProp.match(/rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([0-9.]+)\s*\)/);
+        if (rgbaM && parseFloat(rgbaM[4]) < 1) return cssProp;
+        const hex = rgbToHex(cssProp);
+        if (hex) return hex;
+      }
+      return fallback;
+    };
+
     const colorVal = nodeStyle.color as unknown;
     if (!colorVal || isColorBound(colorVal)) {
-      const hex = rgbToHex(s.color);
-      if (hex) setComputedTextColor(hex);
+      // Check className for text-[#...] or text-[rgba(...)] — distinguish from font-size text-[14px]
+      // Use last match in case of duplicates (most recently written wins)
+      const textToken = [...cls.matchAll(/\btext-\[([^\]]+)\]/g)].pop()?.[1];
+      if (textToken && (textToken.startsWith('#') || textToken.startsWith('rgb'))) {
+        setComputedTextColor(textToken);
+      } else {
+        setComputedTextColor(resolveComputedColor(s.color, '#000000'));
+      }
     } else {
       setComputedTextColor(colorVal as string);
     }
+
     const borderVal = nodeStyle.borderColor as unknown;
     if (!borderVal || isColorBound(borderVal)) {
-      const hex = rgbToHex(s.borderTopColor);
-      if (hex) setComputedBorderColor(hex);
+      // Check className for border-[#...] or border-[rgba(...)] — distinguish from border-width border-[2px]
+      const borderToken = [...cls.matchAll(/\bborder-\[([^\]]+)\]/g)].pop()?.[1];
+      if (borderToken && (borderToken.startsWith('#') || borderToken.startsWith('rgb'))) {
+        setComputedBorderColor(borderToken);
+      } else {
+        setComputedBorderColor(resolveComputedColor(s.borderTopColor, '#000000'));
+      }
     } else {
       setComputedBorderColor(borderVal as string);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodeId, nodeStyle.backgroundColor, nodeStyle.color, nodeStyle.borderColor, store.pageNodes]);
+  }, [nodeId, cls, nodeStyle.backgroundColor, nodeStyle.color, nodeStyle.borderColor, store.pageNodes]);
 
   // ── Component type classification ────────────────────────────────────────────
   // Controls which panel sections are shown. Only show relevant controls
@@ -983,7 +1258,6 @@ function DesignTab({ node }: { node: SDUINode }) {
     // Scale token: opacity-50
     return parseInt(token.replace('opacity-', '') || '100');
   })();
-  const shadowToken   = parseTwToken(cls, 'shadow') ?? 'shadow-none';
   // Border width stored as border-[Xpx] arbitrary class
   const borderWidthPx = parseTwArbitraryPx(cls, 'border-') ?? 0;
   const borderStyle   = BORDER_STYLE_TOKENS.find(t => cls.includes(t)) ?? 'border-solid';
@@ -1016,7 +1290,16 @@ function DesignTab({ node }: { node: SDUINode }) {
   })();
   const isFlipH     = cls.includes('-scale-x-100');
   const isFlipV     = cls.includes('-scale-y-100');
-  const isClipped   = cls.includes('overflow-hidden');
+  // Overflow — detect which token is active (x/y variants must come before generic ones)
+  const OVERFLOW_TOKENS_LIST = [
+    'overflow-x-auto', 'overflow-y-auto',
+    'overflow-x-scroll', 'overflow-y-scroll',
+    'overflow-x-hidden', 'overflow-y-hidden',
+    'overflow-auto', 'overflow-scroll', 'overflow-hidden',
+  ] as const;
+  type OverflowTokenType = typeof OVERFLOW_TOKENS_LIST[number] | 'none';
+  const currentOverflow: OverflowTokenType = OVERFLOW_TOKENS_LIST.find(t => cls.split(/\s+/).includes(t)) ?? 'none';
+  const isClipped   = currentOverflow === 'overflow-hidden';
   const isFlexWrap  = cls.includes('flex-wrap');
   const isGrid      = cls.includes('grid');
   const isSpaceBetween = cls.includes('justify-between');
@@ -1142,12 +1425,14 @@ function DesignTab({ node }: { node: SDUINode }) {
               }}
             />
           </FieldWithBinding>
-          <NumberInput
-            label="Z-Index"
-            testId="input-zindex"
-            value={zIndexPx}
-            onChange={v => patchStyle({ zIndex: String(v) })}
-          />
+          <FieldWithBinding label="zIndex" displayLabel="Z-Index" hint="integer e.g. 10, 50, 100" value={(nodeStyle.zIndex ?? '') as FormulaValue} onChange={v => bindOrPatch('zIndex', v)}>
+            <NumberInput
+              label="Z-Index"
+              testId="input-zindex"
+              value={zIndexPx}
+              onChange={v => patchStyle({ zIndex: String(v) })}
+            />
+          </FieldWithBinding>
         </div>
         <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
           <NumberInput label="X" testId="input-pos-x" value={domMetrics.x} onChange={() => {}} />
@@ -1167,10 +1452,21 @@ function DesignTab({ node }: { node: SDUINode }) {
                 patchCls(clearWModeTokens(cls));
               }} />
               <div style={{ display: 'flex', gap: 2 }}>
-                {(['px', 'vh', 'vw'] as const).map(u => (
+                {(['px', '%', 'vh', 'vw'] as const).map(u => (
                   <ToggleBtn key={u} active={wUnit === u} onClick={() => {
-                    const cur = parseInt(nodeStyle.width ?? '0') || domMetrics.w;
-                    patchStyle({ width: `${cur}${u}`, minWidth: '0' });
+                    if (u === wUnit) return;
+                    // Convert the current rendered width (always px) to the target unit
+                    const pxVal = domMetrics.w || 0;
+                    const frame = document.querySelector('[data-builder-page-frame]');
+                    const frameW = (frame as HTMLElement | null)?.clientWidth ?? window.innerWidth;
+                    const frameH = (frame as HTMLElement | null)?.clientHeight ?? window.innerHeight;
+                    const parentW = (document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null)?.parentElement?.clientWidth ?? frameW;
+                    let converted: number;
+                    if (u === 'px') converted = Math.round(pxVal);
+                    else if (u === 'vw') converted = Math.round(pxVal / frameW * 100 * 10) / 10;
+                    else if (u === 'vh') converted = Math.round(pxVal / frameH * 100 * 10) / 10;
+                    else /* % */ converted = Math.round(pxVal / parentW * 100 * 10) / 10;
+                    patchStyle({ width: `${converted}${u}`, minWidth: '0' });
                     patchCls(clearWModeTokens(cls));
                   }} style={{ fontSize: 9, padding: '1px 5px', minWidth: 0 }}>{u}</ToggleBtn>
                 ))}
@@ -1190,10 +1486,21 @@ function DesignTab({ node }: { node: SDUINode }) {
                 patchCls(clearHModeTokens(cls));
               }} />
               <div style={{ display: 'flex', gap: 2 }}>
-                {(['px', 'vh', 'vw'] as const).map(u => (
+                {(['px', '%', 'vh', 'vw'] as const).map(u => (
                   <ToggleBtn key={u} active={hUnit === u} onClick={() => {
-                    const cur = parseInt(nodeStyle.height ?? '0') || domMetrics.h;
-                    patchStyle({ height: `${cur}${u}`, minHeight: '0' });
+                    if (u === hUnit) return;
+                    // Convert the current rendered height (always px) to the target unit
+                    const pxVal = domMetrics.h || 0;
+                    const frame = document.querySelector('[data-builder-page-frame]');
+                    const frameW = (frame as HTMLElement | null)?.clientWidth ?? window.innerWidth;
+                    const frameH = (frame as HTMLElement | null)?.clientHeight ?? window.innerHeight;
+                    const parentH = (document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null)?.parentElement?.clientHeight ?? frameH;
+                    let converted: number;
+                    if (u === 'px') converted = Math.round(pxVal);
+                    else if (u === 'vh') converted = Math.round(pxVal / frameH * 100 * 10) / 10;
+                    else if (u === 'vw') converted = Math.round(pxVal / frameW * 100 * 10) / 10;
+                    else /* % */ converted = Math.round(pxVal / parentH * 100 * 10) / 10;
+                    patchStyle({ height: `${converted}${u}`, minHeight: '0' });
                     patchCls(clearHModeTokens(cls));
                   }} style={{ fontSize: 9, padding: '1px 5px', minWidth: 0 }}>{u}</ToggleBtn>
                 ))}
@@ -1202,16 +1509,31 @@ function DesignTab({ node }: { node: SDUINode }) {
           </FieldWithBinding>
         </div>
 
-        {/* ── Inset controls (shown when position is absolute / fixed / sticky) ── */}
-        {(positionToken === 'absolute' || positionToken === 'fixed' || positionToken === 'sticky') && (
+        {/* ── Inset controls (shown when position is relative / absolute / fixed / sticky) ── */}
+        {(positionToken === 'relative' || positionToken === 'absolute' || positionToken === 'fixed' || positionToken === 'sticky') && (
           <div style={{ marginTop: 10 }}>
-            <div style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Inset</div>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
+              <div style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', flex: 1 }}>Inset</div>
+              {(positionToken === 'absolute' || positionToken === 'fixed') && (
+                <button
+                  type="button"
+                  title="Fill parent (inset-0)"
+                  onClick={() => {
+                    patchCls(`${cls} inset-0`.trim());
+                    patchStyle({ top: '', right: '', bottom: '', left: '' });
+                  }}
+                  style={{ fontSize: 9, color: '#60a5fa', background: 'none', border: '1px solid #1e3a5f', borderRadius: 4, padding: '2px 6px', cursor: 'pointer' }}
+                >
+                  Fill parent
+                </button>
+              )}
+            </div>
             <InsetDiagram
               values={{
-                top:    (parseTwArbitrary(cls, 'top-')    ?? parseInt(nodeStyle.top    ?? '')) || 0,
-                right:  (parseTwArbitrary(cls, 'right-')  ?? parseInt(nodeStyle.right  ?? '')) || 0,
-                bottom: (parseTwArbitrary(cls, 'bottom-') ?? parseInt(nodeStyle.bottom ?? '')) || 0,
-                left:   (parseTwArbitrary(cls, 'left-')   ?? parseInt(nodeStyle.left   ?? '')) || 0,
+                top:    parseTwArbitrary(cls, 'top-')    ?? (nodeStyle.top    ? (parseInt(nodeStyle.top)    || 0) : null),
+                right:  parseTwArbitrary(cls, 'right-')  ?? (nodeStyle.right  ? (parseInt(nodeStyle.right)  || 0) : null),
+                bottom: parseTwArbitrary(cls, 'bottom-') ?? (nodeStyle.bottom ? (parseInt(nodeStyle.bottom) || 0) : null),
+                left:   parseTwArbitrary(cls, 'left-')   ?? (nodeStyle.left   ? (parseInt(nodeStyle.left)   || 0) : null),
               }}
               onChange={(side, px) => patchStyle({ [side]: `${px}px` })}
             />
@@ -1590,36 +1912,65 @@ function DesignTab({ node }: { node: SDUINode }) {
             </div>
           </div>
 
-          {/* Grid columns / rows (only visible when 'grid' layout is selected) */}
+          {/* Grid controls — only when grid layout is active */}
           {isGrid && (
-            <div style={{ display: 'flex', gap: 6 }}>
-              <FieldWithBinding label="gridCols" displayLabel="Columns" hint="e.g. grid-cols-2, grid-cols-4" value={(classFormulas?.['gridCols'] as FormulaValue) ?? (GRID_COLS_TOKENS.find(t => cls.includes(t)) ?? 'grid-cols-1')} onChange={v => bindOrPatchCls('gridCols', evaluated => {
-                let next = cls;
-                GRID_COLS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-                patchCls(`${next} ${evaluated}`.trim());
+            <>
+              {/* Divider + Grid label */}
+              <div style={{ borderTop: '1px solid #1f2937', marginTop: 2, marginBottom: 6, paddingTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ opacity: 0.5 }}><rect x="1" y="1" width="4" height="4" rx="0.8" stroke="#9ca3af" strokeWidth="1.2"/><rect x="7" y="1" width="4" height="4" rx="0.8" stroke="#9ca3af" strokeWidth="1.2"/><rect x="1" y="7" width="4" height="4" rx="0.8" stroke="#9ca3af" strokeWidth="1.2"/><rect x="7" y="7" width="4" height="4" rx="0.8" stroke="#9ca3af" strokeWidth="1.2"/></svg>
+                <span style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Grid</span>
+              </div>
+              {/* Columns + Rows */}
+              <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                <FieldWithBinding label="gridCols" displayLabel="Columns" hint="e.g. grid-cols-2, grid-cols-4" value={(classFormulas?.['gridCols'] as FormulaValue) ?? (GRID_COLS_TOKENS.find(t => cls.includes(t)) ?? 'grid-cols-1')} onChange={v => bindOrPatchCls('gridCols', evaluated => {
+                  let next = cls;
+                  GRID_COLS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                  patchCls(`${next} ${evaluated}`.trim());
+                }, v)} expectedType="string">
+                  <SelectInput
+                    label="Columns"
+                    value={GRID_COLS_TOKENS.find(t => cls.includes(t)) ?? 'grid-cols-1'}
+                    options={[...GRID_COLS_TOKENS]}
+                    onChange={v => {
+                      let next = cls;
+                      GRID_COLS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                      patchCls(`${next} ${v}`.trim());
+                    }}
+                  />
+                </FieldWithBinding>
+                <FieldWithBinding label="gridRows" displayLabel="Rows" hint="e.g. grid-rows-2, grid-rows-4" value={(classFormulas?.['gridRows'] as FormulaValue) ?? (GRID_ROWS_TOKENS.find(t => cls.includes(t)) ?? 'grid-rows-1')} onChange={v => bindOrPatchCls('gridRows', evaluated => {
+                  let next = cls;
+                  GRID_ROWS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                  patchCls(`${next} ${evaluated}`.trim());
+                }, v)} expectedType="string">
+                  <SelectInput
+                    label="Rows"
+                    value={GRID_ROWS_TOKENS.find(t => cls.includes(t)) ?? 'grid-rows-1'}
+                    options={[...GRID_ROWS_TOKENS]}
+                    onChange={v => {
+                      let next = cls;
+                      GRID_ROWS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                      patchCls(`${next} ${v}`.trim());
+                    }}
+                  />
+                </FieldWithBinding>
+              </div>
+              {/* Auto flow */}
+              <FieldWithBinding label="gridFlow" displayLabel="Auto flow" hint="e.g. grid-flow-row, grid-flow-col, grid-flow-row-dense" value={(classFormulas?.['gridFlow'] as FormulaValue) ?? ((['grid-flow-col','grid-flow-row-dense','grid-flow-col-dense','grid-flow-dense'] as const).find(t => cls.includes(t)) ?? 'grid-flow-row')} onChange={v => bindOrPatchCls('gridFlow', evaluated => {
+                const next = removeTwToken(removeTwToken(removeTwToken(removeTwToken(removeTwToken(cls, 'grid-flow-col-dense'), 'grid-flow-row-dense'), 'grid-flow-col'), 'grid-flow-dense'), 'grid-flow-row');
+                patchCls(evaluated && evaluated !== 'grid-flow-row' ? `${next} ${evaluated}`.trim() : next);
               }, v)} expectedType="string">
                 <SelectInput
-                  label="Columns"
-                  value={GRID_COLS_TOKENS.find(t => cls.includes(t)) ?? 'grid-cols-1'}
-                  options={[...GRID_COLS_TOKENS]}
+                  label="Auto flow"
+                  value={(['grid-flow-col','grid-flow-row-dense','grid-flow-col-dense','grid-flow-dense'] as const).find(t => cls.includes(t)) ?? 'grid-flow-row'}
+                  options={['grid-flow-row','grid-flow-col','grid-flow-row-dense','grid-flow-col-dense','grid-flow-dense']}
                   onChange={v => {
-                    let next = cls;
-                    GRID_COLS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-                    patchCls(`${next} ${v}`.trim());
+                    const next = removeTwToken(removeTwToken(removeTwToken(removeTwToken(removeTwToken(cls, 'grid-flow-col-dense'), 'grid-flow-row-dense'), 'grid-flow-col'), 'grid-flow-dense'), 'grid-flow-row');
+                    patchCls(v && v !== 'grid-flow-row' ? `${next} ${v}`.trim() : next);
                   }}
                 />
               </FieldWithBinding>
-              <SelectInput
-                label="Rows"
-                value={GRID_ROWS_TOKENS.find(t => cls.includes(t)) ?? 'grid-rows-1'}
-                options={[...GRID_ROWS_TOKENS]}
-                onChange={v => {
-                  let next = cls;
-                  GRID_ROWS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-                  patchCls(`${next} ${v}`.trim());
-                }}
-              />
-            </div>
+            </>
           )}
         </div>
       )}
@@ -1654,7 +2005,7 @@ function DesignTab({ node }: { node: SDUINode }) {
       )}
 
       {/* ── Margin ── */}
-      <div style={SECTION_STYLE}>
+      <div data-testid="section-margin" style={SECTION_STYLE}>
         <SpacingDiagram
           label="margin"
           values={{ top: margin.top, right: margin.right, bottom: margin.bottom, left: margin.left }}
@@ -1682,7 +2033,7 @@ function DesignTab({ node }: { node: SDUINode }) {
 
       {/* ── Typography (text nodes only) ── */}
       {isTextNode && (
-        <div style={SECTION_STYLE}>
+        <div data-testid="section-typography" style={SECTION_STYLE}>
           <SectionHeader title="Typography">
             <MiniPreview
               style={{ width: 36, background: 'transparent', border: '1px solid #374151', borderRadius: 3 }}
@@ -1771,6 +2122,62 @@ function DesignTab({ node }: { node: SDUINode }) {
               </div>
             </FieldWithBinding>
           </div>
+
+          {/* ── Text overflow / whitespace / word-break ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
+            {/* Overflow — ellipsis uses Tailwind truncate shorthand (overflow-hidden + whitespace-nowrap + text-ellipsis) */}
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <span style={{ fontSize: 9, color: '#6b7280', width: 60, flexShrink: 0 }}>Overflow</span>
+              {([
+                { v: '' as const,        label: 'none',     title: 'No overflow handling' },
+                { v: 'truncate' as const, label: 'ellipsis', title: 'Clip + nowrap + ellipsis (truncate)' },
+                { v: 'clip' as const,    label: 'clip',     title: 'Clip text, no ellipsis' },
+              ]).map(({ v, label, title }) => {
+                const active = v === '' 
+                  ? !cls.includes('truncate') && !cls.includes('text-clip')
+                  : v === 'truncate' ? cls.includes('truncate')
+                  : cls.includes('text-clip') && !cls.includes('truncate');
+                return (
+                  <ToggleBtn key={v || 'none'} active={active} title={title} onClick={() => {
+                    let next = removeTwToken(removeTwToken(removeTwToken(cls, 'truncate'), 'text-clip'), 'overflow-hidden');
+                    if (v === 'truncate') next = `${next} truncate`.trim();
+                    else if (v === 'clip') next = `${next} overflow-hidden text-clip`.trim();
+                    patchCls(next);
+                  }} style={{ fontSize: 9, padding: '2px 5px' }}>{label}</ToggleBtn>
+                );
+              })}
+            </div>
+            {/* Whitespace */}
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <span style={{ fontSize: 9, color: '#6b7280', width: 60, flexShrink: 0 }}>Whitespace</span>
+              {(['', 'whitespace-nowrap', 'whitespace-pre', 'whitespace-normal'] as const).map(v => (
+                <ToggleBtn
+                  key={v || 'default'}
+                  active={v === '' ? (!cls.includes('whitespace-nowrap') && !cls.includes('whitespace-pre') && !cls.includes('whitespace-normal')) : cls.includes(v)}
+                  title={v === '' ? 'Default (wrap normally)' : v === 'whitespace-nowrap' ? 'No wrapping' : v === 'whitespace-pre' ? 'Preserve whitespace' : 'Normal wrapping'}
+                  onClick={() => {
+                    let next = removeTwToken(removeTwToken(removeTwToken(cls, 'whitespace-nowrap'), 'whitespace-pre'), 'whitespace-normal');
+                    if (v) next = `${next} ${v}`.trim();
+                    patchCls(next);
+                  }} style={{ fontSize: 9, padding: '2px 5px' }}>{v ? v.replace('whitespace-', '') : 'def'}</ToggleBtn>
+              ))}
+            </div>
+            {/* Word break */}
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <span style={{ fontSize: 9, color: '#6b7280', width: 60, flexShrink: 0 }}>Word break</span>
+              {(['', 'break-all', 'break-words', 'break-keep'] as const).map(v => (
+                <ToggleBtn
+                  key={v || 'none'}
+                  active={v === '' ? (!cls.includes('break-all') && !cls.includes('break-words') && !cls.includes('break-keep')) : cls.includes(v)}
+                  title={v === '' ? 'Default' : v === 'break-all' ? 'Break at any character' : v === 'break-words' ? 'Break long words only' : 'Keep CJK words together'}
+                  onClick={() => {
+                    let next = removeTwToken(removeTwToken(removeTwToken(cls, 'break-all'), 'break-words'), 'break-keep');
+                    if (v) next = `${next} ${v}`.trim();
+                    patchCls(next);
+                  }} style={{ fontSize: 9, padding: '2px 5px' }}>{v ? v.replace('break-', '') : 'none'}</ToggleBtn>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -1789,26 +2196,50 @@ function DesignTab({ node }: { node: SDUINode }) {
         </div>
       </div>
 
-      {/* ── Clip content ── */}
-      <ToggleBind
-        rowLabel="Clip content"
-        fieldId="clipContent"
-        hint='"overflow-hidden" or "" (empty to unclip)'
-        expectedType="string"
-        isOn={isClipped}
-        value={(classFormulas?.['clipContent'] as FormulaValue) ?? (isClipped ? 'overflow-hidden' : '')}
-        onToggle={() => patchCls(isClipped ? removeTwToken(cls, 'overflow-hidden') : `${cls} overflow-hidden`.trim())}
-        onChange={v => bindOrPatchCls('clipContent', evaluated => {
-          if (evaluated === 'overflow-hidden' || evaluated === 'true') {
-            patchCls(`${cls} overflow-hidden`.trim());
-          } else {
-            patchCls(removeTwToken(cls, 'overflow-hidden'));
-          }
-        }, v)}
-      />
+      {/* ── Overflow ── */}
+      <div style={SECTION_STYLE}>
+        <FieldWithBinding
+          label="overflow"
+          displayLabel="Overflow"
+          hint='e.g. overflow-hidden, overflow-auto, overflow-x-auto, overflow-y-auto'
+          value={(classFormulas?.['overflow'] as FormulaValue) ?? (currentOverflow === 'none' ? '' : currentOverflow)}
+          onChange={v => bindOrPatchCls('overflow', evaluated => {
+            let next = removeTwToken(cls, 'overflow-');
+            if (evaluated && evaluated !== 'none') next = `${next} ${evaluated}`.trim();
+            patchCls(next);
+          }, v)}
+          expectedType="string"
+          stackLayout
+        >
+          <div style={{ display: 'flex', gap: 2 }}>
+            {([
+              ['none',             '—',     'Default (no overflow class)'],
+              ['overflow-hidden',  'clip',  'overflow-hidden — clips content'],
+              ['overflow-auto',    'auto',  'overflow-auto — scrolls when needed'],
+              ['overflow-scroll',  'scroll','overflow-scroll — always shows scrollbar'],
+              ['overflow-x-auto',  'x',     'overflow-x-auto — horizontal scroll'],
+              ['overflow-y-auto',  'y',     'overflow-y-auto — vertical scroll'],
+            ] as const).map(([token, label, title]) => (
+              <ToggleBtn
+                key={token}
+                title={title}
+                active={currentOverflow === token}
+                style={{ padding: '3px 6px', fontSize: 10 }}
+                onClick={() => {
+                  let next = removeTwToken(cls, 'overflow-');
+                  if (token !== 'none') next = `${next} ${token}`.trim();
+                  patchCls(next);
+                }}
+              >
+                {label}
+              </ToggleBtn>
+            ))}
+          </div>
+        </FieldWithBinding>
+      </div>
 
       {/* ── Fill & Opacity ── */}
-      <div style={SECTION_STYLE}>
+      <div data-testid="section-fill" style={SECTION_STYLE}>
         <SectionHeader title="Fill & Opacity" />
         <div style={{ marginTop: 4 }}>
           <FillBackgroundSection
@@ -1821,19 +2252,7 @@ function DesignTab({ node }: { node: SDUINode }) {
             patchStyle={patchStyle as (patch: Record<string, string>) => void}
           />
         </div>
-        <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 9, color: '#6b7280', minWidth: 60 }}>Fill opacity</span>
-          <input
-            type="range" min={0} max={100} step={5}
-            data-testid="bg-opacity-slider"
-            value={parseInt(parseTwToken(cls, 'bg-opacity-')?.replace('bg-opacity-', '') || '100')}
-            onChange={e => patchCls(replaceTwToken(cls, 'bg-opacity-', `bg-opacity-${e.target.value}`))}
-            style={{ flex: 1 }}
-          />
-          <span style={{ fontSize: 10, color: '#d1d5db', minWidth: 28 }}>
-            {parseTwToken(cls, 'bg-opacity-')?.replace('bg-opacity-', '') ?? '100'}%
-          </span>
-        </div>
+        {/* Background alpha is now controlled via rgba() in the color picker above */}
         <div style={{ marginTop: 6 }}>
           <FieldWithBinding label="opacity" displayLabel="Opacity" hint="number 0–1 e.g. 0.5, 0.8, 1 (no quotes)" value={(nodeStyle.opacity ?? '') as FormulaValue} onChange={v => bindOrPatch('opacity', v)}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1869,7 +2288,7 @@ function DesignTab({ node }: { node: SDUINode }) {
       </div>
 
       {/* ── Stroke ── */}
-      <div style={SECTION_STYLE}>
+      <div data-testid="section-border" style={SECTION_STYLE}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
           <SectionHeader title="Stroke">
             {borderWidthPx > 0 && (
@@ -1879,9 +2298,6 @@ function DesignTab({ node }: { node: SDUINode }) {
               />
             )}
           </SectionHeader>
-          <FieldWithBinding label="borderWidth" displayLabel="Border W" hint="e.g. 1px, 2px, 0" value={(nodeStyle.borderWidth ?? '') as FormulaValue} onChange={v => bindOrPatch('borderWidth', v)} expectedType="string">
-            <span />
-          </FieldWithBinding>
         </div>
         <div style={{ marginBottom: 6 }}>
           <FieldWithBinding label="borderColor" displayLabel="Border Color" hint="CSS color: e.g. #374151, rgba(0,0,0,0.5)" value={(nodeStyle.borderColor as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('borderColor', v)}>
@@ -1899,12 +2315,14 @@ function DesignTab({ node }: { node: SDUINode }) {
           </FieldWithBinding>
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-          <NumberInput
-            label="Width"
-            testId="input-border-width"
-            value={borderWidthPx}
-            onChange={px => patchStyle({ borderWidth: `${px}px` })}
-          />
+          <FieldWithBinding label="borderWidth" displayLabel="Width" hint="e.g. 1px, 2px, 0" value={(nodeStyle.borderWidth ?? '') as FormulaValue} onChange={v => bindOrPatch('borderWidth', v)} expectedType="string">
+            <NumberInput
+              label="Width"
+              testId="input-border-width"
+              value={borderWidthPx}
+              onChange={px => patchStyle({ borderWidth: `${px}px` })}
+            />
+          </FieldWithBinding>
           <FieldWithBinding label="borderStyle" displayLabel="Style" hint="e.g. border-solid, border-dashed, border-dotted" value={(classFormulas?.['borderStyle'] as FormulaValue) ?? borderStyle} onChange={v => bindOrPatchCls('borderStyle', evaluated => {
             let next = cls;
             BORDER_STYLE_TOKENS.forEach(t => { next = removeTwToken(next, t); });
@@ -1930,27 +2348,88 @@ function DesignTab({ node }: { node: SDUINode }) {
         const trPx = parseTwArbitraryPx(cls, 'rounded-tr-') ?? tlPx;
         const brPx = parseTwArbitraryPx(cls, 'rounded-br-') ?? tlPx;
         const blPx = parseTwArbitraryPx(cls, 'rounded-bl-') ?? tlPx;
+        // Uniform bind: read from borderRadius (all-corners style prop) for the formula value
+        const uniformRadiusFormula = (nodeStyle.borderRadius ?? nodeStyle.borderTopLeftRadius ?? '') as FormulaValue;
+        const isBound = isBoundValue(uniformRadiusFormula);
         return (
           <div style={SECTION_STYLE}>
-            <span style={LABEL_STYLE}>Border Radius</span>
-            <CornerRadiusDiagram
-              values={{ tl: tlPx, tr: trPx, br: brPx, bl: blPx }}
-              onChange={(corner, px) => {
-                const styleMap = {
-                  tl: 'borderTopLeftRadius',
-                  tr: 'borderTopRightRadius',
-                  br: 'borderBottomRightRadius',
-                  bl: 'borderBottomLeftRadius',
-                } as const;
-                patchStyle({ [styleMap[corner]]: `${px}px` });
+            <FieldWithBinding
+              label="border-radius"
+              headerTitle="Border Radius"
+              hint="e.g. 8 (px number) or variables['UUID']"
+              value={uniformRadiusFormula}
+              onChange={v => {
+                bindOrPatch('borderRadius', v);
               }}
-              onChangeAll={px => patchStyle({
-                borderTopLeftRadius:     `${px}px`,
-                borderTopRightRadius:    `${px}px`,
-                borderBottomRightRadius: `${px}px`,
-                borderBottomLeftRadius:  `${px}px`,
-              })}
-            />
+            >
+              <CornerRadiusDiagram
+                values={{ tl: tlPx, tr: trPx, br: brPx, bl: blPx }}
+                onChange={(corner, px) => {
+                  const styleMap = {
+                    tl: 'borderTopLeftRadius',
+                    tr: 'borderTopRightRadius',
+                    br: 'borderBottomRightRadius',
+                    bl: 'borderBottomLeftRadius',
+                  } as const;
+                  patchStyle({ [styleMap[corner]]: `${px}px` });
+                }}
+                onChangeAll={px => patchStyle({
+                  borderTopLeftRadius:     `${px}px`,
+                  borderTopRightRadius:    `${px}px`,
+                  borderBottomRightRadius: `${px}px`,
+                  borderBottomLeftRadius:  `${px}px`,
+                })}
+              />
+            </FieldWithBinding>
+          </div>
+        );
+      })()}
+
+      {/* ── Per-side Border ── */}
+      {(() => {
+        const sides = [
+          { key: 't', label: 'T', widthStyle: 'borderTopWidth',    colorStyle: 'borderTopColor',    title: 'Top' },
+          { key: 'r', label: 'R', widthStyle: 'borderRightWidth',  colorStyle: 'borderRightColor',  title: 'Right' },
+          { key: 'b', label: 'B', widthStyle: 'borderBottomWidth', colorStyle: 'borderBottomColor', title: 'Bottom' },
+          { key: 'l', label: 'L', widthStyle: 'borderLeftWidth',   colorStyle: 'borderLeftColor',   title: 'Left' },
+        ] as const;
+        const hasPerSide = sides.some(s => (nodeStyle as Record<string, unknown>)[s.widthStyle] || (nodeStyle as Record<string, unknown>)[s.colorStyle]);
+        const [open, setOpen] = React.useState(hasPerSide);
+        return (
+          <div style={SECTION_STYLE}>
+            <button
+              type="button"
+              onClick={() => setOpen(o => !o)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, color: '#6b7280', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', padding: 0, width: '100%', textAlign: 'left' }}
+            >
+              <svg width={8} height={8} viewBox="0 0 8 8" fill="none" style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
+                <path d="M2 1.5l3 2.5-3 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Per-side border
+            </button>
+            {open && (
+              <div style={{ marginTop: 6, display: 'grid', gridTemplateColumns: '14px 44px 1fr', gap: '5px 6px', alignItems: 'center' }}>
+                {sides.map(({ key, label, widthStyle, colorStyle, title }) => {
+                  const widthPx = parseTwArbitraryPx(cls, `border-${key}-`) ?? (parseInt(String((nodeStyle as Record<string, unknown>)[widthStyle] ?? '0')) || 0);
+                  const colorVal = String((nodeStyle as Record<string, unknown>)[colorStyle] ?? '');
+                  return (
+                    <React.Fragment key={key}>
+                      <span title={title} style={{ fontSize: 9, color: '#6b7280', fontWeight: 600, lineHeight: '26px' }}>{label}</span>
+                      <PanelInput
+                        value={widthPx}
+                        onChange={px => patchStyle({ [widthStyle]: `${px}px` })}
+                        min={0}
+                        width={44}
+                      />
+                      <FigmaColorPicker
+                        value={colorVal || computedBorderColor}
+                        onChange={hex => patchStyle({ [colorStyle]: hex || '' })}
+                      />
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            )}
           </div>
         );
       })()}

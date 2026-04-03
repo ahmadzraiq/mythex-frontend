@@ -52,6 +52,12 @@ const globalStore = createVariableStore({
   adapters: [],
 });
 
+// Expose the store on window in development so E2E tests can read/write variables
+// without going through the UI (e.g. to test formula reactivity).
+if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+  (window as unknown as Record<string, unknown>).__globalVariableStore = globalStore;
+}
+
 export function getGlobalVariableStore() {
   return globalStore;
 }

@@ -31,6 +31,9 @@ import animationTest from './screens/animation-test.json';
 import popupTest from './screens/popup-test.json';
 import heroShowcase from './screens/hero-showcase.json';
 import pricingCardTest from './screens/pricing-card-test.json';
+import stylingTest from './screens/styling-test.json';
+import controlsShowcase from './screens/controls-showcase.json';
+import exprCssTest from './screens/expr-css-test.json';
 
 // Layouts
 import storeLayout from './layouts/store.json';
@@ -68,6 +71,7 @@ import dataSourceActions from './actions/datasource-actions.json';
 import workflowTestActions from './actions/workflow-test.json';
 import animationTestActions from './actions/animation-test.json';
 import popupTestActions from './actions/popup-test.json';
+import controlsShowcaseActions from './actions/controls-showcase.json';
 
 const screens = {
   home,
@@ -93,6 +97,9 @@ const screens = {
   popupTest,
   heroShowcase,
   pricingCardTest,
+  stylingTest,
+  controlsShowcase,
+  exprCssTest,
 };
 
 const layouts = {
@@ -133,6 +140,7 @@ const actions = {
   ...workflowTestActions,
   ...animationTestActions,
   ...popupTestActions,
+  ...controlsShowcaseActions,
 };
 
 const actionsByFile = {
@@ -146,6 +154,7 @@ const actionsByFile = {
   workflowTest: workflowTestActions,
   animationTest: animationTestActions,
   popupTest: popupTestActions,
+  controlsShowcase: controlsShowcaseActions,
 };
 
 export const root = {

@@ -155,6 +155,16 @@ export function _applyLightOverrides(overrides: Record<string, string>) {
       // Also keep --theme-${k} (hex) in sync so component defaultNodes using
       // var(--theme-foreground) etc. reflect the live theme, not the stale config/theme.json value.
       colorLines.push(`  --theme-${k}: ${v};`);
+    } else if (v.startsWith('rgba(') || v.startsWith('rgb(')) {
+      // RGBA/RGB color — extract triplet for Gluestack compat, store full value as --theme-X
+      const m = v.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([0-9.]+))?\s*\)/);
+      if (m) {
+        colorLines.push(`  --${k}: ${m[1]} ${m[2]} ${m[3]};`);
+        colorLines.push(`  --theme-${k}: ${v};`);
+      } else {
+        colorLines.push(`  --${k}: ${v};`);
+        colorLines.push(`  --theme-${k}: ${v};`);
+      }
     } else if (k === 'font-heading' || k === 'font-body') {
       // Font vars MUST go on body{} — ThemeStyles sets them there too, and a body{}
       // value shadows any :root{} value for all descendants. DOM order makes our
@@ -193,10 +203,26 @@ export function _applyDarkOverrides(overrides: Record<string, string>) {
   const vars = Object.entries(overrides)
     .map(([k, v]) => {
       const isHex = v.startsWith('#');
-      const rgbLine = `  --${k}: ${isHex ? hexToRgbTriplet(v) : v};`;
-      // Also sync --theme-${k} (hex) so var(--theme-*) component classes follow live dark theme
-      const themeLine = isHex ? `\n  --theme-${k}: ${v};` : '';
-      return rgbLine + themeLine;
+      const isRgb = v.startsWith('rgb(') || v.startsWith('rgba(');
+      let tripletLine: string;
+      let themeLine = '';
+      if (isHex) {
+        tripletLine = `  --${k}: ${hexToRgbTriplet(v)};`;
+        themeLine = `\n  --theme-${k}: ${v};`;
+      } else if (isRgb) {
+        // Extract triplet for Gluestack compat, store full value as --theme-X
+        const m = v.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([0-9.]+))?\s*\)/);
+        if (m) {
+          tripletLine = `  --${k}: ${m[1]} ${m[2]} ${m[3]};`;
+          themeLine = `\n  --theme-${k}: ${v};`;
+        } else {
+          tripletLine = `  --${k}: ${v};`;
+          themeLine = `\n  --theme-${k}: ${v};`;
+        }
+      } else {
+        tripletLine = `  --${k}: ${v};`;
+      }
+      return tripletLine + themeLine;
     })
     .join('\n');
   el.textContent = `html.dark {\n${vars ? vars + '\n' : ''}${GLUESTACK_PRIMARY_BRIDGE}\n}`;

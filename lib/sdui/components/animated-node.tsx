@@ -69,6 +69,8 @@ import Svg, {
 import LinearGradient from 'react-native-linear-gradient';
 import { useRunAction } from '../run-action-context';
 import { useScrollOffset } from '../scroll-offset-context';
+import { getGlobalVariableStore } from '../global-variable-store';
+import { setNestedValue } from '../nested-utils';
 
 // ─── Cross-platform library imports ───────────────────────────────────────────
 // On web, Next.js aliases these to stubs in lib/sdui/stubs/ via next.config.mjs.
@@ -453,7 +455,12 @@ const RN_EASING: Record<string, typeof ReanimatedEasing.linear> = {
   backOut:   ReanimatedEasing.out(ReanimatedEasing.back(1.5)),
   backInOut: ReanimatedEasing.inOut(ReanimatedEasing.back(1.5)),
 };
-const rnEase = (name?: string) => RN_EASING[name ?? ''] ?? ReanimatedEasing.inOut(ReanimatedEasing.quad);
+const rnEase = (name?: string, bezier?: [number, number, number, number]) => {
+  if (name === 'custom' && bezier?.length === 4) {
+    return ReanimatedEasing.bezier(bezier[0], bezier[1], bezier[2], bezier[3]);
+  }
+  return RN_EASING[name ?? ''] ?? ReanimatedEasing.inOut(ReanimatedEasing.quad);
+};
 
 // ─── Named animation → initial/target value maps ─────────────────────────────
 
@@ -807,8 +814,11 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   const isLoopAnimatingRef = useRef(false);
 
   // Timeline
-  const timelineOpacity = useSharedValue(1);
-  const timelineScale   = useSharedValue(1);
+  const timelineOpacity    = useSharedValue(1);
+  const timelineScale      = useSharedValue(1);
+  const timelineTranslateX = useSharedValue(0);
+  const timelineTranslateY = useSharedValue(0);
+  const timelineRotate     = useSharedValue(0);
 
   // statesMachine
   const smOpacity     = useSharedValue(1);
@@ -1736,55 +1746,68 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // ── Declarative timeline — cross-platform (Reanimated) ─────────────────────
   useEffect(() => {
     if (!timeline?.length) return;
-    const rnEasingFn = rnEase(timeline[0]?.easing ?? 'easeInOut');
+
+    const animateProp = (
+      sv: { value: number },
+      from: number, to: number,
+      startMs: number, dur: number,
+      ez: ReturnType<typeof rnEase>,
+      loop: boolean,
+    ) => {
+      sv.value = from;
+      if (loop) {
+        sv.value = withRepeat(
+          withDelay(startMs, withSequence(
+            withTiming(to,   { duration: dur, easing: ez }),
+            withTiming(from, { duration: dur, easing: ez }),
+          )), -1, false,
+        );
+      } else {
+        sv.value = withDelay(startMs, withTiming(to, { duration: dur, easing: ez }));
+      }
+    };
+
     for (const step of timeline) {
       const startMs = step.startMs ?? 0;
       const endMs   = step.endMs   ?? 1000;
       const dur     = endMs - startMs;
-      const ez      = rnEase(step.easing ?? 'easeInOut');
+      const ez      = rnEase(step.easing ?? 'easeInOut', customBezier);
 
-      if (step.property === 'opacity') {
-        const from = Number(step.from ?? 1);
-        const to   = Number(step.to   ?? 1);
-        if (step.loop) {
-          timelineOpacity.value = from;
-          timelineOpacity.value = withRepeat(
-            withDelay(startMs, withSequence(
-              withTiming(to,   { duration: dur, easing: ez }),
-              withTiming(from, { duration: dur, easing: ez }),
-            )), -1, false,
-          );
-        } else {
-          timelineOpacity.value = from;
-          timelineOpacity.value = withDelay(startMs, withTiming(to, { duration: dur, easing: ez }));
-        }
-      } else if (step.property === 'transform') {
-        const fromScaleMatch = String(step.from ?? '').match(/scale\(([\d.]+)\)/);
-        const toScaleMatch   = String(step.to   ?? '').match(/scale\(([\d.]+)\)/);
-        if (fromScaleMatch && toScaleMatch) {
-          const from = Number(fromScaleMatch[1]);
-          const to   = Number(toScaleMatch[1]);
-          if (step.loop) {
-            timelineScale.value = from;
-            timelineScale.value = withRepeat(
-              withDelay(startMs, withSequence(
-                withTiming(to,   { duration: dur, easing: ez }),
-                withTiming(from, { duration: dur, easing: ez }),
-              )), -1, false,
-            );
-          } else {
-            timelineScale.value = from;
-            timelineScale.value = withDelay(startMs, withTiming(to, { duration: dur, easing: ez }));
+      switch (step.property) {
+        case 'opacity':
+          animateProp(timelineOpacity, Number(step.from ?? 1), Number(step.to ?? 1), startMs, dur, ez, !!step.loop);
+          break;
+        case 'translateX':
+          animateProp(timelineTranslateX, Number(step.from ?? 0), Number(step.to ?? 0), startMs, dur, ez, !!step.loop);
+          break;
+        case 'translateY':
+          animateProp(timelineTranslateY, Number(step.from ?? 0), Number(step.to ?? 0), startMs, dur, ez, !!step.loop);
+          break;
+        case 'rotate':
+          animateProp(timelineRotate, Number(step.from ?? 0), Number(step.to ?? 0), startMs, dur, ez, !!step.loop);
+          break;
+        case 'transform': {
+          const fromScaleMatch = String(step.from ?? '').match(/scale\(([\d.]+)\)/);
+          const toScaleMatch   = String(step.to   ?? '').match(/scale\(([\d.]+)\)/);
+          if (fromScaleMatch && toScaleMatch) {
+            animateProp(timelineScale, Number(fromScaleMatch[1]), Number(toScaleMatch[1]), startMs, dur, ez, !!step.loop);
           }
+          break;
         }
       }
     }
-    void rnEasingFn;
+
     return () => {
       cancelAnimation(timelineOpacity);
       cancelAnimation(timelineScale);
-      timelineOpacity.value = 1;
-      timelineScale.value   = 1;
+      cancelAnimation(timelineTranslateX);
+      cancelAnimation(timelineTranslateY);
+      cancelAnimation(timelineRotate);
+      timelineOpacity.value    = 1;
+      timelineScale.value      = 1;
+      timelineTranslateX.value = 0;
+      timelineTranslateY.value = 0;
+      timelineRotate.value     = 0;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(timeline), JSON.stringify(customBezier)]);
@@ -1817,6 +1840,38 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scroll?.enabled, scroll?.threshold, scroll?.once]);
+
+  // ── Scroll trigger typed animation — drives enter shared values on visibility change ─
+  // When scroll.type is set, use ENTER_FROM[type] to animate via Reanimated instead
+  // of CSS keyframes (which require globally-defined @keyframes that don't exist at runtime).
+  useEffect(() => {
+    if (!scroll?.enabled || !scroll?.type || scroll.type === 'none') return;
+    const type = scroll.type as string;
+    const from = ENTER_FROM[type] ?? { opacity: 0 };
+    const dur     = scroll.duration ?? 500;
+    const delay   = scroll.delay ?? 0;
+    const easing  = rnEase(scroll.easing ?? 'easeOut');
+    const anim    = (f: number, to: number) => withDelay(delay, withTiming(to, { duration: dur, easing }));
+
+    if (scrollVisible) {
+      // Animate to final resting position
+      if (from.opacity    != null) { enterOpacity.value   = from.opacity;    enterOpacity.value   = anim(from.opacity,    1); }
+      if (from.translateX != null) { enterTranslateX.value = from.translateX; enterTranslateX.value = anim(from.translateX, 0); }
+      if (from.translateY != null) { enterTranslateY.value = from.translateY; enterTranslateY.value = anim(from.translateY, 0); }
+      if (from.scale      != null) { enterScale.value      = from.scale;      enterScale.value      = anim(from.scale,      1); }
+      if (from.rotateX    != null) { enterRotateX.value    = from.rotateX;    enterRotateX.value    = anim(from.rotateX,    0); }
+      if (from.rotateY    != null) { enterRotateY.value    = from.rotateY;    enterRotateY.value    = anim(from.rotateY,    0); }
+    } else {
+      // Reset to hidden state when element leaves viewport
+      enterOpacity.value   = from.opacity    ?? 1;
+      enterTranslateX.value = from.translateX ?? 0;
+      enterTranslateY.value = from.translateY ?? 0;
+      enterScale.value      = from.scale      ?? 1;
+      enterRotateX.value    = from.rotateX    ?? 0;
+      enterRotateY.value    = from.rotateY    ?? 0;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scrollVisible, scroll?.type, scroll?.duration, scroll?.delay, scroll?.easing]);
 
   // ── Parallax — web: window.scroll + getBoundingClientRect ───────────────────
   useEffect(() => {
@@ -2102,6 +2157,17 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   }, [noise?.animate, noise?.animateDuration]);
 
   // ── Gesture Handler — Pan for drag ────────────────────────────────────────
+
+  // JS-thread helper called via runOnJS from the drag worklet.
+  // Writes a normalised slider value (0–100 or min–max) to the variable store.
+  // Uses setNestedValue so 'components.id.value' is stored as a proper nested object,
+  // consistent with how toggleHandler and setVarHandler write to the same paths.
+  const writeDragValue = useCallback((path: string, value: number) => {
+    getGlobalVariableStore().getState().setState(
+      (prev: Record<string, unknown>) => setNestedValue(prev, path, value) as Record<string, unknown>
+    );
+  }, []);
+
   const dragGesture = useMemo(() => {
     if (!drag?.enabled) return Gesture.Pan().enabled(false);
     const axis   = drag.axis ?? 'both';
@@ -2152,7 +2218,8 @@ export const AnimatedNode = React.memo(function AnimatedNode({
 
         if (dist < thr || vel < vthr) {
           if (gesture.dragFeedback) {
-            gestureTranslateX.value = withSpring(lastSmTransform.value, { damping: 20, stiffness: 200 });
+            const snapDur = gesture.animationDuration ?? 400;
+            gestureTranslateX.value = withTiming(lastSmTransform.value, { duration: snapDur, easing: rnEase('easeOut') });
           }
           return;
         }
@@ -2173,7 +2240,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gesture?.enabled, gesture?.swipe, gesture?.swipeThreshold, gesture?.velocityThreshold,
       gesture?.onSwipeLeftAction, gesture?.onSwipeRightAction, gesture?.onSwipeUpAction, gesture?.onSwipeDownAction,
-      gesture?.dragFeedback, safeRunAction]);
+      gesture?.dragFeedback, gesture?.animationDuration, safeRunAction]);
 
   // ── Tap gesture (press + flip click) ──────────────────────────────────────
   const tapGesture = useMemo(() => {
@@ -2362,10 +2429,19 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     if (smTranslateY.value !== 0) transforms.push({ translateY: smTranslateY.value });
 
     // Timeline
-    if (timelineScale.value !== 1) transforms.push({ scale: timelineScale.value });
+    if (timelineTranslateX.value !== 0) transforms.push({ translateX: timelineTranslateX.value });
+    if (timelineTranslateY.value !== 0) transforms.push({ translateY: timelineTranslateY.value });
+    if (timelineRotate.value     !== 0) transforms.push({ rotate: `${timelineRotate.value}deg` });
+    if (timelineScale.value      !== 1) transforms.push({ scale: timelineScale.value });
 
-    // Parallax
-    if (parallaxOffset.value !== 0) transforms.push({ translateY: parallaxOffset.value });
+    // Parallax — direction controls whether offset applies to X or Y axis
+    if (parallaxOffset.value !== 0) {
+      if (parallax?.direction === 'horizontal') {
+        transforms.push({ translateX: parallaxOffset.value });
+      } else {
+        transforms.push({ translateY: parallaxOffset.value });
+      }
+    }
 
     // Flip
     if (flipRotateY.value !== 0) transforms.push({ rotateY: `${flipRotateY.value}deg` });
@@ -2458,7 +2534,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     dragX, dragY,
     gestureTranslateX,
     smOpacity, smScale, smTranslateX, smTranslateY, smWidth, smHeight, smBorderRadius, smBgColorProg,
-    timelineOpacity, timelineScale,
+    timelineOpacity, timelineScale, timelineTranslateX, timelineTranslateY, timelineRotate,
     colorProgress,
     morphBorderRadius, morphBlob, morphTL, morphTR, morphBR, morphBL,
     flipRotateY,
@@ -2470,19 +2546,17 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     isFocusedSv,
   ]);
 
-  // ── Scroll trigger CSS style (web — named-type CSS animations only) ─────────
+  // ── Scroll trigger CSS style — typed animations now use Reanimated (see scroll typed effect above)
+  // This returns empty object for typed scroll triggers — Reanimated drives enterOpacity/translateX/Y etc.
+  // For type-less scroll triggers, scrollVisProgress drives opacity directly via animatedStyle.
   const scrollCssStyle = useMemo((): CSSProperties => {
+    void cssEase; // retained for future use if needed
     if (Platform.OS !== 'web' || !scroll?.enabled) return {};
-    const type  = scroll.type && scroll.type !== 'none' ? scroll.type : null;
-    const dur   = (scroll.duration ?? 500) + 'ms';
-    const delay = (scroll.delay ?? 0) + 'ms';
-    const ez    = cssEase(scroll.easing ?? 'easeOut');
-    if (type) {
-      if (!scrollVisible) return { opacity: 0 };
-      return { animation: `an-${type} ${dur} ${ez} ${delay} both` } as CSSProperties;
-    }
+    // Typed scroll trigger: Reanimated handles it via the scroll-typed-animation useEffect above.
+    // No CSS animation needed — returning {} here prevents a broken `an-*` keyframe reference.
+    if (scroll.type && scroll.type !== 'none') return {};
     return {};
-  }, [scroll?.enabled, scroll?.type, scroll?.duration, scroll?.delay, scroll?.easing, scrollVisible]);
+  }, [scroll?.enabled, scroll?.type]);
 
   // ── Scroll progress style (web — CSS transform/filter strings) ─────────────
   const scrollProgressCssStyle = useMemo((): CSSProperties => {
@@ -2515,7 +2589,32 @@ export const AnimatedNode = React.memo(function AnimatedNode({
       if (filter.saturate   != null) parts.push(`saturate(${filter.saturate})`);
       if (filter.hueRotate  != null) parts.push(`hue-rotate(${filter.hueRotate}deg)`);
       if ((filter as { dropShadow?: string }).dropShadow) parts.push(`drop-shadow(${(filter as { dropShadow?: string }).dropShadow})`);
-      return parts.length ? { filter: parts.join(' ') } : {};
+      if (!parts.length) return {};
+      const style: Record<string, unknown> = { filter: parts.join(' ') };
+      // Wire duration/easing — add CSS transition so filter value changes animate smoothly.
+      // When filter.loop is set, inject a CSS @keyframes that pulses the filter.
+      if (filter.duration) {
+        const ez = cssEase(filter.easing ?? 'easeInOut');
+        if (filter.loop) {
+          // Build a loop keyframe: 0% → full filter, 50% → no filter, 100% → full filter
+          const keyId = `filter-loop-${nodeId ?? 'x'}`;
+          const kf = `@keyframes ${keyId} { 0%,100% { filter: ${parts.join(' ')}; } 50% { filter: none; } }`;
+          // Inject keyframe if not already present
+          if (typeof document !== 'undefined') {
+            const existing = document.getElementById(`kf-${keyId}`);
+            if (!existing) {
+              const s = document.createElement('style');
+              s.id = `kf-${keyId}`;
+              s.textContent = kf;
+              document.head.appendChild(s);
+            }
+          }
+          style.animation = `${keyId} ${filter.duration}ms ${ez} infinite`;
+        } else {
+          style.transition = `filter ${filter.duration}ms ${ez}`;
+        }
+      }
+      return style;
     } else {
       // Native: RN 0.76+ filter array format (dropShadow not supported in array)
       const arr: object[] = [];
@@ -2527,7 +2626,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
       if (filter.hueRotate  != null) arr.push({ hueRotate: filter.hueRotate });
       return arr.length ? { filter: arr } : {};
     }
-  }, [filter?.enabled, filter?.blur, filter?.brightness, filter?.contrast, filter?.grayscale, filter?.saturate, filter?.hueRotate]);
+  }, [filter?.enabled, filter?.blur, filter?.brightness, filter?.contrast, filter?.grayscale, filter?.saturate, filter?.hueRotate, filter?.duration, filter?.easing, filter?.loop, nodeId]);
 
   // ── Backdrop blur — web only (not supported on React Native native) ──────────
   const backdropStyle = useMemo(() => {
@@ -2568,7 +2667,11 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     ...maskCssStyle,
     // Gradient: keep background-size hint on wrapper so tests/CSS inspectors detect it
     ...(gradientAnimation?.enabled ? { backgroundSize: '200% 200%' } as object : {}),
-    position: parallax?.enabled || drag?.enabled || noise || particles ? 'relative' : scrollProgress?.pin ? 'sticky' : undefined,
+    // When outerStyle provides its own position (e.g. absolute for a full-track slider overlay),
+    // skip the forced 'relative' so outerStyle wins without fighting the style array order.
+    position: (outerStyle as Record<string, unknown> | undefined)?.position != null
+      ? undefined
+      : parallax?.enabled || drag?.enabled || noise || particles ? 'relative' : scrollProgress?.pin ? 'sticky' : undefined,
     // morphShape clips the inner content via border-radius; overflow:hidden is required
     // so the child's background (gradient, image) is clipped by the animated corner radii.
     overflow: noise || particles || morphShape?.enabled || pseudoElCfg?.enabled ? 'hidden' : undefined,
@@ -2585,7 +2688,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     ...(statesMachine?.defaultState && !statesMachine.watchVar ? statesMachine.states[statesMachine.defaultState] ?? {} : {}),
   }), [scrollCssStyle, scrollProgressCssStyle, filterStyle, backdropStyle, clipPathStyle, maskCssStyle,
        parallax?.enabled, drag?.enabled, noise, particles, scrollProgress?.pin, focus?.enabled,
-       flip, statesMachine, morphShape?.enabled, gesture?.enabled, outerClassName]);
+       flip, statesMachine, morphShape?.enabled, gesture?.enabled, outerClassName, outerStyle, builderMode]);
 
   // ── Pseudo-element animated styles (cross-platform Reanimated) ────────────
   const pseudoBeforeStyle = useAnimatedStyle(() => {

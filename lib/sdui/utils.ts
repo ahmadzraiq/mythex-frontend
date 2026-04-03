@@ -160,7 +160,9 @@ export function resolveProps(
             resolved[key] = evalResult.value;
           }
         } catch {
-          resolved[key] = value;
+          // CSS expressions like calc(100% - 24px) are not valid JS but are valid CSS.
+          // Return the formula string as-is so the browser CSS engine can handle it.
+          resolved[key] = (value as { formula?: string }).formula ?? value;
         }
       } else if ('action' in obj && runAction) {
         resolved[key] = () => runAction(obj);

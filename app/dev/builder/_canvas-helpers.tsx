@@ -166,6 +166,10 @@ export const InactivePagesGrid = memo(function InactivePagesGrid({
                 [data-builder-page-frame="0"] .min-h-screen { min-height: ${VIEWPORT_H}px !important; }
                 [data-builder-page-frame="0"] .w-screen    { width: ${vpWidth}px !important; }
                 [data-builder-page-frame="0"] .max-h-screen { max-height: ${VIEWPORT_H}px !important; }
+                [data-builder-page-frame="0"] {
+                  --builder-vw: ${vpWidth / 100}px;
+                  --builder-vh: ${VIEWPORT_H / 100}px;
+                }
               `}</style>
               <InactivePageEngine
                 pageId={page.id}

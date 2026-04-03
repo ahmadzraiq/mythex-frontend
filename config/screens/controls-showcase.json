@@ -1,0 +1,665 @@
+{
+  "meta": {
+    "title": "Controls Showcase"
+  },
+  "layout": "store",
+  "content": {
+    "type": "Box",
+    "props": {
+      "className": "w-full max-w-3xl mx-auto px-[16px] py-[40px] flex flex-col gap-[32px]"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "props": { "className": "flex flex-col gap-[8px]" },
+        "children": [
+          {
+            "type": "Text",
+            "props": { "className": "text-[32px] font-bold text-foreground" },
+            "text": "Controls Showcase"
+          },
+          {
+            "type": "Text",
+            "props": { "className": "text-[16px] text-gray-500 dark:text-gray-400" },
+            "text": "Box-based interactive components — Checkbox, Switch, Toggle, Radio Group, Progress, Slider. All state is live-reactive."
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-[12px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]" },
+        "children": [
+          {
+            "type": "Text",
+            "props": { "className": "text-[18px] font-semibold text-foreground" },
+            "text": "Checkbox"
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row items-center gap-[8px] cursor-pointer w-fit" },
+            "actions": [{ "action": "csToggleCheckbox" }],
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "w-[18px] h-[18px] rounded-[4px] border-[2px] border-gray-300 flex items-center justify-center transition-colors" },
+                "children": [
+                  {
+                    "type": "Icon",
+                    "condition": "variables?.['cs-checkbox-0000-0000-0000-000000000001']",
+                    "props": { "icon": "lucide:check", "size": 12, "color": "#6366f1" }
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-[14px] text-foreground select-none" },
+                "text": "I accept the terms and conditions"
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row items-center gap-[8px] px-[12px] py-[8px] rounded-[8px] bg-gray-50 dark:bg-gray-800" },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-[13px] text-gray-500" },
+                "text": "State: "
+              },
+              {
+                "type": "Text",
+                "condition": "variables?.['cs-checkbox-0000-0000-0000-000000000001']",
+                "props": { "className": "text-[13px] font-semibold text-green-600" },
+                "text": "✓ checked"
+              },
+              {
+                "type": "Text",
+                "condition": "!variables?.['cs-checkbox-0000-0000-0000-000000000001']",
+                "props": { "className": "text-[13px] font-semibold text-gray-400" },
+                "text": "unchecked"
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-[12px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]" },
+        "children": [
+          {
+            "type": "Text",
+            "props": { "className": "text-[18px] font-semibold text-foreground" },
+            "text": "Switch"
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row items-center gap-[16px]" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "relative w-[48px] h-[26px] rounded-[9999px] cursor-pointer overflow-hidden" },
+                "actions": [{ "action": "csToggleSwitch" }],
+                "children": [
+                  {
+                    "type": "Box",
+                    "condition": "!variables?.['cs-switch-00000-0000-0000-000000000002']",
+                    "props": { "className": "absolute inset-0 rounded-[9999px] bg-gray-300" }
+                  },
+                  {
+                    "type": "Box",
+                    "condition": "variables?.['cs-switch-00000-0000-0000-000000000002']",
+                    "props": { "className": "absolute inset-0 rounded-[9999px] bg-[var(--theme-primary)]" }
+                  },
+                  {
+                    "type": "Box",
+                    "condition": "!variables?.['cs-switch-00000-0000-0000-000000000002']",
+                    "props": { "className": "absolute left-[3px] top-[3px] w-[20px] h-[20px] rounded-[9999px] bg-white shadow-sm" }
+                  },
+                  {
+                    "type": "Box",
+                    "condition": "variables?.['cs-switch-00000-0000-0000-000000000002']",
+                    "props": { "className": "absolute right-[3px] top-[3px] w-[20px] h-[20px] rounded-[9999px] bg-white shadow-sm" }
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-[14px] text-foreground" },
+                "text": "Enable notifications"
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row items-center gap-[8px] px-[12px] py-[8px] rounded-[8px] bg-gray-50 dark:bg-gray-800" },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-[13px] text-gray-500" },
+                "text": "State: "
+              },
+              {
+                "type": "Text",
+                "condition": "variables?.['cs-switch-00000-0000-0000-000000000002']",
+                "props": { "className": "text-[13px] font-semibold text-green-600" },
+                "text": "ON"
+              },
+              {
+                "type": "Text",
+                "condition": "!variables?.['cs-switch-00000-0000-0000-000000000002']",
+                "props": { "className": "text-[13px] font-semibold text-gray-400" },
+                "text": "OFF"
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-[12px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]" },
+        "children": [
+          {
+            "type": "Text",
+            "props": { "className": "text-[18px] font-semibold text-foreground" },
+            "text": "Toggle"
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row items-center gap-[8px] px-[12px] py-[8px] rounded-[8px] border border-gray-300 dark:border-gray-600 cursor-pointer w-fit" },
+            "actions": [{ "action": "csToggleToggle" }],
+            "children": [
+              {
+                "type": "Box",
+                "condition": "variables?.['cs-toggle-00000-0000-0000-000000000003']",
+                "props": { "className": "w-[8px] h-[8px] rounded-[9999px] bg-[var(--theme-primary)]" }
+              },
+              {
+                "type": "Box",
+                "condition": "!variables?.['cs-toggle-00000-0000-0000-000000000003']",
+                "props": { "className": "w-[8px] h-[8px] rounded-[9999px] bg-gray-300" }
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-[14px] font-medium text-foreground select-none" },
+                "text": "Bold text"
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row items-center gap-[8px] px-[12px] py-[8px] rounded-[8px] bg-gray-50 dark:bg-gray-800" },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-[13px] text-gray-500" },
+                "text": "State: "
+              },
+              {
+                "type": "Text",
+                "condition": "variables?.['cs-toggle-00000-0000-0000-000000000003']",
+                "props": { "className": "text-[13px] font-bold text-[var(--theme-primary)]" },
+                "text": "active"
+              },
+              {
+                "type": "Text",
+                "condition": "!variables?.['cs-toggle-00000-0000-0000-000000000003']",
+                "props": { "className": "text-[13px] font-semibold text-gray-400" },
+                "text": "inactive"
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-[12px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]" },
+        "children": [
+          {
+            "type": "Text",
+            "props": { "className": "text-[18px] font-semibold text-foreground" },
+            "text": "Radio Group"
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[12px]" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row items-center gap-[10px] cursor-pointer" },
+                "actions": [{ "action": "csSelectRadioA" }],
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": { "className": "w-[18px] h-[18px] rounded-[9999px] border-[2px] border-gray-300 flex items-center justify-center" },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "condition": "variables?.['cs-radio-000000-0000-0000-000000000004'] === 'option-a'",
+                        "props": { "className": "w-[8px] h-[8px] rounded-[9999px] bg-[var(--theme-primary)]" }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-[14px] text-foreground select-none" },
+                    "text": "Option A — Free plan"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row items-center gap-[10px] cursor-pointer" },
+                "actions": [{ "action": "csSelectRadioB" }],
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": { "className": "w-[18px] h-[18px] rounded-[9999px] border-[2px] border-gray-300 flex items-center justify-center" },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "condition": "variables?.['cs-radio-000000-0000-0000-000000000004'] === 'option-b'",
+                        "props": { "className": "w-[8px] h-[8px] rounded-[9999px] bg-[var(--theme-primary)]" }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-[14px] text-foreground select-none" },
+                    "text": "Option B — Pro plan $9/mo"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row items-center gap-[10px] cursor-pointer" },
+                "actions": [{ "action": "csSelectRadioC" }],
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": { "className": "w-[18px] h-[18px] rounded-[9999px] border-[2px] border-gray-300 flex items-center justify-center" },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "condition": "variables?.['cs-radio-000000-0000-0000-000000000004'] === 'option-c'",
+                        "props": { "className": "w-[8px] h-[8px] rounded-[9999px] bg-[var(--theme-primary)]" }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-[14px] text-foreground select-none" },
+                    "text": "Option C — Enterprise custom"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row items-center gap-[8px] px-[12px] py-[8px] rounded-[8px] bg-gray-50 dark:bg-gray-800" },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-[13px] text-gray-500" },
+                "text": "Selected: "
+              },
+              {
+                "type": "Text",
+                "condition": "variables?.['cs-radio-000000-0000-0000-000000000004']",
+                "props": { "className": "text-[13px] font-semibold text-[var(--theme-primary)]" },
+                "text": "{{variables['cs-radio-000000-0000-0000-000000000004']}}"
+              },
+              {
+                "type": "Text",
+                "condition": "!variables?.['cs-radio-000000-0000-0000-000000000004']",
+                "props": { "className": "text-[13px] font-semibold text-gray-400" },
+                "text": "none"
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-[12px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]" },
+        "children": [
+          {
+            "type": "Text",
+            "props": { "className": "text-[18px] font-semibold text-foreground" },
+            "text": "Progress Bar"
+          },
+          {
+            "type": "Box",
+            "props": { "className": "w-full h-[10px] rounded-[9999px] bg-gray-200 overflow-hidden" },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "h-full rounded-[9999px] bg-[var(--theme-primary)] transition-all",
+                  "style": { "width": "{{variables['cs-progress-0000-0000-0000-000000000005']}}%" }
+                }
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row items-center justify-between" },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-[13px] text-gray-500" },
+                "text": "{{variables['cs-progress-0000-0000-0000-000000000005']}}% complete"
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row gap-[8px]" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex items-center justify-center px-[12px] py-[6px] rounded-[6px] border border-gray-300 dark:border-gray-600 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800" },
+                    "actions": [{ "action": "csProgressDecrease" }],
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[13px] font-medium text-foreground" },
+                        "text": "−10"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex items-center justify-center px-[12px] py-[6px] rounded-[6px] bg-[var(--theme-primary)] cursor-pointer hover:opacity-90" },
+                    "actions": [{ "action": "csProgressIncrease" }],
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[13px] font-medium text-[var(--theme-primary-foreground)]" },
+                        "text": "+10"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-[12px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]" },
+        "children": [
+          {
+            "type": "Text",
+            "props": { "className": "text-[18px] font-semibold text-foreground" },
+            "text": "Slider"
+          },
+          {
+            "type": "Slider",
+            "props": { "defaultValue": 50, "minValue": 0, "maxValue": 100, "className": "w-full" },
+            "children": [
+              { "type": "SliderTrack", "children": [{ "type": "SliderFilledTrack" }] },
+              { "type": "SliderThumb" }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row items-center gap-[8px]" },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-[13px] text-gray-500" },
+                "text": "Disabled slider:"
+              },
+              {
+                "type": "Slider",
+                "props": { "defaultValue": 30, "minValue": 0, "maxValue": 100, "isDisabled": true, "className": "flex-1" },
+                "children": [
+                  { "type": "SliderTrack", "children": [{ "type": "SliderFilledTrack" }] },
+                  { "type": "SliderThumb" }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[8px]" },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-[13px] font-medium text-foreground" },
+                "text": "Vertical:"
+              },
+              {
+                "type": "Box",
+                "props": { "className": "h-[120px] flex items-center justify-center" },
+                "children": [
+                  {
+                    "type": "Slider",
+                    "props": { "defaultValue": 60, "minValue": 0, "maxValue": 100, "orientation": "vertical", "className": "h-full" },
+                    "children": [
+                      { "type": "SliderTrack", "children": [{ "type": "SliderFilledTrack" }] },
+                      { "type": "SliderThumb" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row items-center gap-[8px]" },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-[13px] text-gray-500" },
+                "text": "Step 10:"
+              },
+              {
+                "type": "Slider",
+                "props": { "defaultValue": 40, "minValue": 0, "maxValue": 100, "step": 10, "className": "flex-1" },
+                "children": [
+                  { "type": "SliderTrack", "children": [{ "type": "SliderFilledTrack" }] },
+                  { "type": "SliderThumb" }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-[12px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]" },
+        "children": [
+          {
+            "type": "Text",
+            "props": { "className": "text-[18px] font-semibold text-foreground" },
+            "text": "Switch & Toggle (visual states)"
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-[16px] items-center" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col items-center gap-[8px]" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-[12px] text-gray-500" }, "text": "Off" },
+                  {
+                    "type": "Box",
+                    "props": { "className": "relative w-[48px] h-[24px] rounded-[9999px] bg-gray-300 justify-center" },
+                    "children": [{ "type": "Box", "props": { "className": "absolute left-[2px] top-[2px] w-[20px] h-[20px] rounded-[9999px] bg-white shadow-sm" } }]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col items-center gap-[8px]" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-[12px] text-gray-500" }, "text": "On" },
+                  {
+                    "type": "Box",
+                    "props": { "className": "relative w-[48px] h-[24px] rounded-[9999px] bg-[var(--theme-primary)] justify-center" },
+                    "children": [{ "type": "Box", "props": { "className": "absolute right-[2px] top-[2px] w-[20px] h-[20px] rounded-[9999px] bg-white shadow-sm" } }]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[8px]" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-[13px] text-gray-500" }, "text": "Toggle:" },
+              {
+                "type": "Box",
+                "props": { "className": "relative w-[48px] h-[24px] rounded-[9999px] bg-gray-300 justify-center px-[2px]" },
+                "children": [{ "type": "Box", "props": { "className": "w-[20px] h-[20px] rounded-[9999px] bg-white shadow-sm" } }]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-[12px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[8px]" },
+        "children": [
+          {
+            "type": "Text",
+            "props": { "className": "text-[18px] font-semibold text-foreground" },
+            "text": "Placeholder (removed)"
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row items-center gap-[8px]" },
+            "children": []
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-[12px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]" },
+        "children": [
+          {
+            "type": "Text",
+            "props": { "className": "text-[18px] font-semibold text-foreground" },
+            "text": "Spinner"
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row items-center gap-[16px]" },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center justify-center w-[40px] h-[40px]",
+                  "animation": { "loop": { "type": "spin", "duration": 1000, "repeatCount": -1 } }
+                },
+                "children": [
+                  { "type": "Icon", "props": { "icon": "lucide:loader-2", "size": 28, "color": "#6b7280" } }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center justify-center w-[40px] h-[40px]",
+                  "animation": { "loop": { "type": "spin", "duration": 800, "repeatCount": -1 } }
+                },
+                "children": [
+                  { "type": "Icon", "props": { "icon": "lucide:loader-2", "size": 28, "color": "#6366f1" } }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center justify-center w-[40px] h-[40px]",
+                  "animation": { "loop": { "type": "spin", "duration": 600, "repeatCount": -1 } }
+                },
+                "children": [
+                  { "type": "Icon", "props": { "icon": "lucide:loader-2", "size": 28, "color": "#10b981" } }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Text",
+            "props": { "className": "text-[13px] text-gray-400" },
+            "text": "Spinners at 1000ms, 800ms, 600ms. Pure Box + Icon + animation.loop.spin — no Gluestack Spinner dependency."
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-[12px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]" },
+        "children": [
+          {
+            "type": "Text",
+            "props": { "className": "text-[18px] font-semibold text-foreground" },
+            "text": "Live State Summary"
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[8px]" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row items-center justify-between py-[6px] border-b border-gray-100 dark:border-gray-800" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-[13px] text-gray-500" }, "text": "Checkbox" },
+                  { "type": "Text", "props": { "className": "text-[13px] font-mono font-semibold text-foreground" }, "text": "{{variables['cs-checkbox-0000-0000-0000-000000000001']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row items-center justify-between py-[6px] border-b border-gray-100 dark:border-gray-800" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-[13px] text-gray-500" }, "text": "Switch" },
+                  { "type": "Text", "props": { "className": "text-[13px] font-mono font-semibold text-foreground" }, "text": "{{variables['cs-switch-00000-0000-0000-000000000002']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row items-center justify-between py-[6px] border-b border-gray-100 dark:border-gray-800" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-[13px] text-gray-500" }, "text": "Toggle" },
+                  { "type": "Text", "props": { "className": "text-[13px] font-mono font-semibold text-foreground" }, "text": "{{variables['cs-toggle-00000-0000-0000-000000000003']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row items-center justify-between py-[6px] border-b border-gray-100 dark:border-gray-800" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-[13px] text-gray-500" }, "text": "Radio" },
+                  { "type": "Text", "props": { "className": "text-[13px] font-mono font-semibold text-foreground" }, "text": "{{variables['cs-radio-000000-0000-0000-000000000004']}}" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row items-center justify-between py-[6px] border-b border-gray-100 dark:border-gray-800" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-[13px] text-gray-500" }, "text": "Progress" },
+                  { "type": "Text", "props": { "className": "text-[13px] font-mono font-semibold text-foreground" }, "text": "{{variables['cs-progress-0000-0000-0000-000000000005']}}%" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row items-center justify-between py-[6px]" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-[13px] text-gray-500" }, "text": "Slider" },
+                  { "type": "Text", "props": { "className": "text-[13px] font-mono font-semibold text-gray-400" }, "text": "internal state" }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

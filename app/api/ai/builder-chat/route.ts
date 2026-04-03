@@ -27,7 +27,7 @@ import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { ALL_BUILDER_TOOLS, PHASE3_BUILDER_TOOLS, PHASE_W_TOOLS, STRUCTURE_AGENT_TOOLS, BINDING_AGENT_TOOLS, LAYOUT_AGENT_TOOLS, COLORS_AGENT_TOOLS, TYPO_ANIM_AGENT_TOOLS } from '@/lib/ai/builder-tools';
 import { buildChatSystemPrompt, buildPhase3SystemPrompt, PLAN_SYSTEM } from '@/lib/ai/builder-knowledge-v2';
-import { buildStructureAgentPrompt, buildBindingAgentPrompt, buildWorkflowsAgentPrompt, buildLayoutAgentPrompt, buildColorsAgentPrompt, buildTypoAnimAgentPrompt } from '@/lib/ai/agent-prompts';
+import { buildStructureAgentPrompt, buildBindingAgentPrompt, buildWorkflowsAgentPrompt, buildLayoutAgentPrompt, buildColorsAgentPrompt, buildTypoAnimAgentPrompt } from '@/lib/ai/agents';
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // ── Build-mode types ─────────────────────────────────────────────────────────

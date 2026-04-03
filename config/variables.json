@@ -855,6 +855,78 @@
       "type": "string",
       "initialValue": "",
       "folder": "Popup Test"
+    },
+    "style-test-0000-0000-0000-width-pct": {
+      "label": "ST Width %",
+      "type": "number",
+      "initialValue": 60,
+      "folder": "Styling Test"
+    },
+    "style-test-0000-0000-0000-opacity-val": {
+      "label": "ST Opacity",
+      "type": "number",
+      "initialValue": 1,
+      "folder": "Styling Test"
+    },
+    "style-test-0000-0000-0000-radius-px": {
+      "label": "ST Border Radius",
+      "type": "number",
+      "initialValue": 8,
+      "folder": "Styling Test"
+    },
+    "style-test-0000-0000-0000-padding-px": {
+      "label": "ST Padding",
+      "type": "number",
+      "initialValue": 16,
+      "folder": "Styling Test"
+    },
+    "style-test-0000-0000-0000-z-index": {
+      "label": "ST Z-Index",
+      "type": "number",
+      "initialValue": 10,
+      "folder": "Styling Test"
+    },
+    "cs-checkbox-0000-0000-0000-000000000001": {
+      "label": "CS Checkbox",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Controls Showcase"
+    },
+    "cs-switch-00000-0000-0000-000000000002": {
+      "label": "CS Switch",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Controls Showcase"
+    },
+    "cs-toggle-00000-0000-0000-000000000003": {
+      "label": "CS Toggle",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Controls Showcase"
+    },
+    "cs-radio-000000-0000-0000-000000000004": {
+      "label": "CS Radio",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Controls Showcase"
+    },
+    "cs-progress-0000-0000-0000-000000000005": {
+      "label": "CS Progress",
+      "type": "number",
+      "initialValue": 30,
+      "folder": "Controls Showcase"
+    },
+    "cs-slider-00000-0000-0000-000000000006": {
+      "label": "CS Slider",
+      "type": "number",
+      "initialValue": 50,
+      "folder": "Controls Showcase"
+    },
+    "ex-width-00000-0000-0000-000000000001": {
+      "label": "Expr Test Width",
+      "type": "number",
+      "initialValue": 200,
+      "folder": "Expr CSS Test"
     }
   },
   "varFolders": [
@@ -921,6 +993,18 @@
     {
       "id": "Popup Test",
       "label": "Popup Test"
+    },
+    {
+      "id": "Styling Test",
+      "label": "Styling Test"
+    },
+    {
+      "id": "Controls Showcase",
+      "label": "Controls Showcase"
+    },
+    {
+      "id": "Expr CSS Test",
+      "label": "Expr CSS Test"
     }
   ]
 }

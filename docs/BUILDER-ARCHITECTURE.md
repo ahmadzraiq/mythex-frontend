@@ -220,6 +220,7 @@ The builder has an AI assistant that calls semantic builder actions via Anthropi
 | `app/api/ai/builder-chat/route.ts` | POST endpoint — builds system prompt with live theme palette + project context, runs the Anthropic multi-round tool loop, streams SSE events |
 | `lib/ai/builder-knowledge.ts` | `buildChatSystemPrompt()` — the edit-mode system prompt. Accepts `paletteSnapshot`, `mood`, `appName`, `description`. Auto-generates formula function reference from `FUNCTION_LIBRARY`. |
 | `lib/ai/builder-knowledge-v2.ts` | Phase-specific system prompts for parallel build: `buildPhase2SysPrompt` (structure), `buildPhase3SystemPrompt` (styling), `buildPhaseWSysPrompt` (workflows). Contains anti-hallucination rules and concept blocks (`CONCEPT_REPEAT`, `CONCEPT_COLORS`, `CONCEPT_FORMULA`). |
+| `lib/ai/agents/` | Parallel agent prompts — one subfolder per agent (`structure`, `binding`, `layout`, `colors`, `typo-anim`, `workflows`) and `shared/` (formula/scope + styling context). `registry.ts` documents agent IDs aligned with SSE `agent` / `phase` strings. Barrel: `lib/ai/agents/index.ts`; also re-exported from `lib/ai/agent-prompts.ts` for stable imports. |
 | `lib/ai/builder-tools.ts` | `ALL_BUILDER_TOOLS` — all Anthropic `tool_use` tool definitions (add_component, create_workflow, set_text, etc.) |
 | `lib/ai/tool-executor.ts` | `executeTool()` — maps AI tool calls to Zustand store mutations client-side. Contains `validateFormula()` for formula linting. |
 | `lib/ai/sdui-component-schema.ts` | Maps component labels to default JSON node templates |

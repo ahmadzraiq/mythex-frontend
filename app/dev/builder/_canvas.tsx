@@ -26,7 +26,8 @@ import appConfig from '@/config/app';
 import type { SDUIConfig } from '@/lib/sdui/types';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import { computeSnap, snapResizeSize, SNAP_THRESHOLD, type SnapGuide, type ContentRect } from './_snap-engine';
-import { removeTwToken, styleToClassName, STYLE_TO_CLASS_KEYS } from './_tw-utils';
+import { removeTwToken, styleToClassName, STYLE_TO_CLASS_KEYS, parseTwArbitraryWithUnit } from './_tw-utils';
+import { cancelPendingDimensionFlush } from './_panel-right';
 import { StateBar } from './_state-bar';
 import { applyStateTagOverrides } from '@/lib/sdui/builder-preview';
 
@@ -263,6 +264,15 @@ export default function BuilderCanvas() {
 
   // ── Canvas right-click context menu ───────────────────────────────────────
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; nodeId: string | null } | null>(null);
+
+  // ── Transient toast message (auto-dismisses) ─────────────────────────────
+  const [canvasToast, setCanvasToast] = useState<string | null>(null);
+  const canvasToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showCanvasToast = useCallback((msg: string) => {
+    if (canvasToastTimerRef.current) clearTimeout(canvasToastTimerRef.current);
+    setCanvasToast(msg);
+    canvasToastTimerRef.current = setTimeout(() => setCanvasToast(null), 3000);
+  }, []);
 
   // ── Inline text editing (contentEditable) ────────────────────────────────
   //
@@ -1442,12 +1452,16 @@ export default function BuilderCanvas() {
     e.stopPropagation();
     e.preventDefault();
 
+    // Flush any pending patchStyle dimension update before capturing existingCls.
+    // Without this, a debounce timer (e.g. from a unit-toggle) would fire after onUp
+    // and overwrite the committed resize result.
+    cancelPendingDimensionFlush();
+
     const el    = document.querySelector(`[data-builder-id="${id}"]`) as HTMLElement | null;
     const frame = document.querySelector('[data-builder-page-frame]');
     if (!el || !frame) return;
 
     const r         = el.getBoundingClientRect();
-    const fr        = frame.getBoundingClientRect();
     const z         = useBuilderStore.getState().zoom;
     const startX    = e.clientX;
     const startY    = e.clientY;
@@ -1507,17 +1521,65 @@ export default function BuilderCanvas() {
       window.removeEventListener('pointerup',   onUp);
       setSnapGuides([]);
 
+      // Guard: if the node has a formula expression binding on width/height, bail out.
+      // Expressions (calc(), variables, etc.) cannot be represented as pixel Tailwind classes.
+      const styleProps = (node?.props as { style?: Record<string, unknown> })?.style ?? {};
+      const isFormulaDim = (v: unknown): boolean => v !== null && v !== undefined && typeof v === 'object';
+      if ((handle.includes('e') || handle.includes('w')) && isFormulaDim(styleProps.width)) {
+        showCanvasToast('Width uses an expression — edit it via the ƒ button in the panel.');
+        return;
+      }
+      if ((handle.includes('n') || handle.includes('s')) && isFormulaDim(styleProps.height)) {
+        showCanvasToast('Height uses an expression — edit it via the ƒ button in the panel.');
+        return;
+      }
+
       // Commit final size to Zustand as Tailwind arbitrary-value classes (class-only, no inline style).
+      // Preserve the existing unit (vw/vh/%/px) so a vw element stays in vw after drag.
       // Strip w-fit/w-full/w-screen/h-fit/h-screen/flex-1 so Dimensions panel shows Fixed mode.
       const existingCls = (node?.props as { className?: string })?.className ?? '';
       let newCls = existingCls;
+
+      // Convert a logical px value to the target CSS unit string.
+      // vw/vh are relative to the DESIGNED viewport (vpWidth × VIEWPORT_H), not the
+      // frame's actual rendered height (which grows with content).
+      // Read --builder-vw/vh from the frame's computed style so this calculation
+      // always matches classToInlineStyle's calc(N * var(--builder-vw/vh)) output.
+      const computedFrame = getComputedStyle(frame as HTMLElement);
+      const vwProp = parseFloat(computedFrame.getPropertyValue('--builder-vw').trim()) || 0;
+      const vhProp = parseFloat(computedFrame.getPropertyValue('--builder-vh').trim()) || 0;
+      const frameRect = frame.getBoundingClientRect();
+      // vwProp is "1% of designed viewport width" (e.g. 14.4 for a 1440px frame).
+      // Multiply by 100 to get the full logical viewport dimension.
+      const frameW = vwProp > 0 ? vwProp * 100 : frameRect.width  / z;
+      const frameH = vhProp > 0 ? vhProp * 100 : frameRect.height / z;
+      const pxToUnit = (pxVal: number, unit: string, axis: 'w' | 'h'): string => {
+        if (unit === 'vw') {
+          return `${Math.round(pxVal / frameW * 100 * 10) / 10}vw`;
+        }
+        if (unit === 'vh') {
+          return `${Math.round(pxVal / frameH * 100 * 10) / 10}vh`;
+        }
+        if (unit === '%') {
+          const parentEl   = el.parentElement;
+          const parentRect = parentEl?.getBoundingClientRect();
+          const parentSize = parentRect
+            ? (axis === 'w' ? parentRect.width : parentRect.height) / z
+            : (axis === 'w' ? frameW : frameH);
+          return `${Math.round(pxVal / parentSize * 100 * 10) / 10}%`;
+        }
+        return `${Math.round(pxVal)}px`;
+      };
+
       if (handle.includes('e') || handle.includes('w')) {
+        const curUnit = parseTwArbitraryWithUnit(existingCls, 'w-')?.unit ?? 'px';
         newCls = removeTwToken(removeTwToken(removeTwToken(removeTwToken(newCls, 'w-fit'), 'w-full'), 'w-screen'), 'w-');
-        newCls = `${newCls} w-[${lastW}px]`.trim();
+        newCls = `${newCls} w-[${pxToUnit(lastW, curUnit, 'w')}]`.trim();
       }
       if (handle.includes('n') || handle.includes('s')) {
+        const curUnit = parseTwArbitraryWithUnit(existingCls, 'h-')?.unit ?? 'px';
         newCls = removeTwToken(removeTwToken(removeTwToken(removeTwToken(removeTwToken(newCls, 'h-fit'), 'h-screen'), 'flex-1'), 'h-'), 'min-h-');
-        newCls = `${newCls} h-[${lastH}px]`.trim();
+        newCls = `${newCls} h-[${pxToUnit(lastH, curUnit, 'h')}]`.trim();
       }
       useBuilderStore.getState().patchProp(id, 'props.className', newCls);
 
@@ -1541,7 +1603,6 @@ export default function BuilderCanvas() {
     // Suppress canvas pan drag from kicking in
     dragRef.current.active = false;
 
-    void fr; // used via closure above, silence lint
   }, []);
 
   const cursorStyle = tool === 'hand' ? 'grab' : 'default';
@@ -1689,6 +1750,10 @@ export default function BuilderCanvas() {
           [data-builder-page-frame] .min-h-screen { min-height: ${VIEWPORT_H}px !important; }
           [data-builder-page-frame] .w-screen   { width: ${vpWidth}px !important; }
           [data-builder-page-frame] .max-h-screen { max-height: ${VIEWPORT_H}px !important; }
+          [data-builder-page-frame] {
+            --builder-vw: ${vpWidth / 100}px;
+            --builder-vh: ${VIEWPORT_H / 100}px;
+          }
         `}</style>
         <PageEngine
           pageConfig={pageConfig}
@@ -2202,6 +2267,22 @@ export default function BuilderCanvas() {
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 9990, pointerEvents: 'all' }}>
         <StateBar />
       </div>
+
+      {/* ── Canvas toast (resize guard messages, etc.) ── */}
+      {canvasToast && (
+        <div
+          data-testid="canvas-toast"
+          style={{
+            position: 'absolute', bottom: 52, left: '50%', transform: 'translateX(-50%)',
+            background: '#1f2937', border: '1px solid #374151', borderRadius: 8,
+            padding: '8px 14px', zIndex: 9995, pointerEvents: 'none',
+            fontSize: 12, color: '#fbbf24', whiteSpace: 'nowrap',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+          }}
+        >
+          {canvasToast}
+        </div>
+      )}
     </div>
   );
 }

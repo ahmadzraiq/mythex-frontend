@@ -27,34 +27,28 @@ export interface PrimitiveComponent {
 
 export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
   Layout: [
-    { type: 'Box',    label: 'Box',        icon: '□',
-      defaultNode: { type: 'Box',    props: { className: 'flex flex-col' } } },
-    { type: 'Box',    label: 'Row',        icon: '⬌',
-      defaultNode: { type: 'Box',    props: { className: 'flex flex-row items-center' } } },
-    { type: 'VStack', label: 'VStack',     icon: '⬇',
+    { type: 'Box',  label: 'Box',        icon: '□',
       defaultNode: { type: 'Box', props: { className: 'flex flex-col' } } },
-    { type: 'HStack', label: 'HStack',     icon: '➡',
+    { type: 'Box',  label: 'Row',        icon: '⬌',
       defaultNode: { type: 'Box', props: { className: 'flex flex-row items-center' } } },
-    { type: 'Center', label: 'Center',     icon: '⊕',
-      defaultNode: { type: 'Box', props: { className: 'flex flex-col items-center justify-center' } } },
-    { type: 'Grid',   label: 'Grid',       icon: '⊞',
-      defaultNode: { type: 'Grid', props: { className: 'grid' } } },
-    { type: 'Box',    label: 'Card',       icon: '▣', aiStrip: 'placeholder',
-      defaultNode: { type: 'Box', props: { className: 'rounded-[8px] border border-border bg-[var(--theme-card)] p-[16px] flex flex-col gap-[8px]' }, children: [{ type: 'Heading', text: 'Card Title', props: { className: 'text-[18px] font-semibold' } }, { type: 'Text', text: 'Card content goes here.', props: { className: 'text-[14px] text-muted-foreground' } }] } },
-    { type: 'Box',    label: 'Divider',    icon: '—',
+    { type: 'Box',  label: 'Grid',        icon: '⊞',
+      defaultNode: { type: 'Box', props: { className: 'grid' } } },
+    { type: 'Box',  label: 'Card',       icon: '▣', aiStrip: 'placeholder',
+      defaultNode: { type: 'Box', props: { className: 'rounded-[8px] border border-border bg-[var(--theme-card)] p-[16px] flex flex-col gap-[8px]' }, children: [{ type: 'Text', text: 'Card Title', props: { className: 'text-[18px] font-semibold text-foreground' } }, { type: 'Text', text: 'Card content goes here.', props: { className: 'text-[14px] text-muted-foreground' } }] } },
+    { type: 'Box',  label: 'Divider',    icon: '—',
       defaultNode: { type: 'Box', props: { className: 'w-full h-px bg-border' } } },
-    { type: 'Box',    label: 'ScrollView', icon: '↕',
+    { type: 'Box',  label: 'ScrollView', icon: '↕',
       defaultNode: { type: 'Box', props: { className: 'flex flex-col overflow-auto', style: { maxHeight: '200px' } }, children: [{ type: 'Text', text: 'Scroll content here', props: { className: 'text-[14px] text-foreground' } }] } },
   ],
   Typography: [
-    { type: 'Text',    label: 'Text',    icon: 'T',
-      defaultNode: { type: 'Text',    text: 'Text block', props: { className: 'text-[16px] text-foreground' } } },
-    { type: 'Heading', label: 'Heading', icon: 'H',
-      defaultNode: { type: 'Heading', text: 'Heading',    props: { className: 'text-[24px] font-bold text-foreground' } } },
-    { type: 'Text',    label: 'Label',   icon: 'L',
-      defaultNode: { type: 'Text',    text: 'Label',      props: { className: 'text-[14px] font-medium text-foreground' } } },
-    { type: 'Text',    label: 'Caption', icon: 'C',
-      defaultNode: { type: 'Text',    text: 'Caption',    props: { className: 'text-[12px] text-muted-foreground' } } },
+    { type: 'Text', label: 'Text',    icon: 'T',
+      defaultNode: { type: 'Text', text: 'Text block', props: { className: 'text-[16px] text-foreground' } } },
+    { type: 'Text', label: 'Heading', icon: 'H',
+      defaultNode: { type: 'Text', text: 'Heading', props: { className: 'text-[32px] font-bold text-foreground' } } },
+    { type: 'Text', label: 'Label',   icon: 'L',
+      defaultNode: { type: 'Text', text: 'Label', props: { className: 'text-[14px] font-medium text-foreground' } } },
+    { type: 'Text', label: 'Caption', icon: 'C',
+      defaultNode: { type: 'Text', text: 'Caption', props: { className: 'text-[12px] text-muted-foreground' } } },
     { type: 'Box',  label: 'Link',    icon: '🔗',
       defaultNode: { type: 'Box', props: { href: '#' }, children: [{ type: 'Text', text: 'Link text', props: { className: 'text-[14px] text-primary underline cursor-pointer' } }] } },
   ],
@@ -137,26 +131,8 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
       defaultNode: { type: 'Checkbox', props: { defaultIsChecked: false }, children: [{ type: 'CheckboxIndicator' }, { type: 'CheckboxLabel', text: 'Label' }] } },
     { type: 'CheckboxGroup', label: 'Checkbox Group', icon: '☑☑',
       defaultNode: { type: 'CheckboxGroup', props: { className: 'flex flex-col gap-[12px]' }, children: [{ type: 'Checkbox', props: { value: 'a' }, children: [{ type: 'CheckboxIndicator' }, { type: 'CheckboxLabel', text: 'Option A' }] }, { type: 'Checkbox', props: { value: 'b' }, children: [{ type: 'CheckboxIndicator' }, { type: 'CheckboxLabel', text: 'Option B' }] }] } },
-    {
-      type: 'Box',
-      label: 'Switch',
-      icon: '⏵',
-      defaultNode: {
-        type: 'Box',
-        props: { className: 'relative w-[48px] h-[24px] rounded-[9999px] bg-gray-300 justify-center' },
-        children: [{ type: 'Box', props: { className: 'absolute left-[2px] top-[2px] w-[20px] h-[20px] rounded-[9999px] bg-white shadow-sm' } }],
-      },
-    },
-    {
-      type: 'Box',
-      label: 'Switch On',
-      icon: '⏸',
-      defaultNode: {
-        type: 'Box',
-        props: { className: 'relative w-[48px] h-[24px] rounded-[9999px] bg-primary justify-center' },
-        children: [{ type: 'Box', props: { className: 'absolute right-[2px] top-[2px] w-[20px] h-[20px] rounded-[9999px] bg-white shadow-sm' } }],
-      },
-    },
+    { type: 'Switch', label: 'Switch', icon: '⏵',
+      defaultNode: { type: 'Switch', props: { defaultIsChecked: false, size: 'md' } } },
   ],
   Composite: [
     {
@@ -369,13 +345,13 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
     },
   ],
   Media: [
-    { type: 'Image',       label: 'Image',        icon: '🖼',
+    { type: 'Image', label: 'Image', icon: '🖼',
       defaultNode: { type: 'Image', props: { style: { width: '300px', height: '192px' } }, src: 'https://placehold.co/600x400' } },
-    { type: 'Icon', label: 'Icon',          icon: '◈',
+    { type: 'Icon', label: 'Icon', icon: '◈',
       defaultNode: { type: 'Icon', props: { icon: 'heroicons:star', size: 24, color: 'primary' } } },
-    { type: 'Box',   label: 'Icon Tap',      icon: '⊙',
+    { type: 'Box', label: 'Icon Tap', icon: '⊙',
       defaultNode: { type: 'Box', props: { className: 'flex items-center justify-center w-[40px] h-[40px] rounded-[9999px] bg-secondary' }, children: [{ type: 'Icon', props: { icon: 'heroicons:star', size: 18, color: 'currentColor' } }] } },
-    { type: 'Video',       label: 'Video',         icon: '▶',
+    { type: 'Video', label: 'Video', icon: '▶',
       defaultNode: { type: 'Video', props: { controls: false, muted: true, loop: true, autoPlay: true, style: { width: '400px', height: '240px' } }, src: '' } },
   ],
   'Data & Media': [
@@ -419,8 +395,20 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
       icon: '👤',
       defaultNode: { type: 'Box', props: { className: 'w-[48px] h-[48px] rounded-[9999px] bg-gray-200 flex items-center justify-center overflow-hidden' }, children: [{ type: 'Text', props: { className: 'text-[14px] font-medium text-gray-600' }, text: 'AB' }] },
     },
-    { type: 'Spinner',  label: 'Spinner',  icon: '↺',
-      defaultNode: { type: 'Spinner', props: { size: 'small', color: '#6b7280' } } },
+    // Spinner replaced with animated Box + icon (no Gluestack dependency)
+    {
+      type: 'Box',
+      label: 'Spinner',
+      icon: '↺',
+      defaultNode: {
+        type: 'Box',
+        props: {
+          className: 'flex items-center justify-center',
+          animation: { loop: { type: 'spin', duration: 1000, repeatCount: -1 } },
+        },
+        children: [{ type: 'Icon', props: { icon: 'lucide:loader-2', size: 24, color: '#6b7280' } }],
+      },
+    },
     { type: 'Skeleton', label: 'Skeleton', icon: '░',
       defaultNode: { type: 'Skeleton', props: { className: 'rounded-[6px] w-full' }, children: [{ type: 'SkeletonText', props: { _lines: 3, className: 'w-full' } }] } },
     {
@@ -432,27 +420,6 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
   ],
   Overlays: [
     {
-      type: 'Modal',
-      label: 'Modal',
-      icon: '⬜',
-      defaultNode: {
-        type: 'Modal',
-        props: { isOpen: true, className: '' },
-        children: [
-          { type: 'ModalBackdrop', props: {} },
-          {
-            type: 'ModalContent',
-            props: { className: 'rounded-[8px] bg-background p-0 w-full max-w-[448px]' },
-            children: [
-              { type: 'ModalHeader', props: { className: 'p-[16px] border-b border-border flex flex-row items-center justify-between' }, children: [{ type: 'Text', props: { className: 'text-[18px] font-semibold text-foreground' }, text: 'Modal Title' }, { type: 'ModalCloseButton', props: {} }] },
-              { type: 'ModalBody', props: { className: 'p-[16px]' }, children: [{ type: 'Text', props: { className: 'text-[14px] text-foreground' }, text: 'Modal body content goes here.' }] },
-              { type: 'ModalFooter', props: { className: 'p-[16px] border-t border-border flex flex-row gap-[8px] justify-end' }, children: [{ type: 'Box', props: { className: 'px-[16px] py-[8px] rounded-[6px] border border-border' }, children: [{ type: 'Text', props: { className: 'text-[14px] text-foreground' }, text: 'Cancel' }] }, { type: 'Box', props: { className: 'px-[16px] py-[8px] rounded-[6px] bg-primary' }, children: [{ type: 'Text', props: { className: 'text-[14px] font-medium text-primary-foreground' }, text: 'Confirm' }] }] },
-            ],
-          },
-        ],
-      },
-    },
-    {
       type: 'Tooltip',
       label: 'Tooltip',
       icon: '💬',
@@ -462,27 +429,6 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
         children: [
           { type: 'Box', props: { className: 'px-[16px] py-[8px] rounded-[6px] bg-primary' }, children: [{ type: 'Text', props: { className: 'text-[14px] text-primary-foreground' }, text: 'Hover me' }] },
           { type: 'TooltipContent', props: { className: 'bg-gray-900 rounded-[4px] px-[8px] py-[4px]' }, children: [{ type: 'TooltipText', props: { className: 'text-[12px] text-white' }, text: 'Tooltip text' }] },
-        ],
-      },
-    },
-    {
-      type: 'AlertDialog',
-      label: 'Alert Dialog',
-      icon: '⚠',
-      defaultNode: {
-        type: 'AlertDialog',
-        props: { isOpen: true },
-        children: [
-          { type: 'AlertDialogBackdrop', props: {} },
-          {
-            type: 'AlertDialogContent',
-            props: { className: 'rounded-[8px] bg-background w-full max-w-[384px] p-0' },
-            children: [
-              { type: 'AlertDialogHeader', props: { className: 'p-[16px] border-b border-border' }, children: [{ type: 'Text', props: { className: 'text-[18px] font-semibold text-foreground' }, text: 'Confirm Action' }] },
-              { type: 'AlertDialogBody', props: { className: 'p-[16px]' }, children: [{ type: 'Text', props: { className: 'text-[14px] text-foreground' }, text: 'Are you sure you want to continue?' }] },
-              { type: 'AlertDialogFooter', props: { className: 'p-[16px] border-t border-border flex flex-row gap-[8px] justify-end' }, children: [{ type: 'Box', props: { className: 'px-[16px] py-[8px] rounded-[6px] border border-border' }, children: [{ type: 'Text', props: { className: 'text-[14px]' }, text: 'Cancel' }] }, { type: 'Box', props: { className: 'px-[16px] py-[8px] rounded-[6px] bg-destructive' }, children: [{ type: 'Text', props: { className: 'text-[14px] font-medium text-white' }, text: 'Delete' }] }] },
-            ],
-          },
         ],
       },
     },

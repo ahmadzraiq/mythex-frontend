@@ -888,11 +888,13 @@ export function LogicPanel({ node }: LogicPanelProps) {
 // ─── Workflows section ────────────────────────────────────────────────────────
 
 function WorkflowsSection() {
-  const { pageWorkflows, setPageWorkflow, removePageWorkflow } = useBuilderStore();
+  const { pageWorkflows, pageWorkflowMeta, setPageWorkflow, removePageWorkflow } = useBuilderStore();
   const [newName, setNewName] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  const entries = Object.entries(pageWorkflows);
+  // Filter out system workflows
+  const entries = Object.entries(pageWorkflows)
+    .filter(([id]) => !pageWorkflowMeta[id]?.isSystem);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

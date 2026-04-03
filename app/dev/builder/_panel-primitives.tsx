@@ -17,7 +17,8 @@
  *  - AnimPreview     — pure-CSS animated preview box for animation sub-sections
  */
 
-import React, { useState, useEffect, useRef, useId } from 'react';
+import React, { useState, useEffect, useRef, useId, useCallback } from 'react';
+import { FigmaColorPicker } from './_color-picker';
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
@@ -156,27 +157,17 @@ export function SelectInput({
 }
 
 // ─── ColorInput ───────────────────────────────────────────────────────────────
+// Thin wrapper: clicking anywhere (swatch or text) opens FigmaColorPicker.
 
 export function ColorInput({ label, value, onChange, testId }: { label: string; value: string; onChange: (v: string) => void; testId?: string }) {
-  const [local, setLocal] = useState(value);
-  useEffect(() => setLocal(value), [value]);
+  const handleChange = useCallback((color: string) => onChange(color), [onChange]);
   return (
-    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-      <input
-        type="color" value={local.startsWith('#') ? local : '#000000'}
-        onChange={e => { setLocal(e.target.value); onChange(e.target.value); }}
-        style={{ width: 26, height: 26, padding: 0, border: '1px solid #374151', borderRadius: 4, background: 'none', cursor: 'pointer' }}
-      />
-      <div style={{ flex: 1 }}>
-        {label && <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>{label}</span>}
-        <input
-          data-testid={testId}
-          value={local} onChange={e => setLocal(e.target.value)} onBlur={() => onChange(local)}
-          placeholder="#000000"
-          style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 6px', width: '100%', boxSizing: 'border-box' }}
-        />
-      </div>
-    </div>
+    <FigmaColorPicker
+      value={value || '#000000'}
+      onChange={handleChange}
+      label={label}
+      testId={testId}
+    />
   );
 }
 

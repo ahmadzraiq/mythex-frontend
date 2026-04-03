@@ -33,11 +33,16 @@ export function extractPathsFromObject(obj: unknown): string[] {
   if (obj == null) return [];
   if (typeof obj === 'string') return extractPathsFromTemplate(obj);
   // Builder formula bindings: { formula: "expression" }
-  // The expression is used directly as the subscription path. getNestedValue handles
-  // bracket-notation / optional-chain syntax (components?.['id']?.['value'], variables['uuid']).
+  // The expression may be a simple path (components?.['id']?.value) or a JS expression
+  // containing variable/collection references (variables['UUID'] + 'px').
+  // Always include the raw formula string (for simple path lookups via getNestedValue)
+  // AND extract any variables['UUID'] / collections['UUID'] patterns (for subscriptions).
   if (typeof obj === 'object' && !Array.isArray(obj) && 'formula' in obj) {
     const f = (obj as { formula: unknown }).formula;
-    return typeof f === 'string' && f.trim() ? [f.trim()] : [];
+    if (typeof f !== 'string' || !f.trim()) return [];
+    const paths: string[] = [f.trim()];
+    paths.push(...extractFormulaVarPaths(f));
+    return paths;
   }
   if (typeof obj === 'object') {
     return Object.values(obj).flatMap(extractPathsFromObject);

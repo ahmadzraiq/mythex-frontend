@@ -87,6 +87,42 @@ module.exports = {
     { pattern: /^opacity-\[0?\.?\d+\]$/ },
     // Rotation
     { pattern: /^-?rotate-\[-?\d+deg\]$/ },
+    // ── A4: New CSS properties added in builder design panel ─────────────────
+    // Pointer events
+    'pointer-events-none', 'pointer-events-auto',
+    // Word-break
+    'break-all', 'break-words', 'break-normal',
+    // White-space
+    'whitespace-nowrap', 'whitespace-pre', 'whitespace-pre-wrap', 'whitespace-normal',
+    // Text overflow
+    'truncate', 'text-ellipsis', 'text-clip',
+    // Flex grow/shrink bare keywords
+    'grow', 'grow-0', 'shrink', 'shrink-0',
+    // Aspect ratio arbitrary
+    { pattern: /^aspect-\[.+\]$/ },
+    // Flex grow/shrink/basis arbitrary
+    { pattern: /^grow-\[\d+(\.\d+)?\]$/ },
+    { pattern: /^shrink-\[\d+(\.\d+)?\]$/ },
+    { pattern: /^basis-\[\d+(\.\d+)?px\]$/ },
+    // Line clamp
+    { pattern: /^line-clamp-\[\d+\]$/ },
+    { pattern: /^line-clamp-\d+$/ },
+    // Text decoration color arbitrary
+    { pattern: /^decoration-\[#[0-9a-fA-F]{3,8}\]$/ },
+    { pattern: /^decoration-\[rgba?\([^)]+\)\]$/ },
+    // ── A5: Per-side border arbitrary values ──────────────────────────────────
+    { pattern: /^border-(t|r|b|l)-\[\d+(\.\d+)?px\]$/ },
+    { pattern: /^border-(t|r|b|l)-\[#[0-9a-fA-F]{3,8}\]$/ },
+    { pattern: /^border-(t|r|b|l)-\[rgba?\([^)]+\)\]$/ },
+    // ── A2: Dimension percentage/viewport units ───────────────────────────────
+    { pattern: /^(w|h)-\[\d+(\.\d+)?%\]$/ },
+    { pattern: /^(w|h)-\[\d+(\.\d+)?(vh|vw)\]$/ },
+    { pattern: /^(min-w|max-w|min-h|max-h)-\[\d+(\.\d+)?%\]$/ },
+    // ── RGBA colors for background, text, border ─────────────────────────────
+    { pattern: /^bg-\[rgba\([^)]+\)\]$/ },
+    { pattern: /^text-\[rgba\([^)]+\)\]$/ },
+    { pattern: /^border-\[rgba\([^)]+\)\]$/ },
+    { pattern: /^border-(t|r|b|l)-\[rgba?\([^)]+\)\]$/ },
   ],
   theme: {
     extend: {

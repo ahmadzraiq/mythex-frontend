@@ -28,6 +28,7 @@ import type {
   MouseParallaxConfig, FocusConfig, MorphShapeConfig, ScrollProgressConfig,
   SvgStrokeConfig, TimelineStep, GradientAnimationConfig, ClipPathConfig,
   MaskConfig, PseudoElementConfig, GestureConfig,
+  FlipConfig, SplitTextConfig, ParticlesConfig,
 } from '@/lib/sdui/components/animated-node';
 
 // ─── Token lists ──────────────────────────────────────────────────────────────
@@ -43,6 +44,7 @@ const ENTER_TYPES = [
   'skewIn', 'skewInY',
   'blurIn', 'glowIn',
   'rollIn',
+  'revealUp', 'charFall', 'charBounce',
 ] as const;
 
 const EXIT_TYPES = [
@@ -80,6 +82,7 @@ const POPOVER_TITLES: Record<string, string> = {
   tilt: '3D Tilt',
   mouseParallax: 'Mouse Parallax',
   focus: 'Focus Ring',
+  flip: 'Flip Card',
   scroll: 'Scroll Trigger',
   parallax: 'Parallax',
   scrollProgress: 'Scroll Progress',
@@ -89,6 +92,9 @@ const POPOVER_TITLES: Record<string, string> = {
   morph: 'Morph Shape',
   imperativeTrigger: 'Imperative Trigger',
   drag: 'Drag',
+  splitText: 'Split Text',
+  statesMachine: 'States Machine',
+  particles: 'Particles',
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -420,12 +426,22 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
   const maskCfg2:    Partial<MaskConfig>              = cfg.mask              ?? {};
   const pseudoCfg:   Partial<PseudoElementConfig>     = cfg.pseudoElement     ?? {};
   const gestureCfg:  Partial<GestureConfig>           = cfg.gesture           ?? {};
+  const flipCfg:     Partial<FlipConfig>              = cfg.flip              ?? {};
+  const splitTextCfg:Partial<SplitTextConfig>         = cfg.splitText         ?? {};
+  const particlesCfg:Partial<ParticlesConfig>         = cfg.particles         ?? {};
+  const shimmerCfg = cfg.shimmer ?? {};
+  const statesCfg  = cfg.states  ?? { states: {} } as NonNullable<AnimationConfig['states']>;
 
-  const patchGrad    = (p: Partial<GradientAnimationConfig>) => patch({ gradientAnimation: { ...gradAnim,    ...p } });
-  const patchClip    = (p: Partial<ClipPathConfig>)          => patch({ clipPath:          { ...clipPathCfg, ...p } });
-  const patchMask2   = (p: Partial<MaskConfig>)              => patch({ mask:              { ...maskCfg2,    ...p } });
-  const patchPseudo  = (p: Partial<PseudoElementConfig>)     => patch({ pseudoElement:     { ...pseudoCfg,   ...p } });
-  const patchGesture = (p: Partial<GestureConfig>)           => patch({ gesture:           { ...gestureCfg,  ...p } });
+  const patchGrad       = (p: Partial<GradientAnimationConfig>) => patch({ gradientAnimation: { ...gradAnim,    ...p } });
+  const patchClip       = (p: Partial<ClipPathConfig>)          => patch({ clipPath:          { ...clipPathCfg, ...p } });
+  const patchMask2      = (p: Partial<MaskConfig>)              => patch({ mask:              { ...maskCfg2,    ...p } });
+  const patchPseudo     = (p: Partial<PseudoElementConfig>)     => patch({ pseudoElement:     { ...pseudoCfg,   ...p } });
+  const patchGesture    = (p: Partial<GestureConfig>)           => patch({ gesture:           { ...gestureCfg,  ...p } });
+  const patchFlip       = (p: Partial<FlipConfig>)              => patch({ flip:              { ...flipCfg,     ...p } });
+  const patchSplitText  = (p: Partial<SplitTextConfig>)         => patch({ splitText:         { ...splitTextCfg,...p } });
+  const patchParticles  = (p: Partial<ParticlesConfig>)         => patch({ particles:         { ...particlesCfg,...p } });
+  const patchShimmer    = (p: Partial<typeof shimmerCfg>)       => patch({ shimmer:           { ...shimmerCfg,  ...p } });
+  const patchStates     = (p: Partial<NonNullable<AnimationConfig['states']>>) => patch({ states: { ...statesCfg, ...p } });
 
   const gradColors = gradAnim.colors ?? ['#6366f1', '#ec4899', '#6366f1'];
   const hasMap = !!(node?.map);
@@ -443,6 +459,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
     tiltCfg.enabled,
     mousePar.enabled,
     focusCfg.enabled,
+    flipCfg.trigger != null,
   ].filter(Boolean).length;
 
   const scrollActive = [
@@ -458,6 +475,10 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
     morphCfg.enabled,
     impTrig.type && impTrig.type !== 'none',
     drag.enabled,
+    shimmerCfg.duration != null,
+    splitTextCfg.type != null,
+    particlesCfg.count != null,
+    statesCfg.states && Object.keys(statesCfg.states).length > 0,
   ].filter(Boolean).length;
 
   const advancedActive = [
@@ -639,6 +660,37 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
           <ToggleRow label="Enable focus ring" active={focusCfg.enabled} onChange={() => patchFocus({ enabled: !focusCfg.enabled })} />
         </SubSection>
 
+        {/* Flip Card */}
+        <SubSection
+          label="Flip Card"
+          defaultOpen={flipCfg.trigger != null}
+          isActive={flipCfg.trigger != null}
+          onConfigure={flipCfg.trigger != null ? e => togglePopover('flip', e) : undefined}
+        >
+          <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
+            Flips the element on hover or click to reveal the back face.
+          </span>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {(['hover', 'click', 'none'] as const).map(t => (
+              <button
+                key={t}
+                onClick={() => patchFlip({ trigger: t === 'none' ? undefined : t })}
+                style={{
+                  flex: 1, fontSize: 10, padding: '3px 6px', borderRadius: 3, cursor: 'pointer',
+                  background: (flipCfg.trigger ?? 'none') === t ? '#3b82f6' : '#1f2937',
+                  color: (flipCfg.trigger ?? 'none') === t ? '#fff' : '#9ca3af',
+                  border: '1px solid #374151',
+                }}
+              >{t}</button>
+            ))}
+          </div>
+          {flipCfg.trigger && (
+            <div style={{ marginTop: 6 }}>
+              <SliderField label="Duration (ms)" value={flipCfg.duration ?? 400} min={100} max={1500} step={50} unit="ms" onChange={v => patchFlip({ duration: v })} />
+            </div>
+          )}
+        </SubSection>
+
       </CategoryGroup>
 
       {/* ── SCROLL ────────────────────────────────────────────────────────── */}
@@ -759,6 +811,137 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
           onConfigure={e => togglePopover('drag', e)}
         >
           <ToggleRow label="Enable drag" active={drag.enabled} onChange={() => patchDrag({ enabled: !drag.enabled })} />
+        </SubSection>
+
+        {/* Shimmer */}
+        <SubSection
+          label="Shimmer"
+          defaultOpen={shimmerCfg.duration != null}
+          isActive={shimmerCfg.duration != null}
+        >
+          <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
+            Sweeping shimmer highlight overlay (skeleton-loader style).
+          </span>
+          <ToggleRow
+            label="Enable shimmer"
+            active={shimmerCfg.duration != null}
+            onChange={() => {
+              if (shimmerCfg.duration != null) patchShimmer({ duration: undefined });
+              else patchShimmer({ duration: 1200, baseColor: '#e5e7eb', highlightColor: '#f9fafb' });
+            }}
+          />
+          {shimmerCfg.duration != null && (
+            <div style={{ marginTop: 6 }}>
+              <SliderField label="Duration (ms)" value={shimmerCfg.duration ?? 1200} min={400} max={3000} step={100} unit="ms" onChange={v => patchShimmer({ duration: v })} />
+              <div style={{ height: 4 }} />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <ColorInput label="Base" value={shimmerCfg.baseColor ?? '#e5e7eb'} onChange={v => patchShimmer({ baseColor: v })} />
+                <ColorInput label="Highlight" value={shimmerCfg.highlightColor ?? '#f9fafb'} onChange={v => patchShimmer({ highlightColor: v })} />
+              </div>
+            </div>
+          )}
+        </SubSection>
+
+        {/* Split Text */}
+        <SubSection
+          label="Split Text"
+          defaultOpen={splitTextCfg.type != null}
+          isActive={splitTextCfg.type != null}
+          onConfigure={splitTextCfg.type != null ? e => togglePopover('splitText', e) : undefined}
+        >
+          <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
+            Animate text character by character or word by word.
+          </span>
+          <ToggleRow
+            label="Enable split text"
+            active={splitTextCfg.type != null}
+            onChange={() => {
+              if (splitTextCfg.type != null) patchSplitText({ type: undefined });
+              else patchSplitText({ type: 'fadeIn', split: 'char', stagger: 30, duration: 400 });
+            }}
+          />
+          {splitTextCfg.type != null && (
+            <div style={{ marginTop: 6 }}>
+              <div style={{ marginBottom: 4 }}>
+                <span style={{ fontSize: 9, color: '#9ca3af', display: 'block', marginBottom: 2 }}>Split by</span>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {(['char', 'word', 'line'] as const).map(s => (
+                    <button key={s} onClick={() => patchSplitText({ split: s })}
+                      style={{ flex: 1, fontSize: 10, padding: '3px 4px', borderRadius: 3, cursor: 'pointer',
+                        background: (splitTextCfg.split ?? 'char') === s ? '#3b82f6' : '#1f2937',
+                        color: (splitTextCfg.split ?? 'char') === s ? '#fff' : '#9ca3af',
+                        border: '1px solid #374151' }}>{s}</button>
+                  ))}
+                </div>
+              </div>
+              <ChipSelect
+                value={splitTextCfg.type ?? 'fadeIn'}
+                options={ENTER_TYPES as unknown as string[]}
+                onChange={v => patchSplitText({ type: v })}
+              />
+              <div style={{ height: 6 }} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+                <SliderField label="Duration" value={splitTextCfg.duration ?? 400} min={100} max={2000} step={50} unit="ms" onChange={v => patchSplitText({ duration: v })} />
+                <SliderField label="Stagger" value={splitTextCfg.stagger ?? 30} min={0} max={200} step={5} unit="ms" onChange={v => patchSplitText({ stagger: v })} />
+                <SliderField label="Delay" value={splitTextCfg.delay ?? 0} min={0} max={2000} step={50} unit="ms" onChange={v => patchSplitText({ delay: v })} />
+              </div>
+            </div>
+          )}
+        </SubSection>
+
+        {/* States Machine */}
+        <SubSection
+          label="States Machine"
+          defaultOpen={statesCfg.states && Object.keys(statesCfg.states).length > 0}
+          isActive={statesCfg.states && Object.keys(statesCfg.states).length > 0}
+          onConfigure={e => togglePopover('statesMachine', e)}
+        >
+          <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
+            Switch between visual states (e.g. default/hover/active) driven by a variable.
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 10, color: '#9ca3af' }}>
+              {Object.keys(statesCfg.states ?? {}).length} state(s) configured
+            </span>
+            <button
+              onClick={e => togglePopover('statesMachine', e)}
+              style={{ fontSize: 10, padding: '3px 8px', border: '1px solid #374151', borderRadius: 3, background: '#1f2937', color: '#d1d5db', cursor: 'pointer' }}
+            >Configure</button>
+          </div>
+        </SubSection>
+
+        {/* Particles */}
+        <SubSection
+          label="Particles"
+          defaultOpen={particlesCfg.count != null}
+          isActive={particlesCfg.count != null}
+          onConfigure={particlesCfg.count != null ? e => togglePopover('particles', e) : undefined}
+        >
+          <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
+            Animated particle canvas overlay (network / star field).
+          </span>
+          <ToggleRow
+            label="Enable particles"
+            active={particlesCfg.count != null}
+            onChange={() => {
+              if (particlesCfg.count != null) patchParticles({ count: undefined });
+              else patchParticles({ count: 50, color: '#ffffff', speed: 1, maxRadius: 3, connectDistance: 80 });
+            }}
+          />
+          {particlesCfg.count != null && (
+            <div style={{ marginTop: 6 }}>
+              <SliderField label="Count" value={particlesCfg.count ?? 50} min={5} max={300} step={5} unit="" onChange={v => patchParticles({ count: v })} />
+              <div style={{ height: 4 }} />
+              <SliderField label="Speed" value={particlesCfg.speed ?? 1} min={0.1} max={5} step={0.1} unit="" onChange={v => patchParticles({ speed: v })} />
+              <div style={{ height: 4 }} />
+              <SliderField label="Connect dist" value={particlesCfg.connectDistance ?? 80} min={20} max={250} step={10} unit="px" onChange={v => patchParticles({ connectDistance: v })} />
+              <div style={{ height: 4 }} />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <ColorInput label="Particles" value={particlesCfg.color ?? '#ffffff'} onChange={v => patchParticles({ color: v })} />
+                <ColorInput label="Background" value={particlesCfg.background ?? 'transparent'} onChange={v => patchParticles({ background: v })} />
+              </div>
+            </div>
+          )}
         </SubSection>
 
       </CategoryGroup>
@@ -961,18 +1144,18 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
                 <SliderField label="Min distance (px)"   value={gestureCfg.swipeThreshold   ?? 50}  min={10}  max={300}  step={5}  unit="px" onChange={v => patchGesture({ swipeThreshold: v })} />
                 <SliderField label="Anim duration (ms)"  value={gestureCfg.animationDuration ?? 400} min={100} max={2000} step={50} unit="ms" onChange={v => patchGesture({ animationDuration: v })} />
               </PRow>
-              <div style={{ fontSize: 10, color: '#888', padding: '4px 0 4px' }}>Animation type on swipe:</div>
+              <div style={{ fontSize: 10, color: '#888', padding: '4px 0 4px' }}>Workflow action to run on swipe:</div>
               <PRow>
                 <span style={{ fontSize: 10, color: '#aaa', minWidth: 40 }}>← Left</span>
-                <input value={gestureCfg.onSwipeLeft  ?? ''} onChange={e => patchGesture({ onSwipeLeft:  e.target.value })} placeholder="slideInRight" style={{ flex: 1, fontSize: 11, background: '#1a1a1a', color: '#fff', border: '1px solid #333', borderRadius: 3, padding: '2px 5px' }} />
+                <input value={gestureCfg.onSwipeLeftAction  ?? ''} onChange={e => patchGesture({ onSwipeLeftAction:  e.target.value })} placeholder="myActionName" style={{ flex: 1, fontSize: 11, background: '#1a1a1a', color: '#fff', border: '1px solid #333', borderRadius: 3, padding: '2px 5px' }} />
                 <span style={{ fontSize: 10, color: '#aaa', minWidth: 40 }}>→ Right</span>
-                <input value={gestureCfg.onSwipeRight ?? ''} onChange={e => patchGesture({ onSwipeRight: e.target.value })} placeholder="slideInLeft"  style={{ flex: 1, fontSize: 11, background: '#1a1a1a', color: '#fff', border: '1px solid #333', borderRadius: 3, padding: '2px 5px' }} />
+                <input value={gestureCfg.onSwipeRightAction ?? ''} onChange={e => patchGesture({ onSwipeRightAction: e.target.value })} placeholder="myActionName" style={{ flex: 1, fontSize: 11, background: '#1a1a1a', color: '#fff', border: '1px solid #333', borderRadius: 3, padding: '2px 5px' }} />
               </PRow>
               <PRow>
                 <span style={{ fontSize: 10, color: '#aaa', minWidth: 40 }}>↑ Up</span>
-                <input value={gestureCfg.onSwipeUp   ?? ''} onChange={e => patchGesture({ onSwipeUp:   e.target.value })} placeholder="slideInDown" style={{ flex: 1, fontSize: 11, background: '#1a1a1a', color: '#fff', border: '1px solid #333', borderRadius: 3, padding: '2px 5px' }} />
+                <input value={gestureCfg.onSwipeUpAction    ?? ''} onChange={e => patchGesture({ onSwipeUpAction:    e.target.value })} placeholder="myActionName" style={{ flex: 1, fontSize: 11, background: '#1a1a1a', color: '#fff', border: '1px solid #333', borderRadius: 3, padding: '2px 5px' }} />
                 <span style={{ fontSize: 10, color: '#aaa', minWidth: 40 }}>↓ Down</span>
-                <input value={gestureCfg.onSwipeDown ?? ''} onChange={e => patchGesture({ onSwipeDown: e.target.value })} placeholder="slideInUp"   style={{ flex: 1, fontSize: 11, background: '#1a1a1a', color: '#fff', border: '1px solid #333', borderRadius: 3, padding: '2px 5px' }} />
+                <input value={gestureCfg.onSwipeDownAction  ?? ''} onChange={e => patchGesture({ onSwipeDownAction:  e.target.value })} placeholder="myActionName" style={{ flex: 1, fontSize: 11, background: '#1a1a1a', color: '#fff', border: '1px solid #333', borderRadius: 3, padding: '2px 5px' }} />
               </PRow>
             </>
           )}
@@ -1308,6 +1491,150 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
               </Row>
             </>
           )}
+
+          {/* ── Flip Card ── */}
+          {popover.category === 'flip' && (
+            <>
+              <SliderField label="Duration (ms)" value={flipCfg.duration ?? 400} min={100} max={1500} step={50} unit="ms" onChange={v => patchFlip({ duration: v })} />
+              <SliderField label="Perspective (px)" value={flipCfg.perspective ?? 800} min={200} max={3000} step={50} unit="px" onChange={v => patchFlip({ perspective: v })} />
+            </>
+          )}
+
+          {/* ── Split Text ── */}
+          {popover.category === 'splitText' && (
+            <>
+              <div style={{ marginBottom: 6 }}>
+                <span style={{ fontSize: 9, color: '#9ca3af', display: 'block', marginBottom: 2 }}>Split by</span>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {(['char', 'word', 'line'] as const).map(s => (
+                    <button key={s} onClick={() => patchSplitText({ split: s })}
+                      style={{ flex: 1, fontSize: 10, padding: '3px 4px', borderRadius: 3, cursor: 'pointer',
+                        background: (splitTextCfg.split ?? 'char') === s ? '#3b82f6' : '#1f2937',
+                        color: (splitTextCfg.split ?? 'char') === s ? '#fff' : '#9ca3af',
+                        border: '1px solid #374151' }}>{s}</button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ marginBottom: 6 }}>
+                <span style={{ fontSize: 9, color: '#9ca3af', display: 'block', marginBottom: 2 }}>Animation type</span>
+                <ChipSelect
+                  value={splitTextCfg.type ?? 'fadeIn'}
+                  options={ENTER_TYPES as unknown as string[]}
+                  onChange={v => patchSplitText({ type: v })}
+                />
+              </div>
+              <SliderField label="Duration (ms)" value={splitTextCfg.duration ?? 400} min={50} max={2000} step={50} unit="ms" onChange={v => patchSplitText({ duration: v })} />
+              <SliderField label="Stagger (ms)" value={splitTextCfg.stagger ?? 30} min={0} max={200} step={5} unit="ms" onChange={v => patchSplitText({ stagger: v })} />
+              <SliderField label="Delay (ms)" value={splitTextCfg.delay ?? 0} min={0} max={2000} step={50} unit="ms" onChange={v => patchSplitText({ delay: v })} />
+              <SelectInput label="Easing" value={splitTextCfg.easing ?? 'easeOut'} options={EASING_OPTS as unknown as string[]} onChange={v => patchSplitText({ easing: v })} />
+            </>
+          )}
+
+          {/* ── States Machine ── */}
+          {popover.category === 'statesMachine' && (
+            <>
+              <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 8, lineHeight: 1.4 }}>
+                watchVar is a formula expression that returns the current state name (e.g. <code style={{ color: '#a5b4fc' }}>variables{`['`}UUID{`']`}</code>).
+                Each state is a set of style overrides applied when watchVar equals that state name.
+              </span>
+              <div style={{ marginBottom: 8 }}>
+                <span style={{ fontSize: 9, color: '#9ca3af', display: 'block', marginBottom: 2 }}>Watch variable (formula)</span>
+                <input
+                  value={typeof statesCfg.watchVar === 'string' ? statesCfg.watchVar : ''}
+                  onChange={e => patchStates({ watchVar: e.target.value })}
+                  placeholder="variables['UUID']"
+                  style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <input
+                  value={statesCfg.defaultState ?? ''}
+                  onChange={e => patchStates({ defaultState: e.target.value })}
+                  placeholder="default state name"
+                  style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', boxSizing: 'border-box' }}
+                />
+                <span style={{ fontSize: 9, color: '#6b7280' }}>Default state (applies when watchVar is undefined)</span>
+              </div>
+              <SliderField label="Transition (ms)" value={statesCfg.duration ?? 300} min={50} max={2000} step={50} unit="ms" onChange={v => patchStates({ duration: v })} />
+              <SelectInput label="Easing" value={statesCfg.easing ?? 'easeInOut'} options={EASING_OPTS as unknown as string[]} onChange={v => patchStates({ easing: v })} />
+              <div style={{ marginTop: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ fontSize: 9, color: '#9ca3af' }}>States</span>
+                  <button
+                    onClick={() => {
+                      const name = prompt('State name (e.g. "active", "hover"):');
+                      if (!name) return;
+                      patchStates({ states: { ...(statesCfg.states ?? {}), [name]: {} } });
+                    }}
+                    style={{ fontSize: 9, padding: '2px 6px', border: '1px solid #374151', borderRadius: 3, background: '#1f2937', color: '#9ca3af', cursor: 'pointer' }}
+                  >+ Add state</button>
+                </div>
+                {Object.entries(statesCfg.states ?? {}).map(([stateName, props]) => (
+                  <div key={stateName} style={{ border: '1px solid #374151', borderRadius: 4, padding: 8, marginBottom: 6 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontSize: 10, color: '#d1d5db', fontWeight: 600 }}>{stateName}</span>
+                      <button
+                        onClick={() => {
+                          const next = { ...(statesCfg.states ?? {}) };
+                          delete next[stateName];
+                          patchStates({ states: next });
+                        }}
+                        style={{ fontSize: 9, padding: '1px 4px', border: '1px solid #374151', borderRadius: 3, background: 'transparent', color: '#ef4444', cursor: 'pointer' }}
+                      >✕</button>
+                    </div>
+                    {Object.entries(props as Record<string, string>).map(([prop, val]) => (
+                      <div key={prop} style={{ display: 'flex', gap: 4, marginBottom: 3 }}>
+                        <input value={prop} readOnly style={{ flex: 1, fontSize: 9, padding: '2px 4px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#9ca3af' }} />
+                        <input
+                          value={val}
+                          onChange={e => {
+                            const newProps = { ...(props as Record<string, string>), [prop]: e.target.value };
+                            patchStates({ states: { ...(statesCfg.states ?? {}), [stateName]: newProps } });
+                          }}
+                          style={{ flex: 2, fontSize: 9, padding: '2px 4px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb' }}
+                        />
+                        <button
+                          onClick={() => {
+                            const newProps = { ...(props as Record<string, string>) };
+                            delete newProps[prop];
+                            patchStates({ states: { ...(statesCfg.states ?? {}), [stateName]: newProps } });
+                          }}
+                          style={{ fontSize: 9, padding: '1px 4px', border: '1px solid #374151', borderRadius: 3, background: 'transparent', color: '#6b7280', cursor: 'pointer' }}
+                        >✕</button>
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => {
+                        const propName = prompt('CSS property (e.g. "backgroundColor", "opacity"):');
+                        if (!propName) return;
+                        const newProps = { ...(props as Record<string, string>), [propName]: '' };
+                        patchStates({ states: { ...(statesCfg.states ?? {}), [stateName]: newProps } });
+                      }}
+                      style={{ fontSize: 9, padding: '2px 6px', border: '1px solid #374151', borderRadius: 3, background: '#111827', color: '#6b7280', cursor: 'pointer', width: '100%' }}
+                    >+ Add property</button>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* ── Particles ── */}
+          {popover.category === 'particles' && (
+            <>
+              <SliderField label="Count" value={particlesCfg.count ?? 50} min={5} max={300} step={5} unit="" onChange={v => patchParticles({ count: v })} />
+              <SliderField label="Speed" value={particlesCfg.speed ?? 1} min={0.1} max={5} step={0.1} unit="" onChange={v => patchParticles({ speed: v })} />
+              <SliderField label="Max radius (px)" value={particlesCfg.maxRadius ?? 3} min={1} max={20} step={0.5} unit="px" onChange={v => patchParticles({ maxRadius: v })} />
+              <SliderField label="Connect distance" value={particlesCfg.connectDistance ?? 80} min={0} max={300} step={10} unit="px" onChange={v => patchParticles({ connectDistance: v })} />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <ColorInput label="Particles" value={particlesCfg.color ?? '#ffffff'} onChange={v => patchParticles({ color: v })} />
+                <ColorInput label="Background" value={particlesCfg.background ?? 'transparent'} onChange={v => patchParticles({ background: v })} />
+              </div>
+              <div style={{ marginTop: 6 }}>
+                <ToggleRow label="Interactive (mouse repel)" active={!!particlesCfg.interactive} onChange={() => patchParticles({ interactive: !particlesCfg.interactive })} />
+              </div>
+            </>
+          )}
+
         </AnimConfigPopover>
       )}
     </div>
