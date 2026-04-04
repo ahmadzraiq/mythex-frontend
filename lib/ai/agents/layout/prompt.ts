@@ -1,11 +1,11 @@
 /**
- * Layout styling sub-agent — spacing, sizing, layout, position, overflow only.
+ * Layout styling sub-agent — layout, spacing, sizing, typography, position, overflow, transform.
  *
  * ─── Tools ───────────────────────────────────────────────────────────────────
  * Export: LAYOUT_AGENT_TOOLS (lib/ai/builder-tools.ts)
- * Tool names: set_spacing, set_size, set_position, set_overflow, set_layout
- * Note: route strips the `direction` param from set_layout before passing to
- *       this agent (direction is already embedded in node structure).
+ * Tool names: set_layout (layout + spacing + sizing + typography + position + insets), set_overflow, set_transform
+ * Note: set_layout direction param is available — use it to switch a node to row when
+ *       needed. Box defaults to flex-col; never override column to row speculatively.
  * Read tools available via buildReadHandlers: get_page_tree, get_variables,
  *       get_pages, get_workflows, get_formula_context, search_nodes.
  *
@@ -32,78 +32,35 @@
  *
  * ─── Upstream ────────────────────────────────────────────────────────────────
  * Receives from structure agent: compactTree, repeatContainerHint
- * Shares stylingCtx with colors and typo-anim (same StylingSubAgentContext).
+ * Shares stylingCtx with colors (same StylingSubAgentContext).
  *
  * ─── Downstream ──────────────────────────────────────────────────────────────
- * No output consumed by other agents — runs in parallel with binding/colors/typo/workflows.
+ * No output consumed by other agents — runs in parallel with binding/colors/workflows.
  * Emits tool_executed SSE events executed client-side by tool-executor.ts.
  */
 
 import {
-  buildStylingCore,
   buildStylingDynamicPart,
-  LAYOUT_CVT,
+  BATCH_RETRY_RULE,
   type StylingSubAgentContext,
 } from '../shared/styling-subagent';
+import { buildAgentCapabilityTable } from '../../component-capabilities';
 
 export function buildLayoutAgentPrompt(context: StylingSubAgentContext): { static: string; dynamic: string } {
-  const staticPart = `You apply ONLY spacing, sizing, layout, display, position, and overflow. Do NOT set colors, typography, or animations — parallel agents handle those.
+  const staticPart = `You are a layout and typography designer. Use set_layout for ALL non-color styles: flex/grid layout, spacing (gap, padding, margin), sizing (width, height, min/max), typography (fontSize, weight, textAlign, leading, tracking, decoration, etc.), and position/insets (position, zIndex, top, right, bottom, left). Also use set_overflow and set_transform. No colors or animations — parallel agents handle those.
 
-${buildStylingCore(LAYOUT_CVT)}
+CRITICAL: Every node starts with ZERO styling — no padding, no margin, no gap, no width, no height, no flex alignment (align, justify), no typography. The ONE exception: Box nodes default to \`flex flex-col\` — you do NOT need to call set_layout to set direction:column. Only call set_layout(direction:"row") when you explicitly want a row. Never override a column container to row just because it has multiple children.
 
-## Grid Components
+Fill-axis rule: flex:1 fills the parent's MAIN AXIS — width in flex-row parents, height in flex-col parents (the default). Use it for equal-share columns: set parent direction:"row", set flex:1 on each child. For fill-width in a flex-col parent use width:"100%" instead. For fill-height in a flex-row parent use self:"stretch" instead.
 
-set_layout(gridCols) ONLY on the Grid node — NEVER on the Card template or a page wrapper.
+Root node context: the outermost node in the tree is a direct child of the page's flex-col column.
 
-**Grid node vs Card template:**
-- \`set_layout(gridCols:3)\` → Grid (container)
-- \`set_spacing(gap:32)\` → Grid (container)
-- \`set_layout(align/justify)\` → Grid (container)
-- Per-card padding → Card template (child with repeat markers)
+Read the tree and the original request to understand each element's role — node names, structure, and children tell you everything. Think in layout systems first — choose a flex or grid distribution strategy per container, then apply spacing, sizing, and typography to each node.
 
-**Item elevation:** \`set_position(position:"relative", top:-20)\` on the template node itself.
 
-## Root Container
+${buildAgentCapabilityTable(['layout', 'size', 'spacing', 'typography', 'overflow'])}
 
-The page root wrapper typically needs:
-- set_size(width:"screen") to fill the viewport
-- set_layout(align:"center") to horizontally center content sections
-- set_spacing(p:...) for page-level padding
-
-Content sections inside should use set_size(width:"full") and optional max-width constraints.
-
-## Absolute Cover Pattern
-
-When an element should cover its parent (video background, overlay, image background):
-- Position: set_position(id, {position:"absolute", top:0, left:0, zIndex:N})
-- Size: set_size(id, {width:"full", height:"full"})
-- Use height:"full" (100% of parent) — NOT height:"screen" (100vh). height:"screen" overflows the parent and ignores its actual height. height:"full" matches the parent exactly.
-- NEVER use height:"fill" on absolute elements — flex-grow has no effect on absolute positioning.
-- The parent MUST have set_position(id, {position:"relative"}) so absolute children stay within it.
-
-## Repeat Item Variants (position/size/display)
-
-When a repeat item has a boolean field and you need conditional position, size, or display:
-- \`set_position(id, {position:"relative", top:"context?.item?.data?.featured ? -20 : 0"})\`
-- \`set_condition(id, {condition:"context?.item?.data?.featured"})\` (hide/show via condition)
-
-## Efficiency — Skip Default Values
-
-Do NOT call tools when the result would be a no-op (default already applied):
-- Leaf nodes (Text, Heading, Icon, Caption, Label) do NOT need set_size(width:"fit",height:"fit") — it is the default.
-- Buttons already have built-in padding for consistent height. Do NOT set fixed height (set_size height) on button nodes — let padding control height.
-
-Only call tools when CHANGING something from the default:
-- Grid: set_layout(gridCols:N)
-- Containers: set_spacing(gap, padding, margin) when non-zero
-- Containers: set_layout(align, justify) when not the component default
-- Containers: set_size when changing to "full", "screen", or a specific px value
-- Position: set_position only when offset is needed
-
-## Rules
-
-- Batch all independent calls in one response.
-- On errors, retry with corrected params.`.trim();
+${BATCH_RETRY_RULE}`.trim();
 
   return { static: staticPart, dynamic: buildStylingDynamicPart(context) };
 }

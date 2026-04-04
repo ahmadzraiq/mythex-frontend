@@ -92,6 +92,22 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
     else if (clean === 'grow-0')   { (style as Record<string, string>).flexGrow = '0'; }
     else if (clean === 'shrink')   { (style as Record<string, string>).flexShrink = '1'; }
     else if (clean === 'shrink-0') { (style as Record<string, string>).flexShrink = '0'; }
+    // width / height keyword utilities (non-arbitrary). These are NOT compiled by Tailwind JIT
+    // for JSON-config classes, so we must emit them as inline styles so the outer Animated.View
+    // wrapper can forward them (e.g. w-fit on a button must make the outer wrapper fit-content
+    // wide, not stretch to fill the flex parent).
+    else if (clean === 'w-fit')     { (style as Record<string, string>).width = 'fit-content'; }
+    else if (clean === 'w-max')     { (style as Record<string, string>).width = 'max-content'; }
+    else if (clean === 'w-min')     { (style as Record<string, string>).width = 'min-content'; }
+    else if (clean === 'w-auto')    { (style as Record<string, string>).width = 'auto'; }
+    else if (clean === 'w-full')    { (style as Record<string, string>).width = '100%'; }
+    else if (clean === 'w-screen')  { (style as Record<string, string>).width = '100vw'; }
+    else if (clean === 'h-fit')     { (style as Record<string, string>).height = 'fit-content'; }
+    else if (clean === 'h-max')     { (style as Record<string, string>).height = 'max-content'; }
+    else if (clean === 'h-min')     { (style as Record<string, string>).height = 'min-content'; }
+    else if (clean === 'h-auto')    { (style as Record<string, string>).height = 'auto'; }
+    else if (clean === 'h-full')    { (style as Record<string, string>).height = '100%'; }
+    else if (clean === 'h-screen')  { (style as Record<string, string>).height = '100vh'; }
   }
 
   for (const token of className.split(/\s+/)) {
@@ -512,7 +528,8 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
   // Map data-testid → testID so Gluestack Button surfaces it in the DOM.
   // React Native uses testID (rendered as data-testid by RN-Web); plain HTML elements
   // (e.g. Text → span) forward data-* directly, but Gluestack compound components may not.
-  if ('data-testid' in cleanProps && !('testID' in cleanProps)) {
+  const SHOULD_MAP_TESTID = (node.type as string) === 'Button';
+  if (SHOULD_MAP_TESTID && 'data-testid' in cleanProps && !('testID' in cleanProps)) {
     cleanProps.testID = cleanProps['data-testid'];
   }
 
@@ -533,12 +550,33 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
     cleanProps._formNodeId = node.id ?? '';
   }
 
-  // In builder mode, animated nodes own their own data-builder-id (set directly on the
-  // outer View in AnimatedNode). Skip applyBuilderAnnotation for those so the inner
-  // element never gets a duplicate data-builder-id via the ref callback.
+  // Detect animation config early so we can choose between:
+  // - single-element animated path (no overlay siblings)
+  // - wrapped AnimatedNode path (overlay/pseudo features need siblings)
   const animCfgForIdCheck = (node.props as Record<string, unknown>)?.animation
     ?? (node as unknown as Record<string, unknown>).animation;
-  const animNodeOwnsId = !!(builderMode && node.id && animCfgForIdCheck);
+  const animCfgObj = (animCfgForIdCheck && typeof animCfgForIdCheck === 'object')
+    ? (animCfgForIdCheck as AnimationConfig)
+    : undefined;
+  const hasOverlayFeature = !!(animCfgObj && (
+    animCfgObj.shimmer ||
+    animCfgObj.particles ||
+    animCfgObj.noise ||
+    animCfgObj.pseudoElement?.enabled ||
+    animCfgObj.splitText ||
+    animCfgObj.flip ||
+    animCfgObj.gradientAnimation?.enabled
+  ));
+  // Single-element path: animate the component directly via createAnimatedComponent
+  // instead of wrapping in an extra Animated.View. This eliminates the outer wrapper
+  // and the OUTER_PASSTHROUGH forwarding of width/height/position.
+  // Web host components (Box, Text, etc.) flatten style arrays via flattenStyle()
+  // so createAnimatedComponent can pass style arrays through without crashing the DOM.
+  // Disabled in builder mode — the wrapped path is needed for selection/resize targeting.
+  const useSingleElementPath = !!(animCfgObj && !hasOverlayFeature && !builderMode);
+  // In builder mode, wrapped animated nodes own their own data-builder-id (set on the
+  // outer Animated.View in AnimatedNode). Single-element nodes keep normal annotation.
+  const animNodeOwnsId = !!(builderMode && node.id && animCfgObj && !useSingleElementPath);
   if (!animNodeOwnsId) {
     applyBuilderAnnotation(node, cleanProps, builderMode);
   }
@@ -630,60 +668,70 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
   // the outer Animated.View wrapper owns position/insets — stripping them from the inner
   // element prevents doubled offsets (inner positioned relative to outer which is itself
   // already positioned at the same coordinates).
-  const _hasAnim = !!(
-    (node.props as Record<string, unknown> | undefined)?.animation ??
-    (node as unknown as Record<string, unknown>).animation
-  );
+  const _hasAnim = !!animCfgObj;
   if (Object.keys(arbStyles).length > 0) {
-    const isOffflow = _hasAnim && (arbStyles.position === 'absolute' || arbStyles.position === 'fixed');
-    if (isOffflow) {
-      // Outer Animated.View owns position/insets — inner element stays in normal flow.
-      const { position: _p, top: _t, right: _r, bottom: _b, left: _l, zIndex: _z, ...contentStyles } = arbStyles;
-      // In builder mode with animNodeOwnsId, the outer Animated.View also owns the pixel
-      // size (outerStyle carries width/height). Replace fixed dimensions on the inner
-      // element with 100% so it fills the wrapper during live resize drag.
-      if (animNodeOwnsId) {
-        if ('width'  in contentStyles) (contentStyles as Record<string, unknown>).width  = '100%';
-        if ('height' in contentStyles) (contentStyles as Record<string, unknown>).height = '100%';
-      }
-      cleanProps.style = { ...contentStyles, ...(cleanProps.style as Record<string, unknown> ?? {}) };
-      // Strip position-keyword and inset/z arbitrary-value classes from className so
-      // NativeWind does not re-apply them on the inner element. The outer Animated.View
-      // already owns position/insets via outerStyle — leaving them on className causes
-      // the inner element to be double-offset relative to the outer wrapper, pushing
-      // absolutely-positioned content completely outside its clipping boundary (blank box).
-      if (cleanProps.className) {
-        cleanProps.className = (cleanProps.className as string)
-          .split(/\s+/)
-          .filter(tok => !['absolute', 'fixed', 'sticky', 'relative', 'static', 'inset-0', 'inset-x-0', 'inset-y-0'].includes(tok))
-          .filter(tok => !/^!?(?:top|right|bottom|left|z|inset(?:-[xy])?)-\[/.test(tok))
-          .join(' ')
-          .trim();
-      }
-      // Remove transform from the inner element — the outer wrapper already receives it
-      // via _nodePropsStyleForOuter (below). Keeping it on both causes double-rotation.
-      if (cleanProps.style) {
-        const _s = cleanProps.style as Record<string, unknown>;
-        delete _s.transform;
-      }
-      // The inner element lost its absolute positioning (stripped above), so it's now in normal
-      // flow inside the outer Animated.View wrapper. Without explicit dimensions it collapses to
-      // content height, breaking flex-based centering (e.g. justify-center, items-center).
-      // Force it to fill the outer wrapper so layout props work as the author intended.
-      {
-        const _s = cleanProps.style as Record<string, unknown> ?? {};
-        if (!_s.width)  _s.width  = '100%';
-        if (!_s.height) _s.height = '100%';
-        cleanProps.style = _s;
-      }
+    if (useSingleElementPath) {
+      // Single-element path: keep all resolved arbStyles on the same element.
+      cleanProps.style = { ...arbStyles, ...(cleanProps.style as Record<string, unknown> ?? {}) };
     } else {
-      // Same logic for non-offflow animated nodes that have explicit width/height.
-      const innerStyles: Record<string, unknown> = { ...(arbStyles as Record<string, unknown>) };
-      if (animNodeOwnsId) {
-        if ('width'  in innerStyles) innerStyles.width  = '100%';
-        if ('height' in innerStyles) innerStyles.height = '100%';
+      const isOffflow = _hasAnim && (arbStyles.position === 'absolute' || arbStyles.position === 'fixed');
+      if (isOffflow) {
+        // Outer Animated.View owns position/insets — inner element stays in normal flow.
+        const { position: _p, top: _t, right: _r, bottom: _b, left: _l, zIndex: _z, ...contentStyles } = arbStyles;
+        // In builder mode with animNodeOwnsId, the outer Animated.View also owns the pixel
+        // size (outerStyle carries width/height). Replace fixed dimensions on the inner
+        // element with 100% so it fills the wrapper during live resize drag.
+        if (animNodeOwnsId) {
+          // Only override pixel (number) widths/heights — string values like 'fit-content'
+          // must be preserved so w-fit / h-fit nodes continue to size to their content.
+          const _cs = contentStyles as Record<string, unknown>;
+          if ('width'  in _cs && typeof _cs.width  === 'number') _cs.width  = '100%';
+          if ('height' in _cs && typeof _cs.height === 'number') _cs.height = '100%';
+        }
+        cleanProps.style = { ...contentStyles, ...(cleanProps.style as Record<string, unknown> ?? {}) };
+        // Strip position-keyword and inset/z arbitrary-value classes from className so
+        // NativeWind does not re-apply them on the inner element. The outer Animated.View
+        // already owns position/insets via outerStyle — leaving them on className causes
+        // the inner element to be double-offset relative to the outer wrapper, pushing
+        // absolutely-positioned content completely outside its clipping boundary (blank box).
+        if (cleanProps.className) {
+          cleanProps.className = (cleanProps.className as string)
+            .split(/\s+/)
+            .filter(tok => !['absolute', 'fixed', 'sticky', 'relative', 'static', 'inset-0', 'inset-x-0', 'inset-y-0'].includes(tok))
+            .filter(tok => !/^!?(?:top|right|bottom|left|z|inset(?:-[xy])?)-\[/.test(tok))
+            .join(' ')
+            .trim();
+        }
+        // Remove transform from the inner element — the outer wrapper already receives it
+        // via _nodePropsStyleForOuter (below). Keeping it on both causes double-rotation.
+        if (cleanProps.style) {
+          const _s = cleanProps.style as Record<string, unknown>;
+          delete _s.transform;
+        }
+        // The inner element lost its absolute positioning (stripped above), so it's now in normal
+        // flow inside the outer Animated.View wrapper. Without explicit dimensions it collapses to
+        // content height, breaking flex-based centering (e.g. justify-center, items-center).
+        // Force it to fill the outer wrapper so layout props work as the author intended.
+        {
+          const _s = cleanProps.style as Record<string, unknown> ?? {};
+          if (!_s.width)  _s.width  = '100%';
+          if (!_s.height) _s.height = '100%';
+          cleanProps.style = _s;
+        }
+      } else {
+        // Same logic for non-offflow animated nodes that have explicit width/height.
+        const innerStyles: Record<string, unknown> = { ...(arbStyles as Record<string, unknown>) };
+        if (animNodeOwnsId) {
+          // Only replace PIXEL (number) widths/heights with '100%' so the inner element fills
+          // the outer wrapper during live resize drag. String values like 'fit-content', 'auto',
+          // 'max-content', or '100%' must be left as-is — replacing 'fit-content' with '100%'
+          // breaks w-fit buttons because the outer (also fit-content) then expands to fill the
+          // parent rather than shrinking to its content width.
+          if ('width'  in innerStyles && typeof innerStyles.width  === 'number') innerStyles.width  = '100%';
+          if ('height' in innerStyles && typeof innerStyles.height === 'number') innerStyles.height = '100%';
+        }
+        cleanProps.style = { ...innerStyles, ...(cleanProps.style as Record<string, unknown> ?? {}) };
       }
-      cleanProps.style = { ...innerStyles, ...(cleanProps.style as Record<string, unknown> ?? {}) };
     }
   }
 
@@ -721,7 +769,56 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
     }
   }
 
-  const element = React.createElement(Component, { ...cleanProps, key: node.key }, children);
+  // Pre-apply animated-node inner-element fixes BEFORE createElement so changes make it
+  // into the React element. React.createElement produces an immutable element — any
+  // mutation to cleanProps after this line is too late.
+  {
+    const _rawAnimCfg = (node.props as Record<string, unknown> | undefined)?.animation
+      ?? (node as unknown as Record<string, unknown>).animation;
+    const _willOwn = !!(builderMode && node.id && _rawAnimCfg && !useSingleElementPath);
+
+    if (_rawAnimCfg && !useSingleElementPath) {
+      // Strip margin-* from the inner element when any animation is present.
+      // Margins on the inner element create a transparent gap between it and the outer
+      // Animated.View wrapper (the margin space is inside the outer wrapper but has no
+      // background). The margins are forwarded to the outer wrapper's outerStyle via the
+      // sizeOverride block below so spacing in the parent layout is unchanged.
+      // Also strip the corresponding arbitrary-value Tailwind tokens from className so
+      // NativeWind's compiled CSS doesn't re-apply them on the inner element.
+      const MARGIN_KEYS = ['marginTop', 'marginRight', 'marginBottom', 'marginLeft',
+        'margin', 'marginHorizontal', 'marginVertical'] as const;
+      if (cleanProps.style) {
+        const s = cleanProps.style as Record<string, unknown>;
+        for (const k of MARGIN_KEYS) delete s[k];
+      }
+      if (cleanProps.className) {
+        cleanProps.className = (cleanProps.className as string)
+          .split(/\s+/)
+          .filter(tok => !/^!?m[trblxy]?-\[/.test(tok))
+          .join(' ')
+          .trim();
+      }
+    }
+
+    // flexGrow:1 on the inner element fills the outer wrapper when it is stretched by its
+    // flex parent (align-items:stretch in a flex-row). Without it, the inner stays at
+    // natural content-height while the outer grows, showing a transparent gap in builder.
+    // Use flexGrow:1 (NOT flex:1) — flex:1 sets flex-basis:0% which collapses the item's
+    // intrinsic size to 0 before growing, making buttons appear much taller. flexGrow:1
+    // with flex-basis:auto only grows when the outer wrapper has extra space to fill.
+    // Only needed in builder mode (animNodeOwnsId=true) since Reanimated's Animated.View
+    // on web lacks RNW's default align-self:flex-start and can stretch unexpectedly.
+    if (_willOwn && !(cleanProps.style as Record<string, unknown>)?.height) {
+      cleanProps.style = {
+        flexGrow: 1,
+        ...((cleanProps.style as Record<string, unknown>) ?? {}),
+      };
+    }
+  }
+
+  const element = useSingleElementPath
+    ? null
+    : React.createElement(Component, { ...cleanProps, key: node.key }, children);
 
   // Wrap with AnimatedNode when the node has an animation config.
   // Support both node.props.animation (canonical) and node.animation (top-level alias).
@@ -820,10 +917,14 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
       };
     }
     if (_rawCfg.scroll) {
+      // Auto-enable scroll when type is set but enabled is not explicitly specified.
+      // Avoids requiring the user to always add enabled:true when type already implies intent.
+      const scrollEnabled = _rawCfg.scroll.enabled ?? (!!_rawCfg.scroll.type && _rawCfg.scroll.type !== 'none');
       resolvedAnimCfg = {
         ...resolvedAnimCfg,
         scroll: {
           ...(_rawCfg.scroll),
+          enabled: scrollEnabled,
           duration: resolveAnimNum(_rawCfg.scroll.duration, 500),
         },
       };
@@ -909,6 +1010,23 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
         },
       };
     }
+    if (useSingleElementPath) {
+      return (
+        <AnimatedNode
+          key={node.key}
+          animation={resolvedAnimCfg}
+          staggerIndex={staggerIndex}
+          nodeId={node.id}
+          nodeType={node.type as string | undefined}
+          builderMode={builderMode}
+          componentType={Component as React.ComponentType<Record<string, unknown>>}
+          componentProps={{ ...cleanProps }}
+          componentChildren={children}
+          children={null}
+        />
+      );
+    }
+
     // In builder mode the Animated.View is the selectable/resizable target:
     // (1) Always clear data-builder-id from inner element — AnimatedNode sets it on the
     //     Animated.View directly so patchStyle and canvas resize hit the right element.
@@ -957,6 +1075,8 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
       // so non-JIT-compiled arbitrary classes (from JSON nodes) still render correctly.
       // Note: width/height are replaced with 100% earlier (before createElement) so the
       // inner fills the outer Animated.View during live resize drag in builder mode.
+      // flexGrow:1 is pre-applied to cleanProps.style BEFORE createElement (see above) so
+      // the inner element fills the outer wrapper when it is stretched by a flex parent.
     }
     // Forward size-critical classes from the inner node to the outer wrapper.
     // React Native Web's base View style includes align-self: flex-start, which causes
@@ -1020,11 +1140,16 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
           break;
         }
       }
-      // Forward insets, zIndex, and explicit size constraints from arbitrary classes so the outer
-      // wrapper matches the inner node's exact dimensions. Without this, the outer Animated.View
-      // collapses in preview mode for nodes like h-[120px] min-w-[200px] (no NativeWind class
-      // on the outer wrapper means no compiled CSS — only inline outerStyle is applied).
-      for (const key of ['top', 'right', 'bottom', 'left', 'zIndex', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight'] as const) {
+      // Forward insets, zIndex, explicit size constraints, AND margins from arbitrary classes to
+      // the outer Animated.View wrapper. Without this, the outer wrapper has neither compiled CSS
+      // nor inline style for these properties, so sizing collapses and margins are lost.
+      // Margins must be forwarded here because the pre-check block above stripped them from the
+      // inner element's style/className — the spacing in the parent layout is only preserved if
+      // the outer wrapper carries the margin instead.
+      // Also forward borderRadius variants so box-shadow on the outer wrapper follows the node's
+      // rounded corners. Without this the shadow is rectangular while the inner content is rounded,
+      // creating a visible corner artifact in both preview and builder modes.
+      for (const key of ['top', 'right', 'bottom', 'left', 'zIndex', 'width', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'margin', 'marginHorizontal', 'marginVertical', 'borderRadius', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius'] as const) {
         if ((arbStyles as Record<string, unknown>)[key] !== undefined) {
           sizeOverride[key] = (arbStyles as Record<string, unknown>)[key];
         }

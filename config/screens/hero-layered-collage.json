@@ -1,0 +1,200 @@
+{
+  "meta": { "title": "Hero Layered Collage" },
+  "ui": {
+    "id": "d6abaeb0-7b9c-40b7-aecf-eddcd5acfd44",
+    "name": "hero-layered-collage",
+    "type": "Box",
+    "props": {
+      "style": {
+        "backgroundImage": "linear-gradient(to bottom right, #faf5ff, #f3e8ff)",
+        "backgroundRepeat": "no-repeat",
+        "backgroundPosition": "center"
+      },
+      "className": "flex flex-row items-center w-full min-h-screen pl-[40px] pr-[40px] pt-[60px] pb-[60px] gap-[60px] relative"
+    },
+    "children": [
+      {
+        "id": "8176fd6d-d91b-4af7-b66f-c9a0afd6c4ce",
+        "name": "hero-content-overlay",
+        "type": "Box",
+        "props": {
+          "style": {},
+          "className": "flex flex-col bg-transparent gap-[20px] flex-1 max-w-[500px] relative z-[10]"
+        },
+        "children": [
+          {
+            "id": "8aa317c9-497e-4327-8920-1511ab4418ae",
+            "text": "Discover Depth in Design",
+            "type": "Text",
+            "props": {
+              "className": "!text-[#3b0764] text-[48px] font-bold leading-tight tracking-tight"
+            },
+            "children": [],
+            "animation": {
+              "enter": { "type": "slideInLeft", "delay": 100, "duration": 600 }
+            }
+          },
+          {
+            "id": "fe127ac2-85ff-4064-ad72-c627e2e82fca",
+            "text": "Layered visuals create compelling visual hierarchy and modern aesthetic",
+            "type": "Text",
+            "props": {
+              "className": "!text-[#6d28d9] mt-[8px] text-[18px] font-normal leading-relaxed"
+            },
+            "children": [],
+            "animation": {
+              "enter": { "type": "slideInLeft", "delay": 250, "duration": 600 }
+            }
+          },
+          {
+            "id": "58348ecc-c0a6-484f-b1a8-4be1ea60ed5c",
+            "name": "cta-button",
+            "type": "Box",
+            "props": {
+              "style": {
+                "boxShadow": "0px 12px 24px -8px rgba(124, 58, 237, 0.3)",
+                "elevation": 12,
+                "shadowColor": "rgb(124,58,237)",
+                "shadowOffset": { "width": 0, "height": 12 },
+                "shadowRadius": 24,
+                "shadowOpacity": 0.3
+              },
+              "className": "bg-[#7c3aed] rounded-[8px] pl-[32px] pr-[32px] pt-[16px] pb-[16px] mt-[24px] cursor-pointer w-fit"
+            },
+            "children": [
+              {
+                "id": "378bd468-70e9-4167-a11a-1b4f5091fe20",
+                "text": "Explore Now",
+                "type": "Text",
+                "props": {
+                  "className": "!text-[#ffffff] text-[16px] font-semibold"
+                },
+                "children": []
+              }
+            ],
+            "animation": {
+              "enter": { "type": "slideInLeft", "delay": 400, "duration": 700 },
+              "hover": { "scale": 1.06, "duration": 250 }
+            }
+          }
+        ]
+      },
+      {
+        "id": "87b63592-82a7-4358-95ea-e0b9fd563e8f",
+        "name": "primary-image-container",
+        "type": "Box",
+        "props": {
+          "style": {
+            "boxShadow": "0px 20px 40px -10px rgba(123, 58, 237, 0.25)",
+            "elevation": 20,
+            "shadowColor": "rgb(123,58,237)",
+            "shadowOffset": { "width": 0, "height": 20 },
+            "shadowRadius": 40,
+            "shadowOpacity": 0.25
+          },
+          "className": "flex-1 h-[450px] min-w-[300px] rounded-[12px] relative z-[5]"
+        },
+        "children": [
+          {
+            "id": "3dcf34e6-e46a-41a5-874b-92a4eee0ffa7",
+            "name": "image-clip-wrapper",
+            "type": "Box",
+            "props": {
+              "style": {},
+              "className": "border-[1px] border-[#ddd6fe] rounded-[12px] overflow-hidden w-full h-full relative"
+            },
+            "children": [
+              {
+                "id": "de0ea106-bcbb-43f5-b5e6-4bf87d39b736",
+                "src": "https://images.unsplash.com/photo-1694182155733-59ecf6fd5335?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBtaW5pbWFsaXN0JTIwYXJjaGl0ZWN0dXJlJTIwd2l0aCUyMGNsZWFuJTIwbGluZXMlMjBhbmQlMjBkZXB0aHxlbnwwfHx8fDE3NzUzMTc5NDN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+                "type": "Image",
+                "props": {
+                  "alt": "a black and white photo of a building",
+                  "className": "w-full h-full",
+                  "objectFit": "cover"
+                },
+                "children": []
+              }
+            ]
+          }
+        ],
+        "animation": {
+          "enter": { "type": "slideInRight", "delay": 300, "duration": 800 }
+        }
+      },
+      {
+        "id": "ca98ed24-b8f6-4cbc-b4b1-89a3fbafe99b",
+        "name": "accent-image-container",
+        "type": "Box",
+        "props": {
+          "style": {
+            "boxShadow": "0px 16px 32px -8px rgba(123, 58, 237, 0.2)",
+            "elevation": 16,
+            "shadowColor": "rgb(123,58,237)",
+            "shadowOffset": { "width": 0, "height": 16 },
+            "shadowRadius": 32,
+            "shadowOpacity": 0.2
+          },
+          "className": "w-[280px] h-[340px] rounded-[12px] absolute z-[3] bottom-[-40px] left-[-60px]"
+        },
+        "children": [
+          {
+            "id": "c8e94cd5-e795-448d-bac2-2141a3198966",
+            "name": "accent-clip-wrapper",
+            "type": "Box",
+            "props": {
+              "style": {},
+              "className": "border-[2px] border-[#ddd6fe] rounded-[12px] overflow-hidden w-full h-full relative"
+            },
+            "children": [
+              {
+                "id": "37cbf0c8-2e65-4ac6-832f-b0b7f2ccdda3",
+                "src": "https://images.unsplash.com/photo-1681041880053-2b26ddfe8401?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjBtaW5pbWFsaXN0JTIwYXJjaGl0ZWN0dXJlJTIwd2l0aCUyMGNsZWFuJTIwbGluZXMlMjBhbmQlMjBkZXB0aHxlbnwwfHx8fDE3NzUzMTc5NDN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+                "type": "Image",
+                "props": {
+                  "alt": "an airplane flying over a building with a blue sky in the background",
+                  "className": "w-full h-full",
+                  "objectFit": "cover"
+                },
+                "children": []
+              }
+            ]
+          }
+        ],
+        "animation": {
+          "enter": { "type": "zoomIn", "delay": 500, "duration": 700 }
+        }
+      },
+      {
+        "id": "ed879cc0-99c9-464a-97a4-1c8f5275db56",
+        "name": "shadow-accent",
+        "type": "Box",
+        "props": {
+          "style": {},
+          "className": "w-[380px] h-[380px] absolute z-[1] top-[20px] right-[-80px]"
+        },
+        "children": [
+          {
+            "id": "3fcc9bf6-d51f-4d81-ac84-9f9463d1780a",
+            "name": "floating-shape",
+            "type": "Box",
+            "props": {
+              "style": {},
+              "className": "bg-[#7c3aed] bg-opacity-[8%] w-full h-full"
+            },
+            "children": [],
+            "animation": {
+              "loop": {
+                "type": "float",
+                "delay": 200,
+                "duration": 6000,
+                "direction": "alternate",
+                "repeatCount": -1
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

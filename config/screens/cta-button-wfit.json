@@ -1,0 +1,71 @@
+{
+  "meta": { "title": "CTA Button w-fit" },
+  "ui": {
+    "type": "Box",
+    "props": { "className": "flex flex-col items-center justify-center w-full min-h-screen bg-[#faf5ff] p-[40px]" },
+    "children": [
+      {
+        "type": "Text",
+        "props": { "className": "!text-[#3b0764] text-[28px] font-bold mb-[8px] text-center" },
+        "text": "CTA Button — w-fit + enter/hover animation"
+      },
+      {
+        "type": "Text",
+        "props": { "className": "!text-[#6d28d9] text-[14px] text-center mb-[4px]" },
+        "text": "Button must hug its content width (not stretch to fill parent)"
+      },
+      {
+        "id": "6f16d7b2-9792-414e-a8cd-0dfb365d4697",
+        "name": "Call-to-Action Button",
+        "type": "Box",
+        "props": {
+          "style": {
+            "boxShadow": "0px 8px 20px -2px rgba(123, 58, 237, 0.35)",
+            "elevation": 10,
+            "shadowColor": "rgb(123,58,237)",
+            "shadowOffset": { "width": 0, "height": 8 },
+            "shadowRadius": 20,
+            "shadowOpacity": 0.35
+          },
+          "className": "flex flex-row !bg-[var(--theme-primary)] rounded-[8px] items-center justify-center pl-[24px] pr-[24px] pt-[12px] pb-[12px] mt-[24px] gap-[8px] cursor-pointer w-fit"
+        },
+        "children": [
+          {
+            "id": "97acaca6-5b20-4d83-b686-61b0c5d1d8a4",
+            "name": "CTA Label",
+            "text": "Explore Design",
+            "type": "Text",
+            "props": {
+              "className": "!text-[var(--theme-primary-foreground)] text-[14px] font-semibold text-center tracking-wide"
+            },
+            "children": []
+          },
+          {
+            "id": "53fdd7fa-b377-4659-801a-ae611e075d4d",
+            "name": "Arrow Icon",
+            "type": "Icon",
+            "props": {
+              "icon": "lucide:arrow-right",
+              "size": 24,
+              "color": "var(--theme-primary-foreground)"
+            },
+            "children": []
+          }
+        ],
+        "animation": {
+          "enter": {
+            "type": "slideInUp",
+            "delay": 200,
+            "easing": "easeOut",
+            "duration": 700
+          },
+          "hover": {
+            "y": -4,
+            "scale": 1.05,
+            "duration": 300
+          }
+        }
+      }
+    ]
+  }
+}

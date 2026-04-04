@@ -71,6 +71,7 @@ import { useRunAction } from '../run-action-context';
 import { useScrollOffset } from '../scroll-offset-context';
 import { getGlobalVariableStore } from '../global-variable-store';
 import { setNestedValue } from '../nested-utils';
+import { getAnimatedComponent } from '../animated-component-cache';
 
 // ─── Cross-platform library imports ───────────────────────────────────────────
 // On web, Next.js aliases these to stubs in lib/sdui/stubs/ via next.config.mjs.
@@ -424,7 +425,10 @@ interface AnimatedNodeProps {
   nodeId?: string;
   nodeType?: string;
   builderMode?: boolean;
-  children: React.ReactNode;
+  componentType?: React.ComponentType<Record<string, unknown>>;
+  componentProps?: Record<string, unknown>;
+  componentChildren?: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 // ─── Easing helpers ───────────────────────────────────────────────────────────
@@ -732,6 +736,9 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   nodeId,
   nodeType,
   builderMode = false,
+  componentType,
+  componentProps,
+  componentChildren,
   children,
 }: AnimatedNodeProps) {
   const {
@@ -742,6 +749,15 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     mask: maskCfg, pseudoElement: pseudoElCfg, gesture, flip,
     splitText, particles, noise, outerClassName, outerStyle, shimmer,
   } = animation;
+  const needsOverlayWrapper = !!(
+    shimmer ||
+    particles ||
+    noise ||
+    pseudoElCfg?.enabled ||
+    splitText?.text ||
+    flip ||
+    gradientAnimation?.enabled
+  );
 
   // ── Animated ref (for measure on native) ───────────────────────────────────
   const animatedRef = useAnimatedRef<Animated.View>();
@@ -2878,6 +2894,43 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   ) : null;
 
   // ── Return ─────────────────────────────────────────────────────────────────
+  if (componentType && !needsOverlayWrapper) {
+    const AnimatedComponent = getAnimatedComponent(componentType);
+    const singleProps = { ...((componentProps ?? {}) as Record<string, unknown>) };
+    // Never spread React's reserved `key` prop into JSX props.
+    delete singleProps.key;
+    // RN-specific DOM-incompatible props that crash or warn on web host elements.
+    // Our web host components (Box, Text, Heading, etc.) are functions that forward
+    // {...props} to raw DOM elements, so all RN-only props must be stripped.
+    delete singleProps.nativeID;
+    if (Platform.OS === 'web') {
+      delete singleProps.testID;
+    }
+    const singleStyle = singleProps.style as object | undefined;
+    return (
+      <GestureDetector gesture={composedGesture}>
+        <AnimatedComponent
+          {...singleProps}
+          ref={animatedRef}
+          style={[animatedStyle, mergedStyle as object, outerStyle as object, singleStyle]}
+          onLayout={handleLayout}
+          exiting={exitingAnimation ?? undefined}
+          data-anim-node="single"
+          {...(focus?.enabled ? { tabIndex: 0 } : {})}
+          {...(focus?.enabled ? {
+            onFocus: () => { isFocusedSv.value = withTiming(1, { duration: focus.duration ?? 200 }); },
+            onBlur:  () => { isFocusedSv.value = withTiming(0, { duration: focus.duration ?? 200 }); },
+          } as object : {})}
+          {...(builderMode && nodeId
+            ? { 'data-builder-id': nodeId, 'data-builder-type': nodeType ?? 'Box' }
+            : {})}
+        >
+          {componentChildren ?? children}
+        </AnimatedComponent>
+      </GestureDetector>
+    );
+  }
+
   // Always use Animated.View so animatedStyle is applied and animations run in all modes.
   // For hover-flip on web, wrap the entire GestureDetector in a plain div so
   // mouseenter/mouseleave fire at the outer card boundary — not on the Reanimated
@@ -2891,6 +2944,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
           style={[animatedStyle, mergedStyle as object, outerStyle as object, shimmer ? { overflow: 'hidden' } : undefined]}
           onLayout={handleLayout}
           exiting={exitingAnimation ?? undefined}
+          data-anim-node="wrapped"
           {...(focus?.enabled ? { tabIndex: 0 } : {})}
           {...(pseudoElCfg?.enabled ? { 'data-anim-id': nodeId ?? componentId } : {})}
           {...(focus?.enabled ? {

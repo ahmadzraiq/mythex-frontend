@@ -1,10 +1,11 @@
 /**
- * Colors styling sub-agent — backgrounds, text colors, borders, shadows, opacity, icon color/size.
+ * Colors + Animation styling sub-agent — backgrounds, text colors, borders, shadows, opacity, icon color/size, animations.
  *
  * ─── Tools ───────────────────────────────────────────────────────────────────
  * Export: COLORS_AGENT_TOOLS (lib/ai/builder-tools.ts)
  * Tool names: set_background, set_text_color, set_border, set_shadow, set_opacity,
- *             set_icon (color/size variant — icon name stripped via stripIconName)
+ *             set_icon (color/size variant — icon name stripped via stripIconName),
+ *             set_animation, bulk_apply
  * Read tools available via buildReadHandlers: get_page_tree, get_variables,
  *       get_pages, get_workflows, get_formula_context, search_nodes.
  *
@@ -36,81 +37,41 @@
  * ─── Upstream ────────────────────────────────────────────────────────────────
  * Receives from structure agent: compactTree, varRoster, repeatContainerHint,
  *   nestedRepeatHint, ternaryContrastHint (route derives these from collected trees).
- * Shares stylingCtx with layout and typo-anim.
+ * Shares stylingCtx with layout.
  *
  * ─── Downstream ──────────────────────────────────────────────────────────────
- * No output consumed by other agents — runs in parallel with binding/layout/typo/workflows.
+ * No output consumed by other agents — runs in parallel with binding/layout/workflows.
  * Emits tool_executed SSE events executed client-side by tool-executor.ts.
  */
 
 import {
-  buildStylingCore,
   buildStylingDynamicPart,
-  COLORS_CVT,
+  buildAnimLevelBlock,
+  BATCH_RETRY_RULE,
   type StylingSubAgentContext,
 } from '../shared/styling-subagent';
+import { SHARED_FORMULA_SYNTAX } from '../shared/formula-scope';
+import { buildAgentCapabilityTable } from '../../component-capabilities';
 
 export function buildColorsAgentPrompt(context: StylingSubAgentContext): { static: string; dynamic: string } {
-  const staticPart = `You apply ONLY colors, backgrounds, text colors, borders, shadows, opacity, and icon color/size. Do NOT set spacing, layout, typography, or animations — parallel agents handle those.
+  const staticPart = `You apply colors, backgrounds, text colors, borders, shadows, opacity, icon color/size, and animations. No spacing, layout, or typography — the layout agent handles those.
 
-${buildStylingCore(COLORS_CVT)}
+glowPulse and ripple loops ALWAYS require loopColor. gradientDrift requires gradientColors set first.
 
-## Contrast Rule — CRITICAL
+${SHARED_FORMULA_SYNTAX}
 
-When a template node gets a ternary background (e.g. \`boolField ? 'theme:primary' : 'theme:card'\`), **EVERY single descendant** with text/color must also get a matching ternary:
-- EVERY Heading, Text, Label, Caption → set_text_color with the SAME condition
-- EVERY Icon → set_icon with ternary color
-- EVERY Button → set_background + set_text_color with matching ternaries
-- EVERY Divider → set_background with matching ternary
-- Nodes inside a nested repeat use context?.item?.parent?.data for the outer field
-- Nodes that are direct children of the outer template use context?.item?.data
+## System-Specific Rules
 
-**Common failure:** Forgetting descendants — ALL text and icon descendants need matching ternaries.
+- **Ternary contrast:** When a repeated template gets a ternary background, ALL text/icon descendants MUST use matching ternaries with the same condition.
+- In nested repeats, use \`context?.item?.parent?.data\` for the outer item's fields.
+- Static token: \`set_background(id, {bg:"primary"})\`. Formula ternary: \`"COND ? 'theme:primary' : 'theme:card'"\`.
+- Use bulk_apply for sibling groups with identical colors or animations.
 
-If the user message includes TERNARY CONTRAST REQUIRED with specific node IDs, style ALL listed nodes — do not skip any.
+${buildAgentCapabilityTable(['background', 'border', 'shadow', 'typography', 'icon'])}
 
-## Icon Color
+${BATCH_RETRY_RULE}`.trim();
 
-Icons default to 'primary' (theme accent color). This is often WRONG for the design context.
-- Feature list checks / decorative icons: usually 'foreground' or 'muted-foreground'
-- Icons on primary-colored backgrounds: 'primary-foreground'
-- Icons in ternary templates: MUST use matching ternary (same condition as sibling text)
-- Icons in nested repeats: use context?.item?.parent?.data for outer template field
+  const dynamicPart = [buildStylingDynamicPart(context), buildAnimLevelBlock(context.animationLevel)].filter(Boolean).join('\n\n');
 
-set_icon(id, {color: "foreground"}) — static
-set_icon(id, {color: "context?.item?.data?.featured ? 'theme:primary-foreground' : 'theme:foreground'"}) — ternary
-
-## Nested Repeat Ternary
-
-Nodes INSIDE a nested repeat that need the outer template's boolean field MUST use \`.parent\`:
-
-WRONG: \`context?.item?.data?.boolField ? 'theme:primary-foreground' : 'theme:foreground'\`
-RIGHT: \`context?.item?.parent?.data?.boolField ? 'theme:primary-foreground' : 'theme:foreground'\`
-
-If the TERNARY CONTRAST REQUIRED hint marks a node as "(NESTED)", always use \`.parent\` for that node.
-
-## Condition-Gated Nodes
-
-A node with a condition (from the Binding agent) only renders when truthy — use STATIC colors for that case, not a ternary.
-
-## Repeat Item Variants
-
-When a repeat item has a boolean field:
-1. Ternary bg on the template: set_background(id, {bg: "context?.item?.data?.boolField ? 'theme:primary' : 'theme:card'"})
-2. ALL text/icon/button descendants must use matching ternaries
-3. ONE template — no duplicate nodes needed
-
-## Visual Effects
-
-Glow: set_shadow(id, {blur:25,spread:-5,y:12,color:"#hex"})
-Glass: set_background(id, {bg:"primary/10"})
-Per-item shadow: set_shadow(id, {boxShadow:"COND ? 'css-shadow' : 'css-shadow'"})
-
-## Rules
-
-- Prefer 'theme:tokenName' over hardcoded hex in ternaries for backgrounds and text colors — theme tokens stay portable across themes. Hardcoded hex is fine for shadows, decorative accents, or specific one-off design choices.
-- Batch all independent calls in one response.
-- On errors, retry with corrected params.`.trim();
-
-  return { static: staticPart, dynamic: buildStylingDynamicPart(context) };
+  return { static: staticPart, dynamic: dynamicPart };
 }

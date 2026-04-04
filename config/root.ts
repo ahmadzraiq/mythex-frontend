@@ -34,6 +34,12 @@ import pricingCardTest from './screens/pricing-card-test.json';
 import stylingTest from './screens/styling-test.json';
 import controlsShowcase from './screens/controls-showcase.json';
 import exprCssTest from './screens/expr-css-test.json';
+import jsonTest from './screens/json-test.json';
+import heroSaaSWorkflow from './screens/hero-saas-workflow.json';
+import heightFillTest from './screens/height-fill-test.json';
+import layeredDepthHero from './screens/layered-depth-hero.json';
+import ctaButtonWfit from './screens/cta-button-wfit.json';
+import heroLayeredCollage from './screens/hero-layered-collage.json';
 
 // Layouts
 import storeLayout from './layouts/store.json';
@@ -100,6 +106,12 @@ const screens = {
   stylingTest,
   controlsShowcase,
   exprCssTest,
+  jsonTest,
+  heroSaaSWorkflow,
+  heightFillTest,
+  layeredDepthHero,
+  ctaButtonWfit,
+  heroLayeredCollage,
 };
 
 const layouts = {

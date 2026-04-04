@@ -2,7 +2,7 @@
  * Tool Executor — maps AI tool calls to builder Zustand store actions.
  *
  * Design: The AI uses semantic builder actions, never raw JSON.
- * - add_component("Card") → looks up COMPONENT_SCHEMA["Card"] → inserts template
+ * - add_component("Label") → looks up COMPONENT_SCHEMA[label] → inserts template
  * - set_text(id, "Hello") → patchProp(id, "text", "Hello")
  * - set_background(id, {bg:"primary"}) → resolves to bg-[var(--theme-primary)], patches className
  *
@@ -15,6 +15,12 @@ import { COMPONENT_SCHEMA } from './sdui-component-schema';
 import { ALL_PRIMITIVES } from '@/lib/builder/primitive-components';
 import { FORMULA_FNS } from '@/lib/sdui/formula-functions';
 import { replaceTwToken, removeTwToken } from '@/app/dev/builder/_tw-utils';
+import {
+  type ToolGroup,
+  getCapabilities,
+  buildCapabilityNote,
+  buildBlockedGroupSuggestion,
+} from './component-capabilities';
 
 export type ToolInput = Record<string, unknown>;
 
@@ -167,6 +173,35 @@ function requireNode(
   return null;
 }
 
+// ─── Check component capability against the registry ─────────────────────────
+//
+// Returns { success: false, error } when the component type does not support
+// the given tool group. Returns null when the call is allowed to proceed.
+// Universal tools (opacity, position, animation, condition, etc.) are never
+// passed here — they skip the capability check entirely.
+
+function checkCapability(
+  store: BuilderStore,
+  nodeId: string,
+  group: ToolGroup,
+): { success: false; error: string } | null {
+  const node = findNode(store.pageNodes as SDUINode[], nodeId);
+  if (!node) return null; // requireNode handles the missing-node error
+  const componentType = (node.type as string | undefined) ?? 'Unknown';
+  const caps = getCapabilities(componentType);
+  if (caps === null) return null; // unknown type → no restriction
+  if (!caps.includes(group)) {
+    const suggestion = buildBlockedGroupSuggestion(group, componentType);
+    return {
+      success: false,
+      error:
+        `"${group}" tools are not supported on ${componentType}. ${suggestion} ` +
+        `${buildCapabilityNote(componentType)}`,
+    };
+  }
+  return null;
+}
+
 // ─── Return all map-bearing ancestors of a node (repeat context chain) ───────
 
 function getRepeatAncestors(nodes: SDUINode[], targetId: string, ancestors: SDUINode[] = []): SDUINode[] | null {
@@ -230,12 +265,18 @@ function validateRepeatScopeFormula(
 
 function summarizeNode(n: SDUINode, depth: number): unknown {
   const node = n as unknown as Record<string, unknown>;
+  const caps = getCapabilities(n.type as string);
   const base: Record<string, unknown> = {
     id: n.id,
     type: n.type,
     name: node.name,
     text: typeof node.text === 'string' ? (node.text as string).slice(0, 80) : undefined,
     className: (n.props as { className?: string })?.className?.slice(0, 100),
+    // tools lists the capability groups this component supports.
+    // Universal tools (set_opacity, set_position, set_animation, set_condition,
+    // set_repeat, bind_action, rename_node, set_transform) are always available
+    // and are not listed here to keep the output compact.
+    tools: caps ?? 'all',
   };
   if (depth > 0 && n.children?.length) {
     base.children = (n.children as SDUINode[]).map(c => summarizeNode(c, depth - 1));
@@ -247,34 +288,36 @@ function summarizeNode(n: SDUINode, depth: number): unknown {
 
 // ─── Apply set_layout helper ─────────────────────────────────────────────────
 
+/** Map CSS justify-content wording to Tailwind justify-* suffix (both forms accepted). */
+function normJustifyCssToTwSuffix(v: string): string {
+  let s = v.trim().replace(/^space-/, '');
+  if (s === 'flex-start') s = 'start';
+  if (s === 'flex-end') s = 'end';
+  return s;
+}
+
 function buildLayoutClass(input: ToolInput, current = ''): string {
   let cls = current;
 
   if (input.direction === 'row') {
     cls = cls.replace(/\bflex-col\b/g, '').trim();
     if (!cls.includes('flex-row')) cls += ' flex-row';
+    // Ensure display:flex is present — flex-row alone does not set it on web
+    if (!cls.split(' ').includes('flex')) cls = `flex ${cls}`.trim();
   } else if (input.direction === 'column') {
     cls = cls.replace(/\bflex-row\b/g, '').trim();
     if (!cls.includes('flex-col')) cls += ' flex-col';
+    if (!cls.split(' ').includes('flex')) cls = `flex ${cls}`.trim();
   }
 
   if (input.align)   cls = replaceTwToken(cls, 'items-', `items-${input.align}`);
-  if (input.justify) cls = replaceTwToken(cls, 'justify-', `justify-${input.justify}`);
+  if (input.justify) cls = replaceTwToken(cls, 'justify-', `justify-${normJustifyCssToTwSuffix(String(input.justify))}`);
   // gap is handled via inline style (written after buildLayoutClass via patchNodeStyle in set_layout executor)
 
-  // Process padding and width in a single pass (no early returns — both can be set together)
+  // Process padding in a single pass
   if (input.padding) {
     cls = cls.split(' ').filter(t => !/^p[xyblrt]?-/.test(t)).join(' ');
     cls += ` ${input.padding}`;
-  }
-  if (input.width) {
-    const widthVal = input.width as string;
-    cls = cls.split(' ').filter(t => !/^(w-|max-w-|mx-)/.test(t)).join(' ');
-    cls += ` ${widthVal}`;
-    // max-w-* always needs mx-auto to actually center — add it automatically
-    if (/^max-w-/.test(widthVal) && !widthVal.includes('mx-auto')) {
-      cls += ' mx-auto';
-    }
   }
 
   return cls.replace(/\s+/g, ' ').trim();
@@ -462,6 +505,7 @@ const SIZE_HEIGHT_TOKEN_MAP: Record<string, string> = {
   fill:   '100%',
   fit:    'fit-content',
   screen: '100vh',
+  'min-screen': '100vh',
 };
 
 function replaceTokenGroup(cls: string, patterns: string[], newToken: string): string {
@@ -531,8 +575,21 @@ const handlers: Record<string, Handler> = {
   get_node_details(input, getStore) {
     const store = getStore();
     const ids = input.nodeIds as string[];
-    const nodes = ids.map(id => findNode(store.pageNodes, id)).filter(Boolean);
-    return { success: true, data: nodes.map(n => summarizeNode(n!, 3)) };
+    const found: SDUINode[] = [];
+    const missing: string[] = [];
+    for (const id of ids) {
+      const node = findNode(store.pageNodes, id);
+      if (node) found.push(node);
+      else missing.push(id);
+    }
+    if (missing.length > 0) {
+      return {
+        success: false,
+        error: `Nodes not found: ${missing.join(', ')}. Call get_page_tree() to get valid node IDs.`,
+        data: found.map(n => summarizeNode(n, 3)),
+      };
+    }
+    return { success: true, data: found.map(n => summarizeNode(n, 3)) };
   },
 
   get_pages(_, getStore) {
@@ -698,6 +755,7 @@ const handlers: Record<string, Handler> = {
       src: input.src as string,
       props: {
         alt: (input.alt as string) || '',
+        ...(input.objectFit ? { objectFit: input.objectFit as string } : {}),
         className: (input.className as string) || 'w-full rounded-xl',
       },
     } as unknown as SDUINode;
@@ -775,6 +833,21 @@ const handlers: Record<string, Handler> = {
   wrap_in_container(input, getStore) {
     const store = getStore();
     const ids = input.nodeIds as string[];
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return { success: false, error: 'wrap_in_container requires at least one nodeId.' };
+    }
+    const rootIds = new Set((store.pageNodes ?? []).map(n => n.id).filter(Boolean) as string[]);
+    const missing = ids.filter(id => !findNode(store.pageNodes as SDUINode[], id));
+    if (missing.length > 0) {
+      return { success: false, error: `Nodes not found: ${missing.join(', ')}. Call get_page_tree() to get valid IDs.` };
+    }
+    const nonRoot = ids.filter(id => !rootIds.has(id));
+    if (nonRoot.length > 0) {
+      return {
+        success: false,
+        error: `wrap_in_container currently supports root-level nodes only. These IDs are nested: ${nonRoot.join(', ')}.`,
+      };
+    }
     const direction = (input.direction as string) || 'column';
     const cls = direction === 'row'
       ? 'flex flex-row items-center gap-[16px] w-full'
@@ -794,6 +867,8 @@ const handlers: Record<string, Handler> = {
     const nodeId = input.nodeId as string;
     const nodeErr = requireNode(store, nodeId);
     if (nodeErr) return nodeErr;
+    const capErr = checkCapability(store, nodeId, 'text');
+    if (capErr) return capErr;
     let text = input.text as string;
     // AI sometimes double-escapes string literals as \"...\" (literal backslashes) instead of '...'.
     // Sanitize before formula detection so the evaluator sees valid JS single-quoted strings.
@@ -817,6 +892,10 @@ const handlers: Record<string, Handler> = {
   set_placeholder(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
+    const capErr = checkCapability(store, nodeId, 'text');
+    if (capErr) return capErr;
     const placeholder = input.placeholder as string;
     // Input is now a flat node (InputWithField) — set placeholder directly on it
     store.patchProp(nodeId, 'props.placeholder', placeholder);
@@ -825,6 +904,8 @@ const handlers: Record<string, Handler> = {
 
   set_href(input, getStore) {
     const store = getStore();
+    const nodeErr = requireNode(store, input.nodeId as string | undefined);
+    if (nodeErr) return nodeErr;
     store.patchProp(input.nodeId as string, 'props.href', input.href);
     return { success: true, data: { message: `Set href to "${input.href}"` } };
   },
@@ -833,16 +914,19 @@ const handlers: Record<string, Handler> = {
     const store = getStore();
     const nodeId = input.nodeId as string;
     const node = findNode(store.pageNodes as SDUINode[], nodeId);
-    // Box/HStack/etc. ignore props.src — only Image/Video render a URL. Without this guard,
-    // set_src "succeeds" but nothing appears on canvas (common AI hero pattern: Box + set_src).
-    const nodeType = node?.type as string | undefined;
-    if (!node || (nodeType !== 'Image' && nodeType !== 'Video')) {
+    if (!node) return { success: false, error: `Node "${nodeId}" not found on the current page.` };
+    // Capability check replaces the old hand-written Image/Video guard.
+    // Also provides the full "supported groups" list in the error message.
+    const capErr = checkCapability(store, nodeId, 'src');
+    if (capErr) {
+      // Append the specific usage hint for set_src so the AI knows what to do.
       return {
         success: false,
-        error:
-          'set_src only works on Image or Video nodes. Add an Image (add_component label "Image" or add_image), then call set_src. For a full-bleed photo behind content, use an Image layer with absolute positioning and object-cover — do not use set_background for image URLs.',
+        error: capErr.error +
+          ' For a full-bleed photo behind content, use an Image layer with absolute positioning and object-cover. To set a CSS background-image on a Box, use set_background(boxId, { bgImage: "url(...)" }) instead.',
       };
     }
+    const nodeType = node.type as string | undefined;
     // Image nodes store URL at top-level src; Video uses props.src
     if (nodeType === 'Image') {
       if (input.src !== undefined) store.patchProp(nodeId, 'src', input.src);
@@ -859,6 +943,8 @@ const handlers: Record<string, Handler> = {
     const store = getStore();
     const nodeErr = requireNode(store, input.nodeId as string);
     if (nodeErr) return nodeErr;
+    const capErr = checkCapability(store, input.nodeId as string, 'icon');
+    if (capErr) return capErr;
 
     if (input.icon === undefined && input.color === undefined && input.size === undefined) {
       return { success: false, error: 'set_icon requires at least one of: icon, color, size.' };
@@ -925,6 +1011,8 @@ const handlers: Record<string, Handler> = {
   set_video_props(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
     if (input.poster    !== undefined) store.patchProp(nodeId, 'props.poster',    input.poster);
     if (input.autoPlay  !== undefined) store.patchProp(nodeId, 'props.autoPlay',  input.autoPlay);
     if (input.loop      !== undefined) store.patchProp(nodeId, 'props.loop',      input.loop);
@@ -941,13 +1029,13 @@ const handlers: Record<string, Handler> = {
     const nodeId = input.nodeId as string;
     const nodeErr = requireNode(store, nodeId);
     if (nodeErr) return nodeErr;
+    // Capability check replaces the old hand-written Image/Video guard.
+    const capErr = checkCapability(store, nodeId, 'background');
+    if (capErr) return capErr;
     let cls = getNodeClassName(store, nodeId);
 
     if (input.bg != null) {
       const bgVal = input.bg as string;
-      if (bgVal.startsWith('rgba(')) {
-        return { success: false, error: `rgba() is not supported by set_background. Use Tailwind opacity notation instead: "black/40", "white/20", "#000000/40". Example: set_background(id, {bg:"black/40"}) for a 40% black overlay.` };
-      }
       const scopeErr = validateRepeatScopeFormula(store, nodeId, bgVal);
       if (scopeErr) return scopeErr;
       if (isFormulaExpression(bgVal)) {
@@ -956,6 +1044,13 @@ const handlers: Record<string, Handler> = {
         cls = replaceTwToken(cls, 'bg-', '');
         setNodeClassName(store, nodeId, cls);
         return { success: true, data: { message: 'Updated background (formula)' } };
+      }
+      // rgb()/rgba()/hsl() — store as inline backgroundColor (arbitrary values not reliable in Tailwind JIT)
+      if (bgVal.startsWith('rgb(') || bgVal.startsWith('rgba(') || bgVal.startsWith('hsl(') || bgVal.startsWith('hsla(')) {
+        patchNodeStyle(store, nodeId, { backgroundColor: bgVal });
+        cls = replaceTwToken(cls, 'bg-', '');
+        setNodeClassName(store, nodeId, cls);
+        return { success: true, data: { message: 'Updated background (inline color)' } };
       }
       const rawBgClass = resolveColorClass(bgVal, 'bg');
       // Force !bg- prefix for theme-variable classes so they override Gluestack's default
@@ -970,7 +1065,44 @@ const handlers: Record<string, Handler> = {
     if (input.fillOpacity != null) {
       const fo = Math.round(Math.min(100, Math.max(0, Number(input.fillOpacity))));
       cls = cls.split(' ').filter(t => !/^bg-opacity-/.test(t)).join(' ').trim();
-      if (fo < 100) cls = `${cls} bg-opacity-${fo}`.trim();
+      if (fo < 100) cls = `${cls} bg-opacity-[${fo}%]`.trim();
+    }
+
+    // Background image (URL) — stored in props.style.backgroundImage
+    if (input.bgImage != null) {
+      const urlVal = input.bgImage as string;
+      const wrapped = urlVal.trim() && !urlVal.startsWith('url(') ? `url(${urlVal})` : urlVal;
+      patchNodeStyle(store, nodeId, { backgroundImage: wrapped || '' });
+    }
+    if (input.bgSize != null)     patchNodeStyle(store, nodeId, { backgroundSize:     input.bgSize as string });
+    if (input.bgPosition != null) patchNodeStyle(store, nodeId, { backgroundPosition: input.bgPosition as string });
+    if (input.bgRepeat != null)   patchNodeStyle(store, nodeId, { backgroundRepeat:   input.bgRepeat as string });
+
+    // Static gradient — props.style only (animation.outerStyle is for gradientDrift / set_animation)
+    if (input.gradient != null) {
+      const grad = input.gradient as { colors: string[]; direction?: string; radial?: boolean };
+      if (grad.colors && grad.colors.length >= 2) {
+        const dir = grad.direction ?? 'to bottom';
+        const colorList = grad.colors.join(', ');
+        const gradientStr = grad.radial
+          ? `radial-gradient(circle at center, ${colorList})`
+          : `linear-gradient(${dir}, ${colorList})`;
+        patchNodeStyle(store, nodeId, { backgroundImage: gradientStr, backgroundRepeat: 'no-repeat' });
+        const node = findNode(store.pageNodes as SDUINode[], nodeId);
+        const existingAnim = ((node as unknown as Record<string, unknown>)?.animation ?? {}) as Record<string, unknown>;
+        const loop = existingAnim.loop as { type?: string } | undefined;
+        if (loop?.type !== 'gradientDrift') {
+          const outer = { ...((existingAnim.outerStyle ?? {}) as Record<string, unknown>) };
+          if ('backgroundImage' in outer || 'backgroundRepeat' in outer) {
+            delete outer.backgroundImage;
+            delete outer.backgroundRepeat;
+            const nextAnim = { ...existingAnim } as Record<string, unknown>;
+            if (Object.keys(outer).length > 0) nextAnim.outerStyle = outer;
+            else delete nextAnim.outerStyle;
+            store.patchNodeField(nodeId, 'animation', nextAnim);
+          }
+        }
+      }
     }
 
     setNodeClassName(store, nodeId, cls);
@@ -982,6 +1114,8 @@ const handlers: Record<string, Handler> = {
     const nodeId = input.nodeId as string;
     const nodeErr = requireNode(store, nodeId);
     if (nodeErr) return nodeErr;
+    const capErr = checkCapability(store, nodeId, 'typography');
+    if (capErr) return capErr;
     const colorVal = input.color as string;
     if (isFormulaExpression(colorVal)) {
       const sanitized = resolveFormulaTokens(colorVal);
@@ -1002,47 +1136,15 @@ const handlers: Record<string, Handler> = {
     return { success: true, data: { message: `Set text color to "${input.color}"` } };
   },
 
+  // set_typography is kept as a backward-compat alias — remaps old param names and delegates to set_layout.
+  // Old param names: size→fontSize, align→textAlign, transform→textTransform, overflow→textOverflow
   set_typography(input, getStore) {
-    const store = getStore();
-    const nodeId = input.nodeId as string;
-    const nodeErr = requireNode(store, nodeId);
-    if (nodeErr) return nodeErr;
-    let cls = getNodeClassName(store, nodeId);
-
-    if (input.size != null) {
-      const sizePx = Number(input.size);
-      cls = replaceTokenGroup(cls, TEXT_SIZE_PREFIXES, ''); // strip scale tokens
-      cls = removeAllWithPrefix(cls, 'text-[');             // strip existing arbitrary text-[Xpx]
-      if (!Number.isNaN(sizePx) && sizePx > 0) cls = `${cls} text-[${sizePx}px]`.trim();
-    }
-    if (input.weight)   cls = replaceTokenGroup(cls, FONT_WEIGHT_PREFIXES, `font-${input.weight}`);
-    if (input.align) {
-      const alignRaw = input.align as string;
-      if (isFormulaExpression(alignRaw)) {
-        // Formula/ternary — write to inline style; left/center/right/justify are valid CSS text-align values
-        patchNodeStyle(store, nodeId, { textAlign: { formula: alignRaw } });
-        cls = replaceTokenGroup(cls, TEXT_ALIGN_PREFIXES, ''); // strip any existing text-left/center/right class
-      } else {
-        cls = replaceTokenGroup(cls, TEXT_ALIGN_PREFIXES, `text-${alignRaw}`);
-      }
-    }
-    if (input.leading)  cls = replaceTokenGroup(cls, LEADING_PREFIXES, `leading-${input.leading}`);
-    if (input.tracking) cls = replaceTokenGroup(cls, TRACKING_PREFIXES, `tracking-${input.tracking}`);
-
-    if (input.italic !== undefined) {
-      cls = replaceTokenGroup(cls, ITALIC_TOKENS, input.italic ? 'italic' : 'not-italic');
-    }
-    if (input.decoration) {
-      const newDec = input.decoration === 'none' ? 'no-underline' : input.decoration as string;
-      cls = replaceTokenGroup(cls, DECORATION_TOKENS, input.decoration === 'none' ? '' : newDec);
-      if (input.decoration === 'none') cls = `${cls} no-underline`.trim();
-    }
-    if (input.transform) {
-      cls = replaceTokenGroup(cls, TRANSFORM_TOKENS, input.transform === 'none' ? 'normal-case' : input.transform as string);
-    }
-
-    setNodeClassName(store, nodeId, cls);
-    return { success: true, data: { message: 'Updated typography' } };
+    const remapped: Record<string, unknown> = { ...input };
+    if ('size'      in remapped) { remapped.fontSize      = remapped.size;      delete remapped.size; }
+    if ('align'     in remapped) { remapped.textAlign     = remapped.align;     delete remapped.align; }
+    if ('transform' in remapped) { remapped.textTransform = remapped.transform; delete remapped.transform; }
+    if ('overflow'  in remapped) { remapped.textOverflow  = remapped.overflow;  delete remapped.overflow; }
+    return handlers.set_layout(remapped, getStore);
   },
 
   set_border(input, getStore) {
@@ -1050,6 +1152,8 @@ const handlers: Record<string, Handler> = {
     const nodeId = input.nodeId as string;
     const nodeErr = requireNode(store, nodeId);
     if (nodeErr) return nodeErr;
+    const capErr = checkCapability(store, nodeId, 'border');
+    if (capErr) return capErr;
     let cls = getNodeClassName(store, nodeId);
 
     if (input.width != null) {
@@ -1111,8 +1215,45 @@ const handlers: Record<string, Handler> = {
     for (const [key, prefix] of cornerMap) {
       if (input[key] != null) {
         const cornerPx = Number(input[key]);
-        cls = removeAllWithPrefix(cls, prefix); // strip scale + arbitrary
+        cls = removeAllWithPrefix(cls, prefix);
         if (!Number.isNaN(cornerPx) && cornerPx >= 0) cls = `${cls} ${prefix}[${cornerPx}px]`.trim();
+      }
+    }
+
+    // Per-side border width — arbitrary classes: border-t-[Npx] border-r-[Npx] etc.
+    const sideWidthMap: [string, string][] = [
+      ['topWidth',    'border-t-'],
+      ['rightWidth',  'border-r-'],
+      ['bottomWidth', 'border-b-'],
+      ['leftWidth',   'border-l-'],
+    ];
+    for (const [key, prefix] of sideWidthMap) {
+      if (input[key] != null) {
+        const px = Number(input[key]);
+        cls = cls.split(' ').filter(t => !t.startsWith(prefix)).join(' ').trim();
+        if (!Number.isNaN(px) && px > 0) cls = `${cls} ${prefix}[${px}px]`.trim();
+      }
+    }
+
+    // Per-side border color — arbitrary classes: border-t-[color] etc.
+    const sideColorMap: [string, string, string][] = [
+      ['topColor',    'border-t-', 'borderTopColor'],
+      ['rightColor',  'border-r-', 'borderRightColor'],
+      ['bottomColor', 'border-b-', 'borderBottomColor'],
+      ['leftColor',   'border-l-', 'borderLeftColor'],
+    ];
+    for (const [key, prefix, styleProp] of sideColorMap) {
+      if (input[key] != null) {
+        const colorRaw = input[key] as string;
+        if (isFormulaExpression(colorRaw)) {
+          patchNodeStyle(store, nodeId, { [styleProp]: { formula: resolveFormulaTokens(colorRaw) } });
+        } else {
+          const colorClass = resolveColorClass(colorRaw, 'border');
+          // e.g. "border-red-500" → "border-t-red-500"
+          const sideColorClass = colorClass.replace(/^border-/, `${prefix}`);
+          cls = cls.split(' ').filter(t => !t.startsWith(prefix) || t.match(/^border-[trbl]-\d/)).join(' ').trim();
+          cls = `${cls} ${sideColorClass}`.trim();
+        }
       }
     }
 
@@ -1125,6 +1266,8 @@ const handlers: Record<string, Handler> = {
     const nodeId = input.nodeId as string;
     const nodeErr = requireNode(store, nodeId);
     if (nodeErr) return nodeErr;
+    const capErr = checkCapability(store, nodeId, 'shadow');
+    if (capErr) return capErr;
 
     if (input.remove) {
       const node = findNode(store.pageNodes as SDUINode[], nodeId);
@@ -1139,6 +1282,18 @@ const handlers: Record<string, Handler> = {
       return { success: true, data: { message: 'Removed shadow' } };
     }
 
+    // Extracts alpha from rgba/rgb color strings so shadowOpacity reflects transparency.
+    // Returns base color (rgb form, no alpha) + opacity float 0-1.
+    // Hex colors pass through unchanged with opacity 1 (fully opaque).
+    function extractRgba(color: string): { base: string; opacity: number } {
+      const m = color.match(/rgba?\(\s*(\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\s*\)/);
+      if (m) {
+        const a = m[4] !== undefined ? parseFloat(m[4]) : 1;
+        return { base: `rgb(${m[1]},${m[2]},${m[3]})`, opacity: a };
+      }
+      return { base: color, opacity: 1 };
+    }
+
     // boxShadow: full CSS string or formula/ternary expression
     const boxShadowRaw = input.boxShadow as string | undefined;
     if (boxShadowRaw) {
@@ -1151,12 +1306,13 @@ const handlers: Record<string, Handler> = {
       const m = boxShadowRaw.match(/^(-?[\d.]+)px\s+(-?[\d.]+)px\s+([\d.]+)px\s+(-?[\d.]+)px\s+(.+)$/);
       if (m) {
         const bx = parseFloat(m[1]), by = parseFloat(m[2]), bBlur = parseFloat(m[3]), bColor = m[5].trim();
+        const { base: shadowColorBase, opacity: shadowOpacity } = extractRgba(bColor);
         patchNodeStyle(store, nodeId, {
           boxShadow: boxShadowRaw,
-          shadowColor: bColor,
+          shadowColor: shadowColorBase,
           shadowOffset: { width: bx, height: by },
           shadowRadius: bBlur,
-          shadowOpacity: 1,
+          shadowOpacity,
           elevation: Math.max(0, Math.round(bBlur / 2)),
         });
       } else {
@@ -1175,12 +1331,13 @@ const handlers: Record<string, Handler> = {
       return { success: false, error: 'blur/spread/x/y must be plain integers. For per-item shadows use: set_shadow(id, { boxShadow: "ternary formula" })' };
     }
 
+    const { base: shadowColorBase, opacity: shadowOpacity } = extractRgba(color);
     patchNodeStyle(store, nodeId, {
       boxShadow: `${x}px ${y}px ${blur}px ${spread}px ${color}`,
-      shadowColor: color,
+      shadowColor: shadowColorBase,
       shadowOffset: { width: x, height: y },
       shadowRadius: blur,
-      shadowOpacity: 1,
+      shadowOpacity,
       elevation: Math.max(0, Math.round(blur / 2)),
     });
     return { success: true, data: { message: `Set shadow: blur=${blur}px spread=${spread}px color=${color}` } };
@@ -1203,192 +1360,88 @@ const handlers: Record<string, Handler> = {
     return { success: true, data: { message: `Set opacity to ${value}%` } };
   },
 
+  // set_spacing is kept as a backward-compat alias — delegates to set_layout.
   set_spacing(input, getStore) {
-    if (input.gridCols !== undefined) {
-      return { success: false, error: 'gridCols is not a set_spacing param. Use set_layout(nodeId, { gridCols: N }) instead.' };
-    }
-    const store = getStore();
-    const nodeId = input.nodeId as string;
-    const nodeErr = requireNode(store, nodeId);
-    if (nodeErr) return nodeErr;
-    let cls = getNodeClassName(store, nodeId);
-
-    const toPx = (n: number) => `${n}px`;
-
-    // Helper: strip the bare p-* or m-* shorthand (e.g. p-4, m-8) when individual
-    // sides are being set. The shorthand sets all four sides and would conflict with
-    // per-side arbitrary values (e.g. p-4 alongside pt-[96px] is confusing noise).
-    const stripPShorthand = (c: string) => c.split(' ').filter(t => !/^p-/.test(t)).join(' ').trim();
-    const stripMShorthand = (c: string) => c.split(' ').filter(t => !/^-?m-/.test(t)).join(' ').trim();
-    // Helper: write an arbitrary Tailwind token only when value > 0; for 0 just strip.
-    const setTok = (c: string, stripRe: RegExp, token: string, val: number) => {
-      c = c.split(' ').filter(t => !stripRe.test(t)).join(' ').trim();
-      return val !== 0 ? `${c} ${token}`.trim() : c;
-    };
-
-    // Padding — write as arbitrary Tailwind classes, never inline style.
-    // When value is 0 we only strip (zero padding = no class needed).
-    if (input.p != null) {
-      const n = input.p as number;
-      cls = cls.split(' ').filter(t => !/^p[xyblrt]?-/.test(t)).join(' ').trim();
-      if (n !== 0) {
-        const v = toPx(n);
-        cls = `${cls} pt-[${v}] pr-[${v}] pb-[${v}] pl-[${v}]`.trim();
-      }
-    }
-    if (input.px != null) {
-      const n = input.px as number;
-      cls = stripPShorthand(cls.split(' ').filter(t => !/^p[xlr]-/.test(t)).join(' ').trim());
-      if (n !== 0) cls = `${cls} pl-[${toPx(n)}] pr-[${toPx(n)}]`.trim();
-    }
-    if (input.py != null) {
-      const n = input.py as number;
-      cls = stripPShorthand(cls.split(' ').filter(t => !/^p[ybt]-/.test(t)).join(' ').trim());
-      if (n !== 0) cls = `${cls} pt-[${toPx(n)}] pb-[${toPx(n)}]`.trim();
-    }
-    if (input.pt != null) { cls = setTok(stripPShorthand(cls), /^pt-/, `pt-[${toPx(input.pt as number)}]`, input.pt as number); }
-    if (input.pr != null) { cls = setTok(stripPShorthand(cls), /^pr-/, `pr-[${toPx(input.pr as number)}]`, input.pr as number); }
-    if (input.pb != null) { cls = setTok(stripPShorthand(cls), /^pb-/, `pb-[${toPx(input.pb as number)}]`, input.pb as number); }
-    if (input.pl != null) { cls = setTok(stripPShorthand(cls), /^pl-/, `pl-[${toPx(input.pl as number)}]`, input.pl as number); }
-
-    // Margin — same pattern
-    if (input.m != null) {
-      const n = input.m as number;
-      cls = cls.split(' ').filter(t => !/^-?m[xyblrt]?-/.test(t)).join(' ').trim();
-      if (n !== 0) {
-        const v = toPx(n);
-        cls = `${cls} mt-[${v}] mr-[${v}] mb-[${v}] ml-[${v}]`.trim();
-      }
-    }
-    if (input.mx != null) {
-      const n = input.mx as number;
-      cls = stripMShorthand(cls.split(' ').filter(t => !/^-?m[xlr]-/.test(t)).join(' ').trim());
-      if (n !== 0) cls = `${cls} ml-[${toPx(n)}] mr-[${toPx(n)}]`.trim();
-    }
-    if (input.my != null) {
-      const n = input.my as number;
-      cls = stripMShorthand(cls.split(' ').filter(t => !/^-?m[ybt]-/.test(t)).join(' ').trim());
-      if (n !== 0) cls = `${cls} mt-[${toPx(n)}] mb-[${toPx(n)}]`.trim();
-    }
-    if (input.mt != null) { cls = setTok(stripMShorthand(cls), /^-?mt-/, `mt-[${toPx(input.mt as number)}]`, input.mt as number); }
-    if (input.mr != null) { cls = setTok(stripMShorthand(cls), /^-?mr-/, `mr-[${toPx(input.mr as number)}]`, input.mr as number); }
-    if (input.mb != null) { cls = setTok(stripMShorthand(cls), /^-?mb-/, `mb-[${toPx(input.mb as number)}]`, input.mb as number); }
-    if (input.ml != null) { cls = setTok(stripMShorthand(cls), /^-?ml-/, `ml-[${toPx(input.ml as number)}]`, input.ml as number); }
-
-    // Gap — arbitrary classes; value 0 = just strip (no gap-[0px] noise)
-    if (input.gap  != null) { cls = setTok(cls.split(' ').filter(t => !/^gap-/.test(t)).join(' ').trim(),   /^gap-/,   `gap-[${toPx(input.gap  as number)}]`, input.gap  as number); }
-    if (input.gapX != null) { cls = setTok(cls.split(' ').filter(t => !/^gap-x-/.test(t)).join(' ').trim(), /^gap-x-/, `gap-x-[${toPx(input.gapX as number)}]`, input.gapX as number); }
-    if (input.gapY != null) { cls = setTok(cls.split(' ').filter(t => !/^gap-y-/.test(t)).join(' ').trim(), /^gap-y-/, `gap-y-[${toPx(input.gapY as number)}]`, input.gapY as number); }
-
-    // Strip any residual inline spacing styles that used to be written by the old path
-    removeNodeStyleKeys(store, nodeId, [
-      'paddingTop','paddingRight','paddingBottom','paddingLeft','paddingBlock','paddingInline',
-      'marginTop','marginRight','marginBottom','marginLeft',
-      'gap','columnGap','rowGap',
-    ]);
-    setNodeClassName(store, nodeId, cls);
-    return { success: true, data: { message: 'Updated spacing' } };
+    return handlers.set_layout(input, getStore);
   },
 
+  // set_size is kept as a backward-compat alias — delegates to set_layout.
+  // (size params width/height/minWidth/maxWidth/minHeight/maxHeight are now handled in set_layout)
   set_size(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
     const nodeErr = requireNode(store, nodeId);
     if (nodeErr) return nodeErr;
+    const capErr = checkCapability(store, nodeId, 'size');
+    if (capErr) return capErr;
+
+    const node = findNode(store.pageNodes as SDUINode[], nodeId);
+    const isImage = node?.type === 'Image';
+
+    // Normalise number → px string. Strings pass through as-is (CSS values).
+    const toCss = (v: unknown): string =>
+      typeof v === 'number' && Number.isFinite(v) ? `${v}px` : String(v).trim();
+
+    const stylePatch: Record<string, unknown> = {};
     let cls = getNodeClassName(store, nodeId);
+    let stripImageStyleWidth = false;
+    let stripImageStyleHeight = false;
 
     if (input.width != null) {
-      {
-      const w = input.width as string;
-      if (isFormulaExpression(w)) {
-        // Sanitize tool-parameter tokens (px:N, fill, fit, screen) to valid CSS before storing.
-        const sanitized = resolveFormulaTokens(w, SIZE_WIDTH_TOKEN_MAP);
-        patchNodeStyle(store, nodeId, { width: { formula: sanitized } });
+      const w = toCss(input.width);
+      if (isImage && !isFormulaExpression(w)) {
+        const twClass = w === '100%' ? 'w-full' : `w-[${w}]`;
         cls = cls.split(' ').filter(t => !/^w-/.test(t) && !/^grow$/.test(t) && !/^min-w-/.test(t)).join(' ').trim();
-        setNodeClassName(store, nodeId, cls);
-        return { success: true, data: { message: 'Set width (formula)' } };
-      }
-      if (w === 'fill') {
-        // w-full: matches exactly what the panel's Width "Fill" button writes.
+        cls = `${cls} ${twClass}`.trim();
+        stripImageStyleWidth = true;
+      } else {
+        if (isFormulaExpression(w)) {
+          stylePatch.width = { formula: resolveFormulaTokens(w, SIZE_WIDTH_TOKEN_MAP) };
+        } else {
+          stylePatch.width = w;
+        }
         cls = cls.split(' ').filter(t => !/^w-/.test(t) && !/^grow$/.test(t) && !/^min-w-/.test(t)).join(' ').trim();
-        cls = `${cls} w-full`.trim();
-      } else if (w.startsWith('px:')) {
-        const px = w.slice(3);
-        cls = cls.split(' ').filter(t => !/^flex-1/.test(t)).join(' ').trim();
-        cls = replaceTwToken(cls, 'w-', `w-[${px}px]`);
-        // Ensure min-width:0 class so the element doesn't overflow flex parents
-        cls = cls.split(' ').filter(t => !/^min-w-/.test(t)).join(' ').trim();
-        cls = `${cls} min-w-[0px]`.trim();
-      } else {
-        cls = cls.split(' ').filter(t => !/^flex-1/.test(t)).join(' ').trim();
-        cls = replaceTwToken(cls, 'w-', `w-${w}`);
-        // Remove any stale min-w arbitrary value when switching to named mode
-        cls = cls.split(' ').filter(t => !/^min-w-\[0/.test(t)).join(' ').trim();
       }
-      }
-    }
-    if (input.height != null) {
-      {
-      const h = input.height as string;
-      if (isFormulaExpression(h)) {
-        // Sanitize tool-parameter tokens (px:N, vh:N, fill, fit, screen) to valid CSS before storing.
-        const sanitized = resolveFormulaTokens(h, SIZE_HEIGHT_TOKEN_MAP);
-        patchNodeStyle(store, nodeId, { height: { formula: sanitized } });
-        cls = cls.split(' ').filter(t => !/^h-/.test(t) && !/^flex-1/.test(t) && !/^min-h-/.test(t)).join(' ').trim();
-        setNodeClassName(store, nodeId, cls);
-        return { success: true, data: { message: 'Set height (formula)' } };
-      }
-      if (h === 'min-screen') {
-        cls = replaceTwToken(cls, 'min-h-', 'min-h-screen');
-      } else       if (h === 'fill') {
-        cls = removeTwToken(removeTwToken(removeTwToken(cls, 'h-'), 'flex-1'), 'min-h-');
-        cls = `${cls} flex-1`.trim();
-      } else if (h === 'full') {
-        cls = removeTwToken(removeTwToken(removeTwToken(cls, 'h-'), 'flex-1'), 'min-h-');
-        cls = `${cls} h-full`.trim();
-      } else if (h === 'screen') {
-        cls = removeTwToken(removeTwToken(removeTwToken(cls, 'h-'), 'flex-1'), 'min-h-');
-        cls = `${cls} h-screen`.trim();
-      } else if (h.startsWith('vh:')) {
-        // vh unit: Tailwind arbitrary class h-[Nvh]
-        const vhVal = h.slice(3);
-        cls = removeTwToken(removeTwToken(removeTwToken(cls, 'h-fit'), 'h-screen'), 'flex-1');
-        cls = `${cls} h-[${vhVal}vh]`.trim();
-      } else if (h.startsWith('px:')) {
-        // Exact pixel height — class only
-        const px = h.slice(3);
-        cls = removeTwToken(removeTwToken(removeTwToken(cls, 'h-'), 'flex-1'), 'min-h-');
-        cls = `${cls} h-[${px}px]`.trim();
-      } else {
-        const token = `h-${h}`;
-        cls = removeTwToken(removeTwToken(removeTwToken(cls, 'h-'), 'flex-1'), 'min-h-');
-        cls = replaceTwToken(cls, 'h-', token);
-      }
-      }
-    }
-    if (input.maxWidth != null) {
-      const px = Number(input.maxWidth);
-      cls = cls.split(' ').filter(t => !/^max-w-/.test(t)).join(' ').trim();
-      if (px > 0) cls = `${cls} max-w-[${px}px]`.trim();
-    }
-    if (input.minWidth != null) {
-      const px = Number(input.minWidth);
-      cls = cls.split(' ').filter(t => !/^min-w-/.test(t)).join(' ').trim();
-      if (px > 0) cls = `${cls} min-w-[${px}px]`.trim();
-    }
-    if (input.maxHeight != null) {
-      const px = Number(input.maxHeight);
-      cls = cls.split(' ').filter(t => !/^max-h-/.test(t)).join(' ').trim();
-      if (px > 0) cls = `${cls} max-h-[${px}px]`.trim();
-    }
-    if (input.minHeight != null) {
-      const px = Number(input.minHeight);
-      cls = cls.split(' ').filter(t => !/^min-h-/.test(t)).join(' ').trim();
-      if (px > 0) cls = `${cls} min-h-[${px}px]`.trim();
     }
 
-    // Strip any residual inline size styles that used to be written by the old path
-    removeNodeStyleKeys(store, nodeId, ['width', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight']);
+    if (input.height != null) {
+      const h = toCss(input.height);
+      if (isImage && !isFormulaExpression(h)) {
+        const twClass = h === '100%' ? 'h-full' : `h-[${h}]`;
+        cls = cls.split(' ').filter(t => !/^h-/.test(t) && !/^grow$/.test(t) && !/^min-h-/.test(t) && t !== 'self-stretch').join(' ').trim();
+        cls = `${cls} ${twClass}`.trim();
+        stripImageStyleHeight = true;
+      } else {
+        if (isFormulaExpression(h)) {
+          stylePatch.height = { formula: resolveFormulaTokens(h, SIZE_HEIGHT_TOKEN_MAP) };
+        } else {
+          stylePatch.height = h;
+        }
+        cls = cls.split(' ').filter(t => !/^h-/.test(t) && !/^grow$/.test(t) && !/^min-h-/.test(t) && t !== 'self-stretch').join(' ').trim();
+      }
+    }
+
+    if (input.flex != null) {
+      const flexNum = Number(input.flex);
+      if (!Number.isNaN(flexNum) && flexNum !== 0) {
+        cls = cls.split(' ').filter(t => !/^flex-\d/.test(t) && !/^grow$/.test(t)).join(' ').trim();
+        const flexClass = flexNum === 1 ? 'flex-1' : `flex-[${flexNum}]`;
+        cls = `${cls} ${flexClass}`.trim();
+      }
+    }
+
+    if (input.maxWidth  != null) stylePatch.maxWidth  = toCss(input.maxWidth);
+    if (input.minWidth  != null) stylePatch.minWidth  = toCss(input.minWidth);
+    if (input.maxHeight != null) stylePatch.maxHeight = toCss(input.maxHeight);
+    if (input.minHeight != null) stylePatch.minHeight = toCss(input.minHeight);
+
+    if (stripImageStyleWidth || stripImageStyleHeight) {
+      removeNodeStyleKeys(store, nodeId, [
+        ...(stripImageStyleWidth ? ['width'] : []),
+        ...(stripImageStyleHeight ? ['height'] : []),
+      ]);
+    }
+    if (Object.keys(stylePatch).length > 0) patchNodeStyle(store, nodeId, stylePatch);
     setNodeClassName(store, nodeId, cls);
     return { success: true, data: { message: 'Updated size' } };
   },
@@ -1412,7 +1465,9 @@ const handlers: Record<string, Handler> = {
     const parseInset = (v: unknown): number | null => {
       if (v == null) return null;
       if (typeof v === 'number') return v;
-      const n = Number(String(v).replace(/^px:/, ''));
+      const strVal = String(v).replace(/^px:/, '');
+      const rawPx = strVal.match(/^(-?\d+(?:\.\d+)?)px$/)?.[1];
+      const n = rawPx != null ? Number(rawPx) : Number(strVal);
       return Number.isNaN(n) ? null : n;
     };
     const insetStylePatch: Record<string, unknown> = {};
@@ -1422,11 +1477,15 @@ const handlers: Record<string, Handler> = {
       if (typeof val === 'string' && isFormulaExpression(val)) {
         const sanitized = resolveFormulaTokens(val);
         insetStylePatch[key] = { formula: sanitized };
-        cls = cls.split(' ').filter(t => !new RegExp(`^${key}-`).test(t)).join(' ').trim();
+        cls = cls.split(' ').filter(t => !new RegExp(`^-?${key}-`).test(t)).join(' ').trim();
+      } else if (typeof val === 'string' && /^\d+(\.\d+)?%$/.test(val)) {
+        cls = cls.split(' ').filter(t => !new RegExp(`^-?${key}-`).test(t)).join(' ').trim();
+        cls = `${cls} ${key}-[${val}]`.trim();
+        insetKeysToRemoveFromStyle.push(key);
       } else {
         const px = parseInset(val);
         if (px != null) {
-          cls = cls.split(' ').filter(t => !new RegExp(`^${key}-`).test(t)).join(' ').trim();
+          cls = cls.split(' ').filter(t => !new RegExp(`^-?${key}-`).test(t)).join(' ').trim();
           cls = `${cls} ${key}-[${px}px]`.trim();
           insetKeysToRemoveFromStyle.push(key);
         }
@@ -1435,7 +1494,29 @@ const handlers: Record<string, Handler> = {
     if (Object.keys(insetStylePatch).length > 0) patchNodeStyle(store, nodeId, insetStylePatch);
     if (insetKeysToRemoveFromStyle.length > 0) removeNodeStyleKeys(store, nodeId, insetKeysToRemoveFromStyle);
     setNodeClassName(store, nodeId, cls);
-    return { success: true, data: { message: 'Updated position' } };
+
+    const finalCls = getNodeClassName(store, nodeId);
+    const hasAbsolute = /\babsolute\b/.test(finalCls);
+    const hasHorizInset =
+      /(?:^|\s)(?:left|right)-/.test(finalCls) ||
+      /(?:^|\s)inset-x-/.test(finalCls) ||
+      /(?:^|\s)inset-0\b/.test(finalCls) ||
+      /(?:^|\s)inset-\[/.test(finalCls);
+    const hasVertInset =
+      /(?:^|\s)(?:top|bottom)-/.test(finalCls) ||
+      /(?:^|\s)inset-y-/.test(finalCls) ||
+      /(?:^|\s)inset-0\b/.test(finalCls) ||
+      /(?:^|\s)inset-\[/.test(finalCls);
+    let msg = 'Updated position';
+    if (hasAbsolute && !hasHorizInset) {
+      msg +=
+        ' — WARNING: absolute node has no horizontal inset (left/right, inset-x, or inset). Placement may drift; call set_position again.';
+    }
+    if (hasAbsolute && !hasVertInset) {
+      msg +=
+        ' — WARNING: absolute node has no vertical inset (top/bottom, inset-y, or inset). Placement may drift; call set_position again.';
+    }
+    return { success: true, data: { message: msg } };
   },
 
   set_transform(input, getStore) {
@@ -1494,31 +1575,54 @@ const handlers: Record<string, Handler> = {
     const nodeId = input.nodeId as string;
     const nodeErr = requireNode(store, nodeId);
     if (nodeErr) return nodeErr;
+    const capErr = checkCapability(store, nodeId, 'overflow');
+    if (capErr) return capErr;
     let cls = getNodeClassName(store, nodeId);
-    if (input.clip !== undefined) {
+
+    // Handle new `mode` enum (replaces old `clip` boolean)
+    if (input.mode != null) {
+      const mode = input.mode as string;
+      // Strip all existing overflow-* classes
+      cls = cls.split(' ').filter(t => !/^overflow(-[xy])?-/.test(t)).join(' ').trim();
+      if (mode === 'clip')   cls = `${cls} overflow-hidden`.trim();
+      else if (mode === 'visible') cls = `${cls} overflow-visible`.trim();
+      else if (mode === 'auto')   cls = `${cls} overflow-auto`.trim();
+      else if (mode === 'scroll') cls = `${cls} overflow-scroll`.trim();
+      else if (mode === 'x-auto') cls = `${cls} overflow-x-auto overflow-y-hidden`.trim();
+      else if (mode === 'y-auto') cls = `${cls} overflow-y-auto overflow-x-hidden`.trim();
+      // 'none' = remove all overflow classes (already stripped above)
+    }
+
+    // Legacy `clip` boolean — kept for backwards compat
+    if (input.clip !== undefined && input.mode == null) {
       if (input.clip) {
-        if (!cls.includes('overflow-hidden')) cls = `${cls} overflow-hidden`.trim();
+        cls = cls.split(' ').filter(t => !/^overflow(-[xy])?-/.test(t)).join(' ').trim();
+        cls = `${cls} overflow-hidden`.trim();
       } else {
         cls = cls.split(' ').filter(t => t !== 'overflow-hidden').join(' ').trim();
       }
     }
+
     if (input.pointerEvents !== undefined) {
-      // Remove any existing pointer-events classes first
       cls = cls.split(' ').filter(t => !t.startsWith('pointer-events-')).join(' ').trim();
       if (input.pointerEvents === 'none') {
         cls = `${cls} pointer-events-none`.trim();
       }
-      // 'auto' = remove the class (browser default)
     }
     setNodeClassName(store, nodeId, cls);
     const msgs: string[] = [];
-    if (input.clip !== undefined) msgs.push((input.clip as boolean) ? 'clip:on' : 'clip:off');
+    if (input.mode != null) msgs.push(`overflow:${input.mode as string}`);
+    else if (input.clip !== undefined) msgs.push((input.clip as boolean) ? 'clip:on' : 'clip:off');
     if (input.pointerEvents !== undefined) msgs.push(`pointer-events:${input.pointerEvents as string}`);
     return { success: true, data: { message: msgs.join(', ') || 'no changes' } };
   },
 
   set_submit(input, getStore) {
     const store = getStore();
+    const nodeErr = requireNode(store, input.nodeId as string | undefined);
+    if (nodeErr) return nodeErr;
+    const capErr = checkCapability(store, input.nodeId as string, 'submit');
+    if (capErr) return capErr;
     // Toggle props.type='submit' — mirrors the builder Settings panel "Submit" toggle
     store.patchProp(input.nodeId as string, 'props.type', input.submit ? 'submit' : null);
     return { success: true, data: { message: input.submit ? 'Set button as form submit' : 'Cleared button submit type' } };
@@ -1527,6 +1631,10 @@ const handlers: Record<string, Handler> = {
   set_input_props(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
+    const capErr = checkCapability(store, nodeId, 'input-props');
+    if (capErr) return capErr;
     // Input is now a flat node (InputWithField) — set props directly on it
     const targetId = nodeId;
 
@@ -1545,7 +1653,7 @@ const handlers: Record<string, Handler> = {
     if (input.max != null) store.patchProp(targetId, 'props.max', input.max);
     if (input.maxLength) store.patchProp(targetId, 'props.maxLength', input.maxLength);
     // Form field settings
-    if (input.fieldName) store.patchNodeField(targetId, 'props.name', input.fieldName);
+    if (input.fieldName) store.patchProp(targetId, 'props.name', input.fieldName);
     if (input.initialValue !== undefined) store.patchNodeField(targetId, '_initialValue', input.initialValue);
     if (input.autocomplete !== undefined) store.patchProp(targetId, 'props.autoComplete', input.autocomplete ? 'on' : 'off');
     if (input.validationTrigger !== undefined) {
@@ -1572,6 +1680,34 @@ const handlers: Record<string, Handler> = {
     const nodeId = input.nodeId as string;
     const nodeErr = requireNode(store, nodeId);
     if (nodeErr) return nodeErr;
+
+    // Per-param-group capability checks:
+    // Layout params require the 'layout' capability; spacing params require 'spacing'.
+    const LAYOUT_PARAMS  = new Set(['direction', 'align', 'justify', 'self', 'cursor', 'gridCols', 'gridRows', 'gridFlow', 'colSpan', 'flexWrap']);
+    const SPACING_PARAMS = new Set(['gap', 'p', 'px', 'py', 'pt', 'pr', 'pb', 'pl', 'm', 'mx', 'my', 'mt', 'mr', 'mb', 'ml']);
+    const SIZE_PARAMS    = new Set(['width', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight']);
+    const TYPO_PARAMS    = new Set(['fontSize', 'textAlign', 'weight', 'leading', 'tracking', 'italic', 'decoration', 'textTransform', 'textOverflow', 'whitespace', 'wordBreak']);
+    const hasLayoutParam  = Object.keys(input).some(k => LAYOUT_PARAMS.has(k));
+    const hasSpacingParam = Object.keys(input).some(k => SPACING_PARAMS.has(k));
+    const hasSizeParam    = Object.keys(input).some(k => SIZE_PARAMS.has(k));
+    const hasTypoParam    = Object.keys(input).some(k => TYPO_PARAMS.has(k));
+    if (hasLayoutParam) {
+      const capErr = checkCapability(store, nodeId, 'layout');
+      if (capErr) return capErr;
+    }
+    if (hasSpacingParam) {
+      const capErr = checkCapability(store, nodeId, 'spacing');
+      if (capErr) return capErr;
+    }
+    if (hasSizeParam) {
+      const capErr = checkCapability(store, nodeId, 'size');
+      if (capErr) return capErr;
+    }
+    if (hasTypoParam) {
+      const capErr = checkCapability(store, nodeId, 'typography');
+      if (capErr) return capErr;
+    }
+
     const node = findNode(store.pageNodes, nodeId);
     const current = (node?.props as { className?: string })?.className ?? '';
 
@@ -1598,12 +1734,78 @@ const handlers: Record<string, Handler> = {
       updated = updated.split(' ').filter(t => !/^items-/.test(t)).join(' ').trim();
     }
 
-    // gap is a pixel number — write as arbitrary Tailwind class, not inline style
-    if (input.gap != null) {
-      updated = updated.split(' ').filter(t => !/^gap(-[xy])?-/.test(t)).join(' ').replace(/\s+/g, ' ').trim();
-      updated = `${updated} gap-[${input.gap}px]`.trim();
-      removeNodeStyleKeys(store, nodeId, ['gap', 'columnGap', 'rowGap']);
+    // ── Spacing (padding, margin, gap) — same logic as set_spacing ────────────
+    const toPx = (n: number) => `${n}px`;
+    const stripPShorthand = (c: string) => c.split(' ').filter(t => !/^p-/.test(t)).join(' ').trim();
+    const stripMShorthand = (c: string) => c.split(' ').filter(t => !/^-?m-/.test(t)).join(' ').trim();
+    const setTok = (c: string, stripRe: RegExp, token: string, val: number) => {
+      c = c.split(' ').filter(t => !stripRe.test(t)).join(' ').trim();
+      return val !== 0 ? `${c} ${token}`.trim() : c;
+    };
+
+    if (input.p != null) {
+      const n = input.p as number;
+      updated = updated.split(' ').filter(t => !/^p[xyblrt]?-/.test(t)).join(' ').trim();
+      if (n !== 0) {
+        const v = toPx(n);
+        updated = `${updated} pt-[${v}] pr-[${v}] pb-[${v}] pl-[${v}]`.trim();
+      }
     }
+    if (input.px != null) {
+      const n = input.px as number;
+      updated = stripPShorthand(updated.split(' ').filter(t => !/^p[xlr]-/.test(t)).join(' ').trim());
+      if (n !== 0) updated = `${updated} pl-[${toPx(n)}] pr-[${toPx(n)}]`.trim();
+    }
+    if (input.py != null) {
+      const n = input.py as number;
+      updated = stripPShorthand(updated.split(' ').filter(t => !/^p[ybt]-/.test(t)).join(' ').trim());
+      if (n !== 0) updated = `${updated} pt-[${toPx(n)}] pb-[${toPx(n)}]`.trim();
+    }
+    if (input.pt != null) { updated = setTok(stripPShorthand(updated), /^pt-/, `pt-[${toPx(input.pt as number)}]`, input.pt as number); }
+    if (input.pr != null) { updated = setTok(stripPShorthand(updated), /^pr-/, `pr-[${toPx(input.pr as number)}]`, input.pr as number); }
+    if (input.pb != null) { updated = setTok(stripPShorthand(updated), /^pb-/, `pb-[${toPx(input.pb as number)}]`, input.pb as number); }
+    if (input.pl != null) { updated = setTok(stripPShorthand(updated), /^pl-/, `pl-[${toPx(input.pl as number)}]`, input.pl as number); }
+
+    if (input.m != null) {
+      const n = input.m as number;
+      updated = updated.split(' ').filter(t => !/^-?m[xyblrt]?-/.test(t)).join(' ').trim();
+      if (n !== 0) {
+        const v = toPx(n);
+        updated = `${updated} mt-[${v}] mr-[${v}] mb-[${v}] ml-[${v}]`.trim();
+      }
+    }
+    if (input.mx != null) {
+      const n = input.mx as number;
+      updated = stripMShorthand(updated.split(' ').filter(t => !/^-?m[xlr]-/.test(t)).join(' ').trim());
+      if (n !== 0) updated = `${updated} ml-[${toPx(n)}] mr-[${toPx(n)}]`.trim();
+    }
+    if (input.my != null) {
+      const n = input.my as number;
+      updated = stripMShorthand(updated.split(' ').filter(t => !/^-?m[ybt]-/.test(t)).join(' ').trim());
+      if (n !== 0) updated = `${updated} mt-[${toPx(n)}] mb-[${toPx(n)}]`.trim();
+    }
+    if (input.mt != null) { updated = setTok(stripMShorthand(updated), /^-?mt-/, `mt-[${toPx(input.mt as number)}]`, input.mt as number); }
+    if (input.mr != null) { updated = setTok(stripMShorthand(updated), /^-?mr-/, `mr-[${toPx(input.mr as number)}]`, input.mr as number); }
+    if (input.mb != null) { updated = setTok(stripMShorthand(updated), /^-?mb-/, `mb-[${toPx(input.mb as number)}]`, input.mb as number); }
+    if (input.ml != null) { updated = setTok(stripMShorthand(updated), /^-?ml-/, `ml-[${toPx(input.ml as number)}]`, input.ml as number); }
+
+    if (input.gap != null) {
+      if (Number(input.gap) < 0) {
+        return { success: false, error: 'gap must be >= 0. Use set_position with offsets for overlapping elements.' };
+      }
+      updated = setTok(updated.split(' ').filter(t => !/^gap-/.test(t)).join(' ').trim(), /^gap-/, `gap-[${toPx(input.gap as number)}]`, input.gap as number);
+    }
+
+    // Strip any residual inline spacing styles
+    if (hasSpacingParam) {
+      removeNodeStyleKeys(store, nodeId, [
+        'paddingTop','paddingRight','paddingBottom','paddingLeft','paddingBlock','paddingInline',
+        'marginTop','marginRight','marginBottom','marginLeft',
+        'gap','columnGap','rowGap',
+      ]);
+    }
+    // ── End spacing ───────────────────────────────────────────────────────────
+
     if (input.self) {
       const selfVal = input.self as string;
       if (isFormulaExpression(selfVal)) {
@@ -1619,13 +1821,206 @@ const handlers: Record<string, Handler> = {
       updated = replaceTwToken(updated, 'grid-cols-', `grid-cols-${input.gridCols}`);
     }
     if (input.gridRows) updated = replaceTwToken(updated, 'grid-rows-', `grid-rows-${input.gridRows}`);
+    if (input.gridFlow) {
+      // grid-flow-row | grid-flow-col | grid-flow-dense | grid-flow-row-dense | grid-flow-col-dense
+      const GRID_FLOW_TOKENS = ['grid-flow-row', 'grid-flow-col', 'grid-flow-dense', 'grid-flow-row-dense', 'grid-flow-col-dense'];
+      updated = replaceTokenGroup(updated, GRID_FLOW_TOKENS, `grid-flow-${input.gridFlow}`);
+    }
     if (input.colSpan) {
       const span = input.colSpan as number;
       updated = replaceTwToken(updated, 'col-span-', span > 12 ? 'col-span-full' : `col-span-${span}`);
     }
     if (input.flexWrap) updated = replaceTokenGroup(updated, ['flex-wrap', 'flex-nowrap', 'flex-wrap-reverse'], `flex-${input.flexWrap}`);
+    if (input.flex != null) {
+      const flexNum = Number(input.flex);
+      if (!Number.isNaN(flexNum) && flexNum !== 0) {
+        updated = updated.split(' ').filter(t => !/^flex-\d/.test(t) && !/^flex-\[/.test(t) && !/^grow$/.test(t)).join(' ').trim();
+        const flexClass = flexNum === 1 ? 'flex-1' : `flex-[${flexNum}]`;
+        updated = `${updated} ${flexClass}`.trim();
+        removeNodeStyleKeys(store, nodeId, ['flex']);
+      }
+    }
+    // ── Size ──────────────────────────────────────────────────────────────────
+    if (hasSizeParam) {
+      // Keyword → Tailwind class mapping (applies to ALL node types)
+      const W_KEYWORDS: Record<string, string> = {
+        'fit-content': 'w-fit', 'fit': 'w-fit',
+        '100%': 'w-full', 'auto': 'w-auto',
+        '100vw': 'w-screen', 'screen': 'w-screen',
+      };
+      const H_KEYWORDS: Record<string, string> = {
+        'fit-content': 'h-fit', 'fit': 'h-fit',
+        '100%': 'h-full', 'auto': 'h-auto',
+        '100vh': 'h-screen', 'screen': 'h-screen',
+        '100svh': 'h-svh',
+      };
+
+      const toCssSize = (v: unknown): string =>
+        typeof v === 'number' && Number.isFinite(v) ? `${v}px` : String(v).trim();
+
+      const sizePatch: Record<string, unknown> = {};
+      let stripSizeStyleWidth = false;
+      let stripSizeStyleHeight = false;
+
+      if (input.width != null) {
+        const w = toCssSize(input.width);
+        // Strip existing width/grow/flex-1/min-w classes first
+        updated = updated.split(' ').filter(t => !/^w-/.test(t) && !/^grow$/.test(t) && !/^min-w-/.test(t)).join(' ').trim();
+        if (isFormulaExpression(w)) {
+          sizePatch.width = { formula: resolveFormulaTokens(w, SIZE_WIDTH_TOKEN_MAP) };
+        } else {
+          const twClass = W_KEYWORDS[w] ?? `w-[${w}]`;
+          updated = `${updated} ${twClass}`.trim();
+          stripSizeStyleWidth = true;
+        }
+      }
+
+      if (input.height != null) {
+        const h = toCssSize(input.height);
+        // Strip existing height/grow/min-h/self-stretch classes first
+        updated = updated.split(' ').filter(t => !/^h-/.test(t) && !/^grow$/.test(t) && !/^min-h-/.test(t) && t !== 'self-stretch').join(' ').trim();
+        if (isFormulaExpression(h)) {
+          sizePatch.height = { formula: resolveFormulaTokens(h, SIZE_HEIGHT_TOKEN_MAP) };
+        } else {
+          const twClass = H_KEYWORDS[h] ?? `h-[${h}]`;
+          updated = `${updated} ${twClass}`.trim();
+          stripSizeStyleHeight = true;
+        }
+      }
+
+      if (input.maxWidth != null) {
+        const mw = toCssSize(input.maxWidth);
+        updated = updated.split(' ').filter(t => !/^max-w-/.test(t)).join(' ').trim();
+        updated = `${updated} max-w-[${mw}]`.trim();
+      }
+      if (input.minWidth != null) {
+        const mw = toCssSize(input.minWidth);
+        updated = updated.split(' ').filter(t => !/^min-w-/.test(t)).join(' ').trim();
+        updated = `${updated} min-w-[${mw}]`.trim();
+      }
+      if (input.maxHeight != null) {
+        const mh = toCssSize(input.maxHeight);
+        updated = updated.split(' ').filter(t => !/^max-h-/.test(t)).join(' ').trim();
+        updated = `${updated} max-h-[${mh}]`.trim();
+      }
+      if (input.minHeight != null) {
+        const mh = toCssSize(input.minHeight);
+        updated = updated.split(' ').filter(t => !/^min-h-/.test(t)).join(' ').trim();
+        updated = `${updated} min-h-[${mh}]`.trim();
+      }
+
+      if (stripSizeStyleWidth || stripSizeStyleHeight) {
+        removeNodeStyleKeys(store, nodeId, [
+          ...(stripSizeStyleWidth  ? ['width']  : []),
+          ...(stripSizeStyleHeight ? ['height'] : []),
+        ]);
+      }
+      removeNodeStyleKeys(store, nodeId, ['maxWidth', 'minWidth', 'maxHeight', 'minHeight']);
+      if (Object.keys(sizePatch).length > 0) patchNodeStyle(store, nodeId, sizePatch);
+    }
+
+    // ── Typography ────────────────────────────────────────────────────────────
+    if (hasTypoParam) {
+      if (input.fontSize != null) {
+        const sizePx = Number(input.fontSize);
+        updated = replaceTokenGroup(updated, TEXT_SIZE_PREFIXES, '');
+        updated = removeAllWithPrefix(updated, 'text-[');
+        if (!Number.isNaN(sizePx) && sizePx > 0) updated = `${updated} text-[${sizePx}px]`.trim();
+      }
+      if (input.weight)   updated = replaceTokenGroup(updated, FONT_WEIGHT_PREFIXES, `font-${input.weight}`);
+      if (input.textAlign) {
+        const alignRaw = input.textAlign as string;
+        if (isFormulaExpression(alignRaw)) {
+          patchNodeStyle(store, nodeId, { textAlign: { formula: alignRaw } });
+          updated = replaceTokenGroup(updated, TEXT_ALIGN_PREFIXES, '');
+        } else {
+          updated = replaceTokenGroup(updated, TEXT_ALIGN_PREFIXES, `text-${alignRaw}`);
+        }
+      }
+      if (input.leading)  updated = replaceTokenGroup(updated, LEADING_PREFIXES, `leading-${input.leading}`);
+      if (input.tracking) updated = replaceTokenGroup(updated, TRACKING_PREFIXES, `tracking-${input.tracking}`);
+      if (input.italic !== undefined) {
+        updated = replaceTokenGroup(updated, ITALIC_TOKENS, input.italic ? 'italic' : 'not-italic');
+      }
+      if (input.decoration) {
+        const newDec = input.decoration === 'none' ? 'no-underline' : input.decoration as string;
+        updated = replaceTokenGroup(updated, DECORATION_TOKENS, input.decoration === 'none' ? '' : newDec);
+        if (input.decoration === 'none') updated = `${updated} no-underline`.trim();
+      }
+      if (input.textTransform) {
+        updated = replaceTokenGroup(updated, TRANSFORM_TOKENS, input.textTransform === 'none' ? 'normal-case' : input.textTransform as string);
+      }
+      if (input.textOverflow) {
+        const ov = input.textOverflow as string;
+        updated = updated.split(' ').filter(t => t !== 'truncate' && t !== 'overflow-clip' && t !== 'text-ellipsis' && t !== 'text-clip').join(' ').trim();
+        if (ov === 'truncate') updated = `${updated} truncate`.trim();
+        else if (ov === 'clip') updated = `${updated} overflow-clip text-clip`.trim();
+      }
+      if (input.whitespace) {
+        const ws = input.whitespace as string;
+        updated = updated.split(' ').filter(t => !/^whitespace-/.test(t)).join(' ').trim();
+        if (ws !== 'normal') updated = `${updated} whitespace-${ws}`.trim();
+      }
+      if (input.wordBreak) {
+        const wb = input.wordBreak as string;
+        updated = updated.split(' ').filter(t => !/^break-/.test(t)).join(' ').trim();
+        if (wb !== 'normal') updated = `${updated} break-${wb}`.trim();
+      }
+    }
+    // ── End typography ────────────────────────────────────────────────────────
+
+    // ── Position & insets ─────────────────────────────────────────────────────
+    if (input.position) updated = replaceTokenGroup(updated, POSITION_TOKENS, input.position as string);
+    if (input.zIndex != null) {
+      const zNum = Number(input.zIndex);
+      updated = replaceTokenGroup(updated, Z_PREFIXES, '');
+      updated = removeAllWithPrefix(updated, 'z-[');
+      if (!Number.isNaN(zNum)) updated = `${updated} z-[${Math.round(zNum)}]`.trim();
+    }
+    const insetStylePatch: Record<string, unknown> = {};
+    const insetKeysToRemoveFromStyle: string[] = [];
+    const parseInset = (v: unknown): number | null => {
+      if (v == null) return null;
+      if (typeof v === 'number') return v;
+      const strVal = String(v).replace(/^px:/, '');
+      const rawPx = strVal.match(/^(-?\d+(?:\.\d+)?)px$/)?.[1];
+      const n = rawPx != null ? Number(rawPx) : Number(strVal);
+      return Number.isNaN(n) ? null : n;
+    };
+    for (const [key, val] of [['top', input.top], ['right', input.right], ['bottom', input.bottom], ['left', input.left]] as [string, unknown][]) {
+      if (val == null) continue;
+      if (typeof val === 'string' && isFormulaExpression(val)) {
+        insetStylePatch[key] = { formula: resolveFormulaTokens(val) };
+        updated = updated.split(' ').filter(t => !new RegExp(`^-?${key}-`).test(t)).join(' ').trim();
+      } else if (typeof val === 'string' && /^\d+(\.\d+)?%$/.test(val)) {
+        updated = updated.split(' ').filter(t => !new RegExp(`^-?${key}-`).test(t)).join(' ').trim();
+        updated = `${updated} ${key}-[${val}]`.trim();
+        insetKeysToRemoveFromStyle.push(key);
+      } else {
+        const px = parseInset(val);
+        if (px != null) {
+          updated = updated.split(' ').filter(t => !new RegExp(`^-?${key}-`).test(t)).join(' ').trim();
+          updated = `${updated} ${key}-[${px}px]`.trim();
+          insetKeysToRemoveFromStyle.push(key);
+        }
+      }
+    }
+    if (Object.keys(insetStylePatch).length > 0) patchNodeStyle(store, nodeId, insetStylePatch);
+    if (insetKeysToRemoveFromStyle.length > 0) removeNodeStyleKeys(store, nodeId, insetKeysToRemoveFromStyle);
+    // ── End position ──────────────────────────────────────────────────────────
+
     store.patchProp(nodeId, 'props.className', updated);
-    return { success: true, data: { message: 'Updated layout' } };
+
+    // Warn if absolute node is missing insets
+    const finalCls = updated;
+    const hasAbsolute = /\babsolute\b/.test(finalCls);
+    const hasHorizInset = /(?:^|\s)(?:left|right)-/.test(finalCls) || /(?:^|\s)inset-x-/.test(finalCls) || /(?:^|\s)inset-0\b/.test(finalCls) || /(?:^|\s)inset-\[/.test(finalCls);
+    const hasVertInset  = /(?:^|\s)(?:top|bottom)-/.test(finalCls)  || /(?:^|\s)inset-y-/.test(finalCls)  || /(?:^|\s)inset-0\b/.test(finalCls) || /(?:^|\s)inset-\[/.test(finalCls);
+    let layoutMsg = 'Updated layout';
+    if (hasAbsolute && !hasHorizInset) layoutMsg += ' — WARNING: absolute node has no horizontal inset (left/right). Placement may drift.';
+    if (hasAbsolute && !hasVertInset)  layoutMsg += ' — WARNING: absolute node has no vertical inset (top/bottom). Placement may drift.';
+
+    return { success: true, data: { message: layoutMsg } };
   },
 
   // ── Logic ──────────────────────────────────────────────────────────────────
@@ -1633,6 +2028,8 @@ const handlers: Record<string, Handler> = {
   set_condition(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
     let condition = input.condition as string | undefined;
     if (condition && condition.startsWith('!') && !condition.startsWith('!=')) {
       condition = `not(${condition.slice(1)})`;
@@ -1644,20 +2041,27 @@ const handlers: Record<string, Handler> = {
 
   set_repeat(input, getStore) {
     const store = getStore();
+    const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
     // Accept `expression` as an alias for `mapPath` — Phase 3 Haiku may call with the wrong key.
-    // Guard against null/undefined path to prevent silently clearing an existing repeat binding.
-    const mapPath = (input.mapPath ?? input.expression) as string | undefined;
+    // Empty string/null removes repeat binding.
+    const rawMapPath = (input.mapPath ?? input.expression) as string | undefined | null;
+    const mapPath = typeof rawMapPath === 'string' ? rawMapPath.trim() : rawMapPath;
     const keyField = (input.keyField as string | undefined) ?? 'id';
-    if (!mapPath) {
-      return { success: false, error: 'set_repeat requires mapPath — skipping to avoid clearing existing repeat binding.' };
+    if (mapPath === '' || mapPath == null) {
+      store.patchMap(nodeId, null, undefined);
+      return { success: true, data: { message: 'Removed repeat binding' } };
     }
-    store.patchMap(input.nodeId as string, mapPath, keyField);
+    store.patchMap(nodeId, mapPath, keyField);
     return { success: true, data: { message: `Set repeat over "${mapPath}"` } };
   },
 
   bind_action(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
     const workflowName = input.workflowName as string;
     const node = findNode(store.pageNodes as SDUINode[], nodeId);
     const existing = Array.isArray(node?.actions) ? [...(node.actions as Array<{ action: string }>)] : [];
@@ -1672,6 +2076,8 @@ const handlers: Record<string, Handler> = {
   unbind_action(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
     const workflowName = input.workflowName as string;
     const node = findNode(store.pageNodes as SDUINode[], nodeId);
     const existing = Array.isArray(node?.actions) ? [...(node.actions as Array<{ action: string }>)] : [];
@@ -1707,17 +2113,9 @@ const handlers: Record<string, Handler> = {
 
     if (input.bindToNodeId) {
       const nodeId = input.bindToNodeId as string;
-      const findNodeLocal = (nodes: SDUINode[], id: string): SDUINode | null => {
-        for (const n of nodes) {
-          if (n.id === id) return n;
-          if (Array.isArray(n.children)) {
-            const found = findNodeLocal(n.children as SDUINode[], id);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-      const node = findNodeLocal(store.pageNodes as SDUINode[], nodeId);
+      const bindErr = requireNode(store, nodeId);
+      if (bindErr) return bindErr;
+      const node = findNode(store.pageNodes as SDUINode[], nodeId);
       const existing = Array.isArray(node?.actions) ? [...(node.actions as unknown[])] : [];
       const newActions = [...existing, { action: name }];
       store.patchActions(nodeId, newActions as unknown as Record<string, unknown>);
@@ -1737,6 +2135,10 @@ const handlers: Record<string, Handler> = {
   delete_workflow(input, getStore) {
     const store = getStore();
     const workflowName = input.workflowName as string;
+    const exists = !!store.pageWorkflows?.[workflowName];
+    if (!exists) {
+      return { success: false, error: `Workflow "${workflowName}" was not found.` };
+    }
     store.removePageWorkflow(workflowName);
     return { success: true, data: { message: `Deleted workflow "${workflowName}"` } };
   },
@@ -1746,6 +2148,26 @@ const handlers: Record<string, Handler> = {
     const nodeId = input.nodeId as string;
     const nodeErr = requireNode(store, nodeId);
     if (nodeErr) return nodeErr;
+    const ENTER_TYPES = new Set(['none', 'fadeIn', 'slideInUp', 'slideInDown', 'slideInLeft', 'slideInLeftSubtle', 'slideInRight', 'riseFade', 'dropIn', 'zoomIn', 'expandIn', 'bounceIn', 'flipInX', 'flipInY', 'flipIn3D', 'tiltIn', 'skewIn', 'skewInY', 'blurIn', 'glowIn', 'rollIn', 'revealUp', 'charFall', 'charBounce']);
+    const EXIT_TYPES = new Set(['none', 'fadeOut', 'slideOutUp', 'slideOutDown', 'slideOutLeft', 'slideOutRight', 'zoomOut', 'shrinkOut', 'blurOut', 'skewOut']);
+    const LOOP_TYPES = new Set(['none', 'pulse', 'breathe', 'float', 'shake', 'wiggle', 'wobble', 'swing', 'spin', 'ticker', 'bounce', 'heartbeat', 'flash', 'ripple', 'glowPulse', 'gradientDrift']);
+    const SCROLL_TYPES = new Set(['none', 'fadeIn', 'slideInUp', 'slideInDown', 'slideInLeft', 'slideInRight', 'riseFade', 'dropIn', 'zoomIn', 'expandIn', 'bounceIn', 'blurIn']);
+    const HOVER_TYPES = new Set(['scale', 'lift', 'none']);
+    const PRESS_TYPES = new Set(['scale', 'bounce', 'none']);
+    const validateEnum = (name: string, value: unknown, allowed: Set<string>): ToolResult | null => {
+      if (value === undefined || value === null) return null;
+      const s = String(value);
+      if (allowed.has(s)) return null;
+      return { success: false, error: `${name} value "${s}" is not supported. Allowed: ${Array.from(allowed).join(', ')}` };
+    };
+    const enumErr =
+      validateEnum('enter', input.enter, ENTER_TYPES) ??
+      validateEnum('exit', input.exit, EXIT_TYPES) ??
+      validateEnum('loop', input.loop, LOOP_TYPES) ??
+      validateEnum('scroll', input.scroll, SCROLL_TYPES) ??
+      validateEnum('hover', input.hover, HOVER_TYPES) ??
+      validateEnum('press', input.press, PRESS_TYPES);
+    if (enumErr) return enumErr;
 
     // Read existing animation to merge (preserve unspecified fields)
     const node = findNode(store.pageNodes as SDUINode[], nodeId);
@@ -1977,6 +2399,10 @@ const handlers: Record<string, Handler> = {
 
   set_validation(input, getStore) {
     const store = getStore();
+    const nodeErr = requireNode(store, input.nodeId as string | undefined);
+    if (nodeErr) return nodeErr;
+    const capErr = checkCapability(store, input.nodeId as string, 'input-props');
+    if (capErr) return capErr;
     store.patchNodeField(input.nodeId as string, '_validation', {
       trigger: 'submit',
       rules: input.rules,
@@ -1994,12 +2420,18 @@ const handlers: Record<string, Handler> = {
 
   set_disabled(input, getStore) {
     const store = getStore();
+    const nodeErr = requireNode(store, input.nodeId as string | undefined);
+    if (nodeErr) return nodeErr;
+    const capErr = checkCapability(store, input.nodeId as string, 'disabled');
+    if (capErr) return capErr;
     store.patchProp(input.nodeId as string, 'disabled', input.disabled);
     return { success: true, data: { message: `Set disabled to ${JSON.stringify(input.disabled)}` } };
   },
 
   set_loading_state(input, getStore) {
     const store = getStore();
+    const nodeErr = requireNode(store, input.nodeId as string | undefined);
+    if (nodeErr) return nodeErr;
     const state = input.state as string;
     store.patchNodeField(input.nodeId as string, '_stateTag', state === 'None' ? null : state);
     return { success: true, data: { message: state === 'None' ? 'Removed state tag' : `Set state tag to "${state}"` } };
@@ -2120,6 +2552,8 @@ const handlers: Record<string, Handler> = {
 
   select_node(input, getStore) {
     const store = getStore();
+    const nodeErr = requireNode(store, input.nodeId as string | undefined);
+    if (nodeErr) return nodeErr;
     store.select(input.nodeId as string, false);
     return { success: true, data: { message: `Selected node` } };
   },
@@ -2438,33 +2872,12 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
     }
   }
 
-  // Auto-wire Switch/Switch On sibling pairs with boolean variable conditions
-  const boolVarIds = (input._boolVarIds ?? []) as string[];
-  if (boolVarIds.length > 0) {
-    const boolVarId = boolVarIds[0];
-    (function autoWireSwitchPairs(node: SDUINode) {
-      if (!Array.isArray(node.children)) return;
-      for (let i = 0; i < node.children.length; i++) {
-        const child = node.children[i] as SDUINode;
-        const next = node.children[i + 1] as SDUINode | undefined;
-        if (!child?.id || !next?.id) continue;
-        const childLabel = labelMap.get(child.id);
-        const nextLabel = labelMap.get(next.id);
-        if (childLabel === 'Switch' && nextLabel === 'Switch On') {
-          if (!child.condition) store.patchCondition(child.id, `not(variables['${boolVarId}'])` as unknown as object);
-          if (!next.condition) store.patchCondition(next.id, `variables['${boolVarId}']` as unknown as object);
-        }
-        autoWireSwitchPairs(child);
-      }
-    })(materializedTree);
-  }
-
   return { success: true, data: { message: 'Structure inserted.' } };
 };
 
 // ─── bulk_apply — apply same style tool to multiple nodes ──────────────────
 
-handlers['bulk_apply'] = function bulkApply(input, getStore) {
+handlers['bulk_apply'] = async function bulkApply(input, getStore) {
   const nodeIds = input.nodeIds as string[];
   const toolName = input.tool as string;
   const params = input.params as Record<string, unknown>;
@@ -2481,7 +2894,7 @@ handlers['bulk_apply'] = function bulkApply(input, getStore) {
   for (const nodeId of nodeIds) {
     const handler = handlers[toolName];
     if (!handler) { errors.push(`${nodeId}: handler for "${toolName}" not found`); continue; }
-    const res = handler({ ...params, nodeId }, getStore) as ToolResult;
+    const res = await handler({ ...params, nodeId }, getStore) as ToolResult;
     if (!res.success) errors.push(`${nodeId}: ${res.error ?? 'unknown error'}`);
   }
 

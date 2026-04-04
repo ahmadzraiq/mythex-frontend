@@ -1,9 +1,7 @@
 /**
  * Shared pieces for Layout, Colors, and Typography+Animation agents
- * (container vs template, dynamic theme/project block).
+ * (dynamic theme/project block, animation level, batch rule).
  */
-
-import { SHARED_FORMULA_SYNTAX } from './formula-scope';
 
 export type StylingSubAgentContext = {
   pages: Array<{ id: string; name: string; route: string }>;
@@ -17,42 +15,22 @@ export type StylingSubAgentContext = {
   category?: string;
 };
 
-export function buildStylingCore(containerVsTemplate: string): string {
-  return `${SHARED_FORMULA_SYNTAX}
+/** Shared batch+retry footer — use in all styling agents */
+export const BATCH_RETRY_RULE = `Batch all independent calls. On errors, retry with corrected params.`;
 
-## Repeat Scope Rule
+/** Shared animation level guidance block — injected when animationLevel > 0 */
+export function buildAnimLevelBlock(animationLevel: number | undefined): string | null {
+  if (animationLevel == null || animationLevel <= 0) return null;
+  const ANIM = ['none', 'subtle', 'moderate', 'rich'];
+  const label = ANIM[animationLevel] ?? animationLevel;
+  return `## Animation Level: ${label}
 
-context?.item?.data formulas ONLY on repeated nodes and their descendants. Never on the Grid/container parent.
+subtle → enter on 1-2 key nodes. No loops.
+moderate → enter on major sections. One loop on a key element.
+rich → enter on all sections + loops: float, breathe, glowPulse (always add loopColor), gradientColors.
 
-${containerVsTemplate}
-
-## Nested Repeat Scope
-
-Inside a nested repeat, outer fields require \`.parent\`:
-- context?.item?.data?.field — INNER repeat item
-- context?.item?.parent?.data?.field — OUTER template item`;
+Easing: enterSpring + stiffness/damping for bouncy entrances. scrollThreshold 0.1-0.3 for scroll reveals.`;
 }
-
-export const LAYOUT_CVT = `## Container vs Template
-
-Node with \`_needsRepeat\` = TEMPLATE (per item). Its PARENT = CONTAINER (once).
-Container gets: grid layout, gap, section width.
-Template gets: padding, position offset.
-NEVER: set_layout(gridCols) on template, context?.item on container.`;
-
-export const COLORS_CVT = `## Container vs Template
-
-Node with \`_needsRepeat\` = TEMPLATE (per item). Its PARENT = CONTAINER (once).
-Container gets: static backgrounds.
-Template gets: per-item bg ternary, per-item border/shadow.
-NEVER: context?.item on container, ternary bg on container.`;
-
-export const TYPO_CVT = `## Container vs Template
-
-Node with \`_needsRepeat\` = TEMPLATE (per item). Its PARENT = CONTAINER (once).
-Container gets: enter/scroll animations.
-Template gets: hover/press animations.
-NEVER: enter animation with item-level ternary on container.`;
 
 export function buildStylingDynamicPart(context: StylingSubAgentContext): string {
   const ANIM = ['none', 'subtle', 'moderate', 'rich'];

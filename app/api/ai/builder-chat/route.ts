@@ -25,10 +25,40 @@
 
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { ALL_BUILDER_TOOLS, PHASE3_BUILDER_TOOLS, PHASE_W_TOOLS, STRUCTURE_AGENT_TOOLS, BINDING_AGENT_TOOLS, LAYOUT_AGENT_TOOLS, COLORS_AGENT_TOOLS, TYPO_ANIM_AGENT_TOOLS } from '@/lib/ai/builder-tools';
+import { ALL_BUILDER_TOOLS, PHASE3_BUILDER_TOOLS, PHASE_W_TOOLS, STRUCTURE_AGENT_TOOLS, BINDING_AGENT_TOOLS, LAYOUT_AGENT_TOOLS, COLORS_AGENT_TOOLS } from '@/lib/ai/builder-tools';
 import { buildChatSystemPrompt, buildPhase3SystemPrompt, PLAN_SYSTEM } from '@/lib/ai/builder-knowledge-v2';
-import { buildStructureAgentPrompt, buildBindingAgentPrompt, buildWorkflowsAgentPrompt, buildLayoutAgentPrompt, buildColorsAgentPrompt, buildTypoAnimAgentPrompt } from '@/lib/ai/agents';
+import { buildStructureAgentPrompt, buildBindingAgentPrompt, buildWorkflowsAgentPrompt, buildLayoutAgentPrompt, buildColorsAgentPrompt } from '@/lib/ai/agents';
+import { TOOL_CAPABILITY_GROUP, getCapabilities, buildBlockedGroupSuggestion, buildCapabilityNote } from '@/lib/ai/component-capabilities';
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+const MODEL_TIMEOUT_MS = 120_000;
+const EXTERNAL_FETCH_TIMEOUT_MS = 15_000;
+
+function buildTimeoutSignal(baseSignal: AbortSignal, timeoutMs: number): { signal: AbortSignal; cleanup: () => void } {
+  const ctrl = new AbortController();
+  const onAbort = () => ctrl.abort(new Error('Request aborted by client'));
+  baseSignal.addEventListener('abort', onAbort, { once: true });
+  const timer = setTimeout(() => ctrl.abort(new Error(`Timed out after ${timeoutMs}ms`)), timeoutMs);
+  return {
+    signal: ctrl.signal,
+    cleanup: () => {
+      clearTimeout(timer);
+      baseSignal.removeEventListener('abort', onAbort);
+    },
+  };
+}
+
+function parseStreamedToolInput(raw: string): { input: Record<string, unknown>; parseError?: string } {
+  try {
+    return { input: JSON.parse(raw || '{}') as Record<string, unknown> };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      input: { __parseError: true, __rawInputJson: raw },
+      parseError: `Invalid tool JSON input: ${msg}`,
+    };
+  }
+}
 
 // ── Build-mode types ─────────────────────────────────────────────────────────
 
@@ -39,12 +69,20 @@ interface BuildUnit {
   description: string;
   sectionCount?: number;
   layout?: string;
+  /** When false, the structure agent is told to declare zero variables — purely visual section with no interactive state or data arrays. */
+  needsVariables?: boolean;
+  /** Machine-readable layout pattern key emitted by the classify agent when a specific tree shape is required. */
+  structureHint?: 'layered-absolute' | 'grid' | 'flex-row';
 }
 
 interface BuildPlan {
   mode: 'edit' | 'build' | 'mixed';
   /** When false, Phase 3 styling is skipped — components render with their defaultNode styles. */
   needsStyling?: boolean;
+  /** When false, the binding agent is skipped — no repeat, condition, or text binding needed. */
+  needsBinding?: boolean;
+  /** When false, the workflows agent is skipped — purely visual/decorative section with no interactions. */
+  needsWorkflows?: boolean;
   editSummary?: string;
   buildUnits?: BuildUnit[];
   relations?: string[];
@@ -60,6 +98,7 @@ interface CollectedTree {
     icons: Array<{ id: string; icon: string }>;
     images: Array<{ id: string; searchQuery: string }>;
     videos: Array<{ id: string; searchQuery: string }>;
+    bgImages: Array<{ id: string; searchQuery: string }>;
   };
 }
 
@@ -315,6 +354,7 @@ async function classifyRequest(
   pages: Array<{ id: string; name: string; route: string }>,
   modelId: string,
   currentPageRoute?: string,
+  signal?: AbortSignal,
 ): Promise<BuildPlan> {
   const pageList = pages.map(p => `- "${p.name}" at ${p.route} (id: ${p.id})`).join('\n');
   const prompt = `Current page: "${currentPageRoute ?? '/'}"\nAll pages:\n${pageList || '(none)'}\n\nUser request:\n${message}`;
@@ -324,7 +364,7 @@ async function classifyRequest(
       max_tokens: 1024,
       system: PLAN_SYSTEM,
       messages: [{ role: 'user', content: prompt }],
-    });
+    }, signal ? { signal } : undefined);
     const text = res.content.filter(b => b.type === 'text').map(b => (b as { type: 'text'; text: string }).text).join('');
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) return JSON.parse(jsonMatch[0]) as BuildPlan;
@@ -336,23 +376,23 @@ async function classifyRequest(
 
 // ── Server-side media search helpers (Tier 0 pre-fetch) ──────────────────────
 
-async function searchUnsplashServer(query: string, count = 5): Promise<Array<{ url: string; alt: string }>> {
+async function searchUnsplashServer(query: string, count = 5, signal?: AbortSignal): Promise<Array<{ url: string; alt: string }>> {
   try {
     const apiKey = process.env.UNSPLASH_ACCESS_KEY;
     if (!apiKey || !query) return [];
-    const r = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=${count}&client_id=${apiKey}`);
+    const r = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=${count}&client_id=${apiKey}`, { signal });
     if (!r.ok) return [];
     const d = await r.json() as { results?: Array<{ urls: { regular: string }; alt_description: string }> };
     return (d.results ?? []).map(p => ({ url: p.urls.regular, alt: p.alt_description ?? '' }));
   } catch { return []; }
 }
 
-async function searchPexelsServer(query: string, count = 4): Promise<Array<{ src: string; poster: string }>> {
+async function searchPexelsServer(query: string, count = 4, signal?: AbortSignal): Promise<Array<{ src: string; poster: string }>> {
   try {
     const apiKey = process.env.PEXELS_API_KEY;
     if (!apiKey) return [];
     const q = encodeURIComponent(query || 'nature');
-    const r = await fetch(`https://api.pexels.com/videos/search?query=${q}&page=1&per_page=${count}`, { headers: { Authorization: apiKey }, next: { revalidate: 300 } });
+    const r = await fetch(`https://api.pexels.com/videos/search?query=${q}&page=1&per_page=${count}`, { headers: { Authorization: apiKey }, next: { revalidate: 300 }, signal });
     if (!r.ok) return [];
     const d = await r.json() as { videos?: Array<{ image: string; video_files: Array<{ quality: string; link: string }> }> };
     return (d.videos ?? []).map(v => {
@@ -362,19 +402,21 @@ async function searchPexelsServer(query: string, count = 4): Promise<Array<{ src
   } catch { return []; }
 }
 
-/** Walk the resolved tree, extract icon/searchQuery media hints from Phase 2, strip them from tree.
+/** Walk the resolved tree, extract icon/searchQuery/bgImage media hints from Phase 2, strip them from tree.
  *  Returns a manifest of media nodes to process server-side.
- *  Tree is modified in place — icon/searchQuery fields are removed so they don't reach the client.
+ *  Tree is modified in place — icon/searchQuery/bgImage fields are removed so they don't reach the client.
  */
 function extractMediaFromTree(tree: Record<string, unknown>): {
   icons: Array<{ id: string; icon: string }>;
   images: Array<{ id: string; searchQuery: string }>;
   videos: Array<{ id: string; searchQuery: string }>;
+  bgImages: Array<{ id: string; searchQuery: string }>;
 } {
   const manifest = {
     icons: [] as Array<{ id: string; icon: string }>,
     images: [] as Array<{ id: string; searchQuery: string }>,
     videos: [] as Array<{ id: string; searchQuery: string }>,
+    bgImages: [] as Array<{ id: string; searchQuery: string }>,
   };
 
   const walk = (node: Record<string, unknown>) => {
@@ -397,11 +439,18 @@ function extractMediaFromTree(tree: Record<string, unknown>): {
         delete node.searchQuery; // strip
         manifest.videos.push({ id, searchQuery: searchQuery ?? '' });
       }
+      // Box with bgImage — CSS background-image set via set_background by media agent
+      if (node.bgImage) {
+        const bgImageQuery = node.bgImage as string;
+        delete node.bgImage; // strip — media agent handles the URL lookup
+        if (id) manifest.bgImages.push({ id, searchQuery: bgImageQuery });
+      }
     }
 
-    // Strip icon/searchQuery from any node type (defensive cleanup)
+    // Strip icon/searchQuery/bgImage from any node type (defensive cleanup)
     if ('icon' in node && label !== 'icon') delete node.icon;
     if ('searchQuery' in node) delete node.searchQuery;
+    if ('bgImage' in node) delete node.bgImage;
 
     for (const child of (Array.isArray(node.children) ? node.children as Record<string, unknown>[] : [])) {
       walk(child);
@@ -423,9 +472,14 @@ async function runHaikuAgentLoop(
   allExecutedTools: Array<{ name: string; input: Record<string, unknown>; result?: unknown }>,
   maxRounds = 15,
   phase?: string,
+  signal?: AbortSignal,
+  capabilityValidator?: (toolName: string, args: Record<string, unknown>) => string | null,
 ): Promise<void> {
   let currentMessages = [...messages];
   let rounds = 0;
+  // Maps tool call ID → error string for client-side tools blocked by capability check.
+  // These never reach the client; the model receives the real error for self-correction.
+  const blockedToolErrors = new Map<string, string>();
 
   // Build allowed tool set — any tool name NOT in this set gets an error back to the LLM
   const allowedTools = new Set([
@@ -443,7 +497,7 @@ async function runHaikuAgentLoop(
       system: systemBlocks,
       tools,
       messages: currentMessages,
-    } as Parameters<typeof client.messages.stream>[0]);
+    } as unknown as Parameters<typeof client.messages.stream>[0], signal ? { signal } : undefined);
 
     const toolUseBlocks: Array<{ id: string; name: string; input: Record<string, unknown> }> = [];
     // Track tool IDs emitted during streaming so the post-stream loop doesn't double-emit.
@@ -458,18 +512,23 @@ async function runHaikuAgentLoop(
       } else if (event.type === 'content_block_delta' && (event.delta as { type: string }).type === 'input_json_delta' && currentToolBlock) {
         currentToolBlock.inputJson += (event.delta as { partial_json: string }).partial_json;
       } else if (event.type === 'content_block_stop' && currentToolBlock) {
-        let parsedInput: Record<string, unknown> = {};
-        try {
-          parsedInput = JSON.parse(currentToolBlock.inputJson || '{}') as Record<string, unknown>;
-        } catch { parsedInput = {}; }
+        const parsed = parseStreamedToolInput(currentToolBlock.inputJson);
+        const parsedInput = parsed.input;
         const toolBlock = { id: currentToolBlock.id, name: currentToolBlock.name, input: parsedInput };
         toolUseBlocks.push(toolBlock);
         // Only emit for known, non-read tools — unknown tools are rejected in the results loop
         const isReadTool = !!readToolHandlers[toolBlock.name];
         if (!isReadTool && allowedTools.has(toolBlock.name)) {
-          streamEmittedIds.add(toolBlock.id);
-          send({ type: 'tool_executed', id: toolBlock.id, name: toolBlock.name, input: toolBlock.input, phase });
-          allExecutedTools.push({ name: toolBlock.name, input: toolBlock.input });
+          // Server-side capability guard: validate before emitting to client.
+          // Blocked tools are never sent to the client; the model receives the real error.
+          const capBlockError = capabilityValidator?.(toolBlock.name, toolBlock.input) ?? null;
+          if (capBlockError) {
+            blockedToolErrors.set(toolBlock.id, capBlockError);
+          } else {
+            streamEmittedIds.add(toolBlock.id);
+            send({ type: 'tool_executed', id: toolBlock.id, name: toolBlock.name, input: toolBlock.input, phase });
+            allExecutedTools.push({ name: toolBlock.name, input: toolBlock.input });
+          }
         }
         currentToolBlock = null;
       } else if (event.type === 'message_delta') {
@@ -504,6 +563,19 @@ async function runHaikuAgentLoop(
     const toolResults: Anthropic.Messages.ToolResultBlockParam[] = [];
 
     for (const tool of toolUseBlocks) {
+      const hadParseError = tool.input.__parseError === true;
+      if (hadParseError) {
+        toolResults.push({
+          type: 'tool_result',
+          tool_use_id: tool.id,
+          content: JSON.stringify({
+            success: false,
+            error: 'Malformed tool JSON input. Re-emit this tool call with valid JSON.',
+          }),
+          is_error: true,
+        });
+        continue;
+      }
       // Reject hallucinated tools that are not in this agent's schema
       if (!allowedTools.has(tool.name)) {
         toolResults.push({
@@ -516,15 +588,25 @@ async function runHaikuAgentLoop(
       }
       const readHandler = readToolHandlers[tool.name];
       if (readHandler) {
-        const result = readHandler(tool.input);
-        const resultStr = result instanceof Promise ? JSON.stringify(await result) : JSON.stringify(result);
-        toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: resultStr });
+        try {
+          const result = readHandler(tool.input);
+          const resultStr = result instanceof Promise ? JSON.stringify(await result) : JSON.stringify(result);
+          toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: resultStr });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: tool.id,
+            content: JSON.stringify({ success: false, error: `Read tool failed: ${msg}` }),
+            is_error: true,
+          });
+        }
       } else if (tool.name === 'search_icons') {
         try {
           const q = encodeURIComponent(String(tool.input.query ?? ''));
           const count = Number(tool.input.count ?? 10);
           const prefix = tool.input.prefix ? `&prefix=${tool.input.prefix}` : '';
-          const r = await fetch(`https://api.iconify.design/search?query=${q}&limit=${count}${prefix}`);
+          const r = await fetch(`https://api.iconify.design/search?query=${q}&limit=${count}${prefix}`, { signal });
           const d = r.ok ? await r.json() as { icons?: string[] } : { icons: [] as string[] };
           // Emit as 'media' phase so icon searches group with image/video searches in the chat log
           send({ type: 'tool_executed', id: tool.id, name: tool.name, input: tool.input, phase: 'media' });
@@ -533,21 +615,44 @@ async function runHaikuAgentLoop(
         } catch {
           send({ type: 'tool_executed', id: tool.id, name: tool.name, input: tool.input, phase: 'media' });
           allExecutedTools.push({ name: tool.name, input: tool.input });
-          toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify([]) });
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: tool.id,
+            content: JSON.stringify({ success: false, error: 'search_icons failed (network/timeout).' }),
+            is_error: true,
+          });
         }
       } else if (tool.name === 'create_workflow' && isCustomJsDomWorkflow(tool.input)) {
         toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify({
           success: false,
           error: 'customJavaScript with DOM manipulation is not supported in the SDUI engine. Visual effects (hover, press, entrance animations) are handled by set_animation in the styling phase. Only create workflows for state changes (toggle, tab switch, form submit, navigation). If no state logic is needed, stop.',
         }) });
+      } else if (blockedToolErrors.has(tool.id)) {
+        // Capability-blocked tool — return the real error so the model can self-correct.
+        toolResults.push({
+          type: 'tool_result',
+          tool_use_id: tool.id,
+          content: JSON.stringify({ success: false, error: blockedToolErrors.get(tool.id) }),
+          is_error: true,
+        });
       } else if (streamEmittedIds.has(tool.id)) {
         // Already emitted during streaming — just add the tool result.
         toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify({ ok: true, pending: 'client_execution' }) });
       } else {
-        // Not emitted during streaming (e.g. max_tokens reconciliation path) — emit now.
-        send({ type: 'tool_executed', id: tool.id, name: tool.name, input: tool.input, phase });
-        allExecutedTools.push({ name: tool.name, input: tool.input });
-        toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify({ ok: true, pending: 'client_execution' }) });
+        // Not emitted during streaming (e.g. max_tokens reconciliation path) — check capability first.
+        const capBlockError = capabilityValidator?.(tool.name, tool.input) ?? null;
+        if (capBlockError) {
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: tool.id,
+            content: JSON.stringify({ success: false, error: capBlockError }),
+            is_error: true,
+          });
+        } else {
+          send({ type: 'tool_executed', id: tool.id, name: tool.name, input: tool.input, phase });
+          allExecutedTools.push({ name: tool.name, input: tool.input });
+          toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify({ ok: true, pending: 'client_execution' }) });
+        }
       }
     }
 
@@ -567,6 +672,7 @@ async function runStructureAgent(
   existingVariables: Array<{ id?: string; label?: string; name?: string; type?: string }>,
   send: (event: Record<string, unknown>) => void,
   allExecutedTools: Array<{ name: string; input: Record<string, unknown>; result?: unknown }>,
+  signal?: AbortSignal,
 ): Promise<{
   tree: CollectedTree | null;
   markers: Array<{ nodeId: string; _needsRepeat?: string | boolean; _needsRepeatKeyField?: string; _needsCondition?: string }>;
@@ -584,7 +690,11 @@ async function runStructureAgent(
   ];
 
   const sectionLimit = `\nSECTION LIMIT: Build EXACTLY ${unit.sectionCount ?? 1} section(s). Do NOT add extra sections.`;
-  const prompt = `Build: ${unit.name}\nDescription: ${unit.description}${sectionLimit}\n${unit.layout ? `Layout: ${unit.layout}` : ''}\n\nDeclare all needed variables in the \`variables\` array and build the tree in one generate_structure call.`;
+  const noVarsNote = unit.needsVariables === false
+    ? '\nVARIABLES: None needed — this section is purely visual. Leave the variables array empty [].'
+    : '';
+  const structureHintLine = unit.structureHint ? `\nStructurePattern: ${unit.structureHint}` : '';
+  const prompt = `Build: ${unit.name}\nDescription: ${unit.description}${sectionLimit}\n${unit.layout ? `Layout: ${unit.layout}` : ''}${structureHintLine}${noVarsNote}\n\nDeclare all needed variables in the \`variables\` array and build the tree in one generate_structure call.`;
 
     const response = await client.messages.create({
       model: 'claude-haiku-4-5',
@@ -593,7 +703,7 @@ async function runStructureAgent(
     tools: STRUCTURE_AGENT_TOOLS.map(t => ({ name: t.name, description: t.description, input_schema: t.input_schema })),
     tool_choice: { type: 'tool' as const, name: 'generate_structure' },
     messages: [{ role: 'user', content: prompt }],
-  });
+  }, signal ? { signal } : undefined);
 
     for (const block of response.content) {
     if (block.type !== 'tool_use' || block.name !== 'generate_structure') continue;
@@ -722,6 +832,7 @@ export async function POST(req: NextRequest) {
     variables = [],
     workflows = [],
     dataSources = [],
+    threadId,
     chatHistory = [],
     toolResults,
     model: requestedModel,
@@ -732,6 +843,9 @@ export async function POST(req: NextRequest) {
   // Resolve model — only accept known models, default to haiku
   const modelId = (requestedModel && VALID_MODELS.has(requestedModel)) ? requestedModel : 'claude-haiku-4-5';
   const supportsThinking = THINKING_MODELS.has(modelId);
+  const requestId = threadId || crypto.randomUUID();
+  const modelSignalCtl = buildTimeoutSignal(req.signal, MODEL_TIMEOUT_MS);
+  const externalSignalCtl = buildTimeoutSignal(req.signal, EXTERNAL_FETCH_TIMEOUT_MS);
 
   // ── Build system prompt ─────────────────────────────────────────────────────
 
@@ -851,6 +965,7 @@ export async function POST(req: NextRequest) {
       // stream closed
     }
   };
+  send({ type: 'request_start', requestId, pageId: currentPage.id, model: modelId });
 
   // ── Detect build / mixed mode ────────────────────────────────────────────────
   // Always call Phase 0 classifier for first-round messages — it uses Haiku (fast, cheap)
@@ -864,10 +979,7 @@ export async function POST(req: NextRequest) {
     let currentMessages = [...messages];
     let rounds = 0;
     const allExecutedTools: Array<{ name: string; input: Record<string, unknown>; result?: unknown }> = [];
-    // Set to true by runBuildOrMixedMode after Phase 2 completes — Phase 3 uses haiku for speed
-    let useHaikuForNextRound = false;
-    // Stays true for ALL Phase 3 rounds once first activated — prevents revert to full prompt/tools.
-    // Also restored from isPhase3Continuation when the client sends back tool results across requests.
+    // Restored from isPhase3Continuation when the client sends back tool results across requests.
     let inPhase3Mode = isPhase3Continuation;
 
     // ── Build / mixed mode orchestrator ──────────────────────────────────────
@@ -914,9 +1026,9 @@ export async function POST(req: NextRequest) {
         ctWithMedia?: CollectedTree;
       };
 
-      const structureSubResults = await Promise.all(units.map(async (unit, i): Promise<StructureSubResult> => {
+      const structureSubResultsSettled = await Promise.allSettled(units.map(async (unit, i): Promise<StructureSubResult> => {
         const assignedPid = pageIdMap[unit.pageRoute ?? '/'] ?? null;
-        const result = await runStructureAgent(unit, assignedPid, variables, send, allExecutedTools);
+        const result = await runStructureAgent(unit, assignedPid, variables, send, allExecutedTools, modelSignalCtl.signal);
 
         let ctWithMedia: CollectedTree | undefined;
         if (result.tree) {
@@ -926,17 +1038,30 @@ export async function POST(req: NextRequest) {
 
             if (mediaManifest.images.length > 0) {
               const query = mediaManifest.images[0]?.searchQuery || unit.description;
-            imagePreFetches.set(ct.unitName, searchUnsplashServer(query, mediaManifest.images.length + 1));
+            imagePreFetches.set(ct.unitName, searchUnsplashServer(query, mediaManifest.images.length + 1, externalSignalCtl.signal));
             }
             if (mediaManifest.videos.length > 0) {
               const query = mediaManifest.videos[0]?.searchQuery || unit.description;
-            videoPreFetches.set(ct.unitName, searchPexelsServer(query, mediaManifest.videos.length + 1));
+            videoPreFetches.set(ct.unitName, searchPexelsServer(query, mediaManifest.videos.length + 1, externalSignalCtl.signal));
           }
         }
 
         send({ type: 'section_progress', done: i + 1, total: units.length, name: unit.name });
         return { result, unit, index: i, ctWithMedia };
       }));
+      const structureSubResults: StructureSubResult[] = [];
+      for (const [idx, settled] of structureSubResultsSettled.entries()) {
+        if (settled.status === 'fulfilled') {
+          structureSubResults.push(settled.value);
+          continue;
+        }
+        send({
+          type: 'agent_error',
+          agent: 'structure',
+          section: units[idx]?.name,
+          message: settled.reason instanceof Error ? settled.reason.message : String(settled.reason),
+        });
+      }
 
       // Collect variable events from all structure sub-results
       const addVarEventsCollected = structureSubResults.flatMap(s => s.result.varEvents);
@@ -962,7 +1087,7 @@ export async function POST(req: NextRequest) {
 
       send({ type: 'agent_complete', agent: 'structure', rounds: structureSubResults.length, toolCallCount: collectedTrees.length + addVarEventsCollected.length, duration: Date.now() - structureStartedAt, endedAt: Date.now() });
 
-      if (collectedTrees.length === 0 || plan.needsStyling === false) {
+      if (collectedTrees.length === 0) {
         send({ type: 'done', tools: allExecutedTools });
         return false;
       }
@@ -1009,18 +1134,80 @@ export async function POST(req: NextRequest) {
         };
         for (const ct of trees) walkNested(ct.tree, 0);
 
-        function walkNode(node: Record<string, unknown>, indent: string): string {
+        // Infer semantic role from structure alone — no names, no hints required.
+        const LEAF_TYPES = new Set(['Text', 'Icon']);
+        function inferRole(
+          node: Record<string, unknown>,
+          kids: Record<string, unknown>[],
+          parentRole: string,
+          depth: number,
+        ): string {
+          // Structure trees use `label`; resolved SDUI uses `type` — mirror walkForTypes / walkNode.
+          const nType = ((node.type ?? node.label) as string | undefined) ?? 'Box';
+
+          // Non-Box nodes: annotate based on parent context only
+          if (nType === 'Text') {
+            if (parentRole === 'button' || parentRole === 'icon-button') return 'button-text';
+            return '';
+          }
+          if (nType === 'Icon') {
+            if (parentRole === 'button' || parentRole === 'icon-button') return 'button-icon';
+            return '';
+          }
+          if (nType !== 'Box') return ''; // Image, Video, Input, etc. — type is self-describing
+
+          if (kids.length === 0) return '';
+
+          const childTypes = kids.map(k => ((k.type ?? k.label) as string | undefined) ?? 'Box');
+          const allLeaf = childTypes.every(t => LEAF_TYPES.has(t));
+
+          if (allLeaf) {
+            // Icon-only → icon-button; anything else all-leaf → button (CTA, badge, chip, tag)
+            return childTypes.length === 1 && childTypes[0] === 'Icon' ? 'icon-button' : 'button';
+          }
+          if (kids.length === 1 && childTypes[0] === 'Image') return 'image-wrap';
+          if (kids.length === 1 && childTypes[0] === 'Video') return 'video-wrap';
+
+          const mk = markerMap.get(node.id as string);
+          if (mk?.repeat || node._needsRepeat || node.repeat) return 'list';
+
+          if (depth === 0) return 'section';
+          if (childTypes.some(t => t === 'Box')) return 'group';
+
+          return '';
+        }
+
+        function walkNode(node: Record<string, unknown>, indent: string, parentRole = '', depth = 0): string {
           const nId = node.id as string ?? '?';
-          const nType = node.type as string ?? 'Box';
+          const nType = ((node.type ?? node.label) as string | undefined) ?? 'Box';
           const nName = node.name as string ?? '';
           const nText = node.text as string ?? '';
+          const nHint = node._hint as string ?? '';
+          const nRepeat = typeof node.repeat === 'string' ? node.repeat : '';
+          const nCondition = typeof node.condition === 'string' ? node.condition : '';
           const mk = markerMap.get(nId);
           const nested = nestedSet.has(nId) ? '(NESTED)' : '';
-          const tags = [mk?.repeat, mk?.condition, nested].filter(Boolean).join(' ');
-          const line = `${indent}[${nId}] ${nType}${nName ? ` "${nName}"` : ''}${nText ? ` text="${nText}"` : ''}${tags ? ` — ${tags}` : ''}`;
+          const tags = [
+            mk?.repeat,
+            mk?.condition,
+            nRepeat ? `repeat="${nRepeat}"` : '',
+            nCondition ? `condition="${nCondition}"` : '',
+            nested,
+          ].filter(Boolean).join(' ');
+
           const kids = (Array.isArray(node.children) ? node.children : []) as Record<string, unknown>[];
+          const role = inferRole(node, kids, parentRole, depth);
+          const displayType = role ? `${nType}(${role})` : nType;
+
+          let line = `${indent}[${nId}] ${displayType}${nName ? ` "${nName}"` : ''}${nText ? ` text="${nText}"` : ''}`;
+          if (nHint) line += ` | ${nHint}`;
+          // Structure-declared flex direction — layout agent must not override without reason.
+          const nDir = nType === 'Box' ? String(node.direction ?? '').trim() : '';
+          if (nDir) line += ` [dir:${nDir}]`;
+          if (tags) line += ` — ${tags}`;
+
           return kids.length
-            ? line + '\n' + kids.map(c => walkNode(c, indent + '  ')).join('\n')
+            ? line + '\n' + kids.map(c => walkNode(c, indent + '  ', role, depth + 1)).join('\n')
             : line;
         }
         return trees.map(t => {
@@ -1030,6 +1217,24 @@ export async function POST(req: NextRequest) {
       }
 
       const compactTree = buildCompactTreeText(collectedTrees, allMarkers);
+
+      // Build id→type map from all collected trees for the server-side capability validator.
+      // This lets runHaikuAgentLoop resolve component types without accessing the Zustand store.
+      const nodeTypeMap = new Map<string, string>();
+      {
+        const walkForTypes = (node: Record<string, unknown>) => {
+          const id = node.id as string | undefined;
+          // Structure trees use `label`; resolved SDUI trees use `type`. Handle both.
+          const type = (node.type ?? node.label) as string | undefined;
+          if (id && type) nodeTypeMap.set(id, type);
+          for (const child of (Array.isArray(node.children) ? node.children as Record<string, unknown>[] : [])) {
+            walkForTypes(child);
+          }
+        };
+        for (const ct of collectedTrees) {
+          if (ct.tree) walkForTypes(ct.tree as Record<string, unknown>);
+        }
+      }
 
       // Emit switch_page for created pages (still needed for client-side execution)
       if (createdPageIds.length > 0) {
@@ -1082,9 +1287,21 @@ export async function POST(req: NextRequest) {
         get_formula_context: () => ({ variables, collections: [] }),
         search_nodes: (inp) => {
           const q = String(inp.query ?? '').toLowerCase();
+          const typeFilter = inp.nodeType ? String(inp.nodeType).toLowerCase() : undefined;
           type SN = { id?: string; type?: string; name?: string; children?: unknown[] };
           const hits: Array<{ id: string | undefined; name: string | undefined; type: string | undefined }> = [];
-          const wk = (nodes: SN[]) => { for (const n of nodes) { if ((n.name ?? '').toLowerCase().includes(q) || (n.type ?? '').toLowerCase().includes(q)) hits.push({ id: n.id, name: n.name, type: n.type }); if (Array.isArray(n.children)) wk(n.children as SN[]); } };
+          const wk = (nodes: SN[]) => {
+            for (const n of nodes) {
+              const name = (n.name ?? '').toLowerCase();
+              const type = (n.type ?? '').toLowerCase();
+              const text = (String((n as Record<string, unknown>).text ?? '')).toLowerCase();
+              const id = (n.id ?? '').toLowerCase();
+              const matches = name.includes(q) || type.includes(q) || text.includes(q) || id.includes(q);
+              const typeMatches = !typeFilter || type === typeFilter;
+              if (matches && typeMatches) hits.push({ id: n.id, name: n.name, type: n.type });
+              if (Array.isArray(n.children)) wk(n.children as SN[]);
+            }
+          };
           wk(pageTreeSnapshot as SN[]);
           return hits.length ? hits : { note: `No nodes found matching "${inp.query}"` };
         },
@@ -1106,7 +1323,7 @@ ${markersNote}
 
 ${varRoster}
 
-Bind ALL text nodes with their data fields from the variable initialValue.
+Apply data bindings: use set_text only for formula expressions (context, variables, ternaries). Static text and inline repeat/condition visible in the tree are already applied — do not re-apply them.
 
 Original request:
 ${message}`,
@@ -1125,7 +1342,8 @@ ${message}`,
         {
           role: 'user',
           content: `${contextNote ? `[Context]\n${contextNote}\n\n` : ''}[Layout Agent]
-The structure ALREADY EXISTS — do NOT create or modify structure. Apply spacing, sizing, layout alignment, grid columns, position offsets, and overflow. Do NOT set colors, typography, or animations — parallel agents handle those.
+The structure ALREADY EXISTS — do NOT create or modify structure. Apply layout, spacing, sizing, typography (fontSize, weight, textAlign, etc.), position offsets, and overflow. Do NOT set colors or animations — the colors agent handles those.
+Use SAFE-FIRST composition by default: prioritize clean flow layout, avoid heavy absolute layering unless explicitly requested, and avoid defaulting root to viewport-forced geometry.
 
 [Page Tree — use exact node UUIDs]
 ${compactTree}
@@ -1145,7 +1363,7 @@ ${message}${relationsNote}${pageContextNote}`,
         {
           role: 'user',
           content: `${contextNote ? `[Context]\n${contextNote}\n\n` : ''}[Colors Agent]
-Apply all colors, backgrounds, text colors, borders, shadows, opacity, and icon color/size. Apply TERNARY CONTRAST on all repeated template descendants. Do NOT set typography, spacing, or animations — parallel agents handle those.
+Apply all colors, backgrounds, text colors, borders, shadows, opacity, icon color/size, and animations (enter, scroll, hover, press, loop). Apply TERNARY CONTRAST on all repeated template descendants. Do NOT set spacing, layout, or typography — the layout agent handles those.
 
 [Page Tree — use exact node UUIDs]
 ${compactTree}
@@ -1153,25 +1371,6 @@ ${compactTree}
 ${varRoster}
 ${repeatContainerHint}${nestedRepeatHint}${ternaryContrastHint}
 Repeat template reminder: style ALL children (buttons, icons, text/headings). When boolean fields exist in repeat data, apply ternary expressions for background, text color, border, shadow.
-
-Original request:
-${message}${relationsNote}${pageContextNote}`,
-        },
-      ];
-
-      const typoAnimPromptParts = buildTypoAnimAgentPrompt(stylingCtx);
-      const typoAnimSystemBlocks: Anthropic.Messages.TextBlockParam[] = [
-        { type: 'text', text: typoAnimPromptParts.static, cache_control: { type: 'ephemeral' } },
-        { type: 'text', text: typoAnimPromptParts.dynamic },
-      ];
-      const typoAnimMessages: Anthropic.Messages.MessageParam[] = [
-        {
-          role: 'user',
-          content: `${contextNote ? `[Context]\n${contextNote}\n\n` : ''}[Typography + Animation Agent]
-Apply typography (size, weight, alignment) and all animations (enter, scroll, hover, press, loop). Use bulk_apply for sibling groups with identical typography. Do NOT set colors, spacing, or layout — parallel agents handle those.
-
-[Page Tree — use exact node UUIDs]
-${compactTree}
 
 Original request:
 ${message}${relationsNote}${pageContextNote}`,
@@ -1247,37 +1446,73 @@ ${message}${relationsNote}${phaseWPageNote}`,
               });
             }
           }
+
+          // CSS background-image on Box nodes (declared via bgImage in generate_structure tree)
+          if (manifest.bgImages && manifest.bgImages.length > 0) {
+            const firstQuery = manifest.bgImages[0].searchQuery;
+            const bgImageUrls = firstQuery
+              ? await searchUnsplashServer(firstQuery, manifest.bgImages.length, externalSignalCtl.signal)
+              : [];
+            manifest.bgImages.forEach((bgNode, idx) => {
+              const img = bgImageUrls[idx] ?? bgImageUrls[0];
+              if (!img) return;
+              const input = { nodeId: bgNode.id, bgImage: img.url, bgSize: 'cover', bgPosition: 'center' };
+              send({ type: 'tool_executed', id: `bg-img-${bgNode.id}`, name: 'set_background', input, phase: 'media' });
+              allExecutedTools.push({ name: 'set_background', input });
+            });
+          }
         }
-        send({ type: 'agent_complete', agent: 'media', rounds: 0, toolCallCount: collectedTrees.reduce((sum, ct) => sum + (ct.mediaManifest?.icons.length ?? 0) + (ct.mediaManifest?.images.length ?? 0) + (ct.mediaManifest?.videos.length ?? 0), 0), duration: Date.now() - mediaStartedAt, endedAt: Date.now() });
+        send({ type: 'agent_complete', agent: 'media', rounds: 0, toolCallCount: collectedTrees.reduce((sum, ct) => sum + (ct.mediaManifest?.icons.length ?? 0) + (ct.mediaManifest?.images.length ?? 0) + (ct.mediaManifest?.videos.length ?? 0) + (ct.mediaManifest?.bgImages?.length ?? 0), 0), duration: Date.now() - mediaStartedAt, endedAt: Date.now() });
       })();
 
       // ── Emit agent_context for LLM agents ───────────────────────────────────
       send({ type: 'agent_context', agent: 'binding', systemPrompt: bindingPromptParts.static, tools: BINDING_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
       send({ type: 'agent_context', agent: 'styling:layout', systemPrompt: layoutPromptParts.static + '\n\n' + layoutPromptParts.dynamic, tools: LAYOUT_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
       send({ type: 'agent_context', agent: 'styling:colors', systemPrompt: colorsPromptParts.static + '\n\n' + colorsPromptParts.dynamic, tools: COLORS_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
-      send({ type: 'agent_context', agent: 'styling:typo', systemPrompt: typoAnimPromptParts.static + '\n\n' + typoAnimPromptParts.dynamic, tools: TYPO_ANIM_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
       send({ type: 'agent_context', agent: 'workflows', systemPrompt: phaseWPromptParts.static + '\n\n' + phaseWPromptParts.dynamic, tools: PHASE_W_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
-
-      // Strip direction from set_layout for layout sub-agent (already embedded in structure)
-      const layoutToolsNoDirection = LAYOUT_AGENT_TOOLS.map(t => {
-        if (t.name !== 'set_layout') return t;
-        const { direction: _d, ...propsNoDir } = (t.input_schema as { properties: Record<string, unknown> }).properties;
-        void _d;
-        return { ...t, input_schema: { ...t.input_schema, properties: propsNoDir } };
-      });
 
       const toToolParam = (t: { name: string; description: string; input_schema: unknown }) =>
         ({ name: t.name, description: t.description, input_schema: t.input_schema as Record<string, unknown> });
 
-      // ── Launch all 6 agents in parallel ─────────────────────────────────────
-      await Promise.all([
-        runHaikuAgentLoop(bindingMessages, bindingSystemBlocks, BINDING_AGENT_TOOLS.map(toToolParam), {}, send, allExecutedTools, 10, 'binding'),
-        runHaikuAgentLoop(layoutMessages, layoutSystemBlocks, layoutToolsNoDirection.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, 'styling:layout'),
-        runHaikuAgentLoop(colorsMessages, colorsSystemBlocks, COLORS_AGENT_TOOLS.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, 'styling:colors'),
-        runHaikuAgentLoop(typoAnimMessages, typoAnimSystemBlocks, TYPO_ANIM_AGENT_TOOLS.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, 'styling:typo'),
-        runHaikuAgentLoop(phaseWMessages, phaseWSystemBlocks, PHASE_W_TOOLS.map(toToolParam), phaseWReadHandlers, send, allExecutedTools, 15, 'workflows'),
-        mediaInjectionPromise,
-      ]);
+      // ── Capability validator for styling/binding sub-agents ─────────────────
+      // Resolves component type from the nodeTypeMap built above and checks against
+      // the component capability registry. Blocked calls are returned as real errors
+      // to the model (instead of the usual ok:true/pending response) for self-correction.
+      const capabilityValidator = (toolName: string, args: Record<string, unknown>): string | null => {
+        const group = TOOL_CAPABILITY_GROUP[toolName];
+        if (!group) return null; // tool has no capability constraint
+        const nodeId = args.nodeId as string | undefined;
+        if (!nodeId) return null;
+        const nodeType = nodeTypeMap.get(nodeId);
+        if (!nodeType) return null;
+        const caps = getCapabilities(nodeType);
+        if (caps === null) return null; // unknown type → no restriction
+        if (caps.includes(group)) return null; // allowed
+        const suggestion = buildBlockedGroupSuggestion(group, nodeType);
+        return `"${group}" tools are not supported on ${nodeType}. ${suggestion} ${buildCapabilityNote(nodeType)}`;
+      };
+
+      // ── Launch agents in parallel (conditionally based on plan flags) ────────
+      const shouldStyle    = plan.needsStyling   !== false;
+      const shouldBind     = plan.needsBinding   !== false;
+      const shouldWorkflow = plan.needsWorkflows !== false;
+
+      const agentRuns: Array<{ agent: string; promise: Promise<void> }> = [
+        ...(shouldBind ? [{ agent: 'binding', promise: runHaikuAgentLoop(bindingMessages, bindingSystemBlocks, BINDING_AGENT_TOOLS.map(toToolParam), {}, send, allExecutedTools, 10, 'binding', modelSignalCtl.signal, capabilityValidator) }] : []),
+        ...(shouldStyle ? [{ agent: 'styling:layout', promise: runHaikuAgentLoop(layoutMessages, layoutSystemBlocks, LAYOUT_AGENT_TOOLS.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, 'styling:layout', modelSignalCtl.signal, capabilityValidator) }] : []),
+        ...(shouldStyle ? [{ agent: 'styling:colors', promise: runHaikuAgentLoop(colorsMessages, colorsSystemBlocks, COLORS_AGENT_TOOLS.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, 'styling:colors', modelSignalCtl.signal, capabilityValidator) }] : []),
+        ...(shouldWorkflow ? [{ agent: 'workflows', promise: runHaikuAgentLoop(phaseWMessages, phaseWSystemBlocks, PHASE_W_TOOLS.map(toToolParam), phaseWReadHandlers, send, allExecutedTools, 15, 'workflows', modelSignalCtl.signal) }] : []),
+        { agent: 'media', promise: mediaInjectionPromise },
+      ];
+      const settledAgents = await Promise.allSettled(agentRuns.map(a => a.promise));
+      settledAgents.forEach((res, idx) => {
+        if (res.status === 'fulfilled') return;
+        send({
+          type: 'agent_error',
+          agent: agentRuns[idx]?.agent,
+          message: res.reason instanceof Error ? res.reason.message : String(res.reason),
+        });
+      });
 
       send({ type: 'done', tools: allExecutedTools });
       return false;
@@ -1297,7 +1532,7 @@ ${message}${relationsNote}${phaseWPageNote}`,
           ],
           tools: ALL_BUILDER_TOOLS.map(t => ({ name: t.name, description: t.description, input_schema: t.input_schema })),
           messages: editMsgs,
-        } as Parameters<typeof client.messages.stream>[0]);
+        } as unknown as Parameters<typeof client.messages.stream>[0], { signal: modelSignalCtl.signal });
         const editToolBlocks: Array<{ id: string; name: string; input: Record<string, unknown> }> = [];
         let editStop = '';
         let editToolBlock: { id: string; name: string; inputJson: string } | null = null;
@@ -1310,8 +1545,8 @@ ${message}${relationsNote}${phaseWPageNote}`,
             if (dt === 'text_delta') send({ type: 'text_delta', content: (ev.delta as { text: string }).text });
             else if (dt === 'input_json_delta' && editToolBlock) editToolBlock.inputJson += (ev.delta as { partial_json: string }).partial_json;
           } else if (ev.type === 'content_block_stop' && editToolBlock) {
-            try { editToolBlocks.push({ id: editToolBlock.id, name: editToolBlock.name, input: JSON.parse(editToolBlock.inputJson || '{}') as Record<string, unknown> }); }
-            catch { editToolBlocks.push({ id: editToolBlock.id, name: editToolBlock.name, input: {} }); }
+            const parsed = parseStreamedToolInput(editToolBlock.inputJson);
+            editToolBlocks.push({ id: editToolBlock.id, name: editToolBlock.name, input: parsed.input });
             editToolBlock = null;
           } else if (ev.type === 'message_delta') {
             editStop = (ev.delta as { stop_reason?: string }).stop_reason ?? '';
@@ -1319,11 +1554,30 @@ ${message}${relationsNote}${phaseWPageNote}`,
         }
         const editFinal = await editResp.finalMessage();
         editStop = editFinal.stop_reason ?? editStop;
+        {
+          const streamedIds = new Set(editToolBlocks.map(t => t.id));
+          for (const block of editFinal.content) {
+            if (block.type !== 'tool_use') continue;
+            const tb = block as { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> };
+            if (!streamedIds.has(tb.id)) {
+              editToolBlocks.push({ id: tb.id, name: tb.name, input: tb.input ?? {} });
+            }
+          }
+        }
         editMsgs.push({ role: 'assistant', content: editFinal.content });
         if (editToolBlocks.length === 0) break;
         const editResultBlocks: Anthropic.Messages.ToolResultBlockParam[] = [];
         for (const t of editToolBlocks) {
           const ri = t.input;
+          if (ri.__parseError === true) {
+            editResultBlocks.push({
+              type: 'tool_result',
+              tool_use_id: t.id,
+              content: JSON.stringify({ success: false, error: 'Malformed tool JSON input. Re-emit the tool call with valid JSON.' }),
+              is_error: true,
+            });
+            continue;
+          }
           let tr = JSON.stringify({ ok: true, pending: 'client_execution' });
           if (t.name === 'get_page_tree') tr = JSON.stringify({ pageName: currentPage.name, sections: pageTreeSnapshot });
           else if (t.name === 'get_pages') tr = JSON.stringify(pages);
@@ -1350,7 +1604,7 @@ ${message}${relationsNote}${phaseWPageNote}`,
           editResultBlocks.push({ type: 'tool_result', tool_use_id: t.id, content: tr });
         }
         editMsgs.push({ role: 'user', content: editResultBlocks });
-        if (editStop !== 'tool_use') break;
+        if (editStop !== 'tool_use' && editStop !== 'max_tokens') break;
       }
     }
 
@@ -1368,20 +1622,12 @@ ${message}${relationsNote}${phaseWPageNote}`,
       category,
     });
 
-    // Phase 3 tool list with direction stripped from set_layout — direction is already embedded
-    // in the tree by generate_structure; passing it again is always a no-op and wastes calls.
-    const phase3ToolsNoDirection = PHASE3_BUILDER_TOOLS.map(t => {
-      if (t.name !== 'set_layout') return t;
-      const { direction: _dir, ...propsWithoutDirection } = (t.input_schema as { properties: Record<string, unknown> }).properties;
-      void _dir;
-      return { ...t, input_schema: { ...t.input_schema, properties: propsWithoutDirection } };
-    });
 
     try {
       // ── Phase 0: classify for build / mixed mode ──────────────────────────
       if (mightBeBuildRequest) {
         send({ type: 'build_phase', phase: 'planning', message: 'Planning your request...' });
-        const plan = await classifyRequest(message, pages, modelId, currentPage.route);
+        const plan = await classifyRequest(message, pages, modelId, currentPage.route, modelSignalCtl.signal);
         send({
           type: 'tool_executed',
           id: 'classify-request',
@@ -1408,18 +1654,11 @@ ${message}${relationsNote}${phaseWPageNote}`,
         // Create streaming request to Anthropic using the stream helper (has finalMessage())
         // Phase 3 (post-build styling) uses haiku with a focused prompt + filtered tools.
         // inPhase3Mode persists across all rounds so rounds 2+ don't revert to full prompt/tools.
-        if (useHaikuForNextRound) {
-          inPhase3Mode = true;
-          useHaikuForNextRound = false;
-          // Signal to client that Phase 3 has started — client passes isPhase3Continuation=true
-          // on all subsequent tool-result requests so the server can restore inPhase3Mode.
-          send({ type: 'phase3_started' });
-        }
         const isPhase3 = inPhase3Mode;
         const activeModel = isPhase3 ? 'claude-haiku-4-5' : modelId;
         const activeSupportsThinking = supportsThinking && activeModel === modelId;
         // Phase 3 gets only styling tools — structure tools are architecturally excluded
-        const activeTools = isPhase3 ? phase3ToolsNoDirection : ALL_BUILDER_TOOLS;
+        const activeTools = isPhase3 ? PHASE3_BUILDER_TOOLS : ALL_BUILDER_TOOLS;
         // Build system blocks: Phase 3 uses two-block split (static cached + dynamic fresh);
         // main edit mode uses the full prompt in one cached block.
         const activeSystemBlocks: Anthropic.Messages.TextBlockParam[] = isPhase3
@@ -1443,7 +1682,7 @@ ${message}${relationsNote}${phaseWPageNote}`,
             input_schema: t.input_schema,
           })),
           messages: currentMessages,
-        } as Parameters<typeof client.messages.stream>[0]);
+        } as unknown as Parameters<typeof client.messages.stream>[0], { signal: modelSignalCtl.signal });
 
         // Collect response blocks incrementally — no need to wait for finalMessage() for tool extraction
         let textContent = '';
@@ -1479,16 +1718,12 @@ ${message}${relationsNote}${phaseWPageNote}`,
           } else if (event.type === 'content_block_stop') {
             if (currentToolBlock) {
               // Tool input is fully received — parse and store without waiting for finalMessage()
-              try {
-                toolUseBlocks.push({
-                  id: currentToolBlock.id,
-                  name: currentToolBlock.name,
-                  input: JSON.parse(currentToolBlock.inputJson || '{}') as Record<string, unknown>,
-                });
-              } catch {
-                // Malformed JSON — push empty input so the round can continue
-                toolUseBlocks.push({ id: currentToolBlock.id, name: currentToolBlock.name, input: {} });
-              }
+              const parsed = parseStreamedToolInput(currentToolBlock.inputJson);
+              toolUseBlocks.push({
+                id: currentToolBlock.id,
+                name: currentToolBlock.name,
+                input: parsed.input,
+              });
               currentToolBlock = null;
             }
             if (currentThinkingBlock) {
@@ -1531,6 +1766,15 @@ ${message}${relationsNote}${phaseWPageNote}`,
           const toolResultsForNextRound: Anthropic.Messages.ToolResultBlockParam[] = [];
 
           for (const tool of toolUseBlocks) {
+            if (tool.input.__parseError === true) {
+              toolResultsForNextRound.push({
+                type: 'tool_result',
+                tool_use_id: tool.id,
+                content: JSON.stringify({ success: false, error: 'Malformed tool JSON input. Re-emit this tool call with valid JSON.' }),
+                is_error: true,
+              });
+              continue;
+            }
             // For read-only tools, execute server-side and return results
             // For mutation tools, the client executes them
             const isReadTool = ['get_page_tree', 'get_node_details', 'get_theme', 'get_variables', 'get_pages', 'get_formula_context', 'get_workflows', 'get_data_sources', 'search_nodes'].includes(tool.name);
@@ -1789,7 +2033,7 @@ ${message}${relationsNote}${phaseWPageNote}`,
                 const count = Number(rawInput.count ?? 5);
                 const apiKey = process.env.UNSPLASH_ACCESS_KEY;
                 if (apiKey) {
-                  const r = await fetch(`https://api.unsplash.com/search/photos?query=${q}&per_page=${count}&client_id=${apiKey}`);
+                  const r = await fetch(`https://api.unsplash.com/search/photos?query=${q}&per_page=${count}&client_id=${apiKey}`, { signal: externalSignalCtl.signal });
                   if (r.ok) {
                     const d = await r.json() as { results?: Array<{ id: string; urls: { regular: string; small: string }; alt_description: string; user: { name: string } }> };
                     const photos = (d.results ?? []).map(p => ({
@@ -1817,7 +2061,7 @@ ${message}${relationsNote}${phaseWPageNote}`,
                   const url = q
                     ? `https://api.pexels.com/videos/search?query=${q}&page=1&per_page=${count}`
                     : `https://api.pexels.com/videos/popular?page=1&per_page=${count}`;
-                  const r = await fetch(url, { headers: { Authorization: apiKey }, next: { revalidate: 300 } });
+                  const r = await fetch(url, { headers: { Authorization: apiKey }, next: { revalidate: 300 }, signal: externalSignalCtl.signal });
                   if (r.ok) {
                     const d = await r.json() as { videos?: Array<{ id: number; image: string; video_files: Array<{ quality: string; link: string }> }> };
                     const videos = (d.videos ?? []).map(v => {
@@ -1840,7 +2084,7 @@ ${message}${relationsNote}${phaseWPageNote}`,
                 const q = encodeURIComponent(String(rawInput.query ?? ''));
                 const count = Number(rawInput.count ?? 10);
                 const prefix = rawInput.prefix ? `&prefix=${rawInput.prefix}` : '';
-                const r = await fetch(`https://api.iconify.design/search?query=${q}&limit=${count}${prefix}`);
+                const r = await fetch(`https://api.iconify.design/search?query=${q}&limit=${count}${prefix}`, { signal: externalSignalCtl.signal });
                 if (r.ok) {
                   const d = await r.json() as { icons?: string[] };
                   toolResult = JSON.stringify(d.icons ?? []);
@@ -1899,8 +2143,11 @@ ${message}${relationsNote}${phaseWPageNote}`,
       send({ type: 'done', tools: allExecutedTools });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      console.error('[builder-chat] request failed', { requestId, pageId: currentPage.id, modelId, message: msg });
       send({ type: 'error', message: msg });
     } finally {
+      modelSignalCtl.cleanup();
+      externalSignalCtl.cleanup();
       try { controller.close(); } catch { /* already closed */ }
     }
   })();

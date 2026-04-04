@@ -166,6 +166,42 @@
       "config": "exprCssTest",
       "auth": false,
       "layout": "full"
+    },
+    {
+      "path": "/json-test",
+      "config": "jsonTest",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/hero-saas-workflow",
+      "config": "heroSaaSWorkflow",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/height-fill-test",
+      "config": "heightFillTest",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/layered-depth-hero",
+      "config": "layeredDepthHero",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/cta-button-wfit",
+      "config": "ctaButtonWfit",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/hero-layered-collage",
+      "config": "heroLayeredCollage",
+      "auth": false,
+      "layout": "full"
     }
   ]
 }

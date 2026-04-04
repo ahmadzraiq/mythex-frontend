@@ -1489,7 +1489,9 @@ window.open(buildFinalUrl(data), '_blank');           // gesture expired → cur
 
 **Problem:** Passing `data-builder-id={nodeId}` as a JSX prop to `Animated.View` does NOT set the attribute in the DOM. Reanimated's `createAnimatedComponent` and RNW's `View` cssInterop chain both strip unknown `data-*` props before they reach the DOM element. Result: `elementsFromPoint` finds the element but `.closest('[data-builder-id]')` returns null → canvas click-to-select silently fails for ALL animated nodes.
 
-**Fix (applied in `lib/sdui/components/animated-node.tsx`):** A `useEffect` imperatively calls `element.setAttribute('data-builder-id', nodeId)` on mount using `animatedRef.current`, which is the actual underlying DOM element:
+**Regression (fixed):** The builder `useEffect` must **not** gate on `needsOverlayWrapper`. If it returns early when `needsOverlayWrapper` is false (typical for `enter`/`hover`/`press`/`loop`/`outerStyle`-only configs), `setAttribute` never runs and **every** normal animated node becomes unselectable. Only shimmer/particles/noise/splitText/flip/gradientAnimation nodes would work.
+
+**Fix (applied in `lib/sdui/components/animated-node.tsx`):** A `useEffect` imperatively calls `element.setAttribute('data-builder-id', nodeId)` on mount using `animatedRef.current`, which is the actual underlying DOM element — for **all** builder-mode animated nodes (no `needsOverlayWrapper` guard):
 
 ```tsx
 useEffect(() => {

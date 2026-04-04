@@ -28,17 +28,17 @@ export interface PrimitiveComponent {
 export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
   Layout: [
     { type: 'Box',  label: 'Box',        icon: '□',
-      defaultNode: { type: 'Box', props: { className: 'flex flex-col' } } },
+      defaultNode: { type: 'Box', props: {} } },
     { type: 'Box',  label: 'Row',        icon: '⬌',
-      defaultNode: { type: 'Box', props: { className: 'flex flex-row items-center' } } },
+      defaultNode: { type: 'Box', props: {} } },
     { type: 'Box',  label: 'Grid',        icon: '⊞',
-      defaultNode: { type: 'Box', props: { className: 'grid' } } },
+      defaultNode: { type: 'Box', props: {} } },
     { type: 'Box',  label: 'Card',       icon: '▣', aiStrip: 'placeholder',
       defaultNode: { type: 'Box', props: { className: 'rounded-[8px] border border-border bg-[var(--theme-card)] p-[16px] flex flex-col gap-[8px]' }, children: [{ type: 'Text', text: 'Card Title', props: { className: 'text-[18px] font-semibold text-foreground' } }, { type: 'Text', text: 'Card content goes here.', props: { className: 'text-[14px] text-muted-foreground' } }] } },
     { type: 'Box',  label: 'Divider',    icon: '—',
       defaultNode: { type: 'Box', props: { className: 'w-full h-px bg-border' } } },
     { type: 'Box',  label: 'ScrollView', icon: '↕',
-      defaultNode: { type: 'Box', props: { className: 'flex flex-col overflow-auto', style: { maxHeight: '200px' } }, children: [{ type: 'Text', text: 'Scroll content here', props: { className: 'text-[14px] text-foreground' } }] } },
+      defaultNode: { type: 'Box', props: { style: { maxHeight: '200px' } }, children: [{ type: 'Text', text: 'Scroll content here', props: { className: 'text-[14px] text-foreground' } }] } },
   ],
   Typography: [
     { type: 'Text', label: 'Text',    icon: 'T',
@@ -79,26 +79,9 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
       type: 'FormContainer',
       label: 'Form',
       icon: '⊞',
-      aiStrip: 'all',
       defaultNode: {
         type: 'FormContainer',
         props: { className: 'flex flex-col gap-[16px] w-full', initialFormData: {} },
-        children: [
-          {
-            type: 'Input',
-            props: { variant: 'outline', size: 'md', className: 'w-full !rounded-[6px] !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900', placeholder: 'Email', name: 'email' },
-          },
-          {
-            type: 'Input',
-            props: { variant: 'outline', size: 'md', className: 'w-full !rounded-[6px] !border-gray-200 !bg-white dark:!border-gray-700 dark:!bg-gray-900', placeholder: 'Password', name: 'password', type: 'password' },
-          },
-          {
-            type: 'Box',
-            props: { className: 'flex flex-row items-center justify-center w-full px-[16px] py-[10px] rounded-[6px] bg-[var(--theme-foreground)] hover:opacity-90 cursor-pointer' },
-            children: [{ type: 'Text', text: 'Submit', props: { className: 'text-[14px] font-medium text-[var(--theme-background)]' } }],
-            actions: { click: { type: 'submitForm' } },
-          },
-        ],
       },
     },
     { type: 'Input',    label: 'Input',        icon: '▭',
@@ -346,7 +329,7 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
   ],
   Media: [
     { type: 'Image', label: 'Image', icon: '🖼',
-      defaultNode: { type: 'Image', props: { style: { width: '300px', height: '192px' } }, src: 'https://placehold.co/600x400' } },
+      defaultNode: { type: 'Image', props: {}, src: 'https://placehold.co/600x400' } },
     { type: 'Icon', label: 'Icon', icon: '◈',
       defaultNode: { type: 'Icon', props: { icon: 'heroicons:star', size: 24, color: 'primary' } } },
     { type: 'Box', label: 'Icon Tap', icon: '⊙',

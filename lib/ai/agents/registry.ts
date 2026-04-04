@@ -11,7 +11,6 @@ export const BUILDER_AGENT_IDS = [
   'binding',
   'styling:layout',
   'styling:colors',
-  'styling:typo',
   'workflows',
   'media',
 ] as const;
@@ -32,15 +31,11 @@ export const AGENT_REGISTRY: Record<
   },
   'styling:layout': {
     promptModule: 'lib/ai/agents/layout/prompt.ts',
-    notes: 'spacing, size, layout, position; tools: LAYOUT_AGENT_TOOLS',
+    notes: 'layout, spacing, sizing, typography, position, overflow, transform; tools: LAYOUT_AGENT_TOOLS',
   },
   'styling:colors': {
     promptModule: 'lib/ai/agents/colors/prompt.ts',
-    notes: 'colors, borders, shadows; tools: COLORS_AGENT_TOOLS',
-  },
-  'styling:typo': {
-    promptModule: 'lib/ai/agents/typo-anim/prompt.ts',
-    notes: 'typography + animation; tools: TYPO_ANIM_AGENT_TOOLS',
+    notes: 'colors, borders, shadows, animations, bulk_apply; tools: COLORS_AGENT_TOOLS',
   },
   workflows: {
     promptModule: 'lib/ai/agents/workflows/prompt.ts',

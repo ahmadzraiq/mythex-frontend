@@ -1,0 +1,216 @@
+{
+  "meta": {
+    "title": "Hero SaaS workflow"
+  },
+  "ui": {
+    "type": "Box",
+    "props": {
+      "className": "flex flex-col w-full min-h-screen"
+    },
+    "id": "hero-saas-workflow-root",
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "flex-row items-center justify-between gap-[60px] w-full min-h-[700px] pt-[80px] pr-[80px] pb-[80px] pl-[80px]",
+          "style": {
+            "backgroundImage": "linear-gradient(to bottom right, #faf5ff, #f3e8ff)",
+            "backgroundRepeat": "no-repeat",
+            "backgroundSize": "100% 100%"
+          }
+        },
+        "id": "16f30b16-293f-41e1-8e92-58af0aca6a6d",
+        "name": "HeroSection",
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex-col bg-transparent items-start justify-center w-[45%] min-w-[320px] gap-[24px]",
+              "style": {}
+            },
+            "id": "543e7c8e-27c4-45ea-98db-bacccd08f6ea",
+            "name": "TextContentOverlay",
+            "children": [
+              {
+                "type": "Text",
+                "text": "Transform Your Workflow",
+                "props": {
+                  "className": "text-[56px] font-bold leading-tight tracking-tight !text-[#3b0764] mb-[12px]",
+                  "text": "Transform Your Workflow",
+                  "style": {}
+                },
+                "id": "8d90f865-474c-4e6b-8514-27419880fd3f",
+                "children": [],
+                "animation": {
+                  "enter": {
+                    "type": "slideInLeft",
+                    "duration": 700,
+                    "delay": 100,
+                    "easing": "easeOut"
+                  }
+                }
+              },
+              {
+                "type": "Text",
+                "text": "Bring clarity to complexity with intelligent design that adapts to your process.",
+                "props": {
+                  "className": "text-[18px] font-normal leading-relaxed tracking-normal !text-[#6d28d9] mb-[28px]",
+                  "text": "Bring clarity to complexity with intelligent design that adapts to your process.",
+                  "style": {}
+                },
+                "id": "fce1e4ab-ef15-4864-a7b0-8a90ffc94440",
+                "children": [],
+                "animation": {
+                  "enter": {
+                    "type": "slideInLeft",
+                    "duration": 700,
+                    "delay": 200,
+                    "easing": "easeOut"
+                  }
+                }
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "boxShadow": "0px 4px 14px 0px rgba(124,58,237,0.35), 0px 12px 40px 4px rgba(124,58,237,0.18)",
+                    "shadowColor": "#7c3aed",
+                    "shadowOffset": {
+                      "width": 0,
+                      "height": 8
+                    },
+                    "shadowRadius": 24,
+                    "shadowOpacity": 0.35,
+                    "elevation": 12
+                  },
+                  "className": "bg-[#7c3aed] rounded-[8px] flex-row items-center justify-center pt-[16px] pb-[16px] pl-[32px] pr-[32px]"
+                },
+                "id": "0ff583d3-0ed9-4481-8a3b-6e34d76f7ec8",
+                "name": "CTAButton",
+                "children": [
+                  {
+                    "type": "Text",
+                    "text": "Get Started",
+                    "props": {
+                      "className": "text-[16px] font-semibold tracking-wide !text-[#ffffff]",
+                      "text": "Get Started",
+                      "style": {}
+                    },
+                    "id": "603e8fc6-363d-4ca2-b37b-ba761a45039a",
+                    "children": []
+                  }
+                ],
+                "animation": {
+                  "enter": {
+                    "type": "fadeIn",
+                    "duration": 600,
+                    "delay": 400,
+                    "easing": "easeOut"
+                  },
+                  "hover": {
+                    "scale": 1.05,
+                    "duration": 300
+                  },
+                  "press": {
+                    "scale": 0.95,
+                    "duration": 100
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "style": {
+                "boxShadow": "12px 20px 32px -4px #00000020",
+                "shadowColor": "#00000020",
+                "shadowOffset": {
+                  "width": 12,
+                  "height": 20
+                },
+                "shadowRadius": 32,
+                "shadowOpacity": 1,
+                "elevation": 16
+              },
+              "className": "relative rounded-[16px] w-[55%] h-[550px] min-w-[300px]"
+            },
+            "id": "6d39f007-85ea-4633-88f0-c1fe17698e7e",
+            "name": "PrimaryImageLayer",
+            "children": [
+              {
+                "type": "Image",
+                "props": {
+                  "style": {},
+                  "alt": "graphs of performance analytics on a laptop screen",
+                  "objectFit": "cover",
+                  "className": "absolute inset-0 w-full h-full rounded-[16px] overflow-hidden"
+                },
+                "src": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBTYWFTJTIwZGFzaGJvYXJkJTIwd2l0aCUyMGRhdGElMjB2aXN1YWxpemF0aW9uJTIwY2hhcnRzJTIwYW5kJTIwYW5hbHl0aWNzJTIwaW50ZXJmYWNlfGVufDB8fHx8MTc3NTI5NTU2N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+                "id": "4661e7ef-9cf7-4890-899c-bdc9e25dffd0",
+                "children": []
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "boxShadow": "-8px 12px 28px -2px #7c3aed33",
+                    "shadowColor": "#7c3aed33",
+                    "shadowOffset": {
+                      "width": -8,
+                      "height": 12
+                    },
+                    "shadowRadius": 28,
+                    "shadowOpacity": 1,
+                    "elevation": 14
+                  },
+                  "className": "border-[1px] border-[#ddd6fe] rounded-[12px] absolute top-[40px] right-[-80px] w-[280px] min-w-[0px] h-[340px] overflow-hidden z-[2]"
+                },
+                "id": "1cccc7cc-e66c-4416-94b6-f9672db04acd",
+                "name": "SecondaryAccentImageLayer",
+                "children": [
+                  {
+                    "type": "Image",
+                    "props": {
+                      "style": {},
+                      "alt": "a computer screen with a bunch of data on it",
+                      "objectFit": "cover",
+                      "className": "absolute inset-0 w-full h-full"
+                    },
+                    "src": "https://images.unsplash.com/photo-1625296276703-3fbc924f07b5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjBTYWFTJTIwZGFzaGJvYXJkJTIwd2l0aCUyMGRhdGElMjB2aXN1YWxpemF0aW9uJTIwY2hhcnRzJTIwYW5kJTIwYW5hbHl0aWNzJTIwaW50ZXJmYWNlfGVufDB8fHx8MTc3NTI5NTU2N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+                    "id": "7664a3ea-7aac-42df-bba7-607a28be17e4",
+                    "children": []
+                  }
+                ],
+                "animation": {
+                  "enter": {
+                    "type": "zoomIn",
+                    "duration": 900,
+                    "delay": 500,
+                    "easing": "easeOut"
+                  },
+                  "hover": {
+                    "y": -12,
+                    "duration": 400
+                  }
+                }
+              }
+            ],
+            "animation": {
+              "enter": {
+                "type": "slideInRight",
+                "duration": 800,
+                "delay": 300,
+                "easing": "easeOut"
+              },
+              "hover": {
+                "y": -8,
+                "duration": 400
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,699 @@
+{
+  "meta": {
+    "title": "JSON Design Test"
+  },
+  "ui": {
+    "type": "Box",
+    "props": {
+      "className": "flex flex-col w-full min-h-screen"
+    },
+    "id": "json-test-root",
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "flex-row !bg-[var(--theme-background)] w-[100%] min-w-[0px] h-screen items-center justify-center relative overflow-hidden"
+        },
+        "id": "4c5289f3-4eaa-4f77-9280-acf8a3442863",
+        "name": "Futuristic Product Hero Section",
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "!bg-[var(--theme-background)] absolute z-[0] top-[0px] left-[0px] w-[100%] min-w-[0px] h-[100%] overflow-hidden",
+              "style": {}
+            },
+            "id": "4e8bd69d-2951-4bf7-8251-e4b467c07b57",
+            "name": "Background Layer",
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "items-center justify-center w-[100%] min-w-[0px] h-[100%] relative",
+                  "style": {}
+                },
+                "id": "67c5a0b2-303e-4f51-aa0b-3ff4e40abba4",
+                "name": "Abstract Gradient Shapes",
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "absolute z-[1] top-[-100px] left-[-50px] w-[500px] min-w-[0px] h-[500px]",
+                      "style": {
+                        "opacity": 0.15
+                      }
+                    },
+                    "id": "2e9564b1-bb7a-4cfd-ada9-b4308c79d372",
+                    "name": "Gradient Shape 1 - Purple Blue",
+                    "children": [],
+                    "animation": {
+                      "outerStyle": {
+                        "backgroundImage": "linear-gradient(135deg, #7c3aed, #2563eb)",
+                        "backgroundRepeat": "no-repeat",
+                        "backgroundSize": "100% 100%"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "absolute z-[1] top-[200px] right-[-100px] w-[450px] min-w-[0px] h-[450px]",
+                      "style": {
+                        "opacity": 0.12
+                      }
+                    },
+                    "id": "781594ba-1264-4e27-b8e3-670de1022452",
+                    "name": "Gradient Shape 2 - Cyan Orange",
+                    "children": [],
+                    "animation": {
+                      "outerStyle": {
+                        "backgroundImage": "linear-gradient(45deg, #06b6d4, #f97316)",
+                        "backgroundRepeat": "no-repeat",
+                        "backgroundSize": "100% 100%"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "absolute z-[1] bottom-[50px] left-[100px] w-[400px] min-w-[0px] h-[400px]",
+                      "style": {
+                        "opacity": 0.1
+                      }
+                    },
+                    "id": "07f89088-3c91-45af-ad0f-4b61aadf095b",
+                    "name": "Gradient Shape 3 - Magenta Teal",
+                    "children": [],
+                    "animation": {
+                      "outerStyle": {
+                        "backgroundImage": "linear-gradient(225deg, #ec4899, #14b8a6)",
+                        "backgroundRepeat": "no-repeat",
+                        "backgroundSize": "100% 100%"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "backgroundColor": "rgba(59, 7, 100, 0.03)"
+                  },
+                  "className": "absolute z-[2] top-[0px] left-[0px] w-[100%] min-w-[0px] h-[100%]"
+                },
+                "id": "8fd08678-9485-45e2-b2bf-ce930084836f",
+                "name": "Grain Texture Overlay",
+                "children": []
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex-row relative z-[3] w-[100%] min-w-[0px] h-[100%] items-center justify-between gap-[60px] pl-[80px] pr-[80px] pt-[60px] pb-[60px]",
+              "style": {}
+            },
+            "id": "58768bf5-43de-4a7f-9f6a-7ac96589ff7f",
+            "name": "Main Content Container",
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "style": {},
+                  "className": "w-[45%] min-w-[300px] items-center justify-center relative"
+                },
+                "id": "40380fa3-6fb6-4fef-9771-b51d906e2f67",
+                "name": "Left Column - Product Image",
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "style": {},
+                      "className": "bg-transparent relative w-[100%] min-w-[0px] h-[450px] items-center justify-center overflow-hidden"
+                    },
+                    "id": "f42ca2ff-4f83-4c1f-9ee6-8bf2102dcf72",
+                    "name": "Main Product Container",
+                    "children": [
+                      {
+                        "type": "Image",
+                        "props": {
+                          "style": {
+                            "boxShadow": "0px 20px 60px -10px rgba(124, 58, 237, 0.25)",
+                            "shadowColor": "rgb(124,58,237)",
+                            "shadowOffset": { "width": 0, "height": 20 },
+                            "shadowRadius": 60,
+                            "shadowOpacity": 0.25,
+                            "elevation": 30
+                          },
+                          "alt": "A repeating pattern of white iphones on a black background.",
+                          "objectFit": "cover",
+                          "className": "absolute z-[1] top-[0px] left-[0px] w-[100%] min-w-[0px] h-[100%]"
+                        },
+                        "src": "https://images.unsplash.com/photo-1766503206581-6824e98f49de?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwxfHxmdXR1cmlzdGljJTIwcHJvZHVjdCUyMHRlY2glMjBnYWRnZXQlMjBzbGVlayUyMG1vZGVybnxlbnwwfHx8fDE3NzUyMzU5NjZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+                        "id": "90037db1-155d-41d6-9366-b3c907683d36",
+                        "name": "Main Product Image",
+                        "children": [],
+                        "animation": {
+                          "enter": {
+                            "type": "zoomIn",
+                            "duration": 1000,
+                            "easing": "easeOut",
+                            "spring": true,
+                            "stiffness": 150,
+                            "damping": 22
+                          },
+                          "loop": {
+                            "type": "float",
+                            "duration": 4000,
+                            "repeatCount": -1,
+                            "direction": "alternate"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "style": { "backgroundColor": "rgba(255, 255, 255, 0.08)" },
+                          "className": "absolute z-[2] top-[0px] left-[0px] w-[100%] min-w-[0px] h-[100%]"
+                        },
+                        "id": "a1a28317-ada8-4cf2-9945-eb86942309f6",
+                        "name": "Light Reflection Overlay",
+                        "children": [],
+                        "animation": {
+                          "enter": { "type": "fadeIn", "duration": 1200, "delay": 500 },
+                          "loop": { "type": "breathe", "duration": 5000, "repeatCount": -1, "direction": "alternate" }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "absolute z-[4] bottom-[-40px] right-[-60px]"
+                    },
+                    "id": "01ce7d03-90b1-4244-9229-cb9350b3b134",
+                    "name": "Floating Secondary Image Container",
+                    "children": [
+                      {
+                        "type": "Image",
+                        "props": {
+                          "style": {
+                            "width": 300,
+                            "height": 192,
+                            "borderRadius": 12,
+                            "boxShadow": "0 8px 24px rgba(124,58,237,0.25)"
+                          },
+                          "alt": "Fingers hold a black smart ring with circuits visible.",
+                          "objectFit": "cover"
+                        },
+                        "src": "https://images.unsplash.com/photo-1758577515333-e71b713059f1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwyfHxmdXR1cmlzdGljJTIwcHJvZHVjdCUyMHRlY2glMjBnYWRnZXQlMjBzbGVlayUyMG1vZGVybnxlbnwwfHx8fDE3NzUyMzU5NjZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+                        "id": "0c430eb8-9e2e-4c68-ab70-5a53e06aa304",
+                        "name": "Secondary Product Image",
+                        "children": [],
+                        "animation": {
+                          "enter": { "type": "slideInRight", "duration": 900, "delay": 200, "easing": "easeOut" },
+                          "loop": { "type": "float", "duration": 5500, "repeatCount": -1, "direction": "alternate" }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col flex-1 min-w-[280px] gap-[16px]"
+                },
+                "id": "3a967c6e-8af5-424b-a19c-82d72280dda3",
+                "name": "Right Column - Glassmorphism Panel",
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "border-[1px] border-solid border-[rgba(255,255,255,0.2)] rounded-[16px] pt-[20px] pr-[24px] pb-[20px] pl-[24px] gap-[8px] flex flex-col",
+                      "style": {
+                        "backgroundColor": "rgba(255, 255, 255, 0.08)",
+                        "boxShadow": "0px 8px 32px -8px rgba(124, 58, 237, 0.15)"
+                      }
+                    },
+                    "id": "78ec71de-1db6-4aaa-9e8f-e7147fe38e92",
+                    "name": "Glassmorphism Card 1",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "Next Generation",
+                        "props": {
+                          "className": "text-[18px] font-semibold tracking-wide !text-[var(--theme-foreground)]"
+                        },
+                        "id": "686d5ac8-61ba-4518-87c8-8e21d003f41a",
+                        "name": "Feature Title 1",
+                        "children": []
+                      },
+                      {
+                        "type": "Text",
+                        "text": "Cutting-edge technology meets elegant design",
+                        "props": {
+                          "className": "text-[14px] font-normal leading-relaxed !text-[var(--theme-muted-foreground)]"
+                        },
+                        "id": "c85bc0b2-3c03-40cc-b5db-e292ae5ebe8e",
+                        "name": "Feature Description 1",
+                        "children": []
+                      }
+                    ],
+                    "animation": {
+                      "enter": { "type": "slideInUp", "duration": 700, "delay": 300, "easing": "easeOut" },
+                      "hover": { "y": -4, "duration": 300 },
+                      "filter": { "enabled": true, "backdropBlur": 10 }
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "border-[1px] border-solid border-[rgba(255,255,255,0.2)] rounded-[16px] pt-[20px] pr-[24px] pb-[20px] pl-[24px] gap-[8px] flex flex-col",
+                      "style": {
+                        "backgroundColor": "rgba(255, 255, 255, 0.08)",
+                        "boxShadow": "0px 8px 32px -8px rgba(124, 58, 237, 0.15)"
+                      }
+                    },
+                    "id": "70742d8c-7b22-49f6-bd14-7fc8f975c73a",
+                    "name": "Glassmorphism Card 2",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "Ultra Performance",
+                        "props": {
+                          "className": "text-[18px] font-semibold tracking-wide !text-[var(--theme-foreground)]"
+                        },
+                        "id": "8373ed57-8275-407c-9ce1-5897f9a80b4e",
+                        "name": "Feature Title 2",
+                        "children": []
+                      },
+                      {
+                        "type": "Text",
+                        "text": "Lightning-fast processing with zero compromises",
+                        "props": {
+                          "className": "text-[14px] font-normal leading-relaxed !text-[var(--theme-muted-foreground)]"
+                        },
+                        "id": "78c0e35c-4a86-4f29-81a8-8bbaa14fa615",
+                        "name": "Feature Description 2",
+                        "children": []
+                      }
+                    ],
+                    "animation": {
+                      "enter": { "type": "slideInUp", "duration": 700, "delay": 450, "easing": "easeOut" },
+                      "hover": { "y": -4, "duration": 300 },
+                      "filter": { "enabled": true, "backdropBlur": 10 }
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "border-[1px] border-solid border-[rgba(255,255,255,0.2)] rounded-[16px] pt-[20px] pr-[24px] pb-[20px] pl-[24px] gap-[8px] flex flex-col",
+                      "style": {
+                        "backgroundColor": "rgba(255, 255, 255, 0.08)",
+                        "boxShadow": "0px 8px 32px -8px rgba(124, 58, 237, 0.15)"
+                      }
+                    },
+                    "id": "58a3cf56-f72d-492b-b3df-5c817de01e11",
+                    "name": "Glassmorphism Card 3",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "Immersive Experience",
+                        "props": {
+                          "className": "text-[18px] font-semibold tracking-wide !text-[var(--theme-foreground)]"
+                        },
+                        "id": "443ca253-6d9a-4bef-a4b6-2d87a9f199f3",
+                        "name": "Feature Title 3",
+                        "children": []
+                      },
+                      {
+                        "type": "Text",
+                        "text": "Stunning visuals with immersive haptic feedback",
+                        "props": {
+                          "className": "text-[14px] font-normal leading-relaxed !text-[var(--theme-muted-foreground)]"
+                        },
+                        "id": "07e0f224-22cc-45ed-96aa-b739bbe50bdc",
+                        "name": "Feature Description 3",
+                        "children": []
+                      }
+                    ],
+                    "animation": {
+                      "enter": { "type": "slideInUp", "duration": 700, "delay": 600, "easing": "easeOut" },
+                      "hover": { "y": -4, "duration": 300 },
+                      "filter": { "enabled": true, "backdropBlur": 10 }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "absolute z-[4] pointer-events-none top-[0px] left-[0px] w-[100%] min-w-[0px] h-[100%]"
+            },
+            "id": "80af852b-598d-4440-949a-d4f14ac45321",
+            "name": "Floating Elements Layer",
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "opacity": 0.2,
+                    "boxShadow": "0px 0px 20px 0px rgba(124, 58, 237, 0.4)"
+                  },
+                  "className": "absolute top-[15%] left-[20%] w-[12px] min-w-[0px] h-[12px] rounded-[6px] !bg-[var(--theme-primary)]"
+                },
+                "id": "19ac3b21-7b03-4531-9080-ce5745ae1b7b",
+                "name": "Floating Particle 1",
+                "children": [],
+                "animation": {
+                  "enter": { "type": "fadeIn", "duration": 1200 },
+                  "loop": { "type": "float", "duration": 6000, "repeatCount": -1, "direction": "alternate", "delay": 0 }
+                }
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "opacity": 0.15,
+                    "boxShadow": "0px 0px 25px 0px rgba(6, 182, 212, 0.35)"
+                  },
+                  "className": "absolute top-[60%] left-[10%] w-[8px] min-w-[0px] h-[8px] rounded-[4px] bg-[#06b6d4]"
+                },
+                "id": "aecca2be-d474-4534-8c87-15023ec711a1",
+                "name": "Floating Particle 2",
+                "children": [],
+                "animation": {
+                  "enter": { "type": "fadeIn", "duration": 1200, "delay": 200 },
+                  "loop": { "type": "float", "duration": 7000, "repeatCount": -1, "direction": "alternate", "delay": 200 }
+                }
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "opacity": 0.18,
+                    "boxShadow": "0px 0px 22px 0px rgba(236, 72, 153, 0.38)"
+                  },
+                  "className": "absolute top-[35%] right-[15%] w-[10px] min-w-[0px] h-[10px] rounded-[5px] bg-[#ec4899]"
+                },
+                "id": "79517eb7-3a46-4f9a-b2e3-9dbed4231c6b",
+                "name": "Floating Particle 3",
+                "children": [],
+                "animation": {
+                  "enter": { "type": "fadeIn", "duration": 1200, "delay": 400 },
+                  "loop": { "type": "float", "duration": 8000, "repeatCount": -1, "direction": "alternate", "delay": 400 }
+                }
+              }
+            ]
+          }
+        ],
+        "animation": {
+          "enter": { "type": "fadeIn", "duration": 800, "easing": "easeOut" }
+        }
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full flex flex-col gap-[12px] pt-[40px] pr-[40px] pb-[40px] pl-[40px]",
+          "style": { "backgroundColor": "#0f172a" }
+        },
+        "id": "issues-panel",
+        "children": [
+          {
+            "type": "Heading",
+            "props": {
+              "className": "text-[20px] font-bold !text-[#f8fafc]"
+            },
+            "text": "Original JSON — Issues Found & Fixed",
+            "id": "issues-heading",
+            "children": []
+          },
+          {
+            "type": "Text",
+            "props": { "className": "text-[13px] !text-[#94a3b8]" },
+            "text": "6 issues were found in the original JSON. The hero above shows the corrected version.",
+            "id": "issues-sub",
+            "children": []
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[12px] pt-[12px]" },
+            "id": "issues-list",
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex-row gap-[12px] rounded-[8px] pt-[14px] pr-[18px] pb-[14px] pl-[18px]",
+                  "style": { "backgroundColor": "#1a0a0a", "borderWidth": 1, "borderColor": "#7f1d1d", "borderStyle": "solid" }
+                },
+                "id": "issue-1",
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[11px] font-bold !text-[#fff]",
+                      "style": { "backgroundColor": "#ef4444", "borderRadius": 4, "paddingTop": 2, "paddingBottom": 2, "paddingLeft": 8, "paddingRight": 8, "marginTop": 2 }
+                    },
+                    "text": "FIXED",
+                    "id": "issue-1-badge",
+                    "children": []
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-col flex-1 gap-[4px]" },
+                    "id": "issue-1-body",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[14px] font-semibold !text-[#e2e8f0]" },
+                        "text": "min-h-screen on parent breaks all h-[100%] children",
+                        "id": "issue-1-title",
+                        "children": []
+                      },
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[13px] !text-[#94a3b8]" },
+                        "text": "Background Layer (absolute h-[100%]), Main Content Container (h-[100%]), and their children all resolve height:100% against the parent's auto height since only min-height was set. Background gradient and layout container collapsed to 0px height. Fix: changed root to h-screen.",
+                        "id": "issue-1-detail",
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex-row gap-[12px] rounded-[8px] pt-[14px] pr-[18px] pb-[14px] pl-[18px]",
+                  "style": { "backgroundColor": "#1a0a0a", "borderWidth": 1, "borderColor": "#7f1d1d", "borderStyle": "solid" }
+                },
+                "id": "issue-2",
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[11px] font-bold !text-[#fff]",
+                      "style": { "backgroundColor": "#ef4444", "borderRadius": 4, "paddingTop": 2, "paddingBottom": 2, "paddingLeft": 8, "paddingRight": 8, "marginTop": 2 }
+                    },
+                    "text": "FIXED",
+                    "id": "issue-2-badge",
+                    "children": []
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-col flex-1 gap-[4px]" },
+                    "id": "issue-2-body",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[14px] font-semibold !text-[#e2e8f0]" },
+                        "text": "Right Column had empty props — no layout, no width, no padding",
+                        "id": "issue-2-title",
+                        "children": []
+                      },
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[13px] !text-[#94a3b8]" },
+                        "text": "\"Right Column - Glassmorphism Panel\" had props:{} with nothing set. No flex-col, no width, no gap between cards. The column shrank to content width and cards had no spacing. Fix: added flex flex-col flex-1 min-w-[280px] gap-[16px].",
+                        "id": "issue-2-detail",
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex-row gap-[12px] rounded-[8px] pt-[14px] pr-[18px] pb-[14px] pl-[18px]",
+                  "style": { "backgroundColor": "#1a0a0a", "borderWidth": 1, "borderColor": "#7f1d1d", "borderStyle": "solid" }
+                },
+                "id": "issue-3",
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[11px] font-bold !text-[#fff]",
+                      "style": { "backgroundColor": "#ef4444", "borderRadius": 4, "paddingTop": 2, "paddingBottom": 2, "paddingLeft": 8, "paddingRight": 8, "marginTop": 2 }
+                    },
+                    "text": "FIXED",
+                    "id": "issue-3-badge",
+                    "children": []
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-col flex-1 gap-[4px]" },
+                    "id": "issue-3-body",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[14px] font-semibold !text-[#e2e8f0]" },
+                        "text": "Glassmorphism cards had no padding and no border-solid",
+                        "id": "issue-3-title",
+                        "children": []
+                      },
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[13px] !text-[#94a3b8]" },
+                        "text": "Cards had border-[1px] and border-color but no border-solid — on web, border-style defaults to none so borders were invisible. Also no padding so text rendered flush against the card edge. Fix: added border-solid + padding + flex flex-col gap to all three cards.",
+                        "id": "issue-3-detail",
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex-row gap-[12px] rounded-[8px] pt-[14px] pr-[18px] pb-[14px] pl-[18px]",
+                  "style": { "backgroundColor": "#1a0a0a", "borderWidth": 1, "borderColor": "#7f1d1d", "borderStyle": "solid" }
+                },
+                "id": "issue-4",
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[11px] font-bold !text-[#fff]",
+                      "style": { "backgroundColor": "#ef4444", "borderRadius": 4, "paddingTop": 2, "paddingBottom": 2, "paddingLeft": 8, "paddingRight": 8, "marginTop": 2 }
+                    },
+                    "text": "FIXED",
+                    "id": "issue-4-badge",
+                    "children": []
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-col flex-1 gap-[4px]" },
+                    "id": "issue-4-body",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[14px] font-semibold !text-[#e2e8f0]" },
+                        "text": "Floating Elements Layer had no position and particles had no size",
+                        "id": "issue-4-title",
+                        "children": []
+                      },
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[13px] !text-[#94a3b8]" },
+                        "text": "The layer had props:{} — not positioned absolutely, so it rendered in document flow pushing layout down. The three particles had only a background color class but no w/h — they collapsed to 0x0px and were invisible. Fix: added absolute inset, w/h, and rounded corners to the layer and particles.",
+                        "id": "issue-4-detail",
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex-row gap-[12px] rounded-[8px] pt-[14px] pr-[18px] pb-[14px] pl-[18px]",
+                  "style": { "backgroundColor": "#1a0a0a", "borderWidth": 1, "borderColor": "#7f1d1d", "borderStyle": "solid" }
+                },
+                "id": "issue-5",
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[11px] font-bold !text-[#fff]",
+                      "style": { "backgroundColor": "#ef4444", "borderRadius": 4, "paddingTop": 2, "paddingBottom": 2, "paddingLeft": 8, "paddingRight": 8, "marginTop": 2 }
+                    },
+                    "text": "FIXED",
+                    "id": "issue-5-badge",
+                    "children": []
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-col flex-1 gap-[4px]" },
+                    "id": "issue-5-body",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[14px] font-semibold !text-[#e2e8f0]" },
+                        "text": "Floating Secondary Image Container had no absolute positioning",
+                        "id": "issue-5-title",
+                        "children": []
+                      },
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[13px] !text-[#94a3b8]" },
+                        "text": "props:{} with no position classes. The secondary image rendered in document flow below the main 450px container, adding unexpected height to the left column. Also the image used style width/height as strings (\"300px\") — should be numbers. Fix: added absolute z-[4] bottom-[-40px] right-[-60px] to the container, and converted string dimensions to numbers.",
+                        "id": "issue-5-detail",
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex-row gap-[12px] rounded-[8px] pt-[14px] pr-[18px] pb-[14px] pl-[18px]",
+                  "style": { "backgroundColor": "#1a0a0a", "borderWidth": 1, "borderColor": "#7f1d1d", "borderStyle": "solid" }
+                },
+                "id": "issue-6",
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[11px] font-bold !text-[#fff]",
+                      "style": { "backgroundColor": "#ef4444", "borderRadius": 4, "paddingTop": 2, "paddingBottom": 2, "paddingLeft": 8, "paddingRight": 8, "marginTop": 2 }
+                    },
+                    "text": "FIXED",
+                    "id": "issue-6-badge",
+                    "children": []
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-col flex-1 gap-[4px]" },
+                    "id": "issue-6-body",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[14px] font-semibold !text-[#e2e8f0]" },
+                        "text": "Gradient shapes missing backgroundSize in outerStyle",
+                        "id": "issue-6-title",
+                        "children": []
+                      },
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[13px] !text-[#94a3b8]" },
+                        "text": "All three gradient shapes had backgroundImage in animation.outerStyle but no backgroundSize. Without it, some browsers render the gradient at auto dimensions which may not fill the element. Fix: added backgroundSize:\"100% 100%\" to all three gradient shape outerStyles.",
+                        "id": "issue-6-detail",
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

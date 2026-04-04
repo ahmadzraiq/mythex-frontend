@@ -737,11 +737,14 @@ function EffectsSection({ nodeId, node, store, commitHistory }: {
 
 function DesignTab({ node }: { node: SDUINode }) {
   const store = useBuilderStore();
-  const { zoom } = store;
+  const { zoom, pageNodes } = store;
   const nodeId = (node as { id?: string }).id ?? '';
   const cls: string = (node.props as { className?: string })?.className ?? '';
   // Sidecar map that stores formula bindings for class-based fields (selfAlignment, textAlign, etc.)
   const classFormulas = (node.props as { classFormulas?: Record<string, FormulaValue> })?.classFormulas;
+  // Parent flex-direction — used for axis-aware Fill tokens (W/H mode buttons)
+  const parentNode = findParentNode(pageNodes, nodeId);
+  const parentIsRow = !!(parentNode?.props?.className as string | undefined)?.includes('flex-row');
 
   const histTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const commitHistory = useCallback(() => {
@@ -780,15 +783,33 @@ function DesignTab({ node }: { node: SDUINode }) {
 
   // Remove height-mode tokens (h-fit, h-screen, any h-* class) AND flex-1 from a className.
   // Used when switching between H modes so old mode tokens don't linger.
-  const clearHMode = (c: string) => removeTwToken(removeTwToken(c, 'h-'), 'flex-1');
+  // H clear: only strip flex-1 when parent is flex-col (flex-1 = height fill there).
+  // In a flex-row parent flex-1 means WIDTH fill — never strip it from H clear.
+  const clearHMode = (c: string) => {
+    let r = removeTwToken(removeTwToken(c, 'h-'), 'self-stretch');
+    if (!parentIsRow) r = removeTwToken(r, 'flex-1');
+    return r;
+  };
   // Remove only the discrete H-mode tokens (not arbitrary h-[N] classes) — used when
   // setting a fixed pixel/vh/vw size via the number input so h-16 etc. are preserved.
-  const clearHModeTokens = (c: string) =>
-    removeTwToken(removeTwToken(removeTwToken(c, 'h-fit'), 'h-screen'), 'flex-1');
-  // Same helpers for W axis.
-  const clearWMode = (c: string) => removeTwToken(c, 'w-');
-  const clearWModeTokens = (c: string) =>
-    removeTwToken(removeTwToken(removeTwToken(c, 'w-fit'), 'w-full'), 'w-screen');
+  const clearHModeTokens = (c: string) => {
+    let r = removeTwToken(removeTwToken(c, 'h-fit'), 'h-screen');
+    r = removeTwToken(r, 'self-stretch');
+    if (!parentIsRow) r = removeTwToken(r, 'flex-1');
+    return r;
+  };
+  // W clear: only strip flex-1 when parent is flex-row (flex-1 = width fill there).
+  // In a flex-col parent flex-1 means HEIGHT fill — never strip it from W clear.
+  const clearWMode = (c: string) => {
+    let r = removeTwToken(c, 'w-');
+    if (parentIsRow) r = removeTwToken(r, 'flex-1');
+    return r;
+  };
+  const clearWModeTokens = (c: string) => {
+    let r = removeTwToken(removeTwToken(removeTwToken(c, 'w-fit'), 'w-full'), 'w-screen');
+    if (parentIsRow) r = removeTwToken(r, 'flex-1');
+    return r;
+  };
   const pendingStyleRef   = useRef<Record<string, string>>({});
   const pendingNodeIdRef  = useRef<string>(nodeId);
   const rafSyncRef        = useRef<number | null>(null);
@@ -1546,18 +1567,26 @@ function DesignTab({ node }: { node: SDUINode }) {
         <SectionHeader title="Dimensions" />
         <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
           {/* W mode — headerTitle puts bind icon beside "W" label */}
-          <FieldWithBinding label="wMode" hint="hug=w-fit, fill=w-full, screen=w-screen, fixed=''" headerTitle="W" value={(classFormulas?.['wMode'] as FormulaValue) ?? (cls.includes('w-fit') ? 'w-fit' : cls.includes('w-screen') ? 'w-screen' : cls.includes('w-full') ? 'w-full' : '')} onChange={v => bindOrPatchCls('wMode', evaluated => {
+          <FieldWithBinding label="wMode" hint="hug=w-fit, fill=w-full/flex-1, screen=w-screen, fixed=''" headerTitle="W" value={(classFormulas?.['wMode'] as FormulaValue) ?? (cls.includes('w-fit') ? 'w-fit' : cls.includes('w-screen') ? 'w-screen' : (cls.includes('w-full') || (parentIsRow && cls.includes('flex-1'))) ? 'w-full' : '')} onChange={v => bindOrPatchCls('wMode', evaluated => {
             if (evaluated === 'w-fit')    { patchCls(replaceTwToken(clearWMode(cls), 'w-', 'w-fit'));    patchStyle({ width: '', minWidth: '' }); }
-            else if (evaluated === 'w-full')   { patchCls(replaceTwToken(clearWMode(cls), 'w-', 'w-full'));   patchStyle({ width: '', minWidth: '' }); }
+            else if (evaluated === 'w-full') {
+              patchCls(parentIsRow ? `${clearWMode(cls)} flex-1`.trim() : replaceTwToken(clearWMode(cls), 'w-', 'w-full'));
+              patchStyle({ width: '', minWidth: '' });
+            }
             else if (evaluated === 'w-screen') { patchCls(replaceTwToken(clearWMode(cls), 'w-', 'w-screen')); patchStyle({ width: '', minWidth: '' }); }
             else { patchCls(clearWModeTokens(cls)); }
           }, v)} expectedType="string">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-              {([['Hug', 'w-fit', 'Shrink to content (w-fit)'], ['Fill', 'w-full', 'Fill parent width (w-full)'], ['Screen', 'w-screen', 'Full viewport width (w-screen / 100vw)'], ['Fixed', '', 'Exact pixel / vh / vw size']] as const).map(([label, token, tooltip]) => {
-                const active = token ? cls.includes(token) : (!cls.includes('w-fit') && !cls.includes('w-full') && !cls.includes('w-screen'));
+              {([['Hug', 'w-fit', 'Shrink to content (w-fit)'], ['Fill', 'w-full', 'Fill parent flex space (flex-1 in flex-row parent, w-full in flex-col parent)'], ['Screen', 'w-screen', 'Full viewport width (w-screen / 100vw)'], ['Fixed', '', 'Exact pixel / vh / vw size']] as const).map(([label, token, tooltip]) => {
+                const active = token
+                  ? (token === 'w-full' ? (cls.includes('w-full') || (parentIsRow && cls.includes('flex-1'))) : cls.includes(token))
+                  : (!cls.includes('w-fit') && !cls.includes('w-full') && !cls.includes('w-screen') && !(parentIsRow && cls.includes('flex-1')));
                 return (
                   <ToggleBtn key={label} data-testid={`dim-w-${label.toLowerCase()}`} active={active} title={tooltip} style={{ textAlign: 'center' }} onClick={() => {
-                    if (token) {
+                    if (token === 'w-full') {
+                      patchCls(parentIsRow ? `${clearWMode(cls)} flex-1`.trim() : replaceTwToken(clearWMode(cls), 'w-', 'w-full'));
+                      patchStyle({ width: '', minWidth: '' });
+                    } else if (token) {
                       patchCls(replaceTwToken(clearWMode(cls), 'w-', token));
                       patchStyle({ width: '', minWidth: '' });
                     } else {
@@ -1573,21 +1602,26 @@ function DesignTab({ node }: { node: SDUINode }) {
           {/* H mode — headerTitle puts bind icon beside "H" label */}
           {/* Fill = flex-1 (grow in flex parent, matches Figma behaviour)       */}
           {/* Screen = h-screen (100vh, always resolves regardless of parent)    */}
-          <FieldWithBinding label="hMode" hint="hug=h-fit, fill=flex-1, screen=h-screen, fixed=''" headerTitle="H" value={(classFormulas?.['hMode'] as FormulaValue) ?? (cls.includes('h-fit') ? 'h-fit' : cls.includes('h-screen') ? 'h-screen' : cls.includes('flex-1') ? 'flex-1' : '')} onChange={v => bindOrPatchCls('hMode', evaluated => {
+          <FieldWithBinding label="hMode" hint="hug=h-fit, fill=flex-1/self-stretch, screen=h-screen, fixed=''" headerTitle="H" value={(classFormulas?.['hMode'] as FormulaValue) ?? (cls.includes('h-fit') ? 'h-fit' : cls.includes('h-screen') ? 'h-screen' : (parentIsRow ? cls.includes('self-stretch') : (cls.includes('flex-1') || cls.includes('self-stretch'))) ? 'flex-1' : '')} onChange={v => bindOrPatchCls('hMode', evaluated => {
             if (evaluated === 'h-fit')    { patchCls(replaceTwToken(clearHMode(cls), 'h-', 'h-fit'));    patchStyle({ height: '', minHeight: '' }); }
-            else if (evaluated === 'flex-1')   { patchCls(`${clearHMode(cls)} flex-1`.trim());                patchStyle({ height: '', minHeight: '' }); }
+            else if (evaluated === 'flex-1') {
+              const fillToken = parentIsRow ? 'self-stretch' : 'flex-1';
+              patchCls(`${clearHMode(cls)} ${fillToken}`.trim());
+              patchStyle({ height: '', minHeight: '' });
+            }
             else if (evaluated === 'h-screen') { patchCls(replaceTwToken(clearHMode(cls), 'h-', 'h-screen')); patchStyle({ height: '', minHeight: '' }); }
             else { patchCls(clearHModeTokens(cls)); }
           }, v)} expectedType="string">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-              {([['Hug', 'h-fit', 'Shrink to content (h-fit)'], ['Fill', 'flex-1', 'Fill parent flex space (flex-1) — like Figma Fill'], ['Screen', 'h-screen', 'Full viewport height (h-screen / 100vh)'], ['Fixed', '', 'Exact pixel / vh / vw size']] as const).map(([label, token, tooltip]) => {
+              {([['Hug', 'h-fit', 'Shrink to content (h-fit)'], ['Fill', 'flex-1', 'Fill parent flex space (flex-1 in flex-col parent, self-stretch in flex-row parent)'], ['Screen', 'h-screen', 'Full viewport height (h-screen / 100vh)'], ['Fixed', '', 'Exact pixel / vh / vw size']] as const).map(([label, token, tooltip]) => {
                 const active = token
-                  ? (token === 'flex-1' ? cls.includes('flex-1') : cls.includes(token))
-                  : (!cls.includes('h-fit') && !cls.includes('h-screen') && !cls.includes('flex-1'));
+                  ? (token === 'flex-1' ? (parentIsRow ? cls.includes('self-stretch') : (cls.includes('flex-1') || cls.includes('self-stretch'))) : cls.includes(token))
+                  : (!cls.includes('h-fit') && !cls.includes('h-screen') && !cls.includes('self-stretch') && (parentIsRow || !cls.includes('flex-1')));
                 return (
                   <ToggleBtn key={label} data-testid={`dim-h-${label.toLowerCase()}`} active={active} title={tooltip} style={{ textAlign: 'center' }} onClick={() => {
                     if (token === 'flex-1') {
-                      patchCls(`${clearHMode(cls)} flex-1`.trim());
+                      const fillToken = parentIsRow ? 'self-stretch' : 'flex-1';
+                      patchCls(`${clearHMode(cls)} ${fillToken}`.trim());
                       patchStyle({ height: '', minHeight: '' });
                     } else if (token) {
                       patchCls(replaceTwToken(clearHMode(cls), 'h-', token));

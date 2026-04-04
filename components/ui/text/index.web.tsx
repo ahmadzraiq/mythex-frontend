@@ -1,6 +1,7 @@
 import React from 'react';
 import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
 import { textStyle } from './styles';
+import { flattenStyle } from '../flatten-style';
 
 type ITextProps = React.ComponentProps<'span'> & VariantProps<typeof textStyle>;
 
@@ -16,6 +17,7 @@ const Text = React.forwardRef<React.ComponentRef<'span'>, ITextProps>(
       sub,
       italic,
       highlight,
+      style,
       ...props
     }: { className?: string } & ITextProps,
     ref
@@ -33,6 +35,7 @@ const Text = React.forwardRef<React.ComponentRef<'span'>, ITextProps>(
           highlight: highlight as boolean,
           class: className,
         })}
+        style={flattenStyle(style)}
         {...props}
         ref={ref}
       />

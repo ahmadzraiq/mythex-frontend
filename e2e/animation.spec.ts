@@ -129,7 +129,7 @@ test('AN-06: loop pulse — transform changes between two measurements', async (
   await expect(pulseBox).toBeVisible();
 
   const getTransform = () =>
-    pulseBox.evaluate(el => window.getComputedStyle(el.parentElement ?? el).transform);
+    pulseBox.evaluate(el => window.getComputedStyle((el.closest('[data-anim-node]') as HTMLElement | null) ?? el.parentElement ?? el).transform);
 
   const t1 = await getTransform();
   await page.waitForTimeout(600);
@@ -538,7 +538,7 @@ test('AN-P1-02: phase 1 enter — skewIn and blurIn boxes are fully opaque after
   for (const id of ['p1-skewIn', 'p1-blurIn']) {
     const el = page.locator(`[data-testid="${id}"]`).first();
     await expect(el).toBeVisible();
-    const opacity = await el.evaluate(e => parseFloat(window.getComputedStyle(e.parentElement ?? e).opacity));
+    const opacity = await el.evaluate(e => parseFloat(window.getComputedStyle((e.closest('[data-anim-node]') as HTMLElement | null) ?? e.parentElement ?? e).opacity));
     expect(opacity).toBeGreaterThan(0.8);
   }
 });
@@ -551,7 +551,7 @@ test('AN-P1-03: phase 1 spring enter — expandIn box is visible and opaque', as
   await el.scrollIntoViewIfNeeded();
   await page.waitForTimeout(1000);
   await expect(el).toBeVisible({ timeout: 3_000 });
-  const opacity = await el.evaluate(e => parseFloat(window.getComputedStyle(e.parentElement ?? e).opacity));
+  const opacity = await el.evaluate(e => parseFloat(window.getComputedStyle((e.closest('[data-anim-node]') as HTMLElement | null) ?? e.parentElement ?? e).opacity));
   expect(opacity).toBeGreaterThan(0.8);
 });
 
@@ -734,7 +734,7 @@ test('AN-P2-02: phase 2 filter — drop-shadow CSS filter is applied to the wrap
   await el.scrollIntoViewIfNeeded();
   await page.waitForTimeout(300);
   const filterVal = await el.evaluate(e => {
-    const wrapper = e.parentElement as HTMLElement;
+    const wrapper = ((e.closest('[data-anim-node]') as HTMLElement | null) ?? e.parentElement ?? e) as HTMLElement;
     return window.getComputedStyle(wrapper).filter;
   });
   // drop-shadow() filter should be present (not 'none')
@@ -758,7 +758,7 @@ test('AN-P2-03: phase 2 tilt — mouse hover over element applies 3D transform',
   await page.waitForTimeout(250);
 
   const transform = await el.evaluate(e => {
-    const wrapper = e.parentElement as HTMLElement;
+    const wrapper = ((e.closest('[data-anim-node]') as HTMLElement | null) ?? e.parentElement ?? e) as HTMLElement;
     return window.getComputedStyle(wrapper).transform;
   });
   // Should have a non-identity transform from tilt
@@ -775,7 +775,7 @@ test('AN-P2-04: phase 2 morphShape — blob animation applies border-radius to w
   await page.waitForTimeout(500);
 
   const br = await el.evaluate(e => {
-    const wrapper = e.parentElement as HTMLElement;
+    const wrapper = ((e.closest('[data-anim-node]') as HTMLElement | null) ?? e.parentElement ?? e) as HTMLElement;
     const s = window.getComputedStyle(wrapper);
     // Animation or border-radius should be non-default
     return { anim: wrapper.style.animation, borderRadius: s.borderRadius };
@@ -828,12 +828,12 @@ test('AN-P3-02: phase 3 scrollProgress — opacity increases when element scroll
   // Scroll to top — element is below, should have low opacity
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   await page.waitForTimeout(200);
-  const opacityBefore = await el.evaluate(e => parseFloat(window.getComputedStyle(e.parentElement ?? e).opacity));
+  const opacityBefore = await el.evaluate(e => parseFloat(window.getComputedStyle((e.closest('[data-anim-node]') as HTMLElement | null) ?? e.parentElement ?? e).opacity));
 
   // Scroll element into view — opacity should increase toward 1
   await el.scrollIntoViewIfNeeded();
   await page.waitForTimeout(300);
-  const opacityAfter = await el.evaluate(e => parseFloat(window.getComputedStyle(e.parentElement ?? e).opacity));
+  const opacityAfter = await el.evaluate(e => parseFloat(window.getComputedStyle((e.closest('[data-anim-node]') as HTMLElement | null) ?? e.parentElement ?? e).opacity));
 
   expect(opacityAfter).toBeGreaterThanOrEqual(opacityBefore);
 });
@@ -847,7 +847,7 @@ test('AN-P3-03: phase 3 scrollProgress translateY — transform changes as eleme
   await page.waitForTimeout(300);
 
   const transform = await el.evaluate(e => {
-    const wrapper = e.parentElement as HTMLElement;
+    const wrapper = ((e.closest('[data-anim-node]') as HTMLElement | null) ?? e.parentElement ?? e) as HTMLElement;
     return wrapper.style.transform ?? window.getComputedStyle(wrapper).transform;
   });
   // Should have a translateY transform set by scrollProgress
@@ -1518,7 +1518,7 @@ test('AN-P15-04: Overlay element AnimatedNode wrapper has data-anim-id set', asy
 // correct slide is active.
 const getTrackTransform = (page: import('@playwright/test').Page) =>
   page.locator('[data-testid="p17-gesture"]').evaluate(
-    el => (el.parentElement as HTMLElement | null)?.style?.transform ?? ''
+    el => (((el.closest('[data-anim-node]') as HTMLElement | null) ?? el.parentElement ?? el) as HTMLElement)?.style?.transform ?? ''
   );
 
 test('AN-P17-01: Phase 17 carousel card is visible with track at slide 0', async () => {
