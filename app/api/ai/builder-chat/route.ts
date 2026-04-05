@@ -25,11 +25,15 @@
 
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { ALL_BUILDER_TOOLS, PHASE3_BUILDER_TOOLS, PHASE_W_TOOLS, STRUCTURE_AGENT_TOOLS, BINDING_AGENT_TOOLS, LAYOUT_AGENT_TOOLS, COLORS_AGENT_TOOLS } from '@/lib/ai/builder-tools';
+import { ALL_BUILDER_TOOLS, PHASE3_BUILDER_TOOLS, PHASE_W_TOOLS, STRUCTURE_AGENT_TOOLS, BINDING_AGENT_TOOLS, STYLING_AGENT_TOOLS, ANIMATION_AGENT_TOOLS, MEDIA_AGENT_TOOLS } from '@/lib/ai/builder-tools';
 import { buildChatSystemPrompt, buildPhase3SystemPrompt, PLAN_SYSTEM } from '@/lib/ai/builder-knowledge-v2';
-import { buildStructureAgentPrompt, buildBindingAgentPrompt, buildWorkflowsAgentPrompt, buildLayoutAgentPrompt, buildColorsAgentPrompt } from '@/lib/ai/agents';
+import { buildStructureAgentPrompt, buildBindingAgentPrompt, buildWorkflowsAgentPrompt, buildStylingAgentPrompt, buildAnimationAgentPrompt, buildMediaAgentPrompt } from '@/lib/ai/agents';
 import { TOOL_CAPABILITY_GROUP, getCapabilities, buildBlockedGroupSuggestion, buildCapabilityNote } from '@/lib/ai/component-capabilities';
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+// ── Feature flags ─────────────────────────────────────────────────────────────
+// Set to false to skip that agent entirely during parallel build.
+const ANIMATION_AGENT_ENABLED = true;
 
 const MODEL_TIMEOUT_MS = 120_000;
 const EXTERNAL_FETCH_TIMEOUT_MS = 15_000;
@@ -93,12 +97,13 @@ interface CollectedTree {
   tree: Record<string, unknown>;
   pageId: string | null;
   atIndex?: number;
+  structureHint?: string;
   // Populated by onStructureReady via extractMediaFromTree — no post-hoc scanning
   mediaManifest?: {
-    icons: Array<{ id: string; icon: string }>;
-    images: Array<{ id: string; searchQuery: string }>;
-    videos: Array<{ id: string; searchQuery: string }>;
-    bgImages: Array<{ id: string; searchQuery: string }>;
+    icons: Array<{ id: string; icon: string; name?: string }>;
+    images: Array<{ id: string; searchQuery: string; name?: string }>;
+    videos: Array<{ id: string; searchQuery: string; name?: string }>;
+    bgImages: Array<{ id: string; searchQuery: string; name?: string }>;
   };
 }
 
@@ -376,11 +381,15 @@ async function classifyRequest(
 
 // ── Server-side media search helpers (Tier 0 pre-fetch) ──────────────────────
 
+// Random page offset (1–4) so repeated runs with identical queries get different photos/videos.
+function randPage(max = 4): number { return Math.ceil(Math.random() * max); }
+
 async function searchUnsplashServer(query: string, count = 5, signal?: AbortSignal): Promise<Array<{ url: string; alt: string }>> {
   try {
     const apiKey = process.env.UNSPLASH_ACCESS_KEY;
     if (!apiKey || !query) return [];
-    const r = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=${count}&client_id=${apiKey}`, { signal });
+    const page = randPage(4);
+    const r = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=${count}&page=${page}&client_id=${apiKey}`, { signal });
     if (!r.ok) return [];
     const d = await r.json() as { results?: Array<{ urls: { regular: string }; alt_description: string }> };
     return (d.results ?? []).map(p => ({ url: p.urls.regular, alt: p.alt_description ?? '' }));
@@ -392,13 +401,28 @@ async function searchPexelsServer(query: string, count = 4, signal?: AbortSignal
     const apiKey = process.env.PEXELS_API_KEY;
     if (!apiKey) return [];
     const q = encodeURIComponent(query || 'nature');
-    const r = await fetch(`https://api.pexels.com/videos/search?query=${q}&page=1&per_page=${count}`, { headers: { Authorization: apiKey }, next: { revalidate: 300 }, signal });
+    const page = randPage(3);
+    const r = await fetch(`https://api.pexels.com/videos/search?query=${q}&page=${page}&per_page=${count}`, { headers: { Authorization: apiKey }, signal });
     if (!r.ok) return [];
     const d = await r.json() as { videos?: Array<{ image: string; video_files: Array<{ quality: string; link: string }> }> };
     return (d.videos ?? []).map(v => {
-      const sd = v.video_files.find(f => f.quality === 'sd') ?? v.video_files[0];
-      return { src: sd?.link ?? '', poster: v.image };
+      // Prefer hd (1280x720) over sd (640x360) so background videos aren't tiny/blurry.
+      const file = v.video_files.find(f => f.quality === 'hd') ?? v.video_files.find(f => f.quality === 'sd') ?? v.video_files[0];
+      return { src: file?.link ?? '', poster: v.image };
     }).filter(v => v.src);
+  } catch { return []; }
+}
+
+async function searchPexelsPhotosServer(query: string, count = 5, signal?: AbortSignal): Promise<Array<{ url: string; alt: string }>> {
+  try {
+    const apiKey = process.env.PEXELS_API_KEY;
+    if (!apiKey || !query) return [];
+    const q = encodeURIComponent(query);
+    const page = randPage(4);
+    const r = await fetch(`https://api.pexels.com/v1/search?query=${q}&page=${page}&per_page=${count}`, { headers: { Authorization: apiKey }, signal });
+    if (!r.ok) return [];
+    const d = await r.json() as { photos?: Array<{ src: { large: string }; alt: string }> };
+    return (d.photos ?? []).map(p => ({ url: p.src.large, alt: p.alt ?? '' }));
   } catch { return []; }
 }
 
@@ -407,43 +431,54 @@ async function searchPexelsServer(query: string, count = 4, signal?: AbortSignal
  *  Tree is modified in place — icon/searchQuery/bgImage fields are removed so they don't reach the client.
  */
 function extractMediaFromTree(tree: Record<string, unknown>): {
-  icons: Array<{ id: string; icon: string }>;
-  images: Array<{ id: string; searchQuery: string }>;
-  videos: Array<{ id: string; searchQuery: string }>;
-  bgImages: Array<{ id: string; searchQuery: string }>;
+  icons: Array<{ id: string; icon: string; name?: string }>;
+  images: Array<{ id: string; searchQuery: string; name?: string }>;
+  videos: Array<{ id: string; searchQuery: string; name?: string }>;
+  bgImages: Array<{ id: string; searchQuery: string; name?: string }>;
 } {
   const manifest = {
-    icons: [] as Array<{ id: string; icon: string }>,
-    images: [] as Array<{ id: string; searchQuery: string }>,
-    videos: [] as Array<{ id: string; searchQuery: string }>,
-    bgImages: [] as Array<{ id: string; searchQuery: string }>,
+    icons: [] as Array<{ id: string; icon: string; name?: string }>,
+    images: [] as Array<{ id: string; searchQuery: string; name?: string }>,
+    videos: [] as Array<{ id: string; searchQuery: string; name?: string }>,
+    bgImages: [] as Array<{ id: string; searchQuery: string; name?: string }>,
   };
 
-  const walk = (node: Record<string, unknown>) => {
+  const walk = (node: Record<string, unknown>, insideRepeat = false) => {
     const label = String(node.label ?? '').toLowerCase();
     const id = node.id as string | undefined;
+    const nodeName = node.name as string | undefined;
+    // Track repeat context — Images/Videos inside a repeat subtree get their src
+    // from binding agent formula expressions, not from the media agent.
+    const nowInsideRepeat = insideRepeat || !!node.repeat || !!node._needsRepeat;
 
     if (id) {
       if (label === 'icon') {
         const icon = node.icon as string | undefined;
         if (icon) {
-          manifest.icons.push({ id, icon });
+          // Icons are always processed regardless of repeat context — same icon per item is correct.
+          manifest.icons.push({ id, icon, name: nodeName });
           delete node.icon; // strip — not an SDUI prop
         }
       } else if (label === 'image') {
         const searchQuery = node.searchQuery as string | undefined;
         delete node.searchQuery; // strip
-        manifest.images.push({ id, searchQuery: searchQuery ?? '' });
+        if (!insideRepeat) {
+          // Only add to manifest when NOT inside a repeat — binding agent handles formula src for repeat images.
+          manifest.images.push({ id, searchQuery: searchQuery ?? '', name: nodeName });
+        }
       } else if (label === 'video') {
         const searchQuery = node.searchQuery as string | undefined;
         delete node.searchQuery; // strip
-        manifest.videos.push({ id, searchQuery: searchQuery ?? '' });
+        if (!insideRepeat) {
+          // Only add to manifest when NOT inside a repeat — binding agent handles formula src for repeat videos.
+          manifest.videos.push({ id, searchQuery: searchQuery ?? '', name: nodeName });
+        }
       }
       // Box with bgImage — CSS background-image set via set_background by media agent
       if (node.bgImage) {
         const bgImageQuery = node.bgImage as string;
         delete node.bgImage; // strip — media agent handles the URL lookup
-        if (id) manifest.bgImages.push({ id, searchQuery: bgImageQuery });
+        if (id) manifest.bgImages.push({ id, searchQuery: bgImageQuery, name: nodeName });
       }
     }
 
@@ -453,7 +488,7 @@ function extractMediaFromTree(tree: Record<string, unknown>): {
     if ('bgImage' in node) delete node.bgImage;
 
     for (const child of (Array.isArray(node.children) ? node.children as Record<string, unknown>[] : [])) {
-      walk(child);
+      walk(child, nowInsideRepeat);
     }
   };
 
@@ -475,6 +510,8 @@ async function runHaikuAgentLoop(
   signal?: AbortSignal,
   capabilityValidator?: (toolName: string, args: Record<string, unknown>) => string | null,
 ): Promise<void> {
+  const startedAt = Date.now();
+  let localToolCount = 0;
   let currentMessages = [...messages];
   let rounds = 0;
   // Maps tool call ID → error string for client-side tools blocked by capability check.
@@ -486,8 +523,11 @@ async function runHaikuAgentLoop(
     ...tools.map(t => t.name),
     ...Object.keys(readToolHandlers),
     'search_icons',
+    'search_images',
+    'search_videos',
   ]);
 
+  try {
   while (rounds < maxRounds) {
     rounds++;
 
@@ -528,6 +568,7 @@ async function runHaikuAgentLoop(
             streamEmittedIds.add(toolBlock.id);
             send({ type: 'tool_executed', id: toolBlock.id, name: toolBlock.name, input: toolBlock.input, phase });
             allExecutedTools.push({ name: toolBlock.name, input: toolBlock.input });
+            localToolCount++;
           }
         }
         currentToolBlock = null;
@@ -608,17 +649,44 @@ async function runHaikuAgentLoop(
           const prefix = tool.input.prefix ? `&prefix=${tool.input.prefix}` : '';
           const r = await fetch(`https://api.iconify.design/search?query=${q}&limit=${count}${prefix}`, { signal });
           const d = r.ok ? await r.json() as { icons?: string[] } : { icons: [] as string[] };
-          // Emit as 'media' phase so icon searches group with image/video searches in the chat log
-          send({ type: 'tool_executed', id: tool.id, name: tool.name, input: tool.input, phase: 'media' });
-          allExecutedTools.push({ name: tool.name, input: tool.input });
+          // search_icons is a read tool — return data to AI without emitting tool_executed
           toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify(d.icons ?? []) });
         } catch {
-          send({ type: 'tool_executed', id: tool.id, name: tool.name, input: tool.input, phase: 'media' });
-          allExecutedTools.push({ name: tool.name, input: tool.input });
           toolResults.push({
             type: 'tool_result',
             tool_use_id: tool.id,
             content: JSON.stringify({ success: false, error: 'search_icons failed (network/timeout).' }),
+            is_error: true,
+          });
+        }
+      } else if (tool.name === 'search_images') {
+        try {
+          const q = String(tool.input.query ?? '');
+          const count = Math.min(5, Number(tool.input.count ?? 3));
+          let results = await searchUnsplashServer(q, count, signal);
+          if (!results.length) results = await searchPexelsPhotosServer(q, count, signal);
+          // search_images is a read tool — return data to AI without emitting tool_executed
+          toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify(results) });
+        } catch {
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: tool.id,
+            content: JSON.stringify({ success: false, error: 'search_images failed (network/timeout).' }),
+            is_error: true,
+          });
+        }
+      } else if (tool.name === 'search_videos') {
+        try {
+          const q = String(tool.input.query ?? '');
+          const count = Math.min(4, Number(tool.input.count ?? 2));
+          const results = await searchPexelsServer(q, count, signal);
+          // search_videos is a read tool — return data to AI without emitting tool_executed
+          toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify(results) });
+        } catch {
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: tool.id,
+            content: JSON.stringify({ success: false, error: 'search_videos failed (network/timeout).' }),
             is_error: true,
           });
         }
@@ -651,6 +719,7 @@ async function runHaikuAgentLoop(
         } else {
           send({ type: 'tool_executed', id: tool.id, name: tool.name, input: tool.input, phase });
           allExecutedTools.push({ name: tool.name, input: tool.input });
+          localToolCount++;
           toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify({ ok: true, pending: 'client_execution' }) });
         }
       }
@@ -661,6 +730,11 @@ async function runHaikuAgentLoop(
     // Continue if the model wants more tool calls or was truncated (max_tokens).
     // Only stop when the model explicitly ends the turn (end_turn).
     if (stopReason !== 'tool_use' && stopReason !== 'max_tokens') break;
+  }
+  } finally {
+    if (phase) {
+      send({ type: 'agent_complete', agent: phase, rounds, toolCallCount: localToolCount, duration: Date.now() - startedAt, endedAt: Date.now() });
+    }
   }
 }
 
@@ -696,38 +770,75 @@ async function runStructureAgent(
   const structureHintLine = unit.structureHint ? `\nStructurePattern: ${unit.structureHint}` : '';
   const prompt = `Build: ${unit.name}\nDescription: ${unit.description}${sectionLimit}\n${unit.layout ? `Layout: ${unit.layout}` : ''}${structureHintLine}${noVarsNote}\n\nDeclare all needed variables in the \`variables\` array and build the tree in one generate_structure call.`;
 
+  // Retry loop: if the LLM omits searchQuery on Image/Video nodes, feed the error back and retry.
+  const structureMessages: Anthropic.Messages.MessageParam[] = [{ role: 'user', content: prompt }];
+  const MAX_STRUCTURE_ATTEMPTS = 3;
+
+  for (let attempt = 0; attempt < MAX_STRUCTURE_ATTEMPTS; attempt++) {
     const response = await client.messages.create({
       model: 'claude-haiku-4-5',
-    max_tokens: 16384,
-    system: systemBlocks,
-    tools: STRUCTURE_AGENT_TOOLS.map(t => ({ name: t.name, description: t.description, input_schema: t.input_schema })),
-    tool_choice: { type: 'tool' as const, name: 'generate_structure' },
-    messages: [{ role: 'user', content: prompt }],
-  }, signal ? { signal } : undefined);
+      max_tokens: 16384,
+      system: systemBlocks,
+      tools: STRUCTURE_AGENT_TOOLS.map(t => ({ name: t.name, description: t.description, input_schema: t.input_schema })),
+      tool_choice: { type: 'tool' as const, name: 'generate_structure' },
+      messages: structureMessages,
+    }, signal ? { signal } : undefined);
 
     for (const block of response.content) {
-    if (block.type !== 'tool_use' || block.name !== 'generate_structure') continue;
+      if (block.type !== 'tool_use' || block.name !== 'generate_structure') continue;
       const rawInput = block.input as Record<string, unknown>;
-        const treeInput = rawInput.tree as Record<string, unknown> | undefined | null;
-    if (!treeInput || typeof treeInput !== 'object') continue;
+      const treeInput = rawInput.tree as Record<string, unknown> | undefined | null;
+      if (!treeInput || typeof treeInput !== 'object') continue;
 
-        const atIndex = rawInput.atIndex as number | undefined;
-        const resolvedTree = assignTreeIds(treeInput);
-    const markers = extractAndStripMarkers(resolvedTree);
-        const collectedTree: CollectedTree = { unitName: unit.name, tree: resolvedTree, pageId: assignedPageId, atIndex };
+      // Server-side validation: every Image/Video node must have searchQuery so the media
+      // agent can fetch photos. If missing, return the error to the LLM and retry.
+      const missingSearchQuery: string[] = [];
+      const walkForMedia = (node: Record<string, unknown>) => {
+        const label = node.label as string | undefined;
+        if ((label === 'Image' || label === 'Video') && !String(node.searchQuery ?? '').trim()) {
+          missingSearchQuery.push((node.name as string | undefined) ?? label ?? 'unknown');
+        }
+        if (Array.isArray(node.children)) {
+          for (const child of node.children as Record<string, unknown>[]) walkForMedia(child);
+        }
+      };
+      walkForMedia(treeInput);
 
-    const declaredVars = (Array.isArray(rawInput.variables) ? rawInput.variables : []) as Array<{ name: string; type: string; initialValue?: unknown; uuid: string }>;
-    const varEvents: ToolEvent[] = [];
-    for (const v of declaredVars) {
-      const assignedId = (v.uuid && isUUIDFormat(v.uuid)) ? v.uuid : crypto.randomUUID();
-      const varName = String(v.name ?? 'variable');
-      const clientInput: Record<string, unknown> = { name: varName, type: v.type, initialValue: v.initialValue, variableId: assignedId, _assignedVarId: assignedId };
-      varEvents.push({ name: 'add_variable', input: clientInput, result: { success: true } });
-      send({ type: 'tool_executed', id: `var-${varName.replace(/[^a-zA-Z0-9_-]/g, '-')}-${assignedId.slice(0, 8)}`, name: 'add_variable', input: clientInput, phase: 'structure' });
-      allExecutedTools.push({ name: 'add_variable', input: clientInput });
+      if (missingSearchQuery.length > 0) {
+        // Feed the error back so the LLM can self-correct on the next attempt.
+        structureMessages.push({ role: 'assistant', content: response.content });
+        structureMessages.push({
+          role: 'user',
+          content: [{
+            type: 'tool_result',
+            tool_use_id: block.id,
+            content: JSON.stringify({
+              success: false,
+              error: `Missing searchQuery on Image/Video node(s): ${missingSearchQuery.join(', ')}. Every Image and Video node MUST have searchQuery set to a descriptive photo search term (e.g. "modern SaaS dashboard screenshot"). Re-emit generate_structure with searchQuery added to each Image and Video node.`,
+            }),
+          }],
+        });
+        break; // retry with updated messages
+      }
+
+      const atIndex = rawInput.atIndex as number | undefined;
+      const resolvedTree = assignTreeIds(treeInput);
+      const markers = extractAndStripMarkers(resolvedTree);
+      const collectedTree: CollectedTree = { unitName: unit.name, tree: resolvedTree, pageId: assignedPageId, atIndex, structureHint: unit.structureHint };
+
+      const declaredVars = (Array.isArray(rawInput.variables) ? rawInput.variables : []) as Array<{ name: string; type: string; initialValue?: unknown; uuid: string }>;
+      const varEvents: ToolEvent[] = [];
+      for (const v of declaredVars) {
+        const assignedId = (v.uuid && isUUIDFormat(v.uuid)) ? v.uuid : crypto.randomUUID();
+        const varName = String(v.name ?? 'variable');
+        const clientInput: Record<string, unknown> = { name: varName, type: v.type, initialValue: v.initialValue, variableId: assignedId, _assignedVarId: assignedId };
+        varEvents.push({ name: 'add_variable', input: clientInput, result: { success: true } });
+        send({ type: 'tool_executed', id: `var-${varName.replace(/[^a-zA-Z0-9_-]/g, '-')}-${assignedId.slice(0, 8)}`, name: 'add_variable', input: clientInput, phase: 'structure' });
+        allExecutedTools.push({ name: 'add_variable', input: clientInput });
+      }
+
+      return { tree: collectedTree, markers, varEvents };
     }
-
-    return { tree: collectedTree, markers, varEvents };
   }
 
   return { tree: null, markers: [], varEvents: [] };
@@ -1002,8 +1113,10 @@ export async function POST(req: NextRequest) {
       // ── Page creation (sequential) ──────────────────────────────────────────
       const pageIdMap: Record<string, string> = {};
       for (const unit of units) {
+        const routeKey = unit.pageRoute ?? '/';
+        if (pageIdMap[routeKey]) continue; // already assigned for this route — skip to avoid duplicate add_page events
         const isCurrent = !unit.pageRoute || unit.pageRoute === '/' || unit.pageRoute === currentPage.route;
-        if (isCurrent) { pageIdMap[unit.pageRoute ?? '/'] = pageId ?? currentPage.id; continue; }
+        if (isCurrent) { pageIdMap[routeKey] = pageId ?? currentPage.id; continue; }
         const existing = pages.find(p => p.route === unit.pageRoute);
         if (existing) { pageIdMap[unit.pageRoute] = existing.id; continue; }
         const newPageId = `page-${crypto.randomUUID().slice(0, 8)}`;
@@ -1015,9 +1128,6 @@ export async function POST(req: NextRequest) {
       send({ type: 'build_phase', phase: 'structure', message: 'Building structure & variables...' });
       const structureStartedAt = Date.now();
       send({ type: 'agent_context', agent: 'structure', systemPrompt: buildStructureAgentPrompt().static, tools: STRUCTURE_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: structureStartedAt });
-
-      const imagePreFetches = new Map<string, Promise<Array<{ url: string; alt: string }>>>();
-      const videoPreFetches = new Map<string, Promise<Array<{ src: string; poster: string }>>>();
 
       type StructureSubResult = {
         result: Awaited<ReturnType<typeof runStructureAgent>>;
@@ -1035,15 +1145,6 @@ export async function POST(req: NextRequest) {
           const ct = result.tree;
           const mediaManifest = extractMediaFromTree(ct.tree);
           ctWithMedia = { ...ct, mediaManifest };
-
-            if (mediaManifest.images.length > 0) {
-              const query = mediaManifest.images[0]?.searchQuery || unit.description;
-            imagePreFetches.set(ct.unitName, searchUnsplashServer(query, mediaManifest.images.length + 1, externalSignalCtl.signal));
-            }
-            if (mediaManifest.videos.length > 0) {
-              const query = mediaManifest.videos[0]?.searchQuery || unit.description;
-            videoPreFetches.set(ct.unitName, searchPexelsServer(query, mediaManifest.videos.length + 1, externalSignalCtl.signal));
-          }
         }
 
         send({ type: 'section_progress', done: i + 1, total: units.length, name: unit.name });
@@ -1212,7 +1313,8 @@ export async function POST(req: NextRequest) {
         }
         return trees.map(t => {
           const root = t.tree as Record<string, unknown>;
-          return `=== ${t.unitName} ===\n${walkNode(root, '')}`;
+          const layoutHint = t.structureHint ? ` [layout:${t.structureHint}]` : '';
+          return `=== ${t.unitName}${layoutHint} ===\n${walkNode(root, '')}`;
         }).join('\n\n');
       }
 
@@ -1239,7 +1341,7 @@ export async function POST(req: NextRequest) {
       // Emit switch_page for created pages (still needed for client-side execution)
       if (createdPageIds.length > 0) {
         const switchId = `auto-switch-${createdPageIds[0]}`;
-        send({ type: 'tool_executed', id: switchId, name: 'switch_page', input: { pageId: createdPageIds[0] }, phase: 'styling:layout' });
+        send({ type: 'tool_executed', id: switchId, name: 'switch_page', input: { pageId: createdPageIds[0] }, phase: 'structure' });
         allExecutedTools.push({ name: 'switch_page', input: { pageId: createdPageIds[0] } });
       }
 
@@ -1330,40 +1432,19 @@ ${message}`,
         },
       ];
 
-      // ── Styling Sub-Agents (3 parallel) ────────────────────────────────────
+      // ── Styling + Animation Sub-Agents (2 parallel) ────────────────────────
       const stylingCtx = { pages, currentPageName: currentPage.name, currentPageRoute: currentPage.route, paletteSnapshot, mood, animationLevel, appName, description, category };
 
-      const layoutPromptParts = buildLayoutAgentPrompt(stylingCtx);
-      const layoutSystemBlocks: Anthropic.Messages.TextBlockParam[] = [
-        { type: 'text', text: layoutPromptParts.static, cache_control: { type: 'ephemeral' } },
-        { type: 'text', text: layoutPromptParts.dynamic },
+      const stylingPromptParts = buildStylingAgentPrompt(stylingCtx);
+      const stylingSystemBlocks: Anthropic.Messages.TextBlockParam[] = [
+        { type: 'text', text: stylingPromptParts.static, cache_control: { type: 'ephemeral' } },
+        { type: 'text', text: stylingPromptParts.dynamic },
       ];
-      const layoutMessages: Anthropic.Messages.MessageParam[] = [
+      const stylingMessages: Anthropic.Messages.MessageParam[] = [
         {
           role: 'user',
-          content: `${contextNote ? `[Context]\n${contextNote}\n\n` : ''}[Layout Agent]
-The structure ALREADY EXISTS — do NOT create or modify structure. Apply layout, spacing, sizing, typography (fontSize, weight, textAlign, etc.), position offsets, and overflow. Do NOT set colors or animations — the colors agent handles those.
-Use SAFE-FIRST composition by default: prioritize clean flow layout, avoid heavy absolute layering unless explicitly requested, and avoid defaulting root to viewport-forced geometry.
-
-[Page Tree — use exact node UUIDs]
-${compactTree}
-${repeatContainerHint}
-
-Original request:
-${message}${relationsNote}${pageContextNote}`,
-        },
-      ];
-
-      const colorsPromptParts = buildColorsAgentPrompt(stylingCtx);
-      const colorsSystemBlocks: Anthropic.Messages.TextBlockParam[] = [
-        { type: 'text', text: colorsPromptParts.static, cache_control: { type: 'ephemeral' } },
-        { type: 'text', text: colorsPromptParts.dynamic },
-      ];
-      const colorsMessages: Anthropic.Messages.MessageParam[] = [
-        {
-          role: 'user',
-          content: `${contextNote ? `[Context]\n${contextNote}\n\n` : ''}[Colors Agent]
-Apply all colors, backgrounds, text colors, borders, shadows, opacity, icon color/size, and animations (enter, scroll, hover, press, loop). Apply TERNARY CONTRAST on all repeated template descendants. Do NOT set spacing, layout, or typography — the layout agent handles those.
+          content: `${contextNote ? `[Context]\n${contextNote}\n\n` : ''}[Styling Agent]
+The structure ALREADY EXISTS — do NOT create or modify structure. Apply ALL visual styles using set_style: layout, spacing, size, typography, position, overflow, background, text color, border, shadow, and opacity. Apply TERNARY CONTRAST on all repeated template descendants.
 
 [Page Tree — use exact node UUIDs]
 ${compactTree}
@@ -1371,6 +1452,25 @@ ${compactTree}
 ${varRoster}
 ${repeatContainerHint}${nestedRepeatHint}${ternaryContrastHint}
 Repeat template reminder: style ALL children (buttons, icons, text/headings). When boolean fields exist in repeat data, apply ternary expressions for background, text color, border, shadow.
+
+Original request:
+${message}${relationsNote}${pageContextNote}`,
+        },
+      ];
+
+      const animationPromptParts = buildAnimationAgentPrompt(stylingCtx);
+      const animationSystemBlocks: Anthropic.Messages.TextBlockParam[] = [
+        { type: 'text', text: animationPromptParts.static, cache_control: { type: 'ephemeral' } },
+        { type: 'text', text: animationPromptParts.dynamic },
+      ];
+      const animationMessages: Anthropic.Messages.MessageParam[] = [
+        {
+          role: 'user',
+          content: `[Animation Agent]
+Apply enter/exit/scroll/hover/press/loop animations. Do NOT set any layout, color, or other styles — the styling agent handles those.
+
+[Page Tree — use exact node UUIDs]
+${compactTree}
 
 Original request:
 ${message}${relationsNote}${pageContextNote}`,
@@ -1406,73 +1506,66 @@ ${message}${relationsNote}${phaseWPageNote}`,
         get_workflows: () => workflows,
       };
 
-      // ── Media Agent (deterministic — no LLM) ───────────────────────────────
-      const mediaStartedAt = Date.now();
-      send({ type: 'agent_context', agent: 'media', systemPrompt: '(deterministic — icons from tree manifest, images/videos from search)', tools: ['set_icon', 'set_src'], syntheticMessageCount: 0, startedAt: mediaStartedAt });
+      // ── Media Agent (real AI — searches and applies images/videos/icons) ─────
+      // Build a compact media manifest showing only media nodes so the AI knows exactly
+      // what to process. Sibling nodes in the same section are listed together so the
+      // AI can reason about diversifying queries for siblings.
+      const mediaManifestLines: string[] = [];
+      for (const ct of collectedTrees) {
+        const manifest = ct.mediaManifest;
+        if (!manifest) continue;
+        const hasMedia = manifest.icons.length + manifest.images.length + manifest.videos.length + (manifest.bgImages?.length ?? 0) > 0;
+        if (!hasMedia) continue;
 
-      const mediaInjectionPromise = (async () => {
-        for (const ct of collectedTrees) {
-          const manifest = ct.mediaManifest;
-          if (!manifest) continue;
-
-          for (const { id: iconId, icon: iconValue } of manifest.icons) {
-            const setInput = { nodeId: iconId, icon: iconValue };
-            send({ type: 'tool_executed', id: `icon-${iconId}`, name: 'set_icon', input: setInput, phase: 'media' });
-            allExecutedTools.push({ name: 'set_icon', input: setInput });
-          }
-
-          if (manifest.images.length > 0) {
-            const images = await (imagePreFetches.get(ct.unitName) ?? Promise.resolve([]));
-            if (images.length > 0) {
-              manifest.images.forEach((imageNode, idx) => {
-                const img = images[idx] ?? images[0];
-                if (!img) return;
-                const input = { nodeId: imageNode.id, src: img.url, alt: img.alt, objectFit: 'cover' };
-                send({ type: 'tool_executed', id: `src-img-${imageNode.id}`, name: 'set_src', input, phase: 'media' });
-                allExecutedTools.push({ name: 'set_src', input });
-              });
-            }
-          }
-
-          if (manifest.videos.length > 0) {
-            const videos = await (videoPreFetches.get(ct.unitName) ?? Promise.resolve([]));
-            if (videos.length > 0) {
-              manifest.videos.forEach((videoNode, idx) => {
-                const vid = videos[idx] ?? videos[0];
-                if (!vid) return;
-                const input = { nodeId: videoNode.id, src: vid.src, poster: vid.poster };
-                send({ type: 'tool_executed', id: `src-vid-${videoNode.id}`, name: 'set_src', input, phase: 'media' });
-                allExecutedTools.push({ name: 'set_src', input });
-              });
-            }
-          }
-
-          // CSS background-image on Box nodes (declared via bgImage in generate_structure tree)
-          if (manifest.bgImages && manifest.bgImages.length > 0) {
-            const firstQuery = manifest.bgImages[0].searchQuery;
-            const bgImageUrls = firstQuery
-              ? await searchUnsplashServer(firstQuery, manifest.bgImages.length, externalSignalCtl.signal)
-              : [];
-            manifest.bgImages.forEach((bgNode, idx) => {
-              const img = bgImageUrls[idx] ?? bgImageUrls[0];
-              if (!img) return;
-              const input = { nodeId: bgNode.id, bgImage: img.url, bgSize: 'cover', bgPosition: 'center' };
-              send({ type: 'tool_executed', id: `bg-img-${bgNode.id}`, name: 'set_background', input, phase: 'media' });
-              allExecutedTools.push({ name: 'set_background', input });
-            });
-          }
+        mediaManifestLines.push(`=== ${ct.unitName} ===`);
+        for (const n of manifest.images) {
+          const nameTag = n.name ? ` "${n.name}"` : '';
+          mediaManifestLines.push(`[${n.id}] Image${nameTag} | hint: searchQuery="${n.searchQuery}"`);
         }
-        send({ type: 'agent_complete', agent: 'media', rounds: 0, toolCallCount: collectedTrees.reduce((sum, ct) => sum + (ct.mediaManifest?.icons.length ?? 0) + (ct.mediaManifest?.images.length ?? 0) + (ct.mediaManifest?.videos.length ?? 0) + (ct.mediaManifest?.bgImages?.length ?? 0), 0), duration: Date.now() - mediaStartedAt, endedAt: Date.now() });
-      })();
+        for (const n of manifest.videos) {
+          const nameTag = n.name ? ` "${n.name}"` : '';
+          mediaManifestLines.push(`[${n.id}] Video${nameTag} | hint: searchQuery="${n.searchQuery}"`);
+        }
+        for (const n of manifest.bgImages ?? []) {
+          const nameTag = n.name ? ` "${n.name}"` : '';
+          mediaManifestLines.push(`[${n.id}] Box(bgImage)${nameTag} | hint: searchQuery="${n.searchQuery}"`);
+        }
+        for (const n of manifest.icons) {
+          const nameTag = n.name ? ` "${n.name}"` : '';
+          mediaManifestLines.push(`[${n.id}] Icon${nameTag} | hint: icon="${n.icon}"`);
+        }
+      }
+      const mediaManifestText = mediaManifestLines.length > 0
+        ? mediaManifestLines.join('\n')
+        : '(no media nodes in this build)';
 
-      // ── Emit agent_context for LLM agents ───────────────────────────────────
-      send({ type: 'agent_context', agent: 'binding', systemPrompt: bindingPromptParts.static, tools: BINDING_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
-      send({ type: 'agent_context', agent: 'styling:layout', systemPrompt: layoutPromptParts.static + '\n\n' + layoutPromptParts.dynamic, tools: LAYOUT_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
-      send({ type: 'agent_context', agent: 'styling:colors', systemPrompt: colorsPromptParts.static + '\n\n' + colorsPromptParts.dynamic, tools: COLORS_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
-      send({ type: 'agent_context', agent: 'workflows', systemPrompt: phaseWPromptParts.static + '\n\n' + phaseWPromptParts.dynamic, tools: PHASE_W_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
+      const mediaPromptParts = buildMediaAgentPrompt();
+      const mediaSystemBlocks: Anthropic.Messages.TextBlockParam[] = [
+        { type: 'text', text: mediaPromptParts.static, cache_control: { type: 'ephemeral' } },
+      ];
+      const mediaMessages: Anthropic.Messages.MessageParam[] = [
+        {
+          role: 'user',
+          content: `[Media Agent] Find and apply media for every node listed below.
+
+${mediaManifestText}
+
+Original request:
+${message}`,
+        },
+      ];
 
       const toToolParam = (t: { name: string; description: string; input_schema: unknown }) =>
         ({ name: t.name, description: t.description, input_schema: t.input_schema as Record<string, unknown> });
+
+      send({ type: 'agent_context', agent: 'media', systemPrompt: mediaPromptParts.static, tools: MEDIA_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
+      const mediaInjectionPromise = runHaikuAgentLoop(mediaMessages, mediaSystemBlocks, MEDIA_AGENT_TOOLS.map(toToolParam), {}, send, allExecutedTools, 15, 'media', modelSignalCtl.signal);
+
+      // ── Emit agent_context for LLM agents ───────────────────────────────────
+      send({ type: 'agent_context', agent: 'binding', systemPrompt: bindingPromptParts.static, tools: BINDING_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
+      send({ type: 'agent_context', agent: 'styling', systemPrompt: stylingPromptParts.static + '\n\n' + stylingPromptParts.dynamic, tools: STYLING_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
+      send({ type: 'agent_context', agent: 'animation', systemPrompt: animationPromptParts.static + '\n\n' + animationPromptParts.dynamic, tools: ANIMATION_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
+      send({ type: 'agent_context', agent: 'workflows', systemPrompt: phaseWPromptParts.static + '\n\n' + phaseWPromptParts.dynamic, tools: PHASE_W_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
 
       // ── Capability validator for styling/binding sub-agents ─────────────────
       // Resolves component type from the nodeTypeMap built above and checks against
@@ -1499,11 +1592,19 @@ ${message}${relationsNote}${phaseWPageNote}`,
 
       const agentRuns: Array<{ agent: string; promise: Promise<void> }> = [
         ...(shouldBind ? [{ agent: 'binding', promise: runHaikuAgentLoop(bindingMessages, bindingSystemBlocks, BINDING_AGENT_TOOLS.map(toToolParam), {}, send, allExecutedTools, 10, 'binding', modelSignalCtl.signal, capabilityValidator) }] : []),
-        ...(shouldStyle ? [{ agent: 'styling:layout', promise: runHaikuAgentLoop(layoutMessages, layoutSystemBlocks, LAYOUT_AGENT_TOOLS.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, 'styling:layout', modelSignalCtl.signal, capabilityValidator) }] : []),
-        ...(shouldStyle ? [{ agent: 'styling:colors', promise: runHaikuAgentLoop(colorsMessages, colorsSystemBlocks, COLORS_AGENT_TOOLS.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, 'styling:colors', modelSignalCtl.signal, capabilityValidator) }] : []),
+        ...(shouldStyle ? [{ agent: 'styling', promise: runHaikuAgentLoop(stylingMessages, stylingSystemBlocks, STYLING_AGENT_TOOLS.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, 'styling', modelSignalCtl.signal, capabilityValidator) }] : []),
+        ...(shouldStyle && ANIMATION_AGENT_ENABLED ? [{ agent: 'animation', promise: runHaikuAgentLoop(animationMessages, animationSystemBlocks, ANIMATION_AGENT_TOOLS.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, 'animation', modelSignalCtl.signal) }] : []),
         ...(shouldWorkflow ? [{ agent: 'workflows', promise: runHaikuAgentLoop(phaseWMessages, phaseWSystemBlocks, PHASE_W_TOOLS.map(toToolParam), phaseWReadHandlers, send, allExecutedTools, 15, 'workflows', modelSignalCtl.signal) }] : []),
         { agent: 'media', promise: mediaInjectionPromise },
       ];
+
+      // Agents whose agent_context was sent unconditionally but won't run — emit a zero-duration
+      // agent_complete so the frontend doesn't show them as perpetually active.
+      const skippedLlmAgents = (['binding', 'styling', 'animation', 'workflows'] as const)
+        .filter(name => !agentRuns.some(r => r.agent === name));
+      for (const agent of skippedLlmAgents) {
+        send({ type: 'agent_complete', agent, rounds: 0, toolCallCount: 0, duration: 0, endedAt: Date.now() });
+      }
       const settledAgents = await Promise.allSettled(agentRuns.map(a => a.promise));
       settledAgents.forEach((res, idx) => {
         if (res.status === 'fulfilled') return;

@@ -1,66 +1,77 @@
 /**
- * Layout styling sub-agent — layout, spacing, sizing, typography, position, overflow, transform.
+ * Merged Styling sub-agent — ALL visual properties in one agent.
+ *
+ * Replaces the old split layout+colors two-agent system. This agent uses
+ * `set_style` (the unified tool) to apply layout, spacing, size, typography,
+ * position, overflow, background, text color, border, shadow, opacity, and
+ * transform in a single pass per node. Eliminates the coupling bug where
+ * `border-radius` was on the colors agent and `overflow:hidden` was on the
+ * layout agent — now one agent applies both together.
  *
  * ─── Tools ───────────────────────────────────────────────────────────────────
- * Export: LAYOUT_AGENT_TOOLS (lib/ai/builder-tools.ts)
- * Tool names: set_layout (layout + spacing + sizing + typography + position + insets), set_overflow, set_transform
- * Note: set_layout direction param is available — use it to switch a node to row when
- *       needed. Box defaults to flex-col; never override column to row speculatively.
- * Read tools available via buildReadHandlers: get_page_tree, get_variables,
- *       get_pages, get_workflows, get_formula_context, search_nodes.
+ * Export: STYLING_AGENT_TOOLS (lib/ai/builder-tools.ts)
+ * Tool names: set_style (all visual properties), set_icon (color/size)
  *
  * ─── System prompt ───────────────────────────────────────────────────────────
- * Static:  buildLayoutAgentPrompt(context).static (this file)
- * Dynamic: buildLayoutAgentPrompt(context).dynamic via buildStylingDynamicPart(stylingCtx)
- *   stylingCtx fields: pages, currentPageName, currentPageRoute, paletteSnapshot,
- *                      mood, animationLevel, appName, description, category
- *   Injects: ## Project (category, animation level), ## Builder (page info),
- *            ## Theme (live palette snapshot with hex values)
+ * Static:  buildStylingAgentPrompt(context).static (this file)
+ * Dynamic: buildStylingAgentPrompt(context).dynamic via buildStylingDynamicPart(stylingCtx)
  *
  * ─── User message (injected by route) ────────────────────────────────────────
- * route.ts parallel block (~line 1127):
- *   "[Context]\n{contextNote}\n\n"  (optional — selected-node info)
- *   "[Layout Agent]\nThe structure ALREADY EXISTS — do NOT create or modify structure. …"
- *   [Page Tree — use exact node UUIDs]
- *   {compactTree}           ← text representation of node tree from structure pass
- *   {repeatContainerHint}   ← REPEAT LAYOUT RULE lines from detectRepeatContainerPairs()
- *   "Original request: {message}{relationsNote}{pageContextNote}"
- *
- * ─── Read handlers ────────────────────────────────────────────────────────────
- * buildReadHandlers: get_page_tree, get_variables, get_pages, get_workflows,
- *                    get_formula_context, search_nodes
- *
- * ─── Upstream ────────────────────────────────────────────────────────────────
- * Receives from structure agent: compactTree, repeatContainerHint
- * Shares stylingCtx with colors (same StylingSubAgentContext).
- *
- * ─── Downstream ──────────────────────────────────────────────────────────────
- * No output consumed by other agents — runs in parallel with binding/colors/workflows.
- * Emits tool_executed SSE events executed client-side by tool-executor.ts.
+ * route.ts: "[Styling Agent] Apply all visual styles…"
+ *   [Page Tree], {varRoster}, {repeatContainerHint}, {nestedRepeatHint},
+ *   {ternaryContrastHint}, "Original request: {message}"
  */
 
 import {
   buildStylingDynamicPart,
+  buildAnimLevelBlock,
   BATCH_RETRY_RULE,
   type StylingSubAgentContext,
 } from '../shared/styling-subagent';
+import { SHARED_FORMULA_SYNTAX } from '../shared/formula-scope';
 import { buildAgentCapabilityTable } from '../../component-capabilities';
 
-export function buildLayoutAgentPrompt(context: StylingSubAgentContext): { static: string; dynamic: string } {
-  const staticPart = `You are a layout and typography designer. Use set_layout for ALL non-color styles: flex/grid layout, spacing (gap, padding, margin), sizing (width, height, min/max), typography (fontSize, weight, textAlign, leading, tracking, decoration, etc.), and position/insets (position, zIndex, top, right, bottom, left). Also use set_overflow and set_transform. No colors or animations — parallel agents handle those.
+// Keep old export name as an alias so existing callers in route.ts keep working
+// until the route is updated to call buildStylingAgentPrompt directly.
+export { buildStylingAgentPrompt as buildLayoutAgentPrompt };
 
-CRITICAL: Every node starts with ZERO styling — no padding, no margin, no gap, no width, no height, no flex alignment (align, justify), no typography. The ONE exception: Box nodes default to \`flex flex-col\` — you do NOT need to call set_layout to set direction:column. Only call set_layout(direction:"row") when you explicitly want a row. Never override a column container to row just because it has multiple children.
+export function buildStylingAgentPrompt(context: StylingSubAgentContext): { static: string; dynamic: string } {
+  // Replace the auto-generated "Icon → icon only (skip: ...)" line with an explicit
+  // instruction that tells the agent WHICH tool to call (set_icon) and with what params.
+  const capabilityTable = buildAgentCapabilityTable(['layout', 'size', 'spacing', 'typography', 'overflow', 'background', 'border', 'shadow', 'icon'])
+    .replace(
+      /- Icon → icon only.*$/m,
+      `- Icon → call set_icon(nodeId, size: N, color: "hex") — NOT set_style. set_style has zero effect on Icon nodes. Always call set_icon with explicit size (16–24px) and color.`
+    );
 
-Fill-axis rule: flex:1 fills the parent's MAIN AXIS — width in flex-row parents, height in flex-col parents (the default). Use it for equal-share columns: set parent direction:"row", set flex:1 on each child. For fill-width in a flex-col parent use width:"100%" instead. For fill-height in a flex-row parent use self:"stretch" instead.
+  const staticPart = `You are the visual designer. Use set_style for ALL styling — layout, spacing, size, typography, position, overflow, background, text color, border, shadow, opacity, and transform in one call per node.
 
-Root node context: the outermost node in the tree is a direct child of the page's flex-col column.
+CRITICAL — defaults (don't repeat what's already there):
+- Box nodes already have \`flex flex-col\` — call set_style(direction:"row") ONLY when you want a row. NEVER pass direction:"column" — it is the default.
+- Every other property starts at ZERO — no padding, no margin, no gap, no width, no height, no color.
+- Multi-column equal splits: use flex:1 on children, NOT width:%. Asymmetric: use gridCols fr-template (e.g. "3fr 2fr").
+- Root node context: page root uses items-start — ALWAYS set width:"100%" on every root section node.
 
-Read the tree and the original request to understand each element's role — node names, structure, and children tell you everything. Think in layout systems first — choose a flex or grid distribution strategy per container, then apply spacing, sizing, and typography to each node.
+${SHARED_FORMULA_SYNTAX}
 
+## System-Specific Rules
 
-${buildAgentCapabilityTable(['layout', 'size', 'spacing', 'typography', 'overflow'])}
+- **Ternary contrast:** When a repeated template gets a ternary background, ALL text/icon descendants MUST use matching ternaries with the same condition. For Text nodes: \`set_style(color: "COND ? 'theme:A' : 'theme:B'")\`. For Icon nodes: \`set_icon(nodeId, { color: "COND ? 'theme:primary-foreground' : 'theme:primary'" })\` — NEVER set_style on an Icon (no effect).
+- In nested repeats, use \`context?.item?.parent?.data\` for the outer item's fields.
+- Static token: \`set_style(id, {bg:"primary"})\`. Formula ternary: \`"COND ? 'theme:primary' : 'theme:card'"\`.
+- **bg = solid colors ONLY.** Never pass a gradient string to \`bg\` — it produces an invalid CSS class. For gradients use the structured \`gradient\` param OR \`bgImage: "linear-gradient(...)"\` (raw CSS string). Example: \`set_style(id, { bgImage: "linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)" })\`.
+- glowPulse and ripple loops ALWAYS require loopColor. gradientDrift requires gradientColors set first.
+- **DarkOverlay** (hint \`"role:dark overlay"\`): \`bg: "rgba(0,0,0,0.55)"\`, \`zIndex: 10\`. Text/content containers above it MUST receive \`zIndex: 20\` — never \`pointer-events-none\`. Only the overlay node itself has \`pointer-events-none\` (applied automatically by the system).
+- **Card row** (hint \`"role:card row"\`): always set \`direction: "row"\`. Box defaults to \`flex-col\` — without this the cards stack vertically.
+
+${capabilityTable}
 
 ${BATCH_RETRY_RULE}`.trim();
 
-  return { static: staticPart, dynamic: buildStylingDynamicPart(context) };
+  const dynamicPart = [buildStylingDynamicPart(context), buildAnimLevelBlock(context.animationLevel)].filter(Boolean).join('\n\n');
+
+  return { static: staticPart, dynamic: dynamicPart };
 }
+
+// Keep old export for backward compat (used by single-agent edit mode route)
+export { buildStylingAgentPrompt as buildColorsAgentPrompt };

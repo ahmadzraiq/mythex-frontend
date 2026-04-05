@@ -30,7 +30,7 @@ export interface AiToolCall {
   result?: unknown;
   status?: 'pending' | 'success' | 'error' | 'generating';
   /** Which pipeline phase emitted this tool call — used for grouped display in the chat panel */
-  phase?: 'planning' | 'structure' | 'media' | 'styling' | 'styling:layout' | 'styling:colors' | 'styling:typo' | 'workflows' | 'binding';
+  phase?: 'planning' | 'structure' | 'media' | 'styling' | 'animation' | 'styling:layout' | 'styling:colors' | 'styling:typo' | 'workflows' | 'binding';
   /** client Date.now() when the event was received — used for per-phase duration display */
   timestamp?: number;
   /** Which Anthropic API round produced this tool (1-based) */

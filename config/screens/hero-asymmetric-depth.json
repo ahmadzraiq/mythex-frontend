@@ -1,0 +1,175 @@
+{
+  "meta": {
+    "title": "Hero Asymmetric Depth"
+  },
+  "ui": {
+    "type": "Box",
+    "props": {
+      "style": {},
+      "className": "items-center justify-center w-full min-h-[100vh] relative overflow-hidden !bg-[var(--theme-background)]"
+    },
+    "id": "494bc0d3-8401-4b8c-8769-85e5f75de133",
+    "name": "Hero Layered Depth Section",
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "style": {},
+          "className": "gap-[24px] w-[55%] absolute z-[30] top-[20%] left-[5%]"
+        },
+        "id": "08fb814c-f5eb-4fb1-a2f1-268c08eff58b",
+        "name": "Text Container",
+        "children": [
+          {
+            "type": "Text",
+            "text": "Layered Depth",
+            "props": {
+              "className": "text-[56px] font-bold leading-tight !text-[var(--theme-foreground)]",
+              "text": "Layered Depth",
+              "style": {}
+            },
+            "id": "7acd4761-5865-47f8-979d-dc08050b4e7f",
+            "children": []
+          },
+          {
+            "type": "Text",
+            "text": "Discover modern visual hierarchy with asymmetric image layering and depth shadows",
+            "props": {
+              "className": "max-w-[500px] text-[18px] leading-relaxed !text-[var(--theme-muted-foreground)]",
+              "text": "Discover modern visual hierarchy with asymmetric image layering and depth shadows",
+              "style": {}
+            },
+            "id": "246a7778-5c34-4774-8b58-3f05d9d858de",
+            "children": []
+          }
+        ],
+        "animation": {
+          "enter": {
+            "type": "slideInDown",
+            "duration": 600,
+            "delay": 0,
+            "easing": "easeOut"
+          }
+        }
+      },
+      {
+        "type": "Box",
+        "props": {
+          "style": {
+            "boxShadow": "0px 20px 40px -8px rgba(123, 57, 237, 0.25)",
+            "shadowColor": "rgb(123,57,237)",
+            "shadowOffset": {
+              "width": 0,
+              "height": 20
+            },
+            "shadowRadius": 40,
+            "shadowOpacity": 0.25,
+            "elevation": 20
+          },
+          "className": "w-[520px] h-[520px] absolute z-[20] top-[15%] right-[8%] overflow-hidden rounded-[16px]"
+        },
+        "id": "d863b779-14d9-49cd-96e6-9ed792989c63",
+        "name": "Primary Image Clip",
+        "children": [
+          {
+            "type": "Image",
+            "props": {
+              "className": "w-full h-full",
+              "style": {},
+              "alt": "Computer screen displaying editing software interface with histogram",
+              "objectFit": "cover"
+            },
+            "src": "https://images.unsplash.com/photo-1764557222299-5cce88abe80c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw4fHxtb2Rlcm4lMjBTYWFTJTIwZGFzaGJvYXJkJTIwaW50ZXJmYWNlJTIwd2l0aCUyMGdyYWRpZW50JTIwb3ZlcmxheSUyMHByb2Zlc3Npb25hbCUyMGFuYWx5dGljc3xlbnwwfHx8fDE3NzUzOTM1ODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+            "id": "7bf90a6b-34a7-4c67-980a-e1f53f88c729",
+            "children": []
+          }
+        ],
+        "animation": {
+          "enter": {
+            "type": "slideInLeft",
+            "duration": 700,
+            "delay": 150,
+            "easing": "easeOut"
+          }
+        }
+      },
+      {
+        "type": "Box",
+        "props": {
+          "style": {
+            "boxShadow": "0px 12px 28px -4px rgba(123, 57, 237, 0.15)",
+            "shadowColor": "rgb(123,57,237)",
+            "shadowOffset": {
+              "width": 0,
+              "height": 12
+            },
+            "shadowRadius": 28,
+            "shadowOpacity": 0.15,
+            "elevation": 14
+          },
+          "className": "w-[360px] h-[360px] absolute z-[10] right-[2%] bottom-[12%] overflow-hidden rounded-[12px]"
+        },
+        "id": "a29804d4-3c1b-49cd-8e7b-9e393d64ddc3",
+        "name": "Secondary Accent Image Clip",
+        "children": [
+          {
+            "type": "Image",
+            "props": {
+              "className": "w-full h-full",
+              "style": {},
+              "alt": "Group of red geometric objects on white floor with 3D depth and shadows",
+              "objectFit": "cover"
+            },
+            "src": "https://images.unsplash.com/photo-1640168725978-374ba7f233d8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwxMXx8YWJzdHJhY3QlMjBnZW9tZXRyaWMlMjBzaGFwZXMlMjBmbG9hdGluZyUyMDNEJTIwZGVwdGglMjBzaGFkb3clMjBwZXJzcGVjdGl2ZSUyMGRpZ2l0YWwlMjBhcnR8ZW58MHx8fHwxNzc1MzkzNTg4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+            "id": "8c0bd685-7add-474b-a259-3637aea9e0f0",
+            "children": []
+          }
+        ],
+        "animation": {
+          "enter": {
+            "type": "slideInRight",
+            "duration": 700,
+            "delay": 300,
+            "easing": "easeOut"
+          },
+          "loop": {
+            "type": "float",
+            "duration": 4000,
+            "repeatCount": -1,
+            "direction": "alternate",
+            "delay": 800
+          }
+        }
+      },
+      {
+        "type": "Box",
+        "props": {
+          "style": {
+            "backgroundColor": "rgba(123, 57, 237, 0.1)",
+            "boxShadow": "0px 8px 24px 0px rgba(123, 57, 237, 0.2)",
+            "shadowColor": "rgb(123,57,237)",
+            "shadowOffset": {
+              "width": 0,
+              "height": 8
+            },
+            "shadowRadius": 24,
+            "shadowOpacity": 0.2,
+            "elevation": 12
+          },
+          "className": "w-[380px] h-[4px] absolute z-[15] right-[5%] bottom-[8%] rounded-[2px]"
+        },
+        "id": "4e87c6e5-ba75-46ff-a38f-449166054a21",
+        "name": "Depth Shadow Layer",
+        "children": [],
+        "animation": {
+          "enter": {
+            "type": "fadeIn",
+            "duration": 800,
+            "delay": 400,
+            "easing": "easeOut"
+          }
+        }
+      }
+    ]
+  }
+}

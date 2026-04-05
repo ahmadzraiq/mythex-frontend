@@ -40,6 +40,11 @@ import heightFillTest from './screens/height-fill-test.json';
 import layeredDepthHero from './screens/layered-depth-hero.json';
 import ctaButtonWfit from './screens/cta-button-wfit.json';
 import heroLayeredCollage from './screens/hero-layered-collage.json';
+import heroLayeredDepth from './screens/hero-layered-depth.json';
+import heroOverlayDepth from './screens/hero-overlay-depth.json';
+import heroImageFill from './screens/hero-image-fill.json';
+import heroAsymmetricDepth from './screens/hero-asymmetric-depth.json';
+import landingShowcase from './screens/landing-showcase.json';
 
 // Layouts
 import storeLayout from './layouts/store.json';
@@ -112,6 +117,11 @@ const screens = {
   layeredDepthHero,
   ctaButtonWfit,
   heroLayeredCollage,
+  heroLayeredDepth,
+  heroOverlayDepth,
+  heroImageFill,
+  heroAsymmetricDepth,
+  landingShowcase,
 };
 
 const layouts = {

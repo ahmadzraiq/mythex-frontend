@@ -1,0 +1,159 @@
+{
+  "meta": {
+    "title": "Hero Image Fill Test"
+  },
+  "ui": {
+    "type": "Box",
+    "props": {
+      "className": "flex flex-row items-center pl-[80px] pr-[80px] gap-[60px] w-full h-screen relative overflow-hidden !bg-[var(--theme-background)]",
+      "style": {}
+    },
+    "id": "f1a2b3c4-d5e6-7890-abcd-ef1234567890",
+    "name": "HeroImageFillRoot",
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "flex-col justify-center gap-[24px] flex-1 z-[10]",
+          "style": {}
+        },
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567891",
+        "name": "LeftTextColumn",
+        "children": [
+          {
+            "type": "Text",
+            "text": "Image Fill Diagnosis",
+            "props": {
+              "className": "text-[56px] font-bold leading-tight tracking-tight !text-[var(--theme-foreground)]",
+              "style": {}
+            },
+            "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+            "name": "HeroHeading",
+            "children": [],
+            "animation": {
+              "enter": {
+                "type": "slideInLeft",
+                "duration": 600,
+                "easing": "easeOut"
+              }
+            }
+          },
+          {
+            "type": "Text",
+            "text": "The image container uses w-[45%] with a hover animation. The image inside should fill 100% of the container — this page tests whether it does.",
+            "props": {
+              "className": "mt-[8px] max-w-[480px] text-[18px] font-normal leading-relaxed !text-[var(--theme-foreground)] opacity-60",
+              "style": {}
+            },
+            "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+            "name": "HeroSubtitle",
+            "children": [],
+            "animation": {
+              "enter": {
+                "type": "slideInLeft",
+                "duration": 600,
+                "delay": 100,
+                "easing": "easeOut"
+              }
+            }
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row items-center mt-[32px] gap-[16px]",
+              "style": {}
+            },
+            "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
+            "name": "CTAGroup",
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "boxShadow": "0px 4px 12px 0px rgba(124, 58, 237, 0.25)",
+                    "shadowColor": "rgb(124,58,237)",
+                    "shadowOffset": { "width": 0, "height": 4 },
+                    "shadowRadius": 12,
+                    "shadowOpacity": 0.25,
+                    "elevation": 6
+                  },
+                  "className": "pl-[32px] pr-[32px] pt-[14px] pb-[14px] cursor-pointer overflow-hidden !bg-[var(--theme-primary)] rounded-[8px]"
+                },
+                "id": "e5f6a7b8-c9d0-1234-efab-345678901234",
+                "name": "PrimaryButton",
+                "children": [
+                  {
+                    "type": "Text",
+                    "text": "Explore",
+                    "props": {
+                      "className": "text-[16px] font-semibold !text-[var(--theme-primary-foreground)]",
+                      "style": {}
+                    },
+                    "id": "f6a7b8c9-d0e1-2345-fabc-456789012345",
+                    "children": []
+                  }
+                ],
+                "animation": {
+                  "hover": { "scale": 1.05, "duration": 200 },
+                  "press": { "scale": 0.95, "duration": 100 }
+                }
+              }
+            ],
+            "animation": {
+              "enter": {
+                "type": "fadeIn",
+                "duration": 500,
+                "delay": 200,
+                "easing": "easeOut"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "style": {
+            "boxShadow": "0px 4px 16px 0px rgba(0, 0, 0, 0.1)",
+            "shadowColor": "rgb(0,0,0)",
+            "shadowOffset": {
+              "width": 0,
+              "height": 4
+            },
+            "shadowRadius": 16,
+            "shadowOpacity": 0.1,
+            "elevation": 8
+          },
+          "className": "w-[45%] h-[600px] overflow-hidden rounded-[12px]"
+        },
+        "id": "6079ee26-d06e-42af-9d9e-5a659c9e9185",
+        "name": "Image Container 1",
+        "children": [
+          {
+            "type": "Image",
+            "props": {
+              "style": {},
+              "className": "w-full h-full",
+              "alt": "silhouette of mountain during sunset",
+              "objectFit": "cover"
+            },
+            "src": "https://images.unsplash.com/flagged/photo-1571082313327-fc477ed00ded?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwxMXx8bW9kZXJuJTIwbWluaW1hbGlzdCUyMGxhbmRzY2FwZSUyMG1vdW50YWluJTIwdmlzdGElMjBzdW5zZXR8ZW58MHx8fHwxNzc1Mzg0NDE2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+            "id": "2dd9fd2c-a86e-483c-a2e2-3cfae02d96ee",
+            "children": []
+          }
+        ],
+        "animation": {
+          "enter": {
+            "type": "slideInLeft",
+            "duration": 500,
+            "easing": "easeOut"
+          },
+          "hover": {
+            "y": -4,
+            "duration": 300
+          }
+        }
+      }
+    ]
+  }
+}

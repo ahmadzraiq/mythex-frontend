@@ -335,6 +335,10 @@ export interface AnimationConfig {
   noise?: NoiseConfig;
   outerClassName?: string;
   outerStyle?: Record<string, unknown>;
+  /** Static CSS transform from node.props.style (e.g. "rotate(3deg)").
+   *  Kept separate from outerStyle so it can be composed inside the Reanimated
+   *  worklet alongside animated transforms instead of competing with them. */
+  staticTransform?: string;
   shimmer?: {
     baseColor?: string;
     highlightColor?: string;
@@ -429,6 +433,31 @@ interface AnimatedNodeProps {
   componentProps?: Record<string, unknown>;
   componentChildren?: React.ReactNode;
   children?: React.ReactNode;
+}
+
+// ─── DOM element extraction ───────────────────────────────────────────────────
+// In preview mode (useSingleElementPath=true), animatedRef is attached to a
+// Reanimated createAnimatedComponent wrapper (a plain function component).
+// Reanimated passes the ref as `forwardedRef` prop instead of a real React ref,
+// so animatedRef.current is NEVER set (stays null). In builder mode (Animated.View
+// path), .current IS the DOM element directly.
+// Fallback: elements in the singleEl path get a unique `data-sdui-id` attribute so
+// we can reliably find them via document.querySelector when animatedRef.current is null.
+function getDOMEl(
+  animRef: ReturnType<typeof useAnimatedRef>,
+  nodeId?: string,
+): HTMLElement | null {
+  const node = animRef.current as unknown as Record<string, unknown> | null;
+  // Builder mode path: animatedRef.current is the real Animated.View DOM node
+  if (node) {
+    const el = (node._componentDOMRef ?? node) as HTMLElement | null;
+    if (el && typeof el.getBoundingClientRect === 'function') return el;
+  }
+  // Preview/singleEl path: ref is null — query by the unique data-sdui-id attribute
+  if (nodeId && typeof document !== 'undefined') {
+    return document.querySelector(`[data-sdui-id="${nodeId}"]`) as HTMLElement | null;
+  }
+  return null;
 }
 
 // ─── Easing helpers ───────────────────────────────────────────────────────────
@@ -728,6 +757,49 @@ function pickBorderRadius(className?: string): number | undefined {
   return undefined;
 }
 
+// ─── parseCssTransform ────────────────────────────────────────────────────────
+// Converts a CSS transform string (e.g. "rotate(3deg) translateX(-50%)") into an
+// array of React Native transform objects so they can be composed inside the
+// Reanimated worklet alongside animated transforms.
+// translateX/Y are included — when node.props.style has translateX/Y (e.g. for
+// centering: translateX(-50%) translateY(-50%)), they are forwarded here so the
+// Reanimated worklet preserves them after the enter animation completes.
+// Percentage values are kept as strings (web-only; native doesn't support % in transforms).
+type StaticTransformItem =
+  | { rotate: string }
+  | { rotateX: string }
+  | { rotateY: string }
+  | { scale: number }
+  | { skewX: string }
+  | { skewY: string }
+  | { perspective: number }
+  | { translateX: number | string }
+  | { translateY: number | string };
+
+function parseCssTransform(css: string): StaticTransformItem[] {
+  const out: StaticTransformItem[] = [];
+  if (!css) return out;
+  const re = /(\w+)\(([^)]+)\)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(css)) !== null) {
+    const fn = m[1];
+    const arg = m[2].trim();
+    switch (fn) {
+      case 'rotate':
+      case 'rotateZ': out.push({ rotate: arg }); break;
+      case 'rotateX': out.push({ rotateX: arg }); break;
+      case 'rotateY': out.push({ rotateY: arg }); break;
+      case 'scale':   out.push({ scale: parseFloat(arg) }); break;
+      case 'skewX':   out.push({ skewX: arg }); break;
+      case 'skewY':   out.push({ skewY: arg }); break;
+      case 'perspective': out.push({ perspective: parseFloat(arg) }); break;
+      case 'translateX': out.push({ translateX: arg.includes('%') ? arg : parseFloat(arg) }); break;
+      case 'translateY': out.push({ translateY: arg.includes('%') ? arg : parseFloat(arg) }); break;
+    }
+  }
+  return out;
+}
+
 // ─── AnimatedNode ─────────────────────────────────────────────────────────────
 
 export const AnimatedNode = React.memo(function AnimatedNode({
@@ -748,7 +820,15 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     states: statesMachine, gradientAnimation, clipPath: clipPathCfg,
     mask: maskCfg, pseudoElement: pseudoElCfg, gesture, flip,
     splitText, particles, noise, outerClassName, outerStyle, shimmer,
+    staticTransform,
   } = animation;
+
+  // Parse static CSS transform string (e.g. "rotate(3deg)") into RN transform
+  // objects once per mount/change so the worklet doesn't re-parse every frame.
+  const parsedStaticTransforms = useMemo(
+    () => (staticTransform ? parseCssTransform(staticTransform) : []),
+    [staticTransform],
+  );
   const needsOverlayWrapper = !!(
     shimmer ||
     particles ||
@@ -776,12 +856,20 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   }, [builderMode, nodeId, nodeType]);
 
   // ── Reanimated shared values ────────────────────────────────────────────────
+  // scrollActive: treat scroll as active when type is set (enabled: true is optional).
+  // Requiring explicit enabled: true is a footgun — presence of scroll.type is enough.
+  const scrollActive = !!(scroll && scroll.enabled !== false && (scroll.type || scroll.enabled));
+
   // Enter / exit
   // Only start at 0 if the animation type actually includes an opacity from-value.
   // Types like slideInLeftSubtle only translate and should NOT start invisible.
   const enterOpacity    = useSharedValue(
-    enter?.type && enter.type !== 'none' && !scroll?.enabled &&
-    (ENTER_FROM[enter.type]?.opacity ?? null) != null ? 0 : 1
+    // Enter animation (no scroll) — start hidden if from-value has opacity
+    (enter?.type && enter.type !== 'none' && !scrollActive &&
+     (ENTER_FROM[enter.type]?.opacity ?? null) != null) ? 0 :
+    // Scroll animation — start hidden so the element is invisible until IntersectionObserver fires
+    (scrollActive && scroll?.type && scroll.type !== 'none' &&
+     (ENTER_FROM[scroll.type as string]?.opacity ?? null) != null) ? 0 : 1
   );
   const enterTranslateX = useSharedValue(0);
   const enterTranslateY = useSharedValue(0);
@@ -875,8 +963,8 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   const isFocusedSv = useSharedValue(0);
 
   // Scroll trigger
-  const [scrollVisible, setScrollVisible] = useState(!scroll?.enabled);
-  const scrollVisProgress = useSharedValue(scroll?.enabled ? 0 : 1);
+  const [scrollVisible, setScrollVisible] = useState(!scrollActive);
+  const scrollVisProgress = useSharedValue(scrollActive ? 0 : 1);
 
   // Scroll progress (0→1) — web: window.scroll, native: ScrollOffsetContext
   const [scrollProg, setScrollProg] = useState(0);
@@ -934,8 +1022,13 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // ── Enter animation ────────────────────────────────────────────────────────
   useEffect(() => {
     const type = enter?.type;
-    if (!type || type === 'none' || scroll?.enabled) return;
-    const delay     = (enter?.delay ?? 0) + staggerIndex * (enter?.stagger ?? 0);
+    if (!type || type === 'none' || scrollActive) return;
+    const baseDelay = (enter?.delay ?? 0) + staggerIndex * (enter?.stagger ?? 0);
+    // In builder mode (React 18 StrictMode), effects fire twice synchronously.
+    // A delay of 0 causes withDelay(0,…) to start before the second invocation
+    // cancels it, making the animation invisible. A small floor (50 ms) ensures
+    // the animation starts after the StrictMode double-invoke completes.
+    const delay     = builderMode ? Math.max(baseDelay, 50) : baseDelay;
     const dur       = enter?.duration ?? 400;
     const easing    = rnEase(enter?.easing ?? 'easeOut');
     const isSpring  = enter?.spring;
@@ -954,8 +1047,8 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     if (from.rotateX     != null) { enterRotateX.value    = from.rotateX;    enterRotateX.value    = anim(from.rotateX,    0); }
     if (from.rotateY     != null) { enterRotateY.value    = from.rotateY;    enterRotateY.value    = anim(from.rotateY,    0); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enter?.type, enter?.duration, enter?.delay, enter?.easing, enter?.stagger,
-      enter?.spring, enter?.stiffness, enter?.damping, enter?.mass, staggerIndex, scroll?.enabled]);
+  }, [builderMode, enter?.type, enter?.duration, enter?.delay, enter?.easing, enter?.stagger,
+      enter?.spring, enter?.stiffness, enter?.damping, enter?.mass, staggerIndex, scrollActive]);
 
   // ── Builder "Preview animation" button — postMessage replay ───────────────
   // The animation panel posts { type: 'sdui-preview-animation', nodeId } to the iframe.
@@ -1009,7 +1102,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     if (Platform.OS !== 'web') return;
     const type = enter?.type;
     if (type !== 'blurIn' && type !== 'glowIn') return;
-    if (scroll?.enabled) return;
+    if (scrollActive) return;
     const el = animatedRef.current as unknown as HTMLElement | null;
     if (!el) return;
     const dur   = enter?.duration ?? 600;
@@ -1026,7 +1119,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
       el.style.transition = '';
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enter?.type, enter?.duration, enter?.delay, enter?.stagger, staggerIndex, scroll?.enabled]);
+  }, [enter?.type, enter?.duration, enter?.delay, enter?.stagger, staggerIndex, scrollActive]);
 
   // ── Loop animation — cross-platform (Reanimated) ──────────────────────────
   useEffect(() => {
@@ -1830,9 +1923,9 @@ export const AnimatedNode = React.memo(function AnimatedNode({
 
   // ── Scroll trigger — cross-platform (feature detection) ───────────────────
   useEffect(() => {
-    if (!scroll?.enabled) return;
+    if (!scrollActive) return;
     if (typeof IntersectionObserver !== 'undefined') {
-      const el = (animatedRef.current as unknown as HTMLElement | null);
+      const el = getDOMEl(animatedRef, nodeId);
       if (!el) return;
       const threshold = scroll.threshold ?? 0.2;
       const once = scroll.once !== false;
@@ -1855,13 +1948,13 @@ export const AnimatedNode = React.memo(function AnimatedNode({
       setScrollVisible(true);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scroll?.enabled, scroll?.threshold, scroll?.once]);
+  }, [scrollActive, scroll?.threshold, scroll?.once]);
 
   // ── Scroll trigger typed animation — drives enter shared values on visibility change ─
   // When scroll.type is set, use ENTER_FROM[type] to animate via Reanimated instead
   // of CSS keyframes (which require globally-defined @keyframes that don't exist at runtime).
   useEffect(() => {
-    if (!scroll?.enabled || !scroll?.type || scroll.type === 'none') return;
+    if (!scrollActive || !scroll?.type || scroll.type === 'none') return;
     const type = scroll.type as string;
     const from = ENTER_FROM[type] ?? { opacity: 0 };
     const dur     = scroll.duration ?? 500;
@@ -1892,7 +1985,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // ── Parallax — web: window.scroll + getBoundingClientRect ───────────────────
   useEffect(() => {
     if (!parallax?.enabled || typeof window === 'undefined') return;
-    const el = (animatedRef.current as unknown as HTMLElement | null);
+    const el = getDOMEl(animatedRef, nodeId);
     if (!el) return;
     const speed = parallax.speed ?? 0.4;
     const max   = parallax.clamp ?? 200;
@@ -1934,7 +2027,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // ── Scroll progress — web: window.scroll + getBoundingClientRect ─────────────
   useEffect(() => {
     if (!scrollProgress?.enabled || typeof window === 'undefined') return;
-    const el = (animatedRef.current as unknown as HTMLElement | null);
+    const el = getDOMEl(animatedRef, nodeId);
     if (!el) return;
     const startFrac = scrollProgress.start ?? 0;
     const endFrac   = scrollProgress.end   ?? 1;
@@ -2403,8 +2496,16 @@ export const AnimatedNode = React.memo(function AnimatedNode({
 
   // ── Unified animated style ──────────────────────────────────────────────────
   const animatedStyle = useAnimatedStyle(() => {
-    type Transform = { translateX: number } | { translateY: number } | { scale: number } | { rotateX: string } | { rotateY: string } | { rotate: string } | { perspective: number };
+    type Transform = { translateX: number } | { translateY: number } | { scale: number } | { rotateX: string } | { rotateY: string } | { rotate: string } | { perspective: number } | { skewX: string } | { skewY: string };
     const transforms: Transform[] = [];
+
+    // Static CSS transform (e.g. "rotate(3deg)") — must come BEFORE animated
+    // transforms so the rotation/skew is always present regardless of animation state.
+    // This is the only correct way: putting it in outerStyle conflicts with
+    // Reanimated's direct DOM writes to element.style.transform.
+    for (const t of parsedStaticTransforms) {
+      transforms.push(t as Transform);
+    }
 
     // Perspective for flip (must come first)
     if (flip) transforms.push({ perspective: flip.perspective ?? 1000 });
@@ -2542,6 +2643,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     };
   // Explicit deps required for web (no Babel/SWC plugin).
   }, [
+    parsedStaticTransforms,
     enterOpacity, enterTranslateX, enterTranslateY, enterScale, enterRotateX, enterRotateY,
     loopScale, loopTransX, loopTransY, loopOpac, loopRotate,
     loopShadowRadius, loopShadowOpac, loopShadowR, loopShadowG, loopShadowB, loopBgPosX,
@@ -2567,12 +2669,12 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // For type-less scroll triggers, scrollVisProgress drives opacity directly via animatedStyle.
   const scrollCssStyle = useMemo((): CSSProperties => {
     void cssEase; // retained for future use if needed
-    if (Platform.OS !== 'web' || !scroll?.enabled) return {};
+    if (Platform.OS !== 'web' || !scrollActive) return {};
     // Typed scroll trigger: Reanimated handles it via the scroll-typed-animation useEffect above.
     // No CSS animation needed — returning {} here prevents a broken `an-*` keyframe reference.
-    if (scroll.type && scroll.type !== 'none') return {};
+    if (scroll?.type && scroll.type !== 'none') return {};
     return {};
-  }, [scroll?.enabled, scroll?.type]);
+  }, [scrollActive, scroll?.type]);
 
   // ── Scroll progress style (web — CSS transform/filter strings) ─────────────
   const scrollProgressCssStyle = useMemo((): CSSProperties => {
@@ -2893,6 +2995,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     </Animated.View>
   ) : null;
 
+
   // ── Return ─────────────────────────────────────────────────────────────────
   if (componentType && !needsOverlayWrapper) {
     const AnimatedComponent = getAnimatedComponent(componentType);
@@ -2905,69 +3008,66 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     delete singleProps.nativeID;
     if (Platform.OS === 'web') {
       delete singleProps.testID;
+      delete singleProps.onLayout;
     }
     const singleStyle = singleProps.style as object | undefined;
-    return (
-      <GestureDetector gesture={composedGesture}>
-        <AnimatedComponent
-          {...singleProps}
-          ref={animatedRef}
-          style={[animatedStyle, mergedStyle as object, outerStyle as object, singleStyle]}
-          onLayout={handleLayout}
-          exiting={exitingAnimation ?? undefined}
-          data-anim-node="single"
-          {...(focus?.enabled ? { tabIndex: 0 } : {})}
-          {...(focus?.enabled ? {
-            onFocus: () => { isFocusedSv.value = withTiming(1, { duration: focus.duration ?? 200 }); },
-            onBlur:  () => { isFocusedSv.value = withTiming(0, { duration: focus.duration ?? 200 }); },
-          } as object : {})}
-          {...(builderMode && nodeId
-            ? { 'data-builder-id': nodeId, 'data-builder-type': nodeType ?? 'Box' }
-            : {})}
-        >
-          {componentChildren ?? children}
-        </AnimatedComponent>
-      </GestureDetector>
+    const singleEl = (
+      <AnimatedComponent
+        {...singleProps}
+        ref={animatedRef}
+        style={[animatedStyle, mergedStyle as object, outerStyle as object, singleStyle]}
+        onLayout={handleLayout}
+        exiting={exitingAnimation ?? undefined}
+        data-anim-node="single"
+        {...(nodeId ? { 'data-sdui-id': nodeId } : {})}
+        {...(focus?.enabled ? { tabIndex: 0 } : {})}
+        {...(focus?.enabled ? {
+          onFocus: () => { isFocusedSv.value = withTiming(1, { duration: focus.duration ?? 200 }); },
+          onBlur:  () => { isFocusedSv.value = withTiming(0, { duration: focus.duration ?? 200 }); },
+        } as object : {})}
+        {...(builderMode && nodeId
+          ? { 'data-builder-id': nodeId, 'data-builder-type': nodeType ?? 'Box' }
+          : {})}
+      >
+        {componentChildren ?? children}
+      </AnimatedComponent>
     );
+    return <GestureDetector gesture={composedGesture}>{singleEl}</GestureDetector>;
   }
 
   // Always use Animated.View so animatedStyle is applied and animations run in all modes.
   // For hover-flip on web, wrap the entire GestureDetector in a plain div so
   // mouseenter/mouseleave fire at the outer card boundary — not on the Reanimated
   // Animated.View which may have timing issues, and not on a 3D-transformed child.
-  const gestureContent = (
-    <GestureDetector gesture={composedGesture}>
-      {(
-        <Animated.View
-          ref={animatedRef}
-          className={outerClassName ?? undefined}
-          style={[animatedStyle, mergedStyle as object, outerStyle as object, shimmer ? { overflow: 'hidden' } : undefined]}
-          onLayout={handleLayout}
-          exiting={exitingAnimation ?? undefined}
-          data-anim-node="wrapped"
-          {...(focus?.enabled ? { tabIndex: 0 } : {})}
-          {...(pseudoElCfg?.enabled ? { 'data-anim-id': nodeId ?? componentId } : {})}
-          {...(focus?.enabled ? {
-            onFocus: () => { isFocusedSv.value = withTiming(1, { duration: focus.duration ?? 200 }); },
-            onBlur:  () => { isFocusedSv.value = withTiming(0, { duration: focus.duration ?? 200 }); },
-          } as object : {})}
-          {...(builderMode && nodeId
-            ? { 'data-builder-id': nodeId, 'data-builder-type': nodeType ?? 'Box' }
-            : {})}
-        >
-          {pseudoBeforeView}
-          {wrapWithMask(innerContent)}
-          {pseudoAfterView}
-          {gradientOverlay}
-          {shimmerOverlay}
-          {particlesOverlay}
-          {noiseOverlay}
-        </Animated.View>
-      )}
-    </GestureDetector>
+  const animatedViewEl = (
+    <Animated.View
+      ref={animatedRef}
+      className={outerClassName ?? undefined}
+      style={[animatedStyle, mergedStyle as object, outerStyle as object, shimmer ? { overflow: 'hidden' } : undefined]}
+      onLayout={handleLayout}
+      exiting={exitingAnimation ?? undefined}
+      data-anim-node="wrapped"
+      {...(focus?.enabled ? { tabIndex: 0 } : {})}
+      {...(pseudoElCfg?.enabled ? { 'data-anim-id': nodeId ?? componentId } : {})}
+      {...(focus?.enabled ? {
+        onFocus: () => { isFocusedSv.value = withTiming(1, { duration: focus.duration ?? 200 }); },
+        onBlur:  () => { isFocusedSv.value = withTiming(0, { duration: focus.duration ?? 200 }); },
+      } as object : {})}
+      {...(builderMode && nodeId
+        ? { 'data-builder-id': nodeId, 'data-builder-type': nodeType ?? 'Box' }
+        : {})}
+    >
+      {pseudoBeforeView}
+      {wrapWithMask(innerContent)}
+      {pseudoAfterView}
+      {gradientOverlay}
+      {shimmerOverlay}
+      {particlesOverlay}
+      {noiseOverlay}
+    </Animated.View>
   );
 
-  return gestureContent;
+  return <GestureDetector gesture={composedGesture}>{animatedViewEl}</GestureDetector>;
 });
 
 // ─── SplitTextNative — renders animated chars/words/lines cross-platform ─────

@@ -1630,6 +1630,30 @@ delete cleanProps.style; // inner loses inline style fallback
 
 ---
 
+## Percentage Widths on Animated Nodes (Builder Mode) — Use `flex-1` or Explicit `px`/`vh` Instead
+
+**Problem:** In builder mode, a node with `w-[45%]` AND an animation config (enter, hover, loop, etc.) renders its image too small. The outer `Animated.View` wrapper gets `width: '45%'` correctly (45% of grandparent), but the inner element also keeps `width: '45%'` (45% of the outer = ~20% of grandparent). An `Image` child with `w-full h-full` then fills that already-shrunken inner box = too small.
+
+**Root cause:** The `animNodeOwnsId` inner-fill logic in `renderer.tsx` previously only replaced **number** widths with `'100%'` (e.g. `480` from `w-[480px]`). String percentage widths like `'45%'` (produced by `classToInlineStyle('w-[45%]')`) were not replaced, so the inner element kept `width: '45%'` of the outer wrapper.
+
+**Fix (applied in `lib/sdui/renderer.tsx`):** Extended the `animNodeOwnsId` width/height replacement to cover all non-intrinsic values (including string percentages):
+
+```ts
+// Before — only numbers were replaced; '45%' was left as-is on the inner
+if ('width' in innerStyles && typeof innerStyles.width === 'number') innerStyles.width = '100%';
+
+// After — numbers AND percentage strings are replaced; only intrinsic keywords ('fit-content', 'auto') are preserved
+const INTRINSIC_KW_INNER = ['fit-content', 'max-content', 'min-content', 'auto'];
+if ('width'  in innerStyles && !INTRINSIC_KW_INNER.includes(String(innerStyles.width  ?? ''))) innerStyles.width  = '100%';
+if ('height' in innerStyles && !INTRINSIC_KW_INNER.includes(String(innerStyles.height ?? ''))) innerStyles.height = '100%';
+```
+
+**Note:** This bug only manifests in builder mode (`animNodeOwnsId = true`). In preview mode, the `useSingleElementPath` renders the animated node as a single element (no outer wrapper), so `w-[45%]` is applied correctly to the element itself.
+
+**Applies to:** Any animated node (with enter, hover, loop, press, etc.) in the visual builder that uses a percentage-based width or height class like `w-[45%]`, `h-[60%]`, `w-[33%]`, etc.
+
+---
+
 ## Background Media — No Default Border-Radius (Changed)
 
 `Image` and `Video` components no longer ship with a default `rounded-[6px]`. There is no cleanup step needed when using them as background layers.
@@ -1650,3 +1674,47 @@ Use `set_border(id, {radius: N})` only when you explicitly want rounded corners 
 CSS flexbox `align-items: stretch` (the default) makes children fill parent width automatically — `w-full` is not needed and was removed because it broke centering in `items-center` parents.
 
 If a container picks up unwanted spacing, it is coming from a component that intentionally has padding (e.g. `Card`, `Alert`) — not from a generic layout container.
+
+---
+
+## Image Nodes — Always Wrap in a Box When Using Position or Percentage Sizes
+
+**Problem:** Placing an `Image` node as a direct absolutely-positioned child of a flex container (e.g. `flex: 0.55`) causes the image to collapse to zero or render at its natural media size. `<img>` cannot act as a CSS containing block, and percentage `width`/`height` on a `position: absolute` child require an explicit CSS `width` (or `height`) on the containing block. A flex item sized only via `flex: 0.55` has no explicit CSS `width`, so the browser cannot resolve the percentage.
+
+**Fix:** Always wrap `Image` nodes in a `Box` clip-wrapper for any collage, split-hero, layered, or positioned layout:
+
+```
+// ✅ CORRECT — Box provides containing block; Image fills it 100%
+gallery-container
+  Box (clip-wrapper, height: "55vh", width: "420px", overflow: "hidden")
+    Image (width: "100%", height: "100%", objectFit: "cover")
+
+// ❌ WRONG — <img> cannot resolve percentage sizes inside a flex item
+gallery-container (display: flex)
+  Image (position: "absolute", width: "100%", height: "80%")
+```
+
+**Sizing rules for this pattern:**
+- **Wrapper Box**: Use explicit **px or vh values** (e.g. `height: "55vh"`, `width: "420px"`). Never percentage dimensions on an absolutely-positioned Box inside a flex container.
+- **Image inside wrapper**: Set `width: "100%"` and `height: "100%"` only — no position, no explicit px sizing.
+
+**Applies to:** Any layout where images sit inside collage grids, split-hero panels, layered sections, or any container whose CSS width is determined by flex/grid layout rather than an explicit pixel value.
+
+---
+
+## Absolutely-Positioned Animated Box — Image/Children Render Outside Card (Builder Mode)
+
+**Problem:** A `Box` with `className: "... absolute top-[50%] right-[60px] overflow-hidden ..."` and an animation (`loop`, `enter`, etc.) causes its children (e.g. `Image` with `w-full h-full`) to render outside the card boundaries in **builder mode**.
+
+**Root cause:** In builder mode, `AnimatedNode` wraps the inner Box in an outer `Animated.View`. The renderer copies all `arbStyles` (including `position: absolute`, `top: 50%`, `right: 60px`, `zIndex: 20`) into `innerStyles`. Only `width`/`height` were replaced with `100%`. The remaining positioning properties cause the inner Box to be positioned at `top: 50%; right: 60px` **relative to the outer 500×500 wrapper** — placing it 250px from the top AND shifted outside the right boundary.
+
+Additionally, `translateY: "-50%"` from `node.props.style` is composed into `transform: translateY(-50%)` on the inner element, further shifting it outside the outer.
+
+**Fix (applied in `lib/sdui/renderer.tsx`):**
+1. Strip `position`, `top`, `right`, `bottom`, `left`, `zIndex` from `innerStyles` when `animNodeOwnsId` is true.
+2. Strip corresponding Tailwind class tokens (`absolute`, `top-[...]`, `right-[...]`, etc.) from `cleanProps.className` so NativeWind's compiled CSS doesn't re-apply them.
+3. Strip `transform` from `cleanProps.style` — `translateX/Y` from `node.props.style` are outer positioning transforms already forwarded to the outer Animated.View via `nodePropsStyle → outerStyle`.
+
+The inner element becomes a clean `width: 100%; height: 100%` filler with no positioning. All positioning lives on the outer Animated.View wrapper.
+
+**Rule:** Any absolutely-positioned Box with an animation config is safe — the engine handles the stripping automatically. Just use `overflow-hidden` on the Box's className and the image clipping will work correctly.

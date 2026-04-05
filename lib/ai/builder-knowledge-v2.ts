@@ -197,7 +197,7 @@ export const TOOL_DESCRIPTIONS: Record<string, string> = {
   'set_text':            'Set text on Text nodes. For Icon, use set_icon.',
   'set_placeholder':     'Set placeholder text on an input or select.',
   'set_href':            'Set the URL on a Link node.',
-  'set_src':             'Set source URL on an Image or Video. Also objectFit, alt, poster.',
+  'set_src':             'Set source URL on an Image or Video. Also objectFit, alt, poster. For repeat-template binding, pass a formula expression as src (e.g. "context?.item?.data?.avatar") — the executor stores it as a formula so each rendered card gets its own URL from the item data.',
   'set_video_props':     'Set playback props on a Video without changing src. Defaults are already correct — only call when explicitly asked.',
   'set_icon':            'Set icon name, color, and/or size (px). Name and color accept formula strings.',
   'set_background':      'Set background. bg: color token/hex/rgba/formula. fillOpacity: 0-100. bgImage: URL string (Box only — wraps in url(...)). bgSize/bgPosition/bgRepeat: CSS strings. gradient: { colors: string[], direction?: string, radial?: boolean }.',
@@ -234,9 +234,9 @@ export const TOOL_DESCRIPTIONS: Record<string, string> = {
   'set_page_config':     'Set SEO metadata and/or on-mount workflow.',
   'select_node':         'Select a node on canvas to highlight it.',
   'undo':                'Undo the last action.',
-  'search_images':       'Search stock photos. Returns URLs for add_image / set_src.',
-  'search_videos':       'Search stock videos. Returns URLs for add_video.',
-  'search_icons':        'Search icons by keyword. Returns Iconify names for set_icon.',
+  'search_images':       'Search Unsplash/Pexels for photos. Returns [{url, alt}]. ALWAYS call this before set_src on Image nodes or set_background on bgImage boxes. Query must describe visual content (people, places, objects, mood) — never role names like "hero image" or "primary photo".',
+  'search_videos':       'Search Pexels for background videos. Returns [{src, poster}]. ALWAYS call this before set_src on Video nodes. Query must describe the scene (e.g. "ocean waves slow motion", "city traffic aerial").',
+  'search_icons':        'Search Iconify for icons. Returns valid icon names. Use before set_icon to get the best matching icon name.',
   'generate_structure':  `Build a nested UI tree in one call. Server assigns UUIDs — read from returned tree.id / tree.children[N].id.
 
 Tree node: { label, name?, text?, direction?, icon?, searchQuery?, bgImage?, repeat?, keyField?, condition?, children? }
@@ -245,7 +245,6 @@ Tree node: { label, name?, text?, direction?, icon?, searchQuery?, bgImage?, rep
 - condition: visibility formula (e.g. "context?.item?.data?.isActive")
 - bgImage: Box nodes only — search query for a CSS background-image (e.g. "dark purple gradient abstract texture"). The media agent searches Unsplash and calls set_background({ bgImage, bgSize:"cover", bgPosition:"center" }) automatically.
 Never include src on Image/Video — search + set_src after. Never use text: on wrapper nodes. Never call set_background({ bgImage }) manually — declare bgImage in the tree and the media agent handles it.`,
-  'bulk_apply':          'Apply the same tool to multiple nodes. Pattern: search_nodes → bulk_apply(nodeIds, tool, params).',
 };
 
 // ─── Phase 0: Classifier ─────────────────────────────────────────────────────

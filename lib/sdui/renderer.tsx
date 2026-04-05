@@ -49,6 +49,27 @@ const STABLE_EMPTY_OBJECT: Record<string, unknown> = {};
  *
  * The JSON remains class-only; this is purely a render-time enrichment.
  */
+// Bracket-aware tokenizer for Tailwind className strings.
+// className.split(/\s+/) breaks classes with spaces inside [...] brackets — e.g.
+// "w-[calc(33.333% - 22px)]" splits into 3 fragments. This tokenizer never splits
+// inside an open bracket, keeping such classes as a single token.
+function tokenizeClassName(className: string): string[] {
+  const tokens: string[] = [];
+  let depth = 0;
+  let cur = '';
+  for (const ch of className) {
+    if (ch === '[') depth++;
+    else if (ch === ']') depth--;
+    if (/\s/.test(ch) && depth === 0) {
+      if (cur) { tokens.push(cur); cur = ''; }
+    } else {
+      cur += ch;
+    }
+  }
+  if (cur) tokens.push(cur);
+  return tokens;
+}
+
 function classToInlineStyle(className: string | undefined): Record<string, string> {
   if (!className) return {};
   const style: Record<string, string> = {};
@@ -60,7 +81,7 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
     absolute: 'absolute', relative: 'relative',
     fixed: 'fixed', sticky: 'sticky', static: 'static',
   };
-  for (const tok of className.split(/\s+/)) {
+  for (const tok of tokenizeClassName(className)) {
     const clean = tok.startsWith('!') ? tok.slice(1) : tok;
     if (POSITION_KW[clean]) { style.position = POSITION_KW[clean]; }
     // inset-0 / inset-x-0 / inset-y-0 bare keywords → top/right/bottom/left = 0
@@ -70,6 +91,17 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
     // pointer-events
     else if (clean === 'pointer-events-none') { (style as Record<string, string>).pointerEvents = 'none'; }
     else if (clean === 'pointer-events-auto') { (style as Record<string, string>).pointerEvents = 'auto'; }
+    // overflow
+    else if (clean === 'overflow-hidden')  { (style as Record<string, string>).overflow = 'hidden'; }
+    else if (clean === 'overflow-auto')    { (style as Record<string, string>).overflow = 'auto'; }
+    else if (clean === 'overflow-scroll')  { (style as Record<string, string>).overflow = 'scroll'; }
+    else if (clean === 'overflow-visible') { (style as Record<string, string>).overflow = 'visible'; }
+    else if (clean === 'overflow-x-hidden')  { (style as Record<string, string>).overflowX = 'hidden'; }
+    else if (clean === 'overflow-x-auto')    { (style as Record<string, string>).overflowX = 'auto'; }
+    else if (clean === 'overflow-x-scroll')  { (style as Record<string, string>).overflowX = 'scroll'; }
+    else if (clean === 'overflow-y-hidden')  { (style as Record<string, string>).overflowY = 'hidden'; }
+    else if (clean === 'overflow-y-auto')    { (style as Record<string, string>).overflowY = 'auto'; }
+    else if (clean === 'overflow-y-scroll')  { (style as Record<string, string>).overflowY = 'scroll'; }
     // word-break
     else if (clean === 'break-all')    { (style as Record<string, string>).wordBreak = 'break-all'; }
     else if (clean === 'break-words')  { (style as Record<string, string>).wordBreak = 'break-word'; }
@@ -110,17 +142,22 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
     else if (clean === 'h-screen')  { (style as Record<string, string>).height = '100vh'; }
   }
 
-  for (const token of className.split(/\s+/)) {
+  for (const token of tokenizeClassName(className)) {
     // Strip the ! importance prefix so "!bg-[#0f172a]" is handled the same as "bg-[#0f172a]"
     const clean = token.startsWith('!') ? token.slice(1) : token;
     const m = clean.match(/^([\w-]+)-\[(.+)\]$/);
     if (!m) continue;
-    const [, prefix, value] = m;
+    const [, prefix, rawValue] = m;
+    // Tailwind uses underscores for spaces inside arbitrary values (e.g. calc(33%_-_22px)).
+    // Convert them back to spaces so the CSS value is valid.
+    const value = rawValue.replace(/_/g, ' ');
 
     // Determine value category so we can apply the right CSS property below.
     const isNumeric  = /^-?\d/.test(value);           // 96px, 900px, 80vh, -10px
     const isHexColor = /^#[0-9a-fA-F]/.test(value);  // #0f172a, #cbd5e1
-    const isCssFn    = /^\w[\w-]*\(/.test(value);     // rgb(...), rgba(...), hsl(...), var(--)
+    const isCssFn    = /^\w[\w-]*\(/.test(value);     // calc(...), rgb(...), rgba(...), hsl(...), var(--)
+    // A value is a valid dimension: numeric OR a CSS function (calc, min, max, clamp, etc.)
+    const isDimension = isNumeric || isCssFn;
 
     switch (prefix) {
       // ── Numeric layout ────────────────────────────────────────────────────────
@@ -128,44 +165,45 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
       // so the builder preview uses the canvas frame dimensions instead of the
       // browser window viewport. The fallback (1vw / 1vh) makes it correct in
       // the deployed app where no custom property is set.
+      // CSS functions like calc(), min(), max() are also valid dimension values.
       case 'w':
-        if (isNumeric) {
-          const n = parseFloat(value);
-          style.width = value.endsWith('vw')
+        if (isDimension) {
+          const n = isNumeric ? parseFloat(value) : NaN;
+          style.width = !isNaN(n) && value.endsWith('vw')
             ? `calc(${n} * var(--builder-vw, 1vw))`
             : value;
         }
         break;
       case 'h':
-        if (isNumeric) {
-          const n = parseFloat(value);
-          style.height = value.endsWith('vh')
+        if (isDimension) {
+          const n = isNumeric ? parseFloat(value) : NaN;
+          style.height = !isNaN(n) && value.endsWith('vh')
             ? `calc(${n} * var(--builder-vh, 1vh))`
             : value;
         }
         break;
       case 'min-w':
-        if (isNumeric) {
-          const n = parseFloat(value);
-          style.minWidth = value.endsWith('vw') ? `calc(${n} * var(--builder-vw, 1vw))` : value;
+        if (isDimension) {
+          const n = isNumeric ? parseFloat(value) : NaN;
+          style.minWidth = !isNaN(n) && value.endsWith('vw') ? `calc(${n} * var(--builder-vw, 1vw))` : value;
         }
         break;
       case 'max-w':
-        if (isNumeric) {
-          const n = parseFloat(value);
-          style.maxWidth = value.endsWith('vw') ? `calc(${n} * var(--builder-vw, 1vw))` : value;
+        if (isDimension) {
+          const n = isNumeric ? parseFloat(value) : NaN;
+          style.maxWidth = !isNaN(n) && value.endsWith('vw') ? `calc(${n} * var(--builder-vw, 1vw))` : value;
         }
         break;
       case 'min-h':
-        if (isNumeric) {
-          const n = parseFloat(value);
-          style.minHeight = value.endsWith('vh') ? `calc(${n} * var(--builder-vh, 1vh))` : value;
+        if (isDimension) {
+          const n = isNumeric ? parseFloat(value) : NaN;
+          style.minHeight = !isNaN(n) && value.endsWith('vh') ? `calc(${n} * var(--builder-vh, 1vh))` : value;
         }
         break;
       case 'max-h':
-        if (isNumeric) {
-          const n = parseFloat(value);
-          style.maxHeight = value.endsWith('vh') ? `calc(${n} * var(--builder-vh, 1vh))` : value;
+        if (isDimension) {
+          const n = isNumeric ? parseFloat(value) : NaN;
+          style.maxHeight = !isNaN(n) && value.endsWith('vh') ? `calc(${n} * var(--builder-vh, 1vh))` : value;
         }
         break;
       case 'p':       if (isNumeric) { style.paddingTop = style.paddingRight = style.paddingBottom = style.paddingLeft = value; } break;
@@ -185,13 +223,13 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
       case 'gap':     if (isNumeric) { style.gap           = value; } break;
       case 'gap-x':   if (isNumeric) { style.columnGap     = value; } break;
       case 'gap-y':   if (isNumeric) { style.rowGap        = value; } break;
-      case 'top':     if (isNumeric) { style.top           = value; } break;
-      case 'right':   if (isNumeric) { style.right         = value; } break;
-      case 'bottom':  if (isNumeric) { style.bottom        = value; } break;
-      case 'left':    if (isNumeric) { style.left          = value; } break;
-      case 'inset':   if (isNumeric) { style.top = style.right = style.bottom = style.left = value; } break;
-      case 'inset-x': if (isNumeric) { style.left = style.right = value; } break;
-      case 'inset-y': if (isNumeric) { style.top  = style.bottom = value; } break;
+      case 'top':     if (isDimension) { style.top           = value; } break;
+      case 'right':   if (isDimension) { style.right         = value; } break;
+      case 'bottom':  if (isDimension) { style.bottom        = value; } break;
+      case 'left':    if (isDimension) { style.left          = value; } break;
+      case 'inset':   if (isDimension) { style.top = style.right = style.bottom = style.left = value; } break;
+      case 'inset-x': if (isDimension) { style.left = style.right = value; } break;
+      case 'inset-y': if (isDimension) { style.top  = style.bottom = value; } break;
       case 'opacity':     if (isNumeric) { style.opacity               = value; } break;
       // ── Border radius — matches styleToClassName inverse ─────────────────────
       case 'rounded':     if (isNumeric) { style.borderRadius           = value; } break;
@@ -208,7 +246,14 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
       // ── Colors — hex, rgb(...), var(--...), etc. ─────────────────────────────
       // bg-[#hex], bg-[rgb(...)], bg-[var(--theme-...)]
       case 'bg':
-        if (isHexColor || isCssFn) style.backgroundColor = value;
+        if (isHexColor || isCssFn) {
+          // Gradients belong on backgroundImage, not backgroundColor
+          if (value.startsWith('linear-gradient(') || value.startsWith('radial-gradient(')) {
+            (style as Record<string, string>).backgroundImage = value;
+          } else {
+            style.backgroundColor = value;
+          }
+        }
         break;
       // text-[#hex] / text-[var(...)] → color; text-[16px] → fontSize
       case 'text':
@@ -446,7 +491,8 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
   if (node.map) {
     let arr: unknown[];
     if (typeof node.map === 'string') {
-      arr = (get(node.map) as unknown[]) ?? [];
+      const mapStr = node.map;
+      arr = (get(mapStr) as unknown[]) ?? [];
     } else if (node.map && typeof node.map === 'object' && ('expr' in node.map || 'formula' in node.map)) {
       const m = node.map as { expr?: string | object; formula?: string };
       const expr = 'expr' in m ? m.expr! : m.formula!;
@@ -573,7 +619,11 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
   // Web host components (Box, Text, etc.) flatten style arrays via flattenStyle()
   // so createAnimatedComponent can pass style arrays through without crashing the DOM.
   // Disabled in builder mode — the wrapped path is needed for selection/resize targeting.
-  const useSingleElementPath = !!(animCfgObj && !hasOverlayFeature && !builderMode);
+  // Disabled for Image nodes: NextImage renders to <img> which cannot receive RN array
+  // transforms (Reanimated's worklet tries element.style[0]=... → CSSStyleDeclaration
+  // throws "indexed property setter is not supported"). Use the Animated.View wrapper
+  // path instead — it properly converts transforms to CSS before the img ever sees them.
+  const useSingleElementPath = !!(animCfgObj && !hasOverlayFeature && !builderMode && node.type !== 'Image');
   // In builder mode, wrapped animated nodes own their own data-builder-id (set on the
   // outer Animated.View in AnimatedNode). Single-element nodes keep normal annotation.
   const animNodeOwnsId = !!(builderMode && node.id && animCfgObj && !useSingleElementPath);
@@ -681,12 +731,18 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
         // In builder mode with animNodeOwnsId, the outer Animated.View also owns the pixel
         // size (outerStyle carries width/height). Replace fixed dimensions on the inner
         // element with 100% so it fills the wrapper during live resize drag.
+        // In isOffflow, the outer Animated.View wrapper owns all sizing/positioning.
+        // The inner element must fill the wrapper with 100% width/height so percentage
+        // or pixel sizes on the inner don't compound (e.g. w-[45%] inside a 45%-wide
+        // outer wrapper would make the image only 20% of the grandparent).
+        // Preserve only intrinsic sizing keywords ('fit-content', 'auto', etc.) because
+        // those must stay on the inner element to control the outer wrapper's size via
+        // content feedback.
+        const INTRINSIC_KW = ['fit-content', 'max-content', 'min-content', 'auto'];
         if (animNodeOwnsId) {
-          // Only override pixel (number) widths/heights — string values like 'fit-content'
-          // must be preserved so w-fit / h-fit nodes continue to size to their content.
           const _cs = contentStyles as Record<string, unknown>;
-          if ('width'  in _cs && typeof _cs.width  === 'number') _cs.width  = '100%';
-          if ('height' in _cs && typeof _cs.height === 'number') _cs.height = '100%';
+          if ('width'  in _cs && !INTRINSIC_KW.includes(String(_cs.width)))  _cs.width  = '100%';
+          if ('height' in _cs && !INTRINSIC_KW.includes(String(_cs.height))) _cs.height = '100%';
         }
         cleanProps.style = { ...contentStyles, ...(cleanProps.style as Record<string, unknown> ?? {}) };
         // Strip position-keyword and inset/z arbitrary-value classes from className so
@@ -709,26 +765,38 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
           delete _s.transform;
         }
         // The inner element lost its absolute positioning (stripped above), so it's now in normal
-        // flow inside the outer Animated.View wrapper. Without explicit dimensions it collapses to
-        // content height, breaking flex-based centering (e.g. justify-center, items-center).
-        // Force it to fill the outer wrapper so layout props work as the author intended.
+        // flow inside the outer Animated.View wrapper. Force it to fill the outer wrapper.
+        // Same intrinsic-keyword preservation as above — don't override 'fit-content' etc.
         {
           const _s = cleanProps.style as Record<string, unknown> ?? {};
-          if (!_s.width)  _s.width  = '100%';
-          if (!_s.height) _s.height = '100%';
+          if (!INTRINSIC_KW.includes(String(_s.width  ?? ''))) _s.width  = '100%';
+          if (!INTRINSIC_KW.includes(String(_s.height ?? ''))) _s.height = '100%';
           cleanProps.style = _s;
         }
       } else {
         // Same logic for non-offflow animated nodes that have explicit width/height.
         const innerStyles: Record<string, unknown> = { ...(arbStyles as Record<string, unknown>) };
         if (animNodeOwnsId) {
-          // Only replace PIXEL (number) widths/heights with '100%' so the inner element fills
-          // the outer wrapper during live resize drag. String values like 'fit-content', 'auto',
-          // 'max-content', or '100%' must be left as-is — replacing 'fit-content' with '100%'
-          // breaks w-fit buttons because the outer (also fit-content) then expands to fill the
-          // parent rather than shrinking to its content width.
-          if ('width'  in innerStyles && typeof innerStyles.width  === 'number') innerStyles.width  = '100%';
-          if ('height' in innerStyles && typeof innerStyles.height === 'number') innerStyles.height = '100%';
+          // Replace width/height with '100%' so the inner element fills the outer Animated.View
+          // wrapper during live resize drag and in normal rendering.
+          // The outer wrapper already carries the correct size (from OUTER_PASSTHROUGH / sizeOverride).
+          // Covers both:
+          //   - Pixel values stored as numbers (e.g. 480 from w-[480px] via set_size)
+          //   - String percentages (e.g. '45%' from w-[45%]) — typeof check excluded these before,
+          //     causing the inner to be 45% of the outer (which is already 45% of grandparent = ~20%)
+          // Only intrinsic-sizing keywords ('fit-content', 'auto', 'max-content', 'min-content')
+          // are preserved because they describe content-driven sizing that must stay on the inner.
+          const INTRINSIC_KW_INNER = ['fit-content', 'max-content', 'min-content', 'auto'];
+          if ('width'  in innerStyles && !INTRINSIC_KW_INNER.includes(String(innerStyles.width  ?? ''))) innerStyles.width  = '100%';
+          if ('height' in innerStyles && !INTRINSIC_KW_INNER.includes(String(innerStyles.height ?? ''))) innerStyles.height = '100%';
+          // Strip position/inset/zIndex — these belong on the outer Animated.View wrapper
+          // (forwarded via sizeOverride/OUTER_PASSTHROUGH). Keeping them on the inner
+          // repositions it INSIDE the outer, e.g. top:50% of a 500px outer = 250px from the
+          // top, combined with right:60px the inner is shifted outside the outer's bounds —
+          // exactly the "image outside the card" bug for absolute+float animated containers.
+          for (const k of ['position', 'top', 'right', 'bottom', 'left', 'zIndex'] as const) {
+            delete innerStyles[k];
+          }
         }
         cleanProps.style = { ...innerStyles, ...(cleanProps.style as Record<string, unknown> ?? {}) };
       }
@@ -746,8 +814,12 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
       const tyRaw = sStyle.translateY;
       if (txRaw !== undefined || tyRaw !== undefined) {
         // Normalise a translate value to a CSS px string: 20 → "20px", "20px" → "20px", "" → ""
+        // Also handles FormulaValue objects { formula: "-50%" } written by older set_transform calls.
         const toPx = (v: unknown): string => {
           if (v === undefined || v === null || v === '') return '';
+          if (typeof v === 'object' && v !== null && 'formula' in v) {
+            return toPx((v as { formula: unknown }).formula);
+          }
           if (typeof v === 'number') return `${v}px`;
           const s = String(v).trim();
           if (!s) return '';
@@ -797,6 +869,50 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
           .filter(tok => !/^!?m[trblxy]?-\[/.test(tok))
           .join(' ')
           .trim();
+      }
+    }
+    if (_willOwn) {
+      // Strip position/inset/zIndex Tailwind tokens from the inner className so
+      // NativeWind's compiled CSS doesn't re-apply them after they were removed from
+      // innerStyles above. These belong on the outer Animated.View wrapper only.
+      if (cleanProps.className) {
+        cleanProps.className = (cleanProps.className as string)
+          .split(/\s+/)
+          .filter(tok =>
+            !/^!?(?:absolute|relative|fixed|sticky|static)$/.test(tok) &&
+            !/^!?(?:top|right|bottom|left|inset)(?:-[xy])?-\[/.test(tok) &&
+            !/^!?z-\[/.test(tok)
+          )
+          .join(' ')
+          .trim();
+      }
+      // Strip transform from the inner element. translateX/Y from node.props.style are
+      // outer positioning transforms (forwarded to the outer Animated.View via nodePropsStyle
+      // → outerStyle). Keeping the composed transform on the inner causes it to shift
+      // relative to the outer wrapper (e.g. translateY(-50%) moves the inner 250px outside
+      // the outer's top boundary when the inner fills 100% height).
+      if (cleanProps.style) {
+        delete (cleanProps.style as Record<string, unknown>).transform;
+      }
+      // Strip paint-only visual properties from the inner element.
+      // These are already forwarded to the outer Animated.View via outerStyle (from
+      // _outerBase/animNodeOwnsId). Keeping them on both elements doubles the visual effect:
+      // e.g. boxShadow renders twice (inner shadow bleeds through overflow:visible outer),
+      // and backgroundColor stacks to a higher opacity than intended.
+      // In preview mode (single-element path), there is only ONE element so no doubling occurs.
+      if (cleanProps.style) {
+        const _innerS = cleanProps.style as Record<string, unknown>;
+        for (const _pk of [
+          'backgroundColor', 'background', 'backgroundImage',
+          'boxShadow',
+          'shadowColor', 'shadowOffset', 'shadowRadius', 'shadowOpacity', 'elevation',
+          'borderColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor',
+          'borderWidth', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
+          'borderStyle',
+          'outline', 'outlineColor', 'outlineWidth', 'outlineOffset', 'outlineStyle',
+        ]) {
+          delete _innerS[_pk];
+        }
       }
     }
 
@@ -1062,6 +1178,13 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
       // the DOM as [object Object] strings on the outer Animated.View wrapper.
       const nodePropsStyle = resolvedNodeStyle;
       const styleForOuter: Record<string, unknown> = { ...outerFromArb, ...nodePropsStyle };
+      // `transform`, `translateX`, `translateY` must NOT go into outerStyle — Reanimated's worklet
+      // overrides element.style.transform after every animation frame. All three are forwarded via
+      // resolvedAnimCfg.staticTransform and composed inside the worklet so they persist.
+      // This handles both rotation ("rotate(3deg)") and percentage centering ("translateX(-50%)").
+      delete styleForOuter.transform;
+      delete styleForOuter.translateX;
+      delete styleForOuter.translateY;
       // Position forwarding is handled universally by the sizeOverride block below (all modes).
       // This block only needs OUTER_PASSTHROUGH keys + nodePropsStyle for builder selection.
       // MERGE into the existing outerStyle (don't overwrite) so animation.outerStyle values
@@ -1163,6 +1286,33 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
       // prevent formula objects leaking as [object Object] into the outer Animated.View DOM.
       const _nodePropsStyleForOuter = resolvedNodeStyle;
       const _outerBase = { ...sizeOverride, ..._nodePropsStyleForOuter };
+      // `transform`, `translateX`, `translateY` must not be in outerStyle — Reanimated's worklet
+      // overrides element.style.transform after every animation frame. All three are forwarded
+      // via staticTransform and composed inside the worklet so they persist after animation.
+      delete _outerBase.transform;
+      delete _outerBase.translateX;
+      delete _outerBase.translateY;
+      // Build staticTransform from node.props.style transforms so the Reanimated worklet can
+      // compose them with animated transforms (enter, hover, press, loop).
+      // Handles:
+      //   - translateX/Y percentage centering: translateX("-50%") translateY("-50%")
+      //     → allows centering an absolute element while keeping enter animation correct.
+      //   - CSS transform strings: "rotate(3deg)" "scale(1.1)" etc.
+      // All are forwarded as a single CSS string. parseCssTransform() in animated-node.tsx
+      // converts each function to an RN transform object, keeping percentages as strings
+      // (web-only: Reanimated converts the array to CSS, preserving the % unit).
+      const _nodeStyleRaw = resolvedNodeStyle as Record<string, unknown>;
+      const _staticTx = _nodeStyleRaw.transform;
+      const _staticTxX = _nodeStyleRaw.translateX;
+      const _staticTxY = _nodeStyleRaw.translateY;
+      const _staticParts: string[] = [];
+      if (_staticTxX !== undefined) _staticParts.push(`translateX(${String(_staticTxX)})`);
+      if (_staticTxY !== undefined) _staticParts.push(`translateY(${String(_staticTxY)})`);
+      if (_staticTx && typeof _staticTx === 'string' && _staticTx.trim()) _staticParts.push(_staticTx.trim());
+      const _allStatic = _staticParts.length > 0 ? _staticParts.join(' ') : undefined;
+      if (_allStatic) {
+        resolvedAnimCfg = { ...resolvedAnimCfg, staticTransform: _allStatic };
+      }
       if (Object.keys(_outerBase).length > 0) {
         resolvedAnimCfg = {
           ...resolvedAnimCfg,

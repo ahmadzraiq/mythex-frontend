@@ -145,13 +145,14 @@ function ToolRow({ tool, stepNumber }: { tool: AiToolCall; stepNumber: number })
 // Phase grouping helpers
 // ---------------------------------------------------------------------------
 
-const PHASE_ORDER: Array<AiToolCall['phase'] | undefined> = ['planning', 'structure', 'binding', 'media', 'styling', 'styling:layout', 'styling:colors', 'styling:typo', 'workflows', undefined];
+const PHASE_ORDER: Array<AiToolCall['phase'] | undefined> = ['planning', 'structure', 'binding', 'media', 'styling', 'animation', 'styling:layout', 'styling:colors', 'styling:typo', 'workflows', undefined];
 const PHASE_LABELS: Record<string, string> = {
   planning: 'Planning',
   structure: 'Structure',
   binding: 'Binding',
   media: 'Media',
   styling: 'Styling',
+  animation: 'Animation',
   'styling:layout': 'Layout',
   'styling:colors': 'Colors',
   'styling:typo': 'Typo + Anim',
@@ -282,7 +283,12 @@ function PhaseGroupSection({ label, tools, active }: {
 
 const LIVE_MAX = 5;
 
-function ToolCallsGroup({ tools, streaming, isThinking }: { tools: AiToolCall[]; streaming: boolean; isThinking?: boolean }) {
+function ToolCallsGroup({ tools, streaming, isThinking, agentDebugInfo }: {
+  tools: AiToolCall[];
+  streaming: boolean;
+  isThinking?: boolean;
+  agentDebugInfo?: Record<string, { startedAt?: number; endedAt?: number }>;
+}) {
   const [expanded, setExpanded] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [totalMs, setTotalMs] = useState<number | null>(null);
@@ -313,8 +319,21 @@ function ToolCallsGroup({ tools, streaming, isThinking }: { tools: AiToolCall[];
   // Check whether any tool has a phase tag — if so use grouped display
   const hasPhases = tools.some(t => t.phase !== undefined);
   const groups = hasPhases ? groupToolsByPhase(tools) : null;
-  // The "active" phase is the phase of the last received tool call (while streaming)
-  const activePhase = streaming ? (tools[tools.length - 1]?.phase) : undefined;
+  // Compute all currently active phases — agents that have started but not yet completed.
+  // When parallel agents run, multiple phase groups show spinners simultaneously.
+  const activePhases = new Set<string>();
+  if (streaming) {
+    if (agentDebugInfo) {
+      for (const [agent, info] of Object.entries(agentDebugInfo)) {
+        if (info.startedAt && !info.endedAt) activePhases.add(agent);
+      }
+    }
+    // Fallback: if agentDebugInfo isn't populated yet, use the last received tool's phase
+    if (activePhases.size === 0) {
+      const last = tools[tools.length - 1]?.phase;
+      if (last) activePhases.add(last);
+    }
+  }
 
   // ── Streaming state ──────────────────────────────────────────────────────
   if (streaming) {
@@ -337,7 +356,7 @@ function ToolCallsGroup({ tools, streaming, isThinking }: { tools: AiToolCall[];
                 key={g.phase ?? 'other'}
                 label={g.label}
                 tools={g.tools}
-                active={streaming && g.phase === activePhase}
+                active={streaming && activePhases.has(g.phase ?? '')}
               />
             ))}
           </div>
@@ -435,6 +454,7 @@ const AGENT_COLORS: Record<string, string> = {
   structure: '#60a5fa',
   binding: '#34d399',
   styling: '#f472b6',
+  animation: '#a78bfa',
   'styling:layout': '#e879f9',
   'styling:colors': '#f472b6',
   'styling:typo': '#c084fc',
@@ -968,7 +988,7 @@ function MessageBubble({
       {/* Tool calls + per-message copy — below the message bubble */}
       {!isUser && msg.toolCalls && msg.toolCalls.length > 0 && (
         <div style={{ width: '100%', paddingLeft: 32 }}>
-          <ToolCallsGroup tools={msg.toolCalls} streaming={isThisStreaming} isThinking={msg.isThinking} />
+          <ToolCallsGroup tools={msg.toolCalls} streaming={isThisStreaming} isThinking={msg.isThinking} agentDebugInfo={msg.agentDebugInfo} />
           {!isThisStreaming && <BuildStats msg={msg} />}
           {!isThisStreaming && (
             <CopyMsgLogBtn msg={msg} />

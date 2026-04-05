@@ -29,7 +29,7 @@ subtle → enter on 1-2 key nodes. No loops.
 moderate → enter on major sections. One loop on a key element.
 rich → enter on all sections + loops: float, breathe, glowPulse (always add loopColor), gradientColors.
 
-Easing: enterSpring + stiffness/damping for bouncy entrances. scrollThreshold 0.1-0.3 for scroll reveals.`;
+Easing: enterSpring + stiffness/damping for spring entry. scrollThreshold 0.1-0.3 for scroll reveals.`;
 }
 
 export function buildStylingDynamicPart(context: StylingSubAgentContext): string {

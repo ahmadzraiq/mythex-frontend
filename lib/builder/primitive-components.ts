@@ -329,13 +329,13 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
   ],
   Media: [
     { type: 'Image', label: 'Image', icon: '🖼',
-      defaultNode: { type: 'Image', props: {}, src: 'https://placehold.co/600x400' } },
+      defaultNode: { type: 'Image', props: { className: 'w-full h-full' }, src: 'https://placehold.co/600x400' } },
     { type: 'Icon', label: 'Icon', icon: '◈',
       defaultNode: { type: 'Icon', props: { icon: 'heroicons:star', size: 24, color: 'primary' } } },
     { type: 'Box', label: 'Icon Tap', icon: '⊙',
       defaultNode: { type: 'Box', props: { className: 'flex items-center justify-center w-[40px] h-[40px] rounded-[9999px] bg-secondary' }, children: [{ type: 'Icon', props: { icon: 'heroicons:star', size: 18, color: 'currentColor' } }] } },
     { type: 'Video', label: 'Video', icon: '▶',
-      defaultNode: { type: 'Video', props: { controls: false, muted: true, loop: true, autoPlay: true, style: { width: '400px', height: '240px' } }, src: '' } },
+      defaultNode: { type: 'Video', props: { controls: false, muted: true, loop: true, autoPlay: true, className: 'w-full h-full' }, src: '' } },
   ],
   'Data & Media': [
     { type: 'DatePicker',     label: 'Date Picker',  icon: '📅',

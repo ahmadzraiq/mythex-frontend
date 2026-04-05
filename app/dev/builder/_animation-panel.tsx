@@ -101,8 +101,12 @@ const POPOVER_TITLES: Record<string, string> = {
 
 function postPreview(nodeId: string, category?: string) {
   if (typeof window === 'undefined') return;
+  const msg = { type: 'sdui-preview-animation', nodeId, category };
+  // Builder renders SDUI directly (no iframe), so post to window itself first.
+  window.postMessage(msg, '*');
+  // Also forward to any iframes that might exist (e.g. embedded previews).
   document.querySelectorAll('iframe').forEach(f =>
-    f.contentWindow?.postMessage({ type: 'sdui-preview-animation', nodeId, category }, '*')
+    f.contentWindow?.postMessage(msg, '*')
   );
 }
 
@@ -364,7 +368,13 @@ interface AnimationInDesignProps {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function AnimationInDesign({ nodeId, node, store, commitHistory }: AnimationInDesignProps) {
-  const cfg: AnimationConfig = (node?.props as { animation?: AnimationConfig })?.animation ?? {};
+  // Animation may live at node.props.animation (canonical, written by the panel)
+  // or node.animation (top-level alias used by the renderer and raw JSON configs).
+  const cfg: AnimationConfig =
+    (node?.props as { animation?: AnimationConfig })?.animation ??
+    (node as { animation?: AnimationConfig })?.animation ??
+    {};
+
 
   const patch = useCallback((partial: Partial<AnimationConfig>) => {
     const next = { ...cfg, ...partial };
@@ -535,8 +545,11 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
             options={ENTER_TYPES as unknown as string[]}
             onChange={(v, e) => {
               patchEnter({ type: v });
-              if (v !== 'none') openPopover('enter', e.clientY);
-              else setPopover(null);
+              if (v !== 'none') {
+                openPopover('enter', e.clientY);
+                // Auto-preview after a tick so the patch propagates to the canvas first
+                setTimeout(() => postPreview(nodeId), 80);
+              } else setPopover(null);
             }}
           />
         </SubSection>

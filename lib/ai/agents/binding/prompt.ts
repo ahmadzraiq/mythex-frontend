@@ -1,9 +1,9 @@
 /**
- * Binding agent — connects data to nodes (text, repeat, condition, icons).
+ * Binding agent — connects data to nodes (text, repeat, condition, icons, media src).
  *
  * ─── Tools ───────────────────────────────────────────────────────────────────
  * Export: BINDING_AGENT_TOOLS (lib/ai/builder-tools.ts)
- * Tool names: set_text, set_repeat, set_condition, set_disabled,
+ * Tool names: set_text, set_src, set_repeat, set_condition, set_disabled,
  *             set_icon (icon-name-only variant — color/size stripped via stripIconColorSize)
  *
  * ─── System prompt ───────────────────────────────────────────────────────────
@@ -50,8 +50,10 @@ ${SHARED_FORMULA_SYNTAX}
 - NEVER set_condition on the template root (the node with set_repeat) — it hides items instead of filtering. Use conditions only on child nodes inside the template.
 - In nested repeats: \`context?.item?.data\` = inner item, \`context?.item?.parent?.data\` = outer item.
 - Use EXACT field names from the variable roster — misspelled names resolve to undefined.
+- **Image or Video inside a repeat template**: call \`set_src(imageId, { src: "context?.item?.data?.avatar" })\` using the exact field name from the variable's initialValue schema (e.g. \`avatar\`, \`videoSrc\`). The executor stores it as a formula — each rendered card gets its own URL from the item data.
+- **Only call \`set_src\` inside repeat templates.** For Image/Video nodes outside a repeat template, skip entirely — the media agent owns their source. Never call \`set_src\` with a static URL string.
 
-${buildAgentCapabilityTable(['text', 'disabled', 'icon'])}
+${buildAgentCapabilityTable(['text', 'src', 'disabled', 'icon'])}
 
 ${BATCH_RETRY_RULE}`;
 

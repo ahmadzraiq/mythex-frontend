@@ -3,7 +3,7 @@
  *
  * ─── Tools ───────────────────────────────────────────────────────────────────
  * Export: TYPO_ANIM_AGENT_TOOLS (lib/ai/builder-tools.ts)
- * Tool names: set_typography, set_transform, set_animation, bulk_apply
+ * Tool names: set_typography, set_transform, set_animation
  * Read tools available via buildReadHandlers: get_page_tree, get_variables,
  *       get_pages, get_workflows, get_formula_context, search_nodes.
  *

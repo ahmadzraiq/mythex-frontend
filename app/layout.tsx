@@ -172,7 +172,7 @@ export default function RootLayout({
         <ThemePresetOverlay />
         <StyledJsxRegistry>
           <GluestackUIProvider mode="system">
-            <div className="min-h-screen w-full overflow-auto">
+            <div className="min-h-screen w-full">
               {children}
             </div>
             <Toaster position="top-center" richColors />

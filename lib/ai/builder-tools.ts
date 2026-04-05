@@ -382,7 +382,7 @@ const semanticDesignTools: BuilderTool[] = [
         nodeId: { type: 'string', description: 'Node ID.' },
         bg: {
           type: 'string',
-          description: 'Background color (theme token, hex, rgb/rgba, slash-opacity token) or formula expression.',
+          description: 'Solid color only — theme token, hex, rgb/rgba, or formula expression. For gradients use the gradient param or bgImage.',
         },
         fillOpacity: {
           type: 'number',
@@ -596,7 +596,7 @@ const semanticDesignTools: BuilderTool[] = [
         nodeId:    { type: 'string', description: 'Node ID.' },
         width:     { description: 'CSS width value — e.g. "100%", "320px", "50vw". Number treated as px. Formula string for dynamic values.' },
         height:    { description: 'CSS height value — e.g. "100%", "550px", "80vh", "100svh". Number treated as px. Formula string for dynamic values.' },
-        flex:      { type: 'number', description: 'Flex-grow. Fills the parent\'s MAIN AXIS: width in flex-row parents, height in flex-col parents. Use for equal-share columns (set parent direction:"row", set flex:1 on each child). Do NOT use to fill width in a flex-col parent — use width:"100%" instead.' },
+        flex:      { type: 'number', enum: [1], description: 'Flex-grow. Only 1 is accepted — makes this node fill remaining space on the parent\'s main axis (width in flex-row, height in flex-col). Use width/height for fixed sizes instead.' },
         maxWidth:  { description: 'CSS max-width — e.g. "800px", "100%", "90vw". Number treated as px.' },
         minWidth:  { description: 'CSS min-width — e.g. "320px", "50%". Number treated as px.' },
         maxHeight: { description: 'CSS max-height — e.g. "100vh", "600px". Number treated as px.' },
@@ -736,7 +736,7 @@ const layoutTools: BuilderTool[] = [
           enum: ['auto', 'default', 'pointer', 'not-allowed', 'grab', 'move', 'text', 'crosshair'],
           description: 'Cursor style on hover.',
         },
-        gridCols: { type: 'number', description: 'Number of grid columns (1-12). Switches display to grid automatically.' },
+        gridCols: { description: 'Number of columns (integer, 1-12) or fr-unit template string (e.g. \'3fr 2fr\'). Fr strings are written as inline gridTemplateColumns. Switches display to grid automatically.' },
         gridRows: { type: 'number', description: 'Number of grid rows (1-6).' },
         gridFlow: {
           type: 'string',
@@ -745,7 +745,7 @@ const layoutTools: BuilderTool[] = [
         },
         colSpan:  { type: 'number', description: 'How many columns this item spans (1-12). 13 = col-span-full.' },
         flexWrap: { type: 'string', enum: ['wrap', 'nowrap', 'wrap-reverse'], description: 'Flex wrap behavior.' },
-        flex:     { type: 'number', description: 'Flex-grow. Fills the parent\'s MAIN AXIS: width in flex-row parents, height in flex-col parents. Use for equal-share columns (set parent direction:"row", set flex:1 on each child). Do NOT use to fill width in a flex-col parent — use width:"100%" instead.' },
+        flex:     { type: 'number', enum: [1], description: 'Flex-grow. Only 1 is accepted — makes this node fill remaining space on the parent\'s main axis (width in flex-row, height in flex-col). Use width/height for fixed sizes instead.' },
         // ── Spacing (padding, margin, gap) ────────────────────────────────────
         gap: { type: 'number', minimum: 0, description: 'Gap between flex/grid children in px.' },
         p:   { type: 'number', description: 'Padding all sides in px.' },
@@ -1377,7 +1377,7 @@ const batchTools: BuilderTool[] = [
       properties: {
         tree: {
           type: 'object',
-          description: 'Root node of the section tree. Each node has: label (required), name, text (Text nodes only), direction ("row"|"column"), children.\nREQUIRED per type — Icon: icon (Iconify name, e.g. "lucide:check"). Image: searchQuery (photo description, e.g. "modern SaaS dashboard screenshot"). Video: searchQuery (video description).\nOptional: repeat (state path to array, e.g. "variables[\'UUID\']" — node is cloned per item), keyField (React key field, default "id"), condition (visibility formula, e.g. "context?.item?.data?.featured"), _needsRepeat, _needsRepeatKeyField, _needsCondition, _hint (semantic role string for styling agents, e.g. "role:hero section" or "role:primary action group" — structural/container nodes only, not Text/Image/Icon leaves).',
+          description: 'Root node of the section tree. Each node has: label (required), name, text (Text nodes only), children.\nREQUIRED per type — Icon: icon (Iconify name, e.g. "lucide:check"). Image: searchQuery (photo description, e.g. "modern SaaS dashboard screenshot"). Video: searchQuery (video description).\nOptional: repeat (state path to array, e.g. "variables[\'UUID\']" — node is cloned per item), keyField (React key field, default "id"), condition (visibility formula, e.g. "context?.item?.data?.featured"), _needsRepeat, _needsRepeatKeyField, _needsCondition, _hint (semantic role string for styling agents, e.g. "role:hero section" or "role:primary action group" — structural/container nodes only, not Text/Image/Icon leaves).',
         },
         variables: {
           type: 'array',
@@ -1407,34 +1407,154 @@ const batchTools: BuilderTool[] = [
   },
 ];
 
-// ─── Bulk Operations (apply same op to multiple nodes) ───────────────────────
+// ─── Unified Styling Tool (set_style) ────────────────────────────────────────
+// Single tool that covers ALL visual properties: layout, spacing, size,
+// typography, position, overflow, background, text color, border, shadow,
+// opacity, and transform. Used exclusively by the merged styling agent.
+// Old individual tools (set_layout, set_background, etc.) remain available
+// for the builder design panel and backward-compat single-agent edit mode.
 
-const bulkTools: BuilderTool[] = [
+const setStyleTool: BuilderTool[] = [
   {
-    name: 'bulk_apply',
-    description: TOOL_DESCRIPTIONS['bulk_apply'],
+    name: 'set_style',
+    description: 'Apply any visual style to a node in one call. Covers layout, spacing, size, typography, position, overflow, background, text color, border, shadow, opacity, and transform. Use this for ALL styling — no need to call set_layout + set_background + set_border separately.',
     input_schema: {
       type: 'object',
       properties: {
-        nodeIds: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Array of node IDs returned by search_nodes.',
-        },
-        tool: {
-          type: 'string',
-          enum: ['set_border', 'set_background', 'set_opacity', 'set_position', 'set_layout', 'set_icon', 'set_text_color', 'set_animation'],
-          description: 'Name of the style tool to apply to every node.',
-        },
-        params: {
+        nodeId: { type: 'string', description: 'Node ID.' },
+
+        // ── Layout (flex/grid direction, alignment) ───────────────────────────
+        direction: { type: 'string', enum: ['row', 'column'], description: 'Flex direction. Box defaults to column — only set row when needed.' },
+        align: { type: 'string', enum: ['start', 'center', 'end', 'stretch', 'baseline'], description: 'Cross-axis alignment (align-items). Accepts formula string.' },
+        justify: { description: 'justify-content value (start, center, end, between, around, evenly). Accepts formula string.' },
+        self: { type: 'string', enum: ['auto', 'start', 'center', 'end', 'stretch', 'baseline'], description: 'Self cross-axis alignment (align-self).' },
+        cursor: { type: 'string', enum: ['pointer', 'default', 'not-allowed', 'grab', 'crosshair', 'text'], description: 'CSS cursor.' },
+        gridCols: { description: 'Number of columns (integer) or fr-unit template string (e.g. \'3fr 2fr\'). Fr strings are written as inline gridTemplateColumns.' },
+        gridRows: { description: 'Number of grid rows.' },
+        gridFlow: { type: 'string', enum: ['row', 'col', 'row-dense', 'col-dense'], description: 'grid-auto-flow direction.' },
+        colSpan: { description: 'Number of grid columns this item spans.' },
+        flexWrap: { type: 'string', enum: ['wrap', 'nowrap', 'wrap-reverse'], description: 'Flex wrap behaviour.' },
+        flex: { type: 'number', enum: [1], description: 'Flex-grow. Only 1 is accepted — makes this node fill remaining space on the parent\'s main axis (width in flex-row, height in flex-col). Use width/height for fixed sizes instead.' },
+
+        // ── Spacing ───────────────────────────────────────────────────────────
+        gap: { type: 'number', minimum: 0, description: 'Gap between flex/grid children in px (number, e.g. 20). Never pass strings like "20px".' },
+        p:   { type: 'number', description: 'Padding all sides in px (number, e.g. 16). Never pass strings like "16px".' },
+        px:  { type: 'number', description: 'Horizontal padding (left + right) in px (number, e.g. 32).' },
+        py:  { type: 'number', description: 'Vertical padding (top + bottom) in px (number, e.g. 14).' },
+        pt:  { type: 'number', description: 'Padding top in px (number).' },
+        pr:  { type: 'number', description: 'Padding right in px (number).' },
+        pb:  { type: 'number', description: 'Padding bottom in px (number).' },
+        pl:  { type: 'number', description: 'Padding left in px (number).' },
+        m:   { type: 'number', description: 'Margin all sides in px (number). Use 0 to clear.' },
+        mx:  { type: 'number', description: 'Horizontal margin (left + right) in px (number).' },
+        my:  { type: 'number', description: 'Vertical margin (top + bottom) in px (number).' },
+        mt:  { type: 'number', description: 'Margin top in px (number).' },
+        mr:  { type: 'number', description: 'Margin right in px (number).' },
+        mb:  { type: 'number', description: 'Margin bottom in px (number).' },
+        ml:  { type: 'number', description: 'Margin left in px (number).' },
+
+        // ── Size ─────────────────────────────────────────────────────────────
+        width:     { description: 'Width (number = px, "100%" = fill, "fit-content", "auto", CSS string).' },
+        height:    { description: 'Height (number = px, "100%", "100vh", "fit-content", CSS string).' },
+        minWidth:  { description: 'min-width value.' },
+        maxWidth:  { description: 'max-width value (e.g. "600px", "100%").' },
+        minHeight: { description: 'min-height value.' },
+        maxHeight: { description: 'max-height value.' },
+
+        // ── Typography (Text nodes only) ───────────────────────────────────
+        fontSize:      { type: 'number', description: 'Font size in px as a number (e.g. 56 for 56px). Never pass strings like "56px" or Tailwind tokens like "lg" — the builder exclusively uses the text-[Npx] format.' },
+        weight:        { type: 'string', enum: ['thin', 'extralight', 'light', 'normal', 'medium', 'semibold', 'bold', 'extrabold', 'black'], description: 'Font weight.' },
+        textAlign:     { type: 'string', enum: ['left', 'center', 'right', 'justify'], description: 'Text alignment.' },
+        leading:       { type: 'string', description: 'Line height (tight, snug, normal, relaxed, loose or number).' },
+        tracking:      { type: 'string', description: 'Letter spacing (tighter, tight, normal, wide, wider, widest).' },
+        italic:        { type: 'boolean', description: 'Italic text.' },
+        decoration:    { type: 'string', enum: ['underline', 'line-through', 'overline', 'no-underline'], description: 'Text decoration.' },
+        textTransform: { type: 'string', enum: ['uppercase', 'lowercase', 'capitalize', 'normal-case'], description: 'Text transform.' },
+        textOverflow:  { type: 'string', enum: ['truncate', 'ellipsis', 'clip'], description: 'Text overflow handling.' },
+        whitespace:    { type: 'string', enum: ['normal', 'nowrap', 'pre', 'pre-line', 'pre-wrap'], description: 'White-space mode.' },
+        wordBreak:     { type: 'string', enum: ['normal', 'words', 'all', 'keep'], description: 'Word break mode.' },
+
+        // ── Position / Insets ─────────────────────────────────────────────────
+        position: { type: 'string', enum: ['relative', 'absolute', 'fixed', 'sticky', 'static'], description: 'CSS position. Use absolute for overlapping layers. Parent must be position:relative.' },
+        zIndex:   { description: 'z-index (number or CSS string).' },
+        top:      { description: 'Top inset (number = px or CSS string like "50%", "-20px").' },
+        right:    { description: 'Right inset.' },
+        bottom:   { description: 'Bottom inset.' },
+        left:     { description: 'Left inset.' },
+
+        // ── Overflow ──────────────────────────────────────────────────────────
+        overflow:      { type: 'string', enum: ['clip', 'visible', 'auto', 'scroll', 'x-auto', 'y-auto'], description: 'Overflow behaviour. Use "clip" (overflow-hidden) to clip child content to border-radius.' },
+        pointerEvents: { type: 'string', enum: ['none', 'auto'], description: 'Pointer events.' },
+
+        // ── Background ────────────────────────────────────────────────────────
+        bg:          { type: 'string', description: 'Solid color only — theme token, hex, rgb/rgba, or formula. For gradients use the gradient param or bgImage.' },
+        fillOpacity: { type: 'number', description: 'Background fill opacity 0-100.' },
+        bgImage:     { type: 'string', description: 'Background-image URL or CSS gradient string (e.g. linear-gradient(...)). Do NOT wrap in url() — the executor handles that for URLs automatically.' },
+        bgSize:      { type: 'string', description: 'background-size (cover, contain, auto, CSS value).' },
+        bgPosition:  { type: 'string', description: 'background-position value.' },
+        bgRepeat:    { type: 'string', description: 'background-repeat value.' },
+        gradient: {
           type: 'object',
-          description: 'Params to pass to the tool — same as calling it directly (nodeId is injected automatically).',
+          description: 'Linear gradient. direction: CSS angle/keyword. colors: 2-5 color stops.',
+          properties: {
+            direction: { type: 'string' },
+            colors: { type: 'array', items: { type: 'string' } },
+          },
         },
+
+        // ── Text Color ────────────────────────────────────────────────────────
+        color: { type: 'string', description: 'Text/icon color (theme token, hex, formula). Theme tokens: foreground, primary, muted-foreground, etc.' },
+
+        // ── Border ────────────────────────────────────────────────────────────
+        borderWidth: { description: 'Border width in px (number) or 0 to remove.' },
+        borderStyle: { type: 'string', enum: ['solid', 'dashed', 'dotted', 'none'], description: 'Border style.' },
+        borderColor: { type: 'string', description: 'Border color (theme token, hex, formula).' },
+        radius:    { description: 'Border radius in px (number, e.g. 8 = rounded-[8px]). IMPORTANT: pair with overflow:"clip" to clip child content.' },
+        radiusTL:  { description: 'Top-left radius px.' },
+        radiusTR:  { description: 'Top-right radius px.' },
+        radiusBR:  { description: 'Bottom-right radius px.' },
+        radiusBL:  { description: 'Bottom-left radius px.' },
+        // Per-side border width/color
+        topWidth:    { description: 'Top border width px.' },
+        rightWidth:  { description: 'Right border width px.' },
+        bottomWidth: { description: 'Bottom border width px.' },
+        leftWidth:   { description: 'Left border width px.' },
+        topColor:    { type: 'string', description: 'Top border color.' },
+        rightColor:  { type: 'string', description: 'Right border color.' },
+        bottomColor: { type: 'string', description: 'Bottom border color.' },
+        leftColor:   { type: 'string', description: 'Left border color.' },
+
+        // ── Shadow ────────────────────────────────────────────────────────────
+        shadow: {
+          type: 'object',
+          description: 'Box shadow. Use boxShadow for a full CSS string, or set x/y/blur/spread/color individually.',
+          properties: {
+            boxShadow: { type: 'string', description: 'Full CSS box-shadow string, e.g. "0px 4px 12px 0px rgba(0,0,0,0.1)".' },
+            color:  { type: 'string', description: 'Shadow color (hex or rgba).' },
+            blur:   { type: 'number', description: 'Blur radius px.' },
+            spread: { type: 'number', description: 'Spread px.' },
+            x:      { type: 'number', description: 'X offset px.' },
+            y:      { type: 'number', description: 'Y offset px.' },
+            remove: { type: 'boolean', description: 'Remove all shadows.' },
+          },
+        },
+
+        // ── Opacity ───────────────────────────────────────────────────────────
+        opacity: { type: 'number', description: 'Opacity 0–100 (100 = fully opaque, 0 = invisible).' },
+
+        // ── Transform ────────────────────────────────────────────────────────
+        transform:  { type: 'string', description: 'CSS transform string — parsed automatically. e.g. "translate(-50%, -50%)" sets both translateX and translateY; "rotate(45deg)" sets rotation. Use this instead of separate translateX/translateY.' },
+        rotate:     { description: 'Rotation in degrees (number) or CSS string.' },
+        flipX:      { type: 'boolean', description: 'Flip horizontally (scaleX(-1)).' },
+        flipY:      { type: 'boolean', description: 'Flip vertically (scaleY(-1)).' },
+        translateX: { description: 'Horizontal translate (number = px or CSS string).' },
+        translateY: { description: 'Vertical translate (number = px or CSS string).' },
       },
-      required: ['nodeIds', 'tool', 'params'],
+      required: ['nodeId'],
     },
   },
 ];
+
 
 // ─── All Tools (in priority order) ───────────────────────────────────────────
 
@@ -1444,8 +1564,6 @@ export const ALL_BUILDER_TOOLS: BuilderTool[] = [
   ...readTools,
   // Batch structure — build full tree in one call
   ...batchTools,
-  // Bulk ops — apply same style to multiple nodes
-  ...bulkTools,
   // Structure — add / remove / reorder / reparent
   ...addTools,
   ...structureTools,
@@ -1473,7 +1591,7 @@ export const ALL_BUILDER_TOOLS: BuilderTool[] = [
  *  Excluded (run in parallel phases or handled server-side):
  *  - create_workflow / bind_action → Phase W (parallel)
  *  - set_repeat → Phase 2b (wiring already done)
- *  - search_icons / search_images / search_videos / set_src → media phase (server-side)
+ *  - search_icons / search_images / search_videos / set_src → media phase (AI agent)
  *  - set_submit → behavior/form wiring (not styling)
  *  - set_input_props → input config/structure (not styling)
  *  - set_icon icon param → icon name set by tree manifest; Phase 3 only adjusts size/color. */
@@ -1497,7 +1615,6 @@ export const PHASE3_BUILDER_TOOLS: BuilderTool[] = [
     };
   }),
   ...textTools.filter(t => ['set_text', 'set_placeholder'].includes(t.name)),
-  ...bulkTools,
 ];
 
 /** Phase W (workflow) tools — runs in parallel with Phase 3 after structure is built. */
@@ -1538,7 +1655,7 @@ export const STRUCTURE_AGENT_TOOLS: BuilderTool[] = [
 
 /** Binding Agent — connects data to UI nodes (text, repeat, condition, disabled, icon name). */
 export const BINDING_AGENT_TOOLS: BuilderTool[] = [
-  ...textTools.filter(t => ['set_text'].includes(t.name)),
+  ...textTools.filter(t => ['set_text', 'set_src'].includes(t.name)),
   ...logicTools.filter(t => ['set_condition', 'set_repeat', 'set_disabled'].includes(t.name)),
   ...textTools.filter(t => t.name === 'set_icon').map(stripIconColorSize),
 ];
@@ -1552,14 +1669,35 @@ export const LAYOUT_AGENT_TOOLS: BuilderTool[] = [
   ...semanticDesignTools.filter(t => t.name === 'set_transform'),
 ];
 
-/** Colors Sub-Agent — backgrounds, text color, borders, shadows, opacity, icon color/size, animation, bulk_apply. */
+/** Colors Sub-Agent — backgrounds, text color, borders, shadows, opacity, icon color/size, animation. */
 export const COLORS_AGENT_TOOLS: BuilderTool[] = [
   ...semanticDesignTools.filter(t => ['set_background', 'set_text_color', 'set_border', 'set_shadow', 'set_opacity'].includes(t.name)),
   ...textTools.filter(t => t.name === 'set_icon').map(stripIconName),
   ...logicTools.filter(t => t.name === 'set_animation'),
-  ...bulkTools,
 ];
 
 /** Typography + Animation Sub-Agent — removed (merged into layout + colors agents). */
 export const TYPO_ANIM_AGENT_TOOLS: BuilderTool[] = [];
+
+// ─── Merged Styling Agent Tool Collections ────────────────────────────────────
+
+/** Styling Agent — unified set_style covers ALL visual properties (layout, colors, border, shadow…). */
+export const STYLING_AGENT_TOOLS: BuilderTool[] = [
+  ...setStyleTool,
+  ...textTools.filter(t => t.name === 'set_icon').map(stripIconName),
+];
+
+/** Animation Agent — set_animation for loop/enter/exit/hover/press. */
+export const ANIMATION_AGENT_TOOLS: BuilderTool[] = [
+  ...logicTools.filter(t => t.name === 'set_animation'),
+];
+
+/** Media Agent — searches for and assigns images, videos, and icons to nodes.
+ *  search_images / search_videos / search_icons are read-tools (return data to AI).
+ *  set_src / set_background / set_icon are write-tools (emit tool_executed to client). */
+export const MEDIA_AGENT_TOOLS: BuilderTool[] = [
+  ...assetTools, // search_images, search_videos, search_icons
+  ...textTools.filter(t => ['set_src', 'set_icon'].includes(t.name)),
+  ...semanticDesignTools.filter(t => t.name === 'set_background'),
+];
 

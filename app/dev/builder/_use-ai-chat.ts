@@ -46,7 +46,7 @@ type BuilderChatSSE =
   | { type: 'text_delta'; content: string }
   | { type: 'thinking_delta'; content: string }
   | { type: 'round_start'; round: number }
-  | { type: 'tool_executed'; id: string; name: string; input: Record<string, unknown>; result?: unknown; error?: string; phase?: 'structure' | 'media' | 'styling' | 'styling:layout' | 'styling:colors' | 'styling:typo' | 'workflows' | 'binding' }
+  | { type: 'tool_executed'; id: string; name: string; input: Record<string, unknown>; result?: unknown; error?: string; phase?: 'structure' | 'media' | 'styling' | 'styling:layout' | 'styling:colors' | 'styling:typo' | 'animation' | 'workflows' | 'binding' }
   | { type: 'image_results'; images: Array<{ url: string; thumb: string; alt: string; credit: string; photographer?: string }> }
   | { type: 'icon_results'; icons: Array<{ id: string; name: string; prefix: string }> }
   | { type: 'build_phase'; phase: 'planning' | 'editing' | 'building' | 'wiring' | 'structure' | 'parallel'; total?: number; message: string; buildUnits?: Array<{ name: string; description: string; pageRoute: string; sectionCount?: number }> }

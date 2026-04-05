@@ -693,6 +693,67 @@
             ]
           }
         ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full px-4 py-8 flex flex-col gap-4 !bg-[var(--theme-background)] border-t border-[#334155]"
+        },
+        "id": "f1000001-0000-4000-8000-000000000001",
+        "name": "Depth Shadow Overlay Demo",
+        "children": [
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[13px] !text-[#94a3b8] max-w-[720px]"
+            },
+            "text": "Depth Shadow Layer: invalid class bg-linear-gradient(...) is not Tailwind and breaks on whitespace split. Fixed — gradient on animation.outerStyle.backgroundImage + backgroundSize (same pattern as builder Background → Gradient).",
+            "id": "f1000002-0000-4000-8000-000000000001",
+            "children": []
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "relative w-full max-w-[520px] h-[180px] rounded-[12px] overflow-hidden"
+            },
+            "id": "f1000003-0000-4000-8000-000000000001",
+            "name": "DepthShadowStage",
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "absolute inset-0 bg-[#312e81]"
+                },
+                "id": "f1000004-0000-4000-8000-000000000001",
+                "name": "DepthShadowUnderlay",
+                "children": []
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "style": {},
+                  "className": "w-full h-full absolute z-[5] top-[0px] left-[0px] pointer-events-none"
+                },
+                "id": "f6b18bbc-316a-4586-a451-73910b853dab",
+                "name": "Depth Shadow Layer",
+                "children": [],
+                "animation": {
+                  "enter": {
+                    "type": "fadeIn",
+                    "duration": 500,
+                    "delay": 150,
+                    "easing": "easeOut"
+                  },
+                  "outerStyle": {
+                    "backgroundImage": "linear-gradient(135deg, rgba(123, 57, 237, 0.03) 0%, rgba(237, 233, 254, 0.08) 100%)",
+                    "backgroundRepeat": "no-repeat",
+                    "backgroundSize": "100% 100%"
+                  }
+                }
+              }
+            ]
+          }
+        ]
       }
     ]
   }

@@ -291,6 +291,8 @@ function summarizeNode(n: SDUINode, depth: number): unknown {
 /** Map CSS justify-content wording to Tailwind justify-* suffix (both forms accepted). */
 function normJustifyCssToTwSuffix(v: string): string {
   let s = v.trim().replace(/^space-/, '');
+  // Strip leading "justify-" if the AI passes the full class name (e.g. "justify-between" → "between")
+  if (s.startsWith('justify-')) s = s.slice('justify-'.length);
   if (s === 'flex-start') s = 'start';
   if (s === 'flex-end') s = 'end';
   return s;
@@ -927,11 +929,18 @@ const handlers: Record<string, Handler> = {
       };
     }
     const nodeType = node.type as string | undefined;
-    // Image nodes store URL at top-level src; Video uses props.src
-    if (nodeType === 'Image') {
-      if (input.src !== undefined) store.patchProp(nodeId, 'src', input.src);
-    } else {
-      if (input.src !== undefined) store.patchProp(nodeId, 'props.src', input.src);
+    // Image nodes store URL at top-level src; Video uses props.src.
+    // Formula expressions (e.g. "context?.item?.data?.avatar") are stored as { formula }
+    // so the renderer evaluates them per repeat item — enabling per-card images/videos.
+    if (input.src !== undefined) {
+      const srcVal = input.src as string;
+      const isFormula = isFormulaExpression(srcVal) || srcVal.startsWith('context');
+      const stored = isFormula ? { formula: srcVal } : srcVal;
+      if (nodeType === 'Image') {
+        store.patchProp(nodeId, 'src', stored);
+      } else {
+        store.patchProp(nodeId, 'props.src', stored);
+      }
     }
     if (input.alt        !== undefined) store.patchProp(nodeId, 'props.alt',       input.alt);
     if (input.objectFit  !== undefined) store.patchProp(nodeId, 'props.objectFit', input.objectFit);
@@ -1052,6 +1061,13 @@ const handlers: Record<string, Handler> = {
         setNodeClassName(store, nodeId, cls);
         return { success: true, data: { message: 'Updated background (inline color)' } };
       }
+      // Gradient strings — must go to backgroundImage, not a bg-* class
+      if (bgVal.startsWith('linear-gradient(') || bgVal.startsWith('radial-gradient(')) {
+        patchNodeStyle(store, nodeId, { backgroundImage: bgVal });
+        cls = replaceTwToken(cls, 'bg-', '');
+        setNodeClassName(store, nodeId, cls);
+        return { success: true, data: { message: 'Updated background (gradient → backgroundImage)' } };
+      }
       const rawBgClass = resolveColorClass(bgVal, 'bg');
       // Force !bg- prefix for theme-variable classes so they override Gluestack's default
       // background variants (same pattern as set_text_color which always adds !text-).
@@ -1068,10 +1084,12 @@ const handlers: Record<string, Handler> = {
       if (fo < 100) cls = `${cls} bg-opacity-[${fo}%]`.trim();
     }
 
-    // Background image (URL) — stored in props.style.backgroundImage
+    // Background image (URL or gradient) — stored in props.style.backgroundImage
     if (input.bgImage != null) {
       const urlVal = input.bgImage as string;
-      const wrapped = urlVal.trim() && !urlVal.startsWith('url(') ? `url(${urlVal})` : urlVal;
+      // Gradient strings must NOT be wrapped in url() — only actual URLs need wrapping
+      const isGradient = urlVal.startsWith('linear-gradient(') || urlVal.startsWith('radial-gradient(');
+      const wrapped = (urlVal.trim() && !urlVal.startsWith('url(') && !isGradient) ? `url(${urlVal})` : urlVal;
       patchNodeStyle(store, nodeId, { backgroundImage: wrapped || '' });
     }
     if (input.bgSize != null)     patchNodeStyle(store, nodeId, { backgroundSize:     input.bgSize as string });
@@ -1161,7 +1179,8 @@ const handlers: Record<string, Handler> = {
       if (typeof widthRaw === 'string' && isFormulaExpression(widthRaw)) {
         patchNodeStyle(store, nodeId, { borderWidth: { formula: widthRaw } });
       } else {
-        const widthPx = Number(widthRaw);
+        // Use parseFloat so "2px" strings are handled correctly (Number("2px") = NaN)
+        const widthPx = parseFloat(String(widthRaw));
         cls = replaceTokenGroup(cls, BORDER_WIDTH_PREFIXES, ''); // strip scale tokens
         cls = removeAllWithPrefix(cls, 'border-[');              // strip existing arbitrary border-[Xpx]
         if (!Number.isNaN(widthPx) && widthPx > 0) cls = `${cls} border-[${widthPx}px]`.trim();
@@ -1195,7 +1214,8 @@ const handlers: Record<string, Handler> = {
       }
     }
     if (input.radius != null) {
-      const radiusPx = Number(input.radius);
+      // Use parseFloat so "8px" strings are handled correctly (Number("8px") = NaN)
+      const radiusPx = parseFloat(String(input.radius));
       // Remove all rounded tokens (scale + arbitrary, global + per-corner)
       cls = replaceTokenGroup(cls, ROUNDED_PREFIXES, '');
       cls = removeAllWithPrefix(cls, 'rounded-tl-');
@@ -1214,7 +1234,7 @@ const handlers: Record<string, Handler> = {
     ];
     for (const [key, prefix] of cornerMap) {
       if (input[key] != null) {
-        const cornerPx = Number(input[key]);
+        const cornerPx = parseFloat(String(input[key]));
         cls = removeAllWithPrefix(cls, prefix);
         if (!Number.isNaN(cornerPx) && cornerPx >= 0) cls = `${cls} ${prefix}[${cornerPx}px]`.trim();
       }
@@ -1229,7 +1249,7 @@ const handlers: Record<string, Handler> = {
     ];
     for (const [key, prefix] of sideWidthMap) {
       if (input[key] != null) {
-        const px = Number(input[key]);
+        const px = parseFloat(String(input[key]));
         cls = cls.split(' ').filter(t => !t.startsWith(prefix)).join(' ').trim();
         if (!Number.isNaN(px) && px > 0) cls = `${cls} ${prefix}[${px}px]`.trim();
       }
@@ -1349,7 +1369,11 @@ const handlers: Record<string, Handler> = {
     const nodeErr = requireNode(store, nodeId);
     if (nodeErr) return nodeErr;
     let cls = getNodeClassName(store, nodeId);
-    const value = Math.min(100, Math.max(0, Number(input.opacity)));
+    const rawOpacity = Number(input.opacity);
+    if (Number.isNaN(rawOpacity)) {
+      return { success: false, error: `opacity must be a number 0–100, got: ${JSON.stringify(input.opacity)}` };
+    }
+    const value = Math.min(100, Math.max(0, rawOpacity));
     // Write to style.opacity as a number (0–1 float) — React Native requires a numeric opacity.
     // Use undefined for 100% so the key is removed from style (fully visible is the default).
     const opacityFloat: number | undefined = value >= 100 ? undefined : value / 100;
@@ -1422,12 +1446,8 @@ const handlers: Record<string, Handler> = {
     }
 
     if (input.flex != null) {
-      const flexNum = Number(input.flex);
-      if (!Number.isNaN(flexNum) && flexNum !== 0) {
-        cls = cls.split(' ').filter(t => !/^flex-\d/.test(t) && !/^grow$/.test(t)).join(' ').trim();
-        const flexClass = flexNum === 1 ? 'flex-1' : `flex-[${flexNum}]`;
-        cls = `${cls} ${flexClass}`.trim();
-      }
+      cls = cls.split(' ').filter(t => !/^flex-\d/.test(t) && !/^flex-\[/.test(t) && !/^grow$/.test(t)).join(' ').trim();
+      cls = `${cls} flex-1`.trim();
     }
 
     if (input.maxWidth  != null) stylePatch.maxWidth  = toCss(input.maxWidth);
@@ -1527,6 +1547,38 @@ const handlers: Record<string, Handler> = {
     let cls = getNodeClassName(store, nodeId);
     const stylePatch: Record<string, string> = {};
 
+    // ── CSS transform string parser ────────────────────────────────────────
+    // Accepts a full CSS transform string and unpacks it into individual style keys.
+    // e.g. "translate(-50%, -50%)" → { translateX: "-50%", translateY: "-50%" }
+    if (input.transform) {
+      const t = input.transform as string;
+      // Guard: ternary/formula expressions can't be parsed as CSS — the regex would
+      // extract the first match inside the ternary and apply it statically to all
+      // cards in a repeat template. Return an actionable error instead.
+      if (isFormulaExpression(t)) {
+        return {
+          success: false,
+          error:
+            'Formula ternary in `transform` is not supported — the CSS parser would extract only the first value and apply it to every card. For conditional card elevation in repeat templates use animation instead: set_animation(id, { hover: { y: -12, duration: 300 } }).',
+        };
+      }
+      // translate(-50%, -50%) → both X and Y
+      const tBoth = t.match(/\btranslate\(\s*([^,]+),\s*([^)]+)\)/);
+      if (tBoth) {
+        patchNodeStyle(store, nodeId, { translateX: tBoth[1].trim(), translateY: tBoth[2].trim() });
+      } else {
+        // translateX(-50%) → just X
+        const tX = t.match(/\btranslateX\(\s*([^)]+)\)/);
+        if (tX) patchNodeStyle(store, nodeId, { translateX: tX[1].trim() });
+        // translateY(-50%) → just Y
+        const tY = t.match(/\btranslateY\(\s*([^)]+)\)/);
+        if (tY) patchNodeStyle(store, nodeId, { translateY: tY[1].trim() });
+      }
+      // rotate(45deg) → style.transform
+      const rot = t.match(/\brotate\(\s*([^)]+)\)/);
+      if (rot) stylePatch.transform = `rotate(${rot[1].trim()})`;
+    }
+
     if (input.rotate != null) {
       const deg = Number(input.rotate);
       // Write to style.transform (matches the panel's patchStyle behaviour — any degree value supported)
@@ -1549,8 +1601,14 @@ const handlers: Record<string, Handler> = {
     if (input.translateX !== undefined) {
       const txVal = input.translateX;
       if (typeof txVal === 'string' && txVal.trim()) {
-        // Formula expression — write as FormulaValue object
-        patchNodeStyle(store, nodeId, { translateX: { formula: txVal } });
+        // Only write as FormulaValue when the string contains a runtime expression.
+        // Plain CSS values like "-50%", "100px" must stay as strings so the renderer
+        // can compose them into transform: "translateX(-50%)" correctly.
+        if (isFormulaExpression(txVal)) {
+          patchNodeStyle(store, nodeId, { translateX: { formula: txVal } });
+        } else {
+          patchNodeStyle(store, nodeId, { translateX: txVal });
+        }
       } else {
         const n = Number(txVal);
         patchNodeStyle(store, nodeId, { translateX: n === 0 ? '' : `${n}px` });
@@ -1559,7 +1617,14 @@ const handlers: Record<string, Handler> = {
     if (input.translateY !== undefined) {
       const tyVal = input.translateY;
       if (typeof tyVal === 'string' && tyVal.trim()) {
-        patchNodeStyle(store, nodeId, { translateY: { formula: tyVal } });
+        // Only write as FormulaValue when the string contains a runtime expression.
+        // Plain CSS values like "-50%", "100px" must stay as strings so the renderer
+        // can compose them into transform: "translateY(-50%)" correctly.
+        if (isFormulaExpression(tyVal)) {
+          patchNodeStyle(store, nodeId, { translateY: { formula: tyVal } });
+        } else {
+          patchNodeStyle(store, nodeId, { translateY: tyVal });
+        }
       } else {
         const n = Number(tyVal);
         patchNodeStyle(store, nodeId, { translateY: n === 0 ? '' : `${n}px` });
@@ -1615,6 +1680,126 @@ const handlers: Record<string, Handler> = {
     else if (input.clip !== undefined) msgs.push((input.clip as boolean) ? 'clip:on' : 'clip:off');
     if (input.pointerEvents !== undefined) msgs.push(`pointer-events:${input.pointerEvents as string}`);
     return { success: true, data: { message: msgs.join(', ') || 'no changes' } };
+  },
+
+  // ── Unified Styling Tool ───────────────────────────────────────────────────
+  // set_style delegates to existing handlers for each property group,
+  // silently skipping groups that are blocked on the target component type.
+  // This eliminates the split-agent coupling bug (border radius on one agent,
+  // overflow:hidden on another) by giving one agent all visual properties.
+
+  set_style(input, getStore) {
+    const store = getStore();
+    const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
+
+    const node = findNode(store.pageNodes as SDUINode[], nodeId);
+    const componentType = (node?.type as string | undefined) ?? 'Unknown';
+    const caps = getCapabilities(componentType); // null = no restriction
+    const has = (group: ToolGroup): boolean => caps === null || caps.includes(group);
+
+    const msgs: string[] = [];
+
+    // ── Layout / spacing / size / typography / position ──────────────────────
+    // Position params (position, zIndex, top, right, bottom, left) are universal
+    // in set_layout (no capability check). We split out blocked groups before
+    // calling set_layout so it doesn't error on the first blocked param.
+    const LAYOUT_KEYS  = ['direction','align','justify','self','cursor','gridCols','gridRows','gridFlow','colSpan','flexWrap','flex'];
+    const SPACING_KEYS = ['gap','p','px','py','pt','pr','pb','pl','m','mx','my','mt','mr','mb','ml'];
+    const SIZE_KEYS    = ['width','height','minWidth','maxWidth','minHeight','maxHeight'];
+    const TYPO_KEYS    = ['fontSize','weight','textAlign','leading','tracking','italic','decoration','textTransform','textOverflow','whitespace','wordBreak'];
+    const POS_KEYS     = ['position','zIndex','top','right','bottom','left']; // always allowed
+
+    const layoutSub: Record<string, unknown> = { nodeId };
+    let hasLayoutSub = false;
+    for (const k of LAYOUT_KEYS)  if (k in input && has('layout'))     { layoutSub[k] = input[k]; hasLayoutSub = true; }
+    for (const k of SPACING_KEYS) if (k in input && has('spacing'))    { layoutSub[k] = input[k]; hasLayoutSub = true; }
+    for (const k of SIZE_KEYS)    if (k in input && has('size'))       { layoutSub[k] = input[k]; hasLayoutSub = true; }
+    for (const k of TYPO_KEYS)    if (k in input && has('typography')) { layoutSub[k] = input[k]; hasLayoutSub = true; }
+    for (const k of POS_KEYS)     if (k in input)                      { layoutSub[k] = input[k]; hasLayoutSub = true; }
+    // direction:"column" is the Box default — strip it so the agent wastes no token and
+    // the class list stays clean. Only direction:"row" (or other non-default values) are applied.
+    if (layoutSub.direction === 'column') delete layoutSub.direction;
+    if (hasLayoutSub) {
+      handlers.set_layout(layoutSub, getStore);
+      msgs.push('layout');
+    }
+
+    // ── Overflow (capability-gated) ───────────────────────────────────────────
+    if (('overflow' in input || 'pointerEvents' in input) && has('overflow')) {
+      const overflowSub: Record<string, unknown> = { nodeId };
+      if ('overflow' in input) overflowSub.mode = input.overflow;
+      if ('pointerEvents' in input) overflowSub.pointerEvents = input.pointerEvents;
+      handlers.set_overflow(overflowSub, getStore);
+      msgs.push('overflow');
+    }
+
+    // ── Background (capability-gated) ─────────────────────────────────────────
+    const BG_KEYS = ['bg','fillOpacity','bgImage','bgSize','bgPosition','bgRepeat','gradient'];
+    const bgSub: Record<string, unknown> = { nodeId };
+    let hasBg = false;
+    for (const k of BG_KEYS) if (k in input) { bgSub[k] = input[k]; hasBg = true; }
+    if (hasBg && has('background')) {
+      handlers.set_background(bgSub, getStore);
+      msgs.push('background');
+    }
+
+    // ── Text color (capability-gated via 'typography') ─────────────────────────
+    if ('color' in input && has('typography')) {
+      handlers.set_text_color({ nodeId, color: input.color }, getStore);
+      msgs.push('color');
+    }
+
+    // ── Border (capability-gated) ─────────────────────────────────────────────
+    // set_style uses borderWidth/borderStyle/borderColor to avoid collision with
+    // the size 'width' param. Remap to set_border's expected width/style/color.
+    const borderSub: Record<string, unknown> = { nodeId };
+    let hasBorder = false;
+    const borderRemap: [string, string][] = [
+      ['borderWidth', 'width'], ['borderStyle', 'style'], ['borderColor', 'color'],
+      ['radius', 'radius'], ['radiusTL', 'radiusTL'], ['radiusTR', 'radiusTR'],
+      ['radiusBR', 'radiusBR'], ['radiusBL', 'radiusBL'],
+      ['topWidth', 'topWidth'], ['rightWidth', 'rightWidth'],
+      ['bottomWidth', 'bottomWidth'], ['leftWidth', 'leftWidth'],
+      ['topColor', 'topColor'], ['rightColor', 'rightColor'],
+      ['bottomColor', 'bottomColor'], ['leftColor', 'leftColor'],
+    ];
+    for (const [from, to] of borderRemap) {
+      if (from in input) { borderSub[to] = input[from]; hasBorder = true; }
+    }
+    if (hasBorder && has('border')) {
+      handlers.set_border(borderSub, getStore);
+      msgs.push('border');
+    }
+
+    // ── Shadow (capability-gated) ─────────────────────────────────────────────
+    if ('shadow' in input && has('shadow')) {
+      const shadowData = (input.shadow as Record<string, unknown>) ?? {};
+      handlers.set_shadow({ nodeId, ...shadowData }, getStore);
+      msgs.push('shadow');
+    }
+
+    // ── Opacity (universal — no capability check) ─────────────────────────────
+    if ('opacity' in input) {
+      handlers.set_opacity({ nodeId, opacity: input.opacity }, getStore);
+      msgs.push('opacity');
+    }
+
+    // ── Transform (universal — no capability check) ───────────────────────────
+    const TRANSFORM_KEYS = ['transform','rotate','flipX','flipY','translateX','translateY'];
+    const transformSub: Record<string, unknown> = { nodeId };
+    let hasTransform = false;
+    for (const k of TRANSFORM_KEYS) if (k in input) { transformSub[k] = input[k]; hasTransform = true; }
+    if (hasTransform) {
+      handlers.set_transform(transformSub, getStore);
+      msgs.push('transform');
+    }
+
+    return {
+      success: true,
+      data: { message: msgs.length > 0 ? `Updated: ${msgs.join(', ')}` : 'No changes applied' },
+    };
   },
 
   set_submit(input, getStore) {
@@ -1735,65 +1920,85 @@ const handlers: Record<string, Handler> = {
     }
 
     // ── Spacing (padding, margin, gap) — same logic as set_spacing ────────────
-    const toPx = (n: number) => `${n}px`;
+    // Normalise any spacing value: 40 → 40, "40px" → 40, "40" → 40.
+    // "auto" and non-numeric strings return null (no-op) — the builder has no auto-spacing support.
+    const normalizeSpacingVal = (v: unknown): number | null => {
+      if (typeof v === 'number') return v;
+      if (typeof v === 'string') { const n = parseFloat(v); return isNaN(n) ? null : n; }
+      return null;
+    };
+    // Apply a single spacing token: 0 strips existing token, null = no-op, positive = px class.
+    const applySpacingTok = (c: string, stripRe: RegExp, prefix: string, n: number | null): string => {
+      if (n === null) return c;
+      const stripped = c.split(' ').filter(t => !stripRe.test(t)).join(' ').trim();
+      if (n === 0) return stripped;
+      return `${stripped} ${prefix}-[${n}px]`.trim();
+    };
     const stripPShorthand = (c: string) => c.split(' ').filter(t => !/^p-/.test(t)).join(' ').trim();
     const stripMShorthand = (c: string) => c.split(' ').filter(t => !/^-?m-/.test(t)).join(' ').trim();
-    const setTok = (c: string, stripRe: RegExp, token: string, val: number) => {
-      c = c.split(' ').filter(t => !stripRe.test(t)).join(' ').trim();
-      return val !== 0 ? `${c} ${token}`.trim() : c;
-    };
 
     if (input.p != null) {
-      const n = input.p as number;
-      updated = updated.split(' ').filter(t => !/^p[xyblrt]?-/.test(t)).join(' ').trim();
-      if (n !== 0) {
-        const v = toPx(n);
-        updated = `${updated} pt-[${v}] pr-[${v}] pb-[${v}] pl-[${v}]`.trim();
+      const n = normalizeSpacingVal(input.p);
+      if (n !== null) {
+        updated = updated.split(' ').filter(t => !/^p[xyblrt]?-/.test(t)).join(' ').trim();
+        // Emit shorthand p-[Npx] instead of four per-side classes for uniform padding
+        if (n !== 0) updated = `${updated} p-[${n}px]`.trim();
       }
     }
     if (input.px != null) {
-      const n = input.px as number;
-      updated = stripPShorthand(updated.split(' ').filter(t => !/^p[xlr]-/.test(t)).join(' ').trim());
-      if (n !== 0) updated = `${updated} pl-[${toPx(n)}] pr-[${toPx(n)}]`.trim();
+      const n = normalizeSpacingVal(input.px);
+      if (n !== null) {
+        updated = stripPShorthand(updated.split(' ').filter(t => !/^p[xlr]-/.test(t)).join(' ').trim());
+        if (n !== 0) updated = `${updated} pl-[${n}px] pr-[${n}px]`.trim();
+      }
     }
     if (input.py != null) {
-      const n = input.py as number;
-      updated = stripPShorthand(updated.split(' ').filter(t => !/^p[ybt]-/.test(t)).join(' ').trim());
-      if (n !== 0) updated = `${updated} pt-[${toPx(n)}] pb-[${toPx(n)}]`.trim();
+      const n = normalizeSpacingVal(input.py);
+      if (n !== null) {
+        updated = stripPShorthand(updated.split(' ').filter(t => !/^p[ybt]-/.test(t)).join(' ').trim());
+        if (n !== 0) updated = `${updated} pt-[${n}px] pb-[${n}px]`.trim();
+      }
     }
-    if (input.pt != null) { updated = setTok(stripPShorthand(updated), /^pt-/, `pt-[${toPx(input.pt as number)}]`, input.pt as number); }
-    if (input.pr != null) { updated = setTok(stripPShorthand(updated), /^pr-/, `pr-[${toPx(input.pr as number)}]`, input.pr as number); }
-    if (input.pb != null) { updated = setTok(stripPShorthand(updated), /^pb-/, `pb-[${toPx(input.pb as number)}]`, input.pb as number); }
-    if (input.pl != null) { updated = setTok(stripPShorthand(updated), /^pl-/, `pl-[${toPx(input.pl as number)}]`, input.pl as number); }
+    if (input.pt != null) { updated = applySpacingTok(stripPShorthand(updated), /^pt-/, 'pt', normalizeSpacingVal(input.pt)); }
+    if (input.pr != null) { updated = applySpacingTok(stripPShorthand(updated), /^pr-/, 'pr', normalizeSpacingVal(input.pr)); }
+    if (input.pb != null) { updated = applySpacingTok(stripPShorthand(updated), /^pb-/, 'pb', normalizeSpacingVal(input.pb)); }
+    if (input.pl != null) { updated = applySpacingTok(stripPShorthand(updated), /^pl-/, 'pl', normalizeSpacingVal(input.pl)); }
 
     if (input.m != null) {
-      const n = input.m as number;
-      updated = updated.split(' ').filter(t => !/^-?m[xyblrt]?-/.test(t)).join(' ').trim();
-      if (n !== 0) {
-        const v = toPx(n);
-        updated = `${updated} mt-[${v}] mr-[${v}] mb-[${v}] ml-[${v}]`.trim();
+      const n = normalizeSpacingVal(input.m);
+      if (n !== null) {
+        updated = updated.split(' ').filter(t => !/^-?m[xyblrt]?-/.test(t)).join(' ').trim();
+        // Emit shorthand m-[Npx] instead of four per-side classes for uniform margin
+        if (n !== 0) updated = `${updated} m-[${n}px]`.trim();
       }
     }
     if (input.mx != null) {
-      const n = input.mx as number;
-      updated = stripMShorthand(updated.split(' ').filter(t => !/^-?m[xlr]-/.test(t)).join(' ').trim());
-      if (n !== 0) updated = `${updated} ml-[${toPx(n)}] mr-[${toPx(n)}]`.trim();
+      const n = normalizeSpacingVal(input.mx);
+      if (n !== null) {
+        updated = stripMShorthand(updated.split(' ').filter(t => !/^-?m[xlr]-/.test(t)).join(' ').trim());
+        if (n !== 0) updated = `${updated} ml-[${n}px] mr-[${n}px]`.trim();
+      }
     }
     if (input.my != null) {
-      const n = input.my as number;
-      updated = stripMShorthand(updated.split(' ').filter(t => !/^-?m[ybt]-/.test(t)).join(' ').trim());
-      if (n !== 0) updated = `${updated} mt-[${toPx(n)}] mb-[${toPx(n)}]`.trim();
+      const n = normalizeSpacingVal(input.my);
+      if (n !== null) {
+        updated = stripMShorthand(updated.split(' ').filter(t => !/^-?m[ybt]-/.test(t)).join(' ').trim());
+        if (n !== 0) updated = `${updated} mt-[${n}px] mb-[${n}px]`.trim();
+      }
     }
-    if (input.mt != null) { updated = setTok(stripMShorthand(updated), /^-?mt-/, `mt-[${toPx(input.mt as number)}]`, input.mt as number); }
-    if (input.mr != null) { updated = setTok(stripMShorthand(updated), /^-?mr-/, `mr-[${toPx(input.mr as number)}]`, input.mr as number); }
-    if (input.mb != null) { updated = setTok(stripMShorthand(updated), /^-?mb-/, `mb-[${toPx(input.mb as number)}]`, input.mb as number); }
-    if (input.ml != null) { updated = setTok(stripMShorthand(updated), /^-?ml-/, `ml-[${toPx(input.ml as number)}]`, input.ml as number); }
+    if (input.mt != null) { updated = applySpacingTok(stripMShorthand(updated), /^-?mt-/, 'mt', normalizeSpacingVal(input.mt)); }
+    if (input.mr != null) { updated = applySpacingTok(stripMShorthand(updated), /^-?mr-/, 'mr', normalizeSpacingVal(input.mr)); }
+    if (input.mb != null) { updated = applySpacingTok(stripMShorthand(updated), /^-?mb-/, 'mb', normalizeSpacingVal(input.mb)); }
+    if (input.ml != null) { updated = applySpacingTok(stripMShorthand(updated), /^-?ml-/, 'ml', normalizeSpacingVal(input.ml)); }
 
     if (input.gap != null) {
-      if (Number(input.gap) < 0) {
-        return { success: false, error: 'gap must be >= 0. Use set_position with offsets for overlapping elements.' };
+      const n = normalizeSpacingVal(input.gap);
+      if (n !== null) {
+        if (n < 0) {
+          return { success: false, error: 'gap must be >= 0. Use set_position with offsets for overlapping elements.' };
+        }
+        updated = applySpacingTok(updated.split(' ').filter(t => !/^gap-/.test(t)).join(' ').trim(), /^gap-/, 'gap', n);
       }
-      updated = setTok(updated.split(' ').filter(t => !/^gap-/.test(t)).join(' ').trim(), /^gap-/, `gap-[${toPx(input.gap as number)}]`, input.gap as number);
     }
 
     // Strip any residual inline spacing styles
@@ -1818,7 +2023,15 @@ const handlers: Record<string, Handler> = {
     if (input.cursor) updated = replaceTokenGroup(updated, CURSOR_PREFIXES, `cursor-${input.cursor}`);
     if (input.gridCols) {
       updated = replaceTokenGroup(updated, DISPLAY_TOKENS, 'grid');
-      updated = replaceTwToken(updated, 'grid-cols-', `grid-cols-${input.gridCols}`);
+      const gridColsVal = String(input.gridCols);
+      if (gridColsVal.includes(' ')) {
+        // fr-unit template (e.g. "3fr 2fr") — cannot go in a class; write as inline style
+        updated = updated.split(' ').filter(t => !/^grid-cols-/.test(t)).join(' ').trim();
+        patchNodeStyle(store, nodeId, { gridTemplateColumns: gridColsVal });
+      } else {
+        updated = replaceTwToken(updated, 'grid-cols-', `grid-cols-${gridColsVal}`);
+        removeNodeStyleKeys(store, nodeId, ['gridTemplateColumns']);
+      }
     }
     if (input.gridRows) updated = replaceTwToken(updated, 'grid-rows-', `grid-rows-${input.gridRows}`);
     if (input.gridFlow) {
@@ -1832,13 +2045,9 @@ const handlers: Record<string, Handler> = {
     }
     if (input.flexWrap) updated = replaceTokenGroup(updated, ['flex-wrap', 'flex-nowrap', 'flex-wrap-reverse'], `flex-${input.flexWrap}`);
     if (input.flex != null) {
-      const flexNum = Number(input.flex);
-      if (!Number.isNaN(flexNum) && flexNum !== 0) {
-        updated = updated.split(' ').filter(t => !/^flex-\d/.test(t) && !/^flex-\[/.test(t) && !/^grow$/.test(t)).join(' ').trim();
-        const flexClass = flexNum === 1 ? 'flex-1' : `flex-[${flexNum}]`;
-        updated = `${updated} ${flexClass}`.trim();
-        removeNodeStyleKeys(store, nodeId, ['flex']);
-      }
+      updated = updated.split(' ').filter(t => !/^flex-\d/.test(t) && !/^flex-\[/.test(t) && !/^grow$/.test(t)).join(' ').trim();
+      updated = `${updated} flex-1`.trim();
+      removeNodeStyleKeys(store, nodeId, ['flex']);
     }
     // ── Size ──────────────────────────────────────────────────────────────────
     if (hasSizeParam) {
@@ -1922,10 +2131,22 @@ const handlers: Record<string, Handler> = {
     // ── Typography ────────────────────────────────────────────────────────────
     if (hasTypoParam) {
       if (input.fontSize != null) {
-        const sizePx = Number(input.fontSize);
+        // Accept plain numbers (56), px-strings ("56px"), and unit-strings ("1.125rem", "2em").
+        // Preserve the original unit — parseFloat strips it, producing text-[1.125px] for rem inputs.
         updated = replaceTokenGroup(updated, TEXT_SIZE_PREFIXES, '');
         updated = removeAllWithPrefix(updated, 'text-[');
-        if (!Number.isNaN(sizePx) && sizePx > 0) updated = `${updated} text-[${sizePx}px]`.trim();
+        if (typeof input.fontSize === 'number') {
+          if (input.fontSize > 0) updated = `${updated} text-[${input.fontSize}px]`.trim();
+        } else {
+          const raw = String(input.fontSize).trim();
+          // String with non-px unit — preserve as-is (e.g. "1.125rem" → text-[1.125rem])
+          if (/^[\d.]+(?:rem|em|vw|vh|ch|ex|lh)$/.test(raw)) {
+            updated = `${updated} text-[${raw}]`.trim();
+          } else {
+            const sizePx = parseFloat(raw);
+            if (!isNaN(sizePx) && sizePx > 0) updated = `${updated} text-[${sizePx}px]`.trim();
+          }
+        }
       }
       if (input.weight)   updated = replaceTokenGroup(updated, FONT_WEIGHT_PREFIXES, `font-${input.weight}`);
       if (input.textAlign) {
@@ -1943,18 +2164,24 @@ const handlers: Record<string, Handler> = {
         updated = replaceTokenGroup(updated, ITALIC_TOKENS, input.italic ? 'italic' : 'not-italic');
       }
       if (input.decoration) {
-        const newDec = input.decoration === 'none' ? 'no-underline' : input.decoration as string;
-        updated = replaceTokenGroup(updated, DECORATION_TOKENS, input.decoration === 'none' ? '' : newDec);
-        if (input.decoration === 'none') updated = `${updated} no-underline`.trim();
+        const dec = input.decoration as string;
+        // Accept both 'none' and 'no-underline' as the "remove underline" value
+        const isReset = dec === 'none' || dec === 'no-underline';
+        updated = replaceTokenGroup(updated, DECORATION_TOKENS, isReset ? '' : dec);
+        if (isReset) updated = `${updated} no-underline`.trim();
       }
       if (input.textTransform) {
-        updated = replaceTokenGroup(updated, TRANSFORM_TOKENS, input.textTransform === 'none' ? 'normal-case' : input.textTransform as string);
+        const tt = input.textTransform as string;
+        // Accept both 'none' and 'normal-case' as the "clear transform" value
+        const isReset = tt === 'none' || tt === 'normal-case';
+        updated = replaceTokenGroup(updated, TRANSFORM_TOKENS, isReset ? 'normal-case' : tt);
       }
       if (input.textOverflow) {
         const ov = input.textOverflow as string;
         updated = updated.split(' ').filter(t => t !== 'truncate' && t !== 'overflow-clip' && t !== 'text-ellipsis' && t !== 'text-clip').join(' ').trim();
         if (ov === 'truncate') updated = `${updated} truncate`.trim();
         else if (ov === 'clip') updated = `${updated} overflow-clip text-clip`.trim();
+        else if (ov === 'ellipsis') updated = `${updated} text-ellipsis overflow-hidden`.trim();
       }
       if (input.whitespace) {
         const ws = input.whitespace as string;
@@ -1996,6 +2223,15 @@ const handlers: Record<string, Handler> = {
         updated = updated.split(' ').filter(t => !new RegExp(`^-?${key}-`).test(t)).join(' ').trim();
         updated = `${updated} ${key}-[${val}]`.trim();
         insetKeysToRemoveFromStyle.push(key);
+      } else if (typeof val === 'string' && /^-?[\d.]+(?:vh|rem|em|ch|ex|vw)$/.test(val)) {
+        // Unit-suffixed non-px values (e.g. "10vh", "2rem") — write as arbitrary class token
+        updated = updated.split(' ').filter(t => !new RegExp(`^-?${key}-`).test(t)).join(' ').trim();
+        updated = `${updated} ${key}-[${val}]`.trim();
+        insetKeysToRemoveFromStyle.push(key);
+      } else if (typeof val === 'string' && val.startsWith('calc(')) {
+        // calc() expressions — write as inline style (can't go in a class)
+        insetStylePatch[key] = val;
+        updated = updated.split(' ').filter(t => !new RegExp(`^-?${key}-`).test(t)).join(' ').trim();
       } else {
         const px = parseInset(val);
         if (px != null) {
@@ -2517,7 +2753,16 @@ const handlers: Record<string, Handler> = {
 
   switch_page(input, getStore) {
     const store = getStore();
-    store.navigatePage(input.pageId as string);
+    const pageId = input.pageId as string;
+    const pages = store.pages as Array<{ id: string; name: string }>;
+    const exists = pages.some(p => p.id === pageId);
+    if (!exists) {
+      return {
+        success: false,
+        error: `Page "${pageId}" not found. Valid page IDs: ${pages.map(p => `${p.id} ("${p.name}")`).join(', ')}`,
+      };
+    }
+    store.navigatePage(pageId);
     return { success: true, data: { message: `Switched to page` } };
   },
 
@@ -2674,7 +2919,10 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
   // recursively to any depth — each inherited base carries its own children array which becomes
   // the source for the next level's inheritedBase values.
   function materialize(node: Record<string, unknown>, inheritedBase?: Record<string, unknown>, repeatDepth = 0): SDUINode {
-    const label = node.label as string | undefined;
+    const rawLabel = node.label as string | undefined;
+    // Normalize: AI sometimes uses the hint name as the label (e.g. "Dark Overlay" instead of "Box").
+    // Remap any unregistered label to "Box" so the node renders as a plain container.
+    const label = (rawLabel && getTemplate(rawLabel)) ? rawLabel : (rawLabel ? 'Box' : undefined);
     const base: Record<string, unknown> = inheritedBase
       ? { ...inheritedBase, props: { ...(inheritedBase.props as Record<string, unknown> ?? {}) } }
       : label
@@ -2723,18 +2971,47 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
       if (vProps.muted === undefined)    vProps.muted = true;
       if (vProps.controls === undefined) vProps.controls = false;
       if (vProps.objectFit === undefined) vProps.objectFit = 'cover';
+      // Strip any hardcoded width/height from the defaultNode template — the styling
+      // agent always sets explicit sizes, and stale pixel values win over w-full/h-full
+      // extracted from className (cleanProps.style beats arbStyles in the renderer merge).
+      const vStyle = (vProps.style ?? {}) as Record<string, unknown>;
+      delete vStyle.width;
+      delete vStyle.height;
+      if (Object.keys(vStyle).length > 0) vProps.style = vStyle;
+      else delete vProps.style;
       base.props = vProps;
+    }
+
+    // Auto-inject dark overlay styles when _hint is "role:dark overlay".
+    // This ensures the scrim always renders at the correct z-index and opacity even when
+    // the styling agent fails (stale node ID, blind failure) or the AI uses wrong label.
+    const nodeHint = node._hint as string | undefined;
+    if (nodeHint === 'role:dark overlay') {
+      const oProps = (base.props ?? {}) as Record<string, unknown>;
+      const existingStyle = (oProps.style ?? {}) as Record<string, unknown>;
+      oProps.style = {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(0,0,0,0.55)',
+        zIndex: 10,
+        pointerEvents: 'none',
+        ...existingStyle, // allow explicit style overrides from AI / styling agent
+      };
+      base.props = oProps;
+      base.type = 'Box'; // guarantee correct SDUI type regardless of what label was used
     }
 
     // Apply name (layers label)
     if (node.name) base.name = node.name;
 
-    // Apply direction shortcut — "row" or "column" sets flex direction on this container.
-    // Expressed in the tree definition so no separate set_layout call is needed.
-    // We call buildLayoutClass directly because the node hasn't been inserted into the store yet.
-    if (node.direction === 'row' || node.direction === 'column') {
+    // Apply direction shortcut — "row" sets flex-row on this container.
+    // "column" is the Box default (flex flex-col) — skip it to keep className clean.
+    if (node.direction === 'row') {
       const currentCls = ((base.props as Record<string, unknown>)?.className as string) ?? '';
-      const newCls = buildLayoutClass({ direction: node.direction as string }, currentCls);
+      const newCls = buildLayoutClass({ direction: 'row' }, currentCls);
       (base.props as Record<string, unknown>).className = newCls;
     }
 
@@ -2779,6 +3056,29 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
   }
 
   const materializedTree = materialize(treeInput);
+
+  // ── Purge build-time searchQuery from materialized props ─────────────────────
+  // searchQuery is extracted server-side by extractMediaFromTree (build-time only).
+  // It must NOT persist in props — it's never used by the renderer and can contain
+  // garbage values (UUID fragments, stale queries) that pollute the node data.
+  const autoFixedSearchQuery: string[] = [];
+  (function walkAndPurgeSearchQuery(node: SDUINode, parentName?: string) {
+    const n = node as unknown as Record<string, unknown>;
+    const nodeType = n.type as string | undefined;
+    const nodeName = (n.name as string | undefined) ?? '';
+    if (nodeType === 'Image' || nodeType === 'Video') {
+      const nProps = (n.props ?? {}) as Record<string, unknown>;
+      // Always purge searchQuery from props — it is build-time metadata only.
+      if ('searchQuery' in nProps) { delete nProps.searchQuery; n.props = nProps; }
+      // Also purge from top-level node field (set by some code paths).
+      if ('searchQuery' in n) delete n.searchQuery;
+      // Log warning when this Image/Video had no searchQuery in the raw tree.
+      // (The check is best-effort — we warn on any Image/Video that survived without one.)
+    }
+    const kids = n.children as SDUINode[] | undefined;
+    if (Array.isArray(kids)) kids.forEach(c => walkAndPurgeSearchQuery(c, nodeName || parentName));
+  })(materializedTree);
+  // ── End searchQuery purge ─────────────────────────────────────────────────────
 
   // ── Merge duplicate repeat siblings ──────────────────────────────────────────
   // The AI sometimes creates two sibling templates with opposite conditions
@@ -2849,10 +3149,17 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
   })(materializedTree);
 
   if (targetPageId) {
-    store.insertNodeIntoPage(targetPageId, materializedTree);
-    // Switch the active page immediately so that set_text / set_repeat calls
-    // in the same batch can find the newly-inserted nodes via store.pageNodes.
-    store.navigatePage(targetPageId);
+    const pageExists = (store.pages as Array<{ id: string }>).some(p => p.id === targetPageId);
+    if (pageExists) {
+      store.insertNodeIntoPage(targetPageId, materializedTree);
+      // Switch the active page immediately so that set_text / set_repeat calls
+      // in the same batch can find the newly-inserted nodes via store.pageNodes.
+      store.navigatePage(targetPageId);
+    } else {
+      // _pageId points to a non-existent page (e.g. AI hallucinated the ID).
+      // Fall back to inserting into the current page so nodes remain findable.
+      store.addNode(materializedTree, parentId, atIdx);
+    }
   } else {
     store.addNode(materializedTree, parentId, atIdx);
   }
@@ -2872,40 +3179,15 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
     }
   }
 
+  void autoFixedSearchQuery; // unused — kept for future warning extension
   return { success: true, data: { message: 'Structure inserted.' } };
 };
 
-// ─── bulk_apply — apply same style tool to multiple nodes ──────────────────
-
-handlers['bulk_apply'] = async function bulkApply(input, getStore) {
-  const nodeIds = input.nodeIds as string[];
-  const toolName = input.tool as string;
-  const params = input.params as Record<string, unknown>;
-
-  const SUPPORTED = new Set([
-    'set_spacing', 'set_border', 'set_background', 'set_typography', 'set_opacity', 'set_size', 'set_position',
-    'set_layout', 'set_icon', 'set_text_color', 'set_animation',
-  ]);
-  if (!SUPPORTED.has(toolName)) {
-    return { success: false, error: `Unsupported tool "${toolName}". Supported: ${[...SUPPORTED].join(', ')}` };
-  }
-
-  const errors: string[] = [];
-  for (const nodeId of nodeIds) {
-    const handler = handlers[toolName];
-    if (!handler) { errors.push(`${nodeId}: handler for "${toolName}" not found`); continue; }
-    const res = await handler({ ...params, nodeId }, getStore) as ToolResult;
-    if (!res.success) errors.push(`${nodeId}: ${res.error ?? 'unknown error'}`);
-  }
-
-  if (errors.length) return { success: false, error: errors.join('\n') };
-  return { success: true, data: { message: `Applied ${toolName} to ${nodeIds.length} nodes.` } };
-};
 
 // ─── Mutation tool set (executed client-side) ─────────────────────────────────
 
 export const CLIENT_SIDE_TOOLS = new Set([
-  'generate_structure', 'bulk_apply',
+  'generate_structure',
   'add_component', 'add_icon', 'add_image', 'add_video',
   'delete_node', 'duplicate_node', 'move_node_up', 'move_node_down', 'move_node', 'wrap_in_container',
   'set_text', 'set_placeholder', 'set_href', 'set_src', 'set_icon', 'set_video_props',
@@ -2913,6 +3195,7 @@ export const CLIENT_SIDE_TOOLS = new Set([
   'set_opacity', 'set_spacing', 'set_size', 'set_position', 'set_transform', 'set_overflow',
   'set_submit', 'set_input_props',
   'set_layout',
+  'set_style',
   'set_condition', 'set_repeat', 'bind_action', 'unbind_action', 'create_workflow',
   'delete_workflow', 'set_animation', 'set_validation',
   'rename_node', 'set_disabled', 'set_loading_state',
