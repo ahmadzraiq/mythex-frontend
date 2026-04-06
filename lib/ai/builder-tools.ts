@@ -980,7 +980,8 @@ const logicTools: BuilderTool[] = [
           enum: ['normal', 'alternate'],
           description: 'Loop playback direction. "normal" = always forward. "alternate" = forward then backward (default for most types).',
         },
-        loopColor: { type: 'string', description: 'Glow/shadow color for glowPulse and ripple loop types (hex, e.g. "#a855f7"). Required for glowPulse to be visible on light backgrounds.' },
+        loopColor: { type: 'string', description: 'Glow/shadow color for glowPulse and ripple loop types (hex or rgba, e.g. "#a855f7"). Required for glowPulse to be visible on light backgrounds.' },
+        loopIntensity: { type: 'number', description: 'Glow intensity for glowPulse (0–1). Scales max shadow radius and opacity. 0.3–0.5 for subtle badges, 0.8–1 for prominent hero elements. Default 1.' },
         hover: {
           type: 'string',
           enum: ['scale', 'lift', 'none'],

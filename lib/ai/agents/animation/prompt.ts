@@ -32,6 +32,7 @@ export function buildAnimationAgentPrompt(context: StylingSubAgentContext): { st
 - glowPulse and ripple loops ALWAYS require loopColor (otherwise invisible on most backgrounds).
 - gradientDrift requires gradientColors to be set on the node first.
 - Use enterSpring + stiffness/damping for spring entry; scrollThreshold 0.1–0.3 for scroll reveals.
+- hover ONLY accepts: "scale" (grows slightly) or "lift" (moves up). NEVER use enter/exit type names (e.g. "slideInRight", "fadeIn") for hover — they are unsupported and silently fail.
 
 ${BATCH_RETRY_RULE}`.trim();
 

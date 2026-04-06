@@ -119,6 +119,12 @@ export interface LoopConfig {
   direction?: 'normal' | 'alternate';
   /** Shadow/ring color for glowPulse and ripple (CSS color string, e.g. "#facc15" or "rgba(20,184,166,0.8)") */
   color?: string;
+  /**
+   * Glow intensity multiplier for glowPulse (0–1, default 1).
+   * Scales both max shadow radius (18 → 18*intensity) and max opacity (0.8 → 0.8*intensity).
+   * Use 0.3–0.5 for subtle badges, 0.8–1 for prominent hero elements.
+   */
+  intensity?: number;
 }
 
 export interface PressConfig {
@@ -1135,12 +1141,15 @@ export const AnimatedNode = React.memo(function AnimatedNode({
       loopShadowR.value = r;
       loopShadowG.value = g;
       loopShadowB.value = b;
-      const halfDur = dur * 0.5;
-      const easing  = ReanimatedEasing.inOut(ReanimatedEasing.quad);
-      loopShadowRadius.value = 4;
-      loopShadowOpac.value   = 0.25;
-      loopShadowRadius.value = withRepeat(withTiming(18, { duration: halfDur, easing }), count, true);
-      loopShadowOpac.value   = withRepeat(withTiming(0.8, { duration: halfDur, easing }), count, true);
+      const halfDur   = dur * 0.5;
+      const easing    = ReanimatedEasing.inOut(ReanimatedEasing.quad);
+      const intensity = Math.max(0, Math.min(1, loop.intensity ?? 1));
+      const maxRadius = 18 * intensity;
+      const maxOpac   = 0.8 * intensity;
+      loopShadowRadius.value = 4 * intensity;
+      loopShadowOpac.value   = 0.25 * intensity;
+      loopShadowRadius.value = withRepeat(withTiming(maxRadius, { duration: halfDur, easing }), count, true);
+      loopShadowOpac.value   = withRepeat(withTiming(maxOpac,   { duration: halfDur, easing }), count, true);
       return () => {
         cancelAnimation(loopShadowRadius);
         cancelAnimation(loopShadowOpac);

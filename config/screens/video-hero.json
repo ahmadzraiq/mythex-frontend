@@ -1,0 +1,675 @@
+{
+  "meta": {
+    "title": "Video Hero"
+  },
+  "ui": {
+    "id": "page-root-video-hero",
+    "name": "Page Root",
+    "type": "Box",
+    "props": {
+      "className": "flex flex-col w-full"
+    },
+    "children": [
+      {
+        "id": "9e514470-1cb4-4fdd-aafd-bb5a591d3855",
+        "name": "Full-Screen Video Hero",
+        "type": "Box",
+        "props": {
+          "className": "w-full h-screen relative overflow-hidden"
+        },
+        "children": [
+          {
+            "id": "2f3e5e6b-d3fa-4b16-9dbd-0942c3d96f57",
+            "name": "Hero Background Video",
+            "type": "Video",
+            "props": {
+              "src": "https://videos.pexels.com/video-files/18526851/18526851-hd_1920_1080_30fps.mp4",
+              "loop": true,
+              "muted": true,
+              "poster": "https://images.pexels.com/videos/18526851/3d-arcadian-cgi-digital-18526851.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=630&w=1200",
+              "autoPlay": true,
+              "controls": false,
+              "className": "w-full h-full absolute top-[0px] left-[0px]",
+              "objectFit": "cover"
+            },
+            "children": []
+          },
+          {
+            "id": "9876523e-00c7-4461-acd8-4518739e7d1a",
+            "name": "Dark Overlay",
+            "type": "Box",
+            "props": {
+              "style": {
+                "backgroundColor": "rgba(0,0,0,0.55)",
+                "pointerEvents": "none"
+              },
+              "className": "absolute inset-0 z-[10] pointer-events-none"
+            },
+            "children": []
+          },
+          {
+            "id": "d533879d-c802-4f33-80e3-bd85e1638c1a",
+            "name": "Hero Content Container",
+            "type": "Box",
+            "props": {
+              "style": {
+                "translateX": "-50%",
+                "translateY": "-50%"
+              },
+              "className": "items-center pl-[32px] pr-[32px] w-full max-w-[900px] absolute z-[20] top-[50%] left-[50%]"
+            },
+            "children": [
+              {
+                "id": "e60a0508-4628-4ccd-8e13-77d1ed795e89",
+                "name": "Badge Chip",
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "backgroundColor": "rgba(255,255,255,0.2)"
+                  },
+                  "className": "pl-[16px] pr-[16px] pt-[8px] pb-[8px] mb-[24px] border-[1px] border-solid border-[rgba(255,255,255,0.4)] rounded-[20px]"
+                },
+                "children": [
+                  {
+                    "id": "f37063c0-3e22-4983-817d-ef4fdaf10b14",
+                    "text": "New Release",
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[12px] font-semibold tracking-wide uppercase !text-[#ffffff]"
+                    },
+                    "children": []
+                  }
+                ],
+                "animation": {
+                  "enter": {
+                    "type": "fadeIn",
+                    "delay": 400,
+                    "duration": 600
+                  },
+                  "hover": {
+                    "scale": 1.05,
+                    "duration": 200
+                  }
+                }
+              },
+              {
+                "id": "7a539cff-9540-4c63-a345-fa34ac9ca66d",
+                "name": "Main Headline",
+                "text": "The Future Is Now",
+                "type": "Text",
+                "props": {
+                  "className": "mb-[16px] text-[72px] font-bold leading-tight text-center !text-[#ffffff]"
+                },
+                "children": [],
+                "animation": {
+                  "enter": {
+                    "type": "fadeIn",
+                    "delay": 300,
+                    "duration": 700
+                  }
+                }
+              },
+              {
+                "id": "5d59a279-b4a7-4d9b-b73f-c84e3873076e",
+                "name": "Subheadline",
+                "text": "Experience the next generation of innovation.\nTransform your vision into reality.",
+                "type": "Text",
+                "props": {
+                  "className": "mb-[40px] max-w-[600px] text-[20px] leading-relaxed text-center !text-[rgba(255,255,255,0.85)]"
+                },
+                "children": [],
+                "animation": {
+                  "enter": {
+                    "type": "fadeIn",
+                    "delay": 500,
+                    "duration": 700
+                  }
+                }
+              },
+              {
+                "id": "fd756eb3-6cde-4aef-a03d-ef1130531a6e",
+                "name": "CTA Button Group",
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center gap-[16px]"
+                },
+                "children": [
+                  {
+                    "id": "3f8c7ac1-f171-4281-a279-7b2e1cb66a11",
+                    "name": "Primary CTA Button",
+                    "type": "Box",
+                    "props": {
+                      "className": "pl-[32px] pr-[32px] pt-[16px] pb-[16px] cursor-pointer !bg-[var(--theme-primary)] rounded-[8px]"
+                    },
+                    "children": [
+                      {
+                        "id": "a58a54dd-ad7b-4bdc-aabe-102cec959a8b",
+                        "text": "Get Started",
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[16px] font-semibold !text-[var(--theme-primary-foreground)]"
+                        },
+                        "children": []
+                      }
+                    ],
+                    "animation": {
+                      "hover": {
+                        "y": -3,
+                        "duration": 250
+                      },
+                      "press": {
+                        "scale": 0.95,
+                        "duration": 100
+                      }
+                    }
+                  },
+                  {
+                    "id": "d0dbdd11-384e-4768-bbae-0dad51853867",
+                    "name": "Ghost CTA Button",
+                    "type": "Box",
+                    "props": {
+                      "style": {
+                        "backgroundColor": "rgba(255,255,255,0.15)"
+                      },
+                      "className": "pl-[32px] pr-[32px] pt-[16px] pb-[16px] cursor-pointer border-[2px] border-solid border-[rgba(255,255,255,0.4)] rounded-[8px]"
+                    },
+                    "children": [
+                      {
+                        "id": "05e21cbe-a9e1-4f46-bc2c-1d5c8ff883bd",
+                        "text": "Learn More",
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[16px] font-semibold !text-[#ffffff]"
+                        },
+                        "children": []
+                      }
+                    ],
+                    "animation": {
+                      "hover": {
+                        "y": -3,
+                        "duration": 250
+                      },
+                      "press": {
+                        "scale": 0.95,
+                        "duration": 100
+                      }
+                    }
+                  }
+                ],
+                "animation": {
+                  "enter": {
+                    "type": "slideInUp",
+                    "delay": 600,
+                    "spring": true,
+                    "damping": 22,
+                    "duration": 700,
+                    "stiffness": 140
+                  }
+                }
+              }
+            ],
+            "animation": {
+              "enter": {
+                "type": "slideInUp",
+                "delay": 200,
+                "easing": "easeOut",
+                "spring": true,
+                "damping": 25,
+                "duration": 800,
+                "stiffness": 150
+              }
+            }
+          }
+        ],
+        "animation": {
+          "enter": {
+            "type": "fadeIn",
+            "easing": "easeOut",
+            "duration": 600
+          }
+        }
+      },
+      {
+        "id": "gallery-section-root",
+        "name": "Gallery Section",
+        "type": "Box",
+        "props": {
+          "className": "flex flex-row items-center justify-center gap-[80px] w-full px-[80px] py-[100px] !bg-[var(--theme-background)]"
+        },
+        "children": [
+          {
+            "id": "gallery-text-col",
+            "name": "Gallery Text Column",
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-[24px] max-w-[420px]"
+            },
+            "children": [
+              {
+                "id": "gallery-eyebrow",
+                "type": "Text",
+                "text": "Our Work",
+                "props": {
+                  "className": "text-[13px] font-semibold tracking-widest uppercase !text-[var(--theme-primary)]"
+                },
+                "animation": {
+                  "enter": {
+                    "type": "slideInLeft",
+                    "duration": 500,
+                    "delay": 100,
+                    "easing": "easeOut"
+                  }
+                }
+              },
+              {
+                "id": "gallery-heading",
+                "type": "Text",
+                "text": "Crafted with precision and purpose",
+                "props": {
+                  "className": "text-[42px] font-bold leading-tight !text-[var(--theme-foreground)]"
+                },
+                "animation": {
+                  "enter": {
+                    "type": "slideInLeft",
+                    "duration": 500,
+                    "delay": 180,
+                    "easing": "easeOut"
+                  }
+                }
+              },
+              {
+                "id": "gallery-body",
+                "type": "Text",
+                "text": "Every project starts with a vision. We turn that vision into stunning reality through thoughtful design and meticulous execution.",
+                "props": {
+                  "className": "text-[17px] leading-relaxed !text-[var(--theme-muted-foreground)]"
+                },
+                "animation": {
+                  "enter": {
+                    "type": "fadeIn",
+                    "duration": 500,
+                    "delay": 280,
+                    "easing": "easeOut"
+                  }
+                }
+              },
+              {
+                "id": "gallery-cta",
+                "name": "View Work Button",
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center gap-[8px] mt-[8px] cursor-pointer"
+                },
+                "children": [
+                  {
+                    "id": "gallery-cta-text",
+                    "type": "Text",
+                    "text": "View all projects",
+                    "props": {
+                      "className": "text-[15px] font-semibold !text-[var(--theme-primary)]"
+                    }
+                  },
+                  {
+                    "id": "gallery-cta-icon",
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:arrow-right",
+                      "size": 18,
+                      "color": "var(--theme-primary)"
+                    }
+                  }
+                ],
+                "animation": {
+                  "enter": {
+                    "type": "fadeIn",
+                    "duration": 400,
+                    "delay": 350,
+                    "easing": "easeOut"
+                  },
+                  "hover": {
+                    "x": 4,
+                    "duration": 200
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "c49043fe-01e6-40d9-b394-e31f213d4147",
+            "name": "Images Gallery Container",
+            "type": "Box",
+            "props": {
+              "className": "w-[560px] h-[500px] relative"
+            },
+            "children": [
+              {
+                "id": "28b1f567-1bf2-4988-996d-b9caffbf2988",
+                "name": "Image Layer 1 Wrapper",
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "boxShadow": "0px 20px 40px 0px rgba(0,0,0,0.15)",
+                    "transform": "rotate(-8deg)"
+                  },
+                  "className": "w-[300px] h-[300px] absolute z-[1] top-[20px] left-[0px] overflow-hidden rounded-[12px]"
+                },
+                "children": [
+                  {
+                    "id": "e695af47-f7f0-4358-951b-4795fe368c5b",
+                    "type": "Image",
+                    "props": {
+                      "alt": "Modern building architecture with geometric patterns",
+                      "className": "w-full h-full",
+                      "objectFit": "cover",
+                      "src": "https://images.unsplash.com/photo-1768223886132-24ac6c85ef3d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw1fHxtb2Rlcm4lMjBhcmNoaXRlY3R1cmUlMjBnZW9tZXRyaWMlMjBidWlsZGluZyUyMGRldGFpbCUyMHN1bmxpZ2h0fGVufDB8fHx8MTc3NTQwODUzMnww&ixlib=rb-4.1.0&q=80&w=1080"
+                    },
+                    "children": []
+                  }
+                ],
+                "animation": {
+                  "hover": {
+                    "scale": 1.03,
+                    "easing": "easeOut",
+                    "duration": 300
+                  }
+                }
+              },
+              {
+                "id": "178a1d81-8a97-49d2-a17f-24d26754f9b6",
+                "name": "Image Layer 2 Wrapper",
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "boxShadow": "0px 30px 50px 0px rgba(0,0,0,0.2)",
+                    "transform": "rotate(6deg)"
+                  },
+                  "className": "w-[280px] h-[320px] absolute z-[3] top-[100px] right-[40px] overflow-hidden rounded-[12px]"
+                },
+                "children": [
+                  {
+                    "id": "2ba9558a-ef4b-4a08-a163-7e7e575a3152",
+                    "type": "Image",
+                    "props": {
+                      "alt": "Palm frond in lush, green garden.",
+                      "className": "w-full h-full",
+                      "objectFit": "cover",
+                      "src": "https://images.unsplash.com/photo-1745488792461-7a32632ab220?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw4fHxsdXNoJTIwZ3JlZW4lMjB0cm9waWNhbCUyMHBsYW50cyUyMGxlYWYlMjBjbG9zZS11cHxlbnwwfHx8fDE3NzU0MDg1MzN8MA&ixlib=rb-4.1.0&q=80&w=1080"
+                    },
+                    "children": []
+                  }
+                ],
+                "animation": {
+                  "hover": {
+                    "scale": 1.03,
+                    "easing": "easeOut",
+                    "duration": 300
+                  }
+                }
+              },
+              {
+                "id": "f6c8c573-4de8-453b-82be-d550e70005a1",
+                "name": "Image Layer 3 Wrapper",
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "boxShadow": "0px 25px 35px 0px rgba(0,0,0,0.12)",
+                    "transform": "rotate(-5deg)"
+                  },
+                  "className": "w-[290px] h-[290px] absolute z-[2] bottom-[30px] left-[80px] overflow-hidden rounded-[12px]"
+                },
+                "children": [
+                  {
+                    "id": "e04c2d5c-e879-4902-9d66-1dd813f40d78",
+                    "type": "Image",
+                    "props": {
+                      "alt": "Vibrant orange clouds over the ocean at dusk",
+                      "className": "w-full h-full",
+                      "objectFit": "cover",
+                      "src": "https://images.unsplash.com/photo-1774440575258-6a7dda9419c1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw4fHx2aWJyYW50JTIwc3Vuc2V0JTIwb2NlYW4lMjB3YXRlciUyMHJlZmxlY3Rpb24lMjBnb2xkZW4lMjBob3VyfGVufDB8fHx8MTc3NTQwODUzNHww&ixlib=rb-4.1.0&q=80&w=1080"
+                    },
+                    "children": []
+                  }
+                ],
+                "animation": {
+                  "hover": {
+                    "scale": 1.03,
+                    "easing": "easeOut",
+                    "duration": 300
+                  }
+                }
+              }
+            ],
+            "animation": {
+              "enter": {
+                "type": "slideInRight",
+                "delay": 200,
+                "spring": true,
+                "damping": 24,
+                "duration": 700,
+                "stiffness": 160
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "feature-cards-section",
+        "name": "Feature Cards Section",
+        "type": "Box",
+        "props": {
+          "className": "flex flex-col items-center w-full px-[48px] py-[80px] !bg-[var(--theme-background)]"
+        },
+        "children": [
+          {
+            "id": "feature-section-eyebrow",
+            "type": "Text",
+            "text": "Why Choose Us",
+            "props": {
+              "className": "text-[13px] font-semibold tracking-widest uppercase text-center mb-[12px] !text-[var(--theme-primary)]"
+            },
+            "animation": {
+              "enter": {
+                "type": "fadeIn",
+                "duration": 500,
+                "delay": 0
+              }
+            }
+          },
+          {
+            "id": "feature-section-heading",
+            "type": "Text",
+            "text": "Everything you need to succeed",
+            "props": {
+              "className": "text-[40px] font-bold text-center mb-[48px] !text-[var(--theme-foreground)]"
+            },
+            "animation": {
+              "enter": {
+                "type": "fadeIn",
+                "duration": 500,
+                "delay": 80
+              }
+            }
+          },
+          {
+            "id": "73eae12d-855d-4671-8363-991653f03a65",
+            "name": "Grid Wrapper",
+            "type": "Box",
+            "props": {
+              "className": "gap-[24px] grid grid-cols-3 w-full max-w-[1200px] mx-auto"
+            },
+            "children": [
+              {
+                "id": "5e743cd0-eb59-4fc7-9d6b-5be247d2a13a",
+                "key": "id",
+                "map": "variables['222f98dd-3122-4fd7-8797-9de8e339bcdd']",
+                "name": "Feature Card",
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "boxShadow": "0px 4px 12px 0px rgba(0,0,0,0.05)",
+                    "elevation": 6,
+                    "shadowColor": "rgb(0,0,0)",
+                    "shadowOffset": { "width": 0, "height": 4 },
+                    "shadowRadius": 12,
+                    "shadowOpacity": 0.05
+                  },
+                  "className": "p-[32px] cursor-pointer !bg-[var(--theme-card)] border-[1px] border-solid border-[var(--theme-border)] rounded-[12px]"
+                },
+                "children": [
+                  {
+                    "id": "c2c43d27-b66d-42fa-8e53-7492d8f8f0ac",
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:zap",
+                      "size": 24,
+                      "color": "var(--theme-primary)"
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "b24b484e-89bd-4bbf-950e-da04378e6153",
+                    "text": { "formula": "context?.item?.data?.title" },
+                    "type": "Text",
+                    "props": {
+                      "className": "mt-[16px] mb-[8px] text-[18px] font-semibold !text-[var(--theme-foreground)]"
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "95deadfa-86eb-4ba9-a71d-f10e14a93e21",
+                    "text": { "formula": "context?.item?.data?.description" },
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[14px] leading-relaxed !text-[var(--theme-muted-foreground)]"
+                    },
+                    "children": []
+                  }
+                ],
+                "animation": {
+                  "hover": {
+                    "y": -4,
+                    "easing": "easeOut",
+                    "duration": 250
+                  }
+                }
+              }
+            ],
+            "animation": {
+              "enter": {
+                "type": "fadeIn",
+                "delay": 200,
+                "stagger": 100,
+                "duration": 600
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "379fe00e-dd31-4fa8-ae7e-9f0e67cac30c",
+        "name": "Gradient CTA Banner",
+        "type": "Box",
+        "props": {
+          "className": "pl-[48px] pr-[48px] pt-[80px] pb-[80px] w-full relative overflow-hidden"
+        },
+        "children": [
+          {
+            "id": "b7fe59fc-1da2-4af9-b13f-54af2c39c936",
+            "name": "Gradient Background",
+            "type": "Box",
+            "props": {
+              "style": {
+                "backgroundImage": "linear-gradient(135deg, #7c3aed 0%, #ede9fe 100%)"
+              },
+              "className": "w-full h-full absolute z-[1] top-[0px] left-[0px]"
+            },
+            "children": []
+          },
+          {
+            "id": "7a76d4aa-da6d-478f-8d3a-e7a9ad9dd1bf",
+            "name": "Banner Content Container",
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col items-center mx-auto max-w-[600px] relative z-[2]"
+            },
+            "children": [
+              {
+                "id": "ee11db93-0380-4ff6-bc56-456e095c4d0c",
+                "name": "Headline",
+                "text": "Ready to start?",
+                "type": "Text",
+                "props": {
+                  "className": "mb-[16px] text-[48px] font-bold text-center !text-[#ffffff]"
+                },
+                "children": []
+              },
+              {
+                "id": "cta-banner-subtext",
+                "type": "Text",
+                "text": "Join thousands of teams building faster with our platform.",
+                "props": {
+                  "className": "mb-[32px] text-[18px] leading-relaxed text-center !text-[rgba(255,255,255,0.85)]"
+                },
+                "children": []
+              },
+              {
+                "id": "1548d526-7b82-4a4f-8885-28f37699b835",
+                "name": "CTA Button",
+                "type": "Box",
+                "props": {
+                  "className": "pl-[40px] pr-[40px] pt-[16px] pb-[16px] cursor-pointer !bg-[var(--theme-primary-foreground)] rounded-[8px]"
+                },
+                "children": [
+                  {
+                    "id": "3d135cee-0fee-4e55-ab3d-df40c6209e0c",
+                    "text": "Get Started",
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[16px] font-semibold !text-[var(--theme-primary)]"
+                    },
+                    "children": []
+                  }
+                ],
+                "animation": {
+                  "hover": {
+                    "y": -3,
+                    "duration": 250
+                  },
+                  "press": {
+                    "scale": 0.95,
+                    "duration": 100
+                  }
+                }
+              }
+            ],
+            "animation": {
+              "enter": {
+                "type": "slideInUp",
+                "delay": 200,
+                "spring": true,
+                "damping": 25,
+                "duration": 600,
+                "stiffness": 150
+              }
+            }
+          }
+        ],
+        "animation": {
+          "loop": {
+            "type": "pulse",
+            "delay": 500,
+            "duration": 3000,
+            "direction": "alternate",
+            "repeatCount": -1
+          },
+          "scroll": {
+            "type": "fadeIn",
+            "easing": "easeOut",
+            "duration": 700,
+            "threshold": 0.2
+          }
+        }
+      }
+    ]
+  }
+}

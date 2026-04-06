@@ -509,7 +509,13 @@
     "wa000001-0000-0000-0000-000000000042": {
       "label": "WA Items 1to5",
       "type": "array",
-      "initialValue": [1, 2, 3, 4, 5],
+      "initialValue": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
       "folder": "WA Tests"
     },
     "wa000001-0000-0000-0000-000000000043": {
@@ -605,17 +611,27 @@
       "label": "Sort Input Map",
       "type": "object",
       "initialValue": {
-        "name-asc": { "name": "ASC" },
-        "name-desc": { "name": "DESC" },
-        "price-asc": { "price": "ASC" },
-        "price-desc": { "price": "DESC" }
+        "name-asc": {
+          "name": "ASC"
+        },
+        "name-desc": {
+          "name": "DESC"
+        },
+        "price-asc": {
+          "price": "ASC"
+        },
+        "price-desc": {
+          "price": "DESC"
+        }
       },
       "folder": "Catalog"
     },
     "fa000006-0000-0000-0000-000000000001": {
       "label": "Default Sort Input",
       "type": "object",
-      "initialValue": { "name": "ASC" },
+      "initialValue": {
+        "name": "ASC"
+      },
       "folder": "Catalog"
     },
     "wa-chain-0000-0000-0000-000000000001": {
@@ -808,9 +824,18 @@
       "label": "Anim Layout Items",
       "type": "array",
       "initialValue": [
-        { "id": "li-1", "label": "Item 1" },
-        { "id": "li-2", "label": "Item 2" },
-        { "id": "li-3", "label": "Item 3" }
+        {
+          "id": "li-1",
+          "label": "Item 1"
+        },
+        {
+          "id": "li-2",
+          "label": "Item 2"
+        },
+        {
+          "id": "li-3",
+          "label": "Item 3"
+        }
       ],
       "folder": "Animation Test"
     },
@@ -818,11 +843,36 @@
       "label": "Anim Stagger Items",
       "type": "array",
       "initialValue": [
-        { "id": "s-1", "label": "First staggered item", "index": "1", "color": "#3b82f6" },
-        { "id": "s-2", "label": "Second staggered item", "index": "2", "color": "#8b5cf6" },
-        { "id": "s-3", "label": "Third staggered item", "index": "3", "color": "#ec4899" },
-        { "id": "s-4", "label": "Fourth staggered item", "index": "4", "color": "#f59e0b" },
-        { "id": "s-5", "label": "Fifth staggered item", "index": "5", "color": "#10b981" }
+        {
+          "id": "s-1",
+          "label": "First staggered item",
+          "index": "1",
+          "color": "#3b82f6"
+        },
+        {
+          "id": "s-2",
+          "label": "Second staggered item",
+          "index": "2",
+          "color": "#8b5cf6"
+        },
+        {
+          "id": "s-3",
+          "label": "Third staggered item",
+          "index": "3",
+          "color": "#ec4899"
+        },
+        {
+          "id": "s-4",
+          "label": "Fourth staggered item",
+          "index": "4",
+          "color": "#f59e0b"
+        },
+        {
+          "id": "s-5",
+          "label": "Fifth staggered item",
+          "index": "5",
+          "color": "#10b981"
+        }
       ],
       "folder": "Animation Test"
     },
@@ -927,6 +977,162 @@
       "type": "number",
       "initialValue": 200,
       "folder": "Expr CSS Test"
+    },
+    "77b4c8e1-2a3d-4e7f-9c1b-5f8d2e4a7b9c": {
+      "label": "Pricing Plans",
+      "type": "array",
+      "initialValue": [
+        {
+          "id": "starter",
+          "name": "Starter",
+          "description": "Perfect for getting started",
+          "featured": false,
+          "currency": "$",
+          "monthlyPrice": "29",
+          "billingPeriod": "/month",
+          "ctaText": "Get Started",
+          "microcopy": "Ideal for individuals and small projects",
+          "features": [
+            {
+              "id": "f1",
+              "name": "Up to 5 projects"
+            },
+            {
+              "id": "f2",
+              "name": "Basic analytics"
+            },
+            {
+              "id": "f3",
+              "name": "Community support"
+            },
+            {
+              "id": "f4",
+              "name": "1 GB storage"
+            }
+          ],
+          "trustIndicator": "No credit card required"
+        },
+        {
+          "id": "professional",
+          "name": "Professional",
+          "description": "For growing teams",
+          "featured": true,
+          "currency": "$",
+          "monthlyPrice": "79",
+          "billingPeriod": "/month",
+          "ctaText": "Start Free Trial",
+          "microcopy": "Most popular choice for scaling teams",
+          "features": [
+            {
+              "id": "f1",
+              "name": "Unlimited projects"
+            },
+            {
+              "id": "f2",
+              "name": "Advanced analytics"
+            },
+            {
+              "id": "f3",
+              "name": "Priority support"
+            },
+            {
+              "id": "f4",
+              "name": "100 GB storage"
+            },
+            {
+              "id": "f5",
+              "name": "Team collaboration"
+            },
+            {
+              "id": "f6",
+              "name": "Custom integrations"
+            }
+          ],
+          "trustIndicator": "14-day free trial included"
+        },
+        {
+          "id": "enterprise",
+          "name": "Enterprise",
+          "description": "For large organizations",
+          "featured": false,
+          "currency": "$",
+          "monthlyPrice": "199",
+          "billingPeriod": "/month",
+          "ctaText": "Contact Sales",
+          "microcopy": "Dedicated support and custom features",
+          "features": [
+            {
+              "id": "f1",
+              "name": "Unlimited everything"
+            },
+            {
+              "id": "f2",
+              "name": "Real-time analytics"
+            },
+            {
+              "id": "f3",
+              "name": "Dedicated account manager"
+            },
+            {
+              "id": "f4",
+              "name": "Unlimited storage"
+            },
+            {
+              "id": "f5",
+              "name": "Advanced security"
+            },
+            {
+              "id": "f6",
+              "name": "SSO & API access"
+            }
+          ],
+          "trustIndicator": "99.9% uptime guarantee"
+        }
+      ],
+      "folder": "Pricing"
+    },
+    "222f98dd-3122-4fd7-8797-9de8e339bcdd": {
+      "label": "Feature Cards",
+      "type": "array",
+      "initialValue": [
+        {
+          "id": "feat-1",
+          "icon": "lucide:zap",
+          "title": "Fast Performance",
+          "description": "Lightning-quick load times and optimized performance across all devices and connections."
+        },
+        {
+          "id": "feat-2",
+          "icon": "lucide:shield-check",
+          "title": "Enterprise Security",
+          "description": "Bank-grade encryption and compliance built in from day one, so your data stays safe."
+        },
+        {
+          "id": "feat-3",
+          "icon": "lucide:layers",
+          "title": "Scalable by Design",
+          "description": "Grow from zero to millions of users without changing your architecture or pricing plan."
+        },
+        {
+          "id": "feat-4",
+          "icon": "lucide:code-2",
+          "title": "Developer First",
+          "description": "Clean APIs, SDKs in every language, and docs that actually make sense."
+        },
+        {
+          "id": "feat-5",
+          "icon": "lucide:bar-chart-2",
+          "title": "Real-Time Analytics",
+          "description": "Understand your users with live dashboards, funnels, and cohort analysis out of the box."
+        },
+        {
+          "id": "feat-6",
+          "icon": "lucide:globe",
+          "title": "Global Edge Network",
+          "description": "Content delivered from 200+ edge locations for sub-50ms response times worldwide."
+        }
+      ],
+      "folder": "Video Hero"
     }
   },
   "varFolders": [
@@ -1005,6 +1211,14 @@
     {
       "id": "Expr CSS Test",
       "label": "Expr CSS Test"
+    },
+    {
+      "id": "Pricing",
+      "label": "Pricing"
+    },
+    {
+      "id": "Video Hero",
+      "label": "Video Hero"
     }
   ]
 }

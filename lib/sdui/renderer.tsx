@@ -623,7 +623,21 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
   // transforms (Reanimated's worklet tries element.style[0]=... → CSSStyleDeclaration
   // throws "indexed property setter is not supported"). Use the Animated.View wrapper
   // path instead — it properly converts transforms to CSS before the img ever sees them.
-  const useSingleElementPath = !!(animCfgObj && !hasOverlayFeature && !builderMode && node.type !== 'Image');
+  // Disabled when the node has a static transform in node.props.style (translateX, translateY,
+  // or a CSS transform string like "rotate(-8deg)"):
+  // In the singleEl path, Reanimated applies the transform via useAnimatedStyle to an
+  // AnimatedComponent(Box) which goes through NativeWind's cssInterop. The cssInterop
+  // pipeline does not reliably compose Reanimated's animated transforms with static CSS
+  // transform strings — centering shifts are dropped and static rotations may be overridden.
+  // The outer Animated.View wrapper path bypasses NativeWind on the wrapper itself, so
+  // static transforms (both pixel and percentage) apply correctly in all modes.
+  const _rawNodeStyle = (node.props as Record<string, unknown> | undefined)?.style as Record<string, unknown> | undefined;
+  const _hasStaticStyleTransform = !!(
+    _rawNodeStyle?.translateX !== undefined ||
+    _rawNodeStyle?.translateY !== undefined ||
+    (typeof _rawNodeStyle?.transform === 'string' && (_rawNodeStyle.transform as string).trim().length > 0)
+  );
+  const useSingleElementPath = !!(animCfgObj && !hasOverlayFeature && !builderMode && node.type !== 'Image' && !_hasStaticStyleTransform);
   // In builder mode, wrapped animated nodes own their own data-builder-id (set on the
   // outer Animated.View in AnimatedNode). Single-element nodes keep normal annotation.
   const animNodeOwnsId = !!(builderMode && node.id && animCfgObj && !useSingleElementPath);
@@ -847,7 +861,14 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
   {
     const _rawAnimCfg = (node.props as Record<string, unknown> | undefined)?.animation
       ?? (node as unknown as Record<string, unknown>).animation;
-    const _willOwn = !!(builderMode && node.id && _rawAnimCfg && !useSingleElementPath);
+    // _willOwn is true in two cases:
+    // 1. Builder mode — outer Animated.View owns the selection/resize target.
+    // 2. Percentage static transform in any mode — forced wrapper path so the outer
+    //    Animated.View (no NativeWind cssInterop) applies translateX/Y(-50%) reliably.
+    //    In both cases the inner element must have its position/inset classes stripped so
+    //    they don't double-position relative to the wrapper (position is forwarded to outerStyle).
+    const _willOwn = !!((builderMode && node.id && _rawAnimCfg && !useSingleElementPath) ||
+                        (_hasStaticStyleTransform && _rawAnimCfg));
 
     if (_rawAnimCfg && !useSingleElementPath) {
       // Strip margin-* from the inner element when any animation is present.
@@ -1167,6 +1188,12 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
         'borderRadius', 'borderTopLeftRadius', 'borderTopRightRadius',
         'borderBottomRightRadius', 'borderBottomLeftRadius',
         'zIndex',
+        // Paint-only visual properties: must be on the outer Animated.View (the selection
+        // target in builder mode) so they're visible. They're stripped from the inner element
+        // below (lines 924-937) to avoid double-rendering. OUTER_PASSTHROUGH ensures they
+        // arrive on the outer before being removed from the inner.
+        'backgroundColor', 'background', 'backgroundImage',
+        'boxShadow',
       ]);
       // Only OUTER_PASSTHROUGH keys from arbStyles go to the outer wrapper.
       const outerFromArb: Record<string, unknown> = {};

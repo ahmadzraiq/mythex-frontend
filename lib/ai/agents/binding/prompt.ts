@@ -52,6 +52,7 @@ ${SHARED_FORMULA_SYNTAX}
 - Use EXACT field names from the variable roster — misspelled names resolve to undefined.
 - **Image or Video inside a repeat template**: call \`set_src(imageId, { src: "context?.item?.data?.avatar" })\` using the exact field name from the variable's initialValue schema (e.g. \`avatar\`, \`videoSrc\`). The executor stores it as a formula — each rendered card gets its own URL from the item data.
 - **Only call \`set_src\` inside repeat templates.** For Image/Video nodes outside a repeat template, skip entirely — the media agent owns their source. Never call \`set_src\` with a static URL string.
+- **Boolean toggle → ternary text binding**: When a boolean variable is in the varRoster and the repeat template's data schema has two variant fields for the same concept (two alternative values a text node could display depending on state), bind that text node as a ternary: \`variables['BOOL_UUID'] ? context?.item?.data?.fieldA : context?.item?.data?.fieldB\`. Do NOT bind to a single static field when a boolean variable controls which value is visible. Apply the same ternary to every text node whose displayed value depends on that boolean.
 
 ${buildAgentCapabilityTable(['text', 'src', 'disabled', 'icon'])}
 

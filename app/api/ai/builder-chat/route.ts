@@ -752,9 +752,9 @@ async function runStructureAgent(
   markers: Array<{ nodeId: string; _needsRepeat?: string | boolean; _needsRepeatKeyField?: string; _needsCondition?: string }>;
   varEvents: ToolEvent[];
 }> {
-  const arrayVars = existingVariables.filter(v => v.type === 'array' && v.id);
-  const existingVarsNote = arrayVars.length > 0
-    ? `\nExisting array variables (prefer reusing these instead of creating duplicates):\n${arrayVars.map(v => `  - "${v.label ?? v.name}" id="${v.id}" type="${v.type}"`).join('\n')}\n`
+  const allExistingVars = existingVariables.filter(v => v.id);
+  const existingVarsNote = allExistingVars.length > 0
+    ? `\nExisting variables (reuse these UUIDs — NEVER create a new variable for an existing one):\n${allExistingVars.map(v => `  - "${v.label ?? v.name}" id="${v.id}" type="${v.type}"`).join('\n')}\n`
     : '';
 
   const sysPrompt = buildStructureAgentPrompt(existingVarsNote || undefined);
@@ -1359,25 +1359,38 @@ export async function POST(req: NextRequest) {
         : '';
 
       // ── Variable roster for downstream agents ───────────────────────────────
-      const varRoster = addVarEventsCollected.length > 0
-        ? `Available variables (ONLY these UUIDs are valid):\n${addVarEventsCollected.map(e => {
-            const inp = e.input as Record<string, unknown>;
-            const n = String(inp.name ?? '');
-            const id = String(inp.variableId ?? '');
-            const t = String(inp.type ?? 'string');
-            let fields = '';
-            if (t === 'array' && Array.isArray(inp.initialValue) && (inp.initialValue as unknown[]).length > 0) {
-              const firstItem = (inp.initialValue as unknown[])[0] as Record<string, unknown>;
-              const fieldDescs = Object.entries(firstItem).map(([k, v]) => {
-                if (Array.isArray(v) && v.length > 0 && typeof v[0] === 'object' && v[0] !== null) {
-                  return `${k}[{${Object.keys(v[0] as Record<string, unknown>).join(', ')}}]`;
-                }
-                return k;
-              });
-              fields = ` — fields: ${fieldDescs.join(', ')}`;
+      // Merge: newly-created vars (with full schema) + pre-existing vars not re-created this run.
+      // This ensures binding/workflows agents can reference variables from previous runs without
+      // inventing UUIDs or creating duplicates.
+      const newVarIds = new Set(addVarEventsCollected.map(e => String((e.input as Record<string, unknown>).variableId ?? '')));
+      const existingVarsForRoster = variables.filter(v => v.id && !newVarIds.has(v.id));
+
+      const renderVarRosterEntry = (inp: Record<string, unknown>): string => {
+        const n = String(inp.name ?? '');
+        const id = String(inp.variableId ?? '');
+        const t = String(inp.type ?? 'string');
+        let fields = '';
+        if (t === 'array' && Array.isArray(inp.initialValue) && (inp.initialValue as unknown[]).length > 0) {
+          const firstItem = (inp.initialValue as unknown[])[0] as Record<string, unknown>;
+          const fieldDescs = Object.entries(firstItem).map(([k, v]) => {
+            if (Array.isArray(v) && v.length > 0 && typeof v[0] === 'object' && v[0] !== null) {
+              return `${k}[{${Object.keys(v[0] as Record<string, unknown>).join(', ')}}]`;
             }
-            return `  "${n}" (${t}) → variables['${id}']${fields}`;
-          }).join('\n')}`
+            return k;
+          });
+          fields = ` — fields: ${fieldDescs.join(', ')}`;
+        }
+        return `  "${n}" (${t}) → variables['${id}']${fields}`;
+      };
+
+      const newVarEntries = addVarEventsCollected.map(e => renderVarRosterEntry(e.input as Record<string, unknown>));
+      const existingVarEntries = existingVarsForRoster.map(v =>
+        renderVarRosterEntry({ name: v.label ?? v.name, variableId: v.id, type: v.type })
+      );
+      const allVarEntries = [...newVarEntries, ...existingVarEntries];
+
+      const varRoster = allVarEntries.length > 0
+        ? `Available variables (ONLY these UUIDs are valid):\n${allVarEntries.join('\n')}`
         : `No variables were created. Do NOT reference variables['UUID'].`;
 
       // ── Read handlers shared by Styling and Binding ─────────────────────────

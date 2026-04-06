@@ -157,6 +157,7 @@ function findNode(nodes: SDUINode[], id: string): SDUINode | null {
   return null;
 }
 
+
 // ─── Require a node to exist — used by all setter tools ──────────────────────
 
 function requireNode(
@@ -298,6 +299,16 @@ function normJustifyCssToTwSuffix(v: string): string {
   return s;
 }
 
+/** Map CSS align-items wording to Tailwind items-* suffix (both forms accepted). */
+function normAlignCssToTwSuffix(v: string): string {
+  let s = v.trim();
+  // Strip leading "items-" if the AI passes the full class name (e.g. "items-start" → "start")
+  if (s.startsWith('items-')) s = s.slice('items-'.length);
+  if (s === 'flex-start') s = 'start';
+  if (s === 'flex-end')   s = 'end';
+  return s;
+}
+
 function buildLayoutClass(input: ToolInput, current = ''): string {
   let cls = current;
 
@@ -312,7 +323,7 @@ function buildLayoutClass(input: ToolInput, current = ''): string {
     if (!cls.split(' ').includes('flex')) cls = `flex ${cls}`.trim();
   }
 
-  if (input.align)   cls = replaceTwToken(cls, 'items-', `items-${input.align}`);
+  if (input.align)   cls = replaceTwToken(cls, 'items-', `items-${normAlignCssToTwSuffix(String(input.align))}`);
   if (input.justify) cls = replaceTwToken(cls, 'justify-', `justify-${normJustifyCssToTwSuffix(String(input.justify))}`);
   // gap is handled via inline style (written after buildLayoutClass via patchNodeStyle in set_layout executor)
 
@@ -1342,7 +1353,7 @@ const handlers: Record<string, Handler> = {
     }
 
     // Raw values mode: compose CSS boxShadow from individual params
-    const color  = (input.color  as string)  || '#000000';
+    const color  = (input.color  as string)  || 'rgba(0,0,0,0.1)';
     const blur   = Number(input.blur   ?? 20);
     const spread = Number(input.spread ?? 0);
     const x      = Number(input.x      ?? 0);
@@ -2289,7 +2300,12 @@ const handlers: Record<string, Handler> = {
       store.patchMap(nodeId, null, undefined);
       return { success: true, data: { message: 'Removed repeat binding' } };
     }
-    store.patchMap(nodeId, mapPath, keyField);
+    // Normalize optional-chaining in map paths — `context?.item?.data?.features` breaks
+    // scope resolution because `context?` is not a recognized scope variable prefix.
+    // Plain dot notation (`context.item.data.features`) is required for nested repeats.
+    // generate_structure already does this normalization for inline tree repeat fields.
+    const normalizedMapPath = mapPath.replace(/\?\./g, '.');
+    store.patchMap(nodeId, normalizedMapPath, keyField);
     return { success: true, data: { message: `Set repeat over "${mapPath}"` } };
   },
 
@@ -2471,6 +2487,7 @@ const handlers: Record<string, Handler> = {
         };
         if (input.loopDelay !== undefined) loopCfg.delay = Number(input.loopDelay);
         if (input.loopColor !== undefined) loopCfg.color = input.loopColor;
+        if (input.loopIntensity !== undefined) loopCfg.intensity = Math.max(0, Math.min(1, Number(input.loopIntensity)));
         animation.loop = loopCfg;
       }
     } else {
@@ -2481,6 +2498,7 @@ const handlers: Record<string, Handler> = {
         if (input.loopRepeatCount !== undefined) lc.repeatCount = Number(input.loopRepeatCount);
         if (input.loopDirection !== undefined) lc.direction = input.loopDirection;
         if (input.loopColor !== undefined) lc.color = input.loopColor;
+        if (input.loopIntensity !== undefined) lc.intensity = Math.max(0, Math.min(1, Number(input.loopIntensity)));
       }
     }
 

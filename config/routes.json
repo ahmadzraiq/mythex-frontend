@@ -232,6 +232,18 @@
       "config": "landingShowcase",
       "auth": false,
       "layout": "full"
+    },
+    {
+      "path": "/pricing",
+      "config": "pricing",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/video-hero",
+      "config": "videoHero",
+      "auth": false,
+      "layout": "full"
     }
   ]
 }

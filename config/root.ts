@@ -45,6 +45,8 @@ import heroOverlayDepth from './screens/hero-overlay-depth.json';
 import heroImageFill from './screens/hero-image-fill.json';
 import heroAsymmetricDepth from './screens/hero-asymmetric-depth.json';
 import landingShowcase from './screens/landing-showcase.json';
+import pricing from './screens/pricing.json';
+import videoHero from './screens/video-hero.json';
 
 // Layouts
 import storeLayout from './layouts/store.json';
@@ -122,6 +124,8 @@ const screens = {
   heroImageFill,
   heroAsymmetricDepth,
   landingShowcase,
+  pricing,
+  videoHero,
 };
 
 const layouts = {

@@ -61,6 +61,7 @@ ${SHARED_FORMULA_SYNTAX}
 - Static token: \`set_style(id, {bg:"primary"})\`. Formula ternary: \`"COND ? 'theme:primary' : 'theme:card'"\`.
 - **bg = solid colors ONLY.** Never pass a gradient string to \`bg\` — it produces an invalid CSS class. For gradients use the structured \`gradient\` param OR \`bgImage: "linear-gradient(...)"\` (raw CSS string). Example: \`set_style(id, { bgImage: "linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)" })\`.
 - glowPulse and ripple loops ALWAYS require loopColor. gradientDrift requires gradientColors set first.
+- **Shadow colors must always use rgba** — never bare hex (e.g. \`#000000\` = fully opaque black). Use \`rgba(0,0,0,0.08)\` for subtle card shadows, \`rgba(0,0,0,0.15)\` for medium, \`rgba(0,0,0,0.25)\` for strong. The shadow tool also accepts the full CSS string: \`set_style(id, { boxShadow: "0px 2px 16px 0px rgba(0,0,0,0.08)" })\`.
 - **DarkOverlay** (hint \`"role:dark overlay"\`): \`bg: "rgba(0,0,0,0.55)"\`, \`zIndex: 10\`. Text/content containers above it MUST receive \`zIndex: 20\` — never \`pointer-events-none\`. Only the overlay node itself has \`pointer-events-none\` (applied automatically by the system).
 - **Card row** (hint \`"role:card row"\`): always set \`direction: "row"\`. Box defaults to \`flex-col\` — without this the cards stack vertically.
 

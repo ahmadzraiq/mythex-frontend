@@ -74,7 +74,7 @@ Tree node: { label, name?, text?, icon, searchQuery, bgImage?, _hint?, _needsRep
 - \`searchQuery\` — Image/Video nodes (REQUIRED, describe the visual content to search for)
 - \`bgImage\` — Box nodes only, CSS background-image search query. Media agent handles URL lookup + set_background call.
 - \`_hint: "role:hero section"\` — semantic role for styling agents (role: prefix only, e.g. "role:content group", "role:primary action group", "role:card row"). Set on structural/container nodes only — not on Text, Image, or Icon leaves. Use \`"role:card row"\` when a parent holds a repeat-template child that should render cards horizontally side-by-side (e.g. testimonials, pricing tiers, team members).
-- \`_needsRepeat: true\` marks a node for repeat binding (downstream agent resolves the variable)
+- \`_needsRepeat: true\` marks the ITEM TEMPLATE for repeat binding — always place it on the repeating child, never on the parent container. The container is the layout wrapper (e.g. the row/grid); the child is what repeats per data item. ❌ NEVER set \`repeat\` or \`_needsRepeat\` on a container that already wraps the template child.
 - \`_needsCondition: "fieldName"\` marks a node for conditional visibility
 - **Nested repeat \`map\` path**: when a node inside a repeat template itself maps over a sub-array (e.g. a feature list inside a pricing card), set \`map\` to plain dot notation — \`"context.item.data.features"\` — NEVER optional-chaining like \`"context?.item?.data?.features"\`. Optional-chaining in a \`map\` string breaks scope resolution (the path prefix \`"context?"\` is not recognized as a scope variable).
 
@@ -83,6 +83,7 @@ Variables: declare in the \`variables\` array with name, type, initialValue, uui
 - One template per array with \`_needsRepeat: true\` — never duplicate siblings per item.
 - Reuse existing variable UUIDs when available (listed in dynamic context).
 - If you set \`repeat\` directly on a node (e.g. \`repeat: "variables['UUID']"\`), the UUID MUST be the EXACT uuid you declared in the variables array for this call — never invent a different UUID. Mismatched UUIDs produce empty lists silently.
+- **Interactive state elements require a companion boolean variable**: When the tree includes any Switch, toggle, checkbox, or tab-switch node, ALWAYS declare a companion boolean variable (type: "boolean", initialValue: false) for it in the same \`generate_structure\` call. Never leave an interactive state node without a declared variable — the workflows agent will invent a UUID that does not exist, silently breaking the interaction.
 
 Do NOT pass \`_pageId\` in generate_structure — it is a system-only field injected at build time. Do NOT call styling or binding tools.`;
 

@@ -1534,7 +1534,18 @@ Additionally, a hover outline drawn around the outer (oversized) wrapper creates
    }
    ```
 
-**Rule:** `arbStyles` always go to the inner element via `cleanProps.style`. In `animNodeOwnsId` mode, ONLY the `OUTER_PASSTHROUGH` subset (width, height, min/max sizes, top/right/bottom/left, borderRadius variants, zIndex) is additionally forwarded to `outerStyle` so the selection wrapper matches the element's dimensions. Padding, margin, color, fontSize, borderWidth/Color NEVER go to `outerStyle` — they stay on the inner element only, otherwise the builder shows the element taller/wider than in preview.
+**Rule:** `arbStyles` always go to the inner element via `cleanProps.style`. In `animNodeOwnsId` mode, the `OUTER_PASSTHROUGH` subset is additionally forwarded to `outerStyle` so the selection wrapper matches the element visually. Current `OUTER_PASSTHROUGH` keys:
+
+| Key group | Reason |
+|---|---|
+| `width`, `height`, `minWidth`, `maxWidth`, `minHeight`, `maxHeight` | Outer wrapper must match element size for selection/resize |
+| `top`, `right`, `bottom`, `left` | Outer owns positioning for off-flow animated nodes |
+| `borderRadius` variants | Selection ring clips to correct shape |
+| `zIndex` | Outer stacking context must match |
+| `backgroundColor`, `background`, `backgroundImage` | Paint-only; stripped from inner (anti-double), must appear on outer for builder visibility |
+| `boxShadow` | Paint-only; same reason as above |
+
+Padding, margin, `color`, `fontSize`, `borderWidth/Color` are NOT in `OUTER_PASSTHROUGH` — they stay on the inner element only to avoid size/layout changes on the outer wrapper.
 
 ---
 
@@ -1718,3 +1729,43 @@ Additionally, `translateY: "-50%"` from `node.props.style` is composed into `tra
 The inner element becomes a clean `width: 100%; height: 100%` filler with no positioning. All positioning lives on the outer Animated.View wrapper.
 
 **Rule:** Any absolutely-positioned Box with an animation config is safe — the engine handles the stripping automatically. Just use `overflow-hidden` on the Box's className and the image clipping will work correctly.
+
+---
+
+## Centering with `translateX(-50%) translateY(-50%)` — Broken in Preview Mode
+
+**Problem:** An absolutely-positioned content overlay centered with the classic CSS trick:
+```json
+"style": { "translateX": "-50%", "translateY": "-50%" },
+"className": "absolute top-[50%] left-[50%]"
+```
+…works correctly in the **builder** but text appears off-center in **preview**.
+
+**Root cause:** In preview mode, `useSingleElementPath=true` wraps the `Box` as `AnimatedComponent(Box)` via NativeWind's `cssInterop`. When Reanimated applies `animatedStyle` (which contains the static `translateX(-50%)` as a parsed transform) to a NativeWind-processed component, NativeWind's style pipeline doesn't reliably merge Reanimated's percentage transform string — the centering shift is dropped. In builder mode, the outer `Animated.View` wrapper carries both `top/left` positioning and the transform as Reanimated-owned properties, bypassing NativeWind entirely, so it works.
+
+**Fix (code — already applied in `lib/sdui/renderer.tsx`):** When a node's `style` contains ANY `translateX`, `translateY`, or non-empty CSS `transform` string (e.g. `"rotate(-8deg)"`, `"translateX(-50%)"`, `"scale(1.1)"`), `_hasStaticStyleTransform` is set to `true`. This:
+1. Forces `useSingleElementPath = false` — the wrapper path is used instead of `AnimatedComponent(Box)`.
+2. Sets `_willOwn = true` — position/inset Tailwind tokens (`absolute`, `top-[...]`, `left-[...]`, `z-[...]`) are stripped from the inner `cleanProps.className`.
+3. Those stripped values are forwarded to `outerStyle` via `sizeOverride` so the outer `Animated.View` carries `position: absolute; top: 50%; left: 50%`.
+4. `staticTransform = "translateX(-50%) translateY(-50%)"` is composed into `animatedStyle` by the Reanimated worklet and applied to the raw outer `Animated.View` (no NativeWind interference) — centering works in both preview and builder.
+
+Both patterns now work correctly:
+
+```json
+// ✅ Classic CSS centering — now works in preview too
+{
+  "style": { "translateX": "-50%", "translateY": "-50%" },
+  "className": "items-center absolute z-[20] top-[50%] left-[50%]"
+}
+
+// ✅ Alternative — inset-0 + flexbox (simpler, no transform needed)
+{
+  "className": "flex flex-col items-center justify-center absolute inset-0 z-[20]"
+}
+```
+
+**When to use which:**
+- `translateX(-50%)` centering: use when you need the container to have a fixed/max-width that doesn't fill the parent (e.g. `max-w-[900px]`). The container starts at `left:50%` and shifts left by half its own width.
+- `inset-0 justify-center`: use when the container can fill the full parent and flexbox centers the children. Simpler and requires no `staticTransform` at all.
+
+**Also:** add `text-center` to headline/subheadline Text nodes when centering — `items-center` on the parent Box centers the text blocks but doesn't center text *within* each block.
