@@ -31,7 +31,7 @@ export const AGENT_REGISTRY: Record<
   },
   styling: {
     promptModule: 'lib/ai/agents/layout/prompt.ts (buildStylingAgentPrompt)',
-    notes: 'all visual styles via set_style + set_icon; tools: STYLING_AGENT_TOOLS',
+    notes: 'all visual styles via set_style (Icon color/size included); tools: STYLING_AGENT_TOOLS',
   },
   animation: {
     promptModule: 'lib/ai/agents/animation/prompt.ts',
@@ -43,6 +43,6 @@ export const AGENT_REGISTRY: Record<
   },
   media: {
     promptModule: '(deterministic — no LLM prompt file)',
-    notes: 'set_icon / set_src from tree manifest + search',
+    notes: 'set_icon_src / set_src from tree manifest + search (color/size via styling agent)',
   },
 };

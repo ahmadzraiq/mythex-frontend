@@ -13,7 +13,7 @@ import type { SDUINode } from '@/lib/sdui/types/node';
 import type { BuilderStore, CustomVar, DataSourceConfig } from '@/app/dev/builder/_store-types';
 import { COMPONENT_SCHEMA } from './sdui-component-schema';
 import { ALL_PRIMITIVES } from '@/lib/builder/primitive-components';
-import { FORMULA_FNS } from '@/lib/sdui/formula-functions';
+import { validateWorkflowFormulas, findProhibitedStep } from './workflow-validator';
 import { replaceTwToken, removeTwToken } from '@/app/dev/builder/_tw-utils';
 import {
   type ToolGroup,
@@ -33,66 +33,71 @@ export interface ToolResult {
 export type StoreGetter = () => BuilderStore;
 
 // ─── Formula validator ────────────────────────────────────────────────────────
-// Returns an error message string if the formula is invalid, or null if valid.
-// Used by create_workflow so the AI receives an error and self-corrects rather
-// than relying on fragile "NEVER" prompt instructions.
+// validateFormula, validateWorkflowFormulas, findProhibitedStep, and
+// PROHIBITED_STEP_TYPES are imported from ./workflow-validator (shared with route.ts).
 
-const KNOWN_FN_NAMES = new Set(Object.keys(FORMULA_FNS));
-
-function validateFormula(expr: string): string | null {
-  // Detect Math.* usage (Math.max, Math.floor, etc.)
-  if (/\bMath\s*\./.test(expr)) {
-    const matches = expr.match(/\bMath\s*\.\s*(\w+)/g) ?? [];
-    const names = matches.map(m => m.replace(/\bMath\s*\.\s*/, ''));
-    const suggestions = names.map(n => {
-      const lower = n.toLowerCase();
-      const found = [...KNOWN_FN_NAMES].find(k => k.toLowerCase() === lower);
-      return found ? `Math.${n}() → ${found}()` : `Math.${n}() (not available as a formula function)`;
-    });
-    return `Formula uses JavaScript globals (${matches.join(', ')}). Use the formula functions directly instead: ${suggestions.join('; ')}. Available math functions: ${[...KNOWN_FN_NAMES].filter(k => ['abs','ceil','floor','round','max','min','clamp','pow','sqrt','mod','sum'].includes(k)).join(', ')}.`;
-  }
-  return null;
+// Converts "{ formula: \"...\" }" strings to proper { formula: "..." } objects.
+// The AI sometimes stringifies the formula wrapper instead of emitting a real JSON object.
+function tryCoerceStringFormula(value: unknown): unknown {
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  const dqMatch = trimmed.match(/^\{\s*formula:\s*"([\s\S]*)"\s*\}$/);
+  if (dqMatch) return { formula: dqMatch[1].replace(/\\"/g, '"') };
+  const sqMatch = trimmed.match(/^\{\s*formula:\s*'([\s\S]*)'\s*\}$/);
+  if (sqMatch) return { formula: sqMatch[1].replace(/\\'/g, "'") };
+  return value;
 }
 
-// Validates all changeVariableValue formula steps in a workflow.
-// Returns an error string if any step has an invalid formula, or null if all pass.
-function validateWorkflowFormulas(steps: Array<Record<string, unknown>>): string | null {
-  for (const step of steps) {
-    if (step.type !== 'changeVariableValue') continue;
-    const cfg = step.config as Record<string, unknown> | undefined;
-    const value = cfg?.value as Record<string, unknown> | undefined;
-    if (typeof value?.formula === 'string') {
-      const err = validateFormula(value.formula);
-      if (err) return `Step "${step.id ?? '?'}": ${err}`;
-    }
-  }
-  return null;
+// Extracts the plain formula string from a "{ formula: \"...\" }" wrapper string.
+// Used for condition fields (branch, multiOptionBranch, etc.) where the value must be a
+// plain string, not a { formula: "..." } object.
+function tryCoerceConditionString(value: unknown): unknown {
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  const dqMatch = trimmed.match(/^\{\s*formula:\s*"([\s\S]*)"\s*\}$/);
+  if (dqMatch) return dqMatch[1].replace(/\\"/g, '"');
+  const sqMatch = trimmed.match(/^\{\s*formula:\s*'([\s\S]*)'\s*\}$/);
+  if (sqMatch) return sqMatch[1].replace(/\\'/g, "'");
+  return value;
 }
 
-// Recursively checks all steps (including nested branches/loops) for prohibited types.
-function findProhibitedStep(steps: Array<Record<string, unknown>>, prohibited: Set<string>): string | null {
-  for (const step of steps) {
-    const t = step.type as string | undefined;
-    if (t && prohibited.has(t)) {
-      return `Step "${step.id ?? '?'}": type "${t}" is not supported. Use changeVariableValue, navigateTo, or other supported types instead.`;
-    }
-    for (const branch of ['trueBranch', 'falseBranch', 'loopBody', 'defaultBranch'] as const) {
-      if (Array.isArray(step[branch])) {
-        const err = findProhibitedStep(step[branch] as Array<Record<string, unknown>>, prohibited);
-        if (err) return err;
+const CONDITION_STEP_TYPES = new Set(['branch', 'multiOptionBranch', 'passThroughCondition', 'whileLoop']);
+
+// Recursively coerces all changeVariableValue config.value fields in steps and their nested branches/loops.
+function coerceStepFormulas(steps: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+  return steps.map(step => {
+    const out = { ...step };
+    if (step.type === 'changeVariableValue') {
+      const cfg = step.config as Record<string, unknown> | undefined;
+      if (cfg) {
+        const coerced = tryCoerceStringFormula(cfg.value);
+        if (coerced !== cfg.value) out.config = { ...cfg, value: coerced };
       }
     }
+    // Coerce condition fields for branch/multiOptionBranch/passThroughCondition/whileLoop.
+    // The AI sometimes wraps conditions in "{ formula: \"...\" }" strings, which at runtime
+    // evaluate to a truthy object that never matches any branch label → all clicks are no-ops.
+    if (CONDITION_STEP_TYPES.has(step.type as string)) {
+      const cfg = step.config as Record<string, unknown> | undefined;
+      if (cfg && typeof cfg.condition === 'string') {
+        const coerced = tryCoerceConditionString(cfg.condition);
+        if (coerced !== cfg.condition) out.config = { ...(out.config as Record<string, unknown> ?? cfg), condition: coerced };
+      }
+    }
+    if (Array.isArray(step.trueBranch)) out.trueBranch = coerceStepFormulas(step.trueBranch as Array<Record<string, unknown>>);
+    if (Array.isArray(step.falseBranch)) out.falseBranch = coerceStepFormulas(step.falseBranch as Array<Record<string, unknown>>);
+    if (Array.isArray(step.loopBody)) out.loopBody = coerceStepFormulas(step.loopBody as Array<Record<string, unknown>>);
+    if (Array.isArray(step.defaultBranch)) out.defaultBranch = coerceStepFormulas(step.defaultBranch as Array<Record<string, unknown>>);
     if (Array.isArray(step.branches)) {
-      for (const b of step.branches as Array<Record<string, unknown>>) {
-        if (Array.isArray(b.steps)) {
-          const err = findProhibitedStep(b.steps as Array<Record<string, unknown>>, prohibited);
-          if (err) return err;
-        }
-      }
+      out.branches = (step.branches as Array<Record<string, unknown>>).map(b => ({
+        ...b,
+        steps: Array.isArray(b.steps) ? coerceStepFormulas(b.steps as Array<Record<string, unknown>>) : b.steps,
+      }));
     }
-  }
-  return null;
+    return out;
+  });
 }
+
 
 // ─── UUID ────────────────────────────────────────────────────────────────────
 
@@ -273,6 +278,9 @@ function summarizeNode(n: SDUINode, depth: number): unknown {
     name: node.name,
     text: typeof node.text === 'string' ? (node.text as string).slice(0, 80) : undefined,
     className: (n.props as { className?: string })?.className?.slice(0, 100),
+    // When map is set this node is a REPEAT TEMPLATE — it renders once per item.
+    // Row/grid/gap layout for arranging multiple items belongs on the PARENT, not here.
+    map: node.map,
     // tools lists the capability groups this component supports.
     // Universal tools (set_opacity, set_position, set_animation, set_condition,
     // set_repeat, bind_action, rename_node, set_transform) are always available
@@ -391,6 +399,30 @@ function isFormulaExpression(val: string): boolean {
 
 // Map friendly color names to CSS-variable Tailwind classes.
 // prefix: 'bg' | 'text' | 'border'
+// Resolves a theme token name or any color value to a raw CSS color string
+// suitable for use inside CSS functions like linear-gradient().
+// Unlike resolveColorClass(), this returns CSS var() references, not Tailwind classes.
+function resolveColorForCSS(value: string): string {
+  if (value.startsWith('theme:')) value = value.slice(6);
+  const CSS_TOKENS: Record<string, string> = {
+    primary:                'var(--theme-primary)',
+    'primary-foreground':   'var(--theme-primary-foreground)',
+    secondary:              'var(--theme-secondary)',
+    'secondary-foreground': 'var(--theme-secondary-foreground)',
+    card:                   'var(--theme-card)',
+    'card-foreground':      'var(--theme-card-foreground)',
+    background:             'var(--theme-background)',
+    foreground:             'var(--theme-foreground)',
+    muted:                  'var(--theme-muted)',
+    'muted-foreground':     'var(--theme-muted-foreground)',
+    accent:                 'var(--theme-accent)',
+    'accent-foreground':    'var(--theme-accent-foreground)',
+    destructive:            'var(--theme-destructive)',
+    border:                 'var(--theme-border)',
+  };
+  return CSS_TOKENS[value] ?? value; // passthrough for hex, rgba, hsl, var(), etc.
+}
+
 function resolveColorClass(value: string, prefix: 'bg' | 'text' | 'border'): string {
   // Strip 'theme:' prefix so AI can use 'theme:primary' interchangeably with 'primary' in static params
   if (value.startsWith('theme:')) value = value.slice(6);
@@ -959,73 +991,33 @@ const handlers: Record<string, Handler> = {
     return { success: true, data: { message: 'Updated source' } };
   },
 
-  set_icon(input, getStore) {
+  set_icon_src(input, getStore) {
     const store = getStore();
     const nodeErr = requireNode(store, input.nodeId as string);
     if (nodeErr) return nodeErr;
     const capErr = checkCapability(store, input.nodeId as string, 'icon');
     if (capErr) return capErr;
 
-    if (input.icon === undefined && input.color === undefined && input.size === undefined) {
-      return { success: false, error: 'set_icon requires at least one of: icon, color, size.' };
+    if (input.icon === undefined) {
+      return { success: false, error: 'set_icon_src requires an icon name. Use set_style for color and size.' };
     }
-
-    // Theme token → CSS variable map for icon colors.
-    const ICON_THEME_VARS: Record<string, string> = {
-      primary:                'var(--theme-primary)',
-      'primary-foreground':   'var(--theme-primary-foreground)',
-      secondary:              'var(--theme-secondary)',
-      'secondary-foreground': 'var(--theme-secondary-foreground)',
-      accent:                 'var(--theme-accent)',
-      'accent-foreground':    'var(--theme-accent-foreground)',
-      muted:                  'var(--theme-muted)',
-      'muted-foreground':     'var(--theme-muted-foreground)',
-      foreground:             'var(--theme-foreground)',
-      background:             'var(--theme-background)',
-      destructive:            'var(--theme-destructive)',
-      card:                   'var(--theme-card)',
-      'card-foreground':      'var(--theme-card-foreground)',
-      border:                 'var(--theme-border)',
-    };
 
     const nodeId = input.nodeId as string;
 
     // Handle icon name — static string or formula expression string.
     let iconLabel = '';
-    if (input.icon !== undefined) {
-      iconLabel = typeof input.icon === 'string' ? (input.icon as string) : '';
-      if (isFormulaExpression(input.icon as string)) {
-        patchNodeStyle(store, nodeId, { icon: { formula: input.icon as string } });
-        store.patchProp(nodeId, 'props.icon', '');
-        iconLabel = '(formula)';
-      } else {
-        store.patchProp(nodeId, 'props.icon', input.icon);
-        iconLabel = input.icon as string;
-      }
-      // Clear any stale top-level text field left by Phase 2 set_text calls on Icon nodes.
-      store.patchProp(nodeId, 'text', undefined);
+    if (isFormulaExpression(input.icon as string)) {
+      // Store as props.icon formula so resolveProps evaluates it with full repeat scope.
+      store.patchProp(nodeId, 'props.icon', { formula: input.icon as string });
+      iconLabel = '(formula)';
+    } else {
+      store.patchProp(nodeId, 'props.icon', input.icon);
+      iconLabel = input.icon as string;
     }
+    // Clear any stale top-level text field left by set_text calls on Icon nodes.
+    store.patchProp(nodeId, 'text', undefined);
 
-    if (input.size) {
-      store.patchProp(nodeId, 'props.width', input.size);
-      store.patchProp(nodeId, 'props.height', input.size);
-    }
-
-    if (input.color) {
-      if (isFormulaExpression(input.color as string)) {
-        const sanitized = resolveFormulaTokens(input.color as string);
-        store.patchProp(nodeId, 'props.color', { formula: sanitized });
-      } else {
-        const resolved = ICON_THEME_VARS[input.color as string] ?? (input.color as string);
-        store.patchProp(nodeId, 'props.color', resolved);
-      }
-    }
-
-    const parts: string[] = [];
-    if (iconLabel) parts.push(`icon → "${iconLabel}"`);
-    if (input.color !== undefined) parts.push(`color updated`);
-    if (input.size  !== undefined) parts.push(`size → ${input.size}px`);
-    return { success: true, data: { message: `Updated icon: ${parts.join(', ')}` } };
+    return { success: true, data: { message: `Updated icon: icon → "${iconLabel}"` } };
   },
 
   set_video_props(input, getStore) {
@@ -1095,24 +1087,81 @@ const handlers: Record<string, Handler> = {
       if (fo < 100) cls = `${cls} bg-opacity-[${fo}%]`.trim();
     }
 
-    // Background image (URL or gradient) — stored in props.style.backgroundImage
+    // Background image (URL or gradient) — stored in props.style.backgroundImage.
+    // Batch all four background style properties into ONE patchNodeStyle call so they
+    // all survive. Separate calls share a stale store.pageNodes snapshot (captured at
+    // store = getStore()), so each call overwrites the previous one's write.
+    const bgStylePatch: Record<string, unknown> = {};
     if (input.bgImage != null) {
       const urlVal = input.bgImage as string;
       // Gradient strings must NOT be wrapped in url() — only actual URLs need wrapping
       const isGradient = urlVal.startsWith('linear-gradient(') || urlVal.startsWith('radial-gradient(');
       const wrapped = (urlVal.trim() && !urlVal.startsWith('url(') && !isGradient) ? `url(${urlVal})` : urlVal;
-      patchNodeStyle(store, nodeId, { backgroundImage: wrapped || '' });
+      if (!isGradient && wrapped) {
+        // When a photo URL is applied, compose with any SEMI-TRANSPARENT gradient the styling agent
+        // already wrote. Agents run in parallel: styling agent writes first (fast, no API call),
+        // media agent writes second (slow, needs image search).
+        // Only compose when the gradient has transparency (rgba, 'transparent' keyword, CSS color-level-4
+        // slash-opacity, or 4-arg rgb). An opaque gradient (#rrggbb, #rgb, hsl without alpha) would
+        // completely cover the photo — in that case the photo wins (gradient discarded).
+        // store was captured via getStore() at handler entry, so it reflects the styling agent's
+        // prior patchNodeStyle write — safe to read here without double-stale-snapshot risk.
+        const existingBg = getNodeStyle(store, nodeId).backgroundImage as string | undefined;
+        const existingIsGradient = !!existingBg &&
+          (existingBg.startsWith('linear-gradient(') || existingBg.startsWith('radial-gradient('));
+        // A gradient is only "transparent enough" to compose with a photo if its alpha values
+        // are actually low. rgba(0,0,0,0.95) technically contains rgba() but is 95% opaque —
+        // that would completely obscure the photo. We extract all alpha values and only compose
+        // when the MAXIMUM alpha across all color stops is below 0.7 (≤70% opacity).
+        const existingHasTransparency = !!existingBg && (() => {
+          if (existingBg.includes('transparent')) return true; // CSS keyword = fully transparent
+
+          // Collect alpha values from rgba(r, g, b, alpha) stops
+          const allAlphas: number[] = [];
+          const rgbaRe = /rgba\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*,\s*([\d.]+)\s*\)/g;
+          let rm: RegExpExecArray | null;
+          while ((rm = rgbaRe.exec(existingBg)) !== null) allAlphas.push(parseFloat(rm[1]));
+
+          // Collect alpha values from CSS color-level-4 slash syntax (e.g. hsl(200 50% 50% / 0.3))
+          const slashRe = /\/\s*([\d.]+)/g;
+          let sm: RegExpExecArray | null;
+          while ((sm = slashRe.exec(existingBg)) !== null) allAlphas.push(parseFloat(sm[1]));
+
+          if (allAlphas.length === 0) return false; // solid hex / rgb / hsl with no alpha → opaque
+
+          // Compose only when ALL stops are below the opacity threshold (photo remains visible)
+          return Math.max(...allAlphas) < 0.7;
+        })();
+        if (existingIsGradient && existingHasTransparency) {
+          // Strip any url() layers from the existing value — the styling agent may have
+          // hard-coded a placeholder URL alongside the gradient. The media agent always owns
+          // the photo layer, so we discard the old url() and insert the searched one.
+          const gradientsOnly = existingBg
+            .replace(/,?\s*url\([^)]*\)/gi, '')
+            .replace(/,\s*,/g, ',')
+            .replace(/^,\s*|,\s*$/g, '')
+            .trim();
+          bgStylePatch.backgroundImage = gradientsOnly
+            ? `${gradientsOnly}, ${wrapped}`
+            : wrapped;
+        } else {
+          bgStylePatch.backgroundImage = wrapped;
+        }
+      } else {
+        bgStylePatch.backgroundImage = wrapped || '';
+      }
     }
-    if (input.bgSize != null)     patchNodeStyle(store, nodeId, { backgroundSize:     input.bgSize as string });
-    if (input.bgPosition != null) patchNodeStyle(store, nodeId, { backgroundPosition: input.bgPosition as string });
-    if (input.bgRepeat != null)   patchNodeStyle(store, nodeId, { backgroundRepeat:   input.bgRepeat as string });
+    if (input.bgSize != null)     bgStylePatch.backgroundSize     = input.bgSize as string;
+    if (input.bgPosition != null) bgStylePatch.backgroundPosition = input.bgPosition as string;
+    if (input.bgRepeat != null)   bgStylePatch.backgroundRepeat   = input.bgRepeat as string;
+    if (Object.keys(bgStylePatch).length > 0) patchNodeStyle(store, nodeId, bgStylePatch);
 
     // Static gradient — props.style only (animation.outerStyle is for gradientDrift / set_animation)
     if (input.gradient != null) {
       const grad = input.gradient as { colors: string[]; direction?: string; radial?: boolean };
       if (grad.colors && grad.colors.length >= 2) {
         const dir = grad.direction ?? 'to bottom';
-        const colorList = grad.colors.join(', ');
+        const colorList = grad.colors.map(resolveColorForCSS).join(', ');
         const gradientStr = grad.radial
           ? `radial-gradient(circle at center, ${colorList})`
           : `linear-gradient(${dir}, ${colorList})`;
@@ -1712,6 +1761,52 @@ const handlers: Record<string, Handler> = {
 
     const msgs: string[] = [];
 
+    // ── Icon nodes: route color + size directly to props (bypasses Tailwind classes) ──
+    if (componentType === 'Icon') {
+      // Theme token → CSS variable map (mirrors the old set_icon resolution logic).
+      const ICON_THEME_VARS: Record<string, string> = {
+        primary:                'var(--theme-primary)',
+        'primary-foreground':   'var(--theme-primary-foreground)',
+        secondary:              'var(--theme-secondary)',
+        'secondary-foreground': 'var(--theme-secondary-foreground)',
+        accent:                 'var(--theme-accent)',
+        'accent-foreground':    'var(--theme-accent-foreground)',
+        muted:                  'var(--theme-muted)',
+        'muted-foreground':     'var(--theme-muted-foreground)',
+        foreground:             'var(--theme-foreground)',
+        background:             'var(--theme-background)',
+        destructive:            'var(--theme-destructive)',
+        card:                   'var(--theme-card)',
+        'card-foreground':      'var(--theme-card-foreground)',
+        border:                 'var(--theme-border)',
+      };
+      if (input.color !== undefined) {
+        const colorInput = input.color as string;
+        if (isFormulaExpression(colorInput)) {
+          const sanitized = resolveFormulaTokens(colorInput);
+          store.patchProp(nodeId, 'props.color', { formula: sanitized });
+        } else {
+          let colorKey = colorInput;
+          if (colorKey.startsWith('theme:')) colorKey = colorKey.slice(6);
+          store.patchProp(nodeId, 'props.color', ICON_THEME_VARS[colorKey] ?? colorKey);
+        }
+        msgs.push('color');
+      }
+      // Accept width or a numeric size as the icon pixel size.
+      const sizeRaw = input.width ?? input.size;
+      if (sizeRaw !== undefined) {
+        const sz = Number(sizeRaw);
+        if (!isNaN(sz) && sz > 0) {
+          store.patchProp(nodeId, 'props.size', sz);
+          msgs.push('size');
+        }
+      }
+      return {
+        success: true,
+        data: { message: msgs.length > 0 ? `Updated: ${msgs.join(', ')}` : 'No changes applied' },
+      };
+    }
+
     // ── Layout / spacing / size / typography / position ──────────────────────
     // Position params (position, zIndex, top, right, bottom, left) are universal
     // in set_layout (no capability check). We split out blocked groups before
@@ -1976,25 +2071,40 @@ const handlers: Record<string, Handler> = {
     if (input.pl != null) { updated = applySpacingTok(stripPShorthand(updated), /^pl-/, 'pl', normalizeSpacingVal(input.pl)); }
 
     if (input.m != null) {
-      const n = normalizeSpacingVal(input.m);
-      if (n !== null) {
-        updated = updated.split(' ').filter(t => !/^-?m[xyblrt]?-/.test(t)).join(' ').trim();
-        // Emit shorthand m-[Npx] instead of four per-side classes for uniform margin
-        if (n !== 0) updated = `${updated} m-[${n}px]`.trim();
+      if (input.m === 'auto') {
+        updated = updated.split(' ').filter(t => !/^-?m[xyblrt]?-/.test(t) && t !== 'm-auto' && t !== 'mx-auto' && t !== 'my-auto').join(' ').trim();
+        updated = `${updated} m-auto`.trim();
+      } else {
+        const n = normalizeSpacingVal(input.m);
+        if (n !== null) {
+          updated = updated.split(' ').filter(t => !/^-?m[xyblrt]?-/.test(t)).join(' ').trim();
+          // Emit shorthand m-[Npx] instead of four per-side classes for uniform margin
+          if (n !== 0) updated = `${updated} m-[${n}px]`.trim();
+        }
       }
     }
     if (input.mx != null) {
-      const n = normalizeSpacingVal(input.mx);
-      if (n !== null) {
-        updated = stripMShorthand(updated.split(' ').filter(t => !/^-?m[xlr]-/.test(t)).join(' ').trim());
-        if (n !== 0) updated = `${updated} ml-[${n}px] mr-[${n}px]`.trim();
+      if (input.mx === 'auto') {
+        updated = stripMShorthand(updated.split(' ').filter(t => !/^-?m[xlr]-/.test(t) && t !== 'mx-auto' && t !== 'm-auto').join(' ').trim());
+        updated = `${updated} mx-auto`.trim();
+      } else {
+        const n = normalizeSpacingVal(input.mx);
+        if (n !== null) {
+          updated = stripMShorthand(updated.split(' ').filter(t => !/^-?m[xlr]-/.test(t)).join(' ').trim());
+          if (n !== 0) updated = `${updated} ml-[${n}px] mr-[${n}px]`.trim();
+        }
       }
     }
     if (input.my != null) {
-      const n = normalizeSpacingVal(input.my);
-      if (n !== null) {
-        updated = stripMShorthand(updated.split(' ').filter(t => !/^-?m[ybt]-/.test(t)).join(' ').trim());
-        if (n !== 0) updated = `${updated} mt-[${n}px] mb-[${n}px]`.trim();
+      if (input.my === 'auto') {
+        updated = stripMShorthand(updated.split(' ').filter(t => !/^-?m[ybt]-/.test(t) && t !== 'my-auto' && t !== 'm-auto').join(' ').trim());
+        updated = `${updated} my-auto`.trim();
+      } else {
+        const n = normalizeSpacingVal(input.my);
+        if (n !== null) {
+          updated = stripMShorthand(updated.split(' ').filter(t => !/^-?m[ybt]-/.test(t)).join(' ').trim());
+          if (n !== 0) updated = `${updated} mt-[${n}px] mb-[${n}px]`.trim();
+        }
       }
     }
     if (input.mt != null) { updated = applySpacingTok(stripMShorthand(updated), /^-?mt-/, 'mt', normalizeSpacingVal(input.mt)); }
@@ -2315,6 +2425,14 @@ const handlers: Record<string, Handler> = {
     const nodeErr = requireNode(store, nodeId);
     if (nodeErr) return nodeErr;
     const workflowName = input.workflowName as string;
+    // Validate that the workflow exists — binding to a ghost workflow creates a silent no-op action
+    const wfExists = !!store.pageWorkflows?.[workflowName];
+    if (!wfExists) {
+      return {
+        success: false,
+        error: `Workflow "${workflowName}" not found. Create it with create_workflow first, then call bind_action.`,
+      };
+    }
     const node = findNode(store.pageNodes as SDUINode[], nodeId);
     const existing = Array.isArray(node?.actions) ? [...(node.actions as Array<{ action: string }>)] : [];
     // Append only if not already bound
@@ -2342,20 +2460,36 @@ const handlers: Record<string, Handler> = {
     const store = getStore();
     const name = input.name as string;
     const trigger = (input.trigger as string) ?? 'click';
-    const rawSteps = input.steps as Array<Record<string, unknown>>;
+    let rawSteps = input.steps as Array<Record<string, unknown>>;
 
-    const steps = rawSteps.map((s, i) => ({
+    if (!name || typeof name !== 'string') {
+      return { success: false, error: 'create_workflow requires a non-empty "name".' };
+    }
+    // The AI sometimes serializes the steps array as a JSON string instead of a real array.
+    // Parse it silently so the workflow is not lost.
+    if (typeof rawSteps === 'string') {
+      try {
+        const parsed = JSON.parse(rawSteps as unknown as string);
+        if (Array.isArray(parsed)) rawSteps = parsed;
+      } catch {
+        // fall through to the array check below which will return a proper error
+      }
+    }
+    if (!Array.isArray(rawSteps)) {
+      return { success: false, error: 'create_workflow requires a "steps" array.' };
+    }
+
+    const steps = coerceStepFormulas(rawSteps.map((s, i) => ({
       id: s.id ?? `step-${i + 1}`,
       ...s,
-    }));
+    })));
 
     const formulaError = validateWorkflowFormulas(steps);
     if (formulaError) {
       return { success: false, error: formulaError };
     }
 
-    const PROHIBITED_STEP_TYPES = new Set(['customJavaScript', 'animate']);
-    const prohibitedError = findProhibitedStep(steps, PROHIBITED_STEP_TYPES);
+    const prohibitedError = findProhibitedStep(steps);
     if (prohibitedError) {
       return { success: false, error: prohibitedError };
     }
@@ -2365,12 +2499,19 @@ const handlers: Record<string, Handler> = {
 
     if (input.bindToNodeId) {
       const nodeId = input.bindToNodeId as string;
-      const bindErr = requireNode(store, nodeId);
+      // Re-fetch the store after setPageWorkflow/setPageWorkflowMeta to get the freshest
+      // pageNodes. Parallel agents (binding, styling, workflows) run concurrently and their
+      // SSE tool events are interleaved on the client. A binding/styling tool call processed
+      // between two create_workflow calls may have updated pageNodes to a new Zustand state
+      // object, making the original `store` snapshot stale. getStore() always returns the
+      // true current state.
+      const freshStore = getStore();
+      const bindErr = requireNode(freshStore, nodeId);
       if (bindErr) return bindErr;
-      const node = findNode(store.pageNodes as SDUINode[], nodeId);
+      const node = findNode(freshStore.pageNodes as SDUINode[], nodeId);
       const existing = Array.isArray(node?.actions) ? [...(node.actions as unknown[])] : [];
       const newActions = [...existing, { action: name }];
-      store.patchActions(nodeId, newActions as unknown as Record<string, unknown>);
+      freshStore.patchActions(nodeId, newActions as unknown as Record<string, unknown>);
     }
 
     return {
@@ -2454,6 +2595,18 @@ const handlers: Record<string, Handler> = {
         if (input.enterStiffness !== undefined) ec.stiffness = Number(input.enterStiffness);
         if (input.enterDamping !== undefined) ec.damping = Number(input.enterDamping);
         if (input.enterMass !== undefined) ec.mass = Number(input.enterMass);
+        if (input.enterStagger !== undefined) ec.stagger = Number(input.enterStagger);
+      } else if (input.enterStagger !== undefined) {
+        // enterStagger provided without an enter type and no existing enter animation.
+        // Auto-add a default enter so the stagger has something to work with instead of
+        // producing an empty animation object (which would wipe all existing animations).
+        animation.enter = {
+          type: 'fadeIn',
+          duration: Number(input.enterDuration ?? 400),
+          stagger: Number(input.enterStagger),
+        };
+        if (input.enterDelay !== undefined) (animation.enter as Record<string, unknown>).delay = Number(input.enterDelay);
+        if (input.enterEasing !== undefined) (animation.enter as Record<string, unknown>).easing = input.enterEasing;
       }
     }
 
@@ -2973,6 +3126,14 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
       }
     }
 
+    // Strip optional-chaining from repeat/map paths — "context?.item?.data?.x" → "context.item.data.x"
+    if (node.repeat && typeof node.repeat === 'string') {
+      node.repeat = (node.repeat as string).replace(/\?\./g, '.');
+    }
+    if (node.map && typeof node.map === 'string') {
+      node.map = (node.map as string).replace(/\?\./g, '.');
+    }
+
     // Collect inline repeat/condition for deferred application after addNode
     if (node.repeat || node.condition) {
       const op: { nodeId: string; repeat?: string; keyField?: string; condition?: string } = { nodeId: base.id as string };
@@ -3000,26 +3161,19 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
       base.props = vProps;
     }
 
-    // Auto-inject dark overlay styles when _hint is "role:dark overlay".
-    // This ensures the scrim always renders at the correct z-index and opacity even when
-    // the styling agent fails (stale node ID, blind failure) or the AI uses wrong label.
-    const nodeHint = node._hint as string | undefined;
-    if (nodeHint === 'role:dark overlay') {
-      const oProps = (base.props ?? {}) as Record<string, unknown>;
-      const existingStyle = (oProps.style ?? {}) as Record<string, unknown>;
-      oProps.style = {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        backgroundColor: 'rgba(0,0,0,0.55)',
-        zIndex: 10,
-        pointerEvents: 'none',
-        ...existingStyle, // allow explicit style overrides from AI / styling agent
-      };
-      base.props = oProps;
-      base.type = 'Box'; // guarantee correct SDUI type regardless of what label was used
+    // Auto-route CSS gradient bgImage to props.style.backgroundImage.
+    // bgImage is documented as a photo search query for the media agent.
+    // If the AI passes a CSS gradient string (linear-gradient / radial-gradient / conic-gradient),
+    // skip the photo-search path entirely and apply the gradient as an inline style instead.
+    const rawBgImage = node.bgImage as string | undefined;
+    if (rawBgImage && /^(linear|radial|conic)-gradient/i.test(rawBgImage.trim())) {
+      const bProps = (base.props ?? {}) as Record<string, unknown>;
+      const bStyle = (bProps.style ?? {}) as Record<string, unknown>;
+      bStyle.backgroundImage = rawBgImage;
+      bStyle.backgroundSize = bStyle.backgroundSize ?? 'cover';
+      bProps.style = bStyle;
+      base.props = bProps;
+      delete node.bgImage; // prevent media agent from treating this as a photo search
     }
 
     // Apply name (layers label)
@@ -3208,7 +3362,7 @@ export const CLIENT_SIDE_TOOLS = new Set([
   'generate_structure',
   'add_component', 'add_icon', 'add_image', 'add_video',
   'delete_node', 'duplicate_node', 'move_node_up', 'move_node_down', 'move_node', 'wrap_in_container',
-  'set_text', 'set_placeholder', 'set_href', 'set_src', 'set_icon', 'set_video_props',
+  'set_text', 'set_placeholder', 'set_href', 'set_src', 'set_icon_src', 'set_video_props',
   'set_background', 'set_text_color', 'set_typography', 'set_border', 'set_shadow',
   'set_opacity', 'set_spacing', 'set_size', 'set_position', 'set_transform', 'set_overflow',
   'set_submit', 'set_input_props',

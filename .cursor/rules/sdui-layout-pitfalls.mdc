@@ -1769,3 +1769,27 @@ Both patterns now work correctly:
 - `inset-0 justify-center`: use when the container can fill the full parent and flexbox centers the children. Simpler and requires no `staticTransform` at all.
 
 **Also:** add `text-center` to headline/subheadline Text nodes when centering — `items-center` on the parent Box centers the text blocks but doesn't center text *within* each block.
+
+---
+
+## Workflow Branch/Loop Conditions — Repeat Item Context (`context.item`) Not Available
+
+**Problem:** A `multiOptionBranch`, `branch`, `passThroughCondition`, or `whileLoop` workflow step uses a formula that references `context?.item?.data?.type` (or any other repeat-item field). The condition always returns `undefined` — no branch matches and only `defaultBranch` fires, making ALL buttons/cards in a repeat template appear unresponsive.
+
+**Root cause:** These step types evaluated their condition formula with only the global variable store state — `{ ...vsState, variables: vsState }`. The handler context `ctx.scope` (which carries `context.item` from the clicked repeat card) was never included. `ctx.runOne` → `setVarHandler` (used by `changeVariableValue`) correctly includes `ctx.scope`, so variable updates after the dispatch worked, but the dispatch never fired the right branch.
+
+**Fix (applied in `lib/sdui/actions/handlers/workflow-steps-handler.ts`):** A shared `buildFormulaCtx` helper now merges `ctx.scope` into the formula context for all four branching step types:
+```typescript
+function buildFormulaCtx(vsState, ctx) {
+  return {
+    ...vsState,
+    variables: vsState,
+    ...(ctx.scope ?? {}),
+    context: ctx.scope?.context ?? vsState['context'] ?? {},
+  };
+}
+```
+
+**Rule:** Formula conditions in workflow branching steps now have full access to `context.item.data.*` from the triggering repeat node. This was always intended to work — the omission was a bug.
+
+**Related:** When the AI creates a `multiOptionBranch` on `context?.item?.data?.type`, the branch `label` values must exactly match the `type` values in the array variable's `initialValue`. If the data has `type: "operator"` but the branch has `label: "operation"`, the branch silently falls to `defaultBranch`.

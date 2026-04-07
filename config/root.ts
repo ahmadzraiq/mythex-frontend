@@ -47,6 +47,7 @@ import heroAsymmetricDepth from './screens/hero-asymmetric-depth.json';
 import landingShowcase from './screens/landing-showcase.json';
 import pricing from './screens/pricing.json';
 import videoHero from './screens/video-hero.json';
+import techHero from './screens/tech-hero.json';
 
 // Layouts
 import storeLayout from './layouts/store.json';
@@ -126,6 +127,7 @@ const screens = {
   landingShowcase,
   pricing,
   videoHero,
+  techHero,
 };
 
 const layouts = {

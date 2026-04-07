@@ -11,6 +11,9 @@ export const SHARED_FORMULA_SYNTAX = `## Formula Syntax
 - \`.parent\` is ONLY valid inside an inner (nested) repeat template.
 - Theme color in ternary: \`'theme:tokenName'\`
 - Conventions: \`?.\` on all paths, \`not(value)\` for negation (never \`!\`), single quotes for strings \`'active'\`
+- Equality: use \`===\` / \`!==\` directly, or \`equal(a, b)\` / \`notEqual(a, b)\` — never use \`==\` or \`!=\`
+- Containment: use \`contains(str, substr)\` for string/array containment — never \`includes()\`
+- Type conversion: use \`toText(value)\` to convert to string, \`toNumber(value)\` to convert to number — NOT \`string()\` or \`number()\` (those are invalid formula functions)
 - Node IDs and variable IDs are UUIDs — never invent them, only use IDs from prior results.
 
 ## set_repeat mapPath — Plain Dot Notation ONLY

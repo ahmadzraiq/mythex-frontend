@@ -29,6 +29,7 @@ import { ALL_BUILDER_TOOLS, PHASE3_BUILDER_TOOLS, PHASE_W_TOOLS, STRUCTURE_AGENT
 import { buildChatSystemPrompt, buildPhase3SystemPrompt, PLAN_SYSTEM } from '@/lib/ai/builder-knowledge-v2';
 import { buildStructureAgentPrompt, buildBindingAgentPrompt, buildWorkflowsAgentPrompt, buildStylingAgentPrompt, buildAnimationAgentPrompt, buildMediaAgentPrompt } from '@/lib/ai/agents';
 import { TOOL_CAPABILITY_GROUP, getCapabilities, buildBlockedGroupSuggestion, buildCapabilityNote } from '@/lib/ai/component-capabilities';
+import { validateWorkflowFormulas, findProhibitedStep } from '@/lib/ai/workflow-validator';
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // ── Feature flags ─────────────────────────────────────────────────────────────
@@ -146,45 +147,35 @@ function assignTreeIds(
       delete result.keyField;
     }
   }
-  // Auto-fix: Grid with _needsRepeat marker + single child → move marker to the child
-  if (label === 'grid' && result._needsRepeat && children.length === 1) {
-    const child = children[0] as Record<string, unknown>;
-    if (!child._needsRepeat) {
-      child._needsRepeat = result._needsRepeat;
-      if (result._needsRepeatKeyField) child._needsRepeatKeyField = result._needsRepeatKeyField;
-      delete result._needsRepeat;
-      delete result._needsRepeatKeyField;
-    }
-  }
   return result;
 }
 
-/** Strip _needs* marker fields from a tree before sending to client.
+/** Strip loop/showIf marker fields from a tree before sending to client.
  *  Returns the markers extracted from the tree for use by hint detectors and the Binding agent. */
 function extractAndStripMarkers(tree: Record<string, unknown>): Array<{
   nodeId: string;
-  _needsRepeat?: string | boolean;
-  _needsRepeatKeyField?: string;
-  _needsCondition?: string;
+  loop?: string | boolean;
+  loopKey?: string;
+  showIf?: string;
 }> {
   const markers: Array<{
     nodeId: string;
-    _needsRepeat?: string | boolean;
-    _needsRepeatKeyField?: string;
-    _needsCondition?: string;
+    loop?: string | boolean;
+    loopKey?: string;
+    showIf?: string;
   }> = [];
   const walk = (node: Record<string, unknown>) => {
-    const hasMarker = node._needsRepeat || node._needsCondition;
+    const hasMarker = node.loop || node.showIf;
     if (hasMarker) {
       markers.push({
         nodeId: node.id as string,
-        _needsRepeat: node._needsRepeat as string | boolean | undefined,
-        _needsRepeatKeyField: node._needsRepeatKeyField as string | undefined,
-        _needsCondition: node._needsCondition as string | undefined,
+        loop: node.loop as string | boolean | undefined,
+        loopKey: node.loopKey as string | undefined,
+        showIf: node.showIf as string | undefined,
       });
-      delete node._needsRepeat;
-      delete node._needsRepeatKeyField;
-      delete node._needsCondition;
+      delete node.loop;
+      delete node.loopKey;
+      delete node.showIf;
     }
     for (const child of (Array.isArray(node.children) ? node.children as Record<string, unknown>[] : [])) {
       walk(child);
@@ -207,7 +198,7 @@ function isCustomJsDomWorkflow(input: Record<string, unknown>): boolean {
 function detectNestedRepeatNodes(trees: Array<{ tree: Record<string, unknown> }>): string {
   const innerNodeIds: string[] = [];
   const walk = (node: Record<string, unknown>, repeatDepth: number, outerRepeatPath: string | null) => {
-    const hasRepeat = (typeof node.repeat === 'string' && node.repeat.length > 0) || !!node._needsRepeat;
+    const hasRepeat = (typeof node.repeat === 'string' && node.repeat.length > 0) || !!node.loop;
     const newDepth = hasRepeat ? repeatDepth + 1 : repeatDepth;
     const repeatPath = (node.repeat as string) ?? '';
     const newOuterPath = hasRepeat && repeatDepth >= 1 ? repeatPath : outerRepeatPath;
@@ -248,7 +239,7 @@ function detectTernaryContrastNodes(
 
   const walk = (node: Record<string, unknown>) => {
     const inlineRepeat = node.repeat as string | undefined;
-    const markerRepeat = node._needsRepeat;
+    const markerRepeat = node.loop;
     const hasRepeat = (typeof inlineRepeat === 'string' && inlineRepeat.length > 0) || !!markerRepeat;
     if (hasRepeat) {
       // Resolve array data: inline repeat has UUID in path, boolean marker matches any array variable with boolean fields
@@ -257,8 +248,8 @@ function detectTernaryContrastNodes(
         const varIdMatch = inlineRepeat.match(/variables\['([^']+)'\]/);
         const varId = varIdMatch ? varIdMatch[1] : inlineRepeat;
         arrData = arrayVarData.get(varId);
-      } else {
-        // Boolean _needsRepeat: find first array variable that has boolean fields
+        } else {
+        // Boolean loop marker: find first array variable that has boolean fields
         for (const [, data] of arrayVarData) {
           if (data.length > 0) {
             const sample = data[0] as Record<string, unknown>;
@@ -279,7 +270,7 @@ function detectTernaryContrastNodes(
             const children = n.children as Record<string, unknown>[] | undefined;
             if (!Array.isArray(children)) return;
             for (const child of children) {
-              const hasInnerRepeat = (typeof child.repeat === 'string' && (child.repeat as string).length > 0) || !!child._needsRepeat;
+              const hasInnerRepeat = (typeof child.repeat === 'string' && (child.repeat as string).length > 0) || !!child.loop;
               const childDepth = hasInnerRepeat ? repeatDepth + 1 : repeatDepth;
               const label = (child.label as string ?? '').toLowerCase();
               if (['text', 'heading', 'label', 'caption', 'icon', 'btn solid', 'btn outline', 'btn ghost', 'btn destructive', 'btn + icon l', 'btn + icon r', 'divider'].includes(label) ||
@@ -333,7 +324,7 @@ function detectRepeatContainerPairs(trees: Array<{ tree: Record<string, unknown>
     const children = node.children as Record<string, unknown>[] | undefined;
     if (!Array.isArray(children)) return;
     for (const child of children) {
-      const hasRepeat = (typeof child.repeat === 'string' && child.repeat.length > 0) || !!child._needsRepeat;
+      const hasRepeat = (typeof child.repeat === 'string' && child.repeat.length > 0) || !!child.loop;
       if (hasRepeat) {
         pairs.push({
           containerId: node.id as string,
@@ -366,7 +357,7 @@ async function classifyRequest(
   try {
     const res = await client.messages.create({
       model: 'claude-haiku-4-5',
-      max_tokens: 1024,
+      max_tokens: 4096,
       system: PLAN_SYSTEM,
       messages: [{ role: 'user', content: prompt }],
     }, signal ? { signal } : undefined);
@@ -449,15 +440,16 @@ function extractMediaFromTree(tree: Record<string, unknown>): {
     const nodeName = node.name as string | undefined;
     // Track repeat context — Images/Videos inside a repeat subtree get their src
     // from binding agent formula expressions, not from the media agent.
-    const nowInsideRepeat = insideRepeat || !!node.repeat || !!node._needsRepeat;
+    const nowInsideRepeat = insideRepeat || !!node.repeat || !!node.loop;
 
     if (id) {
       if (label === 'icon') {
         const icon = node.icon as string | undefined;
         if (icon) {
-          // Icons are always processed regardless of repeat context — same icon per item is correct.
-          manifest.icons.push({ id, icon, name: nodeName });
-          delete node.icon; // strip — not an SDUI prop
+          if (!insideRepeat) {
+            manifest.icons.push({ id, icon, name: nodeName });
+          }
+          delete node.icon; // always strip — not an SDUI prop
         }
       } else if (label === 'image') {
         const searchQuery = node.searchQuery as string | undefined;
@@ -474,11 +466,15 @@ function extractMediaFromTree(tree: Record<string, unknown>): {
           manifest.videos.push({ id, searchQuery: searchQuery ?? '', name: nodeName });
         }
       }
-      // Box with bgImage — CSS background-image set via set_background by media agent
+      // Box with bgImage — CSS background-image set via set_background by media agent.
+      // Skip gradient strings — the executor already applies them as inline style;
+      // trying to photo-search a gradient expression would produce garbage results.
       if (node.bgImage) {
         const bgImageQuery = node.bgImage as string;
         delete node.bgImage; // strip — media agent handles the URL lookup
-        if (id) manifest.bgImages.push({ id, searchQuery: bgImageQuery, name: nodeName });
+        if (id && !/^(linear|radial|conic)-gradient/i.test(bgImageQuery.trim())) {
+          manifest.bgImages.push({ id, searchQuery: bgImageQuery, name: nodeName });
+        }
       }
     }
 
@@ -749,7 +745,7 @@ async function runStructureAgent(
   signal?: AbortSignal,
 ): Promise<{
   tree: CollectedTree | null;
-  markers: Array<{ nodeId: string; _needsRepeat?: string | boolean; _needsRepeatKeyField?: string; _needsCondition?: string }>;
+  markers: Array<{ nodeId: string; loop?: string | boolean; loopKey?: string; showIf?: string }>;
   varEvents: ToolEvent[];
 }> {
   const allExistingVars = existingVariables.filter(v => v.id);
@@ -790,16 +786,25 @@ async function runStructureAgent(
       const treeInput = rawInput.tree as Record<string, unknown> | undefined | null;
       if (!treeInput || typeof treeInput !== 'object') continue;
 
-      // Server-side validation: every Image/Video node must have searchQuery so the media
-      // agent can fetch photos. If missing, return the error to the LLM and retry.
+      // Server-side validation: collect structural problems so the AI can self-correct before
+      // collectedTree is built. All checks use the same break-and-retry pattern.
       const missingSearchQuery: string[] = [];
-      const walkForMedia = (node: Record<string, unknown>) => {
+      const missingIcon: string[] = [];
+      const walkForMedia = (node: Record<string, unknown>, insideRepeat = false) => {
         const label = node.label as string | undefined;
-        if ((label === 'Image' || label === 'Video') && !String(node.searchQuery ?? '').trim()) {
+        const nodeHasRepeat = !!(node.repeat || node.loop);
+        const nowInsideRepeat = insideRepeat || nodeHasRepeat;
+        // Image/Video outside a repeat template must have searchQuery for the media agent.
+        // Inside repeat templates, src is bound by the binding agent from item data — no searchQuery needed.
+        if ((label === 'Image' || label === 'Video') && !nowInsideRepeat && !String(node.searchQuery ?? '').trim()) {
           missingSearchQuery.push((node.name as string | undefined) ?? label ?? 'unknown');
         }
+        // Icon nodes always need an icon field — they render nothing without it.
+        if (label === 'Icon' && !String((node.icon ?? (node.props as Record<string, unknown> | undefined)?.icon) ?? '').trim()) {
+          missingIcon.push((node.name as string | undefined) ?? 'Icon');
+        }
         if (Array.isArray(node.children)) {
-          for (const child of node.children as Record<string, unknown>[]) walkForMedia(child);
+          for (const child of node.children as Record<string, unknown>[]) walkForMedia(child, nowInsideRepeat);
         }
       };
       walkForMedia(treeInput);
@@ -814,7 +819,61 @@ async function runStructureAgent(
             tool_use_id: block.id,
             content: JSON.stringify({
               success: false,
-              error: `Missing searchQuery on Image/Video node(s): ${missingSearchQuery.join(', ')}. Every Image and Video node MUST have searchQuery set to a descriptive photo search term (e.g. "modern SaaS dashboard screenshot"). Re-emit generate_structure with searchQuery added to each Image and Video node.`,
+              error: `Missing searchQuery on Image/Video node(s): ${missingSearchQuery.join(', ')}. Every Image and Video node outside a repeat template MUST have searchQuery set to a descriptive photo search term (e.g. "modern SaaS dashboard screenshot"). Re-emit generate_structure with searchQuery added to each Image and Video node.`,
+            }),
+          }],
+        });
+        break; // retry with updated messages
+      }
+
+      if (missingIcon.length > 0) {
+        structureMessages.push({ role: 'assistant', content: response.content });
+        structureMessages.push({
+          role: 'user',
+          content: [{
+            type: 'tool_result',
+            tool_use_id: block.id,
+            content: JSON.stringify({
+              success: false,
+              error: `Icon node(s) missing required "icon" field: ${missingIcon.join(', ')}. Every Icon MUST have icon set to a valid Iconify name (e.g. "lucide:check", "lucide:arrow-right"). Re-emit generate_structure with the icon field added to each Icon node.`,
+            }),
+          }],
+        });
+        break; // retry with updated messages
+      }
+
+      // UUID cross-check: inline repeat paths must reference a declared variable.
+      const declaredVarUuids = new Set(
+        (Array.isArray(rawInput.variables) ? rawInput.variables as Array<{ uuid?: string }> : [])
+          .map(v => v.uuid)
+          .filter(Boolean),
+      );
+      const mismatchedRepeatUuids: string[] = [];
+      const uuidPattern = /variables\s*\[\s*['"]([a-f0-9-]{36})['"]\s*\]/i;
+      const walkForRepeatUuids = (node: Record<string, unknown>) => {
+        const repeatPath = node.repeat as string | undefined;
+        if (repeatPath) {
+          const m = repeatPath.match(uuidPattern);
+          if (m && !declaredVarUuids.has(m[1])) {
+            mismatchedRepeatUuids.push(`"${repeatPath}" (UUID ${m[1]} not in declared variables)`);
+          }
+        }
+        if (Array.isArray(node.children)) {
+          for (const child of node.children as Record<string, unknown>[]) walkForRepeatUuids(child);
+        }
+      };
+      walkForRepeatUuids(treeInput);
+
+      if (mismatchedRepeatUuids.length > 0) {
+        structureMessages.push({ role: 'assistant', content: response.content });
+        structureMessages.push({
+          role: 'user',
+          content: [{
+            type: 'tool_result',
+            tool_use_id: block.id,
+            content: JSON.stringify({
+              success: false,
+              error: `UUID mismatch in repeat field(s): ${mismatchedRepeatUuids.join('; ')}. The UUID used in repeat must exactly match one declared in the variables array. Declare the variable with the correct UUID and re-emit generate_structure.`,
             }),
           }],
         });
@@ -1172,7 +1231,7 @@ export async function POST(req: NextRequest) {
         .map(e => String((e.input as Record<string, unknown>).variableId ?? ''));
 
       const collectedTrees: CollectedTree[] = [];
-      const allMarkers: Array<{ nodeId: string; _needsRepeat?: string | boolean; _needsRepeatKeyField?: string; _needsCondition?: string }>[] = [];
+      const allMarkers: Array<{ nodeId: string; loop?: string | boolean; loopKey?: string; showIf?: string }>[] = [];
 
       for (const sub of structureSubResults) {
         if (sub.ctWithMedia) {
@@ -1212,14 +1271,14 @@ export async function POST(req: NextRequest) {
       // and reduces input tokens significantly.
       function buildCompactTreeText(
         trees: CollectedTree[],
-        markers: Array<{ nodeId: string; _needsRepeat?: string | boolean; _needsRepeatKeyField?: string; _needsCondition?: string }>[],
+        markers: Array<{ nodeId: string; loop?: string | boolean; loopKey?: string; showIf?: string }>[],
       ): string {
         const markerMap = new Map<string, { repeat?: string; condition?: string }>();
         for (const mks of markers) {
           for (const m of mks) {
             markerMap.set(m.nodeId, {
-              repeat: m._needsRepeat ? `REPEAT(key=${m._needsRepeatKeyField ?? 'id'})` : undefined,
-              condition: m._needsCondition ? `CONDITION(${m._needsCondition})` : undefined,
+              repeat: m.loop ? `REPEAT(key=${m.loopKey ?? 'id'})` : undefined,
+              condition: m.showIf ? `CONDITION(${m.showIf})` : undefined,
             });
           }
         }
@@ -1227,7 +1286,7 @@ export async function POST(req: NextRequest) {
         // Build set of node IDs inside nested repeats (depth >= 2) for inline annotation
         const nestedSet = new Set<string>();
         const walkNested = (node: Record<string, unknown>, repeatDepth: number) => {
-          const hasRepeat = (typeof node.repeat === 'string' && node.repeat.length > 0) || !!node._needsRepeat || !!markerMap.get(node.id as string)?.repeat;
+          const hasRepeat = (typeof node.repeat === 'string' && node.repeat.length > 0) || !!node.loop || !!markerMap.get(node.id as string)?.repeat;
           const newDepth = hasRepeat ? repeatDepth + 1 : repeatDepth;
           if (newDepth >= 2 && !hasRepeat && node.id) nestedSet.add(node.id as string);
           const children = node.children as Record<string, unknown>[] | undefined;
@@ -1270,7 +1329,7 @@ export async function POST(req: NextRequest) {
           if (kids.length === 1 && childTypes[0] === 'Video') return 'video-wrap';
 
           const mk = markerMap.get(node.id as string);
-          if (mk?.repeat || node._needsRepeat || node.repeat) return 'list';
+          if (mk?.repeat || node.loop || node.repeat) return 'list';
 
           if (depth === 0) return 'section';
           if (childTypes.some(t => t === 'Box')) return 'group';
@@ -1283,7 +1342,6 @@ export async function POST(req: NextRequest) {
           const nType = ((node.type ?? node.label) as string | undefined) ?? 'Box';
           const nName = node.name as string ?? '';
           const nText = node.text as string ?? '';
-          const nHint = node._hint as string ?? '';
           const nRepeat = typeof node.repeat === 'string' ? node.repeat : '';
           const nCondition = typeof node.condition === 'string' ? node.condition : '';
           const mk = markerMap.get(nId);
@@ -1301,10 +1359,6 @@ export async function POST(req: NextRequest) {
           const displayType = role ? `${nType}(${role})` : nType;
 
           let line = `${indent}[${nId}] ${displayType}${nName ? ` "${nName}"` : ''}${nText ? ` text="${nText}"` : ''}`;
-          if (nHint) line += ` | ${nHint}`;
-          // Structure-declared flex direction — layout agent must not override without reason.
-          const nDir = nType === 'Box' ? String(node.direction ?? '').trim() : '';
-          if (nDir) line += ` [dir:${nDir}]`;
           if (tags) line += ` — ${tags}`;
 
           return kids.length
@@ -1352,8 +1406,8 @@ export async function POST(req: NextRequest) {
       const markersNote = flatMarkers.length > 0
         ? `\nMarkers from structure (apply these bindings):\n${flatMarkers.map(m => {
             const parts: string[] = [`  Node ${m.nodeId}:`];
-            if (m._needsRepeat) parts.push(`needs set_repeat (keyField: "${m._needsRepeatKeyField ?? 'id'}") — match to an array variable from the list below`);
-            if (m._needsCondition) parts.push(`set_condition(condition: "context?.item?.data?.${m._needsCondition}")`);
+            if (m.loop) parts.push(`needs set_repeat (keyField: "${m.loopKey ?? 'id'}") — match to an array variable from the list below`);
+            if (m.showIf) parts.push(`set_condition(condition: "context?.item?.data?.${m.showIf}")`);
             return parts.join(' ');
           }).join('\n')}`
         : '';
@@ -1389,6 +1443,21 @@ export async function POST(req: NextRequest) {
       );
       const allVarEntries = [...newVarEntries, ...existingVarEntries];
 
+      // Build merged variable list for get_variables tool handlers.
+      // Newly-created vars from structure phase + pre-existing vars not re-created this run.
+      // Without this, parallel agents call get_variables, get a stale empty list, and invent fake UUIDs.
+      const newVarsForHandler = addVarEventsCollected.map(e => {
+        const inp = e.input as Record<string, unknown>;
+        return {
+          id: String(inp.variableId ?? ''),
+          label: String(inp.name ?? ''),
+          name: String(inp.name ?? ''),
+          type: String(inp.type ?? 'string'),
+          initialValue: inp.initialValue,
+        };
+      });
+      const mergedVariables = [...newVarsForHandler, ...existingVarsForRoster];
+
       const varRoster = allVarEntries.length > 0
         ? `Available variables (ONLY these UUIDs are valid):\n${allVarEntries.join('\n')}`
         : `No variables were created. Do NOT reference variables['UUID'].`;
@@ -1396,10 +1465,10 @@ export async function POST(req: NextRequest) {
       // ── Read handlers shared by Styling and Binding ─────────────────────────
       const buildReadHandlers: Record<string, (input: Record<string, unknown>) => unknown> = {
         get_page_tree: () => ({ pageName: currentPage.name, sections: pageTreeSnapshot }),
-        get_variables: () => variables,
+        get_variables: () => mergedVariables,
         get_pages: () => pages,
         get_workflows: () => workflows,
-        get_formula_context: () => ({ variables, collections: [] }),
+        get_formula_context: () => ({ variables: mergedVariables, collections: [] }),
         search_nodes: (inp) => {
           const q = String(inp.query ?? '').toLowerCase();
           const typeFilter = inp.nodeType ? String(inp.nodeType).toLowerCase() : undefined;
@@ -1515,7 +1584,7 @@ ${message}${relationsNote}${phaseWPageNote}`,
         },
       ];
       const phaseWReadHandlers: Record<string, (input: Record<string, unknown>) => unknown> = {
-        get_variables: () => variables,
+        get_variables: () => mergedVariables,
         get_workflows: () => workflows,
       };
 
@@ -1598,6 +1667,25 @@ ${message}`,
         return `"${group}" tools are not supported on ${nodeType}. ${suggestion} ${buildCapabilityNote(nodeType)}`;
       };
 
+      // ── Capability validator for workflows sub-agent ─────────────────────────
+      // Pre-validates create_workflow steps server-side before emitting tool_executed.
+      // Returns is_error: true directly so the model self-corrects in the same agent run
+      // instead of receiving ok:true/pending (aiBlind) and never retrying.
+      const workflowCapabilityValidator = (toolName: string, args: Record<string, unknown>): string | null => {
+        if (toolName !== 'create_workflow') return null;
+        let steps: Array<Record<string, unknown>> = [];
+        try {
+          steps = Array.isArray(args.steps)
+            ? (args.steps as Array<Record<string, unknown>>)
+            : typeof args.steps === 'string'
+              ? (JSON.parse(args.steps) as Array<Record<string, unknown>>)
+              : [];
+        } catch {
+          return 'steps is not valid JSON.';
+        }
+        return validateWorkflowFormulas(steps) ?? findProhibitedStep(steps);
+      };
+
       // ── Launch agents in parallel (conditionally based on plan flags) ────────
       const shouldStyle    = plan.needsStyling   !== false;
       const shouldBind     = plan.needsBinding   !== false;
@@ -1607,7 +1695,7 @@ ${message}`,
         ...(shouldBind ? [{ agent: 'binding', promise: runHaikuAgentLoop(bindingMessages, bindingSystemBlocks, BINDING_AGENT_TOOLS.map(toToolParam), {}, send, allExecutedTools, 10, 'binding', modelSignalCtl.signal, capabilityValidator) }] : []),
         ...(shouldStyle ? [{ agent: 'styling', promise: runHaikuAgentLoop(stylingMessages, stylingSystemBlocks, STYLING_AGENT_TOOLS.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, 'styling', modelSignalCtl.signal, capabilityValidator) }] : []),
         ...(shouldStyle && ANIMATION_AGENT_ENABLED ? [{ agent: 'animation', promise: runHaikuAgentLoop(animationMessages, animationSystemBlocks, ANIMATION_AGENT_TOOLS.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, 'animation', modelSignalCtl.signal) }] : []),
-        ...(shouldWorkflow ? [{ agent: 'workflows', promise: runHaikuAgentLoop(phaseWMessages, phaseWSystemBlocks, PHASE_W_TOOLS.map(toToolParam), phaseWReadHandlers, send, allExecutedTools, 15, 'workflows', modelSignalCtl.signal) }] : []),
+        ...(shouldWorkflow ? [{ agent: 'workflows', promise: runHaikuAgentLoop(phaseWMessages, phaseWSystemBlocks, PHASE_W_TOOLS.map(toToolParam), phaseWReadHandlers, send, allExecutedTools, 15, 'workflows', modelSignalCtl.signal, workflowCapabilityValidator) }] : []),
         { agent: 'media', promise: mediaInjectionPromise },
       ];
 
@@ -1879,6 +1967,35 @@ ${message}`,
         if (toolUseBlocks.length > 0) {
           const toolResultsForNextRound: Anthropic.Messages.ToolResultBlockParam[] = [];
 
+          // Build whitelists from all prior tool executions so we can validate references
+          // server-side before returning { ok: true, pending: 'client_execution' }.
+          //
+          // knownNodeIds — covers fresh-build sessions where all nodes come from generate_structure.
+          //   Only populated when generate_structure was called; stays empty for pure edit
+          //   sessions (no generate_structure) so we never false-reject pre-existing node IDs.
+          const knownNodeIds = new Set<string>();
+          const walkExtractIds = (node: Record<string, unknown>) => {
+            if (typeof node.id === 'string') knownNodeIds.add(node.id);
+            const kids = node.children as Record<string, unknown>[] | undefined;
+            if (Array.isArray(kids)) kids.forEach(c => walkExtractIds(c));
+          };
+          for (const t of allExecutedTools) {
+            if (t.name === 'generate_structure' && t.input.tree) {
+              walkExtractIds(t.input.tree as Record<string, unknown>);
+            }
+            if (t.name === 'add_component' && typeof t.input.nodeId === 'string') {
+              knownNodeIds.add(t.input.nodeId as string);
+            }
+          }
+
+          // knownWorkflowNames — built from create_workflow calls in allExecutedTools.
+          //   Validates bind_action references so ghost bindings can't be silently created.
+          const knownWorkflowNames = new Set<string>(
+            allExecutedTools
+              .filter(t => t.name === 'create_workflow' && typeof t.input.name === 'string')
+              .map(t => t.input.name as string),
+          );
+
           for (const tool of toolUseBlocks) {
             if (tool.input.__parseError === true) {
               toolResultsForNextRound.push({
@@ -1937,6 +2054,8 @@ ${message}`,
                     message: `Added ${rawInput.label ?? 'component'} (${placement}). nodeId="${nodeId}". Use as parentId for children or in set_text/set_class/rename_node.`,
                 },
               });
+                // Register newly created node so same-round styling/binding tools can reference it
+                knownNodeIds.add(nodeId);
               }
             } else if (isMediaNodeTool) {
               // AI doesn't provide nodeId for icon/image/video — server generates one so the
@@ -2010,6 +2129,8 @@ ${message}`,
                     message: 'Structure created. Read the id field from each node in the returned tree to get its server-assigned UUID.',
                   },
                 });
+                // Register all nodes from this tree so same-round tool calls can reference them
+                walkExtractIds(resolvedTree);
               }
             } else if (isReadTool) {
               // Serve real data from the request context
@@ -2210,8 +2331,33 @@ ${message}`,
                 toolResult = JSON.stringify({ error: String(e) });
               }
             } else {
-              // Mutation tool — the client will execute it
-              toolResult = JSON.stringify({ ok: true, pending: 'client_execution' });
+              // Mutation tool — validate nodeId and workflowName before handing to client.
+              const nodeId = rawInput.nodeId as string | undefined;
+              const workflowName = rawInput.workflowName as string | undefined;
+
+              // nodeId whitelist: only active when generate_structure was called in this session
+              // (knownNodeIds would be empty for pure-edit sessions, so we never false-reject
+              // pre-existing nodes that the AI referenced from the page tree context).
+              if (nodeId && knownNodeIds.size > 0 && !knownNodeIds.has(nodeId)) {
+                skipClientExecution = true;
+                toolResult = JSON.stringify({
+                  success: false,
+                  error: `Node "${nodeId}" not found. Call get_page_tree to get valid node IDs, or check whether a prior generate_structure / add_component step failed.`,
+                });
+              } else if (tool.name === 'bind_action' && workflowName && !knownWorkflowNames.has(workflowName)) {
+                // Workflow doesn't exist — binding it would create a ghost action that silently does nothing.
+                skipClientExecution = true;
+                toolResult = JSON.stringify({
+                  success: false,
+                  error: `Workflow "${workflowName}" not found. Create it with create_workflow first, then call bind_action.`,
+                });
+              } else {
+                // Track create_workflow names so later bind_action calls in this batch can validate them
+                if (tool.name === 'create_workflow' && typeof rawInput.name === 'string') {
+                  knownWorkflowNames.add(rawInput.name);
+                }
+                toolResult = JSON.stringify({ ok: true, pending: 'client_execution' });
+              }
             }
 
             // Send tool execution event to client — skipped when validation failed so the

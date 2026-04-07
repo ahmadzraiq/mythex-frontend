@@ -1,0 +1,381 @@
+{
+  "meta": {
+    "title": "Tech Hero"
+  },
+  "ui": {
+    "type": "Box",
+    "props": {
+      "className": "flex flex-col w-full"
+    },
+    "id": "page-root-tech-hero",
+    "name": "Page Root",
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "style": {
+            "backgroundImage": "linear-gradient(135deg, #1a0f2e 0%, #2d1b4e 50%, #1a0f2e 100%)",
+            "backgroundPosition": "center"
+          },
+          "className": "w-full h-screen relative overflow-hidden"
+        },
+        "id": "79b50935-ad2e-450f-82a2-53dabd498506",
+        "name": "Hero Container",
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "style": {
+                "backgroundColor": "rgba(10, 5, 20, 0.3)",
+                "pointerEvents": "none"
+              },
+              "className": "w-full h-full absolute z-[1] top-[0px] left-[0px]"
+            },
+            "id": "00a20c4c-7753-4805-92bb-ed5b80989246",
+            "name": "Dark Overlay",
+            "children": []
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "w-full h-full absolute z-[2] top-[0px] left-[0px] overflow-hidden"
+            },
+            "id": "6ef4d5c7-01b0-4aae-94be-b83bd7e71aed",
+            "name": "Abstract Gradient Shapes",
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "backgroundImage": "linear-gradient(135deg, rgba(124, 58, 237, 0.4) 0%, rgba(168, 85, 247, 0.2) 50%, transparent 100%)",
+                    "opacity": 0.6
+                  },
+                  "className": "w-[600px] h-[600px] absolute top-[-200px] right-[-150px] rounded-[50px]"
+                },
+                "id": "38394675-6a35-44c8-922c-0a407b87e3d7",
+                "name": "Gradient Shape 1",
+                "children": []
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "backgroundImage": "linear-gradient(225deg, rgba(124, 58, 237, 0.3) 0%, rgba(99, 102, 241, 0.15) 100%)",
+                    "opacity": 0.5
+                  },
+                  "className": "w-[500px] h-[500px] absolute bottom-[-150px] left-[-100px] rounded-[50px]"
+                },
+                "id": "690ae307-cd2e-4744-83cf-d03d783fae3e",
+                "name": "Gradient Shape 2",
+                "children": []
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "backgroundImage": "linear-gradient(45deg, rgba(59, 130, 246, 0.25) 0%, rgba(124, 58, 237, 0.1) 100%)",
+                    "opacity": 0.4
+                  },
+                  "className": "w-[450px] h-[450px] absolute top-[50%] right-[10%] rounded-[50px]"
+                },
+                "id": "6991504c-8d20-4ded-8fd3-01ddf4347762",
+                "name": "Gradient Shape 3",
+                "children": []
+              }
+            ],
+            "animation": {
+              "enter": {
+                "type": "fadeIn",
+                "duration": 800,
+                "delay": 100,
+                "easing": "easeOut"
+              }
+            }
+          },
+          {
+            "type": "Box",
+            "props": {
+              "style": {
+                "translateY": "-50%"
+              },
+              "className": "w-[450px] h-[550px] absolute z-[5] top-[50%] right-[10%]"
+            },
+            "id": "d70d7bd0-3618-4d9e-86de-a966d9a1f7b1",
+            "name": "Main Product Image Wrapper",
+            "children": [
+              {
+                "type": "Image",
+                "props": {
+                  "className": "w-full h-full rounded-[20px]",
+                  "alt": "sleek smartphone with premium reflection on dark background",
+                  "objectFit": "cover",
+                  "style": {
+                    "boxShadow": "0 25px 50px rgba(124, 58, 237, 0.3), 0 0 60px rgba(168, 85, 247, 0.2)"
+                  }
+                },
+                "src": "https://images.unsplash.com/photo-1690247571593-27a988539414?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwxMXx8ZnV0dXJpc3RpYyUyMHNsZWVrJTIwcHJvZHVjdCUyMHRlY2hub2xvZ3klMjBkZXZpY2UlMjBwcmVtaXVtJTIwcmVmbGVjdGlvbnxlbnwwfHx8fDE3NzU0ODMxMTB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+                "id": "81f8180d-355d-4027-af87-3fb37d22227a",
+                "children": []
+              }
+            ],
+            "animation": {
+              "enter": {
+                "type": "zoomIn",
+                "duration": 700,
+                "delay": 200,
+                "easing": "easeOut"
+              }
+            }
+          },
+          {
+            "type": "Box",
+            "props": {
+              "style": {
+                "transform": "rotate(-15deg)"
+              },
+              "className": "w-[280px] h-[280px] absolute z-[6] right-[5%] bottom-[15%]"
+            },
+            "id": "fae17491-5cf7-4981-bbf1-62fb3f315ca5",
+            "name": "Floating Secondary Image Wrapper",
+            "children": [
+              {
+                "type": "Image",
+                "props": {
+                  "className": "w-full h-full rounded-[16px]",
+                  "style": {
+                    "boxShadow": "0 20px 40px rgba(124, 58, 237, 0.4)"
+                  },
+                  "alt": "neon cross geometric element on dark minimalist background",
+                  "objectFit": "cover"
+                },
+                "src": "https://images.unsplash.com/photo-1648177369700-807d0a1e0c98?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw1fHxhYnN0cmFjdCUyMGdlb21ldHJpYyUyMGZsb2F0aW5nJTIwdGVjaCUyMGVsZW1lbnQlMjBtaW5pbWFsaXN0JTIwZGVzaWdufGVufDB8fHx8MTc3NTQ4MzExMHww&ixlib=rb-4.1.0&q=80&w=1080",
+                "id": "1fd3dc1f-bbe2-4e4c-a005-66bb20e619d0",
+                "children": []
+              }
+            ],
+            "animation": {
+              "enter": {
+                "type": "slideInRight",
+                "duration": 700,
+                "delay": 300,
+                "easing": "easeOut"
+              },
+              "loop": {
+                "type": "float",
+                "duration": 4000,
+                "repeatCount": -1,
+                "direction": "alternate",
+                "delay": 500
+              }
+            }
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row gap-[16px] absolute z-[10] bottom-[12%] left-[5%]"
+            },
+            "id": "dd503f59-faaf-427f-aa68-1fcd6606d9e4",
+            "name": "Glassmorphism Highlight Elements",
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "backgroundColor": "rgba(255, 255, 255, 0.1)",
+                    "boxShadow": "0 8px 32px rgba(124, 58, 237, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.2)"
+                  },
+                  "className": "pl-[24px] pr-[24px] pt-[16px] pb-[16px] cursor-pointer border-[1px] border-[rgba(255,255,255,0.2)] rounded-[12px]"
+                },
+                "id": "0751c30f-c4f8-4065-ad86-e52abcd0a612",
+                "name": "Glass Card 1",
+                "children": [
+                  {
+                    "type": "Text",
+                    "text": "Innovative",
+                    "props": {
+                      "className": "text-[14px] font-semibold tracking-wide !text-[#ffffff]"
+                    },
+                    "id": "f876f995-f07a-4833-bdd5-7aa3587433f5",
+                    "children": []
+                  }
+                ],
+                "animation": {
+                  "hover": {
+                    "scale": 1.05,
+                    "duration": 200
+                  },
+                  "press": {
+                    "scale": 0.95,
+                    "duration": 100
+                  }
+                }
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "backgroundColor": "rgba(168, 85, 247, 0.15)",
+                    "boxShadow": "0 8px 32px rgba(168, 85, 247, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1)"
+                  },
+                  "className": "pl-[24px] pr-[24px] pt-[16px] pb-[16px] cursor-pointer border-[1px] border-[rgba(168,85,247,0.3)] rounded-[12px]"
+                },
+                "id": "56056843-8193-4626-9437-afc2927e2e7e",
+                "name": "Glass Card 2",
+                "children": [
+                  {
+                    "type": "Text",
+                    "text": "Futuristic",
+                    "props": {
+                      "className": "text-[14px] font-semibold tracking-wide !text-[#ffffff]"
+                    },
+                    "id": "cf265f9c-7058-484a-94ca-3621a23a98f6",
+                    "children": []
+                  }
+                ],
+                "animation": {
+                  "hover": {
+                    "scale": 1.05,
+                    "duration": 200
+                  },
+                  "press": {
+                    "scale": 0.95,
+                    "duration": 100
+                  }
+                }
+              }
+            ],
+            "animation": {
+              "enter": {
+                "type": "fadeIn",
+                "duration": 800,
+                "delay": 400,
+                "stagger": 150,
+                "easing": "easeOut"
+              }
+            }
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "w-full h-full absolute z-[3] top-[0px] left-[0px] overflow-hidden"
+            },
+            "id": "f41e0149-9d93-4906-b666-c53e9f1be24d",
+            "name": "Light Reflections",
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "backgroundImage": "linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%)",
+                    "opacity": 0.7
+                  },
+                  "className": "w-[300px] h-[2px] absolute top-[20%] left-[15%]"
+                },
+                "id": "ebed2a80-3661-4bae-bac3-f41f5ae86543",
+                "name": "Reflection 1",
+                "children": []
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "backgroundImage": "linear-gradient(90deg, transparent 0%, rgba(124, 58, 237, 0.5) 50%, transparent 100%)",
+                    "opacity": 0.6
+                  },
+                  "className": "w-[250px] h-[1px] absolute right-[20%] bottom-[25%]"
+                },
+                "id": "a6311903-4655-47bb-b3bf-f68e8e996258",
+                "name": "Reflection 2",
+                "children": []
+              }
+            ],
+            "animation": {
+              "enter": {
+                "type": "fadeIn",
+                "duration": 900,
+                "delay": 450,
+                "easing": "easeOut"
+              }
+            }
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "gap-[20px] max-w-[500px] absolute z-[8] top-[30%] left-[5%]"
+            },
+            "id": "2152b10e-4bb1-45e8-ab6d-63a4ed278cc5",
+            "name": "Content Container",
+            "children": [
+              {
+                "type": "Text",
+                "text": "Experience the Future",
+                "props": {
+                  "className": "text-[72px] font-bold text-left leading-tight tracking-tight !text-[#ffffff]"
+                },
+                "id": "94024981-3be7-469f-859e-13e10e9b747a",
+                "children": []
+              },
+              {
+                "type": "Text",
+                "text": "Where innovation meets elegance",
+                "props": {
+                  "className": "text-[20px] font-light text-left leading-relaxed tracking-normal !text-[rgba(255,255,255,0.8)]"
+                },
+                "id": "9e355105-d086-4e98-8189-105977dbce33",
+                "children": []
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "backgroundImage": "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)",
+                    "boxShadow": "0 15px 35px rgba(124, 58, 237, 0.4), 0 0 20px rgba(168, 85, 247, 0.3)"
+                  },
+                  "className": "pl-[32px] pr-[32px] pt-[16px] pb-[16px] cursor-pointer w-fit rounded-[12px]"
+                },
+                "id": "9785c24a-36ca-4338-949f-3de41b7eb834",
+                "name": "CTA Button",
+                "children": [
+                  {
+                    "type": "Text",
+                    "text": "Discover Now",
+                    "props": {
+                      "className": "text-[16px] font-semibold tracking-wide !text-[#ffffff]"
+                    },
+                    "id": "c3fd3625-d111-4cce-89a7-cfce1f157d8f",
+                    "children": []
+                  }
+                ],
+                "animation": {
+                  "hover": {
+                    "y": -4,
+                    "duration": 200
+                  },
+                  "press": {
+                    "scale": 0.95,
+                    "duration": 100
+                  }
+                }
+              }
+            ],
+            "animation": {
+              "enter": {
+                "type": "slideInUp",
+                "duration": 700,
+                "delay": 500,
+                "easing": "easeOut"
+              }
+            }
+          }
+        ],
+        "animation": {
+          "enter": {
+            "type": "fadeIn",
+            "duration": 600,
+            "easing": "easeOut"
+          }
+        }
+      }
+    ]
+  }
+}

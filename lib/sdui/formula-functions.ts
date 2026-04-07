@@ -23,6 +23,10 @@ export const FORMULA_FNS: Record<string, (...args: unknown[]) => unknown> = {
   if: (cond, v1, v2) => cond ? v1 : v2,
   ifEmpty: (v, fallback) => (v == null || v === '' || (Array.isArray(v) && v.length === 0)) ? fallback : v,
   not: (v) => !v,
+  and: (...args) => args.every(Boolean),
+  or: (...args) => args.some(Boolean),
+  equal: (a, b) => a === b,
+  notEqual: (a, b) => a !== b,
   switch: (...args) => {
     const [expr, ...rest] = args;
     for (let i = 0; i < rest.length - 1; i += 2) {
@@ -53,6 +57,7 @@ export const FORMULA_FNS: Record<string, (...args: unknown[]) => unknown> = {
   // ── ARRAY ─────────────────────────────────────────────────────────────────────
   add: (arr, ...vals) => [...(arr as unknown[]), ...vals],
   contains: (a, v) => Array.isArray(a) ? a.includes(v) : typeof a === 'string' ? (a as string).includes(v as string) : false,
+  includes: (a, v) => Array.isArray(a) ? (a as unknown[]).includes(v) : typeof a === 'string' ? (a as string).includes(v as string) : false,
   createArray: (...args) => args,
   compare: (a, b) => JSON.stringify(a) === JSON.stringify(b),
   distinct: (arr) => [...new Set(arr as unknown[])],
@@ -196,8 +201,9 @@ export const FORMULA_FNS: Record<string, (...args: unknown[]) => unknown> = {
 
   // ── TEXT ──────────────────────────────────────────────────────────────────────
   capitalize: (s) => String(s).replace(/\b\w/g, c => c.toUpperCase()),
-  // "cat" is a string concatenation alias
+  // "cat" / "concat" / "concatenate" are string concatenation aliases
   cat: (...args) => args.map(a => (a == null ? '' : String(a))).join(''),
+  concat: (...args) => args.map(a => (a == null ? '' : String(a))).join(''),
   concatenate: (...args) => args.map(a => (a == null ? '' : String(a))).join(''),
   indexOf: (s, sub) => String(s).indexOf(sub as string),
   lower: (s) => String(s).toLowerCase(),
@@ -205,6 +211,10 @@ export const FORMULA_FNS: Record<string, (...args: unknown[]) => unknown> = {
   subText: (s, start, end?) => String(s).slice(start as number, end as number),
   textLength: (s) => String(s).length,
   toText: (v) => String(v),
+  toString: (v) => String(v),
+  // "string" / "number" — natural aliases the AI commonly generates; map to toText/toNumber
+  string: (v) => String(v ?? ''),
+  number: (v) => Number(v),
   uppercase: (s) => String(s).toUpperCase(),
 
   // ── OBJECT ────────────────────────────────────────────────────────────────────

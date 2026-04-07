@@ -27,7 +27,7 @@ export type ToolGroup =
   | 'typography'  // set_typography, set_text_color
   | 'background'  // set_background
   | 'src'         // set_src, set_video_props
-  | 'icon'        // set_icon
+  | 'icon'        // set_icon_src
   | 'layout'      // set_layout
   | 'size'        // set_size
   | 'spacing'     // set_spacing
@@ -46,7 +46,7 @@ export const TOOL_CAPABILITY_GROUP: Partial<Record<string, ToolGroup>> = {
   set_background:  'background',
   set_src:         'src',
   set_video_props: 'src',
-  set_icon:        'icon',
+  set_icon_src:    'icon',
   // set_layout: omitted — executor handles per-param capability checks (layout, spacing, size, typography groups)
   // set_spacing: omitted — backward-compat alias, delegates to set_layout which does its own checks
   // set_size: omitted — backward-compat alias, delegates to set_layout which does its own checks
@@ -90,7 +90,7 @@ export const COMPONENT_CAPABILITIES: Record<string, ToolGroup[]> = {
   Image: ['src', 'size', 'border', 'shadow'],
   Video: ['src', 'size', 'border'],
 
-  // Icon is sized via set_icon's size param, not set_size.
+  // Icon name is set via set_icon_src; color/size are set via set_style (Icon-specific branch).
   // No layout (not a container), no background, no typography.
   Icon: ['icon'],
 
@@ -202,9 +202,9 @@ export function buildBlockedGroupSuggestion(group: ToolGroup, componentType: str
     typography:  'Use set_typography / set_text_color on a Text child node instead.',
     background:  'Wrap the element in a Box and call set_background on the Box instead.',
     src:         'Use set_src — it only works on Image or Video nodes.',
-    icon:        'Use set_icon on an Icon node instead.',
+    icon:        'Use set_icon_src on an Icon node to set the icon name; use set_style for color/size.',
     layout:      `${componentType} is not a flex/grid container. Use set_layout on a Box wrapper.`,
-    size:        `Use set_icon with "size" param for Icon nodes, or use set_layout / set_spacing for Text.`,
+    size:        `Use set_style with "width" param for Icon nodes, or use set_layout / set_spacing for Text.`,
     overflow:    `${componentType} manages overflow internally. Use a Box wrapper for overflow control.`,
     'input-props': 'Use set_input_props / set_validation on an Input or Textarea node.',
     submit:      'set_submit only applies to Box-based button nodes inside a FormContainer.',

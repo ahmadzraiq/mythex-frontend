@@ -244,6 +244,12 @@
       "config": "videoHero",
       "auth": false,
       "layout": "full"
+    },
+    {
+      "path": "/tech-hero",
+      "config": "techHero",
+      "auth": false,
+      "layout": "full"
     }
   ]
 }

@@ -182,6 +182,26 @@ function flushWorkflowCtx(workflowCtx: WorkflowCtx) {
   );
 }
 
+/**
+ * Build a formula evaluation context that merges the global variable store
+ * with the action handler scope (which carries context.item.data.* from
+ * repeat-template clicks). Without scope, context?.item?.data?.type in
+ * branch/multiOptionBranch conditions always resolves to undefined.
+ */
+function buildFormulaCtx(
+  vsState: Record<string, unknown>,
+  ctx: ActionHandlerContext,
+): Record<string, unknown> {
+  return {
+    ...vsState,
+    variables: vsState,
+    ...(ctx.scope ?? {}),
+    context: (ctx.scope?.context as Record<string, unknown> | undefined)
+      ?? (vsState['context'] as Record<string, unknown> | undefined)
+      ?? {},
+  };
+}
+
 /** Recursively execute a list of workflow steps.
  *  workflowCtx is passed by reference so branch/loop sub-steps share the same map. */
 async function runSteps(
@@ -202,8 +222,7 @@ async function runSteps(
       let condResult: unknown;
       if (condFormula) {
         const vsState = getGlobalVariableStore().getState().getFullState();
-        // Formula evaluator expects context.variables for variables['UUID'] access
-        const formulaCtx = { ...vsState, variables: vsState };
+        const formulaCtx = buildFormulaCtx(vsState, ctx);
         condResult = evaluateFormula(condFormula, formulaCtx).value;
       } else {
         condResult = condPath ? ctx.get(condPath) : false;
@@ -276,7 +295,7 @@ async function runSteps(
       const checkCond = () => {
         if (condFormula) {
           const vsState = getGlobalVariableStore().getState().getFullState();
-          const formulaCtx = { ...vsState, variables: vsState };
+          const formulaCtx = buildFormulaCtx(vsState, ctx);
           return Boolean(evaluateFormula(condFormula, formulaCtx).value);
         }
         return condPath ? Boolean(ctx.get(condPath)) : false;
@@ -312,7 +331,7 @@ async function runSteps(
       let condResult: unknown;
       if (condFormula) {
         const vsState = getGlobalVariableStore().getState().getFullState();
-        const formulaCtx = { ...vsState, variables: vsState };
+        const formulaCtx = buildFormulaCtx(vsState, ctx);
         condResult = evaluateFormula(condFormula, formulaCtx).value;
       } else {
         condResult = condPath ? ctx.get(condPath) : false;
@@ -330,7 +349,7 @@ async function runSteps(
       let value: unknown;
       if (conditionFormula) {
         const vsState = getGlobalVariableStore().getState().getFullState();
-        const formulaCtx = { ...vsState, variables: vsState };
+        const formulaCtx = buildFormulaCtx(vsState, ctx);
         value = evaluateFormula(conditionFormula, formulaCtx).value;
       } else if (conditionPath) {
         value = ctx.get(conditionPath);

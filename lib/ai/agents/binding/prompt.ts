@@ -4,7 +4,7 @@
  * ─── Tools ───────────────────────────────────────────────────────────────────
  * Export: BINDING_AGENT_TOOLS (lib/ai/builder-tools.ts)
  * Tool names: set_text, set_src, set_repeat, set_condition, set_disabled,
- *             set_icon (icon-name-only variant — color/size stripped via stripIconColorSize)
+ *             set_icon_src (icon name only — color/size handled by styling agent via set_style)
  *
  * ─── System prompt ───────────────────────────────────────────────────────────
  * Static only: buildBindingAgentPrompt().static (this file)
@@ -15,7 +15,7 @@
  *   "[Binding Agent] Connect data to all nodes. Apply set_repeat, set_text, set_condition…"
  *   [Page Tree — use exact node UUIDs]
  *   {compactTree}       ← text representation of node tree from structure pass
- *   {markersNote}       ← list of node IDs with _needsRepeat / _needsCondition markers
+ *   {markersNote}       ← list of node IDs with loop / showIf markers
  *   {varRoster}         ← "Available variables (ONLY these UUIDs are valid): …"
  *   "Bind ALL text nodes with their data fields from the variable initialValue."
  *   "Original request: {message}"
@@ -26,12 +26,12 @@
  * ─── Upstream ────────────────────────────────────────────────────────────────
  * Receives from structure agent:
  *   - compactTree (text tree with UUIDs)
- *   - markersNote (extracted _needsRepeat / _needsCondition markers)
+ *   - markersNote (extracted loop / showIf markers)
  *   - varRoster (add_variable events → variable name + UUID + field schema)
  *
  * ─── Downstream ──────────────────────────────────────────────────────────────
  * No output consumed by other agents — runs in parallel with layout/colors/typo/workflows.
- * Emits tool_executed SSE events (set_text, set_repeat, set_condition, set_icon)
+ * Emits tool_executed SSE events (set_text, set_repeat, set_condition, set_icon_src)
  * executed client-side by tool-executor.ts.
  */
 
@@ -46,7 +46,7 @@ ${SHARED_FORMULA_SYNTAX}
 
 ## System-Specific Rules
 
-- Read \`_needsRepeat\` / \`_needsCondition\` markers from the tree and bind accordingly.
+- Read \`loop\` / \`showIf\` markers from the tree and bind accordingly.
 - NEVER set_condition on the template root (the node with set_repeat) — it hides items instead of filtering. Use conditions only on child nodes inside the template.
 - In nested repeats: \`context?.item?.data\` = inner item, \`context?.item?.parent?.data\` = outer item.
 - Use EXACT field names from the variable roster — misspelled names resolve to undefined.

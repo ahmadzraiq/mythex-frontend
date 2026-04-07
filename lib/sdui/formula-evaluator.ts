@@ -61,10 +61,13 @@ export function evaluateFormula(formula: string | object, context: Record<string
   const formulaStr = String(formula);
   if (!formulaStr.trim()) return { value: undefined, error: null };
 
-  // Normalise natural-language operators
+  // Normalise natural-language operators.
+  // Negative lookahead (?!\s*\() preserves `and(...)` / `or(...)` function-call
+  // syntax so they are handled by the FORMULA_FNS rewrite pass below instead of
+  // being broken into invalid `&&(...)` / `||(...)` JavaScript.
   const resolved = formulaStr.trim()
-    .replace(/\band\b/g, '&&')
-    .replace(/\bor\b/g, '||');
+    .replace(/\band\b(?!\s*\()/g, '&&')
+    .replace(/\bor\b(?!\s*\()/g, '||');
 
   // Rewrite function calls: sum( → __fns__['sum'](
   // Using bracket notation handles reserved keywords like 'if', 'switch'

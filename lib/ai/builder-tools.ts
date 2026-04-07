@@ -346,23 +346,18 @@ const textTools: BuilderTool[] = [
     },
   },
   {
-    name: 'set_icon',
-    description: TOOL_DESCRIPTIONS['set_icon'],
+    name: 'set_icon_src',
+    description: TOOL_DESCRIPTIONS['set_icon_src'],
     input_schema: {
       type: 'object',
       properties: {
         nodeId: { type: 'string', description: 'Node ID.' },
         icon: {
           type: 'string',
-          description: 'Iconify icon name (static) or a formula expression string (conditional). Static: "lucide:home", "heroicons:star", "tabler:check", "ph:arrow-right", etc. Conditional: pass result.expression with a ternary, e.g. "context?.item?.data?.[\'featured\'] ? \'lucide:check-circle\' : \'lucide:check\'". Omit to keep the current icon and only update size/color.',
-        },
-        size: { type: 'number', description: 'Optional new size in px.' },
-        color: {
-          type: 'string',
-          description: 'Icon color (static) or formula expression (conditional). Static: "#hex", "currentColor", or theme token name (e.g. "primary", "muted-foreground"). Conditional: ternary using \'theme:tokenName\' for colors. Omit to keep the current color.',
+          description: 'Iconify icon name (static) or a formula expression string (conditional). Static: "lucide:home", "heroicons:star", "tabler:check", "ph:arrow-right", etc. Conditional: ternary, e.g. "context?.item?.data?.[\'featured\'] ? \'lucide:check-circle\' : \'lucide:check\'". Color and size are set via set_style.',
         },
       },
-      required: ['nodeId'],
+      required: ['nodeId', 'icon'],
     },
   },
 ];
@@ -576,8 +571,8 @@ const semanticDesignTools: BuilderTool[] = [
         pb: { type: 'number', description: 'Padding bottom in px.' },
         pl: { type: 'number', description: 'Padding left in px.' },
         m:  { type: 'number', description: 'Margin all sides in px.' },
-        mx: { type: 'number', description: 'Horizontal margin (left + right) in px.' },
-        my: { type: 'number', description: 'Vertical margin (top + bottom) in px.' },
+        mx: { description: 'Horizontal margin in px, or "auto".' },
+        my: { description: 'Vertical margin in px, or "auto".' },
         mt: { type: 'number', description: 'Margin top in px.' },
         mr: { type: 'number', description: 'Margin right in px.' },
         mb: { type: 'number', description: 'Margin bottom in px.' },
@@ -756,8 +751,8 @@ const layoutTools: BuilderTool[] = [
         pb:  { type: 'number', description: 'Padding bottom in px.' },
         pl:  { type: 'number', description: 'Padding left in px.' },
         m:   { type: 'number', description: 'Margin all sides in px.' },
-        mx:  { type: 'number', description: 'Horizontal margin in px.' },
-        my:  { type: 'number', description: 'Vertical margin in px.' },
+        mx:  { description: 'Horizontal margin in px, or "auto".' },
+        my:  { description: 'Vertical margin in px, or "auto".' },
         mt:  { type: 'number', description: 'Margin top in px.' },
         mr:  { type: 'number', description: 'Margin right in px.' },
         mb:  { type: 'number', description: 'Margin bottom in px.' },
@@ -944,7 +939,7 @@ const logicTools: BuilderTool[] = [
         },
         enterDuration: { type: 'number', description: 'Enter animation duration in ms. Default 300.' },
         enterDelay: { type: 'number', description: 'Delay before the enter animation starts (ms).' },
-        enterStagger: { type: 'number', description: 'Per-child stagger offset (ms). Set this on the mapped LIST CONTAINER, not on individual child nodes — the engine distributes the delay automatically.' },
+        enterStagger: { type: 'number', description: 'Per-child stagger offset (ms). MUST be used together with an `enter` type in the same call — enterStagger alone removes all animations. Set on the LIST CONTAINER, not individual child nodes.' },
         enterEasing: {
           type: 'string',
           enum: ['easeOut', 'easeIn', 'easeInOut', 'linear', 'circIn', 'circOut', 'circInOut', 'backIn', 'backOut', 'backInOut'],
@@ -1378,7 +1373,7 @@ const batchTools: BuilderTool[] = [
       properties: {
         tree: {
           type: 'object',
-          description: 'Root node of the section tree. Each node has: label (required), name, text (Text nodes only), children.\nREQUIRED per type — Icon: icon (Iconify name, e.g. "lucide:check"). Image: searchQuery (photo description, e.g. "modern SaaS dashboard screenshot"). Video: searchQuery (video description).\nOptional: repeat (state path to array, e.g. "variables[\'UUID\']" — node is cloned per item), keyField (React key field, default "id"), condition (visibility formula, e.g. "context?.item?.data?.featured"), _needsRepeat, _needsRepeatKeyField, _needsCondition, _hint (semantic role string for styling agents, e.g. "role:hero section" or "role:primary action group" — structural/container nodes only, not Text/Image/Icon leaves).',
+          description: 'Root node of the section tree. Each node has: label (required), name, text (Text nodes only), children.\nREQUIRED per type — Icon: icon (Iconify name, e.g. "lucide:check"). Image: searchQuery (photo description, e.g. "modern SaaS dashboard screenshot"). Video: searchQuery (video description).\nOptional: repeat (state path to array, e.g. "variables[\'UUID\']" — node is cloned per item), keyField (React key field, default "id"), condition (visibility formula, e.g. "context?.item?.data?.featured"), loop (true = this node needs set_repeat bound to an array variable), loopKey (key field for loop items, default "id"), showIf (field name for conditional visibility, e.g. "featured").',
         },
         variables: {
           type: 'array',
@@ -1447,8 +1442,8 @@ const setStyleTool: BuilderTool[] = [
         pb:  { type: 'number', description: 'Padding bottom in px (number).' },
         pl:  { type: 'number', description: 'Padding left in px (number).' },
         m:   { type: 'number', description: 'Margin all sides in px (number). Use 0 to clear.' },
-        mx:  { type: 'number', description: 'Horizontal margin (left + right) in px (number).' },
-        my:  { type: 'number', description: 'Vertical margin (top + bottom) in px (number).' },
+        mx:  { description: 'Horizontal margin in px, or "auto".' },
+        my:  { description: 'Vertical margin in px, or "auto".' },
         mt:  { type: 'number', description: 'Margin top in px (number).' },
         mr:  { type: 'number', description: 'Margin right in px (number).' },
         mb:  { type: 'number', description: 'Margin bottom in px (number).' },
@@ -1595,7 +1590,7 @@ export const ALL_BUILDER_TOOLS: BuilderTool[] = [
  *  - search_icons / search_images / search_videos / set_src → media phase (AI agent)
  *  - set_submit → behavior/form wiring (not styling)
  *  - set_input_props → input config/structure (not styling)
- *  - set_icon icon param → icon name set by tree manifest; Phase 3 only adjusts size/color. */
+ *  - set_icon_src → icon name set by tree manifest or media agent; color/size via set_style. */
 export const PHASE3_BUILDER_TOOLS: BuilderTool[] = [
   ...pageTools.filter(t => t.name === 'switch_page'),
   // Exclude set_submit (form behavior), set_input_props (input structure), set_spacing (merged into set_layout) from styling phase
@@ -1604,17 +1599,8 @@ export const PHASE3_BUILDER_TOOLS: BuilderTool[] = [
     .filter(t => !['set_submit', 'set_input_props', 'set_spacing'].includes(t.name)),
   ...layoutTools,
   ...logicTools.filter(t => ['set_condition', 'set_animation'].includes(t.name)),
-  // set_icon for Phase 3: size and color only (icon name stripped — set by tree manifest)
-  ...textTools.filter(t => t.name === 'set_icon').map(t => {
-    const { icon: _icon, ...propsWithoutIcon } =
-      (t.input_schema as { properties: Record<string, unknown> }).properties;
-    void _icon;
-    return {
-      ...t,
-      description: 'Adjust icon size and color. Icon name is already set by the tree manifest — do NOT pass the icon param.',
-      input_schema: { ...t.input_schema, properties: propsWithoutIcon },
-    };
-  }),
+  // set_icon_src for Phase 3: icon name only (color/size handled via set_style)
+  ...textTools.filter(t => t.name === 'set_icon_src'),
   ...textTools.filter(t => ['set_text', 'set_placeholder'].includes(t.name)),
 ];
 
@@ -1627,28 +1613,6 @@ export const PHASE_W_TOOLS: BuilderTool[] = [
 
 // ─── Parallel Agent Tool Collections ─────────────────────────────────────────
 
-const stripIconName = (t: BuilderTool): BuilderTool => {
-  const { icon: _icon, ...propsWithoutIcon } =
-    (t.input_schema as { properties: Record<string, unknown> }).properties;
-  void _icon;
-  return {
-    ...t,
-    description: 'Adjust icon size and color. Icon name is set by the media agent — do NOT pass the icon param.',
-    input_schema: { ...t.input_schema, properties: propsWithoutIcon },
-  };
-};
-
-const stripIconColorSize = (t: BuilderTool): BuilderTool => {
-  const { color: _color, size: _size, ...propsWithoutColorSize } =
-    (t.input_schema as { properties: Record<string, unknown> }).properties;
-  void _color; void _size;
-  return {
-    ...t,
-    description: 'Set icon name (static or formula). Color/size are set by the Colors agent.',
-    input_schema: { ...t.input_schema, properties: propsWithoutColorSize },
-  };
-};
-
 /** Structure Agent — builds tree shape + declares variables in one call. */
 export const STRUCTURE_AGENT_TOOLS: BuilderTool[] = [
   ...batchTools, // generate_structure (includes variables array)
@@ -1658,7 +1622,7 @@ export const STRUCTURE_AGENT_TOOLS: BuilderTool[] = [
 export const BINDING_AGENT_TOOLS: BuilderTool[] = [
   ...textTools.filter(t => ['set_text', 'set_src'].includes(t.name)),
   ...logicTools.filter(t => ['set_condition', 'set_repeat', 'set_disabled'].includes(t.name)),
-  ...textTools.filter(t => t.name === 'set_icon').map(stripIconColorSize),
+  ...textTools.filter(t => t.name === 'set_icon_src'),
 ];
 
 // ─── Styling Sub-Agent Tool Collections (3-way parallel split) ───────────────
@@ -1670,10 +1634,9 @@ export const LAYOUT_AGENT_TOOLS: BuilderTool[] = [
   ...semanticDesignTools.filter(t => t.name === 'set_transform'),
 ];
 
-/** Colors Sub-Agent — backgrounds, text color, borders, shadows, opacity, icon color/size, animation. */
+/** Colors Sub-Agent — backgrounds, text color, borders, shadows, opacity, animation. */
 export const COLORS_AGENT_TOOLS: BuilderTool[] = [
   ...semanticDesignTools.filter(t => ['set_background', 'set_text_color', 'set_border', 'set_shadow', 'set_opacity'].includes(t.name)),
-  ...textTools.filter(t => t.name === 'set_icon').map(stripIconName),
   ...logicTools.filter(t => t.name === 'set_animation'),
 ];
 
@@ -1682,10 +1645,11 @@ export const TYPO_ANIM_AGENT_TOOLS: BuilderTool[] = [];
 
 // ─── Merged Styling Agent Tool Collections ────────────────────────────────────
 
-/** Styling Agent — unified set_style covers ALL visual properties (layout, colors, border, shadow…). */
+/** Styling Agent — unified set_style covers ALL visual properties (layout, colors, border, shadow…).
+ *  Icon color/size are set via set_style (Icon-specific branch handles props.color + props.size).
+ *  Icon name is set by the media/binding agents via set_icon_src — not available here. */
 export const STYLING_AGENT_TOOLS: BuilderTool[] = [
   ...setStyleTool,
-  ...textTools.filter(t => t.name === 'set_icon').map(stripIconName),
 ];
 
 /** Animation Agent — set_animation for loop/enter/exit/hover/press. */
@@ -1695,10 +1659,11 @@ export const ANIMATION_AGENT_TOOLS: BuilderTool[] = [
 
 /** Media Agent — searches for and assigns images, videos, and icons to nodes.
  *  search_images / search_videos / search_icons are read-tools (return data to AI).
- *  set_src / set_background / set_icon are write-tools (emit tool_executed to client). */
+ *  set_src / set_background / set_icon_src are write-tools (emit tool_executed to client).
+ *  Icon color/size are NOT set here — handled by the styling agent via set_style. */
 export const MEDIA_AGENT_TOOLS: BuilderTool[] = [
   ...assetTools, // search_images, search_videos, search_icons
-  ...textTools.filter(t => ['set_src', 'set_icon'].includes(t.name)),
+  ...textTools.filter(t => ['set_src', 'set_icon_src'].includes(t.name)),
   ...semanticDesignTools.filter(t => t.name === 'set_background'),
 ];
 

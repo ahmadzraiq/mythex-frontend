@@ -150,82 +150,83 @@
             "type": "Box",
             "props": {
               "style": {
-                "backgroundColor": {
-                  "formula": "context?.item?.data?.featured ? theme?.['colors']?.['primary'] : theme?.['colors']?.['card']"
-                },
-                "borderColor": {
-                  "formula": "context?.item?.data?.featured ? theme?.['colors']?.['primary'] : theme?.['colors']?.['border']"
-                },
-                "boxShadow": {
-                  "formula": "context?.item?.data?.featured ? '0px 8px 32px 0px rgba(124,58,237,0.25)' : '0px 2px 16px 0px rgba(0,0,0,0.08)'"
-                },
-                "shadowColor": "#000000",
-                "shadowOffset": {
-                  "width": 0,
-                  "height": 4
-                },
-                "shadowRadius": 16,
-                "shadowOpacity": 0.08,
-                "elevation": 4
+                "backgroundPosition": "center"
               },
-              "className": "p-[32px] gap-[24px] w-[320px] relative overflow-hidden border-[1px] rounded-[16px]"
+              "className": "flex-1 max-w-[380px] relative"
             },
-            "id": "d4b5d972-c62e-430c-8d51-3360a90f5412",
+            "id": "476a13a9-6a48-42fc-b9a3-34c127d7a82f",
             "name": "Pricing Card",
             "children": [
               {
                 "type": "Box",
                 "props": {
                   "style": {
-                    "backgroundColor": "rgba(255,255,255,0.9)"
+                    "backgroundImage": "linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(147, 51, 234, 0.1) 100%)"
                   },
-                  "className": "flex flex-row items-center pl-[12px] pr-[12px] pt-[5px] pb-[5px] absolute top-[16px] left-[20px] rounded-[20px]"
+                  "className": "w-full h-full absolute z-[1] top-[-2px] left-[-2px] overflow-hidden pointer-events-none rounded-[16px]"
                 },
-                "id": "c55ec91b-547e-4c40-9668-6574cc0c2e81",
-                "name": "Most Popular Badge",
-                "children": [
-                  {
-                    "type": "Text",
-                    "text": "Most Popular",
-                    "props": {
-                      "className": "text-[12px] font-semibold !text-[var(--theme-primary)]"
-                    },
-                    "id": "eca95eb8-17c9-4301-aa0b-0b84161b1542"
-                  }
-                ],
+                "id": "b8db1b59-31a0-400c-97de-fe7749059544",
+                "name": "Card Glow Effect",
+                "children": [],
                 "condition": "context?.item?.data?.featured",
                 "animation": {
-                  "enter": {
-                    "type": "zoomIn",
-                    "duration": 300,
-                    "delay": 150,
-                    "easing": "easeOut"
+                  "loop": {
+                    "type": "glowPulse",
+                    "duration": 2000,
+                    "repeatCount": -1,
+                    "direction": "alternate",
+                    "color": "#7c3aed",
+                    "intensity": 0.6
                   }
                 }
               },
               {
                 "type": "Box",
-                "props": {},
-                "id": "8e02078f-f61a-4b9a-b1e1-cf31b5e95f30",
-                "name": "Plan Header",
+                "props": {
+                  "style": {
+                    "borderColor": {
+                      "formula": "context?.item?.data?.featured ? theme?.['colors']?.['primary'] : theme?.['colors']?.['border']"
+                    },
+                    "boxShadow": {
+                      "formula": "context?.item?.data?.featured ? '0px 20px 40px 0px rgba(124, 58, 237, 0.15)' : '0px 8px 24px 0px rgba(0, 0, 0, 0.08)'"
+                    }
+                  },
+                  "className": "p-[40px] gap-[24px] relative z-[2] overflow-hidden !bg-[var(--theme-card)] rounded-[16px]"
+                },
+                "id": "79e2635b-ff75-450a-a9c5-bd148d2810ba",
+                "name": "Card Content",
                 "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "pl-[16px] pr-[16px] pt-[8px] pb-[8px] overflow-hidden !bg-[var(--theme-primary)] rounded-[8px]"
+                    },
+                    "id": "5e3575f0-35e5-4551-ad15-b9214d98cbd7",
+                    "name": "Featured Badge",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "Most Popular",
+                        "props": {
+                          "className": "text-[12px] font-bold tracking-wide uppercase !text-[var(--theme-primary-foreground)]"
+                        },
+                        "id": "885407e7-83aa-4dd4-a833-196ed4da1e1c",
+                        "children": []
+                      }
+                    ],
+                    "condition": "context?.item?.data?.featured"
+                  },
                   {
                     "type": "Text",
                     "text": {
                       "formula": "context?.item?.data?.name"
                     },
                     "props": {
-                      "className": "text-[22px] font-bold",
-                      "style": {
-                        "marginTop": {
-                          "formula": "context?.item?.data?.featured ? 32 : 0"
-                        },
-                        "color": {
-                          "formula": "context?.item?.data?.featured ? theme?.['colors']?.['primary-foreground'] : theme?.['colors']?.['foreground']"
-                        }
-                      }
+                      "className": "text-[28px] font-bold !text-[var(--theme-foreground)]"
                     },
-                    "id": "e8ef17d8-a9cd-4b7b-99f1-b6aee917f4f6"
+                    "id": "cdb2cdc4-04e0-4430-9f84-6f93f0fe8825",
+                    "name": "Plan Name",
+                    "children": []
                   },
                   {
                     "type": "Text",
@@ -233,256 +234,191 @@
                       "formula": "context?.item?.data?.description"
                     },
                     "props": {
-                      "className": "text-[14px] font-normal mt-[4px]",
-                      "style": {
-                        "color": {
-                          "formula": "context?.item?.data?.featured ? 'rgba(255,255,255,0.8)' : theme?.['colors']?.['muted-foreground']"
-                        }
-                      }
+                      "className": "h-fit text-[14px] !text-[var(--theme-muted-foreground)]"
                     },
-                    "id": "2d832f4a-381e-425e-9d03-7d9a96ec5f74"
-                  }
-                ]
-              },
-              {
-                "type": "Box",
-                "props": {
-                  "className": "flex flex-row items-baseline gap-[4px]"
-                },
-                "id": "44deb164-44e1-4b5a-b70d-ca2eff12c964",
-                "name": "Price Display",
-                "children": [
-                  {
-                    "type": "Text",
-                    "text": {
-                      "formula": "context?.item?.data?.currency"
-                    },
-                    "props": {
-                      "className": "text-[16px] font-medium",
-                      "style": {
-                        "color": {
-                          "formula": "context?.item?.data?.featured ? 'rgba(255,255,255,0.85)' : theme?.['colors']?.['muted-foreground']"
-                        }
-                      }
-                    },
-                    "id": "17fec451-7b10-4582-9d99-417553068e93"
+                    "id": "eec1c138-8d4a-48d3-855a-53ae3464b796",
+                    "name": "Plan Description",
+                    "children": []
                   },
-                  {
-                    "type": "Text",
-                    "text": {
-                      "formula": "context?.item?.data?.monthlyPrice"
-                    },
-                    "props": {
-                      "className": "text-[48px] font-bold",
-                      "style": {
-                        "color": {
-                          "formula": "context?.item?.data?.featured ? theme?.['colors']?.['primary-foreground'] : theme?.['colors']?.['foreground']"
-                        }
-                      }
-                    },
-                    "id": "1cde3334-daaf-4cba-8e96-1d556212a02f"
-                  },
-                  {
-                    "type": "Text",
-                    "text": {
-                      "formula": "context?.item?.data?.billingPeriod"
-                    },
-                    "props": {
-                      "className": "text-[14px] font-normal",
-                      "style": {
-                        "color": {
-                          "formula": "context?.item?.data?.featured ? 'rgba(255,255,255,0.8)' : theme?.['colors']?.['muted-foreground']"
-                        }
-                      }
-                    },
-                    "id": "9ca57c9a-cfe4-419f-8aef-4f56b4575e9f"
-                  }
-                ]
-              },
-              {
-                "type": "Box",
-                "props": {
-                  "style": {
-                    "backgroundColor": {
-                      "formula": "context?.item?.data?.featured ? 'rgba(255,255,255,0.2)' : theme?.['colors']?.['secondary']"
-                    }
-                  },
-                  "className": "flex flex-row items-center justify-center p-[14px] cursor-pointer w-full rounded-[10px]"
-                },
-                "id": "279d3ce8-ee55-42cb-b96b-93957b89f119",
-                "name": "CTA Button",
-                "children": [
-                  {
-                    "type": "Text",
-                    "text": {
-                      "formula": "context?.item?.data?.ctaText"
-                    },
-                    "props": {
-                      "className": "text-[16px] font-semibold text-center",
-                      "style": {
-                        "color": {
-                          "formula": "context?.item?.data?.featured ? theme?.['colors']?.['primary-foreground'] : theme?.['colors']?.['primary']"
-                        }
-                      }
-                    },
-                    "id": "8fde56d3-9bae-4bbc-af32-8e220ed16d43"
-                  }
-                ],
-                "animation": {
-                  "hover": {
-                    "y": -2,
-                    "scale": 1.02,
-                    "duration": 200
-                  },
-                  "press": {
-                    "scale": 0.97,
-                    "duration": 100
-                  }
-                }
-              },
-              {
-                "type": "Text",
-                "text": {
-                  "formula": "context?.item?.data?.microcopy"
-                },
-                "props": {
-                  "className": "text-[12px] text-center italic",
-                  "style": {
-                    "color": {
-                      "formula": "context?.item?.data?.featured ? 'rgba(255,255,255,0.7)' : theme?.['colors']?.['muted-foreground']"
-                    }
-                  }
-                },
-                "id": "4877560f-849e-43e8-b6ae-d7db5c8128e8"
-              },
-              {
-                "type": "Box",
-                "props": {
-                  "style": {
-                    "borderTopWidth": 1,
-                    "borderTopColor": {
-                      "formula": "context?.item?.data?.featured ? 'rgba(255,255,255,0.2)' : theme?.['colors']?.['border']"
-                    }
-                  },
-                  "className": "pt-[16px] gap-[12px] w-full"
-                },
-                "id": "a3a11039-bb7d-4488-959a-910ff11a6d4c",
-                "name": "Features List",
-                "children": [
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex flex-row items-center gap-[10px]"
+                      "className": "flex flex-row items-baseline pt-[16px] pb-[16px] gap-[8px]"
                     },
-                    "id": "b9e74698-da74-490c-a701-3d50bd9aff01",
-                    "name": "Feature Item",
+                    "id": "fd779ec2-07ef-40e4-b15c-43ec3d0e85f7",
+                    "name": "Price Container",
                     "children": [
                       {
-                        "type": "Icon",
-                        "props": {
-                          "icon": "lucide:check",
-                          "size": 16,
-                          "color": {
-                            "formula": "context?.item?.parent?.data?.featured ? '#ffffff' : '#7c3aed'"
-                          }
+                        "type": "Text",
+                        "text": {
+                          "formula": "context?.item?.data?.price"
                         },
-                        "id": "c16ef8a9-3519-47da-8216-eb4be383cfdc"
+                        "props": {
+                          "className": "text-[48px] font-bold !text-[var(--theme-primary)]"
+                        },
+                        "id": "218934a4-30be-4b25-a6d7-84f764884b94",
+                        "name": "Price",
+                        "children": []
                       },
                       {
                         "type": "Text",
                         "text": {
-                          "formula": "context.item.data.name"
+                          "formula": "context?.item?.data?.billingPeriod"
                         },
                         "props": {
-                          "className": "text-[14px] font-normal flex-1",
-                          "style": {
-                            "color": {
-                              "formula": "context?.item?.parent?.data?.featured ? 'rgba(255,255,255,0.9)' : theme?.['colors']?.['foreground']"
-                            }
-                          }
+                          "className": "text-[14px] !text-[var(--theme-muted-foreground)]"
                         },
-                        "id": "8435e859-d5e8-4dd7-a1fe-2f98f8dd7f3d"
+                        "id": "3c16ec34-c02b-46fb-b099-229bfa2956d2",
+                        "name": "Billing Period",
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "items-center justify-center pl-[24px] pr-[24px] pt-[14px] pb-[14px] cursor-pointer w-full overflow-hidden !bg-[var(--theme-primary)] rounded-[8px]"
+                    },
+                    "id": "41626f66-437b-4ed7-800f-c9db4e2254ce",
+                    "name": "CTA Button",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": {
+                          "formula": "context?.item?.data?.ctaText"
+                        },
+                        "props": {
+                          "className": "text-[16px] font-semibold !text-[var(--theme-primary-foreground)]"
+                        },
+                        "id": "35c87cb2-f21b-49e0-8f51-f830b97361d5",
+                        "children": []
+                      }
+                    ],
+                    "animation": {
+                      "hover": {
+                        "scale": 1.05,
+                        "duration": 200
+                      },
+                      "press": {
+                        "scale": 0.95,
+                        "duration": 100
+                      }
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "pt-[8px] pb-[8px] gap-[12px] w-full"
+                    },
+                    "id": "e8c0dac7-e58e-4282-9076-dba4575157a2",
+                    "name": "Features List",
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center pl-[12px] pr-[12px] pt-[8px] pb-[8px] gap-[12px]"
+                        },
+                        "id": "4071ced3-8f09-4420-bd92-c48302289371",
+                        "name": "Feature Item",
+                        "children": [
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:check",
+                              "size": 18,
+                              "color": "var(--theme-primary)"
+                            },
+                            "id": "054144a0-e3c4-443b-8858-86a3d9f4e049",
+                            "children": []
+                          },
+                          {
+                            "type": "Text",
+                            "text": {
+                              "formula": "context?.item?.data?.name"
+                            },
+                            "props": {
+                              "className": "text-[14px] font-medium !text-[var(--theme-foreground)]"
+                            },
+                            "id": "e383b408-807e-418d-a5ff-562b8406d149",
+                            "children": []
+                          }
+                        ],
+                        "animation": {
+                          "hover": {
+                            "y": -2,
+                            "duration": 200
+                          }
+                        }
                       }
                     ],
                     "map": "context.item.data.features",
                     "key": "id",
                     "animation": {
                       "enter": {
-                        "type": "slideInLeft",
+                        "type": "fadeIn",
+                        "duration": 400,
+                        "delay": 400,
+                        "easing": "easeOut"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-row items-center pt-[16px] mt-[16px] gap-[12px]"
+                    },
+                    "id": "144cac1d-a7d9-4d3c-aa39-c7bbdf70514f",
+                    "name": "Trust Indicator",
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:shield-check",
+                          "size": 16,
+                          "color": "var(--theme-muted-foreground)"
+                        },
+                        "id": "d5c8eb90-2d05-413c-9e27-d1081488efd2",
+                        "children": []
+                      },
+                      {
+                        "type": "Text",
+                        "text": {
+                          "formula": "context?.item?.data?.trustIndicator"
+                        },
+                        "props": {
+                          "className": "text-[13px] !text-[var(--theme-muted-foreground)]"
+                        },
+                        "id": "e500c44c-34ce-4784-a726-15df878c7c05",
+                        "children": []
+                      }
+                    ],
+                    "animation": {
+                      "enter": {
+                        "type": "fadeIn",
                         "duration": 300,
-                        "stagger": 60,
+                        "delay": 500,
                         "easing": "easeOut"
                       }
                     }
                   }
                 ]
-              },
-              {
-                "type": "Box",
-                "props": {
-                  "style": {
-                    "borderTopWidth": 1,
-                    "borderTopColor": {
-                      "formula": "context?.item?.data?.featured ? 'rgba(255,255,255,0.2)' : theme?.['colors']?.['border']"
-                    }
-                  },
-                  "className": "flex flex-row items-center pt-[16px] gap-[8px]"
-                },
-                "id": "f92ceb13-b3cd-4e1b-b7a9-b0037517149a",
-                "name": "Trust Indicator",
-                "children": [
-                  {
-                    "type": "Icon",
-                    "props": {
-                      "icon": "lucide:shield-check",
-                      "size": 15,
-                      "color": {
-                        "formula": "context?.item?.data?.featured ? 'rgba(255,255,255,0.8)' : '#7c3aed'"
-                      }
-                    },
-                    "id": "949a3bdd-4766-46e9-9f84-9d21f96568a7"
-                  },
-                  {
-                    "type": "Text",
-                    "text": {
-                      "formula": "context?.item?.data?.trustIndicator"
-                    },
-                    "props": {
-                      "className": "text-[12px] font-medium",
-                      "style": {
-                        "color": {
-                          "formula": "context?.item?.data?.featured ? 'rgba(255,255,255,0.85)' : theme?.['colors']?.['muted-foreground']"
-                        }
-                      }
-                    },
-                    "id": "c520abc4-2ce7-42ab-af35-7d827dcbb4c0"
-                  }
-                ],
-                "animation": {
-                  "enter": {
-                    "type": "fadeIn",
-                    "duration": 300,
-                    "delay": 150,
-                    "easing": "easeOut"
-                  }
-                }
               }
             ],
-            "map": "variables['77b4c8e1-2a3d-4e7f-9c1b-5f8d2e4a7b9c']",
-            "key": "id",
             "animation": {
               "enter": {
                 "type": "zoomIn",
                 "duration": 500,
-                "stagger": 120,
+                "stagger": 150,
                 "easing": "easeOut"
               },
               "hover": {
-                "y": -8,
-                "duration": 300,
-                "easing": "easeOut"
+                "scale": 1.02,
+                "duration": 250
               }
-            }
+            },
+            "map": "variables['8f4c2a1b-7e9d-4c5a-8f2b-6c3d9e1a5b7c']",
+            "key": "id",
+            "condition": "context?.item?.data?.isVisible"
           }
         ]
       }

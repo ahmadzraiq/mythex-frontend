@@ -540,7 +540,7 @@ export function useAiChat() {
                       ev.input,
                       () => useBuilderStore.getState(),
                     );
-                    execResult = result.data;
+                    execResult = result.success ? result.data : { error: result.error };
                     execStatus = result.success ? 'success' : 'error';
                   } catch (e) {
                     execResult = { error: String(e) };

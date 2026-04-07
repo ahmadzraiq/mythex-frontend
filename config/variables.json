@@ -1091,6 +1091,68 @@
       ],
       "folder": "Pricing"
     },
+    "8f4c2a1b-7e9d-4c5a-8f2b-6c3d9e1a5b7c": {
+      "label": "Pricing Plans V2",
+      "type": "array",
+      "initialValue": [
+        {
+          "id": "starter",
+          "name": "Starter",
+          "description": "Perfect for individuals getting started with the basics.",
+          "featured": false,
+          "price": "$29",
+          "billingPeriod": "/month",
+          "ctaText": "Get Started",
+          "trustIndicator": "No credit card required",
+          "isVisible": true,
+          "features": [
+            { "id": "f1", "name": "Up to 5 projects" },
+            { "id": "f2", "name": "Basic analytics" },
+            { "id": "f3", "name": "Community support" },
+            { "id": "f4", "name": "1 GB storage" }
+          ]
+        },
+        {
+          "id": "professional",
+          "name": "Professional",
+          "description": "For growing teams that need more power and flexibility.",
+          "featured": true,
+          "price": "$79",
+          "billingPeriod": "/month",
+          "ctaText": "Start Free Trial",
+          "trustIndicator": "14-day free trial included",
+          "isVisible": true,
+          "features": [
+            { "id": "f1", "name": "Unlimited projects" },
+            { "id": "f2", "name": "Advanced analytics" },
+            { "id": "f3", "name": "Priority support" },
+            { "id": "f4", "name": "100 GB storage" },
+            { "id": "f5", "name": "Team collaboration" },
+            { "id": "f6", "name": "Custom integrations" }
+          ]
+        },
+        {
+          "id": "enterprise",
+          "name": "Enterprise",
+          "description": "Dedicated infrastructure and support for large organizations.",
+          "featured": false,
+          "price": "$199",
+          "billingPeriod": "/month",
+          "ctaText": "Contact Sales",
+          "trustIndicator": "99.9% uptime SLA",
+          "isVisible": true,
+          "features": [
+            { "id": "f1", "name": "Unlimited everything" },
+            { "id": "f2", "name": "Real-time analytics" },
+            { "id": "f3", "name": "Dedicated account manager" },
+            { "id": "f4", "name": "Unlimited storage" },
+            { "id": "f5", "name": "Advanced security & SSO" },
+            { "id": "f6", "name": "API access & webhooks" }
+          ]
+        }
+      ],
+      "folder": "Pricing"
+    },
     "222f98dd-3122-4fd7-8797-9de8e339bcdd": {
       "label": "Feature Cards",
       "type": "array",

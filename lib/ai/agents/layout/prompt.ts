@@ -10,7 +10,7 @@
  *
  * ─── Tools ───────────────────────────────────────────────────────────────────
  * Export: STYLING_AGENT_TOOLS (lib/ai/builder-tools.ts)
- * Tool names: set_style (all visual properties), set_icon (color/size)
+ * Tool names: set_style (all visual properties, including Icon color/size via Icon-specific branch)
  *
  * ─── System prompt ───────────────────────────────────────────────────────────
  * Static:  buildStylingAgentPrompt(context).static (this file)
@@ -37,33 +37,21 @@ export { buildStylingAgentPrompt as buildLayoutAgentPrompt };
 
 export function buildStylingAgentPrompt(context: StylingSubAgentContext): { static: string; dynamic: string } {
   // Replace the auto-generated "Icon → icon only (skip: ...)" line with an explicit
-  // instruction that tells the agent WHICH tool to call (set_icon) and with what params.
+  // instruction telling the agent to use set_style for Icon color/size.
   const capabilityTable = buildAgentCapabilityTable(['layout', 'size', 'spacing', 'typography', 'overflow', 'background', 'border', 'shadow', 'icon'])
     .replace(
       /- Icon → icon only.*$/m,
-      `- Icon → call set_icon(nodeId, size: N, color: "hex") — NOT set_style. set_style has zero effect on Icon nodes. Always call set_icon with explicit size (16–24px) and color.`
+      `- Icon → use set_style(nodeId, { color: "hex", width: N }) for color and size. Do NOT call set_icon_src (media agent sets the icon name). Always include explicit color (e.g. "#ffffff" on dark BG, "var(--theme-primary)" on light) and size (width: 16–24 for inline, 24–36 for feature/hero).`
     );
 
   const staticPart = `You are the visual designer. Use set_style for ALL styling — layout, spacing, size, typography, position, overflow, background, text color, border, shadow, opacity, and transform in one call per node.
 
 CRITICAL — defaults (don't repeat what's already there):
-- Box nodes already have \`flex flex-col\` — call set_style(direction:"row") ONLY when you want a row. NEVER pass direction:"column" — it is the default.
-- Every other property starts at ZERO — no padding, no margin, no gap, no width, no height, no color.
-- Multi-column equal splits: use flex:1 on children, NOT width:%. Asymmetric: use gridCols fr-template (e.g. "3fr 2fr").
 - Root node context: page root uses items-start — ALWAYS set width:"100%" on every root section node.
 
 ${SHARED_FORMULA_SYNTAX}
 
-## System-Specific Rules
-
-- **Ternary contrast:** When a repeated template gets a ternary background, ALL text/icon descendants MUST use matching ternaries with the same condition. For Text nodes: \`set_style(color: "COND ? 'theme:A' : 'theme:B'")\`. For Icon nodes: \`set_icon(nodeId, { color: "COND ? 'theme:primary-foreground' : 'theme:primary'" })\` — NEVER set_style on an Icon (no effect).
-- In nested repeats, use \`context?.item?.parent?.data\` for the outer item's fields.
-- Static token: \`set_style(id, {bg:"primary"})\`. Formula ternary: \`"COND ? 'theme:primary' : 'theme:card'"\`.
-- **bg = solid colors ONLY.** Never pass a gradient string to \`bg\` — it produces an invalid CSS class. For gradients use the structured \`gradient\` param OR \`bgImage: "linear-gradient(...)"\` (raw CSS string). Example: \`set_style(id, { bgImage: "linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)" })\`.
-- glowPulse and ripple loops ALWAYS require loopColor. gradientDrift requires gradientColors set first.
-- **Shadow colors must always use rgba** — never bare hex (e.g. \`#000000\` = fully opaque black). Use \`rgba(0,0,0,0.08)\` for subtle card shadows, \`rgba(0,0,0,0.15)\` for medium, \`rgba(0,0,0,0.25)\` for strong. The shadow tool also accepts the full CSS string: \`set_style(id, { boxShadow: "0px 2px 16px 0px rgba(0,0,0,0.08)" })\`.
-- **DarkOverlay** (hint \`"role:dark overlay"\`): \`bg: "rgba(0,0,0,0.55)"\`, \`zIndex: 10\`. Text/content containers above it MUST receive \`zIndex: 20\` — never \`pointer-events-none\`. Only the overlay node itself has \`pointer-events-none\` (applied automatically by the system).
-- **Card row** (hint \`"role:card row"\`): always set \`direction: "row"\`. Box defaults to \`flex-col\` — without this the cards stack vertically.
+- **Text alignment:** Set \`textAlign\` on each **Text** node directly — Box nodes do not support typography and will silently ignore it.
 
 ${capabilityTable}
 

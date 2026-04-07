@@ -51,7 +51,7 @@ Tool groups → tools:
   typography → set_text_color (set_layout handles font size/weight/align via fontSize/weight/textAlign params)
   background → set_background
   src → set_src, set_video_props
-  icon → set_icon
+  icon → set_icon_src (name only); color + size → set_style
   layout + spacing + size → set_layout
   border → set_border
   shadow → set_shadow
@@ -194,12 +194,12 @@ export const TOOL_DESCRIPTIONS: Record<string, string> = {
   'move_node_down':      'Move a node one position down among siblings.',
   'move_node':           'Move a node to a different parent, optionally at a specific index.',
   'wrap_in_container':   'Wrap one or more nodes in a new Box.',
-  'set_text':            'Set text on Text nodes. For Icon, use set_icon.',
+  'set_text':            'Set text on Text nodes. For Icon name, use set_icon_src.',
   'set_placeholder':     'Set placeholder text on an input or select.',
   'set_href':            'Set the URL on a Link node.',
   'set_src':             'Set source URL on an Image or Video. Also objectFit, alt, poster. For repeat-template binding, pass a formula expression as src (e.g. "context?.item?.data?.avatar") — the executor stores it as a formula so each rendered card gets its own URL from the item data.',
   'set_video_props':     'Set playback props on a Video without changing src. Defaults are already correct — only call when explicitly asked.',
-  'set_icon':            'Set icon name, color, and/or size (px). Name and color accept formula strings.',
+  'set_icon_src':        'Set icon name (static Iconify string or formula expression). Color and size are set via set_style.',
   'set_background':      'Set background. bg: color token/hex/rgba/formula. fillOpacity: 0-100. bgImage: URL string (Box only — wraps in url(...)). bgSize/bgPosition/bgRepeat: CSS strings. gradient: { colors: string[], direction?: string, radial?: boolean }.',
   'set_text_color':      'Set text color. Static: token/hex. Formula: ternary string. Target the Text/Icon CHILD, not the wrapper.',
   'set_border':          'Set border. Color accepts formula strings.',
@@ -236,7 +236,7 @@ export const TOOL_DESCRIPTIONS: Record<string, string> = {
   'undo':                'Undo the last action.',
   'search_images':       'Search Unsplash/Pexels for photos. Returns [{url, alt}]. ALWAYS call this before set_src on Image nodes or set_background on bgImage boxes. Query must describe visual content (people, places, objects, mood) — never role names like "hero image" or "primary photo".',
   'search_videos':       'Search Pexels for background videos. Returns [{src, poster}]. ALWAYS call this before set_src on Video nodes. Query must describe the scene (e.g. "ocean waves slow motion", "city traffic aerial").',
-  'search_icons':        'Search Iconify for icons. Returns valid icon names. Use before set_icon to get the best matching icon name.',
+  'search_icons':        'Search Iconify for icons. Returns valid icon names. Use before set_icon_src to get the best matching icon name.',
   'generate_structure':  `Build a nested UI tree in one call. Server assigns UUIDs — read from returned tree.id / tree.children[N].id.
 
 Tree node: { label, name?, text?, direction?, icon?, searchQuery?, bgImage?, repeat?, keyField?, condition?, children? }
@@ -252,15 +252,20 @@ Never include src on Image/Video — search + set_src after. Never use text: on 
 export const PLAN_SYSTEM = `You are a builder assistant planner. Analyze the user request and output ONLY a JSON object.
 
 Classify:
-- "build" = user wants a NEW PAGE (says "create a page", "make a page", specifies a new route)
-- "edit" = anything on the CURRENT page — adding components/sections is edit, not build
-- "mixed" = new page AND modifying existing page
+- "build" = user wants to build 2+ distinct sections (even on existing pages), uses "build the app/page" language, provides a "[Page] Section: description" structured list, OR wants a NEW PAGE
+- "edit" = small single change to existing content (one color, one text, one component added without a structured list)
+- "mixed" = new page creation AND editing an existing page at the same time
 
 Rules:
-1. "add a [component]" without new-page intent = "edit"
-2. "create a page with..." or "make a [type] page" = "build"
-3. Style-level phrases ("no custom styling", "as default") don't change mode
-4. pageRoute must be a NEW route, never the current page
+1. "[PageName] Section name: description" format in the request → ALWAYS "build", one buildUnit per section
+2. "build the app", "build the page", "build these sections", "build each section" with a list → "build"
+3. "create a page with..." or "make a [type] page" → "build"
+4. User lists 2+ distinct sections with descriptions → "build"
+5. "add a single [component]" without a structured list → "edit"
+6. Style-only phrases ("no custom styling", "as default") don't change mode
+7. pageRoute for [Homepage] → "/" (or the current page route when it IS the homepage)
+8. pageRoute for [About] → "/about", [Contact] → "/contact", etc.
+9. Each distinct section in the user's list = one buildUnit with sectionCount: 1
 
 needsStyling: false ONLY when user explicitly asks for default/unchanged styling.
 needsBinding: false when the section is purely static — no repeated items, no conditional visibility, no dynamic text bound to variables.
@@ -270,8 +275,7 @@ needsVariables per buildUnit: false = purely visual section with no interactive 
   false: hero section, banner, text block, static image/video section, decorative divider, any section where all text is hardcoded.
   true: anything with a toggle (monthly/yearly), active tab, counter, carousel index, or items that repeat over an array.
 
-sectionCount: REQUIRED integer — count ONLY sections the user explicitly described.
-"pricing page" = 1 (the pricing cards). Do NOT inflate by inventing FAQ, testimonials, etc.
+sectionCount: 1 per buildUnit — each buildUnit is one section.
 
 structureHint (optional, per buildUnit — omit for standard layouts):
   "layered-absolute" = overlapping/stacked/depth/collage/floating elements at different z-levels
@@ -415,6 +419,8 @@ Toggle: add_variable boolean → changeVariableValue \`{ formula: "not(variables
 Tabs: add_variable string → one workflow per tab setting the value.
 Modal: openPopup({popupId}) on trigger. closeAllPopups on dismiss.
 Counter: add_variable number → \`{ formula: "variables['UUID'] + 1" }\` / \`{ formula: "max(0, variables['UUID'] - 1)" }\`.
+Repeat button dispatch: ONE workflow with multiOptionBranch on \`context?.item?.data?.action\` (or type), branches per action, bound to the template node via bindToNodeId.
+Multi-step stateful UI: declare all required state variables upfront via add_variable before create_workflow. Branch label values in multiOptionBranch must exactly match the type/action field values in the array's initialValue (e.g. if data has \`type: "operator"\` the branch label must be \`"operator"\`).
 
 ## Rules
 
@@ -424,6 +430,7 @@ Counter: add_variable number → \`{ formula: "variables['UUID'] + 1" }\` / \`{ 
 - Only create workflows for STATE CHANGES: toggling variables, switching tabs/values, opening modals, form submission, navigation, data fetching.
 - Text content switching based on a variable (e.g. showing monthlyPrice vs yearlyPrice based on a toggle) is handled by the Binding agent via ternary formulas in set_text. Do NOT create workflows that use changeVariableValue to update displayed text.
 - Never use a NODE ID as a variableName in changeVariableValue — only variable UUIDs from add_variable results or the variables list.
+- Repeat template dispatch: When a repeat template button/card needs to perform different actions based on item data (e.g. button type or action field), create ONE workflow with multiOptionBranch dispatching on that field (e.g. \`context?.item?.data?.action\`). Bind it to the template node via bindToNodeId. Never create separate workflows per button/item type — only the one workflow bound with bindToNodeId fires on click; all other unbound workflows are orphaned and never execute.
 - Visual effects (hover, animations, transitions) are the styling agent's job — NOT workflows.
 - \`customJavaScript\` and \`animate\` are not supported workflow step types.
 - If the design only has visual effects and no interactive state logic, return NO tool calls.
