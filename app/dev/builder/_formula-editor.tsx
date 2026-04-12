@@ -623,50 +623,95 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     }
     Object.assign(collectionsMap, collStaging);
 
-    // Resolve context.item from the selected node's nearest repeat ancestor
+    // Resolve context.item from the selected node's repeat ancestors (supports nested repeats)
     let contextItem: Record<string, unknown> | undefined;
+    let contextParentItem: Record<string, unknown> | undefined;
     const selectedId = selectedIds[0];
     if (selectedId) {
-      let node = findNode(pageNodes, selectedId);
-      while (node) {
-        if (node.map) {
-          // map is like "collections.UUID.data.search.items" or a variable store path
-          const mapPath = node.map as string;
-
-          // Handle bracket-notation variable paths like "variables['UUID']"
-          const bracketMatch = mapPath.match(/^variables\s*\[['"]([^'"]+)['"]\]/);
-          if (bracketMatch) {
-            const vsVal = (vs as Record<string, unknown>)?.[bracketMatch[1]];
-            if (Array.isArray(vsVal) && vsVal.length > 0) contextItem = vsVal[0] as Record<string, unknown>;
-            else if (vsVal && typeof vsVal === 'object' && !Array.isArray(vsVal)) contextItem = vsVal as Record<string, unknown>;
-          } else {
-            const parts = mapPath.split('.');
-            // Try progressively longer flat key prefixes in zustandData.
-            // Skip missing path segments to handle responsePath-stripped prefixes
-            // (e.g. responsePath="data" means zustandData["collections.UUID"] already
-            // has the inner data, so navigating ["data","search","items"] must skip "data").
-            for (let i = 1; i <= parts.length; i++) {
-              const flatKey = parts.slice(0, i).join('.');
-              const flatVal = zustandData[flatKey];
-              if (flatVal !== undefined) {
-                let val: unknown = flatVal;
-                for (let j = i; j < parts.length; j++) {
-                  if (val && typeof val === 'object' && !Array.isArray(val)) {
-                    const next = (val as Record<string, unknown>)[parts[j]];
-                    if (next !== undefined) val = next;
-                    // else: skip this segment (responsePath may have already stripped it)
-                  } else { break; }
-                }
-                if (Array.isArray(val) && val.length > 0) { contextItem = val[0] as Record<string, unknown>; break; }
-                else if (val && typeof val === 'object' && !Array.isArray(val)) { contextItem = val as Record<string, unknown>; break; }
-                // Traversal failed for this prefix — try a longer prefix key
-              }
-            }
-          }
-          break;
+      // Collect map ancestors (innermost first), skipping the selected node's own map —
+      // a node's map defines scope for its children, not for itself.
+      const mapAncestors: string[] = [];
+      let walkNode = findNode(pageNodes, selectedId);
+      const selectedNode = walkNode;
+      while (walkNode) {
+        if (walkNode.map && walkNode !== selectedNode) {
+          const raw = walkNode.map;
+          const mapStr = typeof raw === 'string'
+            ? raw
+            : (typeof raw === 'object' && raw !== null)
+              ? ((raw as { formula?: string; expr?: string }).formula
+                ?? (raw as { formula?: string; expr?: string }).expr ?? null)
+              : null;
+          if (mapStr) mapAncestors.push(mapStr);
         }
-        const parent = findParentNode(pageNodes, node.id ?? '');
-        node = parent ?? null;
+        const p = findParentNode(pageNodes, walkNode.id ?? '');
+        walkNode = p ?? null;
+      }
+
+      // Resolve a non-context-relative map binding to its first array item
+      const resolveMapItem = (mp: string): Record<string, unknown> | undefined => {
+        const bm = mp.match(/^variables\s*\[['"]([^'"]+)['"]\]/);
+        if (bm) {
+          const vsVal = (vs as Record<string, unknown>)?.[bm[1]];
+          if (Array.isArray(vsVal) && vsVal.length > 0) {
+            const hasExtraNav = mp.length > bm[0].length;
+            const first = vsVal[0];
+            if (hasExtraNav && Array.isArray(first) && first.length > 0) {
+              return first[0] as Record<string, unknown>;
+            }
+            return first as Record<string, unknown>;
+          }
+          if (vsVal && typeof vsVal === 'object' && !Array.isArray(vsVal)) return vsVal as Record<string, unknown>;
+          return undefined;
+        }
+        const parts = mp.split('.');
+        for (let pi = 1; pi <= parts.length; pi++) {
+          const flatKey = parts.slice(0, pi).join('.');
+          const flatVal = zustandData[flatKey];
+          if (flatVal !== undefined) {
+            let val: unknown = flatVal;
+            for (let j = pi; j < parts.length; j++) {
+              if (val && typeof val === 'object' && !Array.isArray(val)) {
+                const next = (val as Record<string, unknown>)[parts[j]];
+                if (next !== undefined) val = next;
+              } else { break; }
+            }
+            if (Array.isArray(val) && val.length > 0) return val[0] as Record<string, unknown>;
+            if (val && typeof val === 'object' && !Array.isArray(val)) return val as Record<string, unknown>;
+          }
+        }
+        if (mp.startsWith('variables.')) {
+          const vsKey = mp.slice('variables.'.length);
+          const vsVal = (vs as Record<string, unknown>)?.[vsKey];
+          if (Array.isArray(vsVal) && vsVal.length > 0) return vsVal[0] as Record<string, unknown>;
+          if (vsVal && typeof vsVal === 'object' && !Array.isArray(vsVal)) return vsVal as Record<string, unknown>;
+        }
+        return undefined;
+      };
+
+      // Resolve from outermost to innermost so context-relative inner maps
+      // can navigate through the already-resolved outer item
+      for (let ai = mapAncestors.length - 1; ai >= 0; ai--) {
+        const mp = mapAncestors[ai];
+        const ctxMatch = mp.match(/^(?:context\.item\.data\.|context\.item\.|\$item\.)(.+)$/);
+        if (ctxMatch && contextItem) {
+          contextParentItem = contextItem;
+          let val: unknown = contextItem;
+          for (const seg of ctxMatch[1].split('.')) {
+            if (val && typeof val === 'object' && !Array.isArray(val)) {
+              val = (val as Record<string, unknown>)[seg];
+            } else { val = undefined; break; }
+          }
+          if (Array.isArray(val) && val.length > 0) contextItem = val[0] as Record<string, unknown>;
+          else if (val && typeof val === 'object' && !Array.isArray(val)) contextItem = val as Record<string, unknown>;
+          else contextItem = undefined;
+        } else if (!ctxMatch) {
+          const resolved = resolveMapItem(mp);
+          if (resolved) {
+            if (contextItem) contextParentItem = contextItem;
+            contextItem = resolved;
+          }
+        }
       }
     }
 
@@ -732,25 +777,30 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       collections: collectionsMap,
       variables: vs,
       context: {
-        ...(contextItem ? {
-          item: {
-            ...contextItem,
-            data: {
+        ...(contextItem ? (() => {
+          const parentCtx = contextParentItem
+            ? { data: { ...contextParentItem, index: 0, repeatIndex: 0, isACopy: false, parent: null, repeatedItems: [contextParentItem] } }
+            : null;
+          return {
+            item: {
               ...contextItem,
+              data: {
+                ...contextItem,
+                index: 0,
+                repeatIndex: 0,
+                isACopy: false,
+                parent: parentCtx,
+                repeatedItems: [contextItem],
+              },
               index: 0,
               repeatIndex: 0,
               isACopy: false,
-              parent: null,
+              parent: parentCtx,
               repeatedItems: [contextItem],
             },
             index: 0,
-            repeatIndex: 0,
-            isACopy: false,
-            parent: null,
-            repeatedItems: [contextItem],
-          },
-          index: 0,
-        } : {}),
+          };
+        })() : {}),
         workflow: workflowMap,
         ...(popupComponentContext ? { component: popupComponentContext } : {}),
         ...(popupLocalContext ? { local: popupLocalContext } : {}),
@@ -1270,6 +1320,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
             <VariableTree
               onSelect={insertVar}
               search={search}
+              isInsideRepeat={isInsideRepeat}
               customVars={[
                 ...customVars,
                 // Virtual entries for each controlled Input node on the page

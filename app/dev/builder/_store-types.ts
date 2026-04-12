@@ -42,6 +42,8 @@ export interface AiToolCall {
 export interface AgentDebugInfo {
   agent: string;
   systemPrompt: string;
+  /** The first user message sent to this agent (contains inline tree, varRoster, original request, etc.) */
+  userMessage?: string;
   tools: string[];
   syntheticMessageCount: number;
   startedAt: number;
@@ -106,6 +108,12 @@ export interface AiChatMessage {
   buildPlanUnits?: Array<{ name: string; description: string; pageRoute: string; sectionCount?: number }>;
   /** Per-agent debug info — populated by agent_context and agent_complete SSE events */
   agentDebugInfo?: Record<string, AgentDebugInfo>;
+  /** Compact tree + variable roster sent to all parallel agents — populated by structure_context SSE event */
+  structureContext?: { compactTree: string; varRoster: string };
+  /** Full build plan (mode, flags, units) — populated by build_plan SSE event */
+  buildPlan?: { mode: string; needsStyling?: boolean; needsBinding?: boolean; needsWorkflows?: boolean; editSummary?: string; buildUnits: unknown[] };
+  /** Repeat/condition/direction markers extracted by the structure agent — populated by structure_markers SSE event */
+  structureMarkers?: Array<{ nodeId: string; loop?: string | boolean; loopKey?: string; showIf?: string; direction?: string }>;
 }
 
 // ─── Viewport ─────────────────────────────────────────────────────────────────

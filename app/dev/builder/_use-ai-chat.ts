@@ -52,8 +52,11 @@ type BuilderChatSSE =
   | { type: 'build_phase'; phase: 'planning' | 'editing' | 'building' | 'wiring' | 'structure' | 'parallel'; total?: number; message: string; buildUnits?: Array<{ name: string; description: string; pageRoute: string; sectionCount?: number }> }
   | { type: 'section_progress'; done: number; total: number; name: string }
   | { type: 'phase3_started' }
-  | { type: 'agent_context'; agent: string; systemPrompt: string; tools: string[]; syntheticMessageCount: number; startedAt: number }
+  | { type: 'agent_context'; agent: string; systemPrompt: string; userMessage?: string; tools: string[]; syntheticMessageCount: number; startedAt: number }
   | { type: 'agent_complete'; agent: string; rounds: number; toolCallCount: number; duration: number; endedAt: number }
+  | { type: 'structure_context'; compactTree: string; varRoster: string }
+  | { type: 'structure_markers'; markers: Array<{ nodeId: string; loop?: string | boolean; loopKey?: string; showIf?: string; direction?: string }> }
+  | { type: 'build_plan'; mode: string; needsStyling?: boolean; needsBinding?: boolean; needsWorkflows?: boolean; editSummary?: string; buildUnits: unknown[] }
   | { type: 'done'; tools: Array<{ name: string; input: Record<string, unknown>; result?: unknown }> }
   | { type: 'error'; message: string };
 
@@ -498,6 +501,9 @@ export function useAiChat() {
       const accSectionsLog: Array<{ done: number; total: number; name: string }> = [];
       const allToolCalls: AiChatMessage['toolCalls'] = [];
       const accAgentDebugInfo: Record<string, import('./_store-types').AgentDebugInfo> = {};
+      let accStructureContext: { compactTree: string; varRoster: string } | null = null;
+      let accStructureMarkers: AiChatMessage['structureMarkers'] = undefined;
+      let accBuildPlan: AiChatMessage['buildPlan'] = undefined;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -614,6 +620,7 @@ export function useAiChat() {
               accAgentDebugInfo[ev.agent] = {
                 agent: ev.agent,
                 systemPrompt: ev.systemPrompt,
+                userMessage: ev.userMessage,
                 tools: ev.tools,
                 syntheticMessageCount: ev.syntheticMessageCount,
                 startedAt: ev.startedAt,
@@ -629,6 +636,12 @@ export function useAiChat() {
                 info.duration = ev.duration;
               }
               store.updateLastAiMessage({ agentDebugInfo: { ...accAgentDebugInfo }, streaming: true });
+            } else if (ev.type === 'structure_context') {
+              accStructureContext = { compactTree: ev.compactTree, varRoster: ev.varRoster };
+            } else if (ev.type === 'structure_markers') {
+              accStructureMarkers = ev.markers;
+            } else if (ev.type === 'build_plan') {
+              accBuildPlan = { mode: ev.mode, needsStyling: ev.needsStyling, needsBinding: ev.needsBinding, needsWorkflows: ev.needsWorkflows, editSummary: ev.editSummary, buildUnits: ev.buildUnits };
             } else if (ev.type === 'phase3_started') {
               isInPhase3Ref.current = true;
             } else if (ev.type === 'done') {
@@ -644,6 +657,9 @@ export function useAiChat() {
                 sectionsLog: accSectionsLog.length ? accSectionsLog : undefined,
                 buildPlanUnits: existingBuildPlanUnits,
                 agentDebugInfo: Object.keys(accAgentDebugInfo).length ? accAgentDebugInfo : undefined,
+                structureContext: accStructureContext ?? undefined,
+                structureMarkers: accStructureMarkers,
+                buildPlan: accBuildPlan,
                 streaming: false,
               });
 

@@ -65,7 +65,7 @@ export type ActionStepType =
   | 'unconfigured';
 
 export interface BranchDef {
-  label: string;
+  match: string;
   steps: ActionStep[];
 }
 
@@ -463,8 +463,8 @@ export function deserializeStep(raw: unknown, id: string, directActionsMap?: Rec
   if (Array.isArray(obj.loopBody)) step.loopBody = deserializeStepArray(obj.loopBody, directActionsMap);
   if (Array.isArray(obj.defaultBranch)) step.defaultBranch = deserializeStepArray(obj.defaultBranch, directActionsMap);
   if (Array.isArray(obj.branches)) {
-    step.branches = (obj.branches as Array<{ label: string; steps: unknown[] }>).map(b => ({
-      label: b.label,
+    step.branches = (obj.branches as Array<{ match?: string; label?: string; steps: unknown[] }>).map(b => ({
+      match: b.match ?? b.label ?? '',
       steps: deserializeStepArray(b.steps ?? [], directActionsMap),
     }));
   }

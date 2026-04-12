@@ -571,12 +571,12 @@ export function MultiOptionBranchNode({
   onUpdateStep: (p: (string | number)[], patch: Partial<ActionStep>) => void;
 }) {
   const branches = step.branches ?? [
-    { label: 'First value', steps: [] },
-    { label: 'Second value', steps: [] },
-    { label: 'Third value', steps: [] },
+    { match: 'First value', steps: [] },
+    { match: 'Second value', steps: [] },
+    { match: 'Third value', steps: [] },
   ];
   const defaultBranch = step.defaultBranch;
-  const allBranches = defaultBranch !== undefined ? [...branches, { label: 'default', steps: defaultBranch }] : branches;
+  const allBranches = defaultBranch !== undefined ? [...branches, { match: 'default', steps: defaultBranch }] : branches;
   const BRANCH_W = 260;
   const GAP = 48;
   const totalW = allBranches.length * BRANCH_W + (allBranches.length - 1) * GAP;
@@ -652,7 +652,7 @@ export function MultiOptionBranchNode({
                   ? { color: '#9ca3af', background: 'rgba(107,114,128,0.12)', border: '1px solid rgba(107,114,128,0.3)' }
                   : { color: '#a5b4fc', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(165,180,252,0.3)' }),
               }}>
-                {branch.label}
+                {branch.match}
               </span>
               <FlowRenderer
                 steps={branch.steps}

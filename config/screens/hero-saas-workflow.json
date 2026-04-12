@@ -1,213 +1,176 @@
 {
-  "meta": {
-    "title": "Hero SaaS workflow"
-  },
+  "meta": { "title": "Hero SaaS Workflow" },
   "ui": {
     "type": "Box",
-    "props": {
-      "className": "flex flex-col w-full min-h-screen"
-    },
-    "id": "hero-saas-workflow-root",
+    "props": { "className": "flex flex-col w-full" },
+    "id": "page-root",
     "children": [
       {
+        "id": "c631ea51-05e3-4c1a-aa4a-3512d39e676b",
+        "name": "LayeredCollageSection",
         "type": "Box",
         "props": {
-          "className": "flex-row items-center justify-between gap-[60px] w-full min-h-[700px] pt-[80px] pr-[80px] pb-[80px] pl-[80px]",
-          "style": {
-            "backgroundImage": "linear-gradient(to bottom right, #faf5ff, #f3e8ff)",
-            "backgroundRepeat": "no-repeat",
-            "backgroundSize": "100% 100%"
+          "style": {},
+          "className": "flex flex-row items-center p-[80px] gap-[60px] w-full !bg-[var(--theme-card)]"
+        },
+        "animation": {
+          "scroll": {
+            "type": "slideInLeft",
+            "easing": "easeOut",
+            "duration": 600,
+            "threshold": 0.2
           }
         },
-        "id": "16f30b16-293f-41e1-8e92-58af0aca6a6d",
-        "name": "HeroSection",
         "children": [
           {
+            "id": "97b9ab20-284a-4dab-8bf4-6261dcc7aacd",
+            "name": "LeftColumn",
             "type": "Box",
             "props": {
-              "className": "flex-col bg-transparent items-start justify-center w-[45%] min-w-[320px] gap-[24px]",
-              "style": {}
+              "style": {},
+              "className": "flex flex-col gap-[24px] flex-1"
             },
-            "id": "543e7c8e-27c4-45ea-98db-bacccd08f6ea",
-            "name": "TextContentOverlay",
             "children": [
               {
+                "id": "970a0007-da77-4ac9-8c72-7954071717bf",
+                "name": "Headline",
+                "text": "Discover Your Creative Vision",
                 "type": "Text",
-                "text": "Transform Your Workflow",
                 "props": {
-                  "className": "text-[56px] font-bold leading-tight tracking-tight !text-[#3b0764] mb-[12px]",
-                  "text": "Transform Your Workflow",
-                  "style": {}
+                  "style": {},
+                  "className": "text-[44px] font-bold leading-tight !text-[var(--theme-foreground)]"
                 },
-                "id": "8d90f865-474c-4e6b-8514-27419880fd3f",
-                "children": [],
-                "animation": {
-                  "enter": {
-                    "type": "slideInLeft",
-                    "duration": 700,
-                    "delay": 100,
-                    "easing": "easeOut"
-                  }
-                }
+                "children": []
               },
               {
+                "id": "c32060f3-1d51-4277-a887-72125f889659",
+                "name": "BodyText",
+                "text": "Explore stunning imagery that brings your stories to life. Our curated collection of layered visual moments captures the essence of creativity and innovation.",
                 "type": "Text",
-                "text": "Bring clarity to complexity with intelligent design that adapts to your process.",
                 "props": {
-                  "className": "text-[18px] font-normal leading-relaxed tracking-normal !text-[#6d28d9] mb-[28px]",
-                  "text": "Bring clarity to complexity with intelligent design that adapts to your process.",
-                  "style": {}
+                  "style": {},
+                  "className": "text-[16px] leading-relaxed !text-[var(--theme-muted-foreground)]"
                 },
-                "id": "fce1e4ab-ef15-4864-a7b0-8a90ffc94440",
-                "children": [],
-                "animation": {
-                  "enter": {
-                    "type": "slideInLeft",
-                    "duration": 700,
-                    "delay": 200,
-                    "easing": "easeOut"
-                  }
-                }
+                "children": []
               },
               {
+                "id": "ff523453-1dec-4a48-9e85-ed0d2b52b61e",
+                "name": "CTAButton",
                 "type": "Box",
                 "props": {
                   "style": {
-                    "boxShadow": "0px 4px 14px 0px rgba(124,58,237,0.35), 0px 12px 40px 4px rgba(124,58,237,0.18)",
-                    "shadowColor": "#7c3aed",
-                    "shadowOffset": {
-                      "width": 0,
-                      "height": 8
-                    },
-                    "shadowRadius": 24,
-                    "shadowOpacity": 0.35,
-                    "elevation": 12
+                    "boxShadow": "0px 2px 8px 0px rgba(124, 58, 237, 0.2)",
+                    "elevation": 4,
+                    "shadowColor": "rgb(124,58,237)",
+                    "shadowOffset": { "width": 0, "height": 2 },
+                    "shadowRadius": 8,
+                    "shadowOpacity": 0.2
                   },
-                  "className": "bg-[#7c3aed] rounded-[8px] flex-row items-center justify-center pt-[16px] pb-[16px] pl-[32px] pr-[32px]"
+                  "className": "items-center pl-[28px] pr-[28px] pt-[12px] pb-[12px] cursor-pointer w-fit !bg-[var(--theme-primary)] rounded-[6px]"
                 },
-                "id": "0ff583d3-0ed9-4481-8a3b-6e34d76f7ec8",
-                "name": "CTAButton",
+                "animation": {
+                  "hover": { "scale": 1.02, "duration": 250 },
+                  "press": { "scale": 0.95, "duration": 100 }
+                },
+                "actions": [{ "action": "onExploreNowClick" }],
                 "children": [
                   {
+                    "id": "3cfbfff1-d314-4d8f-a946-114433363350",
+                    "name": "ButtonText",
+                    "text": "Explore Gallery",
                     "type": "Text",
-                    "text": "Get Started",
                     "props": {
-                      "className": "text-[16px] font-semibold tracking-wide !text-[#ffffff]",
-                      "text": "Get Started",
-                      "style": {}
+                      "style": {},
+                      "className": "text-[14px] font-semibold !text-[var(--theme-primary-foreground)]"
                     },
-                    "id": "603e8fc6-363d-4ca2-b37b-ba761a45039a",
                     "children": []
                   }
-                ],
-                "animation": {
-                  "enter": {
-                    "type": "fadeIn",
-                    "duration": 600,
-                    "delay": 400,
-                    "easing": "easeOut"
-                  },
-                  "hover": {
-                    "scale": 1.05,
-                    "duration": 300
-                  },
-                  "press": {
-                    "scale": 0.95,
-                    "duration": 100
-                  }
-                }
+                ]
               }
             ]
           },
           {
+            "id": "9fc0ac05-7529-438f-8035-0493d99e19e7",
+            "name": "RightColumnContainer",
             "type": "Box",
             "props": {
-              "style": {
-                "boxShadow": "12px 20px 32px -4px #00000020",
-                "shadowColor": "#00000020",
-                "shadowOffset": {
-                  "width": 12,
-                  "height": 20
-                },
-                "shadowRadius": 32,
-                "shadowOpacity": 1,
-                "elevation": 16
-              },
-              "className": "relative rounded-[16px] w-[55%] h-[550px] min-w-[300px]"
+              "style": {},
+              "className": "flex-1 h-[500px] relative"
             },
-            "id": "6d39f007-85ea-4633-88f0-c1fe17698e7e",
-            "name": "PrimaryImageLayer",
+            "animation": {
+              "scroll": {
+                "type": "slideInRight",
+                "delay": 150,
+                "easing": "easeOut",
+                "duration": 600,
+                "threshold": 0.2
+              }
+            },
             "children": [
               {
+                "id": "82d5771e-48fe-4ab6-85aa-6915c7891893",
+                "name": "LayeredImage1",
                 "type": "Image",
                 "props": {
-                  "style": {},
-                  "alt": "graphs of performance analytics on a laptop screen",
+                  "src": "https://images.unsplash.com/photo-1760129774345-4b7ab4511d8f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw4fHx2aWJyYW50JTIwc3Vuc2V0JTIwbW91bnRhaW4lMjBsYW5kc2NhcGUlMjBwaG90b2dyYXBoeXxlbnwwfHx8fDE3NzU5Mjc3NDJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+                  "alt": "Pink and purple sky over rolling hills at dusk",
                   "objectFit": "cover",
-                  "className": "absolute inset-0 w-full h-full rounded-[16px] overflow-hidden"
+                  "style": {
+                    "boxShadow": "-8px 12px 24px 0px rgba(59, 7, 100, 0.15)",
+                    "elevation": 12,
+                    "transform": "rotate(-8deg)",
+                    "shadowColor": "rgb(59,7,100)",
+                    "shadowOffset": { "width": -8, "height": 12 },
+                    "shadowRadius": 24,
+                    "shadowOpacity": 0.15
+                  },
+                  "className": "w-[280px] h-[320px] absolute z-[1] top-[20px] left-[0px] rounded-[12px]"
                 },
-                "src": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBTYWFTJTIwZGFzaGJvYXJkJTIwd2l0aCUyMGRhdGElMjB2aXN1YWxpemF0aW9uJTIwY2hhcnRzJTIwYW5kJTIwYW5hbHl0aWNzJTIwaW50ZXJmYWNlfGVufDB8fHx8MTc3NTI5NTU2N3ww&ixlib=rb-4.1.0&q=80&w=1080",
-                "id": "4661e7ef-9cf7-4890-899c-bdc9e25dffd0",
                 "children": []
               },
               {
-                "type": "Box",
+                "id": "8f2db5c0-9b5a-4807-afd4-d7c08d5c0920",
+                "name": "LayeredImage2",
+                "type": "Image",
                 "props": {
+                  "src": "https://images.unsplash.com/photo-1644251788315-b6d673cc219c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw1fHxtb2Rlcm4lMjB1cmJhbiUyMGFyY2hpdGVjdHVyZSUyMGdsYXNzJTIwYnVpbGRpbmd8ZW58MHx8fHwxNzc1OTI3NzQzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+                  "alt": "a tall building with a clock on the side of it",
+                  "objectFit": "cover",
                   "style": {
-                    "boxShadow": "-8px 12px 28px -2px #7c3aed33",
-                    "shadowColor": "#7c3aed33",
-                    "shadowOffset": {
-                      "width": -8,
-                      "height": 12
-                    },
-                    "shadowRadius": 28,
-                    "shadowOpacity": 1,
-                    "elevation": 14
+                    "boxShadow": "0px 16px 32px 0px rgba(59, 7, 100, 0.2)",
+                    "elevation": 16,
+                    "transform": "rotate(4deg)",
+                    "shadowColor": "rgb(59,7,100)",
+                    "shadowOffset": { "width": 0, "height": 16 },
+                    "shadowRadius": 32,
+                    "shadowOpacity": 0.2
                   },
-                  "className": "border-[1px] border-[#ddd6fe] rounded-[12px] absolute top-[40px] right-[-80px] w-[280px] min-w-[0px] h-[340px] overflow-hidden z-[2]"
+                  "className": "w-[300px] h-[340px] absolute z-[2] top-[80px] left-[150px] rounded-[12px]"
                 },
-                "id": "1cccc7cc-e66c-4416-94b6-f9672db04acd",
-                "name": "SecondaryAccentImageLayer",
-                "children": [
-                  {
-                    "type": "Image",
-                    "props": {
-                      "style": {},
-                      "alt": "a computer screen with a bunch of data on it",
-                      "objectFit": "cover",
-                      "className": "absolute inset-0 w-full h-full"
-                    },
-                    "src": "https://images.unsplash.com/photo-1625296276703-3fbc924f07b5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjBTYWFTJTIwZGFzaGJvYXJkJTIwd2l0aCUyMGRhdGElMjB2aXN1YWxpemF0aW9uJTIwY2hhcnRzJTIwYW5kJTIwYW5hbHl0aWNzJTIwaW50ZXJmYWNlfGVufDB8fHx8MTc3NTI5NTU2N3ww&ixlib=rb-4.1.0&q=80&w=1080",
-                    "id": "7664a3ea-7aac-42df-bba7-607a28be17e4",
-                    "children": []
-                  }
-                ],
-                "animation": {
-                  "enter": {
-                    "type": "zoomIn",
-                    "duration": 900,
-                    "delay": 500,
-                    "easing": "easeOut"
-                  },
-                  "hover": {
-                    "y": -12,
-                    "duration": 400
-                  }
-                }
-              }
-            ],
-            "animation": {
-              "enter": {
-                "type": "slideInRight",
-                "duration": 800,
-                "delay": 300,
-                "easing": "easeOut"
+                "children": []
               },
-              "hover": {
-                "y": -8,
-                "duration": 400
+              {
+                "id": "d1d1696d-e7fd-46f2-8948-f7b9e0c77cce",
+                "name": "LayeredImage3",
+                "type": "Image",
+                "props": {
+                  "src": "https://images.unsplash.com/photo-1759483607793-d262128100ab?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwyfHxzZXJlbmUlMjBmb3Jlc3QlMjB3YXRlcmZhbGwlMjBuYXR1cmUlMjBzY2VuZXxlbnwwfHx8fDE3NzU5Mjc3NDN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+                  "alt": "A lush waterfall cascades through a dense tropical forest",
+                  "objectFit": "cover",
+                  "style": {
+                    "boxShadow": "8px 12px 28px 0px rgba(59, 7, 100, 0.15)",
+                    "elevation": 14,
+                    "transform": "rotate(-6deg)",
+                    "shadowColor": "rgb(59,7,100)",
+                    "shadowOffset": { "width": 8, "height": 12 },
+                    "shadowRadius": 28,
+                    "shadowOpacity": 0.15
+                  },
+                  "className": "w-[260px] h-[300px] absolute z-[1] top-[140px] right-[20px] rounded-[12px]"
+                },
+                "children": []
               }
-            }
+            ]
           }
         ]
       }

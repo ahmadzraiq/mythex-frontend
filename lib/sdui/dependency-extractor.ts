@@ -80,8 +80,10 @@ export function extractNodeDependencies(node: Pick<SDUINode, 'text' | 'props' | 
   }
   if (node.map) {
     if (typeof node.map === 'string') paths.push(node.map);
-    else if (typeof node.map === 'object' && node.map !== null && 'expr' in node.map)
-      paths.push(...extractPathsFromObject((node.map as { expr: unknown }).expr));
+    else if (typeof node.map === 'object' && node.map !== null) {
+      if ('expr' in node.map) paths.push(...extractPathsFromObject((node.map as { expr: unknown }).expr));
+      else if ('formula' in node.map) paths.push(...extractPathsFromObject(node.map as { formula: unknown }));
+    }
   }
   // animation.imperativeTrigger.watchVar and animation.states.watchVar are formula expressions
   // (e.g. "variables['UUID']"), not {{template}} strings, so the generic object scan misses them.

@@ -1,0 +1,19 @@
+{
+  "toggleNestedPricingBilling": {
+    "name": "Toggle Yearly/Monthly",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Toggle billing period",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "pr1c0003-0000-0000-0000-000000000003",
+          "value": {
+            "formula": "!variables['pr1c0003-0000-0000-0000-000000000003']"
+          }
+        }
+      }
+    ]
+  }
+}

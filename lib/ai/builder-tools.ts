@@ -187,7 +187,7 @@ const addTools: BuilderTool[] = [
         poster: { type: 'string', description: 'Poster image URL shown before the video plays.' },
         autoPlay: { type: 'boolean', description: 'Auto-play on load. Default true.' },
         loop: { type: 'boolean', description: 'Loop the video. Default true.' },
-        muted: { type: 'boolean', description: 'Mute audio. Default true (required for autoPlay in browsers).' },
+        muted: { type: 'boolean', description: 'Mute audio. Default true.' },
         controls: { type: 'boolean', description: 'Show playback controls. Default false (background videos are usually silent and control-free).' },
         objectFit: { type: 'string', description: 'Object fit: cover | contain | fill. Default "cover".' },
         parentId: { type: 'string', description: 'Container to add into.' },
@@ -448,7 +448,7 @@ const semanticDesignTools: BuilderTool[] = [
         align: {
           type: 'string',
           enum: ['left', 'center', 'right', 'justify'],
-          description: 'Text alignment. Does NOT center flex children — use set_layout for that.',
+          description: 'Text alignment.',
         },
         leading: {
           type: 'string',
@@ -591,7 +591,7 @@ const semanticDesignTools: BuilderTool[] = [
         nodeId:    { type: 'string', description: 'Node ID.' },
         width:     { description: 'CSS width value — e.g. "100%", "320px", "50vw". Number treated as px. Formula string for dynamic values.' },
         height:    { description: 'CSS height value — e.g. "100%", "550px", "80vh", "100svh". Number treated as px. Formula string for dynamic values.' },
-        flex:      { type: 'number', enum: [1], description: 'Flex-grow. Only 1 is accepted — makes this node fill remaining space on the parent\'s main axis (width in flex-row, height in flex-col). Use width/height for fixed sizes instead.' },
+        flex:      { type: 'number', enum: [1], description: 'Flex-grow. Only 1 is accepted.' },
         maxWidth:  { description: 'CSS max-width — e.g. "800px", "100%", "90vw". Number treated as px.' },
         minWidth:  { description: 'CSS min-width — e.g. "320px", "50%". Number treated as px.' },
         maxHeight: { description: 'CSS max-height — e.g. "100vh", "600px". Number treated as px.' },
@@ -740,7 +740,7 @@ const layoutTools: BuilderTool[] = [
         },
         colSpan:  { type: 'number', description: 'How many columns this item spans (1-12). 13 = col-span-full.' },
         flexWrap: { type: 'string', enum: ['wrap', 'nowrap', 'wrap-reverse'], description: 'Flex wrap behavior.' },
-        flex:     { type: 'number', enum: [1], description: 'Flex-grow. Only 1 is accepted — makes this node fill remaining space on the parent\'s main axis (width in flex-row, height in flex-col). Use width/height for fixed sizes instead.' },
+        flex:     { type: 'number', enum: [1], description: 'Flex-grow. Only 1 is accepted.' },
         // ── Spacing (padding, margin, gap) ────────────────────────────────────
         gap: { type: 'number', minimum: 0, description: 'Gap between flex/grid children in px.' },
         p:   { type: 'number', description: 'Padding all sides in px.' },
@@ -777,7 +777,7 @@ const layoutTools: BuilderTool[] = [
         textAlign: {
           type: 'string',
           enum: ['left', 'center', 'right', 'justify'],
-          description: 'Text alignment. Does NOT center flex children — use align for that.',
+          description: 'Text alignment.',
         },
         leading: {
           type: 'string',
@@ -815,7 +815,7 @@ const layoutTools: BuilderTool[] = [
         position: {
           type: 'string',
           enum: ['static', 'relative', 'absolute', 'fixed', 'sticky'],
-          description: 'CSS position. Use "relative" on a parent before placing "absolute" children.',
+          description: 'CSS position.',
         },
         zIndex: {
           type: 'number',
@@ -856,8 +856,8 @@ const logicTools: BuilderTool[] = [
       type: 'object',
       properties: {
         nodeId: { type: 'string', description: 'Node ID.' },
-        mapPath: { type: 'string', description: 'State path to the array, e.g. "variables[\'varId\']" or "collections.UUID.data.items". For nested repeat (sub-list inside an outer repeated item), use "context.item.data.fieldName". Omit mapPath or pass empty string to remove repeat.' },
-        keyField: { type: 'string', description: 'Field to use as React key, e.g. "id".' },
+        mapPath: { type: 'string', description: 'State path to the array, e.g. "variables[\'varId\']" or "collections.UUID.data.items". For nested repeat (sub-list field on each outer item), use "context.item.data.fieldName". For nested repeat over a separate array-of-arrays variable, use "getByIndex(variables[\'FEATURES_UUID\'], context?.item?.data?.index)". Omit mapPath or pass empty string to remove repeat.' },
+        keyField: { type: 'string', description: 'Field to use as React key. Use "id" when items are objects with an id field. Use "index" when items are plain strings or numbers (primitive arrays).' },
       },
       required: ['nodeId'],
     },
@@ -1373,7 +1373,17 @@ const batchTools: BuilderTool[] = [
       properties: {
         tree: {
           type: 'object',
-          description: 'Root node of the section tree. Each node has: label (required), name, text (Text nodes only), children.\nREQUIRED per type — Icon: icon (Iconify name, e.g. "lucide:check"). Image: searchQuery (photo description, e.g. "modern SaaS dashboard screenshot"). Video: searchQuery (video description).\nOptional: repeat (state path to array, e.g. "variables[\'UUID\']" — node is cloned per item), keyField (React key field, default "id"), condition (visibility formula, e.g. "context?.item?.data?.featured"), loop (true = this node needs set_repeat bound to an array variable), loopKey (key field for loop items, default "id"), showIf (field name for conditional visibility, e.g. "featured").',
+          description: 'Root node of the section tree. Node fields are defined in the system prompt. Required per media type: Icon needs icon (Iconify name, e.g. "lucide:check"), Image needs searchQuery (photo description), Video needs searchQuery (video description).',
+          properties: {
+            label: { type: 'string', description: 'Component type (Box, Text, Image, Icon, etc.).' },
+            name: { type: 'string', description: 'Semantic name for this node.' },
+            text: { type: 'string', description: 'Static text content — Text nodes only.' },
+            icon: { type: 'string', description: 'Iconify icon name (Icon nodes only, e.g. "lucide:check").' },
+            searchQuery: { type: 'string', description: 'Visual search query for Image/Video nodes.' },
+            bgImage: { type: 'string', description: 'Background image search query for Box nodes.' },
+            children: { type: 'array', description: 'Child nodes — same structure as this node.' },
+          },
+          required: ['label'],
         },
         variables: {
           type: 'array',
@@ -1385,6 +1395,8 @@ const batchTools: BuilderTool[] = [
               type: { type: 'string', enum: ['string', 'number', 'boolean', 'object', 'array'], description: 'Variable type.' },
               initialValue: { description: 'Initial value with realistic demo data. Arrays: 3-6 items with ALL display fields. Booleans: false. Strings: first option value.' },
               uuid: { type: 'string', description: 'Pre-assigned hex UUID (8-4-4-4-12 format, hex chars only). Use this SAME UUID in repeat fields as variables[\'UUID\'].' },
+              description: { type: 'string', description: 'Brief usage hint for downstream agents — what this variable stores and when it should be updated (e.g. "Left operand — updated after every intermediate calculation result").' },
+              folder: { type: 'string', description: 'Folder/group name for organizing variables in the builder panel (e.g. "Calculator", "Cart"). Use the feature name.' },
             },
             required: ['name', 'type', 'uuid'],
           },
@@ -1420,7 +1432,7 @@ const setStyleTool: BuilderTool[] = [
         nodeId: { type: 'string', description: 'Node ID.' },
 
         // ── Layout (flex/grid direction, alignment) ───────────────────────────
-        direction: { type: 'string', enum: ['row', 'column'], description: 'Flex direction. Box defaults to column — only set row when needed.' },
+        direction: { type: 'string', enum: ['row', 'column'], description: 'Flex direction.' },
         align: { type: 'string', enum: ['start', 'center', 'end', 'stretch', 'baseline'], description: 'Cross-axis alignment (align-items). Accepts formula string.' },
         justify: { description: 'justify-content value (start, center, end, between, around, evenly). Accepts formula string.' },
         self: { type: 'string', enum: ['auto', 'start', 'center', 'end', 'stretch', 'baseline'], description: 'Self cross-axis alignment (align-self).' },
@@ -1430,7 +1442,7 @@ const setStyleTool: BuilderTool[] = [
         gridFlow: { type: 'string', enum: ['row', 'col', 'row-dense', 'col-dense'], description: 'grid-auto-flow direction.' },
         colSpan: { description: 'Number of grid columns this item spans.' },
         flexWrap: { type: 'string', enum: ['wrap', 'nowrap', 'wrap-reverse'], description: 'Flex wrap behaviour.' },
-        flex: { type: 'number', enum: [1], description: 'Flex-grow. Only 1 is accepted — makes this node fill remaining space on the parent\'s main axis (width in flex-row, height in flex-col). Use width/height for fixed sizes instead.' },
+        flex: { type: 'number', enum: [1], description: 'Flex-grow. Only 1 is accepted.' },
 
         // ── Spacing ───────────────────────────────────────────────────────────
         gap: { type: 'number', minimum: 0, description: 'Gap between flex/grid children in px (number, e.g. 20). Never pass strings like "20px".' },
@@ -1471,7 +1483,7 @@ const setStyleTool: BuilderTool[] = [
         wordBreak:     { type: 'string', enum: ['normal', 'words', 'all', 'keep'], description: 'Word break mode.' },
 
         // ── Position / Insets ─────────────────────────────────────────────────
-        position: { type: 'string', enum: ['relative', 'absolute', 'fixed', 'sticky', 'static'], description: 'CSS position. Use absolute for overlapping layers. Parent must be position:relative.' },
+        position: { type: 'string', enum: ['relative', 'absolute', 'fixed', 'sticky', 'static'], description: 'CSS position.' },
         zIndex:   { description: 'z-index (number or CSS string).' },
         top:      { description: 'Top inset (number = px or CSS string like "50%", "-20px").' },
         right:    { description: 'Right inset.' },
@@ -1479,7 +1491,7 @@ const setStyleTool: BuilderTool[] = [
         left:     { description: 'Left inset.' },
 
         // ── Overflow ──────────────────────────────────────────────────────────
-        overflow:      { type: 'string', enum: ['clip', 'visible', 'auto', 'scroll', 'x-auto', 'y-auto'], description: 'Overflow behaviour. Use "clip" (overflow-hidden) to clip child content to border-radius.' },
+        overflow:      { type: 'string', enum: ['clip', 'visible', 'auto', 'scroll', 'x-auto', 'y-auto'], description: 'Overflow behaviour.' },
         pointerEvents: { type: 'string', enum: ['none', 'auto'], description: 'Pointer events.' },
 
         // ── Background ────────────────────────────────────────────────────────

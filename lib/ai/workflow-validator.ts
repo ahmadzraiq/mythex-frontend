@@ -31,6 +31,28 @@ export function validateFormula(expr: string): string | null {
     });
     return `Formula uses JavaScript globals (${matches.join(', ')}). Use the formula functions directly instead: ${suggestions.join('; ')}. Available math functions: ${[...KNOWN_FN_NAMES].filter(k => ['abs','ceil','floor','round','max','min','clamp','pow','sqrt','mod','sum'].includes(k)).join(', ')}.`;
   }
+  // Balanced parentheses check — catches truncated switch()/toText()/if() calls.
+  // Skip characters inside single-quoted string literals to avoid false positives.
+  {
+    let depth = 0;
+    let inStr = false;
+    for (let i = 0; i < expr.length; i++) {
+      const ch = expr[i];
+      if (ch === "'" && (i === 0 || expr[i - 1] !== '\\')) {
+        inStr = !inStr;
+        continue;
+      }
+      if (inStr) continue;
+      if (ch === '(') depth++;
+      else if (ch === ')') depth--;
+      if (depth < 0) {
+        return `Unbalanced parentheses in formula — extra ')' found. Check all opening '(' have a matching ')'.`;
+      }
+    }
+    if (depth > 0) {
+      return `Unbalanced parentheses in formula — ${depth} unclosed '(' found. A closing ')' is likely missing at the end of a switch(), if(), or other nested function call. Count your opening and closing parentheses and fix before retrying.`;
+    }
+  }
   return null;
 }
 
@@ -46,6 +68,14 @@ export function validateWorkflowFormulas(steps: Array<Record<string, unknown>>):
       if (typeof value?.formula === 'string') {
         const err = validateFormula(value.formula);
         if (err) return `Step "${step.id ?? '?'}": ${err}`;
+      }
+    }
+    // Validate condition formulas in branching/loop steps.
+    if (['branch', 'multiOptionBranch', 'whileLoop', 'passThroughCondition'].includes(step.type as string)) {
+      const cfg = step.config as Record<string, unknown> | undefined;
+      if (typeof cfg?.condition === 'string') {
+        const err = validateFormula(cfg.condition);
+        if (err) return `Step "${step.id ?? '?'}" condition: ${err}`;
       }
     }
     for (const branch of ['trueBranch', 'falseBranch', 'loopBody', 'defaultBranch'] as const) {

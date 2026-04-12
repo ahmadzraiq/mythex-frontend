@@ -399,6 +399,7 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
   const [triggerDropdownOpen, setTriggerDropdownOpen] = useState(false);
   const [addPopoverState, setAddPopoverState] = useState<{ insertIdx: number; pathPrefix: (string | number)[]; x: number; y: number } | null>(null);
   const [copiedStep, setCopiedStep] = useState<ActionStep | null>(null);
+  const [copiedJson, setCopiedJson] = useState(false);
   const [contextMenuState, setContextMenuState] = useState<ContextMenuState | null>(null);
   const [workflowMeta, setWorkflowMeta] = useState<WorkflowMeta>({ id: '', name: 'Workflow' });
   const [workflowMenuAnchor, setWorkflowMenuAnchor] = useState<DOMRect | null>(null);
@@ -467,6 +468,16 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
     historyIdxRef.current = 0;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Copy workflow JSON ────────────────────────────────────────────────────────
+  function handleCopyJson() {
+    const serialized = steps.map(serializeStep);
+    const json = JSON.stringify(serialized, null, 2);
+    navigator.clipboard.writeText(json).then(() => {
+      setCopiedJson(true);
+      setTimeout(() => setCopiedJson(false), 1500);
+    });
+  }
 
   // ── Save & close ─────────────────────────────────────────────────────────────
   function handleClose() {
@@ -540,9 +551,9 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
       trueBranch: type === 'branch' ? [createPlaceholderStep()] : undefined,
       falseBranch: type === 'branch' ? [createPlaceholderStep()] : undefined,
       branches: type === 'multiOptionBranch' ? [
-        { label: 'First value', steps: [createPlaceholderStep()] },
-        { label: 'Second value', steps: [createPlaceholderStep()] },
-        { label: 'Third value', steps: [createPlaceholderStep()] },
+        { match: 'First value', steps: [createPlaceholderStep()] },
+        { match: 'Second value', steps: [createPlaceholderStep()] },
+        { match: 'Third value', steps: [createPlaceholderStep()] },
       ] : undefined,
       loopBody: (type === 'forEach' || type === 'whileLoop') ? [createPlaceholderStep()] : undefined,
     };
@@ -823,6 +834,16 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
             {target.kind === 'globalWorkflow' || target.kind === 'pageWorkflow' ? toHumanName(workflowMeta.name) : 'Workflow'}
           </span>
         </div>
+        {/* Copy JSON */}
+        <button
+          data-testid="workflow-canvas-copy-json"
+          style={{ ...S.closeBtn, color: copiedJson ? '#34d399' : '#9ca3af' }}
+          onClick={handleCopyJson}
+          title="Copy workflow steps as JSON"
+        >
+          <span style={{ fontSize: 13 }}>{copiedJson ? '✓' : '{}'}</span>
+          {copiedJson ? 'Copied!' : 'Copy JSON'}
+        </button>
         {/* Right: Close */}
         <button data-testid="workflow-canvas-close" style={S.closeBtn} onClick={handleClose}>
           <span style={{ fontSize: 14 }}>×</span> Close

@@ -12,6 +12,216 @@
       {
         "type": "Box",
         "props": {
+          "style": {
+            "backgroundImage": "url(https://images.unsplash.com/photo-1770339030394-d170e336470d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwyfHxmdXR1cmlzdGljJTIwdGVjaG5vbG9neSUyMGNpbmVtYXRpYyUyMGJhY2tncm91bmR8ZW58MHx8fHwxNzc1ODQ1NzkxfDA&ixlib=rb-4.1.0&q=80&w=1080)",
+            "backgroundSize": "cover",
+            "backgroundPosition": "center"
+          },
+          "className": "items-center justify-center w-full h-screen relative overflow-hidden"
+        },
+        "id": "6cdb50f5-0141-4f89-91c5-d19b2c99b9be",
+        "name": "VideoHeroSection",
+        "children": [
+          {
+            "type": "Video",
+            "props": {
+              "controls": false,
+              "muted": true,
+              "loop": true,
+              "autoPlay": true,
+              "className": "w-full h-full absolute z-[1] top-[0px] left-[0px]",
+              "objectFit": "cover",
+              "style": {},
+              "src": "https://videos.pexels.com/video-files/29882131/12828947_640_360_25fps.mp4",
+              "poster": "https://images.pexels.com/videos/29882131/loop-29882131.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=630&w=1200"
+            },
+            "src": "",
+            "id": "86f41ede-bdea-4f65-896f-d44308ae518f",
+            "name": "HeroBackgroundVideo",
+            "children": []
+          },
+          {
+            "type": "Box",
+            "props": {
+              "style": {
+                "backgroundColor": "rgba(0, 0, 0, 0.4)"
+              },
+              "className": "w-full h-full absolute z-[2] top-[0px] left-[0px]"
+            },
+            "id": "b5290f79-32f2-439b-a9ed-d006354c92f8",
+            "name": "DarkOverlay",
+            "children": []
+          },
+          {
+            "type": "Box",
+            "props": {
+              "style": {
+                "translateX": "-50%",
+                "translateY": "-50%"
+              },
+              "className": "gap-[24px] w-[90%] max-w-[800px] absolute z-[3] top-[50%] left-[50%]"
+            },
+            "id": "7184283f-3213-44e6-980f-51602c93e946",
+            "name": "HeroContent",
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "style": {
+                    "backgroundColor": "rgba(255, 255, 255, 0.15)"
+                  },
+                  "className": "pl-[12px] pr-[12px] pt-[6px] pb-[6px] mx-auto w-fit border-[1px] border-solid border-[rgba(255,255,255,0.3)] rounded-[24px]"
+                },
+                "id": "0cdc81b3-db11-44d7-a7a2-d9dd4d4efe1e",
+                "name": "BadgeContainer",
+                "children": [
+                  {
+                    "type": "Text",
+                    "text": "New Release",
+                    "props": {
+                      "className": "text-[12px] font-semibold tracking-wide uppercase !text-[#ffffff]",
+                      "style": {}
+                    },
+                    "id": "fd78f39d-7adc-45d7-9a0a-9f31e9bc82ef",
+                    "name": "BadgeLabel",
+                    "children": []
+                  }
+                ],
+                "animation": {
+                  "enter": {
+                    "type": "slideInDown",
+                    "duration": 600,
+                    "delay": 200,
+                    "easing": "easeOut"
+                  }
+                }
+              },
+              {
+                "type": "Text",
+                "text": "The Future Is Now",
+                "props": {
+                  "className": "text-[56px] font-bold text-center leading-tight !text-[#ffffff]",
+                  "style": {}
+                },
+                "id": "2d5d1c84-4482-4e64-843c-0debcb976ef0",
+                "name": "MainHeadline",
+                "children": [],
+                "animation": {
+                  "enter": {
+                    "type": "slideInUp",
+                    "duration": 800,
+                    "delay": 300,
+                    "easing": "easeOut",
+                    "spring": true,
+                    "stiffness": 150,
+                    "damping": 25
+                  }
+                }
+              },
+              {
+                "type": "Text",
+                "text": "Experience next-generation technology that transforms your vision into reality. Discover innovation at every step.",
+                "props": {
+                  "className": "mx-auto max-w-[600px] text-[18px] font-normal text-center leading-relaxed !text-[rgba(255,255,255,0.9)]",
+                  "style": {}
+                },
+                "id": "08601195-3d9c-45d0-9a24-d78bdd9dfe25",
+                "name": "Subheadline",
+                "children": [],
+                "animation": {
+                  "enter": {
+                    "type": "fadeIn",
+                    "duration": 700,
+                    "delay": 500,
+                    "easing": "easeOut"
+                  }
+                }
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "style": {},
+                  "className": "flex flex-row justify-center mx-auto gap-[16px]"
+                },
+                "id": "67611362-5da1-4f5e-a2a3-f5a337f0b8ac",
+                "name": "CTAButtonContainer",
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "style": {
+                        "boxShadow": "0px 4px 12px 0px rgba(124, 58, 237, 0.3)",
+                        "shadowColor": "rgb(124,58,237)",
+                        "shadowOffset": { "width": 0, "height": 4 },
+                        "shadowRadius": 12,
+                        "shadowOpacity": 0.3,
+                        "elevation": 6
+                      },
+                      "className": "pl-[32px] pr-[32px] pt-[14px] pb-[14px] cursor-pointer !bg-[var(--theme-primary)] rounded-[8px]"
+                    },
+                    "id": "26f931fb-2f53-462d-87a2-9255d0d662d8",
+                    "name": "PrimaryCTA",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "Get Started",
+                        "props": {
+                          "className": "text-[16px] font-semibold text-center !text-[var(--theme-primary-foreground)]",
+                          "style": {}
+                        },
+                        "id": "0dfd7327-a771-4a0a-91f9-bae9b5d8f494",
+                        "name": "PrimaryCTALabel",
+                        "children": []
+                      }
+                    ],
+                    "animation": {
+                      "hover": { "scale": 1.05, "duration": 200 },
+                      "press": { "scale": 0.95, "duration": 100 }
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "style": {},
+                      "className": "pl-[32px] pr-[32px] pt-[14px] pb-[14px] cursor-pointer bg-transparent border-[2px] border-solid border-[#ffffff] rounded-[8px]"
+                    },
+                    "id": "23ad0157-c165-40c1-9778-a2a5bb846cb7",
+                    "name": "GhostCTA",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "Learn More",
+                        "props": {
+                          "className": "text-[16px] font-semibold text-center !text-[#ffffff]",
+                          "style": {}
+                        },
+                        "id": "e4ce12ae-ce1b-48ef-8b56-a35051ea1b8b",
+                        "name": "GhostCTALabel",
+                        "children": []
+                      }
+                    ],
+                    "animation": {
+                      "hover": { "scale": 1.05, "duration": 200 },
+                      "press": { "scale": 0.95, "duration": 100 }
+                    }
+                  }
+                ],
+                "animation": {
+                  "enter": {
+                    "type": "fadeIn",
+                    "duration": 700,
+                    "delay": 700,
+                    "easing": "easeOut"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
           "className": "flex-row !bg-[var(--theme-background)] w-[100%] min-w-[0px] h-screen items-center justify-center relative overflow-hidden"
         },
         "id": "4c5289f3-4eaa-4f77-9280-acf8a3442863",

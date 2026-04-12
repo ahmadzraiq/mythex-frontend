@@ -207,7 +207,7 @@ export const TOOL_DESCRIPTIONS: Record<string, string> = {
   'set_opacity':         'Set opacity 0-100. Cascades to ALL children. For background-only transparency, prefer rgba(...) in set_background.',
   'set_transform':       'Set transform. TranslateX/Y accept formula strings.',
   'set_overflow':        'Set overflow and pointer-events.',
-  'set_layout':          'Set ALL non-color styles: layout direction/alignment/grid, spacing (gap, padding, margin), sizing (width, height, min/max), typography (fontSize, weight, textAlign, leading, tracking, decoration, etc.), and position/insets (position, zIndex, top, right, bottom, left). align/justify/self accept formula strings. gridCols auto-switches to grid. flex:1 fills the parent main axis (width in flex-row, height in flex-col); use for equal-share columns. For fill-width in flex-col use width:"100%". For fill-height in flex-row use self:"stretch".',
+  'set_layout':          'Set ALL non-color styles: layout direction/alignment/grid, spacing (gap, padding, margin), sizing (width, height, min/max), typography (fontSize, weight, textAlign, leading, tracking, decoration, etc.), and position/insets (position, zIndex, top, right, bottom, left). align/justify/self accept formula strings. gridCols auto-switches to grid.',
   'set_submit':          'Toggle submit behavior on a Button inside a Form.',
   'set_input_props':     'Configure input behavior and form tracking.',
   'set_condition':       'Set visibility condition (formula string). Works on any node including repeated nodes.',
@@ -237,14 +237,7 @@ export const TOOL_DESCRIPTIONS: Record<string, string> = {
   'search_images':       'Search Unsplash/Pexels for photos. Returns [{url, alt}]. ALWAYS call this before set_src on Image nodes or set_background on bgImage boxes. Query must describe visual content (people, places, objects, mood) — never role names like "hero image" or "primary photo".',
   'search_videos':       'Search Pexels for background videos. Returns [{src, poster}]. ALWAYS call this before set_src on Video nodes. Query must describe the scene (e.g. "ocean waves slow motion", "city traffic aerial").',
   'search_icons':        'Search Iconify for icons. Returns valid icon names. Use before set_icon_src to get the best matching icon name.',
-  'generate_structure':  `Build a nested UI tree in one call. Server assigns UUIDs — read from returned tree.id / tree.children[N].id.
-
-Tree node: { label, name?, text?, direction?, icon?, searchQuery?, bgImage?, repeat?, keyField?, condition?, children? }
-- repeat: state path to array (e.g. "variables['UUID']"). Node is cloned per item.
-- keyField: React key field (default "id")
-- condition: visibility formula (e.g. "context?.item?.data?.isActive")
-- bgImage: Box nodes only — search query for a CSS background-image (e.g. "dark purple gradient abstract texture"). The media agent searches Unsplash and calls set_background({ bgImage, bgSize:"cover", bgPosition:"center" }) automatically.
-Never include src on Image/Video — search + set_src after. Never use text: on wrapper nodes. Never call set_background({ bgImage }) manually — declare bgImage in the tree and the media agent handles it.`,
+  'generate_structure':  `Build a nested UI tree in one call. Parameters: tree (node hierarchy) and variables (data). Server assigns UUIDs — read from returned tree. Never include src on Image/Video — search + set_src after. Never use text: on wrapper nodes.`,
 };
 
 // ─── Phase 0: Classifier ─────────────────────────────────────────────────────
@@ -331,119 +324,6 @@ ${BATCH_RETRY_RULE}`.trim();
 }
 
 // ─── Phase W: Workflows ───────────────────────────────────────────────────────
-
-export function buildPhaseWSysPrompt(context: {
-  pages: Array<{ id: string; name: string; route: string }>;
-  currentPageName: string;
-  currentPageRoute?: string;
-  appName?: string;
-  description?: string;
-}): { static: string; dynamic: string } {
-  const staticPart = `You create interactive behaviors using create_workflow, bind_action, and add_variable only. No styling or structure tools.
-
-## Supported Step Types (complete reference)
-
-### Variables
-- \`changeVariableValue\` — config: \`variableName\` (UUID), \`value\` (static or \`{ formula: "..." }\`). Boolean toggle: \`{ formula: "not(variables['UUID'])" }\`.
-- \`resetVariableValue\` — config: \`variableName\` (UUID), \`defaultValue\` (optional).
-
-### Navigation
-- \`navigateTo\` — config: \`path\` (internal route), \`linkType\` ("internal"/"external"), \`externalUrl\`, \`newTab\` (boolean), \`queryParams\` (array of {name, value}), \`replace\` (boolean). Pages MUST exist in the Builder context — never invent page IDs.
-- \`navigatePrev\` — config: \`defaultPath\` (fallback if no history).
-
-### Data / API
-- \`graphql\` — config: \`endpoint\`, \`query\` (GQL string), \`variables\` (key-value), \`headers\` (key-value), \`credentials\` (boolean). Step result: \`context.workflow['stepId'].result\` = parsed response data.
-- \`fetchData\` — config: \`method\` (GET/POST/PUT/DELETE/PATCH), \`url\`, \`fields\` (key-value body), \`headers\` (key-value), \`query\` (key-value), \`body\` (raw string), \`contentType\`, \`credentials\` (boolean). Step result: parsed JSON response.
-- \`fetchCollection\` — config: \`collectionId\` (datasource UUID). Triggers refetch.
-- \`fetchCollectionsParallel\` — config: \`collections\` (array of datasource UUIDs).
-- \`updateCollection\` — config: \`collectionId\`, \`updateType\` ("insert"/"update"/"delete"/"replaceAll"), \`data\`, \`position\`, \`findBy\`, \`idKey\`, \`idValue\`, \`merge\` (boolean).
-
-### Branching
-- \`branch\` — config: \`condition\` (formula string). Has \`trueBranch\` and \`falseBranch\` (nested step arrays).
-- \`multiOptionBranch\` — config: \`condition\` (formula string). Has \`branches\` (array of { label, steps }) and \`defaultBranch\` (steps).
-- \`passThroughCondition\` — config: \`condition\` (formula). If false, exits current step sequence.
-
-### Loops
-- \`forEach\` — config: \`listPath\` (variable UUID or state path) OR \`list\` (inline array). Body accesses \`context.item.data.value\` and \`context.item.data.index\`.
-- \`whileLoop\` — config: \`condition\` (formula). Max 100 iterations.
-- \`breakLoop\` — exits current loop.
-- \`continueLoop\` — skips to next iteration.
-
-### Popup
-- \`openPopup\` — config: \`popupId\` (Modal node UUID), \`props\` (per-prop values), \`waitClose\` (boolean).
-- \`closePopup\` — closes the currently open popup.
-- \`closeAllPopups\` — no config.
-
-### Form (inside FormContainer only)
-- \`setFormState\` — config: \`isSubmitting\` (boolean), \`isSubmitted\` (boolean).
-- \`resetForm\` — config: \`initialValues\` (optional).
-
-### Other
-- \`runProjectWorkflow\` — config: \`workflowId\` (name of another workflow).
-- \`timeDelay\` — config: \`time\` (ms, number).
-- \`returnValue\` — config: \`path\` (state path), \`value\`.
-- \`copyToClipboard\` — config: \`value\` (string).
-- \`executeComponentAction\` — config: \`action\` (workflow name).
-- \`uploadFile\` — config: upload settings (provider-specific).
-- \`printPdf\` — triggers browser print/PDF flow.
-- \`downloadFileFromUrl\` — config: \`url\` (+ optional filename fields).
-- \`createUrlFromBase64\` — config: \`base64\`, \`mimeType\`, \`storeIn\`.
-- \`encodeFileAsBase64\` — config: \`dataUrl\`, \`storeIn\`.
-- \`stopPropagation\` — currently a workflow-level no-op (event propagation is handled at DOM binding level).
-
-## Formula Support
-
-These config fields accept \`{ formula: "..." }\`:
-- \`changeVariableValue.value\`
-- \`navigateTo.path\`, \`.externalUrl\`, \`.queryParams[].name\`, \`.queryParams[].value\`
-- \`graphql.endpoint\`, \`.variables\` (per-value), \`.headers\` (per-value)
-- \`fetchData.url\`, \`.body\`, \`.fields\` (per-value), \`.headers\` (per-value), \`.query\` (per-value)
-- \`updateCollection.data\`
-- \`branch.condition\`, \`multiOptionBranch.condition\`, \`whileLoop.condition\`, \`passThroughCondition.condition\`
-- \`forEach.items\` (as formula object)
-- \`openPopup.props\` (per-prop)
-- \`returnValue.value\`, \`copyToClipboard.value\`
-
-## Step Result Access
-
-After a step runs, its result is at \`context.workflow['stepId'].result\`:
-- \`graphql\` → parsed json.data
-- \`fetchData\` → parsed response JSON body
-- Most other steps → result is null
-
-Use in subsequent steps: \`{ formula: "context?.workflow?.['step-id']?.result?.fieldName" }\`
-
-## Common Patterns
-
-Toggle: add_variable boolean → changeVariableValue \`{ formula: "not(variables['UUID'])" }\`.
-Tabs: add_variable string → one workflow per tab setting the value.
-Modal: openPopup({popupId}) on trigger. closeAllPopups on dismiss.
-Counter: add_variable number → \`{ formula: "variables['UUID'] + 1" }\` / \`{ formula: "max(0, variables['UUID'] - 1)" }\`.
-Repeat button dispatch: ONE workflow with multiOptionBranch on \`context?.item?.data?.action\` (or type), branches per action, bound to the template node via bindToNodeId.
-Multi-step stateful UI: declare all required state variables upfront via add_variable before create_workflow. Branch label values in multiOptionBranch must exactly match the type/action field values in the array's initialValue (e.g. if data has \`type: "operator"\` the branch label must be \`"operator"\`).
-
-## Rules
-
-- Only use UUIDs from add_variable results or the node tree — never invent.
-- Only use page IDs from the Builder context below — never invent routes.
-- \`trigger: "created"\` workflows run on page mount — use for initial data fetching only (fetchData, graphql, fetchCollection). Never create trigger:"created" workflows that only set a variable to a static value — variables are already initialized to their initialValue and need no workflow to re-set them on mount.
-- Only create workflows for STATE CHANGES: toggling variables, switching tabs/values, opening modals, form submission, navigation, data fetching.
-- Text content switching based on a variable (e.g. showing monthlyPrice vs yearlyPrice based on a toggle) is handled by the Binding agent via ternary formulas in set_text. Do NOT create workflows that use changeVariableValue to update displayed text.
-- Never use a NODE ID as a variableName in changeVariableValue — only variable UUIDs from add_variable results or the variables list.
-- Repeat template dispatch: When a repeat template button/card needs to perform different actions based on item data (e.g. button type or action field), create ONE workflow with multiOptionBranch dispatching on that field (e.g. \`context?.item?.data?.action\`). Bind it to the template node via bindToNodeId. Never create separate workflows per button/item type — only the one workflow bound with bindToNodeId fires on click; all other unbound workflows are orphaned and never execute.
-- Visual effects (hover, animations, transitions) are the styling agent's job — NOT workflows.
-- \`customJavaScript\` and \`animate\` are not supported workflow step types.
-- If the design only has visual effects and no interactive state logic, return NO tool calls.
-- Batch all independent calls. No explanation needed.`.trim();
-
-  const projectLine = context.description
-    ? `## App\n${context.appName ?? 'App'}: ${context.description}`
-    : context.appName ? `## App\n${context.appName}` : '';
-
-  const dynamicPart = [
-    projectLine.trim() || null,
-    `## Builder\n- Page: "${context.currentPageName}"${context.currentPageRoute ? ` (${context.currentPageRoute})` : ''}\n- Pages: ${context.pages.map(p => `${p.name} ${p.route} (${p.id})`).join(', ')}`,
-  ].filter(Boolean).join('\n\n');
-
-  return { static: staticPart, dynamic: dynamicPart };
-}
+// Prompt logic lives in lib/ai/agents/workflows/prompt.ts (owns the full implementation).
+// Re-export here for any callers that still import buildPhaseWSysPrompt from this module.
+export { buildWorkflowsAgentPrompt as buildPhaseWSysPrompt } from './agents/workflows/prompt';

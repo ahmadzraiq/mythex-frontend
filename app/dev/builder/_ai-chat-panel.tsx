@@ -1348,6 +1348,7 @@ export function AiChatPanel() {
             duration: a.duration ? `${(a.duration / 1000).toFixed(1)}s` : null,
             tools: a.tools,
             systemPrompt: a.systemPrompt,
+            userMessage: a.userMessage ?? null,
             toolCalls: a.toolCalls.map(t => ({
               name: t.name, status: t.status, input: t.input, result: t.result,
               round: t.round, aiBlind: t.aiBlind || undefined,
@@ -1362,7 +1363,16 @@ export function AiChatPanel() {
           blindFailures: blindTotal,
         };
 
-        const output = { stats, agents };
+        const structureCtx = lastMsg?.structureContext;
+        const output = {
+          stats,
+          buildPlan: lastMsg?.buildPlan ?? null,
+          phaseLog: lastMsg?.phaseLog ?? null,
+          compactTree: structureCtx?.compactTree ?? null,
+          varRoster: structureCtx?.varRoster ?? null,
+          markers: lastMsg?.structureMarkers ?? null,
+          agents,
+        };
         await navigator.clipboard.writeText(JSON.stringify(output, null, 2));
         setCopyToolsLabel('copied');
         setTimeout(() => setCopyToolsLabel('idle'), 2000);

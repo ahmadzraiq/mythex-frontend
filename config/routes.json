@@ -250,6 +250,30 @@
       "config": "techHero",
       "auth": false,
       "layout": "full"
+    },
+    {
+      "path": "/calculator",
+      "config": "calculator",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/pricing-nested",
+      "config": "pricingNested",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/video-hero-test",
+      "config": "videoHeroTest",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/hero-saas-workflow",
+      "config": "heroSaaSWorkflow",
+      "auth": false,
+      "layout": "full"
     }
   ]
 }

@@ -18,6 +18,8 @@ import workflowTestActions from '@/config/actions/workflow-test.json';
 import animationTestActions from '@/config/actions/animation-test.json';
 import popupTestActions from '@/config/actions/popup-test.json';
 import dsActionsJson from '@/config/actions/datasource-actions.json';
+import calculatorActions from '@/config/actions/calculator.json';
+import pricingNestedActions from '@/config/actions/pricing-nested.json';
 import type { NamedDataSourceDef } from '@/config/datasource-types';
 
 // ── In-memory variable additions (lost on reload) ─────────────────────────────
@@ -134,6 +136,8 @@ export function getBuilderConfig() {
     ...(workflowTestActions as Record<string, Record<string, unknown>>),
     ...(animationTestActions as Record<string, Record<string, unknown>>),
     ...(popupTestActions as Record<string, Record<string, unknown>>),
+    ...(calculatorActions as Record<string, Record<string, unknown>>),
+    ...(pricingNestedActions as Record<string, Record<string, unknown>>),
   };
 
   // A workflow def has a steps array. A direct action has a specific type (graphql, fetch, etc.)

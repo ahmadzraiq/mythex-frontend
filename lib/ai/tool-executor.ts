@@ -76,7 +76,7 @@ function coerceStepFormulas(steps: Array<Record<string, unknown>>): Array<Record
     }
     // Coerce condition fields for branch/multiOptionBranch/passThroughCondition/whileLoop.
     // The AI sometimes wraps conditions in "{ formula: \"...\" }" strings, which at runtime
-    // evaluate to a truthy object that never matches any branch label → all clicks are no-ops.
+    // evaluate to a truthy object that never matches any branch match value → all clicks are no-ops.
     if (CONDITION_STEP_TYPES.has(step.type as string)) {
       const cfg = step.config as Record<string, unknown> | undefined;
       if (cfg && typeof cfg.condition === 'string') {
@@ -395,6 +395,28 @@ function isFormulaExpression(val: string): boolean {
     val.startsWith('context') ||
     val.startsWith('theme[')
   );
+}
+
+/**
+ * Unwraps a serialized formula object string that the AI sometimes produces
+ * instead of a real nested JSON object. For example:
+ *   '{"formula": "if(equal(...), \'#ff9500\', \'#333\')"}' → 'if(equal(...), \'#ff9500\', \'#333\')'
+ * This happens because the AI encodes { "formula": "..." } as a JSON string
+ * in the tool-call arguments rather than as a nested object.
+ */
+function unwrapSerializedFormula(val: string): string {
+  const trimmed = val.trim();
+  if (trimmed.startsWith('{') && trimmed.includes('"formula"')) {
+    try {
+      const parsed = JSON.parse(trimmed) as unknown;
+      if (parsed && typeof (parsed as Record<string, unknown>).formula === 'string') {
+        return (parsed as Record<string, string>).formula;
+      }
+    } catch {
+      // not valid JSON — return as-is
+    }
+  }
+  return val;
 }
 
 // Map friendly color names to CSS-variable Tailwind classes.
@@ -1047,7 +1069,7 @@ const handlers: Record<string, Handler> = {
     let cls = getNodeClassName(store, nodeId);
 
     if (input.bg != null) {
-      const bgVal = input.bg as string;
+      const bgVal = unwrapSerializedFormula(input.bg as string);
       const scopeErr = validateRepeatScopeFormula(store, nodeId, bgVal);
       if (scopeErr) return scopeErr;
       if (isFormulaExpression(bgVal)) {
@@ -1194,7 +1216,7 @@ const handlers: Record<string, Handler> = {
     if (nodeErr) return nodeErr;
     const capErr = checkCapability(store, nodeId, 'typography');
     if (capErr) return capErr;
-    const colorVal = input.color as string;
+    const colorVal = unwrapSerializedFormula(input.color as string);
     if (isFormulaExpression(colorVal)) {
       const sanitized = resolveFormulaTokens(colorVal);
       patchNodeStyle(store, nodeId, { color: { formula: sanitized } });
@@ -1781,7 +1803,7 @@ const handlers: Record<string, Handler> = {
         border:                 'var(--theme-border)',
       };
       if (input.color !== undefined) {
-        const colorInput = input.color as string;
+        const colorInput = unwrapSerializedFormula(input.color as string);
         if (isFormulaExpression(colorInput)) {
           const sanitized = resolveFormulaTokens(colorInput);
           store.patchProp(nodeId, 'props.color', { formula: sanitized });
@@ -1822,14 +1844,18 @@ const handlers: Record<string, Handler> = {
     for (const k of LAYOUT_KEYS)  if (k in input && has('layout'))     { layoutSub[k] = input[k]; hasLayoutSub = true; }
     for (const k of SPACING_KEYS) if (k in input && has('spacing'))    { layoutSub[k] = input[k]; hasLayoutSub = true; }
     for (const k of SIZE_KEYS)    if (k in input && has('size'))       { layoutSub[k] = input[k]; hasLayoutSub = true; }
+    const droppedTypoKeys = TYPO_KEYS.filter(k => k in input && !has('typography'));
     for (const k of TYPO_KEYS)    if (k in input && has('typography')) { layoutSub[k] = input[k]; hasLayoutSub = true; }
     for (const k of POS_KEYS)     if (k in input)                      { layoutSub[k] = input[k]; hasLayoutSub = true; }
-    // direction:"column" is the Box default — strip it so the agent wastes no token and
-    // the class list stays clean. Only direction:"row" (or other non-default values) are applied.
-    if (layoutSub.direction === 'column') delete layoutSub.direction;
+    const subErrors: string[] = [];
+
     if (hasLayoutSub) {
-      handlers.set_layout(layoutSub, getStore);
-      msgs.push('layout');
+      const r = handlers.set_layout(layoutSub, getStore);
+      if (r && !r.success && r.error) {
+        subErrors.push(r.error);
+      } else {
+        msgs.push('layout');
+      }
     }
 
     // ── Overflow (capability-gated) ───────────────────────────────────────────
@@ -1837,8 +1863,8 @@ const handlers: Record<string, Handler> = {
       const overflowSub: Record<string, unknown> = { nodeId };
       if ('overflow' in input) overflowSub.mode = input.overflow;
       if ('pointerEvents' in input) overflowSub.pointerEvents = input.pointerEvents;
-      handlers.set_overflow(overflowSub, getStore);
-      msgs.push('overflow');
+      const r = handlers.set_overflow(overflowSub, getStore);
+      if (r && !r.success && r.error) subErrors.push(r.error); else msgs.push('overflow');
     }
 
     // ── Background (capability-gated) ─────────────────────────────────────────
@@ -1847,14 +1873,14 @@ const handlers: Record<string, Handler> = {
     let hasBg = false;
     for (const k of BG_KEYS) if (k in input) { bgSub[k] = input[k]; hasBg = true; }
     if (hasBg && has('background')) {
-      handlers.set_background(bgSub, getStore);
-      msgs.push('background');
+      const r = handlers.set_background(bgSub, getStore);
+      if (r && !r.success && r.error) subErrors.push(r.error); else msgs.push('background');
     }
 
     // ── Text color (capability-gated via 'typography') ─────────────────────────
     if ('color' in input && has('typography')) {
-      handlers.set_text_color({ nodeId, color: input.color }, getStore);
-      msgs.push('color');
+      const r = handlers.set_text_color({ nodeId, color: input.color }, getStore);
+      if (r && !r.success && r.error) subErrors.push(r.error); else msgs.push('color');
     }
 
     // ── Border (capability-gated) ─────────────────────────────────────────────
@@ -1875,21 +1901,21 @@ const handlers: Record<string, Handler> = {
       if (from in input) { borderSub[to] = input[from]; hasBorder = true; }
     }
     if (hasBorder && has('border')) {
-      handlers.set_border(borderSub, getStore);
-      msgs.push('border');
+      const r = handlers.set_border(borderSub, getStore);
+      if (r && !r.success && r.error) subErrors.push(r.error); else msgs.push('border');
     }
 
     // ── Shadow (capability-gated) ─────────────────────────────────────────────
     if ('shadow' in input && has('shadow')) {
       const shadowData = (input.shadow as Record<string, unknown>) ?? {};
-      handlers.set_shadow({ nodeId, ...shadowData }, getStore);
-      msgs.push('shadow');
+      const r = handlers.set_shadow({ nodeId, ...shadowData }, getStore);
+      if (r && !r.success && r.error) subErrors.push(r.error); else msgs.push('shadow');
     }
 
     // ── Opacity (universal — no capability check) ─────────────────────────────
     if ('opacity' in input) {
-      handlers.set_opacity({ nodeId, opacity: input.opacity }, getStore);
-      msgs.push('opacity');
+      const r = handlers.set_opacity({ nodeId, opacity: input.opacity }, getStore);
+      if (r && !r.success && r.error) subErrors.push(r.error); else msgs.push('opacity');
     }
 
     // ── Transform (universal — no capability check) ───────────────────────────
@@ -1898,13 +1924,19 @@ const handlers: Record<string, Handler> = {
     let hasTransform = false;
     for (const k of TRANSFORM_KEYS) if (k in input) { transformSub[k] = input[k]; hasTransform = true; }
     if (hasTransform) {
-      handlers.set_transform(transformSub, getStore);
-      msgs.push('transform');
+      const r = handlers.set_transform(transformSub, getStore);
+      if (r && !r.success && r.error) subErrors.push(r.error); else msgs.push('transform');
     }
+
+    const typoWarnings = droppedTypoKeys.length > 0
+      ? [`WARNING: ${droppedTypoKeys.join(', ')} not applied — only Text nodes support typography. Apply these props to each Text child instead.`]
+      : [];
+
+    const allWarnings = [...typoWarnings, ...subErrors.map(e => `ERROR: ${e}`)];
 
     return {
       success: true,
-      data: { message: msgs.length > 0 ? `Updated: ${msgs.join(', ')}` : 'No changes applied' },
+      data: { message: [msgs.length > 0 ? `Updated: ${msgs.join(', ')}` : 'No changes applied', ...allWarnings].join(' | ') },
     };
   },
 
@@ -2410,7 +2442,16 @@ const handlers: Record<string, Handler> = {
       store.patchMap(nodeId, null, undefined);
       return { success: true, data: { message: 'Removed repeat binding' } };
     }
-    // Normalize optional-chaining in map paths — `context?.item?.data?.features` breaks
+    // Formula-based map paths (e.g. getByIndex(...)) must be stored as { formula: "..." }
+    // so the runtime renderer evaluates them dynamically per outer-repeat item.
+    // Detection: path matches formula scope identifiers AND contains a function call (parens).
+    const isFormulaMapPath = FORMULA_SCOPE_RE.test(mapPath) && /\(/.test(mapPath);
+    if (isFormulaMapPath) {
+      store.patchNodeField(nodeId, 'map', { formula: mapPath });
+      if (keyField) store.patchNodeField(nodeId, 'key', keyField);
+      return { success: true, data: { message: `Set repeat over formula "${mapPath}"` } };
+    }
+    // Normalize optional-chaining in plain map paths — `context?.item?.data?.features` breaks
     // scope resolution because `context?` is not a recognized scope variable prefix.
     // Plain dot notation (`context.item.data.features`) is required for nested repeats.
     // generate_structure already does this normalization for inline tree repeat fields.
@@ -2848,14 +2889,35 @@ const handlers: Record<string, Handler> = {
 
   add_variable(input, getStore) {
     const store = getStore();
-    const id = (input.variableId as string | undefined)
+    const requestedId = (input.variableId as string | undefined)
       ?? (input._assignedVarId as string | undefined)
       ?? uuid();
+
+    // Detect intra-build UUID collision — assign fresh UUID if already taken
+    const alreadyUsed = store.customVars?.some((cv: { id: string }) => cv.id === requestedId);
+    const id = alreadyUsed ? uuid() : requestedId;
+
+    // Resolve folder name → folderId (auto-create folder entity if it doesn't exist yet)
+    let folderId: string | undefined;
+    const folderName = (input.folder as string) || undefined;
+    if (folderName) {
+      const existing = store.varFolders.find((f: { id: string; name: string }) => f.name === folderName);
+      if (existing) {
+        folderId = existing.id;
+      } else {
+        const newFolderId = uuid();
+        store.addVarFolder({ id: newFolderId, name: folderName, parentId: null });
+        folderId = newFolderId;
+      }
+    }
+
     const v: CustomVar = {
       id,
       name: input.name as string,
       type: input.type as CustomVar['type'],
       initialValue: input.initialValue,
+      description: (input.description as string) || undefined,
+      folderId,
     };
     store.addCustomVar(v);
     return { success: true, data: { id, name: v.name, message: `Created variable "${v.name}" (${id})` } };
@@ -3179,13 +3241,7 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
     // Apply name (layers label)
     if (node.name) base.name = node.name;
 
-    // Apply direction shortcut — "row" sets flex-row on this container.
-    // "column" is the Box default (flex flex-col) — skip it to keep className clean.
-    if (node.direction === 'row') {
-      const currentCls = ((base.props as Record<string, unknown>)?.className as string) ?? '';
-      const newCls = buildLayoutClass({ direction: 'row' }, currentCls);
-      (base.props as Record<string, unknown>).className = newCls;
-    }
+    // direction is a compact-tree annotation only — the styling agent applies layout via set_style.
 
     // Apply text shortcut — apply formula detection so formula expressions are stored as
     // { formula: "..." } instead of literal strings (same logic as set_text handler).
@@ -3340,7 +3396,14 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
   for (const op of deferredOps) {
     if (op.repeat) {
       const normalizedRepeat = op.repeat.replace(/\?\./g, '.');
-      store.patchMap(op.nodeId, normalizedRepeat, op.keyField ?? 'id');
+      // Formula-based map paths (e.g. getByIndex(...)) must be stored as { formula: "..." }
+      const isFormulaRepeat = FORMULA_SCOPE_RE.test(normalizedRepeat) && /\(/.test(normalizedRepeat);
+      if (isFormulaRepeat) {
+        store.patchNodeField(op.nodeId, 'map', { formula: normalizedRepeat });
+        store.patchNodeField(op.nodeId, 'key', op.keyField ?? 'id');
+      } else {
+        store.patchMap(op.nodeId, normalizedRepeat, op.keyField ?? 'id');
+      }
     }
     if (op.condition) {
       let cond = op.condition;

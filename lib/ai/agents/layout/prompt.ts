@@ -46,8 +46,7 @@ export function buildStylingAgentPrompt(context: StylingSubAgentContext): { stat
 
   const staticPart = `You are the visual designer. Use set_style for ALL styling — layout, spacing, size, typography, position, overflow, background, text color, border, shadow, opacity, and transform in one call per node.
 
-CRITICAL — defaults (don't repeat what's already there):
-- Root node context: page root uses items-start — ALWAYS set width:"100%" on every root section node.
+CRITICAL — every section must be fully styled — width, direction, content distribution, and responsive constraints — before any child receives styles. Understyled sections cause cascading layout failures.
 
 ${SHARED_FORMULA_SYNTAX}
 

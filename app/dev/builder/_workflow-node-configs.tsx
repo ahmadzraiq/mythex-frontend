@@ -2656,7 +2656,7 @@ export function NodePropsPanel({
               data-testid="branches-add-btn"
               style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#fff', background: '#3b82f6', border: 'none', borderRadius: 5, padding: '3px 8px', cursor: 'pointer', fontWeight: 600 }}
               onClick={() => {
-                const newBranch: BranchDef = { label: `Value ${(step.branches?.length ?? 0) + 1}`, steps: [{ id: `ph-${Date.now()}`, type: 'graphql' }] };
+                const newBranch: BranchDef = { match: `Value ${(step.branches?.length ?? 0) + 1}`, steps: [{ id: `ph-${Date.now()}`, type: 'graphql' }] };
                 onUpdate({ branches: [...(step.branches ?? []), newBranch] });
               }}
             >
@@ -2674,9 +2674,9 @@ export function NodePropsPanel({
                 <input
                   data-testid={`branch-value-${bi}`}
                   style={{ ...S.fieldInput, flex: 1, color: '#e5e7eb' }}
-                  value={branch.label}
+                  value={branch.match}
                   onChange={e => {
-                    const updated = (step.branches ?? []).map((b, i) => i === bi ? { ...b, label: e.target.value } : b);
+                    const updated = (step.branches ?? []).map((b, i) => i === bi ? { ...b, match: e.target.value } : b);
                     onUpdate({ branches: updated });
                   }}
                 />

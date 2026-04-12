@@ -223,11 +223,13 @@ export function VariableEntry({
   liveValue,
   onInsert,
   search,
+  isInsideRepeat,
 }: {
   variable: CustomVar;
   liveValue: unknown;
   onInsert: (formulaPath: string, displayLabel: string, type: VarRowItem['type']) => void;
   search: string;
+  isInsideRepeat?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -251,13 +253,19 @@ export function VariableEntry({
     return liveValue ?? variable.initialValue;
   })();
 
-  // Convert DataTreeNode dot-path → variables['uuid']?.['seg1']?.['seg2'] chip path
+  // Convert DataTreeNode dot-path → variables['uuid']?.['seg1']?.[0] chip path
+  // Handles bracket-notation [N] from array drill-down (e.g. "[0][0].id" → "?.[0]?.[0]?.['id']")
   const handleNodeInsert = useCallback((nodePath: string) => {
     const uuid = variable.id ?? '';
     const after = nodePath.replace(new RegExp(`^variables\\['${uuid}'\\]\\.?`), '');
-    const chained = after ? after.split('.').filter(Boolean).map(p => `?.['${p}']`).join('') : '';
+    const segments = after.match(/\[\d+\]|[^.\[\]]+/g) ?? [];
+    const chained = segments.map(p => {
+      const bracketMatch = p.match(/^\[(\d+)\]$/);
+      if (bracketMatch) return `?.[${bracketMatch[1]}]`;
+      return `?.['${p}']`;
+    }).join('');
     const fp = `variables['${uuid}']${chained}`;
-    const friendly = after || label;
+    const friendly = after ? `${label}${after.startsWith('[') ? '' : '.'}${after}` : label;
     onInsert(fp, friendly, 'variable');
   }, [variable.id, label, onInsert]);
 
@@ -271,6 +279,9 @@ export function VariableEntry({
   if (lq && !label.toLowerCase().includes(lq)) return null;
 
   const isUndefined = treeData === undefined;
+  const isArrayOfArrays = Array.isArray(treeData)
+    && (treeData as unknown[]).length > 0
+    && Array.isArray((treeData as unknown[])[0]);
 
   return (
     <div>
@@ -338,6 +349,20 @@ export function VariableEntry({
                   ))}
                 </select>
                 <span style={{ fontSize: 9, color: '#4b5563' }}>{(treeData as unknown[]).length} items</span>
+                {isInsideRepeat && isArrayOfArrays && (
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      const formula = `variables['${variable.id}']?.[context?.item?.data?.index]`;
+                      onInsert(formula, `${label}[parent index]`, 'variable');
+                    }}
+                    style={{ background: '#065f46', color: '#6ee7b7', border: '1px solid #047857', borderRadius: 5, padding: '1px 6px', fontSize: 10, cursor: 'pointer', fontFamily: 'monospace', fontWeight: 600, flexShrink: 0 }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#047857'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#065f46'; }}
+                  >
+                    Use parent index
+                  </button>
+                )}
               </div>
               {(treeData as unknown[]).length > 0 && (() => {
                 const idx = arrayIndices.get(rootPath) ?? 0;
@@ -664,11 +689,13 @@ export function VariableTree({
   search,
   customVars,
   varFolders,
+  isInsideRepeat,
 }: {
   onSelect: (formulaPath: string, displayLabel: string, type: VarRowItem['type']) => void;
   search: string;
   customVars: CustomVar[];
   varFolders: { id: string; name: string }[];
+  isInsideRepeat?: boolean;
 }) {
   // Subscribe to variable store for live values
   const [vsState, setVsState] = useState<Record<string, unknown>>(() =>
@@ -743,6 +770,7 @@ export function VariableTree({
                 liveValue={vsState[v.id!]}
                 onInsert={onSelect}
                 search={lq}
+                isInsideRepeat={isInsideRepeat}
               />
                 ))}
               </div>
@@ -1177,17 +1205,28 @@ export function ItemContextGroup({
   const zustandData = useSduiStore(s => s.data);
   const vsData = getGlobalVariableStore()(state => state.data);
 
-  // Find the nearest map ancestor (for inner repeat) and outer map ancestor (for nested repeat)
+  // Find the nearest map ancestor (for inner repeat) and outer map ancestor (for nested repeat).
+  // The selected node's OWN map is skipped — it defines scope for children, not for itself.
   const { innerMap, outerMap } = useMemo(() => {
     const id = selectedIds[0];
     if (!id) return { innerMap: null, outerMap: null };
     let node = findNode(pageNodes, id);
+    const selectedNode = node;
     let inner: string | null = null;
     let outer: string | null = null;
     while (node) {
-      if (node.map) {
-        if (!inner) { inner = node.map as string; }
-        else if (!outer) { outer = node.map as string; break; }
+      if (node.map && node !== selectedNode) {
+        const mapVal = typeof node.map === 'string'
+          ? node.map
+          : (typeof node.map === 'object' && node.map !== null)
+            ? ((node.map as { formula?: string; expr?: string }).formula
+              ?? (node.map as { formula?: string; expr?: string }).expr
+              ?? null)
+            : null;
+        if (mapVal) {
+          if (!inner) { inner = mapVal; }
+          else if (!outer) { outer = mapVal; break; }
+        }
       }
       const parent = findParentNode(pageNodes, node.id ?? '');
       node = parent ?? null;
@@ -1196,19 +1235,45 @@ export function ItemContextGroup({
   }, [selectedIds, pageNodes]);
 
   // Extract first item from a map binding path (e.g. "collections.UUID.data.search.items").
-  // Handles two tricky cases:
+  // Handles three cases:
   // 1. responsePath stripping: when a datasource uses responsePath="data", the stored flat key
   //    "collections.UUID" already has the inner data; navigating "data.search.items" must skip
   //    the "data" segment since it no longer exists in the stored value.
   // 2. Variable store paths: "variables['UUID']" uses bracket notation not dot notation.
-  const resolveFirstItem = useCallback((mapBinding: string | null): Record<string, unknown> | null => {
+  // 3. Context-relative paths: "context.item.data.features" navigates into the parent item.
+  const resolveFirstItem = useCallback((mapBinding: string | null, parentItem?: Record<string, unknown> | null): Record<string, unknown> | null => {
     if (!mapBinding) return null;
+
+    // Handle context-relative paths like "context.item.data.X" or "$item.X"
+    // These reference a nested array inside the outer repeat's current item.
+    const ctxMatch = mapBinding.match(/^(?:context\.item\.data\.|context\.item\.|\$item\.)(.+)$/);
+    if (ctxMatch) {
+      if (!parentItem) return null;
+      let val: unknown = parentItem;
+      for (const seg of ctxMatch[1].split('.')) {
+        if (val && typeof val === 'object' && !Array.isArray(val)) {
+          val = (val as Record<string, unknown>)[seg];
+        } else { return null; }
+      }
+      if (Array.isArray(val) && val.length > 0) return val[0] as Record<string, unknown>;
+      if (val && typeof val === 'object' && !Array.isArray(val)) return val as Record<string, unknown>;
+      return null;
+    }
 
     // Handle bracket-notation variable paths like "variables['UUID']"
     const bracketMatch = mapBinding.match(/^variables\s*\[['"]([^'"]+)['"]\]/);
     if (bracketMatch) {
       const vsVal = vsData?.[bracketMatch[1]];
-      if (Array.isArray(vsVal) && vsVal.length > 0) return vsVal[0] as Record<string, unknown>;
+      if (Array.isArray(vsVal) && vsVal.length > 0) {
+        const hasExtraNav = mapBinding.length > bracketMatch[0].length;
+        const first = vsVal[0];
+        // Formula has additional indexing (e.g. ?.[context?.item?.data?.index])
+        // and the variable is an array of arrays — drill into the first sub-array
+        if (hasExtraNav && Array.isArray(first) && first.length > 0) {
+          return first[0] as Record<string, unknown>;
+        }
+        return first as Record<string, unknown>;
+      }
       if (vsVal && typeof vsVal === 'object' && !Array.isArray(vsVal)) return vsVal as Record<string, unknown>;
       return null;
     }
@@ -1242,8 +1307,9 @@ export function ItemContextGroup({
     return null;
   }, [zustandData, vsData]);
 
-  const itemData = useMemo(() => resolveFirstItem(innerMap), [resolveFirstItem, innerMap]);
+  // Resolve parent (outer map) first, then pass to inner resolve for context-relative paths
   const parentData = useMemo(() => resolveFirstItem(outerMap), [resolveFirstItem, outerMap]);
+  const itemData = useMemo(() => resolveFirstItem(innerMap, parentData), [resolveFirstItem, innerMap, parentData]);
 
   const toggleExpand = (p: string) => setExpanded(prev => { const n = new Set(prev); n.has(p) ? n.delete(p) : n.add(p); return n; });
   const setArrayIndex = (p: string, idx: number) => setArrayIndices(prev => new Map(prev).set(p, idx));

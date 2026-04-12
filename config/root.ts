@@ -48,6 +48,9 @@ import landingShowcase from './screens/landing-showcase.json';
 import pricing from './screens/pricing.json';
 import videoHero from './screens/video-hero.json';
 import techHero from './screens/tech-hero.json';
+import calculator from './screens/calculator.json';
+import pricingNested from './screens/pricing-nested.json';
+import videoHeroTest from './screens/video-hero-test.json';
 
 // Layouts
 import storeLayout from './layouts/store.json';
@@ -86,6 +89,8 @@ import workflowTestActions from './actions/workflow-test.json';
 import animationTestActions from './actions/animation-test.json';
 import popupTestActions from './actions/popup-test.json';
 import controlsShowcaseActions from './actions/controls-showcase.json';
+import calculatorActions from './actions/calculator.json';
+import pricingNestedActions from './actions/pricing-nested.json';
 
 const screens = {
   home,
@@ -128,6 +133,9 @@ const screens = {
   pricing,
   videoHero,
   techHero,
+  calculator,
+  pricingNested,
+  videoHeroTest,
 };
 
 const layouts = {
@@ -169,6 +177,8 @@ const actions = {
   ...animationTestActions,
   ...popupTestActions,
   ...controlsShowcaseActions,
+  ...calculatorActions,
+  ...pricingNestedActions,
 };
 
 const actionsByFile = {
@@ -183,6 +193,8 @@ const actionsByFile = {
   animationTest: animationTestActions,
   popupTest: popupTestActions,
   controlsShowcase: controlsShowcaseActions,
+  calculator: calculatorActions,
+  pricingNested: pricingNestedActions,
 };
 
 export const root = {

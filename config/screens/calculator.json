@@ -1,0 +1,70 @@
+{
+  "meta": { "title": "Calculator" },
+  "state": {},
+  "layout": "store",
+  "content": {
+    "type": "Box",
+    "props": {
+      "className": "w-full flex flex-col items-center justify-center py-[40px] px-[16px]"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full max-w-[360px] bg-black rounded-[24px] overflow-hidden"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "w-full px-[24px] pt-[48px] pb-[12px] flex flex-col items-end justify-end min-h-[120px]"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[48px] font-light text-white text-right"
+                },
+                "text": "{{variables['ca1c0001-0000-0000-0000-000000000001']}}"
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "grid grid-cols-4 gap-[10px] px-[12px] pb-[16px]"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "map": "variables['ca1c0005-0000-0000-0000-000000000005']",
+                "key": "context.item.data.label",
+                "props": { "className": "contents" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-col items-center justify-center cursor-pointer rounded-[9999px] h-[64px] hover:opacity-80 active:opacity-70",
+                      "style": { "backgroundColor": "{{context.item.data.bg}}" }
+                    },
+                    "actions": [{ "action": "calcButtonPress" }],
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[20px] font-medium text-center",
+                          "style": { "color": "{{context.item.data.color}}" }
+                        },
+                        "text": "{{context.item.data.label}}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -201,9 +201,9 @@ Inside the loop body, `context.item.data.value` is the current element and `cont
 
 **`multiOptionBranch` config keys:**
 - `conditionPath`: variable UUID to read the current value from
-- `condition`: formula string that returns the branch label value
-- `branches`: array of `{ "label": "...", "steps": [...] }` — matched by string equality against the condition value
-- `defaultBranch`: steps to run when no branch label matches
+- `condition`: formula string that returns the branch match value
+- `branches`: array of `{ "match": "...", "steps": [...] }` — matched by string equality against the condition value. Backward-compat: `label` and `value` keys are also accepted by the engine.
+- `defaultBranch`: steps to run when no branch match value matches
 
 **Form field tracking:** Input fields inside a `FormContainer` auto-track their value via the `name` prop — no workflow step needed. The `Input` wrapper **must have a unique `id`** so the child `InputField` can register itself correctly (see `sdui-layout-pitfalls.mdc` — Input Wrapper Must Have `id`). To pre-populate a field, use `setFormState` with `path: "local.data.form.formData.{fieldName}"` and `value`.
 

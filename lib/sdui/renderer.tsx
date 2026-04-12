@@ -124,6 +124,21 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
     else if (clean === 'grow-0')   { (style as Record<string, string>).flexGrow = '0'; }
     else if (clean === 'shrink')   { (style as Record<string, string>).flexShrink = '1'; }
     else if (clean === 'shrink-0') { (style as Record<string, string>).flexShrink = '0'; }
+    // margin-auto utilities — critical for centering animated nodes that use mx-auto.
+    // classToInlineStyle only handles arbitrary [Npx] values, not keyword values like auto.
+    // Without emitting them as inline styles, the outer Animated.View wrapper (which carries
+    // the positioning in builder mode) gets no margin, and mx-auto has zero centering effect
+    // on the outer wrapper (only on the inner element via NativeWind compiled CSS, which
+    // doesn't affect the wrapper's position in the flex parent).
+    // sizeOverride forwards marginLeft/marginRight to outerStyle → the outer wrapper
+    // self-centers within its flex parent even when align-self:auto applies stretch.
+    else if (clean === 'm-auto')  { (style as Record<string, string>).margin = 'auto'; }
+    else if (clean === 'mx-auto') { (style as Record<string, string>).marginLeft = 'auto'; (style as Record<string, string>).marginRight = 'auto'; }
+    else if (clean === 'my-auto') { (style as Record<string, string>).marginTop = 'auto';  (style as Record<string, string>).marginBottom = 'auto'; }
+    else if (clean === 'ml-auto') { (style as Record<string, string>).marginLeft = 'auto'; }
+    else if (clean === 'mr-auto') { (style as Record<string, string>).marginRight = 'auto'; }
+    else if (clean === 'mt-auto') { (style as Record<string, string>).marginTop = 'auto'; }
+    else if (clean === 'mb-auto') { (style as Record<string, string>).marginBottom = 'auto'; }
     // width / height keyword utilities (non-arbitrary). These are NOT compiled by Tailwind JIT
     // for JSON-config classes, so we must emit them as inline styles so the outer Animated.View
     // wrapper can forward them (e.g. w-fit on a button must make the outer wrapper fit-content
@@ -772,11 +787,15 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
             .join(' ')
             .trim();
         }
-        // Remove transform from the inner element — the outer wrapper already receives it
-        // via _nodePropsStyleForOuter (below). Keeping it on both causes double-rotation.
+        // Remove transform/translateX/translateY from the inner element — the outer wrapper
+        // already receives them via staticTransform (Reanimated worklet) and _nodePropsStyleForOuter.
+        // Keeping them on the inner element causes double-offset in builder mode where
+        // NativeWind's cssInterop compiles translateX/Y into a CSS transform on the inner div.
         if (cleanProps.style) {
           const _s = cleanProps.style as Record<string, unknown>;
           delete _s.transform;
+          delete _s.translateX;
+          delete _s.translateY;
         }
         // The inner element lost its absolute positioning (stripped above), so it's now in normal
         // flow inside the outer Animated.View wrapper. Force it to fill the outer wrapper.
@@ -907,13 +926,16 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
           .join(' ')
           .trim();
       }
-      // Strip transform from the inner element. translateX/Y from node.props.style are
-      // outer positioning transforms (forwarded to the outer Animated.View via nodePropsStyle
-      // → outerStyle). Keeping the composed transform on the inner causes it to shift
-      // relative to the outer wrapper (e.g. translateY(-50%) moves the inner 250px outside
-      // the outer's top boundary when the inner fills 100% height).
+      // Strip transform/translateX/translateY from the inner element. These are forwarded
+      // to the outer Animated.View via staticTransform (Reanimated worklet). Keeping any
+      // of them on the inner element causes double-offset — in builder mode NativeWind's
+      // cssInterop compiles translateX/Y into CSS transform on the inner div, causing
+      // content to shift (e.g. -50% of 900px = -450px) relative to the outer wrapper.
       if (cleanProps.style) {
-        delete (cleanProps.style as Record<string, unknown>).transform;
+        const _innerTransStyle = cleanProps.style as Record<string, unknown>;
+        delete _innerTransStyle.transform;
+        delete _innerTransStyle.translateX;
+        delete _innerTransStyle.translateY;
       }
       // Strip paint-only visual properties from the inner element.
       // These are already forwarded to the outer Animated.View via outerStyle (from
@@ -1242,6 +1264,30 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
       }
       if (/\bflex-1\b/.test(nodeClassName)) sizeOverride.flex = 1;
       if (/\bmin-w-0\b/.test(nodeClassName)) sizeOverride.minWidth = 0;
+      // Override RNW's align-self:flex-start base style on Animated.View/View wrappers.
+      // Without this, every animated wrapper ignores its flex parent's align-items (center,
+      // stretch, etc.) — e.g. items-center on the parent has no effect on animated children
+      // because each child's outer Animated.View is anchored to the flex-start (left) edge.
+      // Setting alignSelf:'auto' restores the CSS default: "inherit from parent align-items".
+      //
+      // Also restore CSS's default flex-shrink:1. RNW Animated.View hard-codes flex-shrink:0,
+      // but NativeWind's Box (via cssInterop on web) inherits the CSS default flex-shrink:1.
+      // Without this, animated wrappers in a flex-row never shrink — cards sit at their
+      // max-content width (full unbroken quote text) while preview cards correctly shrink
+      // to fit the container (down to min-width). Setting flexShrink:1 restores CSS default.
+      //
+      // Only applies to in-flow elements — absolutely/fixed positioned wrappers are out of
+      // flow and don't participate in flex main-axis sizing.
+      // sizeOverride is spread UNDER resolvedAnimCfg.outerStyle, so any explicit values
+      // in animation.outerStyle in the JSON config override these defaults.
+      if (!arbStyles.position || (arbStyles.position !== 'absolute' && arbStyles.position !== 'fixed')) {
+        sizeOverride.alignSelf = 'auto';
+        // Don't override flexShrink already set (e.g. from the w-full branch above, which
+        // also sets flexShrink:1). Also respect shrink-0 in className if forwarded.
+        if (!sizeOverride.flexShrink && !(/\bshrink-0\b/.test(nodeClassName))) {
+          sizeOverride.flexShrink = 1;
+        }
+      }
       // Mirror border-radius onto the outer wrapper (Animated.View / plain View).
       // Two reasons: (1) In builder mode (animNodeOwnsId=true) this ensures patchStyle({
       // borderRadius }) on the outer wrapper has visible effect for the selection ring.

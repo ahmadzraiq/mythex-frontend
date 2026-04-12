@@ -28,7 +28,7 @@ interface WorkflowStep {
   trueBranch?: WorkflowStep[];
   falseBranch?: WorkflowStep[];
   loopBody?: WorkflowStep[];
-  branches?: Array<{ label?: string; value?: string; steps?: WorkflowStep[] }>;
+  branches?: Array<{ match?: string; label?: string; value?: string; steps?: WorkflowStep[] }>;
   defaultBranch?: WorkflowStep[];
 }
 
@@ -107,7 +107,7 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
     // ── Variables ────────────────────────────────────────────────────────────
     case 'changeVariableValue':
       // Visual builder's primary variable-change step
-      return { type: 'setVar', path: (cfg.variableName ?? cfg.variable) as string, value: cfg.value };
+      return { type: 'setVar', path: (cfg.variableName ?? cfg.variable) as string, value: unwrapFormulaValue(cfg.value) };
     case 'resetVariableValue':
     case 'resetVariable':
       return { type: 'setVar', path: (cfg.variableName ?? cfg.path) as string, value: cfg.defaultValue ?? null };
@@ -174,6 +174,51 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
   }
 }
 
+/**
+ * Resolves a condition/formula field to a plain formula string.
+ * Accepts a plain string, a { formula: "..." } object, or a JSON-stringified
+ * version of the formula object — all three are normalised to the formula string.
+ */
+function resolveFormulaToString(raw: unknown): string | undefined {
+  if (!raw) return undefined;
+  if (typeof raw === 'object' && raw !== null) {
+    const f = (raw as Record<string, unknown>).formula;
+    return typeof f === 'string' ? f : undefined;
+  }
+  if (typeof raw === 'string') {
+    const t = raw.trim();
+    if (t.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(t);
+        if (typeof parsed === 'object' && parsed !== null && typeof (parsed as Record<string, unknown>).formula === 'string') {
+          return (parsed as Record<string, unknown>).formula as string;
+        }
+      } catch { /* not JSON — treat as plain formula string */ }
+    }
+    return t;
+  }
+  return undefined;
+}
+
+/**
+ * Normalises a value field so { "formula": "..." } objects and
+ * JSON-stringified equivalents are returned as actual formula objects
+ * for setVar to evaluate. Static literals are returned unchanged.
+ */
+function unwrapFormulaValue(raw: unknown): unknown {
+  if (typeof raw !== 'string') return raw;
+  const t = raw.trim();
+  if (t.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(t);
+      if (typeof parsed === 'object' && parsed !== null && 'formula' in (parsed as object)) {
+        return parsed;
+      }
+    } catch { /* not JSON */ }
+  }
+  return raw;
+}
+
 /** Write the current workflowCtx snapshot to the variable store so formulas
  *  in subsequent steps can access context.workflow['stepId'].result. */
 function flushWorkflowCtx(workflowCtx: WorkflowCtx) {
@@ -217,7 +262,7 @@ async function runSteps(
     // can reference context.workflow['prevStepId'].result — no "on error" or
     // "default" branches; the formula itself handles error cases.
     if (step.type === 'branch') {
-      const condFormula = step.config?.condition as string | undefined;
+      const condFormula = resolveFormulaToString(step.config?.condition);
       const condPath    = step.config?.conditionPath as string | undefined;
       let condResult: unknown;
       if (condFormula) {
@@ -227,7 +272,7 @@ async function runSteps(
       } else {
         condResult = condPath ? ctx.get(condPath) : false;
       }
-      const branch = condResult ? (step.trueBranch ?? []) : (step.falseBranch ?? []);
+      const branch = condResult ? (step.trueBranch ?? []) : (step.falseBranch ?? step.defaultBranch ?? []);
       await runSteps(branch, ctx, workflowCtx);
       continue;
     }
@@ -290,7 +335,7 @@ async function runSteps(
     // ── Structural: While loop ────────────────────────────────────────────────
     if (step.type === 'whileLoop') {
       const condPath = (step.config?.conditionPath as string) ?? '';
-      const condFormula = step.config?.condition as string | undefined;
+      const condFormula = resolveFormulaToString(step.config?.condition);
       let guard = 0; // safety limit
       const checkCond = () => {
         if (condFormula) {
@@ -326,7 +371,7 @@ async function runSteps(
     // If the condition is false, stop executing further steps in the current
     // sequence (return from runSteps). If true, continue to next step.
     if (step.type === 'passThroughCondition') {
-      const condFormula = step.config?.condition as string | undefined;
+      const condFormula = resolveFormulaToString(step.config?.condition);
       const condPath = step.config?.conditionPath as string | undefined;
       let condResult: unknown;
       if (condFormula) {
@@ -345,7 +390,7 @@ async function runSteps(
     // each branch's label, runs the matched branch or defaultBranch.
     if (step.type === 'multiOptionBranch') {
       const conditionPath = step.config?.conditionPath as string | undefined;
-      const conditionFormula = step.config?.condition as string | undefined;
+      const conditionFormula = resolveFormulaToString(step.config?.condition);
       let value: unknown;
       if (conditionFormula) {
         const vsState = getGlobalVariableStore().getState().getFullState();
@@ -355,7 +400,7 @@ async function runSteps(
         value = ctx.get(conditionPath);
       }
       const branches = step.branches ?? [];
-      const matched = branches.find(b => String(b.label ?? b.value ?? '') === String(value ?? ''));
+      const matched = branches.find(b => String(b.match ?? b.label ?? b.value ?? '') === String(value ?? ''));
       await runSteps(matched ? (matched.steps ?? []) : (step.defaultBranch ?? []), ctx, workflowCtx);
       continue;
     }

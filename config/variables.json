@@ -1195,6 +1195,128 @@
         }
       ],
       "folder": "Video Hero"
+    },
+    "ca1c0001-0000-0000-0000-000000000001": {
+      "label": "Calc Display",
+      "type": "string",
+      "initialValue": "0",
+      "folder": "Calculator"
+    },
+    "ca1c0002-0000-0000-0000-000000000002": {
+      "label": "Calc Previous",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Calculator"
+    },
+    "ca1c0003-0000-0000-0000-000000000003": {
+      "label": "Calc Operator",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Calculator"
+    },
+    "ca1c0004-0000-0000-0000-000000000004": {
+      "label": "Calc New Input",
+      "type": "boolean",
+      "initialValue": true,
+      "folder": "Calculator"
+    },
+    "ca1c0005-0000-0000-0000-000000000005": {
+      "label": "Calc Buttons",
+      "type": "array",
+      "initialValue": [
+        {"label": "AC", "type": "clear", "bg": "#a5a5a5", "color": "#000000"},
+        {"label": "+/-", "type": "negate", "bg": "#a5a5a5", "color": "#000000"},
+        {"label": "%", "type": "percent", "bg": "#a5a5a5", "color": "#000000"},
+        {"label": "\u00f7", "type": "operator", "op": "/", "bg": "#ff9f0a", "color": "#ffffff"},
+        {"label": "7", "type": "digit", "bg": "#333333", "color": "#ffffff"},
+        {"label": "8", "type": "digit", "bg": "#333333", "color": "#ffffff"},
+        {"label": "9", "type": "digit", "bg": "#333333", "color": "#ffffff"},
+        {"label": "\u00d7", "type": "operator", "op": "*", "bg": "#ff9f0a", "color": "#ffffff"},
+        {"label": "4", "type": "digit", "bg": "#333333", "color": "#ffffff"},
+        {"label": "5", "type": "digit", "bg": "#333333", "color": "#ffffff"},
+        {"label": "6", "type": "digit", "bg": "#333333", "color": "#ffffff"},
+        {"label": "\u2212", "type": "operator", "op": "-", "bg": "#ff9f0a", "color": "#ffffff"},
+        {"label": "1", "type": "digit", "bg": "#333333", "color": "#ffffff"},
+        {"label": "2", "type": "digit", "bg": "#333333", "color": "#ffffff"},
+        {"label": "3", "type": "digit", "bg": "#333333", "color": "#ffffff"},
+        {"label": "+", "type": "operator", "op": "+", "bg": "#ff9f0a", "color": "#ffffff"},
+        {"label": "0", "type": "digit", "bg": "#333333", "color": "#ffffff"},
+        {"label": ".", "type": "decimal", "bg": "#333333", "color": "#ffffff"},
+        {"label": "\u232b", "type": "backspace", "bg": "#a5a5a5", "color": "#000000"},
+        {"label": "=", "type": "equals", "bg": "#ff9f0a", "color": "#ffffff"}
+      ],
+      "folder": "Calculator"
+    },
+    "pr1c0001-0000-0000-0000-000000000001": {
+      "label": "Nested Pricing Plans",
+      "type": "array",
+      "initialValue": [
+        {
+          "id": "starter",
+          "name": "Starter",
+          "isFeatured": false,
+          "description": "Perfect for individuals and small projects",
+          "yearlyPrice": 348,
+          "monthlyPrice": 29,
+          "ctaText": "Get Started",
+          "trustText": "No credit card required"
+        },
+        {
+          "id": "professional",
+          "name": "Professional",
+          "isFeatured": true,
+          "description": "Ideal for growing teams and businesses",
+          "yearlyPrice": 948,
+          "monthlyPrice": 79,
+          "ctaText": "Start Free Trial",
+          "trustText": "14-day free trial included"
+        },
+        {
+          "id": "enterprise",
+          "name": "Enterprise",
+          "isFeatured": false,
+          "description": "For large-scale operations and organizations",
+          "yearlyPrice": 2388,
+          "monthlyPrice": 199,
+          "ctaText": "Contact Sales",
+          "trustText": "99.9% uptime guarantee"
+        }
+      ],
+      "folder": "Nested Pricing"
+    },
+    "pr1c0002-0000-0000-0000-000000000002": {
+      "label": "Nested Pricing Features",
+      "type": "array",
+      "initialValue": [
+        [
+          { "id": "s1", "text": "5 Projects" },
+          { "id": "s2", "text": "Basic Analytics" },
+          { "id": "s3", "text": "Email Support" },
+          { "id": "s4", "text": "1 GB Storage" }
+        ],
+        [
+          { "id": "p1", "text": "Unlimited Projects" },
+          { "id": "p2", "text": "Advanced Analytics" },
+          { "id": "p3", "text": "Priority Support" },
+          { "id": "p4", "text": "100 GB Storage" },
+          { "id": "p5", "text": "Team Collaboration" }
+        ],
+        [
+          { "id": "e1", "text": "Everything in Professional" },
+          { "id": "e2", "text": "Custom Integrations" },
+          { "id": "e3", "text": "Dedicated Support" },
+          { "id": "e4", "text": "Unlimited Storage" },
+          { "id": "e5", "text": "Advanced Security" },
+          { "id": "e6", "text": "SLA Guarantee" }
+        ]
+      ],
+      "folder": "Nested Pricing"
+    },
+    "pr1c0003-0000-0000-0000-000000000003": {
+      "label": "Nested Pricing Yearly Toggle",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Nested Pricing"
     }
   },
   "varFolders": [
@@ -1281,6 +1403,14 @@
     {
       "id": "Video Hero",
       "label": "Video Hero"
+    },
+    {
+      "id": "Calculator",
+      "label": "Calculator"
+    },
+    {
+      "id": "Nested Pricing",
+      "label": "Nested Pricing"
     }
   ]
 }

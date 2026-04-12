@@ -151,7 +151,8 @@ function assignTreeIds(
 }
 
 /** Strip loop/showIf marker fields from a tree before sending to client.
- *  Returns the markers extracted from the tree for use by hint detectors and the Binding agent. */
+ *  Returns the markers extracted from the tree for use by hint detectors and downstream agents via the compact tree.
+ *  All annotations are pure hints for AI agents — none are consumed by client-side code. */
 function extractAndStripMarkers(tree: Record<string, unknown>): Array<{
   nodeId: string;
   loop?: string | boolean;
@@ -165,17 +166,22 @@ function extractAndStripMarkers(tree: Record<string, unknown>): Array<{
     showIf?: string;
   }> = [];
   const walk = (node: Record<string, unknown>) => {
-    const hasMarker = node.loop || node.showIf;
-    if (hasMarker) {
+    const loop = node.loop;
+    const loopKey = node.loopKey;
+    const showIf = node.showIf;
+    delete node.loop;
+    delete node.loopKey;
+    delete node.showIf;
+    // Strip direction from the resolved tree (styling agent decides layout independently)
+    delete node.direction;
+
+    if (loop || showIf) {
       markers.push({
         nodeId: node.id as string,
-        loop: node.loop as string | boolean | undefined,
-        loopKey: node.loopKey as string | undefined,
-        showIf: node.showIf as string | undefined,
+        loop: loop as string | boolean | undefined,
+        loopKey: loopKey as string | undefined,
+        showIf: showIf as string | undefined,
       });
-      delete node.loop;
-      delete node.loopKey;
-      delete node.showIf;
     }
     for (const child of (Array.isArray(node.children) ? node.children as Record<string, unknown>[] : [])) {
       walk(child);
@@ -505,6 +511,7 @@ async function runHaikuAgentLoop(
   phase?: string,
   signal?: AbortSignal,
   capabilityValidator?: (toolName: string, args: Record<string, unknown>) => string | null,
+  modelId?: string,
 ): Promise<void> {
   const startedAt = Date.now();
   let localToolCount = 0;
@@ -523,13 +530,17 @@ async function runHaikuAgentLoop(
     'search_videos',
   ]);
 
+  const resolvedLoopModel = (modelId && VALID_MODELS.has(modelId)) ? modelId : 'claude-haiku-4-5';
+  const loopSupportsThinking = THINKING_MODELS.has(resolvedLoopModel);
+
   try {
   while (rounds < maxRounds) {
     rounds++;
 
     const response = client.messages.stream({
-      model: 'claude-haiku-4-5',
-      max_tokens: 16384,
+      model: resolvedLoopModel,
+      max_tokens: loopSupportsThinking ? 32768 : 16384,
+      ...(loopSupportsThinking ? { temperature: 1, thinking: { type: 'enabled', budget_tokens: 8192 } } : {}),
       system: systemBlocks,
       tools,
       messages: currentMessages,
@@ -739,10 +750,11 @@ async function runHaikuAgentLoop(
 async function runStructureAgent(
   unit: BuildUnit,
   assignedPageId: string | null,
-  existingVariables: Array<{ id?: string; label?: string; name?: string; type?: string }>,
+  existingVariables: Array<{ id?: string; label?: string; name?: string; type?: string; initialValue?: unknown }>,
   send: (event: Record<string, unknown>) => void,
   allExecutedTools: Array<{ name: string; input: Record<string, unknown>; result?: unknown }>,
   signal?: AbortSignal,
+  modelId?: string,
 ): Promise<{
   tree: CollectedTree | null;
   markers: Array<{ nodeId: string; loop?: string | boolean; loopKey?: string; showIf?: string }>;
@@ -750,7 +762,17 @@ async function runStructureAgent(
 }> {
   const allExistingVars = existingVariables.filter(v => v.id);
   const existingVarsNote = allExistingVars.length > 0
-    ? `\nExisting variables (reuse these UUIDs — NEVER create a new variable for an existing one):\n${allExistingVars.map(v => `  - "${v.label ?? v.name}" id="${v.id}" type="${v.type}"`).join('\n')}\n`
+    ? `\nExisting variables (reuse a UUID ONLY when the variable is semantically identical — same feature area, same purpose, same data shape. NEVER repurpose a variable from a different feature just because the name sounds similar; always create a fresh UUID in that case):\n${allExistingVars.map(v => {
+        let schema = '';
+        if (v.type === 'array' && Array.isArray(v.initialValue) && (v.initialValue as unknown[]).length > 0) {
+          const first = (v.initialValue as unknown[])[0];
+          if (first && typeof first === 'object' && !Array.isArray(first))
+            schema = ` [fields: ${Object.keys(first as object).join(', ')}]`;
+        } else if (v.type === 'object' && v.initialValue && typeof v.initialValue === 'object' && !Array.isArray(v.initialValue)) {
+          schema = ` [fields: ${Object.keys(v.initialValue as object).join(', ')}]`;
+        }
+        return `  - "${v.label ?? v.name}" id="${v.id}" type="${v.type}"${schema}`;
+      }).join('\n')}\n`
     : '';
 
   const sysPrompt = buildStructureAgentPrompt(existingVarsNote || undefined);
@@ -763,22 +785,24 @@ async function runStructureAgent(
   const noVarsNote = unit.needsVariables === false
     ? '\nVARIABLES: None needed — this section is purely visual. Leave the variables array empty [].'
     : '';
-  const structureHintLine = unit.structureHint ? `\nStructurePattern: ${unit.structureHint}` : '';
-  const prompt = `Build: ${unit.name}\nDescription: ${unit.description}${sectionLimit}\n${unit.layout ? `Layout: ${unit.layout}` : ''}${structureHintLine}${noVarsNote}\n\nDeclare all needed variables in the \`variables\` array and build the tree in one generate_structure call.`;
+  const structureHintLine = '';
+  const prompt = `Build: ${unit.name}\nDescription: ${unit.description}${sectionLimit}\n${unit.layout ? `Layout: ${unit.layout}` : ''}${structureHintLine}${noVarsNote}\n\nBuild the tree and declare variables in one generate_structure call.`;
 
   // Retry loop: if the LLM omits searchQuery on Image/Video nodes, feed the error back and retry.
   const structureMessages: Anthropic.Messages.MessageParam[] = [{ role: 'user', content: prompt }];
   const MAX_STRUCTURE_ATTEMPTS = 3;
 
+  const resolvedStructureModel = (modelId && VALID_MODELS.has(modelId)) ? modelId : 'claude-haiku-4-5';
+
   for (let attempt = 0; attempt < MAX_STRUCTURE_ATTEMPTS; attempt++) {
     const response = await client.messages.create({
-      model: 'claude-haiku-4-5',
+      model: resolvedStructureModel,
       max_tokens: 16384,
       system: systemBlocks,
       tools: STRUCTURE_AGENT_TOOLS.map(t => ({ name: t.name, description: t.description, input_schema: t.input_schema })),
       tool_choice: { type: 'tool' as const, name: 'generate_structure' },
       messages: structureMessages,
-    }, signal ? { signal } : undefined);
+    } as unknown as Anthropic.Messages.MessageCreateParamsNonStreaming, signal ? { signal } : undefined);
 
     for (const block of response.content) {
       if (block.type !== 'tool_use' || block.name !== 'generate_structure') continue;
@@ -880,17 +904,48 @@ async function runStructureAgent(
         break; // retry with updated messages
       }
 
+      // Flat-array check: reject array variables whose items contain a field that is itself
+      // an array of objects (nested structure). This forces the AI to flatten all items to
+      // the same level so a single loop template can iterate over them directly.
+      const nestedArrayVars: string[] = [];
+      for (const v of (Array.isArray(rawInput.variables) ? rawInput.variables as Array<{ name: string; type: string; initialValue?: unknown }> : [])) {
+        if (v.type !== 'array' || !Array.isArray(v.initialValue) || v.initialValue.length === 0) continue;
+        const firstItem = v.initialValue[0];
+        if (typeof firstItem !== 'object' || firstItem === null) continue;
+        for (const [field, val] of Object.entries(firstItem as Record<string, unknown>)) {
+          if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'object' && val[0] !== null) {
+            nestedArrayVars.push(`"${v.name}" (field "${field}" is a nested array of objects)`);
+            break;
+          }
+        }
+      }
+      if (nestedArrayVars.length > 0) {
+        structureMessages.push({ role: 'assistant', content: response.content });
+        structureMessages.push({
+          role: 'user',
+          content: [{
+            type: 'tool_result',
+            tool_use_id: block.id,
+            content: JSON.stringify({
+              success: false,
+              error: `Array variable(s) have nested sub-arrays: ${nestedArrayVars.join('; ')}. All items must be at the same flat level — no arrays of objects inside items. Flatten the structure so each item is a top-level object with all its fields (id, label, type, etc.) and re-emit generate_structure.`,
+            }),
+          }],
+        });
+        break; // retry with updated messages
+      }
+
       const atIndex = rawInput.atIndex as number | undefined;
       const resolvedTree = assignTreeIds(treeInput);
       const markers = extractAndStripMarkers(resolvedTree);
       const collectedTree: CollectedTree = { unitName: unit.name, tree: resolvedTree, pageId: assignedPageId, atIndex, structureHint: unit.structureHint };
 
-      const declaredVars = (Array.isArray(rawInput.variables) ? rawInput.variables : []) as Array<{ name: string; type: string; initialValue?: unknown; uuid: string }>;
+      const declaredVars = (Array.isArray(rawInput.variables) ? rawInput.variables : []) as Array<{ name: string; type: string; initialValue?: unknown; uuid: string; description?: string; folder?: string }>;
       const varEvents: ToolEvent[] = [];
       for (const v of declaredVars) {
         const assignedId = (v.uuid && isUUIDFormat(v.uuid)) ? v.uuid : crypto.randomUUID();
         const varName = String(v.name ?? 'variable');
-        const clientInput: Record<string, unknown> = { name: varName, type: v.type, initialValue: v.initialValue, variableId: assignedId, _assignedVarId: assignedId };
+        const clientInput: Record<string, unknown> = { name: varName, type: v.type, initialValue: v.initialValue, variableId: assignedId, _assignedVarId: assignedId, description: v.description, folder: v.folder };
         varEvents.push({ name: 'add_variable', input: clientInput, result: { success: true } });
         send({ type: 'tool_executed', id: `var-${varName.replace(/[^a-zA-Z0-9_-]/g, '-')}-${assignedId.slice(0, 8)}`, name: 'add_variable', input: clientInput, phase: 'structure' });
         allExecutedTools.push({ name: 'add_variable', input: clientInput });
@@ -1167,6 +1222,9 @@ export async function POST(req: NextRequest) {
       const units = plan.buildUnits ?? [];
       if (units.length === 0) { send({ type: 'done', tools: allExecutedTools }); return false; }
 
+      // Emit full build plan for diagnostic log.
+      send({ type: 'build_plan', mode: plan.mode, needsStyling: plan.needsStyling, needsBinding: plan.needsBinding, needsWorkflows: plan.needsWorkflows, editSummary: plan.editSummary, buildUnits: units });
+
       send({ type: 'build_phase', phase: 'building', total: units.length, message: `Building ${units.length} section${units.length !== 1 ? 's' : ''} with parallel agents...`, buildUnits: units.map(u => ({ name: u.name, description: u.description, pageRoute: u.pageRoute, sectionCount: u.sectionCount })) });
 
       // ── Page creation (sequential) ──────────────────────────────────────────
@@ -1197,7 +1255,7 @@ export async function POST(req: NextRequest) {
 
       const structureSubResultsSettled = await Promise.allSettled(units.map(async (unit, i): Promise<StructureSubResult> => {
         const assignedPid = pageIdMap[unit.pageRoute ?? '/'] ?? null;
-        const result = await runStructureAgent(unit, assignedPid, variables, send, allExecutedTools, modelSignalCtl.signal);
+        const result = await runStructureAgent(unit, assignedPid, variables, send, allExecutedTools, modelSignalCtl.signal, modelId);
 
         let ctWithMedia: CollectedTree | undefined;
         if (result.tree) {
@@ -1367,12 +1425,34 @@ export async function POST(req: NextRequest) {
         }
         return trees.map(t => {
           const root = t.tree as Record<string, unknown>;
-          const layoutHint = t.structureHint ? ` [layout:${t.structureHint}]` : '';
+          const layoutHint = '';
           return `=== ${t.unitName}${layoutHint} ===\n${walkNode(root, '')}`;
         }).join('\n\n');
       }
 
       const compactTree = buildCompactTreeText(collectedTrees, allMarkers);
+
+      // Build a filtered context note for styling/animation agents — only include variables
+      // and workflows whose IDs appear in the current compactTree. This prevents variables and
+      // workflows from unrelated pages from leaking into the build context.
+      const buildContextNote = (() => {
+        // Filter variables to only those whose UUID appears in the current compactTree.
+        // Workflows are omitted entirely — styling/animation agents don't need them,
+        // and there is no reliable way to map workflow names to the compactTree nodes.
+        const filteredVars = variables.filter(v => v.id && compactTree.includes(v.id));
+        return [
+          selectedNodesDetails.length > 0
+            ? `Selected: ${selectedNodesDetails.map((n: unknown) => { const node = n as { type?: string; id?: string; name?: string }; return `${node.type ?? 'Node'} "${node.name ?? 'untitled'}" (id: ${node.id ?? '?'})`; }).join(', ')}`
+            : `Nothing selected`,
+          pageTreeSnapshot.length > 0
+            ? `Current page has ${pageTreeSnapshot.length} top-level section(s). Use search_nodes(query) to find a node by name/type/text, or get_page_tree() to inspect the full structure.`
+            : `Current page is empty — no nodes yet.`,
+          filteredVars.length > 0
+            ? `Variables: ${filteredVars.map((v: { label?: string; name?: string; type?: string; initialValue?: unknown; id?: string }) => `${v.label ?? v.name}${v.type ? ` — ${v.type}` : ''}${v.initialValue != null ? `, initial: ${fmtInitial(v.initialValue)}` : ''}${v.id ? ` (id: ${v.id}, path: variables['${v.id}'])` : ''}`).join(', ')}`
+            : null,
+          dataSources.length > 0 ? `DataSources: ${dataSources.map((d: { label?: string; path?: string }) => `${d.label} → ${d.path}`).join(', ')}` : null,
+        ].filter(Boolean).join('\n');
+      })();
 
       // Build id→type map from all collected trees for the server-side capability validator.
       // This lets runHaikuAgentLoop resolve component types without accessing the Zustand store.
@@ -1401,45 +1481,78 @@ export async function POST(req: NextRequest) {
 
       send({ type: 'build_phase', phase: 'parallel', message: 'Running Styling, Binding, Workflows, Media agents in parallel...' });
 
-      // ── Build markers summary for Binding agent ─────────────────────────────
+      // ── Flatten markers for diagnostic log ──────────────────────────────────
       const flatMarkers = allMarkers.flat();
-      const markersNote = flatMarkers.length > 0
-        ? `\nMarkers from structure (apply these bindings):\n${flatMarkers.map(m => {
-            const parts: string[] = [`  Node ${m.nodeId}:`];
-            if (m.loop) parts.push(`needs set_repeat (keyField: "${m.loopKey ?? 'id'}") — match to an array variable from the list below`);
-            if (m.showIf) parts.push(`set_condition(condition: "context?.item?.data?.${m.showIf}")`);
-            return parts.join(' ');
-          }).join('\n')}`
-        : '';
+      // Emit markers for diagnostic log only — all annotations are in the compact tree.
+      send({ type: 'structure_markers', markers: flatMarkers });
 
       // ── Variable roster for downstream agents ───────────────────────────────
       // Merge: newly-created vars (with full schema) + pre-existing vars not re-created this run.
       // This ensures binding/workflows agents can reference variables from previous runs without
       // inventing UUIDs or creating duplicates.
-      const newVarIds = new Set(addVarEventsCollected.map(e => String((e.input as Record<string, unknown>).variableId ?? '')));
-      const existingVarsForRoster = variables.filter(v => v.id && !newVarIds.has(v.id));
+      const newVarIds = new Set(addVarEventsCollected.map(e => String((e.result as Record<string, unknown> | undefined)?.id ?? (e.input as Record<string, unknown>).variableId ?? '')));
+      // Only include pre-existing variables whose UUID actually appears in the compact tree.
+      // Without this filter, every variable from every other page (e.g. Calculator Buttons) bleeds
+      // into the downstream varRoster, causing the workflows agent to generate logic for the wrong page.
+      const existingVarsForRoster = variables.filter(v => v.id && !newVarIds.has(v.id) && compactTree.includes(v.id));
 
       const renderVarRosterEntry = (inp: Record<string, unknown>): string => {
         const n = String(inp.name ?? '');
         const id = String(inp.variableId ?? '');
         const t = String(inp.type ?? 'string');
         let fields = '';
+        if (t === 'object' && inp.initialValue && typeof inp.initialValue === 'object' && !Array.isArray(inp.initialValue)) {
+          const objKeys = Object.keys(inp.initialValue as Record<string, unknown>);
+          if (objKeys.length > 0) fields = ` — fields: ${objKeys.join(', ')}`;
+        }
         if (t === 'array' && Array.isArray(inp.initialValue) && (inp.initialValue as unknown[]).length > 0) {
-          const firstItem = (inp.initialValue as unknown[])[0] as Record<string, unknown>;
+          const allItems = inp.initialValue as unknown[];
+          const firstItem = allItems[0] as Record<string, unknown>;
           const fieldDescs = Object.entries(firstItem).map(([k, v]) => {
             if (Array.isArray(v) && v.length > 0 && typeof v[0] === 'object' && v[0] !== null) {
-              return `${k}[{${Object.keys(v[0] as Record<string, unknown>).join(', ')}}]`;
+              const allInner = allItems.flatMap(row =>
+                Array.isArray((row as Record<string, unknown>)[k]) ? (row as Record<string, unknown>)[k] as unknown[] : []
+              );
+              const innerFieldDescs = Object.keys(v[0] as Record<string, unknown>).map(ik => {
+                const innerVals = [...new Set(
+                  allInner.map(inner => (inner as Record<string, unknown>)[ik])
+                    .filter(val => typeof val === 'string' && (val as string).length <= 20)
+                )] as string[];
+                if (innerVals.length >= 2 && innerVals.length <= 8) return `${ik}(${innerVals.map(u => `"${u}"`).join('|')})`;
+                return ik;
+              });
+              return `${k}[{${innerFieldDescs.join(', ')}}]`;
+            }
+            if (Array.isArray(v) && v.length > 0 && typeof v[0] === 'string') {
+              // Primitive string array — show sample values so binding agent knows to use keyField:"index" and context?.item?.data?.value
+              const sample = (v as string[]).slice(0, 2).map(s => `"${s.slice(0, 25)}"`).join(', ');
+              return `${k}([${sample},…])`;
+            }
+            if (typeof v === 'string') {
+              const uniqueVals = [...new Set(
+                allItems
+                  .map(item => (item as Record<string, unknown>)[k])
+                  .filter(val => typeof val === 'string' && (val as string).length <= 20)
+              )] as string[];
+              if (uniqueVals.length >= 2 && uniqueVals.length <= 30) {
+                return `${k}(${uniqueVals.map(u => `"${u}"`).join('|')})`;
+              }
             }
             return k;
           });
           fields = ` — fields: ${fieldDescs.join(', ')}`;
         }
-        return `  "${n}" (${t}) → variables['${id}']${fields}`;
+        const desc = inp.description ? ` — ${inp.description}` : '';
+        return `  "${n}" (${t}) → variables['${id}']${fields}${desc}`;
       };
 
-      const newVarEntries = addVarEventsCollected.map(e => renderVarRosterEntry(e.input as Record<string, unknown>));
+      const newVarEntries = addVarEventsCollected.map(e => {
+        const inp = e.input as Record<string, unknown>;
+        const resolvedId = (e.result as Record<string, unknown> | undefined)?.id ?? inp.variableId;
+        return renderVarRosterEntry({ ...inp, variableId: resolvedId });
+      });
       const existingVarEntries = existingVarsForRoster.map(v =>
-        renderVarRosterEntry({ name: v.label ?? v.name, variableId: v.id, type: v.type })
+        renderVarRosterEntry({ name: v.label ?? v.name, variableId: v.id, type: v.type, initialValue: v.initialValue })
       );
       const allVarEntries = [...newVarEntries, ...existingVarEntries];
 
@@ -1448,8 +1561,9 @@ export async function POST(req: NextRequest) {
       // Without this, parallel agents call get_variables, get a stale empty list, and invent fake UUIDs.
       const newVarsForHandler = addVarEventsCollected.map(e => {
         const inp = e.input as Record<string, unknown>;
+        const resolvedId = String((e.result as Record<string, unknown> | undefined)?.id ?? inp.variableId ?? '');
         return {
-          id: String(inp.variableId ?? ''),
+          id: resolvedId,
           label: String(inp.name ?? ''),
           name: String(inp.name ?? ''),
           type: String(inp.type ?? 'string'),
@@ -1461,6 +1575,16 @@ export async function POST(req: NextRequest) {
       const varRoster = allVarEntries.length > 0
         ? `Available variables (ONLY these UUIDs are valid):\n${allVarEntries.join('\n')}`
         : `No variables were created. Do NOT reference variables['UUID'].`;
+
+      // Workflows agent uses the same hard-constraint framing as other agents — all variables
+      // are pre-declared by the structure agent. The add_variable tool has been removed from
+      // PHASE_W_TOOLS so this message matches what the agent can actually do.
+      const varRosterForWorkflows = allVarEntries.length > 0
+        ? `Variables (pre-declared — use these UUIDs only, do NOT create new variables):\n${allVarEntries.join('\n')}`
+        : `No variables were declared by the structure agent for this feature.`;
+
+      // Emit compact tree + var roster for the diagnostic log (client stores these for "Copy log").
+      send({ type: 'structure_context', compactTree, varRoster });
 
       // ── Read handlers shared by Styling and Binding ─────────────────────────
       const buildReadHandlers: Record<string, (input: Record<string, unknown>) => unknown> = {
@@ -1503,7 +1627,6 @@ export async function POST(req: NextRequest) {
 
 [Page Tree — use exact node UUIDs]
 ${compactTree}
-${markersNote}
 
 ${varRoster}
 
@@ -1525,7 +1648,7 @@ ${message}`,
       const stylingMessages: Anthropic.Messages.MessageParam[] = [
         {
           role: 'user',
-          content: `${contextNote ? `[Context]\n${contextNote}\n\n` : ''}[Styling Agent]
+          content: `${buildContextNote ? `[Context]\n${buildContextNote}\n\n` : ''}[Styling Agent]
 The structure ALREADY EXISTS — do NOT create or modify structure. Apply ALL visual styles using set_style: layout, spacing, size, typography, position, overflow, background, text color, border, shadow, and opacity. Apply TERNARY CONTRAST on all repeated template descendants.
 
 [Page Tree — use exact node UUIDs]
@@ -1577,7 +1700,7 @@ Create and bind all workflows needed for interactive behaviors.
 [Page Tree — use exact node UUIDs]
 ${compactTree}
 
-${varRoster}
+${varRosterForWorkflows}
 
 Original request:
 ${message}${relationsNote}${phaseWPageNote}`,
@@ -1640,14 +1763,20 @@ ${message}`,
       const toToolParam = (t: { name: string; description: string; input_schema: unknown }) =>
         ({ name: t.name, description: t.description, input_schema: t.input_schema as Record<string, unknown> });
 
-      send({ type: 'agent_context', agent: 'media', systemPrompt: mediaPromptParts.static, tools: MEDIA_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
+      const getFirstUserMsg = (msgs: Anthropic.Messages.MessageParam[]): string => {
+        const first = msgs[0];
+        if (!first) return '';
+        return typeof first.content === 'string' ? first.content : JSON.stringify(first.content);
+      };
+
+      send({ type: 'agent_context', agent: 'media', systemPrompt: mediaPromptParts.static, tools: MEDIA_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now(), userMessage: getFirstUserMsg(mediaMessages) });
       const mediaInjectionPromise = runHaikuAgentLoop(mediaMessages, mediaSystemBlocks, MEDIA_AGENT_TOOLS.map(toToolParam), {}, send, allExecutedTools, 15, 'media', modelSignalCtl.signal);
 
       // ── Emit agent_context for LLM agents ───────────────────────────────────
-      send({ type: 'agent_context', agent: 'binding', systemPrompt: bindingPromptParts.static, tools: BINDING_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
-      send({ type: 'agent_context', agent: 'styling', systemPrompt: stylingPromptParts.static + '\n\n' + stylingPromptParts.dynamic, tools: STYLING_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
-      send({ type: 'agent_context', agent: 'animation', systemPrompt: animationPromptParts.static + '\n\n' + animationPromptParts.dynamic, tools: ANIMATION_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
-      send({ type: 'agent_context', agent: 'workflows', systemPrompt: phaseWPromptParts.static + '\n\n' + phaseWPromptParts.dynamic, tools: PHASE_W_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now() });
+      send({ type: 'agent_context', agent: 'binding', systemPrompt: bindingPromptParts.static, tools: BINDING_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now(), userMessage: getFirstUserMsg(bindingMessages) });
+      send({ type: 'agent_context', agent: 'styling', systemPrompt: stylingPromptParts.static + '\n\n' + stylingPromptParts.dynamic, tools: STYLING_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now(), userMessage: getFirstUserMsg(stylingMessages) });
+      send({ type: 'agent_context', agent: 'animation', systemPrompt: animationPromptParts.static + '\n\n' + animationPromptParts.dynamic, tools: ANIMATION_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now(), userMessage: getFirstUserMsg(animationMessages) });
+      send({ type: 'agent_context', agent: 'workflows', systemPrompt: phaseWPromptParts.static + '\n\n' + phaseWPromptParts.dynamic, tools: PHASE_W_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now(), userMessage: getFirstUserMsg(phaseWMessages) });
 
       // ── Capability validator for styling/binding sub-agents ─────────────────
       // Resolves component type from the nodeTypeMap built above and checks against
@@ -1695,7 +1824,7 @@ ${message}`,
         ...(shouldBind ? [{ agent: 'binding', promise: runHaikuAgentLoop(bindingMessages, bindingSystemBlocks, BINDING_AGENT_TOOLS.map(toToolParam), {}, send, allExecutedTools, 10, 'binding', modelSignalCtl.signal, capabilityValidator) }] : []),
         ...(shouldStyle ? [{ agent: 'styling', promise: runHaikuAgentLoop(stylingMessages, stylingSystemBlocks, STYLING_AGENT_TOOLS.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, 'styling', modelSignalCtl.signal, capabilityValidator) }] : []),
         ...(shouldStyle && ANIMATION_AGENT_ENABLED ? [{ agent: 'animation', promise: runHaikuAgentLoop(animationMessages, animationSystemBlocks, ANIMATION_AGENT_TOOLS.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, 'animation', modelSignalCtl.signal) }] : []),
-        ...(shouldWorkflow ? [{ agent: 'workflows', promise: runHaikuAgentLoop(phaseWMessages, phaseWSystemBlocks, PHASE_W_TOOLS.map(toToolParam), phaseWReadHandlers, send, allExecutedTools, 15, 'workflows', modelSignalCtl.signal, workflowCapabilityValidator) }] : []),
+        ...(shouldWorkflow ? [{ agent: 'workflows', promise: runHaikuAgentLoop(phaseWMessages, phaseWSystemBlocks, PHASE_W_TOOLS.map(toToolParam), phaseWReadHandlers, send, allExecutedTools, 15, 'workflows', modelSignalCtl.signal, workflowCapabilityValidator, modelId) }] : []),
         { agent: 'media', promise: mediaInjectionPromise },
       ];
 

@@ -5,6 +5,56 @@ alwaysApply: true
 
 # SDUI Layout & Common Pitfalls
 
+## Absolutely-Positioned Collage/Layered Groups — Always Use a Fixed-Width Centered Wrapper
+
+**Problem:** When stacking multiple images with `position: absolute` inside a percentage-width column (e.g. `w-[50%]`), the AI uses pixel-based `left-[Npx]` offsets. The image group clusters at the left edge of the container, leaving dead space on the right — especially obvious on wide screens where 50% might be 600px but the image group only spans 440px.
+
+Two compounding mistakes:
+1. **Mixed anchor sides** — using `right-[0px]` on some cards and `left-[Npx]` on others. In a relative-width container, `right-[0px]` places the card at a viewport-dependent position, creating unpredictable gaps between cards that are supposed to overlap.
+2. **No centering** — placing absolute cards directly inside the percentage-width column with no mechanism to center the group.
+
+**Fix:** Always wrap absolutely-positioned collage children in a **fixed-pixel-width inner container** that is **flex-centered** inside the column:
+
+```json
+// ✅ CORRECT — outer column centers the fixed-width collage group
+{
+  "type": "Box",
+  "props": { "className": "w-[50%] h-[500px] flex items-center justify-center" },
+  "children": [
+    {
+      "type": "Box",
+      "props": { "className": "w-[440px] h-[480px] relative overflow-visible" },
+      "children": [
+        { "type": "Image", "props": { "className": "w-[280px] h-[380px] absolute z-[3] top-[0px] left-[0px] ..." } },
+        { "type": "Image", "props": { "className": "w-[280px] h-[380px] absolute z-[2] top-[60px] left-[160px] ..." } },
+        { "type": "Image", "props": { "className": "w-[280px] h-[380px] absolute z-[1] top-[40px] left-[100px] ..." } }
+      ]
+    }
+  ]
+}
+
+// ❌ WRONG — images left-anchored in a % container; group is never centered
+{
+  "type": "Box",
+  "props": { "className": "w-[50%] h-[500px] relative overflow-visible" },
+  "children": [
+    { "type": "Image", "props": { "className": "... absolute left-[0px] ..." } },
+    { "type": "Image", "props": { "className": "... absolute right-[0px] ..." } },
+    { "type": "Image", "props": { "className": "... absolute left-[100px] ..." } }
+  ]
+}
+```
+
+**Rules:**
+- The inner fixed-width wrapper must be **wide enough to contain all cards** at their max `left + width` extent (e.g. `left-[160px]` + `w-[280px]` = 440px → use `w-[440px]`)
+- **All cards anchor from the same side** — use only `left-[Npx]` offsets, never mix `left` and `right` on sibling absolutely-positioned collage cards
+- The outer percentage column uses `flex items-center justify-center` to center the fixed-width inner wrapper
+- Set `overflow-visible` on the **inner** wrapper (not the outer column) so rotated card corners can spill out visually without affecting page layout
+
+**Applies to:** Layered collage sections, stacked card designs, overlapping image grids, any multi-image absolute-position layout inside a flex column.
+
+---
+
 ## Layout: Sidebar + Content Side-by-Side
 
 **Problem:** Box component defaults to `flex flex-col`. Sidebar and content stack vertically instead of side-by-side.
