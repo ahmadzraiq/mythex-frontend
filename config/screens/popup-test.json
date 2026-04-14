@@ -172,7 +172,7 @@
                       {
                         "type": "Icon",
                         "props": {
-                          "icon": "X",
+                          "icon": "lucide:x",
                           "size": 14
                         }
                       },
@@ -359,7 +359,7 @@
                       {
                         "type": "Icon",
                         "props": {
-                          "icon": "X",
+                          "icon": "lucide:x",
                           "size": 14
                         }
                       },

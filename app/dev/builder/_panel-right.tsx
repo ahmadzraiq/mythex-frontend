@@ -58,10 +58,13 @@ import { PreviewDataEditor, ElementWorkflowsTab } from './_panel-right-workflows
 import { AnimationInDesign } from './_animation-panel';
 import { SpacingDiagram, CornerRadiusDiagram, InsetDiagram, PanelInput } from './_spatial-controls';
 import { useBuilderStore, findParentNode } from './_store';
+import { useShallow } from 'zustand/react/shallow';
 import type { BuilderStore } from './_store-types';
 import { findNode } from './_store-node-helpers';
 import { updatePopup as updatePopupData } from '@/lib/builder/popup-data';
 import { usePopupStore } from '@/lib/sdui/popup-store';
+import { getSharedComponents, updateSharedComponent as updateSCData } from '@/lib/builder/shared-component-data';
+import type { SharedComponentModel } from '@/lib/builder/shared-component-data';
 import { WorkflowBindButton, toHumanName } from './_workflow-canvas'; // used only for unbound slot picker
 import { ThemePanel } from './_theme-panel';
 import { AiChatPanel } from './_ai-chat-panel';
@@ -73,7 +76,7 @@ import { evaluateFormula } from '@/lib/sdui/formula-evaluator';
 import { useSduiStore } from '@/store/sdui-store';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 import { THEME_OBJ } from '@/lib/sdui/engine-static-data';
-import type { SDUINode } from '@/lib/sdui/types/node';
+import type { SDUINode, BreakpointKey } from '@/lib/sdui/types/node';
 import { FigmaColorPicker } from './_color-picker';
 import {
   STYLE_TO_CLASS_KEYS,
@@ -126,6 +129,126 @@ const DIMENSION_CSS_KEYS = new Set([
   'borderWidth','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth',
   'fontSize','lineHeight','letterSpacing','wordSpacing','outlineWidth',
 ]);
+
+// ─── Tailwind token → CSS property mapping (for responsive class-diff routing) ──
+
+const TW_TOKEN_MAP: Record<string, { prop: string; value: string }> = {
+  'flex-row':       { prop: 'flexDirection', value: 'row' },
+  'flex-col':       { prop: 'flexDirection', value: 'column' },
+  'flex-wrap':      { prop: 'flexWrap', value: 'wrap' },
+  'flex-nowrap':    { prop: 'flexWrap', value: 'nowrap' },
+  'flex-1':         { prop: 'flex', value: '1 1 0%' },
+  'justify-start':  { prop: 'justifyContent', value: 'flex-start' },
+  'justify-end':    { prop: 'justifyContent', value: 'flex-end' },
+  'justify-center': { prop: 'justifyContent', value: 'center' },
+  'justify-between':{ prop: 'justifyContent', value: 'space-between' },
+  'justify-around': { prop: 'justifyContent', value: 'space-around' },
+  'justify-evenly': { prop: 'justifyContent', value: 'space-evenly' },
+  'items-start':    { prop: 'alignItems', value: 'flex-start' },
+  'items-end':      { prop: 'alignItems', value: 'flex-end' },
+  'items-center':   { prop: 'alignItems', value: 'center' },
+  'items-stretch':  { prop: 'alignItems', value: 'stretch' },
+  'items-baseline': { prop: 'alignItems', value: 'baseline' },
+  'self-auto':      { prop: 'alignSelf', value: 'auto' },
+  'self-start':     { prop: 'alignSelf', value: 'flex-start' },
+  'self-end':       { prop: 'alignSelf', value: 'flex-end' },
+  'self-center':    { prop: 'alignSelf', value: 'center' },
+  'self-stretch':   { prop: 'alignSelf', value: 'stretch' },
+  'self-baseline':  { prop: 'alignSelf', value: 'baseline' },
+  'text-left':      { prop: 'textAlign', value: 'left' },
+  'text-center':    { prop: 'textAlign', value: 'center' },
+  'text-right':     { prop: 'textAlign', value: 'right' },
+  'text-justify':   { prop: 'textAlign', value: 'justify' },
+  'underline':      { prop: 'textDecoration', value: 'underline' },
+  'line-through':   { prop: 'textDecoration', value: 'line-through' },
+  'no-underline':   { prop: 'textDecoration', value: 'none' },
+  'uppercase':      { prop: 'textTransform', value: 'uppercase' },
+  'lowercase':      { prop: 'textTransform', value: 'lowercase' },
+  'capitalize':     { prop: 'textTransform', value: 'capitalize' },
+  'normal-case':    { prop: 'textTransform', value: 'none' },
+  'truncate':       { prop: 'textOverflow', value: 'ellipsis' },
+  'overflow-hidden':{ prop: 'overflow', value: 'hidden' },
+  'overflow-auto':  { prop: 'overflow', value: 'auto' },
+  'overflow-scroll':{ prop: 'overflow', value: 'scroll' },
+  'overflow-visible':{ prop: 'overflow', value: 'visible' },
+  'overflow-x-auto':{ prop: 'overflowX', value: 'auto' },
+  'overflow-y-auto':{ prop: 'overflowY', value: 'auto' },
+  'hidden':         { prop: 'display', value: 'none' },
+  'block':          { prop: 'display', value: 'block' },
+  'inline':         { prop: 'display', value: 'inline' },
+  'inline-block':   { prop: 'display', value: 'inline-block' },
+  'relative':       { prop: 'position', value: 'relative' },
+  'absolute':       { prop: 'position', value: 'absolute' },
+  'fixed':          { prop: 'position', value: 'fixed' },
+  'sticky':         { prop: 'position', value: 'sticky' },
+  'static':         { prop: 'position', value: 'static' },
+  'w-full':         { prop: 'width', value: '100%' },
+  'w-fit':          { prop: 'width', value: 'fit-content' },
+  'w-screen':       { prop: 'width', value: '100vw' },
+  'h-full':         { prop: 'height', value: '100%' },
+  'h-fit':          { prop: 'height', value: 'fit-content' },
+  'h-screen':       { prop: 'height', value: '100vh' },
+  'cursor-pointer': { prop: 'cursor', value: 'pointer' },
+  'cursor-default': { prop: 'cursor', value: 'default' },
+  'cursor-not-allowed': { prop: 'cursor', value: 'not-allowed' },
+  'border-solid':   { prop: 'borderStyle', value: 'solid' },
+  'border-dashed':  { prop: 'borderStyle', value: 'dashed' },
+  'border-dotted':  { prop: 'borderStyle', value: 'dotted' },
+  'border-none':    { prop: 'borderStyle', value: 'none' },
+};
+
+const TW_FONT_WEIGHT_MAP: Record<string, string> = {
+  'font-thin': '100', 'font-extralight': '200', 'font-light': '300',
+  'font-normal': '400', 'font-medium': '500', 'font-semibold': '600',
+  'font-bold': '700', 'font-extrabold': '800', 'font-black': '900',
+};
+
+const TW_LEADING_MAP: Record<string, string> = {
+  'leading-none': '1', 'leading-tight': '1.25', 'leading-snug': '1.375',
+  'leading-normal': '1.5', 'leading-relaxed': '1.625', 'leading-loose': '2',
+};
+
+const TW_TRACKING_MAP: Record<string, string> = {
+  'tracking-tighter': '-0.05em', 'tracking-tight': '-0.025em', 'tracking-normal': '0em',
+  'tracking-wide': '0.025em', 'tracking-wider': '0.05em', 'tracking-widest': '0.1em',
+};
+
+function twTokenToCss(token: string): { prop: string; value: string } | null {
+  if (TW_TOKEN_MAP[token]) return TW_TOKEN_MAP[token];
+  if (TW_FONT_WEIGHT_MAP[token]) return { prop: 'fontWeight', value: TW_FONT_WEIGHT_MAP[token] };
+  if (TW_LEADING_MAP[token]) return { prop: 'lineHeight', value: TW_LEADING_MAP[token] };
+  if (TW_TRACKING_MAP[token]) return { prop: 'letterSpacing', value: TW_TRACKING_MAP[token] };
+  const leadingN = token.match(/^leading-(\d+)$/);
+  if (leadingN) return { prop: 'lineHeight', value: `${parseInt(leadingN[1]) * 0.25}rem` };
+  const gridColsM = token.match(/^grid-cols-(\d+)$/);
+  if (gridColsM) return { prop: 'gridTemplateColumns', value: `repeat(${gridColsM[1]}, minmax(0, 1fr))` };
+  const gridRowsM = token.match(/^grid-rows-(\d+)$/);
+  if (gridRowsM) return { prop: 'gridTemplateRows', value: `repeat(${gridRowsM[1]}, minmax(0, 1fr))` };
+  return null;
+}
+
+// ─── Responsive Override Detection ────────────────────────────────────────────
+
+type ActiveBreakpoint = 'desktop' | BreakpointKey;
+const BP_ORDER = ['laptop', 'tablet', 'mobile'] as const;
+
+const SECTION_CSS_PROPS: Record<string, readonly string[]> = {
+  'dimensions':       ['width', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight', 'flex'],
+  'position-size':    ['top', 'right', 'bottom', 'left', 'position', 'zIndex'],
+  'auto-layout':      ['flexDirection', 'flexWrap', 'gap', 'columnGap', 'rowGap',
+                       'justifyContent', 'alignItems', 'gridTemplateColumns', 'gridTemplateRows'],
+  'spacing':          ['paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+                       'marginTop', 'marginRight', 'marginBottom', 'marginLeft'],
+  'typography':       ['fontSize', 'fontWeight', 'textAlign', 'textDecoration', 'textTransform',
+                       'textOverflow', 'color'],
+  'fill-opacity':     ['backgroundColor', 'opacity'],
+  'stroke':           ['borderColor', 'borderWidth', 'borderStyle'],
+  'border-radius':    ['borderRadius', 'borderTopLeftRadius', 'borderTopRightRadius',
+                       'borderBottomRightRadius', 'borderBottomLeftRadius'],
+  'display':          ['display', 'overflow', 'cursor'],
+  'self-alignment':   ['alignSelf'],
+};
+
 
 // ─── Effects Section (Shadow, Blur, Backdrop Blur) ────────────────────────────
 
@@ -736,14 +859,18 @@ function EffectsSection({ nodeId, node, store, commitHistory }: {
 // ─── Design Tab ───────────────────────────────────────────────────────────────
 
 function DesignTab({ node }: { node: SDUINode }) {
-  const store = useBuilderStore();
-  const { zoom, pageNodes } = store;
+  const { zoom, pageNodes, activeBreakpoint } = useBuilderStore(useShallow(s => ({
+    zoom: s.zoom, pageNodes: s.pageNodes, activeBreakpoint: s.activeBreakpoint,
+  })));
+  const store = useBuilderStore.getState() as BuilderStore;
   const nodeId = (node as { id?: string }).id ?? '';
+  const abp = activeBreakpoint as ActiveBreakpoint;
   const cls: string = (node.props as { className?: string })?.className ?? '';
   // Sidecar map that stores formula bindings for class-based fields (selfAlignment, textAlign, etc.)
   const classFormulas = (node.props as { classFormulas?: Record<string, FormulaValue> })?.classFormulas;
   // Parent flex-direction — used for axis-aware Fill tokens (W/H mode buttons)
-  const parentNode = findParentNode(pageNodes, nodeId);
+  const canvasNodes = useBuilderStore(s => s.canvasNodes) as SDUINode[];
+  const parentNode = findParentNode(pageNodes, nodeId) ?? findParentNode(canvasNodes, nodeId);
   const parentIsRow = !!(parentNode?.props?.className as string | undefined)?.includes('flex-row');
 
   const histTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -752,9 +879,39 @@ function DesignTab({ node }: { node: SDUINode }) {
     histTimer.current = setTimeout(() => store._pushHistory(), 400);
   }, [store]);
 
-  const nodeStyle = useMemo(
+  const baseNodeStyle = useMemo(
     () => (node.props as { style?: Record<string, string> })?.style ?? {},
     [node]
+  );
+
+  // Compute effective style by merging responsive overrides on top of base.
+  // At desktop this is just the base style. At other breakpoints, responsive
+  // overrides cascade on top so the panel inputs show the correct value.
+  const responsiveStyles = useMemo(() => {
+    if (abp === 'desktop' || !node.responsive) return {};
+    const merged: Record<string, string> = {};
+    for (const bp of BP_ORDER) {
+      const o = node.responsive[bp];
+      if (o?.styles) {
+        for (const [k, v] of Object.entries(o.styles)) {
+          if (v !== null && v !== undefined) merged[k] = String(v);
+        }
+      }
+      if (bp === abp) break;
+    }
+    return merged;
+  }, [node, abp]);
+
+  const nodeStyle = useMemo(
+    () => ({ ...baseNodeStyle, ...responsiveStyles }),
+    [baseNodeStyle, responsiveStyles]
+  );
+
+  // Look up a responsive override for a CSS property.
+  // Returns the override value if present, otherwise undefined so callers fall back to base.
+  const rOvr = useCallback(
+    (cssProp: string): string | undefined => responsiveStyles[cssProp],
+    [responsiveStyles]
   );
 
   // Derive current unit from inline style (px / % / vh / vw) or arbitrary class.
@@ -865,7 +1022,10 @@ function DesignTab({ node }: { node: SDUINode }) {
     rafSyncRef.current = requestAnimationFrame(() => {
       rafSyncRef.current = null;
       const rafEl    = document.querySelector(`[data-builder-id="${targetId}"]`) as HTMLElement | null;
-      const rafFrame = document.querySelector('[data-builder-page-frame]');
+      const fpId = useBuilderStore.getState().focusedPageId || useBuilderStore.getState().currentPageId;
+      const rafFrame = rafEl?.closest('[data-builder-canvas-node]') as HTMLElement
+        ?? document.querySelector(`[data-builder-page-id="${fpId}"][data-builder-page-frame="0"]`) as HTMLElement
+        ?? document.querySelector('[data-builder-page-frame]') as HTMLElement;
       if (rafEl && rafFrame) {
         const r  = rafEl.getBoundingClientRect();
         const fr = rafFrame.getBoundingClientRect();
@@ -878,11 +1038,8 @@ function DesignTab({ node }: { node: SDUINode }) {
         setV('input-pos-y', Math.round((r.top  - fr.top)  / z));
         setV('input-pos-w', Math.round(r.width  / z));
         setV('input-pos-h', Math.round(r.height / z));
-        // Ring-only update: reuse already-computed BCR (r, fr) — no second BCR read,
-        // no getComputedStyle() fills — eliminates 3 layout flushes per RAF frame.
         useBuilderStore.getState()._requestRingUpdate(r, fr);
       } else {
-        // El or frame not found — fall back to full overlay update
         useBuilderStore.getState()._requestOverlayUpdate();
       }
     });
@@ -892,7 +1049,22 @@ function DesignTab({ node }: { node: SDUINode }) {
     if (styleFlushTimer.current) clearTimeout(styleFlushTimer.current);
     styleFlushTimer.current = setTimeout(() => {
       const id = pendingNodeIdRef.current;
-      // Read the current className + style from the store (live, not from the render closure)
+      const currentBp = useBuilderStore.getState().activeBreakpoint as ActiveBreakpoint;
+
+      // ── Responsive route: write to node.responsive[bp].styles ──────────
+      if (currentBp !== 'desktop') {
+        for (const [cssProp, val] of Object.entries(pendingStyleRef.current)) {
+          if (!STYLE_TO_CLASS_KEYS.has(cssProp)) continue;
+          const v = val === '' ? null : val;
+          store.patchResponsive(id, currentBp as 'laptop' | 'tablet' | 'mobile', `styles.${cssProp}`, v);
+        }
+        pendingStyleRef.current = {};
+        styleFlushTimer.current = null;
+        commitHistory();
+        return;
+      }
+
+      // ── Base (desktop) route: normal className + style merge ────────────
       function readNodeData(nodes: unknown[]): { className: string; style: Record<string, string> } | null {
         for (const n of nodes as Array<{ id?: string; props?: { className?: string; style?: Record<string, string> }; children?: unknown[] }>) {
           if (n.id === id) return { className: n.props?.className ?? '', style: n.props?.style ?? {} };
@@ -903,18 +1075,15 @@ function DesignTab({ node }: { node: SDUINode }) {
         }
         return null;
       }
-      const nodeData = readNodeData(useBuilderStore.getState().pageNodes) ?? { className: '', style: {} };
-      // Merge ALL existing + new style; convert everything expressible to className.
-      // Passing the full merged object (not just pending) ensures existing inline styles
-      // on the node are also migrated to classes on the next edit.
+      const nodeData = readNodeData(useBuilderStore.getState().pageNodes)
+        ?? readNodeData(useBuilderStore.getState().canvasNodes as unknown[])
+        ?? { className: '', style: {} };
       const allStyle = Object.fromEntries(
         Object.entries({ ...nodeData.style, ...pendingStyleRef.current })
           .filter(([, v]) => v !== '' && typeof v === 'string'),
       );
       const newCls = styleToClassName(allStyle, nodeData.className);
       store.patchProp(id, 'props.className', newCls);
-      // Only persist style properties that styleToClassName cannot encode as classes
-      // (e.g. transform/rotation stays inline by design).
       const cleanStyle = Object.fromEntries(
         Object.entries(allStyle).filter(([k]) => !STYLE_TO_CLASS_KEYS.has(k)),
       );
@@ -1051,7 +1220,9 @@ function DesignTab({ node }: { node: SDUINode }) {
             }
             return null;
           }
-          const nodeData = readNodeDataFlush(useBuilderStore.getState().pageNodes) ?? { className: '', style: {} };
+          const nodeData = readNodeDataFlush(useBuilderStore.getState().pageNodes)
+            ?? readNodeDataFlush(useBuilderStore.getState().canvasNodes as unknown[])
+            ?? { className: '', style: {} };
           const allStyleFlush = Object.fromEntries(
             Object.entries({ ...nodeData.style, ...pendingStyleRef.current })
               .filter(([, v]) => v !== '' && typeof v === 'string'),
@@ -1071,9 +1242,96 @@ function DesignTab({ node }: { node: SDUINode }) {
   }, [nodeId]);
 
   const patchCls = useCallback((newCls: string) => {
+    const bp = useBuilderStore.getState().activeBreakpoint as ActiveBreakpoint;
+    if (bp !== 'desktop') {
+      const oldTokens = new Set(cls.split(/\s+/).filter(Boolean));
+      const newTokens = new Set(newCls.split(/\s+/).filter(Boolean));
+      const added   = [...newTokens].filter(t => !oldTokens.has(t));
+      const removed = [...oldTokens].filter(t => !newTokens.has(t));
+      const cssOverrides: Record<string, string | null> = {};
+      for (const t of [...added, ...removed]) {
+        const mapping = twTokenToCss(t);
+        if (mapping) {
+          const isAdded = added.includes(t);
+          cssOverrides[mapping.prop] = isAdded ? mapping.value : null;
+        }
+      }
+      if (Object.keys(cssOverrides).length > 0) {
+        for (const [prop, val] of Object.entries(cssOverrides)) {
+          store.patchResponsive(nodeId, bp as 'laptop' | 'tablet' | 'mobile', `styles.${prop}`, val);
+        }
+        commitHistory();
+        return;
+      }
+    }
     store.patchProp(nodeId, 'props.className', newCls);
     commitHistory();
+  }, [nodeId, cls, store, commitHistory]);
+
+  // ── Responsive-aware helpers ──────────────────────────────────────────────────
+
+  /** Get breakpoints that have a specific CSS property override for this node */
+  const getOverriddenBps = useCallback((cssProp: string): string[] => {
+    if (!node.responsive) return [];
+    const bps: string[] = [];
+    for (const bp of BP_ORDER) {
+      const o = node.responsive[bp];
+      if (o?.styles && cssProp in o.styles) bps.push(bp);
+    }
+    return bps;
+  }, [node]);
+
+  /** Get breakpoints that have ANY override for a set of CSS properties */
+  const getSectionOverriddenBps = useCallback((cssProps: readonly string[]): string[] => {
+    if (!node.responsive) return [];
+    const bps = new Set<string>();
+    for (const bp of BP_ORDER) {
+      const o = node.responsive[bp];
+      if (!o?.styles) continue;
+      for (const p of cssProps) {
+        if (p in o.styles) { bps.add(bp); break; }
+      }
+    }
+    return Array.from(bps);
+  }, [node]);
+
+  /** Remove a responsive override for a specific CSS property at a breakpoint */
+  const removeResponsive = useCallback((bp: string, cssProp: string) => {
+    store.removeResponsiveOverride(nodeId, bp as 'laptop' | 'tablet' | 'mobile', `styles.${cssProp}`);
+    commitHistory();
   }, [nodeId, store, commitHistory]);
+
+  /** Remove ALL responsive overrides for a CSS property across all breakpoints */
+  const resetResponsive = useCallback((cssProp: string) => {
+    for (const bp of BP_ORDER) {
+      if (node.responsive?.[bp]?.styles && cssProp in node.responsive[bp]!.styles!) {
+        store.removeResponsiveOverride(nodeId, bp, `styles.${cssProp}`);
+      }
+    }
+    commitHistory();
+  }, [nodeId, node, store, commitHistory]);
+
+  /** Remove all responsive overrides for a set of section CSS properties */
+  const resetSectionResponsive = useCallback((cssProps: readonly string[]) => {
+    for (const bp of BP_ORDER) {
+      const o = node.responsive?.[bp];
+      if (!o?.styles) continue;
+      for (const p of cssProps) {
+        if (p in o.styles) store.removeResponsiveOverride(nodeId, bp, `styles.${p}`);
+      }
+    }
+    commitHistory();
+  }, [nodeId, node, store, commitHistory]);
+
+  /** Remove all section overrides for a specific breakpoint */
+  const removeSectionBp = useCallback((bp: string, cssProps: readonly string[]) => {
+    const o = node.responsive?.[bp as 'laptop' | 'tablet' | 'mobile'];
+    if (!o?.styles) return;
+    for (const p of cssProps) {
+      if (p in o.styles) store.removeResponsiveOverride(nodeId, bp as 'laptop' | 'tablet' | 'mobile', `styles.${p}`);
+    }
+    commitHistory();
+  }, [nodeId, node, store, commitHistory]);
 
   /**
    * Apply a theme CSS variable as a color class (bg/text/border).
@@ -1112,13 +1370,34 @@ function DesignTab({ node }: { node: SDUINode }) {
     const newCls = `${next} ${clsPrefix}-[${cssVarValue}]`.trim();
     // Atomic Zustand update: remove the inline style prop (don't write '' — empty strings linger),
     // then update className so the CSS-var class wins.
-    const existingNode = findNode(useBuilderStore.getState().pageNodes, nodeId);
+    const existingNode = findNode(useBuilderStore.getState().pageNodes, nodeId)
+      ?? findNode(useBuilderStore.getState().canvasNodes as SDUINode[], nodeId);
     const currentStyle = (existingNode?.props as { style?: Record<string, string> })?.style ?? {};
     const { [cssProp]: _removed, ...cleanedStyle } = currentStyle as Record<string, string>;
     store.patchProp(nodeId, 'props.style', cleanedStyle);
     store.patchProp(nodeId, 'props.className', newCls);
     commitHistory();
   }, [nodeId, cls, store, commitHistory]);
+
+  /**
+   * Responsive-aware color patch: routes theme color changes to responsive overrides
+   * when breakpoint is non-desktop.
+   */
+  const patchColorResponsive = useCallback((
+    cssProp: 'backgroundColor' | 'color' | 'borderColor',
+    stylePropPath: string,
+    clsPrefix: 'bg' | 'text' | 'border',
+    cssVar: string,
+  ) => {
+    const bp = useBuilderStore.getState().activeBreakpoint as ActiveBreakpoint;
+    if (bp !== 'desktop') {
+      const cssVarValue = `var(--theme-${cssVar})`;
+      store.patchResponsive(nodeId, bp as 'laptop' | 'tablet' | 'mobile', `styles.${cssProp}`, cssVarValue);
+      commitHistory();
+      return;
+    }
+    patchColorAsThemeVar(cssProp, stylePropPath, clsPrefix, cssVar);
+  }, [nodeId, store, commitHistory, patchColorAsThemeVar]);
 
   // ── Live DOM metrics ─────────────────────────────────────────────────────────
   // Used for the initial render and when selection/zoom changes.
@@ -1253,35 +1532,49 @@ function DesignTab({ node }: { node: SDUINode }) {
   const showLayout   = isContainer;
 
   // ── Parsed tokens ─────────────────────────────────────────────────────────────
+  // All values check responsiveStyles first. If a responsive override exists for
+  // the CSS property, it wins over the base className-derived value.
 
-  const padding     = expandPadding(cls);
-  const flexDir     = parseTwToken(cls, 'flex-') ?? 'flex-col';
+  const basePadding = expandPadding(cls);
+  const padding = {
+    top:    rOvr('paddingTop')    ? parseFloat(rOvr('paddingTop')!)    : basePadding.top,
+    right:  rOvr('paddingRight')  ? parseFloat(rOvr('paddingRight')!)  : basePadding.right,
+    bottom: rOvr('paddingBottom') ? parseFloat(rOvr('paddingBottom')!) : basePadding.bottom,
+    left:   rOvr('paddingLeft')   ? parseFloat(rOvr('paddingLeft')!)   : basePadding.left,
+  };
+  const baseFlexDir = parseTwToken(cls, 'flex-') ?? 'flex-col';
+  const CSS_TO_TW_FLEX: Record<string, string> = { row: 'flex-row', column: 'flex-col', 'row-reverse': 'flex-row-reverse', 'column-reverse': 'flex-col-reverse' };
+  const flexDir     = rOvr('flexDirection') ? (CSS_TO_TW_FLEX[rOvr('flexDirection')!] ?? baseFlexDir) : baseFlexDir;
   const isRow       = flexDir === 'flex-row';
   const activeCell  = getAlignCellIndex(cls, isRow);
   const gapToken    = parseTwToken(cls, 'gap-') ?? 'gap-0';
-  // parseTwArbitrary handles gap-[12px]; scale tokens fall back to the 4px grid
-  const gapPx       = parseTwArbitrary(cls, 'gap-') ?? (parseInt(gapToken.replace('gap-', '') || '0') * 4);
-  // Font size stored as text-[Xpx] arbitrary class
-  const fontSizePx  = parseTwArbitraryPx(cls, 'text-') ?? 0;
-  const fontWeight  = parseTwToken(cls, 'font-') ?? 'font-normal';
+  const baseGapPx   = parseTwArbitrary(cls, 'gap-') ?? (parseInt(gapToken.replace('gap-', '') || '0') * 4);
+  const gapPx       = rOvr('gap') ? parseFloat(rOvr('gap')!) : baseGapPx;
+  const baseFontSizePx = parseTwArbitraryPx(cls, 'text-') ?? 0;
+  const fontSizePx  = rOvr('fontSize') ? parseFloat(rOvr('fontSize')!) : baseFontSizePx;
+  const CSS_TO_TW_WEIGHT: Record<string, string> = {
+    '100': 'font-thin', '200': 'font-extralight', '300': 'font-light', '400': 'font-normal',
+    '500': 'font-medium', '600': 'font-semibold', '700': 'font-bold', '800': 'font-extrabold', '900': 'font-black',
+  };
+  const baseFontWeight = parseTwToken(cls, 'font-') ?? 'font-normal';
+  const fontWeight  = rOvr('fontWeight') ? (CSS_TO_TW_WEIGHT[rOvr('fontWeight')!] ?? baseFontWeight) : baseFontWeight;
   const leading     = parseTwToken(cls, 'leading-') ?? 'leading-normal';
   const tracking    = parseTwToken(cls, 'tracking-') ?? 'tracking-normal';
   // Opacity is stored as opacity-[0.5] arbitrary class (or legacy style.opacity for old nodes).
   const opacityVal = (() => {
-    // Legacy: still in props.style (old nodes before migration)
-    // Guard against formula objects (isBoundValue) to prevent NaN
+    if (rOvr('opacity') !== undefined) return Math.round(parseFloat(rOvr('opacity')!) * 100);
     if (nodeStyle.opacity !== undefined && typeof nodeStyle.opacity !== 'object') return Math.round(parseFloat(String(nodeStyle.opacity)) * 100);
     const token = parseTwToken(cls, 'opacity-');
     if (!token) return 100;
-    // Arbitrary value: opacity-[0.5]
     const arb = token.match(/^opacity-\[([0-9.]+)\]$/);
     if (arb) return Math.round(parseFloat(arb[1]) * 100);
-    // Scale token: opacity-50
     return parseInt(token.replace('opacity-', '') || '100');
   })();
-  // Border width stored as border-[Xpx] arbitrary class
-  const borderWidthPx = parseTwArbitraryPx(cls, 'border-') ?? 0;
-  const borderStyle   = BORDER_STYLE_TOKENS.find(t => cls.includes(t)) ?? 'border-solid';
+  const baseBorderWidthPx = parseTwArbitraryPx(cls, 'border-') ?? 0;
+  const borderWidthPx = rOvr('borderWidth') ? parseFloat(rOvr('borderWidth')!) : baseBorderWidthPx;
+  const CSS_TO_TW_BORDER_STYLE: Record<string, string> = { solid: 'border-solid', dashed: 'border-dashed', dotted: 'border-dotted', double: 'border-double', none: 'border-none' };
+  const baseBorderStyle = BORDER_STYLE_TOKENS.find(t => cls.includes(t)) ?? 'border-solid';
+  const borderStyle   = rOvr('borderStyle') ? (CSS_TO_TW_BORDER_STYLE[rOvr('borderStyle')!] ?? baseBorderStyle) : baseBorderStyle;
   // Rotation stays in props.style.transform (rotation only — no translate mixed in).
   // Guard against formula objects: only treat it as a string for parsing.
   const styleTransform = (() => {
@@ -1325,20 +1618,37 @@ function DesignTab({ node }: { node: SDUINode }) {
   const isGrid      = cls.includes('grid');
   const isSpaceBetween = cls.includes('justify-between');
   // Self-alignment: how this node aligns itself within its parent flex container
-  const selfToken   = parseTwToken(cls, 'self-') ?? 'self-auto';
+  const CSS_TO_TW_SELF: Record<string, string> = { auto: 'self-auto', 'flex-start': 'self-start', 'flex-end': 'self-end', center: 'self-center', stretch: 'self-stretch', baseline: 'self-baseline' };
+  const baseSelfToken = parseTwToken(cls, 'self-') ?? 'self-auto';
+  const selfToken   = rOvr('alignSelf') ? (CSS_TO_TW_SELF[rOvr('alignSelf')!] ?? baseSelfToken) : baseSelfToken;
 
   // Margin (outer spacing)
-  const margin      = expandMargin(cls);
+  const baseMargin  = expandMargin(cls);
+  const margin = {
+    top:    rOvr('marginTop')    ? parseFloat(rOvr('marginTop')!)    : baseMargin.top,
+    right:  rOvr('marginRight')  ? parseFloat(rOvr('marginRight')!)  : baseMargin.right,
+    bottom: rOvr('marginBottom') ? parseFloat(rOvr('marginBottom')!) : baseMargin.bottom,
+    left:   rOvr('marginLeft')   ? parseFloat(rOvr('marginLeft')!)   : baseMargin.left,
+  };
 
   // Position & layer
-  const positionToken = POSITION_TOKENS.find(t => cls.includes(t)) ?? 'static';
-  // Z-index stored as z-[N] arbitrary class (unitless integer)
-  const zIndexPx      = parseTwArbitraryNum(cls, 'z-') ?? 0;
-  const cursorToken   = parseTwToken(cls, 'cursor-') ?? 'cursor-default';
+  const basePositionToken = POSITION_TOKENS.find(t => cls.includes(t)) ?? 'static';
+  const positionToken = rOvr('position') ? rOvr('position')! : basePositionToken;
+  const baseZIndexPx = parseTwArbitraryNum(cls, 'z-') ?? 0;
+  const zIndexPx      = rOvr('zIndex') ? parseFloat(rOvr('zIndex')!) : baseZIndexPx;
+  const baseCursorToken = parseTwToken(cls, 'cursor-') ?? 'cursor-default';
+  const CSS_TO_TW_CURSOR: Record<string, string> = { pointer: 'cursor-pointer', default: 'cursor-default', wait: 'cursor-wait', text: 'cursor-text', move: 'cursor-move', 'not-allowed': 'cursor-not-allowed', grab: 'cursor-grab', 'zoom-in': 'cursor-zoom-in' };
+  const cursorToken   = rOvr('cursor') ? (CSS_TO_TW_CURSOR[rOvr('cursor')!] ?? baseCursorToken) : baseCursorToken;
   // Typography extras
-  const textAlign  = TEXT_ALIGN_TOKENS.find(t => cls.includes(t)) ?? 'text-left';
-  const textDecor  = TEXT_DECORATION_TOKENS.find(t => cls.includes(t)) ?? 'no-underline';
-  const textTransform = TEXT_TRANSFORM_TOKENS.find(t => cls.includes(t)) ?? 'normal-case';
+  const CSS_TO_TW_TEXT_ALIGN: Record<string, string> = { left: 'text-left', center: 'text-center', right: 'text-right', justify: 'text-justify' };
+  const baseTextAlign = TEXT_ALIGN_TOKENS.find(t => cls.includes(t)) ?? 'text-left';
+  const textAlign  = rOvr('textAlign') ? (CSS_TO_TW_TEXT_ALIGN[rOvr('textAlign')!] ?? baseTextAlign) : baseTextAlign;
+  const CSS_TO_TW_TEXT_DECOR: Record<string, string> = { underline: 'underline', 'line-through': 'line-through', none: 'no-underline' };
+  const baseTextDecor = TEXT_DECORATION_TOKENS.find(t => cls.includes(t)) ?? 'no-underline';
+  const textDecor  = rOvr('textDecoration') ? (CSS_TO_TW_TEXT_DECOR[rOvr('textDecoration')!] ?? baseTextDecor) : baseTextDecor;
+  const CSS_TO_TW_TEXT_TRANSFORM: Record<string, string> = { uppercase: 'uppercase', lowercase: 'lowercase', capitalize: 'capitalize', none: 'normal-case' };
+  const baseTextTransform = TEXT_TRANSFORM_TOKENS.find(t => cls.includes(t)) ?? 'normal-case';
+  const textTransform = rOvr('textTransform') ? (CSS_TO_TW_TEXT_TRANSFORM[rOvr('textTransform')!] ?? baseTextTransform) : baseTextTransform;
 
   // padMode/marginMode no longer used — replaced by SpacingDiagram
 
@@ -1427,13 +1737,13 @@ function DesignTab({ node }: { node: SDUINode }) {
 
       {/* ── Position & Size ── */}
       <div style={SECTION_STYLE}>
-        <SectionHeader title="Position & Size" />
+        <SectionHeader title="Position & Size" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['position-size']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['position-size']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['position-size']!)} />
         <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
           <FieldWithBinding label="position" displayLabel="Position" hint="e.g. relative, absolute, fixed" value={(classFormulas?.['position'] as FormulaValue) ?? positionToken} onChange={v => bindOrPatchCls('position', evaluated => {
             let next = cls;
             POSITION_TOKENS.forEach(t => { next = removeTwToken(next, t); });
             patchCls(evaluated === 'static' ? next : `${next} ${evaluated}`.trim());
-          }, v)} expectedType="string">
+          }, v)} expectedType="string" responsiveOverrides={getOverriddenBps('position')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="position">
             <SelectInput
               label="Position"
               testId="select-position"
@@ -1446,7 +1756,7 @@ function DesignTab({ node }: { node: SDUINode }) {
               }}
             />
           </FieldWithBinding>
-          <FieldWithBinding label="zIndex" displayLabel="Z-Index" hint="integer e.g. 10, 50, 100" value={(nodeStyle.zIndex ?? '') as FormulaValue} onChange={v => bindOrPatch('zIndex', v)}>
+          <FieldWithBinding label="zIndex" displayLabel="Z-Index" hint="integer e.g. 10, 50, 100" value={(nodeStyle.zIndex ?? '') as FormulaValue} onChange={v => bindOrPatch('zIndex', v)} responsiveOverrides={getOverriddenBps('zIndex')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="zIndex">
             <NumberInput
               label="Z-Index"
               testId="input-zindex"
@@ -1460,12 +1770,13 @@ function DesignTab({ node }: { node: SDUINode }) {
           <NumberInput label="Y" testId="input-pos-y" value={domMetrics.y} onChange={() => {}} />
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
-          <FieldWithBinding label="width" displayLabel="W" hint="e.g. 200px, 50vh, auto" value={(nodeStyle.width ?? '') as FormulaValue} onChange={v => bindOrPatch('width', v, { minWidth: '0' })}>
+          <FieldWithBinding label="width" displayLabel="W" hint="e.g. 200px, 50vh, auto" value={(nodeStyle.width ?? '') as FormulaValue} onChange={v => bindOrPatch('width', v, { minWidth: '0' })} responsiveOverrides={getOverriddenBps('width')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="width">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               <NumberInput label="W" testId="input-pos-w" value={(() => {
+                if (rOvr('width')) return parseFloat(rOvr('width')!) || domMetrics.w;
                 const clsW = parseTwArbitrary(cls, 'w-');
                 if (clsW !== null) return clsW;
-                const styleW = nodeStyle.width;
+                const styleW = baseNodeStyle.width;
                 if (styleW) return parseInt(styleW) || domMetrics.w;
                 return domMetrics.w;
               })()} onChange={px => {
@@ -1494,12 +1805,13 @@ function DesignTab({ node }: { node: SDUINode }) {
               </div>
             </div>
           </FieldWithBinding>
-          <FieldWithBinding label="height" displayLabel="H" hint="e.g. 100px, 50vh, auto" value={(nodeStyle.height ?? '') as FormulaValue} onChange={v => bindOrPatch('height', v, { minHeight: '0' })}>
+          <FieldWithBinding label="height" displayLabel="H" hint="e.g. 100px, 50vh, auto" value={(nodeStyle.height ?? '') as FormulaValue} onChange={v => bindOrPatch('height', v, { minHeight: '0' })} responsiveOverrides={getOverriddenBps('height')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="height">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               <NumberInput label="H" testId="input-pos-h" value={(() => {
+                if (rOvr('height')) return parseFloat(rOvr('height')!) || domMetrics.h;
                 const clsH = parseTwArbitrary(cls, 'h-');
                 if (clsH !== null) return clsH;
-                const styleH = nodeStyle.height;
+                const styleH = baseNodeStyle.height;
                 if (styleH) return parseInt(styleH) || domMetrics.h;
                 return domMetrics.h;
               })()} onChange={px => {
@@ -1564,10 +1876,10 @@ function DesignTab({ node }: { node: SDUINode }) {
 
       {/* ── W/H Resize modes ── */}
       <div style={SECTION_STYLE}>
-        <SectionHeader title="Dimensions" />
+        <SectionHeader title="Dimensions" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['dimensions']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['dimensions']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['dimensions']!)} />
         <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
           {/* W mode — headerTitle puts bind icon beside "W" label */}
-          <FieldWithBinding label="wMode" hint="hug=w-fit, fill=w-full/flex-1, screen=w-screen, fixed=''" headerTitle="W" value={(classFormulas?.['wMode'] as FormulaValue) ?? (cls.includes('w-fit') ? 'w-fit' : cls.includes('w-screen') ? 'w-screen' : (cls.includes('w-full') || (parentIsRow && cls.includes('flex-1'))) ? 'w-full' : '')} onChange={v => bindOrPatchCls('wMode', evaluated => {
+          <FieldWithBinding label="wMode" hint="hug=w-fit, fill=w-full/flex-1, screen=w-screen, fixed=''" headerTitle="W" responsiveOverrides={getOverriddenBps('width')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="width" value={(classFormulas?.['wMode'] as FormulaValue) ?? (cls.includes('w-fit') ? 'w-fit' : cls.includes('w-screen') ? 'w-screen' : (cls.includes('w-full') || (parentIsRow && cls.includes('flex-1'))) ? 'w-full' : '')} onChange={v => bindOrPatchCls('wMode', evaluated => {
             if (evaluated === 'w-fit')    { patchCls(replaceTwToken(clearWMode(cls), 'w-', 'w-fit'));    patchStyle({ width: '', minWidth: '' }); }
             else if (evaluated === 'w-full') {
               patchCls(parentIsRow ? `${clearWMode(cls)} flex-1`.trim() : replaceTwToken(clearWMode(cls), 'w-', 'w-full'));
@@ -1578,9 +1890,12 @@ function DesignTab({ node }: { node: SDUINode }) {
           }, v)} expectedType="string">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
               {([['Hug', 'w-fit', 'Shrink to content (w-fit)'], ['Fill', 'w-full', 'Fill parent flex space (flex-1 in flex-row parent, w-full in flex-col parent)'], ['Screen', 'w-screen', 'Full viewport width (w-screen / 100vw)'], ['Fixed', '', 'Exact pixel / vh / vw size']] as const).map(([label, token, tooltip]) => {
-                const active = token
-                  ? (token === 'w-full' ? (cls.includes('w-full') || (parentIsRow && cls.includes('flex-1'))) : cls.includes(token))
-                  : (!cls.includes('w-fit') && !cls.includes('w-full') && !cls.includes('w-screen') && !(parentIsRow && cls.includes('flex-1')));
+                const rW = rOvr('width');
+                const active = rW !== undefined
+                  ? (token === 'w-fit' ? rW === 'fit-content' : token === 'w-full' ? rW === '100%' : token === 'w-screen' ? rW === '100vw' : !['fit-content','100%','100vw'].includes(rW))
+                  : token
+                    ? (token === 'w-full' ? (cls.includes('w-full') || (parentIsRow && cls.includes('flex-1'))) : cls.includes(token))
+                    : (!cls.includes('w-fit') && !cls.includes('w-full') && !cls.includes('w-screen') && !(parentIsRow && cls.includes('flex-1')));
                 return (
                   <ToggleBtn key={label} data-testid={`dim-w-${label.toLowerCase()}`} active={active} title={tooltip} style={{ textAlign: 'center' }} onClick={() => {
                     if (token === 'w-full') {
@@ -1602,7 +1917,7 @@ function DesignTab({ node }: { node: SDUINode }) {
           {/* H mode — headerTitle puts bind icon beside "H" label */}
           {/* Fill = flex-1 (grow in flex parent, matches Figma behaviour)       */}
           {/* Screen = h-screen (100vh, always resolves regardless of parent)    */}
-          <FieldWithBinding label="hMode" hint="hug=h-fit, fill=flex-1/self-stretch, screen=h-screen, fixed=''" headerTitle="H" value={(classFormulas?.['hMode'] as FormulaValue) ?? (cls.includes('h-fit') ? 'h-fit' : cls.includes('h-screen') ? 'h-screen' : (parentIsRow ? cls.includes('self-stretch') : (cls.includes('flex-1') || cls.includes('self-stretch'))) ? 'flex-1' : '')} onChange={v => bindOrPatchCls('hMode', evaluated => {
+          <FieldWithBinding label="hMode" hint="hug=h-fit, fill=flex-1/self-stretch, screen=h-screen, fixed=''" headerTitle="H" responsiveOverrides={getOverriddenBps('height')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="height" value={(classFormulas?.['hMode'] as FormulaValue) ?? (cls.includes('h-fit') ? 'h-fit' : cls.includes('h-screen') ? 'h-screen' : (parentIsRow ? cls.includes('self-stretch') : (cls.includes('flex-1') || cls.includes('self-stretch'))) ? 'flex-1' : '')} onChange={v => bindOrPatchCls('hMode', evaluated => {
             if (evaluated === 'h-fit')    { patchCls(replaceTwToken(clearHMode(cls), 'h-', 'h-fit'));    patchStyle({ height: '', minHeight: '' }); }
             else if (evaluated === 'flex-1') {
               const fillToken = parentIsRow ? 'self-stretch' : 'flex-1';
@@ -1614,9 +1929,12 @@ function DesignTab({ node }: { node: SDUINode }) {
           }, v)} expectedType="string">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
               {([['Hug', 'h-fit', 'Shrink to content (h-fit)'], ['Fill', 'flex-1', 'Fill parent flex space (flex-1 in flex-col parent, self-stretch in flex-row parent)'], ['Screen', 'h-screen', 'Full viewport height (h-screen / 100vh)'], ['Fixed', '', 'Exact pixel / vh / vw size']] as const).map(([label, token, tooltip]) => {
-                const active = token
-                  ? (token === 'flex-1' ? (parentIsRow ? cls.includes('self-stretch') : (cls.includes('flex-1') || cls.includes('self-stretch'))) : cls.includes(token))
-                  : (!cls.includes('h-fit') && !cls.includes('h-screen') && !cls.includes('self-stretch') && (parentIsRow || !cls.includes('flex-1')));
+                const rH = rOvr('height');
+                const active = rH !== undefined
+                  ? (token === 'h-fit' ? rH === 'fit-content' : token === 'flex-1' ? rH === '100%' : token === 'h-screen' ? rH === '100vh' : !['fit-content','100%','100vh'].includes(rH))
+                  : token
+                    ? (token === 'flex-1' ? (parentIsRow ? cls.includes('self-stretch') : (cls.includes('flex-1') || cls.includes('self-stretch'))) : cls.includes(token))
+                    : (!cls.includes('h-fit') && !cls.includes('h-screen') && !cls.includes('self-stretch') && (parentIsRow || !cls.includes('flex-1')));
                 return (
                   <ToggleBtn key={label} data-testid={`dim-h-${label.toLowerCase()}`} active={active} title={tooltip} style={{ textAlign: 'center' }} onClick={() => {
                     if (token === 'flex-1') {
@@ -1639,7 +1957,7 @@ function DesignTab({ node }: { node: SDUINode }) {
         </div>
         {/* Min / Max constraints */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-          <FieldWithBinding label="minWidth" displayLabel="Min W" hint="e.g. 0, 100px, 50%" value={(nodeStyle.minWidth ?? '') as FormulaValue} onChange={v => bindOrPatch('minWidth', v)}>
+          <FieldWithBinding label="minWidth" displayLabel="Min W" hint="e.g. 0, 100px, 50%" value={(nodeStyle.minWidth ?? '') as FormulaValue} onChange={v => bindOrPatch('minWidth', v)} responsiveOverrides={getOverriddenBps('minWidth')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="minWidth">
             <NumberInput
               label="Min W"
               testId="input-min-w"
@@ -1647,7 +1965,7 @@ function DesignTab({ node }: { node: SDUINode }) {
               onChange={px => patchStyle({ minWidth: px > 0 ? `${px}px` : '' })}
             />
           </FieldWithBinding>
-          <FieldWithBinding label="maxWidth" displayLabel="Max W" hint="e.g. 100%, 800px, none" value={(nodeStyle.maxWidth ?? '') as FormulaValue} onChange={v => bindOrPatch('maxWidth', v)}>
+          <FieldWithBinding label="maxWidth" displayLabel="Max W" hint="e.g. 100%, 800px, none" value={(nodeStyle.maxWidth ?? '') as FormulaValue} onChange={v => bindOrPatch('maxWidth', v)} responsiveOverrides={getOverriddenBps('maxWidth')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="maxWidth">
             <NumberInput
               label="Max W"
               testId="input-max-w"
@@ -1655,7 +1973,7 @@ function DesignTab({ node }: { node: SDUINode }) {
               onChange={px => patchStyle({ maxWidth: px > 0 ? `${px}px` : '' })}
             />
           </FieldWithBinding>
-          <FieldWithBinding label="minHeight" displayLabel="Min H" hint="e.g. 0, 100px, 50%" value={(nodeStyle.minHeight ?? '') as FormulaValue} onChange={v => bindOrPatch('minHeight', v)}>
+          <FieldWithBinding label="minHeight" displayLabel="Min H" hint="e.g. 0, 100px, 50%" value={(nodeStyle.minHeight ?? '') as FormulaValue} onChange={v => bindOrPatch('minHeight', v)} responsiveOverrides={getOverriddenBps('minHeight')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="minHeight">
             <NumberInput
               label="Min H"
               testId="input-min-h"
@@ -1663,7 +1981,7 @@ function DesignTab({ node }: { node: SDUINode }) {
               onChange={px => patchStyle({ minHeight: px > 0 ? `${px}px` : '' })}
             />
           </FieldWithBinding>
-          <FieldWithBinding label="maxHeight" displayLabel="Max H" hint="e.g. 100px, 50vh, none" value={(nodeStyle.maxHeight ?? '') as FormulaValue} onChange={v => bindOrPatch('maxHeight', v)}>
+          <FieldWithBinding label="maxHeight" displayLabel="Max H" hint="e.g. 100px, 50vh, none" value={(nodeStyle.maxHeight ?? '') as FormulaValue} onChange={v => bindOrPatch('maxHeight', v)} responsiveOverrides={getOverriddenBps('maxHeight')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="maxHeight">
             <NumberInput
               label="Max H"
               testId="input-max-h"
@@ -1678,7 +1996,7 @@ function DesignTab({ node }: { node: SDUINode }) {
       <div style={SECTION_STYLE}>
         <FieldWithBinding label="selfAlignment" hint="e.g. self-center, self-start, self-stretch, self-auto" value={(classFormulas?.['selfAlignment'] as FormulaValue) ?? selfToken} onChange={v => bindOrPatchCls('selfAlignment', evaluated => {
           patchCls(replaceTwToken(removeTwToken(cls, 'self-'), 'self-', evaluated === 'self-auto' ? '' : evaluated).trim());
-        }, v)} expectedType="string" headerTitle="Self Alignment">
+        }, v)} expectedType="string" headerTitle="Self Alignment" responsiveOverrides={getOverriddenBps('alignSelf')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="alignSelf">
           <>
             <div style={{ display: 'flex', gap: 4 }}>
               {([
@@ -1715,7 +2033,7 @@ function DesignTab({ node }: { node: SDUINode }) {
       <div style={SECTION_STYLE}>
         <SectionHeader title="Transform" />
         <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
-          <FieldWithBinding label="rotate" displayLabel="Rotate °" hint="degrees: e.g. 45, -90, 180" value={(styleTransform ?? '') as FormulaValue} onChange={v => bindOrPatch('transform', v)}>
+          <FieldWithBinding label="rotate" displayLabel="Rotate °" hint="degrees: e.g. 45, -90, 180" value={(styleTransform ?? '') as FormulaValue} onChange={v => bindOrPatch('transform', v)} responsiveOverrides={getOverriddenBps('transform')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="transform">
             <NumberInput
               label="Rotate °"
               testId="input-rotate"
@@ -1749,6 +2067,7 @@ function DesignTab({ node }: { node: SDUINode }) {
             displayLabel="Translate X"
             hint="px offset, e.g. 20, -50. Formula should return a number or px string, e.g. variables['uuid']"
             value={(nodeStyle.translateX ?? '') as FormulaValue}
+            responsiveOverrides={getOverriddenBps('translateX')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="translateX"
             onChange={v => {
               if (typeof v === 'object' && v !== null) {
                 store.patchProp(nodeId, 'props.style.translateX', v);
@@ -1791,6 +2110,7 @@ function DesignTab({ node }: { node: SDUINode }) {
             displayLabel="Translate Y"
             hint="px offset, e.g. 20, -50. Formula should return a number or px string, e.g. variables['uuid']"
             value={(nodeStyle.translateY ?? '') as FormulaValue}
+            responsiveOverrides={getOverriddenBps('translateY')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="translateY"
             onChange={v => {
               if (typeof v === 'object' && v !== null) {
                 store.patchProp(nodeId, 'props.style.translateY', v);
@@ -1884,8 +2204,8 @@ function DesignTab({ node }: { node: SDUINode }) {
       {/* ── Auto Layout (only for flex containers) ── */}
       {showLayout && (
         <div style={SECTION_STYLE}>
-          <SectionHeader title="Auto Layout" />
-          <FieldWithBinding label="layoutDir" hint="e.g. flex-row, flex-col, grid" value={(classFormulas?.['layoutDir'] as FormulaValue) ?? (isGrid ? 'grid' : isFlexWrap ? 'flex-row flex-wrap' : flexDir)} onChange={v => bindOrPatchCls('layoutDir', evaluated => {
+          <SectionHeader title="Auto Layout" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['auto-layout']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['auto-layout']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['auto-layout']!)} />
+          <FieldWithBinding label="layoutDir" hint="e.g. flex-row, flex-col, grid" value={(classFormulas?.['layoutDir'] as FormulaValue) ?? (isGrid ? 'grid' : isFlexWrap ? 'flex-row flex-wrap' : flexDir)} responsiveOverrides={getOverriddenBps('flexDirection')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="flexDirection" onChange={v => bindOrPatchCls('layoutDir', evaluated => {
             let next = removeTwToken(removeTwToken(removeTwToken(cls, 'flex-'), 'grid'), 'flex-wrap');
             if (evaluated === 'flex-row flex-wrap') next = `${next} flex flex-row flex-wrap`.trim();
             else if (evaluated === 'grid')          next = `${next} grid`.trim();
@@ -1924,7 +2244,7 @@ function DesignTab({ node }: { node: SDUINode }) {
           </FieldWithBinding>
 
           <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-            <FieldWithBinding label="gap" displayLabel="Gap" hint="e.g. 8px, 1rem, 16px" value={(nodeStyle.gap ?? '') as FormulaValue} onChange={v => bindOrPatch('gap', v)}>
+            <FieldWithBinding label="gap" displayLabel="Gap" hint="e.g. 8px, 1rem, 16px" value={(nodeStyle.gap ?? '') as FormulaValue} onChange={v => bindOrPatch('gap', v)} responsiveOverrides={getOverriddenBps('gap')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="gap">
               <NumberInput
                 label="Gap"
                 testId="input-gap"
@@ -1956,7 +2276,7 @@ function DesignTab({ node }: { node: SDUINode }) {
               </div>
               {/* Columns + Rows */}
               <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-                <FieldWithBinding label="gridCols" displayLabel="Columns" hint="e.g. grid-cols-2, grid-cols-4" value={(classFormulas?.['gridCols'] as FormulaValue) ?? (GRID_COLS_TOKENS.find(t => cls.includes(t)) ?? 'grid-cols-1')} onChange={v => bindOrPatchCls('gridCols', evaluated => {
+                <FieldWithBinding label="gridCols" displayLabel="Columns" hint="e.g. grid-cols-2, grid-cols-4" value={(classFormulas?.['gridCols'] as FormulaValue) ?? (GRID_COLS_TOKENS.find(t => cls.includes(t)) ?? 'grid-cols-1')} responsiveOverrides={getOverriddenBps('gridTemplateColumns')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="gridTemplateColumns" onChange={v => bindOrPatchCls('gridCols', evaluated => {
                   let next = cls;
                   GRID_COLS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
                   patchCls(`${next} ${evaluated}`.trim());
@@ -1972,7 +2292,7 @@ function DesignTab({ node }: { node: SDUINode }) {
                     }}
                   />
                 </FieldWithBinding>
-                <FieldWithBinding label="gridRows" displayLabel="Rows" hint="e.g. grid-rows-2, grid-rows-4" value={(classFormulas?.['gridRows'] as FormulaValue) ?? (GRID_ROWS_TOKENS.find(t => cls.includes(t)) ?? 'grid-rows-1')} onChange={v => bindOrPatchCls('gridRows', evaluated => {
+                <FieldWithBinding label="gridRows" displayLabel="Rows" hint="e.g. grid-rows-2, grid-rows-4" value={(classFormulas?.['gridRows'] as FormulaValue) ?? (GRID_ROWS_TOKENS.find(t => cls.includes(t)) ?? 'grid-rows-1')} responsiveOverrides={getOverriddenBps('gridTemplateRows')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="gridTemplateRows" onChange={v => bindOrPatchCls('gridRows', evaluated => {
                   let next = cls;
                   GRID_ROWS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
                   patchCls(`${next} ${evaluated}`.trim());
@@ -2034,6 +2354,17 @@ function DesignTab({ node }: { node: SDUINode }) {
               bindOrPatch(`padding${cap}`, v);
             }}
             testIdPrefix="pad"
+            responsiveOverrides={getSectionOverriddenBps(['paddingTop','paddingRight','paddingBottom','paddingLeft'])}
+            onResponsiveRemove={(bp) => removeSectionBp(bp, ['paddingTop','paddingRight','paddingBottom','paddingLeft'])}
+            onResponsiveReset={() => resetSectionResponsive(['paddingTop','paddingRight','paddingBottom','paddingLeft'])}
+            perSideOverrides={{
+              top: getOverriddenBps('paddingTop'),
+              right: getOverriddenBps('paddingRight'),
+              bottom: getOverriddenBps('paddingBottom'),
+              left: getOverriddenBps('paddingLeft'),
+            }}
+            onPerSideRemove={removeResponsive}
+            onPerSideReset={resetResponsive}
           />
         </div>
       )}
@@ -2062,13 +2393,24 @@ function DesignTab({ node }: { node: SDUINode }) {
             bindOrPatch(`margin${cap}`, v);
           }}
           testIdPrefix="margin"
+          responsiveOverrides={getSectionOverriddenBps(['marginTop','marginRight','marginBottom','marginLeft'])}
+          onResponsiveRemove={(bp) => removeSectionBp(bp, ['marginTop','marginRight','marginBottom','marginLeft'])}
+          onResponsiveReset={() => resetSectionResponsive(['marginTop','marginRight','marginBottom','marginLeft'])}
+          perSideOverrides={{
+            top: getOverriddenBps('marginTop'),
+            right: getOverriddenBps('marginRight'),
+            bottom: getOverriddenBps('marginBottom'),
+            left: getOverriddenBps('marginLeft'),
+          }}
+          onPerSideRemove={removeResponsive}
+          onPerSideReset={resetResponsive}
         />
       </div>
 
       {/* ── Typography (text nodes only) ── */}
       {isTextNode && (
         <div data-testid="section-typography" style={SECTION_STYLE}>
-          <SectionHeader title="Typography">
+          <SectionHeader title="Typography" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['typography']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['typography']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['typography']!)}>
             <MiniPreview
               style={{ width: 36, background: 'transparent', border: '1px solid #374151', borderRadius: 3 }}
               title={`${fontSizePx}px · ${fontWeight}`}
@@ -2077,21 +2419,23 @@ function DesignTab({ node }: { node: SDUINode }) {
             </MiniPreview>
           </SectionHeader>
           <div style={{ display: 'flex', gap: 6, marginBottom: 6, marginTop: 4 }}>
-            <NumberInput
-              label="Size"
-              testId="input-text-size"
-              value={fontSizePx}
-              onChange={px => patchStyle({ fontSize: `${px}px` })}
-            />
-            <FieldWithBinding label="fontWeightClass" displayLabel="Weight" hint="e.g. font-bold, font-semibold, font-normal" value={(classFormulas?.['fontWeightClass'] as FormulaValue) ?? fontWeight} onChange={v => bindOrPatchCls('fontWeightClass', evaluated => patchCls(replaceTwToken(cls, 'font-', evaluated)), v)} expectedType="string">
+            <FieldWithBinding label="fontSize" displayLabel="Size" hint="e.g. 14px, 16px, 24px" value={(nodeStyle.fontSize ?? '') as FormulaValue} onChange={v => bindOrPatch('fontSize', v)} responsiveOverrides={getOverriddenBps('fontSize')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="fontSize">
+              <NumberInput
+                label="Size"
+                testId="input-text-size"
+                value={fontSizePx}
+                onChange={px => patchStyle({ fontSize: `${px}px` })}
+              />
+            </FieldWithBinding>
+            <FieldWithBinding label="fontWeightClass" displayLabel="Weight" hint="e.g. font-bold, font-semibold, font-normal" value={(classFormulas?.['fontWeightClass'] as FormulaValue) ?? fontWeight} onChange={v => bindOrPatchCls('fontWeightClass', evaluated => patchCls(replaceTwToken(cls, 'font-', evaluated)), v)} expectedType="string" responsiveOverrides={getOverriddenBps('fontWeight')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="fontWeight">
               <SelectInput label="Weight" testId="select-font-weight" value={fontWeight} options={FONT_WEIGHT_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'font-', v))} />
             </FieldWithBinding>
           </div>
           <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-            <FieldWithBinding label="leading" displayLabel="Leading" hint="e.g. leading-tight, leading-relaxed, leading-6" value={(classFormulas?.['leading'] as FormulaValue) ?? leading} onChange={v => bindOrPatchCls('leading', evaluated => patchCls(replaceTwToken(cls, 'leading-', evaluated)), v)} expectedType="string">
+            <FieldWithBinding label="leading" displayLabel="Leading" hint="e.g. leading-tight, leading-relaxed, leading-6" value={(classFormulas?.['leading'] as FormulaValue) ?? leading} onChange={v => bindOrPatchCls('leading', evaluated => patchCls(replaceTwToken(cls, 'leading-', evaluated)), v)} expectedType="string" responsiveOverrides={getOverriddenBps('lineHeight')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="lineHeight">
               <SelectInput label="Leading" testId="select-leading" value={leading} options={LEADING_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'leading-', v))} />
             </FieldWithBinding>
-            <FieldWithBinding label="tracking" displayLabel="Tracking" hint="e.g. tracking-wide, tracking-tight, tracking-normal" value={(classFormulas?.['tracking'] as FormulaValue) ?? tracking} onChange={v => bindOrPatchCls('tracking', evaluated => patchCls(replaceTwToken(cls, 'tracking-', evaluated)), v)} expectedType="string">
+            <FieldWithBinding label="tracking" displayLabel="Tracking" hint="e.g. tracking-wide, tracking-tight, tracking-normal" value={(classFormulas?.['tracking'] as FormulaValue) ?? tracking} onChange={v => bindOrPatchCls('tracking', evaluated => patchCls(replaceTwToken(cls, 'tracking-', evaluated)), v)} expectedType="string" responsiveOverrides={getOverriddenBps('letterSpacing')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="letterSpacing">
               <SelectInput label="Tracking" testId="select-tracking" value={tracking} options={TRACKING_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'tracking-', v))} />
             </FieldWithBinding>
           </div>
@@ -2100,7 +2444,7 @@ function DesignTab({ node }: { node: SDUINode }) {
             let next = cls;
             TEXT_ALIGN_TOKENS.forEach(t => { next = removeTwToken(next, t); });
             patchCls(evaluated === 'text-left' || !evaluated ? next : `${next} ${evaluated}`.trim());
-          }, v)} expectedType="string" stackLayout>
+          }, v)} expectedType="string" stackLayout responsiveOverrides={getOverriddenBps('textAlign')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="textAlign">
             <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
               {([['text-left','left'],['text-center','center'],['text-right','right'],['text-justify','justify']] as const).map(([token, icon]) => (
                 <ToggleBtn key={token} active={textAlign === token} style={{ padding: '4px 6px', display: 'flex', alignItems: 'center' }} onClick={() => {
@@ -2118,7 +2462,7 @@ function DesignTab({ node }: { node: SDUINode }) {
           </FieldWithBinding>
           {/* Text decoration & transform */}
           <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-            <FieldWithBinding label="textDecoration" displayLabel="Decoration" hint="e.g. underline, line-through, no-underline" value={(classFormulas?.['textDecoration'] as FormulaValue) ?? textDecor} onChange={v => bindOrPatchCls('textDecoration', evaluated => {
+            <FieldWithBinding label="textDecoration" displayLabel="Decoration" hint="e.g. underline, line-through, no-underline" value={(classFormulas?.['textDecoration'] as FormulaValue) ?? textDecor} responsiveOverrides={getOverriddenBps('textDecoration')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="textDecoration" onChange={v => bindOrPatchCls('textDecoration', evaluated => {
               let next = cls;
               TEXT_DECORATION_TOKENS.forEach(t => { next = removeTwToken(next, t); });
               patchCls(evaluated === 'no-underline' ? next : `${next} ${evaluated}`.trim());
@@ -2129,7 +2473,7 @@ function DesignTab({ node }: { node: SDUINode }) {
                 patchCls(v === 'no-underline' ? next : `${next} ${v}`.trim());
               }} />
             </FieldWithBinding>
-            <FieldWithBinding label="textTransform" displayLabel="Transform" hint="e.g. uppercase, lowercase, capitalize, normal-case" value={(classFormulas?.['textTransform'] as FormulaValue) ?? textTransform} onChange={v => bindOrPatchCls('textTransform', evaluated => {
+            <FieldWithBinding label="textTransform" displayLabel="Transform" hint="e.g. uppercase, lowercase, capitalize, normal-case" value={(classFormulas?.['textTransform'] as FormulaValue) ?? textTransform} responsiveOverrides={getOverriddenBps('textTransform')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="textTransform" onChange={v => bindOrPatchCls('textTransform', evaluated => {
               let next = cls;
               TEXT_TRANSFORM_TOKENS.forEach(t => { next = removeTwToken(next, t); });
               patchCls(evaluated === 'normal-case' ? next : `${next} ${evaluated}`.trim());
@@ -2142,7 +2486,7 @@ function DesignTab({ node }: { node: SDUINode }) {
             </FieldWithBinding>
           </div>
           <div>
-            <FieldWithBinding label="color" displayLabel="Color" hint="CSS color: e.g. red, #333333, rgba(0,0,0,0.8)" value={(nodeStyle.color as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('color', v)}>
+            <FieldWithBinding label="color" displayLabel="Color" hint="CSS color: e.g. red, #333333, rgba(0,0,0,0.8)" value={(nodeStyle.color as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('color', v)} responsiveOverrides={getOverriddenBps('color')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="color">
               <div>
                 <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Color</span>
                 <FigmaColorPicker
@@ -2217,9 +2561,9 @@ function DesignTab({ node }: { node: SDUINode }) {
 
       {/* ── Interaction ── */}
       <div style={SECTION_STYLE}>
-        <SectionHeader title="Interaction" />
+        <SectionHeader title="Interaction" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['display']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['display']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['display']!)} />
         <div style={{ display: 'flex', gap: 6 }}>
-          <FieldWithBinding label="cursor" displayLabel="Cursor" hint="e.g. cursor-pointer, cursor-default" value={(classFormulas?.['cursor'] as FormulaValue) ?? cursorToken} onChange={v => bindOrPatchCls('cursor', evaluated => patchCls(replaceTwToken(cls, 'cursor-', evaluated)), v)} expectedType="string">
+          <FieldWithBinding label="cursor" displayLabel="Cursor" hint="e.g. cursor-pointer, cursor-default" value={(classFormulas?.['cursor'] as FormulaValue) ?? cursorToken} onChange={v => bindOrPatchCls('cursor', evaluated => patchCls(replaceTwToken(cls, 'cursor-', evaluated)), v)} expectedType="string" responsiveOverrides={getOverriddenBps('cursor')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="cursor">
             <SelectInput
               label="Cursor"
               value={cursorToken}
@@ -2237,6 +2581,7 @@ function DesignTab({ node }: { node: SDUINode }) {
           displayLabel="Overflow"
           hint='e.g. overflow-hidden, overflow-auto, overflow-x-auto, overflow-y-auto'
           value={(classFormulas?.['overflow'] as FormulaValue) ?? (currentOverflow === 'none' ? '' : currentOverflow)}
+          responsiveOverrides={getOverriddenBps('overflow')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="overflow"
           onChange={v => bindOrPatchCls('overflow', evaluated => {
             let next = removeTwToken(cls, 'overflow-');
             if (evaluated && evaluated !== 'none') next = `${next} ${evaluated}`.trim();
@@ -2274,7 +2619,7 @@ function DesignTab({ node }: { node: SDUINode }) {
 
       {/* ── Fill & Opacity ── */}
       <div data-testid="section-fill" style={SECTION_STYLE}>
-        <SectionHeader title="Fill & Opacity" />
+        <SectionHeader title="Fill & Opacity" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['fill-opacity']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['fill-opacity']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['fill-opacity']!)} />
         <div style={{ marginTop: 4 }}>
           <FillBackgroundSection
             nodeId={nodeId}
@@ -2288,7 +2633,7 @@ function DesignTab({ node }: { node: SDUINode }) {
         </div>
         {/* Background alpha is now controlled via rgba() in the color picker above */}
         <div style={{ marginTop: 6 }}>
-          <FieldWithBinding label="opacity" displayLabel="Opacity" hint="number 0–1 e.g. 0.5, 0.8, 1 (no quotes)" value={(nodeStyle.opacity ?? '') as FormulaValue} onChange={v => bindOrPatch('opacity', v)}>
+          <FieldWithBinding label="opacity" displayLabel="Opacity" hint="number 0–1 e.g. 0.5, 0.8, 1 (no quotes)" value={(nodeStyle.opacity ?? '') as FormulaValue} onChange={v => bindOrPatch('opacity', v)} responsiveOverrides={getOverriddenBps('opacity')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="opacity">
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ fontSize: 9, color: '#6b7280', minWidth: 60 }}>Element opacity</span>
               <input
@@ -2324,7 +2669,7 @@ function DesignTab({ node }: { node: SDUINode }) {
       {/* ── Stroke ── */}
       <div data-testid="section-border" style={SECTION_STYLE}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-          <SectionHeader title="Stroke">
+          <SectionHeader title="Stroke" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['stroke']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['stroke']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['stroke']!)}>
             {borderWidthPx > 0 && (
               <MiniPreview
                 style={{ background: 'transparent', border: `${Math.min(borderWidthPx, 4)}px solid ${computedBorderColor || '#6b7280'}` }}
@@ -2334,7 +2679,7 @@ function DesignTab({ node }: { node: SDUINode }) {
           </SectionHeader>
         </div>
         <div style={{ marginBottom: 6 }}>
-          <FieldWithBinding label="borderColor" displayLabel="Border Color" hint="CSS color: e.g. #374151, rgba(0,0,0,0.5)" value={(nodeStyle.borderColor as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('borderColor', v)}>
+          <FieldWithBinding label="borderColor" displayLabel="Border Color" hint="CSS color: e.g. #374151, rgba(0,0,0,0.5)" value={(nodeStyle.borderColor as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('borderColor', v)} responsiveOverrides={getOverriddenBps('borderColor')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="borderColor">
             <div>
               <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Color</span>
               <FigmaColorPicker
@@ -2349,7 +2694,7 @@ function DesignTab({ node }: { node: SDUINode }) {
           </FieldWithBinding>
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-          <FieldWithBinding label="borderWidth" displayLabel="Width" hint="e.g. 1px, 2px, 0" value={(nodeStyle.borderWidth ?? '') as FormulaValue} onChange={v => bindOrPatch('borderWidth', v)} expectedType="string">
+          <FieldWithBinding label="borderWidth" displayLabel="Width" hint="e.g. 1px, 2px, 0" value={(nodeStyle.borderWidth ?? '') as FormulaValue} onChange={v => bindOrPatch('borderWidth', v)} expectedType="string" responsiveOverrides={getOverriddenBps('borderWidth')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="borderWidth">
             <NumberInput
               label="Width"
               testId="input-border-width"
@@ -2357,7 +2702,7 @@ function DesignTab({ node }: { node: SDUINode }) {
               onChange={px => patchStyle({ borderWidth: `${px}px` })}
             />
           </FieldWithBinding>
-          <FieldWithBinding label="borderStyle" displayLabel="Style" hint="e.g. border-solid, border-dashed, border-dotted" value={(classFormulas?.['borderStyle'] as FormulaValue) ?? borderStyle} onChange={v => bindOrPatchCls('borderStyle', evaluated => {
+          <FieldWithBinding label="borderStyle" displayLabel="Style" hint="e.g. border-solid, border-dashed, border-dotted" value={(classFormulas?.['borderStyle'] as FormulaValue) ?? borderStyle} responsiveOverrides={getOverriddenBps('borderStyle')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="borderStyle" onChange={v => bindOrPatchCls('borderStyle', evaluated => {
             let next = cls;
             BORDER_STYLE_TOKENS.forEach(t => { next = removeTwToken(next, t); });
             patchCls(`${next} ${evaluated}`.trim());
@@ -2378,10 +2723,11 @@ function DesignTab({ node }: { node: SDUINode }) {
 
       {/* ── Border Radius ── */}
       {(() => {
-        const tlPx = parseTwArbitraryPx(cls, 'rounded-tl-') ?? parseTwArbitraryPx(cls, 'rounded-') ?? parseRoundedNamedTokenPx(cls, 'rounded-tl-') ?? parseRoundedNamedTokenPx(cls, 'rounded-') ?? 0;
-        const trPx = parseTwArbitraryPx(cls, 'rounded-tr-') ?? tlPx;
-        const brPx = parseTwArbitraryPx(cls, 'rounded-br-') ?? tlPx;
-        const blPx = parseTwArbitraryPx(cls, 'rounded-bl-') ?? tlPx;
+        const baseTlPx = parseTwArbitraryPx(cls, 'rounded-tl-') ?? parseTwArbitraryPx(cls, 'rounded-') ?? parseRoundedNamedTokenPx(cls, 'rounded-tl-') ?? parseRoundedNamedTokenPx(cls, 'rounded-') ?? 0;
+        const tlPx = rOvr('borderTopLeftRadius') ? parseFloat(rOvr('borderTopLeftRadius')!) : (rOvr('borderRadius') ? parseFloat(rOvr('borderRadius')!) : baseTlPx);
+        const trPx = rOvr('borderTopRightRadius') ? parseFloat(rOvr('borderTopRightRadius')!) : (rOvr('borderRadius') ? parseFloat(rOvr('borderRadius')!) : (parseTwArbitraryPx(cls, 'rounded-tr-') ?? baseTlPx));
+        const brPx = rOvr('borderBottomRightRadius') ? parseFloat(rOvr('borderBottomRightRadius')!) : (rOvr('borderRadius') ? parseFloat(rOvr('borderRadius')!) : (parseTwArbitraryPx(cls, 'rounded-br-') ?? baseTlPx));
+        const blPx = rOvr('borderBottomLeftRadius') ? parseFloat(rOvr('borderBottomLeftRadius')!) : (rOvr('borderRadius') ? parseFloat(rOvr('borderRadius')!) : (parseTwArbitraryPx(cls, 'rounded-bl-') ?? baseTlPx));
         // Uniform bind: read from borderRadius (all-corners style prop) for the formula value
         const uniformRadiusFormula = (nodeStyle.borderRadius ?? nodeStyle.borderTopLeftRadius ?? '') as FormulaValue;
         const isBound = isBoundValue(uniformRadiusFormula);
@@ -2395,6 +2741,10 @@ function DesignTab({ node }: { node: SDUINode }) {
               onChange={v => {
                 bindOrPatch('borderRadius', v);
               }}
+              responsiveOverrides={getOverriddenBps('borderRadius')}
+              onResponsiveRemove={removeResponsive}
+              onResponsiveReset={resetResponsive}
+              responsiveCssProp="borderRadius"
             >
               <CornerRadiusDiagram
                 values={{ tl: tlPx, tr: trPx, br: brPx, bl: blPx }}
@@ -2413,6 +2763,14 @@ function DesignTab({ node }: { node: SDUINode }) {
                   borderBottomRightRadius: `${px}px`,
                   borderBottomLeftRadius:  `${px}px`,
                 })}
+                perCornerOverrides={{
+                  tl: getOverriddenBps('borderTopLeftRadius'),
+                  tr: getOverriddenBps('borderTopRightRadius'),
+                  br: getOverriddenBps('borderBottomRightRadius'),
+                  bl: getOverriddenBps('borderBottomLeftRadius'),
+                }}
+                onPerCornerRemove={removeResponsive}
+                onPerCornerReset={resetResponsive}
               />
             </FieldWithBinding>
           </div>
@@ -2626,6 +2984,175 @@ function PropertyFlyout({ initialProp, onClose, onSave }: PropertyFlyoutProps) {
   );
 }
 
+// ─── Shared Component Properties Section ─────────────────────────────────────
+// Shown in the right panel when a shared component is open for editing (in-canvas).
+
+interface SharedComponentPropertiesSectionProps {
+  model: SharedComponentModel;
+  onUpdate: (updated: SharedComponentModel) => void;
+}
+
+function SharedComponentPropertiesSection({ model, onUpdate }: SharedComponentPropertiesSectionProps) {
+  const [propertiesOpen, setPropertiesOpen] = React.useState(true);
+  const [flyout, setFlyout] = React.useState<'create' | string | null>(null);
+  const editingProp = flyout && flyout !== 'create'
+    ? model.properties.find(p => p.id === flyout) ?? null
+    : null;
+
+  const syncContext = (props: typeof model.properties) => {
+    const defaults: Record<string, unknown> = {};
+    for (const p of props) defaults[p.name] = p.defaultValue ?? '';
+    getGlobalVariableStore().getState().setState(prev => ({ ...prev, context: { component: { props: defaults } } }));
+  };
+
+  const handleAdd = ({ name, defaultValue }: { name: string; defaultValue: string }) => {
+    const newProp = { id: crypto.randomUUID(), name, type: 'string' as const, defaultValue };
+    const updated = { ...model, properties: [...model.properties, newProp] };
+    onUpdate(updated);
+    updateSCData(updated);
+    syncContext(updated.properties);
+  };
+
+  const handleUpdate = ({ id, name, defaultValue }: { id: string; name: string; defaultValue: string }) => {
+    const updated = { ...model, properties: model.properties.map(p => p.id === id ? { ...p, name, defaultValue } : p) };
+    onUpdate(updated);
+    updateSCData(updated);
+    syncContext(updated.properties);
+  };
+
+  const handleDelete = (propId: string) => {
+    const updated = { ...model, properties: model.properties.filter(p => p.id !== propId) };
+    onUpdate(updated);
+    updateSCData(updated);
+    syncContext(updated.properties);
+    if (flyout === propId) setFlyout(null);
+  };
+
+  return (
+    <div style={{ borderBottom: '1px solid #1f2937' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px 6px', borderBottom: '1px solid #1f2937' }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: '#d1d5db' }}>Shared Component</span>
+        <span style={{ fontSize: 9, color: '#60a5fa', background: '#1e3a5f', borderRadius: 3, padding: '1px 5px', fontWeight: 700 }}>SC</span>
+      </div>
+      <div style={{ padding: '4px 12px 6px' }}>
+        <span style={{ fontSize: 10, color: '#6b7280' }}>Name: </span>
+        <span style={{ fontSize: 10, color: '#d1d5db' }}>{model.name}</span>
+      </div>
+
+      {/* Properties list */}
+      <div style={{ borderTop: '1px solid #1f2937' }}>
+        <button
+          onClick={() => setPropertiesOpen(o => !o)}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 10, color: '#6b7280' }}>⬡</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#d1d5db' }}>Properties</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button
+              onClick={e => { e.stopPropagation(); setFlyout('create'); }}
+              style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#9ca3af', fontSize: 10, padding: '2px 7px', cursor: 'pointer' }}
+            >
+              + New
+            </button>
+            <span style={{ fontSize: 10, color: '#6b7280' }}>{propertiesOpen ? '▾' : '▸'}</span>
+          </div>
+        </button>
+
+        {propertiesOpen && (
+          <div style={{ paddingBottom: 4 }}>
+            {model.properties.length === 0 ? (
+              <div style={{ padding: '4px 12px 8px', fontSize: 11, color: '#4b5563' }}>No properties yet.</div>
+            ) : (
+              model.properties.map(prop => (
+                <div
+                  key={prop.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setFlyout(flyout === prop.id ? null : prop.id)}
+                  onKeyDown={e => { if (e.key === 'Enter') setFlyout(prop.id); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', cursor: 'pointer', borderLeft: flyout === prop.id ? '2px solid #3b82f6' : '2px solid transparent' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#1f2937')}
+                  onMouseLeave={e => (e.currentTarget.style.background = '')}
+                >
+                  <span style={{ fontSize: 10, color: '#60a5fa', flexShrink: 0 }}>ƒ</span>
+                  <span style={{ flex: 1, fontSize: 11, color: '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{prop.name}</span>
+                  <span style={{ fontSize: 9, color: '#4b5563' }}>{prop.type}</span>
+                  <button
+                    onClick={e => { e.stopPropagation(); handleDelete(prop.id); }}
+                    style={{ background: 'none', border: 'none', color: '#4b5563', fontSize: 11, cursor: 'pointer', padding: '0 2px', lineHeight: 1, flexShrink: 0 }}
+                    onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+                    onMouseLeave={e => (e.currentTarget.style.color = '#4b5563')}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
+      {flyout && (
+        <PropertyFlyout
+          initialProp={editingProp}
+          onClose={() => setFlyout(null)}
+          onSave={({ id, name, defaultValue }) => {
+            if (id) { handleUpdate({ id, name, defaultValue }); }
+            else { handleAdd({ name, defaultValue }); }
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── SharedComponent Instance Props Panel ─────────────────────────────────────
+// Shown in the right panel when a SharedComponent instance node is selected.
+
+function SharedComponentInstancePanel({ node, onPatchProp }: { node: { props?: Record<string, unknown> }; onPatchProp: (key: string, value: unknown) => void }) {
+  const componentId = (node.props?.componentId as string | undefined);
+  const models = getSharedComponents();
+  const model = componentId ? models[componentId] : undefined;
+
+  if (!model) {
+    return (
+      <div style={{ padding: '8px 12px', fontSize: 11, color: '#ef4444', borderBottom: '1px solid #1f2937' }}>
+        SharedComponent: unknown componentId &quot;{componentId ?? '(none)'}&quot;
+      </div>
+    );
+  }
+
+  const instanceProps = node.props ?? {};
+
+  return (
+    <div style={{ borderBottom: '1px solid #1f2937' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px 6px', borderBottom: '1px solid #1f2937' }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: '#d1d5db' }}>Instance of &ldquo;{model.name}&rdquo;</span>
+        <span style={{ fontSize: 9, color: '#60a5fa', background: '#1e3a5f', borderRadius: 3, padding: '1px 5px', fontWeight: 700 }}>SC</span>
+      </div>
+      {model.properties.length === 0 ? (
+        <div style={{ padding: '6px 12px 8px', fontSize: 11, color: '#4b5563' }}>This component has no declared properties.</div>
+      ) : (
+        <div style={{ padding: '6px 12px 8px' }}>
+          {model.properties.map(prop => (
+            <div key={prop.id} style={{ marginBottom: 6 }}>
+              <div style={{ fontSize: 10, color: '#9ca3af', marginBottom: 2 }}>{prop.name} <span style={{ color: '#4b5563' }}>({prop.type})</span></div>
+              <input
+                value={String((instanceProps[prop.name] !== undefined ? instanceProps[prop.name] : prop.defaultValue) ?? '')}
+                onChange={e => onPatchProp(prop.name, e.target.value)}
+                placeholder={String(prop.defaultValue ?? '')}
+                style={{ width: '100%', background: '#111827', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '4px 8px', boxSizing: 'border-box' }}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Popup Properties Section ─────────────────────────────────────────────────
 
 interface PopupPropertiesSectionProps {
@@ -2750,7 +3277,21 @@ function PopupPropertiesSection({
 
 export default function PanelRight() {
   const [tab, setTab] = useState<'design' | 'theme' | 'workflows' | 'json'>('design');
-  const { selectedIds, pageNodes, activePreviewStates, editingPopupId, editingPopupContent, editingPopupModel, exitPopupEdit, aiMode } = useBuilderStore();
+  const {
+    selectedIds, pageNodes, activePreviewStates,
+    editingPopupId, editingPopupContent, editingPopupModel, exitPopupEdit,
+    editingSharedComponentId, editingSharedComponentContent, editingSharedComponentModel,
+    patchProp,
+    aiMode, activeBreakpoint,
+  } = useBuilderStore(useShallow(s => ({
+    selectedIds: s.selectedIds, pageNodes: s.pageNodes, activePreviewStates: s.activePreviewStates,
+    editingPopupId: s.editingPopupId, editingPopupContent: s.editingPopupContent,
+    editingPopupModel: s.editingPopupModel, exitPopupEdit: s.exitPopupEdit,
+    editingSharedComponentId: s.editingSharedComponentId,
+    editingSharedComponentContent: s.editingSharedComponentContent,
+    editingSharedComponentModel: s.editingSharedComponentModel,
+    patchProp: s.patchProp, aiMode: s.aiMode, activeBreakpoint: s.activeBreakpoint,
+  })));
 
   const activePreviewState = activePreviewStates?.[0] ?? 'normal';
 
@@ -2770,6 +3311,8 @@ export default function PanelRight() {
     };
   }, []);
 
+  const canvasNodes = useBuilderStore(s => s.canvasNodes) as SDUINode[];
+
   const selectedNode = useMemo(() => {
     if (selectedIds.length !== 1) return null;
     function findNode(nodes: SDUINode[], id: string): SDUINode | null {
@@ -2782,9 +3325,10 @@ export default function PanelRight() {
       }
       return null;
     }
-    // Search popup content tree first (if in popup-edit mode), then fall back to page nodes
-    return findNode(searchNodes, selectedIds[0]);
-  }, [selectedIds, searchNodes]); // eslint-disable-line react-hooks/exhaustive-deps
+    // Search page nodes, then canvas nodes (freeform nodes outside pages)
+    return findNode(searchNodes, selectedIds[0])
+      ?? findNode(canvasNodes, selectedIds[0]);
+  }, [selectedIds, searchNodes, canvasNodes]);
 
   const TABS: Array<{ id: 'design' | 'theme' | 'workflows' | 'json'; label: string; icon: React.ReactNode }> = [
     {
@@ -2824,6 +3368,18 @@ export default function PanelRight() {
       ),
     },
   ];
+
+  // ── Shared component model properties panel ───────────────────────────────
+  const [scModelState, setScModelState] = React.useState<SharedComponentModel | null>(null);
+  React.useEffect(() => {
+    if (!editingSharedComponentId || !editingSharedComponentModel) {
+      setScModelState(null);
+      return;
+    }
+    // Prefer live in-memory store for the latest model (properties may have changed)
+    const live = getSharedComponents()[editingSharedComponentId];
+    setScModelState(live ?? (editingSharedComponentModel as unknown as SharedComponentModel));
+  }, [editingSharedComponentId, editingSharedComponentModel]);
 
   // ── Popup model properties panel ──────────────────────────────────────────
   const popupModel = editingPopupModel as {
@@ -2915,6 +3471,26 @@ export default function PanelRight() {
 
       {tab === 'design' && (
         <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+          {/* Shared component properties — shown when editing a shared component in the canvas */}
+          {editingSharedComponentId && scModelState && (
+            <SharedComponentPropertiesSection
+              model={scModelState}
+              onUpdate={updated => setScModelState(updated)}
+            />
+          )}
+
+          {/* SharedComponent instance props — shown when a SharedComponent instance node is selected */}
+          {selectedNode && (selectedNode as unknown as { type?: string }).type === 'SharedComponent' && !editingSharedComponentId && (
+            <SharedComponentInstancePanel
+              node={selectedNode as unknown as { props?: Record<string, unknown> }}
+              onPatchProp={(key, value) => {
+                const id = (selectedNode as unknown as { id?: string }).id;
+                if (!id) return;
+                patchProp(id, `props.${key}`, value);
+              }}
+            />
+          )}
+
           {/* Popup properties — scrolls with the rest of the panel */}
           {editingPopupId && resolvedPopupModel && (
             <PopupPropertiesSection

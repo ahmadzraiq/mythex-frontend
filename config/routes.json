@@ -270,8 +270,14 @@
       "layout": "full"
     },
     {
-      "path": "/hero-saas-workflow",
-      "config": "heroSaaSWorkflow",
+      "path": "/responsive-test",
+      "config": "responsiveTest",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/shared-component-test",
+      "config": "sharedComponentTest",
       "auth": false,
       "layout": "full"
     }

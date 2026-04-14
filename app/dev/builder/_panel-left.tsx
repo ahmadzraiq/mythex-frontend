@@ -38,6 +38,7 @@ import { PRIMITIVE_COMPONENTS, SectionHeader, DraggablePrimitive, ComponentsTab 
 import { CustomVarsSection, VarsWorkflowsSection, VarsFormulasSection, VarsPanel } from './_vars-panel';
 import { PopupsTab } from './_popups-tab';
 import { AssetsTab } from './_assets-tab';
+import { SharedComponentsTab } from './_shared-components-tab';
 
 
 // ─── Pages Tab ────────────────────────────────────────────────────────────────
@@ -809,7 +810,7 @@ export default function PanelLeft({
   onOpenPageConfig,
   onWidthChange,
 }: PanelLeftProps) {
-  const [tab, setTab] = useState<'layers' | 'components' | 'data' | 'logic' | 'popups' | 'assets'>('components');
+  const [tab, setTab] = useState<'layers' | 'components' | 'data' | 'logic' | 'popups' | 'assets' | 'shared'>('components');
   const [search, setSearch] = useState('');
   const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [layerDrag, setLayerDrag] = useState<LayerDragState>({ dragId: null, dropTargetId: null, dropPosition: 'above' });
@@ -823,9 +824,8 @@ export default function PanelLeft({
     if (store.selectedIds.length !== 1) return;
     const targetId = store.selectedIds[0];
 
-    // Always search the full pageNodes tree so both page components and popup
-    // nodes are correctly expanded/scrolled-to when selected.
-    const searchRoot = store.pageNodes as SDUINode[];
+    // Search page nodes and canvas nodes so both are correctly expanded/scrolled-to when selected.
+    const searchRoot = [...(store.pageNodes as SDUINode[]), ...(store.canvasNodes as SDUINode[])];
 
     // Walk up ancestry and collect IDs to expand
     const idsToExpand: string[] = [];
@@ -952,7 +952,7 @@ export default function PanelLeft({
       )}
       {/* Tab bar */}
       <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-        {(['layers', 'components', 'data', 'logic', 'popups', 'assets'] as const).map(t => (
+        {(['layers', 'components', 'data', 'logic', 'popups', 'shared', 'assets'] as const).map(t => (
           <button
             key={t}
             data-testid={`tab-${t}`}
@@ -1016,6 +1016,21 @@ export default function PanelLeft({
               onLayerDragOver={handleLayerDragOver}
               onLayerDrop={handleLayerDrop}
             />
+            {/* Canvas nodes (freeform nodes outside pages) */}
+            {(store.canvasNodes as SDUINode[]).length > 0 && (
+              <>
+                <div style={{ padding: '6px 8px 2px', fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Canvas</div>
+                <LayerTree
+                  nodes={store.canvasNodes as SDUINode[]}
+                  store={store}
+                  contextMenuHandlers={ctxHandlers}
+                  dragState={layerDrag}
+                  onLayerDragStart={handleLayerDragStart}
+                  onLayerDragOver={handleLayerDragOver}
+                  onLayerDrop={handleLayerDrop}
+                />
+              </>
+            )}
           </div>
         </>
       )}
@@ -1027,6 +1042,8 @@ export default function PanelLeft({
       {tab === 'logic' && <LogicTab onSetSlide={onSetLogicSlide} />}
 
       {tab === 'popups' && <PopupsTab />}
+
+      {tab === 'shared' && <SharedComponentsTab />}
 
       {tab === 'assets' && <AssetsTab />}
 

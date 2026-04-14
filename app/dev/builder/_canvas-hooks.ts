@@ -120,15 +120,16 @@ export function useCanvasPanZoom(
   const fitToCanvas = useCallback(() => {
     const c = canvasRef.current;
     if (!c) return;
-    const w        = VIEWPORT_WIDTHS[useBuilderStore.getState().viewport];
-    const gap      = PAGE_GAP;
-    const pgs      = useBuilderStore.getState().pages;
-    const activeId = useBuilderStore.getState().currentPageId;
-    const activeIdx = Math.max(0, pgs.findIndex(p => p.id === activeId));
-    const z        = Math.min(c.clientWidth / w, c.clientHeight / VIEWPORT_H) * 0.85;
-    const pageOffsetX = activeIdx * (w + gap);
+    const w          = VIEWPORT_WIDTHS[useBuilderStore.getState().viewport];
+    const pgs        = useBuilderStore.getState().pages;
+    const activeId   = useBuilderStore.getState().focusedPageId || useBuilderStore.getState().currentPageId;
+    const activePage = pgs.find(p => p.id === activeId);
+    const z          = Math.min(c.clientWidth / w, c.clientHeight / VIEWPORT_H) * 0.85;
+    // Use stored wx/wy if available, otherwise fall back to index-based layout
+    const pageOffsetX = activePage?.wx ?? (Math.max(0, pgs.findIndex(p => p.id === activeId)) * (w + PAGE_GAP));
+    const pageOffsetY = activePage?.wy ?? 0;
     const px = (c.clientWidth - w * z) / 2 - pageOffsetX * z;
-    const py = (c.clientHeight - VIEWPORT_H * z) / 2;
+    const py = (c.clientHeight - VIEWPORT_H * z) / 2 - pageOffsetY * z;
     setZoom(z); setPan(px, py);
   }, [canvasRef, setZoom, setPan]);
 

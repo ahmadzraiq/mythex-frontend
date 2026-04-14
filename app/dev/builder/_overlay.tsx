@@ -9,7 +9,7 @@
  * space (already scaled).
  */
 
-import React, { useMemo, useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react';
+import React, { memo, useMemo, useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import type { GridOverlayConfig } from './_store';
 import { useBuilderStore } from './_store';
@@ -66,6 +66,22 @@ export interface OverlayProps {
 
 function getCanvasRect(id: string, canvasEl: HTMLElement): CanvasRect | null {
   const el = canvasEl.querySelector(`[data-builder-id="${id}"]`);
+  if (!el) return null;
+  const r  = el.getBoundingClientRect();
+  const cr = canvasEl.getBoundingClientRect();
+  if (r.width === 0 && r.height === 0) return null;
+  return { x: r.left - cr.left, y: r.top - cr.top, w: r.width, h: r.height };
+}
+
+/**
+ * Like getCanvasRect but targets a specific instance of a repeated/map node.
+ * When a node's template is rendered N times, all instances share the same
+ * `data-builder-id`. `index` selects the nth instance (0-based).
+ * Falls back to the first instance when index is null or out of range.
+ */
+function getCanvasRectByIndex(id: string, index: number | null, canvasEl: HTMLElement): CanvasRect | null {
+  const els = canvasEl.querySelectorAll(`[data-builder-id="${id}"]`);
+  const el = (index !== null && els[index]) ? els[index] : els[0];
   if (!el) return null;
   const r  = el.getBoundingClientRect();
   const cr = canvasEl.getBoundingClientRect();
@@ -187,8 +203,13 @@ function InteractionLines({ pageNodes, canvasEl, canvasDomRect }: {
   );
 }
 
-function getComputedPadding(id: string, canvasEl: HTMLElement) {
-  const el = canvasEl.querySelector(`[data-builder-id="${id}"]`) as HTMLElement | null;
+function getElByMapIndex(id: string, canvasEl: HTMLElement, mapIndex?: number | null): HTMLElement | null {
+  const els = canvasEl.querySelectorAll(`[data-builder-id="${id}"]`);
+  return ((mapIndex != null && els[mapIndex]) ? els[mapIndex] : els[0]) as HTMLElement | null;
+}
+
+function getComputedPadding(id: string, canvasEl: HTMLElement, mapIndex?: number | null) {
+  const el = getElByMapIndex(id, canvasEl, mapIndex);
   if (!el) return null;
   const cs = window.getComputedStyle(el);
   return {
@@ -199,8 +220,8 @@ function getComputedPadding(id: string, canvasEl: HTMLElement) {
   };
 }
 
-function getComputedMargin(id: string, canvasEl: HTMLElement) {
-  const el = canvasEl.querySelector(`[data-builder-id="${id}"]`) as HTMLElement | null;
+function getComputedMargin(id: string, canvasEl: HTMLElement, mapIndex?: number | null) {
+  const el = getElByMapIndex(id, canvasEl, mapIndex);
   if (!el) return null;
   const cs = window.getComputedStyle(el);
   const top    = parseFloat(cs.marginTop)    || 0;
@@ -229,8 +250,8 @@ function isAbsoluteNode(id: string, pageNodes: SDUINode[]): boolean {
   return /\b(absolute|fixed)\b/.test(cls);
 }
 
-function getComputedFlex(id: string, canvasEl: HTMLElement) {
-  const el = canvasEl.querySelector(`[data-builder-id="${id}"]`) as HTMLElement | null;
+function getComputedFlex(id: string, canvasEl: HTMLElement, mapIndex?: number | null) {
+  const el = getElByMapIndex(id, canvasEl, mapIndex);
   if (!el) return null;
   const cs = window.getComputedStyle(el);
   return {
@@ -258,12 +279,14 @@ const HANDLE_STYLE: Record<ResizeHandle, React.CSSProperties> = {
   w:  { top: '50%', left: -5, transform: 'translateY(-50%)',            cursor: 'w-resize'  },
 };
 
-function SelectionBox({ rect, nodeId, onResizeStart, zoom, ringRef }: {
+function SelectionBox({ rect, nodeId, onResizeStart, zoom, ringRef, mapIndex }: {
   rect: CanvasRect;
   nodeId: string;
   onResizeStart: OverlayProps['onResizeStart'];
   zoom: number;
   ringRef?: React.Ref<HTMLDivElement>;
+  /** When the selected node is a repeat instance, which instance to read border-radius from. */
+  mapIndex?: number | null;
 }) {
   const handles: ResizeHandle[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 
@@ -297,25 +320,11 @@ function SelectionBox({ rect, nodeId, onResizeStart, zoom, ringRef }: {
   const w = Math.round(rect.w / zoom);
   const h = Math.round(rect.h / zoom);
 
-  // Read border-radius from the data-builder-id element so the selection ring
-  // follows the node's actual rounded corners. Works for both animated nodes
-  // (outer wrapper carries border-radius via outerStyle) and plain nodes
-  // (element itself has the rounded class → getComputedStyle returns the value).
-  const selectionBorderRadius = (() => {
-    const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
-    if (!el) return '2px';
-    const inlineR = el.style.borderRadius;
-    if (inlineR && inlineR !== '0px' && inlineR !== '0') return inlineR;
-    const computed = getComputedStyle(el).borderRadius;
-    if (computed && computed !== '0px' && computed !== '0') return computed;
-    return '2px';
-  })();
-
   return (
     <div
       ref={ringRef}
       data-testid="selection-ring"
-      style={{ position: 'absolute', left: rect.x, top: rect.y, width: rect.w, height: rect.h, boxShadow: '0 0 0 2px #3b82f6', borderRadius: selectionBorderRadius, pointerEvents: 'none', boxSizing: 'border-box' }}
+      style={{ position: 'absolute', left: rect.x, top: rect.y, width: rect.w, height: rect.h, boxShadow: '0 0 0 2px #3b82f6', pointerEvents: 'none', boxSizing: 'border-box' }}
     >
       {handles.map(handle => (
         <div
@@ -554,7 +563,7 @@ function GridOverlay({ panX, panY, zoom, config }: {
 
 // ─── Main Overlay ─────────────────────────────────────────────────────────────
 
-export default function BuilderOverlay({
+export default memo(function BuilderOverlay({
   zoom,
   panX,
   panY,
@@ -578,6 +587,8 @@ export default function BuilderOverlay({
   const showInteractionLines = useBuilderStore(s => s.showInteractionLines);
   const aiMode               = useBuilderStore(s => s.aiMode);
   const aiSelectedNodeIds    = useBuilderStore(s => s.aiSelectedNodeIds);
+  const selectedMapIndex     = useBuilderStore(s => s.selectedMapIndex);
+  const hoveredMapIndex      = useBuilderStore(s => s.hoveredMapIndex);
 
   // ── Event-driven RAF loop ────────────────────────────────────────────────
   //
@@ -657,13 +668,18 @@ export default function BuilderOverlay({
   // During pan/zoom, overlayInstantUpdateRef also updates them for zero-lag tracking.
   useEffect(() => {
     const hId   = hoveredId;
-    const show  = !!(hId && !selectedIds.includes(hId) && !altMode && canvasEl && !isDragging);
+    // For repeat/map nodes all instances share the same id — allow hover to show
+    // on sibling instances (different hoveredMapIndex than selectedMapIndex).
+    const isSameInstance = selectedIds.includes(hId ?? '') && hoveredMapIndex === selectedMapIndex;
+    const show  = !!(hId && !isSameInstance && !altMode && canvasEl && !isDragging);
     if (!show) {
       if (imperativeHoverBorderRef.current) imperativeHoverBorderRef.current.style.display = 'none';
       if (imperativeHoverLabelRef.current)  imperativeHoverLabelRef.current.style.display  = 'none';
       return;
     }
-    const hEl = canvasEl!.querySelector(`[data-builder-id="${hId}"]`) as HTMLElement | null;
+    const hEls = canvasEl!.querySelectorAll(`[data-builder-id="${hId}"]`);
+    const hEl  = (hoveredMapIndex !== null ? hEls[hoveredMapIndex] : hEls[0]) as HTMLElement | null
+               ?? hEls[0] as HTMLElement | null;
     const cr  = canvasDomRectRef.current;
     if (!hEl || !cr) return;
     const hR   = hEl.getBoundingClientRect();
@@ -688,7 +704,7 @@ export default function BuilderOverlay({
       l.textContent     = `${hType}  ${logW} × ${logH}`;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hoveredId, selectedIds, altMode, isDragging, canvasEl]);
+  }, [hoveredId, hoveredMapIndex, selectedIds, selectedMapIndex, altMode, isDragging, canvasEl]);
 
   // ── Instant synchronous update (zero-lag pan tracking) ──────────────────
   //
@@ -710,6 +726,8 @@ export default function BuilderOverlay({
   const paddingFillsLayerRef  = useRef<HTMLDivElement>(null);   // padding fills (full recompute)
   const gapFillsLayerRef      = useRef<HTMLDivElement>(null);   // gap fills (full recompute from children BCR)
   const marginFillsLayerRef   = useRef<HTMLDivElement>(null);   // margin fills (full recompute)
+  const repeatSiblingsLayerRef = useRef<HTMLDivElement>(null);  // repeat sibling outlines (imperative update)
+  const hoverSiblingsLayerRef  = useRef<HTMLDivElement>(null);  // hover sibling outlines (imperative update)
   // Crosshairs — fully imperative (like hover outline) so they track during pan/zoom with zero lag.
   const imperativeCrosshairHRef = useRef<HTMLDivElement | null>(null);
   const imperativeCrosshairVRef = useRef<HTMLDivElement | null>(null);
@@ -722,6 +740,13 @@ export default function BuilderOverlay({
   const imperativeHoverLabelRef  = useRef<HTMLDivElement | null>(null);
   useEffect(() => { hoveredIdRef.current = hoveredId; }, [hoveredId]);
   useEffect(() => { altModeRef.current   = altMode;   }, [altMode]);
+
+  // Map-index refs — kept in sync so imperative RAF callbacks can read them
+  // without closure staleness (same pattern as hoveredIdRef / altModeRef).
+  const selectedMapIndexRef = useRef(selectedMapIndex);
+  const hoveredMapIndexRef  = useRef(hoveredMapIndex);
+  useEffect(() => { selectedMapIndexRef.current = selectedMapIndex; }, [selectedMapIndex]);
+  useEffect(() => { hoveredMapIndexRef.current  = hoveredMapIndex;  }, [hoveredMapIndex]);
 
   // After every React tick re-render, correct everything before paint.
   //
@@ -752,7 +777,9 @@ export default function BuilderOverlay({
         if (imperativeCrosshairHRef.current) imperativeCrosshairHRef.current.style.display = 'none';
         if (imperativeCrosshairVRef.current) imperativeCrosshairVRef.current.style.display = 'none';
       } else {
-      const el = canvasEl.querySelector(`[data-builder-id="${selectedIds[0]}"]`);
+      const _smi  = selectedMapIndexRef.current;
+      const _sEls = canvasEl.querySelectorAll(`[data-builder-id="${selectedIds[0]}"]`);
+      const el    = (_smi !== null ? _sEls[_smi] : _sEls[0]) ?? _sEls[0];
       if (el) {
       const r  = el.getBoundingClientRect();
       const currX = r.left  - cr.left;
@@ -797,7 +824,7 @@ export default function BuilderOverlay({
 
       // 3. Padding fills — read fresh from DOM every call (no cache).
       //    Stale cache was the root cause of padding not updating after right-panel edits.
-      const padding = getComputedPadding(selectedIds[0], canvasEl);
+      const padding = getComputedPadding(selectedIds[0], canvasEl, selectedMapIndexRef.current);
       if (paddingFillsLayerRef.current && padding) {
         const fills = paddingFillsLayerRef.current.querySelectorAll<HTMLElement>('[data-padding-side]');
         fills.forEach(fill => {
@@ -827,12 +854,13 @@ export default function BuilderOverlay({
       }
 
       // 4. Gap fills — full recompute from each child's BCR (fresh, no cache).
-      const flex = getComputedFlex(selectedIds[0], canvasEl);
+      const flex = getComputedFlex(selectedIds[0], canvasEl, selectedMapIndexRef.current);
       const flexInfo = (flex && flex.gap && flex.display === 'flex')
         ? { isRow: flex.flexDirection === 'row' || flex.flexDirection === 'row-reverse' }
         : null;
       if (gapFillsLayerRef.current && flexInfo) {
-        const parent = canvasEl.querySelector(`[data-builder-id="${selectedIds[0]}"]`);
+        const _gmiSel = selectedMapIndexRef.current;
+        const parent  = getElByMapIndex(selectedIds[0], canvasEl, _gmiSel);
         if (parent) {
           const directChildren = Array.from(parent.children).filter(c => {
             const childEl = c as HTMLElement;
@@ -868,7 +896,7 @@ export default function BuilderOverlay({
       }
 
       // 5. Margin fills — read fresh from DOM every call (same rationale as padding).
-      const margin = getComputedMargin(selectedIds[0], canvasEl);
+      const margin = getComputedMargin(selectedIds[0], canvasEl, selectedMapIndexRef.current);
       if (marginFillsLayerRef.current && margin) {
         const fills = marginFillsLayerRef.current.querySelectorAll<HTMLElement>('[data-margin-side]');
         fills.forEach(fill => {
@@ -897,15 +925,59 @@ export default function BuilderOverlay({
         });
       }
       } // end if (el) — selection ring section
+
+      // ── Repeat sibling outlines (imperative) ──────────────────────────
+      if (repeatSiblingsLayerRef.current) {
+        const selId = selectedIds[0];
+        const allSibEls = canvasEl.querySelectorAll(`[data-builder-id="${selId}"]`);
+        const outlineDivs = repeatSiblingsLayerRef.current.querySelectorAll<HTMLElement>('[data-sib-idx]');
+        outlineDivs.forEach(outline => {
+          const dataIdx = Number(outline.getAttribute('data-sib-idx') ?? '0');
+          const sibEl = allSibEls[dataIdx] as HTMLElement | undefined;
+          if (sibEl) {
+            const sr = sibEl.getBoundingClientRect();
+            outline.style.left   = `${sr.left - cr.left}px`;
+            outline.style.top    = `${sr.top  - cr.top}px`;
+            outline.style.width  = `${sr.width}px`;
+            outline.style.height = `${sr.height}px`;
+          }
+        });
+      }
+
       } // end else — selectedIds.length === 1
+
+      // ── Hover sibling outlines (imperative) ───────────────────────────
+      if (hoverSiblingsLayerRef.current) {
+        const hIdSib = hoveredIdRef.current;
+        if (hIdSib) {
+          const allHovEls = canvasEl.querySelectorAll(`[data-builder-id="${hIdSib}"]`);
+          const hOutlineDivs = hoverSiblingsLayerRef.current.querySelectorAll<HTMLElement>('[data-sib-idx]');
+          hOutlineDivs.forEach(outline => {
+            const dataIdx = Number(outline.getAttribute('data-sib-idx') ?? '0');
+            const sibEl = allHovEls[dataIdx] as HTMLElement | undefined;
+            if (sibEl) {
+              const sr = sibEl.getBoundingClientRect();
+              outline.style.left   = `${sr.left - cr.left}px`;
+              outline.style.top    = `${sr.top  - cr.top}px`;
+              outline.style.width  = `${sr.width}px`;
+              outline.style.height = `${sr.height}px`;
+            }
+          });
+        }
+      }
 
       // ── Hover outline (imperative, all selection states) ────────────────
       // Updated in sync with applyWorldTransform so the outline never lags
       // behind the canvas content during zoom/pan (eliminates dancing).
       const hId  = hoveredIdRef.current;
       const hAlt = altModeRef.current;
-      if (hId && !selectedIds.includes(hId) && !hAlt) {
-        const hEl = canvasEl.querySelector(`[data-builder-id="${hId}"]`) as HTMLElement | null;
+      // Allow hover on sibling repeat instances — same id but different map index.
+      const _hmiNow = hoveredMapIndexRef.current;
+      const _smiNow = selectedMapIndexRef.current;
+      const isSameInst = hId ? (selectedIds.includes(hId) && _hmiNow === _smiNow) : true;
+      if (hId && !isSameInst && !hAlt) {
+        const _hEls = canvasEl.querySelectorAll(`[data-builder-id="${hId}"]`);
+        const hEl   = ((_hmiNow !== null ? _hEls[_hmiNow] : _hEls[0]) ?? _hEls[0]) as HTMLElement | null;
         if (hEl) {
           const hR = hEl.getBoundingClientRect();
           if (imperativeHoverBorderRef.current) {
@@ -972,20 +1044,81 @@ export default function BuilderOverlay({
       useBuilderStore.getState()._setRingUpdateCallback(null);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canvasEl, selectedIds, overlayInstantUpdateRef, zoom, pageNodes]);
+  }, [canvasEl, selectedIds, selectedMapIndex, overlayInstantUpdateRef, zoom, pageNodes]);
 
   // hoverRect is no longer used for rendering — hover outline is now fully imperative.
   // The RAF tick still drives padding/margin/gap fill updates for the selection ring.
 
+  // Repeat sibling rects — computed as a useMemo (not an IIFE in JSX) so React can
+  // reliably cache and recompute when tick/selection/pageNodes change.
+  // We walk UP from the selected element to find the outermost repeat-container so
+  // outlines appear around the full template root (not a nested child element).
+  const repeatSiblingRects = useMemo(() => {
+    if (isDragging || selectedIds.length !== 1 || !canvasEl) return [] as { idx: number; x: number; y: number; w: number; h: number; br: string }[];
+    const selectedId  = selectedIds[0];
+    const mapIndex    = selectedMapIndex;
+
+    const allEls = Array.from(canvasEl.querySelectorAll(`[data-builder-id="${selectedId}"]`)) as HTMLElement[];
+    if (allEls.length <= 1) return [];
+
+    const cr          = canvasEl.getBoundingClientRect();
+    const activeIndex = mapIndex ?? 0;
+
+    return allEls
+      .map((el, idx) => {
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 && r.height === 0) return null;
+        return { idx, x: r.left - cr.left, y: r.top - cr.top, w: r.width, h: r.height };
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null);
+  // pageNodes / tick ensure recompute when canvas changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDragging, selectedIds, selectedMapIndex, tick, pageNodes, canvasEl]);
+
+  // Hover sibling rects — when hovering a repeat instance, show the same hover ring on all
+  // other instances of the same template. Uses identical "walk up to repeat root" logic.
+  const hoverSiblingRects = useMemo(() => {
+    if (!canvasEl || !hoveredId) return [] as { idx: number; x: number; y: number; w: number; h: number; br: string }[];
+    const mapIndex = hoveredMapIndex;
+    if (mapIndex === null) return [];
+
+    const allEls = Array.from(canvasEl.querySelectorAll(`[data-builder-id="${hoveredId}"]`)) as HTMLElement[];
+    if (allEls.length <= 1) return [];
+
+    const cr = canvasEl.getBoundingClientRect();
+
+    return allEls
+      .map((el, idx) => {
+        if (idx === mapIndex) return null;
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 && r.height === 0) return null;
+        const inlineR   = el.style.borderRadius;
+        const computedR = getComputedStyle(el).borderRadius;
+        const br = (inlineR && inlineR !== '0px' && inlineR !== '0') ? inlineR
+          : (computedR && computedR !== '0px' && computedR !== '0') ? computedR
+          : '2px';
+        return { idx, x: r.left - cr.left, y: r.top - cr.top, w: r.width, h: r.height, br };
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hoveredId, hoveredMapIndex, tick, canvasEl]);
+
   const selectedRects = useMemo(() => {
     if (!canvasEl) return [] as { id: string; rect: CanvasRect }[];
     return selectedIds
-      .map(id => ({ id, rect: getCanvasRect(id, canvasEl) }))
+      .map(id => {
+        // For single selection, use selectedMapIndex to target the clicked repeat instance
+        // instead of always defaulting to the first DOM element.
+        const rect = (selectedIds.length === 1)
+          ? getCanvasRectByIndex(id, selectedMapIndex, canvasEl)
+          : getCanvasRect(id, canvasEl);
+        return { id, rect };
+      })
       .filter(r => r.rect !== null) as { id: string; rect: CanvasRect }[];
     // pageNodes included so the rect recomputes on any panel edit (rotation, size, etc.)
     // without waiting for the RAF tick loop to be active.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canvasEl, selectedIds, tick, pageNodes]);
+  }, [canvasEl, selectedIds, selectedMapIndex, tick, pageNodes]);
 
   const firstSel = selectedRects[0];
 
@@ -1036,6 +1169,26 @@ export default function BuilderOverlay({
         }}
       />
 
+      {/* Hover sibling outlines — when hovering a repeat instance, all other instances
+          get the same hover ring so the user sees the full template scope. */}
+      <div ref={hoverSiblingsLayerRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        {hoverSiblingRects.map(({ idx, x, y, w, h }) => (
+          <div
+            key={`hover-sibling-${idx}`}
+            data-testid="hover-sibling-outline"
+            data-sib-idx={idx}
+            style={{
+              position: 'absolute',
+              left: x, top: y, width: w, height: h,
+              boxShadow: '0 0 0 1px rgba(59,130,246,0.8)',
+              pointerEvents: 'none',
+              boxSizing: 'border-box',
+              zIndex: 8,
+            }}
+          />
+        ))}
+      </div>
+
       {/* Crosshairs — fully imperative (position updated in overlayInstantUpdateRef) */}
       <div
         ref={imperativeCrosshairHRef}
@@ -1061,12 +1214,12 @@ export default function BuilderOverlay({
         const isAbs = Array.isArray(pageNodes) && pageNodes.length > 0
           ? isAbsoluteNode(firstSel.id, pageNodes)
           : false;
-        const padding = isAbs ? null : getComputedPadding(firstSel.id, canvasEl);
-        const margin  = isAbs ? null : getComputedMargin(firstSel.id, canvasEl);
+        const padding = isAbs ? null : getComputedPadding(firstSel.id, canvasEl, selectedMapIndex);
+        const margin  = isAbs ? null : getComputedMargin(firstSel.id, canvasEl, selectedMapIndex);
         return (
           <>
             {/* ringRef enables zero-lag imperative position sync during pan/zoom */}
-            <SelectionBox rect={firstSel.rect} nodeId={firstSel.id} onResizeStart={onResizeStart} zoom={zoom} ringRef={selectionRingRef} />
+            <SelectionBox rect={firstSel.rect} nodeId={firstSel.id} onResizeStart={onResizeStart} zoom={zoom} ringRef={selectionRingRef} mapIndex={selectedMapIndex} />
 
             {/* Gap fills — separate layer, fully recomputed each frame from each child's BCR.
                 Children move by different amounts during zoom, so translate alone is wrong. */}
@@ -1093,6 +1246,25 @@ export default function BuilderOverlay({
           </>
         );
       })()}
+
+      {/* Repeat sibling outlines — positions updated imperatively via repeatSiblingsLayerRef */}
+      <div ref={repeatSiblingsLayerRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        {repeatSiblingRects.map(({ idx, x, y, w, h }) => (
+          <div
+            key={`repeat-sibling-${idx}`}
+            data-testid="repeat-sibling-outline"
+            data-sib-idx={idx}
+            style={{
+              position: 'absolute',
+              left: x, top: y, width: w, height: h,
+              boxShadow: '0 0 0 1px rgba(59,130,246,0.8)',
+              pointerEvents: 'none',
+              boxSizing: 'border-box',
+              zIndex: 8,
+            }}
+          />
+        ))}
+      </div>
 
       {/* Multi-select: highlights + bounding box */}
       {!isDragging && selectedRects.length > 1 && (
@@ -1202,4 +1374,4 @@ export default function BuilderOverlay({
       )}
     </div>
   );
-}
+});

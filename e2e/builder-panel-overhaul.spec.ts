@@ -1063,7 +1063,7 @@ test.describe('BPO Group O — Preview data → canvas flow', () => {
     await page.evaluate(() => {
       const storeApi = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore;
       if (!storeApi) return;
-      (storeApi.getState().switchPage as (id: string) => void)('page-search');
+      (storeApi.getState().focusPage as (id: string) => void)('page-search');
     });
     await page.waitForTimeout(300);
 

@@ -48,7 +48,7 @@
                   {
                     "type": "Icon",
                     "props": {
-                      "icon": "lucide:check-circle2",
+                      "icon": "lucide:circle-check",
                       "size": 64,
                       "className": "!text-green-500"
                     }

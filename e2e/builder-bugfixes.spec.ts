@@ -117,11 +117,11 @@ test.describe('BB – Builder Bug Fixes', () => {
     await page.evaluate(({ nodeId: nid, srcPageId: src, dstPageId: dst }) => {
       const s = (window as unknown as Record<string, { getState: () => {
         moveNodeFromPage: (nodeId: string, fromPageId: string, parentId: null, atIdx: number) => void;
-        switchPage: (pageId: string) => void;
+        focusPage: (pageId: string) => void;
         pages: Array<{ id: string }>;
       } }>).__builderStore.getState();
       // Switch to dest page first (simulating page hover during drag)
-      s.switchPage(dst);
+      s.focusPage(dst);
       // Then cross-page move
       s.moveNodeFromPage(nid, src, null, 0);
     }, { nodeId, srcPageId, dstPageId });

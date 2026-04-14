@@ -1,0 +1,111 @@
+{
+  "sc-status-badge": {
+    "id": "sc-status-badge",
+    "name": "Status Badge",
+    "properties": [
+      { "id": "prop-sb-status", "name": "status", "type": "string", "defaultValue": "active" },
+      { "id": "prop-sb-label", "name": "label", "type": "string", "defaultValue": "Active" }
+    ],
+    "content": {
+      "type": "Box",
+      "props": {
+        "className": "inline-flex flex-row items-center gap-[6px] px-[10px] py-[4px] rounded-[9999px] bg-green-100 dark:bg-green-900/30"
+      },
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "className": "w-[6px] h-[6px] rounded-[9999px] bg-green-500"
+          }
+        },
+        {
+          "type": "Text",
+          "props": {
+            "className": "text-[11px] font-semibold text-green-700 dark:text-green-300"
+          },
+          "text": "{{context.component.props.label}}"
+        }
+      ]
+    }
+  },
+  "sc-info-card": {
+    "id": "sc-info-card",
+    "name": "Info Card",
+    "properties": [
+      { "id": "prop-ic-title", "name": "title", "type": "string", "defaultValue": "Card Title" },
+      { "id": "prop-ic-description", "name": "description", "type": "string", "defaultValue": "A description goes here." },
+      { "id": "prop-ic-accent", "name": "accent", "type": "string", "defaultValue": "#6366f1" }
+    ],
+    "content": {
+      "type": "Box",
+      "props": {
+        "className": "w-full rounded-[12px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden"
+      },
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "className": "h-[4px]",
+            "style": { "backgroundColor": "{{context.component.props.accent}}" }
+          }
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "px-[20px] py-[16px] flex flex-col gap-[8px]"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "className": "text-[15px] font-semibold text-gray-900 dark:text-white",
+                "data-testid": "card-title"
+              },
+              "text": "{{context.component.props.title}}"
+            },
+            {
+              "type": "Text",
+              "props": {
+                "className": "text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed",
+                "data-testid": "card-description"
+              },
+              "text": "{{context.component.props.description}}"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "sc-cta-button": {
+    "id": "sc-cta-button",
+    "name": "CTA Button",
+    "properties": [
+      { "id": "prop-cta-text", "name": "buttonText", "type": "string", "defaultValue": "Get Started" },
+      { "id": "prop-cta-variant", "name": "variant", "type": "string", "defaultValue": "primary" }
+    ],
+    "content": {
+      "type": "Box",
+      "props": {
+        "className": "inline-flex flex-row items-center justify-center gap-[8px] px-[20px] py-[10px] rounded-[8px] bg-[#6366f1] hover:bg-[#4f46e5] cursor-pointer"
+      },
+      "children": [
+        {
+          "type": "Text",
+          "props": {
+            "className": "text-[14px] font-semibold text-white",
+            "data-testid": "cta-text"
+          },
+          "text": "{{context.component.props.buttonText}}"
+        },
+        {
+          "type": "Icon",
+          "props": {
+            "icon": "lucide:arrow-right",
+            "size": 14,
+            "color": "#ffffff"
+          }
+        }
+      ]
+    }
+  }
+}

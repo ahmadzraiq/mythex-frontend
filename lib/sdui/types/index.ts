@@ -14,6 +14,10 @@ export type {
   SDUIDataSource,
   SDUIAction,
   SDUINode,
+  BreakpointKey,
+  ResponsiveOverride,
 } from './node';
+
+export { BREAKPOINT_CASCADE, BREAKPOINT_MAX_WIDTHS } from './node';
 
 export type { SDUIConfig, SDUIContext } from './config';

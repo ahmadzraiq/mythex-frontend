@@ -1,0 +1,303 @@
+{
+  "meta": {
+    "title": "Shared Component Test"
+  },
+  "layout": "store",
+  "content": {
+    "type": "Box",
+    "props": {
+      "className": "w-full max-w-3xl mx-auto px-[16px] py-[40px] flex flex-col gap-[32px]"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "flex flex-col gap-[4px]"
+        },
+        "children": [
+          {
+            "type": "Heading",
+            "props": {
+              "size": "2xl",
+              "className": "font-bold text-gray-900 dark:text-gray-100"
+            },
+            "text": "Shared Component System"
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[14px] text-gray-500 dark:text-gray-400"
+            },
+            "text": "A shared component is defined once and placed as instances anywhere on any page. Each instance can pass its own prop values via context.component.props."
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "px-[20px] py-[16px] border-b border-gray-100 dark:border-gray-800 flex flex-row items-center gap-[8px]"
+            },
+            "children": [
+              {
+                "type": "Icon",
+                "props": {
+                  "icon": "lucide:badge-check",
+                  "size": 15,
+                  "color": "#22c55e"
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[14px] font-semibold text-gray-900 dark:text-white"
+                },
+                "text": "Status Badge Component — Three Instances"
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "p-[20px] flex flex-col gap-[16px]"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[13px] text-gray-500 dark:text-gray-400"
+                },
+                "text": "Each badge instance passes different label and status props, all rendered from the same sc-status-badge shared component definition."
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row flex-wrap gap-[12px] items-center",
+                  "data-testid": "badge-row"
+                },
+                "children": [
+                  {
+                    "type": "SharedComponent",
+                    "props": {
+                      "componentId": "sc-status-badge",
+                      "label": "Published",
+                      "status": "active",
+                      "data-testid": "badge-instance-1"
+                    }
+                  },
+                  {
+                    "type": "SharedComponent",
+                    "props": {
+                      "componentId": "sc-status-badge",
+                      "label": "Draft",
+                      "status": "draft",
+                      "data-testid": "badge-instance-2"
+                    }
+                  },
+                  {
+                    "type": "SharedComponent",
+                    "props": {
+                      "componentId": "sc-status-badge",
+                      "label": "Archived",
+                      "status": "archived",
+                      "data-testid": "badge-instance-3"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "px-[20px] py-[16px] border-b border-gray-100 dark:border-gray-800 flex flex-row items-center gap-[8px]"
+            },
+            "children": [
+              {
+                "type": "Icon",
+                "props": {
+                  "icon": "lucide:layout-template",
+                  "size": 15,
+                  "color": "#6366f1"
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[14px] font-semibold text-gray-900 dark:text-white"
+                },
+                "text": "Info Card Component — Three Instances"
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "p-[20px] flex flex-col gap-[16px]"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[13px] text-gray-500 dark:text-gray-400"
+                },
+                "text": "Each card passes a different title, description, and accent color. The shared component definition renders context.component.props.title etc."
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col gap-[12px]",
+                  "data-testid": "card-section"
+                },
+                "children": [
+                  {
+                    "type": "SharedComponent",
+                    "props": {
+                      "componentId": "sc-info-card",
+                      "title": "Getting Started",
+                      "description": "Learn the basics of the shared component system. Define once, reuse everywhere.",
+                      "accent": "#6366f1",
+                      "data-testid": "info-card-1"
+                    }
+                  },
+                  {
+                    "type": "SharedComponent",
+                    "props": {
+                      "componentId": "sc-info-card",
+                      "title": "Prop Passing",
+                      "description": "Instance props override the component's default values at render time.",
+                      "accent": "#f59e0b",
+                      "data-testid": "info-card-2"
+                    }
+                  },
+                  {
+                    "type": "SharedComponent",
+                    "props": {
+                      "componentId": "sc-info-card",
+                      "title": "No Duplication",
+                      "description": "The component tree is defined once in shared-components.json. Updates propagate to every instance automatically.",
+                      "accent": "#22c55e",
+                      "data-testid": "info-card-3"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "px-[20px] py-[16px] border-b border-gray-100 dark:border-gray-800 flex flex-row items-center gap-[8px]"
+            },
+            "children": [
+              {
+                "type": "Icon",
+                "props": {
+                  "icon": "lucide:mouse-pointer-click",
+                  "size": 15,
+                  "color": "#f59e0b"
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[14px] font-semibold text-gray-900 dark:text-white"
+                },
+                "text": "CTA Button Component — Default Props Fallback"
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "p-[20px] flex flex-col gap-[16px]"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[13px] text-gray-500 dark:text-gray-400"
+                },
+                "text": "The first button overrides buttonText. The second passes no props — falling back to the component's defaultValue (\"Get Started\")."
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row flex-wrap gap-[12px]",
+                  "data-testid": "cta-row"
+                },
+                "children": [
+                  {
+                    "type": "SharedComponent",
+                    "props": {
+                      "componentId": "sc-cta-button",
+                      "buttonText": "Sign Up Free",
+                      "data-testid": "cta-instance-custom"
+                    }
+                  },
+                  {
+                    "type": "SharedComponent",
+                    "props": {
+                      "componentId": "sc-cta-button",
+                      "data-testid": "cta-instance-default"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "bg-gray-50 dark:bg-gray-800/50 rounded-[12px] p-[16px] flex flex-col gap-[8px]"
+        },
+        "children": [
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+            },
+            "text": "Unknown component fallback"
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[13px] text-gray-500 dark:text-gray-400"
+            },
+            "text": "The next element uses an unknown componentId — the renderer shows a red error boundary in dev mode."
+          },
+          {
+            "type": "SharedComponent",
+            "props": {
+              "componentId": "sc-does-not-exist",
+              "data-testid": "unknown-component"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

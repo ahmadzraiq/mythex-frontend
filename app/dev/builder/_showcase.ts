@@ -312,12 +312,15 @@ const formSection = section('Form', [
     ],
   }),
   labeled('Input Password', {
-    type: 'Input',
-    props: { variant: 'outline', size: 'md', className: 'w-full !rounded-md !border-[rgb(var(--border))] !bg-[rgb(var(--card))]' },
-    children: [
-      { type: 'InputField', props: { placeholder: 'Password', type: 'password', className: '!text-[rgb(var(--foreground))]' } },
-      { type: 'InputSlot', props: { className: 'pr-3 pointer-events-none' }, children: [{ type: 'Icon', props: { icon: 'lucide:eye', size: 15, color: 'rgb(var(--muted-foreground))' } }] },
-    ],
+    type: 'FormContainer',
+    children: [{
+      type: 'Input',
+      props: { variant: 'outline', size: 'md', className: 'w-full !rounded-md !border-[rgb(var(--border))] !bg-[rgb(var(--card))]' },
+      children: [
+        { type: 'InputField', props: { placeholder: 'Password', type: 'password', className: '!text-[rgb(var(--foreground))]' } },
+        { type: 'InputSlot', props: { className: 'pr-3 pointer-events-none' }, children: [{ type: 'Icon', props: { icon: 'lucide:eye', size: 15, color: 'rgb(var(--muted-foreground))' } }] },
+      ],
+    }],
   }),
   labeled('Textarea', {
     type: 'Textarea',
@@ -979,7 +982,7 @@ const patternsSection = section('Common UI Patterns', [
     ],
   }),
   labeled('Login Form', {
-    type: 'Box',
+    type: 'FormContainer',
     props: { className: 'flex flex-col gap-4 p-6 w-64 bg-[rgb(var(--card))] rounded-2xl border border-[rgb(var(--border))] shadow-md' },
     children: [
       { type: 'Heading', props: { className: 'text-lg font-bold text-[rgb(var(--foreground))]' }, text: 'Welcome back' },

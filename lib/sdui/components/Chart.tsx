@@ -98,7 +98,7 @@ const Chart = React.forwardRef<HTMLDivElement, ChartProps>(
 
     return (
       <div ref={ref} style={style} className={`w-full h-[240px] ${className}`} {...rest}>
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
           {renderChart()}
         </ResponsiveContainer>
       </div>

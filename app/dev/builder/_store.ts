@@ -21,6 +21,7 @@ import { showcaseNodes } from './_showcase';
 import root from '@/config/root';
 import { resolveScreenConfig, type ConfigRegistry } from '@/lib/sdui/config-resolver';
 import { updatePopup, getPopups } from '@/lib/builder/popup-data';
+import { updateSharedComponent, getSharedComponents } from '@/lib/builder/shared-component-data';
 import { getBuilderConfig } from '@/lib/builder/config-data';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 
@@ -42,6 +43,102 @@ export {
 };
 
 const MAX_HISTORY = 50;
+let _historyTimer = 0;
+
+type SetFn = (partial: ((s: BuilderStore) => Partial<BuilderStore>) | Partial<BuilderStore>, replace?: boolean) => void;
+
+function _flushHistory(set: SetFn) {
+  set(s => {
+    const prevSnap = s.historyIdx >= 0 ? s.history[s.historyIdx] : undefined;
+    const snap = makeSnapshot(s.pages, s.focusedPageId, s.pageNodes as SDUINode[], s.canvasNodes, prevSnap);
+    const prev = s.history.slice(0, s.historyIdx + 1);
+    const next = [...prev, snap].slice(-MAX_HISTORY);
+    return { history: next, historyIdx: next.length - 1 };
+  });
+}
+
+function _flushHistoryIfPending(set: SetFn): void {
+  if (_historyTimer) {
+    cancelAnimationFrame(_historyTimer);
+    _historyTimer = 0;
+    _flushHistory(set);
+  }
+}
+
+/** Recursively assign fresh UUIDs to every node in the subtree. */
+function _reassignIds(node: SDUINode): SDUINode {
+  const result = { ...node, id: crypto.randomUUID() };
+  if (Array.isArray(result.children) && result.children.length) {
+    result.children = (result.children as SDUINode[]).map(_reassignIds);
+  }
+  return result as SDUINode;
+}
+
+/**
+ * Patch a node in either pageNodes or canvasNodes.
+ * Tries pageNodes first; if unchanged, falls back to canvasNodes.
+ */
+function patchAnyNode(
+  s: { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] },
+  id: string,
+  patcher: (n: SDUINode) => SDUINode,
+): Partial<{ pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }> {
+  const newPageNodes = patchNodeById(s.pageNodes, id, patcher);
+  if (newPageNodes !== s.pageNodes) return { pageNodes: newPageNodes };
+  // Search canvas nodes — both top-level and nested children
+  for (let i = 0; i < s.canvasNodes.length; i++) {
+    const cn = s.canvasNodes[i];
+    const cnAsArr = [cn] as SDUINode[];
+    const patched = patchNodeById(cnAsArr, id, patcher);
+    if (patched[0] !== cn) {
+      const newCN = [...s.canvasNodes];
+      newCN[i] = { ...(patched[0] as CanvasNode), _cx: cn._cx, _cy: cn._cy, _cw: cn._cw, _ch: cn._ch };
+      return { canvasNodes: newCN };
+    }
+  }
+  return {};
+}
+
+/** Empty history snapshot — used as the initial/cleared state. */
+const EMPTY_SNAPSHOT: HistorySnapshot = { pages: {}, canvasNodes: [] };
+
+/**
+ * Build a full history snapshot from current store state.
+ * Captures all page nodes, page positions, and canvas nodes.
+ */
+function makeSnapshot(
+  pages: BuilderPage[],
+  focusedPageId: string,
+  _pageNodes: SDUINode[],
+  canvasNodes: CanvasNode[],
+  prevSnap?: HistorySnapshot,
+): HistorySnapshot {
+  const pagesSnap: HistorySnapshot['pages'] = {};
+  for (const p of pages) {
+    const prevPage = prevSnap?.pages[p.id];
+    if (prevPage && prevPage.nodes === p.nodes) {
+      pagesSnap[p.id] = prevPage;
+    } else {
+      pagesSnap[p.id] = { nodes: p.nodes as SDUINode[], wx: p.wx ?? 0, wy: p.wy ?? 0 };
+    }
+  }
+  return { pages: pagesSnap, canvasNodes: [...canvasNodes] };
+}
+
+/**
+ * Auto-assign world positions to pages that have wx=0 and wy=0 (migration from old grid layout).
+ * Only assigns positions to pages whose wx/wy have never been set (i.e. are both exactly 0
+ * AND their index in the array is > 0, meaning they're not the origin page).
+ */
+function assignDefaultPagePositions(pages: BuilderPage[], vpWidth: number): BuilderPage[] {
+  const GAP = 80;
+  return pages.map((p, i) => {
+    if (p.wx === 0 && p.wy === 0 && i > 0) {
+      return { ...p, wx: i * (vpWidth + GAP), wy: 0 };
+    }
+    return p;
+  });
+}
 
 
 // ─── Store shape — types extracted to _store-types.ts ─────────────────────────
@@ -52,7 +149,7 @@ export type {
   GridOverlayConfig, ViewportSize,
   DataSourceHeader, DataSourceParam, DataSourceAuth,
   Folder, CustomVar, DataSourceConfig,
-  PageMeta, BuilderPage,
+  PageMeta, BuilderPage, HistorySnapshot, CanvasNode,
   WorkflowMeta, WorkflowCanvasTarget,
   BuilderStore,
   AiChatMessage, AiChatRole, AiToolCall,
@@ -63,7 +160,7 @@ export { VIEWPORT_WIDTHS } from './_store-types';
 import type {
   GridOverlayConfig, ViewportSize, DataSourceConfig, CustomVar,
   Folder, WorkflowMeta, WorkflowCanvasTarget, BuilderStore,
-  BuilderPage, PageMeta,
+  BuilderPage, PageMeta, HistorySnapshot, CanvasNode,
 } from './_store-types';
 import { VIEWPORT_WIDTHS } from './_store-types';
 
@@ -149,6 +246,8 @@ const SHOWCASE_PAGE: BuilderPage = {
   id: 'page-showcase',
   name: '✦ Component Showcase',
   nodes: showcaseNodes,
+  wx: 0,
+  wy: 0,
 };
 
 // Fragment-only registry: resolves $ref nodes from fragments without injecting
@@ -228,11 +327,13 @@ function _extractPageNodes(configName: string): SDUINode[] {
 
 // Initialise one page per route pre-populated with the screen's content nodes.
 const ROUTE_PAGES: BuilderPage[] = (routesConfig as { routes: Array<{ path: string; config: string }> })
-  .routes.map(r => ({
+  .routes.map((r, i) => ({
     id: `page-${r.config}`,
     name: r.config,
     route: r.path,
     nodes: _extractPageNodes(r.config),
+    wx: (i + 1) * (1280 + 80),  // +1 because SHOWCASE_PAGE is at 0
+    wy: 0,
   }));
 
 const INITIAL_PAGES: BuilderPage[] = [SHOWCASE_PAGE, ...ROUTE_PAGES];
@@ -241,7 +342,7 @@ const INITIAL_PAGES: BuilderPage[] = [SHOWCASE_PAGE, ...ROUTE_PAGES];
  * Strips popup root nodes from pageNodes, persists each popup's live content to
  * the in-memory popup store (stripping builder-injected styles), and returns
  * the cleaned node array plus the list of popup model IDs that were flushed.
- * Used by switchPage / navigatePage so page content is never polluted with
+ * Used by focusPage when exiting popup edit mode so page content is never polluted with
  * popup nodes after an in-progress popup edit.
  */
 function _flushEditingPopups(s: ReturnType<typeof useBuilderStore.getState>) {
@@ -278,58 +379,88 @@ function _flushEditingPopups(s: ReturnType<typeof useBuilderStore.getState>) {
   return { cleanNodes, popupIdsToClose };
 }
 
-/**
- * Re-appends every currently-editing popup to `baseNodes` (the new page's node
- * tree) using the freshest content from the in-memory popup store, then adds
- * builder-specific absolute positioning so the popup sits at the right height
- * in the canvas. Returns the merged node array and an updated contentsMap.
- */
-function _reattachPopups(
-  s: ReturnType<typeof useBuilderStore.getState>,
-  baseNodes: SDUINode[],
-): { newNodes: SDUINode[]; newContentsMap: Record<string, SDUINode> } {
-  const newContentsMap: Record<string, SDUINode> = { ...s.editingPopupContentsMap };
-  let newNodes = baseNodes;
+// ─── Auto-sync middleware: keeps pageNodes ↔ pages[focusedIdx].nodes in sync ──
+// Three cases:
+//   1. pageNodes changed → copy ref into pages[focusedIdx].nodes
+//   2. pages changed without pageNodes → derive pageNodes from pages[focusedIdx].nodes
+//   3. focusedPageId changed → derive pageNodes from the new page
+function _syncPageNodesMiddleware(
+  state: BuilderStore,
+  updates: Partial<BuilderStore>,
+): Partial<BuilderStore> {
+  const hasPageNodes = 'pageNodes' in updates;
+  const hasPages = 'pages' in updates;
+  const hasFocusChange = 'focusedPageId' in updates && updates.focusedPageId !== state.focusedPageId;
 
-  s.editingPopupIds.forEach((popupId, index) => {
-    // Use the freshest saved content from the popup store (just flushed above).
-    const liveModel = getPopups()[popupId];
-    const freshContent = (liveModel?.content ?? s.editingPopupContentsMap[popupId]) as SDUINode | undefined;
-    if (!freshContent) return;
+  if (!hasPageNodes && !hasPages && !hasFocusChange) return updates;
 
-    const contentNode = clone(freshContent as unknown as SDUINode);
-    const existingStyle = ((contentNode.props as Record<string, unknown>)?.style ?? {}) as Record<string, unknown>;
-    const builderContent: SDUINode = {
-      ...contentNode,
-      props: {
-        ...(contentNode.props ?? {}),
-        style: {
-          ...existingStyle,
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 900,
-          zIndex: 50 + index,
-        },
-      },
-    };
+  const result = { ...updates };
 
-    newNodes = [...newNodes, builderContent];
-    newContentsMap[popupId] = freshContent;
-  });
+  // Keep deprecated currentPageId alias in sync
+  if (hasFocusChange) {
+    (result as Record<string, unknown>).currentPageId = result.focusedPageId;
+  }
+  const focusId = (result.focusedPageId ?? state.focusedPageId) as string;
+  const effectivePages = (result.pages ?? state.pages) as BuilderPage[];
 
-  return { newNodes, newContentsMap };
+  if (hasPageNodes && !hasPages) {
+    // Case 1: mutation changed pageNodes → sync into pages array
+    const idx = effectivePages.findIndex(p => p.id === focusId);
+    if (idx >= 0 && effectivePages[idx].nodes !== result.pageNodes) {
+      const newPages = [...effectivePages];
+      newPages[idx] = { ...newPages[idx], nodes: result.pageNodes as SDUINode[] };
+      result.pages = newPages as BuilderPage[];
+    }
+  } else if (hasPageNodes && hasPages) {
+    // Both changed — ensure consistency
+    const idx = (result.pages as BuilderPage[]).findIndex(p => p.id === focusId);
+    if (idx >= 0 && (result.pages as BuilderPage[])[idx].nodes !== result.pageNodes) {
+      const newPages = [...(result.pages as BuilderPage[])];
+      newPages[idx] = { ...newPages[idx], nodes: result.pageNodes as SDUINode[] };
+      result.pages = newPages as BuilderPage[];
+    }
+  } else if (hasPages && !hasPageNodes) {
+    // Case 2: pages changed (undo/redo) → derive pageNodes
+    const target = (result.pages as BuilderPage[]).find(p => p.id === focusId);
+    if (target) result.pageNodes = target.nodes as SDUINode[];
+  } else if (hasFocusChange && !hasPageNodes) {
+    // Case 3: focus changed → derive pageNodes from new page
+    const target = effectivePages.find(p => p.id === focusId);
+    if (target) result.pageNodes = target.nodes as SDUINode[];
+  }
+
+  return result;
 }
 
-export const useBuilderStore = create<BuilderStore>((set, get) => ({
+export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
+  // Wrap set to auto-sync pageNodes ↔ pages
+  const set: typeof _rawSet = (partial, replace) => {
+    if (typeof partial === 'function') {
+      _rawSet((state) => {
+        const updates = partial(state);
+        if (!updates || typeof updates !== 'object') return updates;
+        return _syncPageNodesMiddleware(state, updates as Partial<BuilderStore>) as Partial<BuilderStore>;
+      }, replace);
+    } else {
+      _rawSet((state) => {
+        if (!partial || typeof partial !== 'object') return partial;
+        return _syncPageNodesMiddleware(state, partial as Partial<BuilderStore>) as Partial<BuilderStore>;
+      }, replace);
+    }
+  };
+
+  return ({
   // Start blank — loadFromConfig populates pages for admin mode or loads from backend
   pages: [],
-  currentPageId: '',
+  focusedPageId: '',
+  currentPageId: '',   // deprecated alias — kept for backward compat, always mirrors focusedPageId
+  canvasNodes: [],
   loadedPageIds: new Set<string>(),
   pageNodes: [],
   selectedIds: [],
+  selectedMapIndex: null,
   hoveredId: null,
+  hoveredMapIndex: null,
   altHoveredId: null,
   altMode: false,
   lockedIds: new Set(),
@@ -340,9 +471,10 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   panX: 0,
   panY: 0,
   viewport: 'desktop',
+  activeBreakpoint: 'desktop',
   gridOverlay: { enabled: false, type: 'columns', count: 12, color: 'rgba(99,102,241,0.15)' },
   clipboard: [],
-  history: [[]],
+  history: [EMPTY_SNAPSHOT],
   historyIdx: 0,
   pendingFitToPage: false,
   editingPopupIds: [],
@@ -352,6 +484,12 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   editingPopupContent: null,
   editingPopupModel: null,
   _savedPageNodes: null,
+  editingSharedComponentIds: [],
+  editingSharedComponentId: null,
+  editingSharedComponentContentsMap: {},
+  editingSharedComponentModelsMap: {},
+  editingSharedComponentContent: null,
+  editingSharedComponentModel: null,
   activePreviewStates: ['normal'],
   showInteractionLines: false,
   activeLogicSection: null,
@@ -492,7 +630,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
 
   addSection: (variantId, node, atIdx) => {
     set(s => {
-      const nodes = clone(s.pageNodes);
+      const nodes = [...s.pageNodes];
       const idx = atIdx !== undefined ? atIdx : nodes.length;
       nodes.splice(idx, 0, node);
       return { pageNodes: nodes };
@@ -522,7 +660,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
           ? { ...p, nodes: [...(p.nodes as SDUINode[]), assignedNode] }
           : p
       );
-      if (s.currentPageId === pageId) {
+      if (s.focusedPageId === pageId) {
         return { pages, pageNodes: pages.find(p => p.id === pageId)!.nodes as SDUINode[] };
       }
       return { pages };
@@ -538,7 +676,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
           ? { ...p, nodes: [assignedNode, ...(p.nodes as SDUINode[])] }
           : p
       );
-      if (s.currentPageId === pageId) {
+      if (s.focusedPageId === pageId) {
         return { pages, pageNodes: pages.find(p => p.id === pageId)!.nodes as SDUINode[] };
       }
       return { pages };
@@ -554,7 +692,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
           ? { ...p, nodes: [...(p.nodes as SDUINode[]), assignedNode] }
           : p
       );
-      if (s.currentPageId === pageId) {
+      if (s.focusedPageId === pageId) {
         return { pages, pageNodes: pages.find(p => p.id === pageId)!.nodes as SDUINode[] };
       }
       return { pages };
@@ -584,7 +722,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
         return { ...p, nodes: updatedNodes };
       });
 
-      if (s.currentPageId === pageId) {
+      if (s.focusedPageId === pageId) {
         return { pages, pageNodes: pages.find(p => p.id === pageId)!.nodes as SDUINode[] };
       }
       return { pages };
@@ -596,24 +734,19 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
       const node = findNode(s.pageNodes, nodeId);
       if (!node) return s;
 
-      // Prevent dropping a node into itself or its own descendant
       if (newParentId === nodeId) return s;
       if (newParentId && findNode((findNode(s.pageNodes, nodeId)?.children ?? []) as SDUINode[], newParentId)) return s;
 
-      // Context-dependent nodes must stay inside their required parent type.
-      // Moving them out crashes the renderer (useStyleContext returns undefined → destructure error).
       if (node.type && REQUIRED_PARENT[node.type]) {
         const requiredType = REQUIRED_PARENT[node.type];
         const newParent = newParentId ? findNode(s.pageNodes, newParentId) : null;
         if (!newParent || newParent.type !== requiredType) return s;
       }
-      // Also guard the destination: only allowed child types may enter certain parents.
       if (newParentId) {
         const newParent = findNode(s.pageNodes, newParentId);
         if (newParent && ALLOWED_CHILDREN[newParent.type] && !ALLOWED_CHILDREN[newParent.type].has(node.type)) return s;
       }
 
-      // Find current parent to correctly adjust the target index
       const currentParent = findParentNode(s.pageNodes, nodeId);
       const currentParentId = currentParent?.id ?? null;
       const currentSiblings = currentParent
@@ -621,15 +754,13 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
         : s.pageNodes;
       const currentIdx = currentSiblings.findIndex(n => n.id === nodeId);
 
-      // When moving within the same parent to a later slot, subtract 1 because
-      // removing the node shifts every subsequent index down by 1.
       let adjustedIdx = atIdx;
       if (newParentId === currentParentId && atIdx > currentIdx) {
         adjustedIdx = atIdx - 1;
       }
 
-      const withoutNode = removeNodesByIds(clone(s.pageNodes), new Set([nodeId]));
-      const newNodes = insertNode(withoutNode, clone(node), newParentId, adjustedIdx);
+      const withoutNode = removeNodesByIds(s.pageNodes, new Set([nodeId]));
+      const newNodes = insertNode(withoutNode, node, newParentId, adjustedIdx);
       return { pageNodes: newNodes, selectedIds: [nodeId] };
     });
     get()._pushHistory();
@@ -663,12 +794,10 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
         if (!found?.id) continue;
         if (newParentId === found.id) continue;
         if (newParentId && findNode((found.children ?? []) as SDUINode[], newParentId)) continue;
-        nodesToMove.push(clone(found));
+        nodesToMove.push(found);
       }
       if (nodesToMove.length === 0) return s;
 
-      // Count how many of the moving nodes are already in the target parent
-      // at indices BEFORE atIdx — these will be removed, shifting the target left.
       const targetChildren = newParentId
         ? ((findNode(s.pageNodes, newParentId)?.children ?? []) as SDUINode[])
         : s.pageNodes;
@@ -679,8 +808,8 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
       }
       const adjustedIdx = Math.max(0, atIdx - removedBeforeTarget);
 
-      // Remove all nodes in one pass, then insert consecutively at the target
-      let result = removeNodesByIds(clone(s.pageNodes), movingIds);
+      // removeNodesByIds/insertNode create new arrays — no clone needed
+      let result = removeNodesByIds(s.pageNodes, movingIds);
       for (let i = 0; i < nodesToMove.length; i++) {
         result = insertNode(result, nodesToMove[i], newParentId, adjustedIdx + i);
       }
@@ -699,14 +828,13 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
       const node = findNode(srcPage.nodes as SDUINode[], nodeId);
       if (!node) return s;
 
-      // Remove from source page
-      const updatedSrcNodes = removeNodesByIds(clone(srcPage.nodes as SDUINode[]), new Set([nodeId]));
+      // removeNodesByIds/insertNode create new arrays — no clone needed
+      const updatedSrcNodes = removeNodesByIds(srcPage.nodes as SDUINode[], new Set([nodeId]));
       const updatedPages = s.pages.map(p =>
         p.id === fromPageId ? { ...p, nodes: updatedSrcNodes } : p
       );
 
-      // Insert into current page
-      const newPageNodes = insertNode(clone(s.pageNodes), node, parentId, atIdx);
+      const newPageNodes = insertNode(s.pageNodes, node, parentId, atIdx);
 
       return {
         pages: updatedPages,
@@ -727,6 +855,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     if (idSet.size === 0) return;
     set(s => ({
       pageNodes: removeNodesByIds(s.pageNodes, idSet),
+      canvasNodes: (s.canvasNodes as CanvasNode[]).filter(n => !idSet.has(n.id)),
       selectedIds: s.selectedIds.filter(id => !idSet.has(id)),
       aiSelectedNodeIds: s.aiSelectedNodeIds.filter(id => !idSet.has(id)),
     }));
@@ -735,16 +864,12 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
 
   duplicateNodes: (ids) => {
     set(s => {
-      const nodes = clone(s.pageNodes);
       const newNodes: SDUINode[] = [];
       for (const id of ids) {
-        const found = findNode(nodes, id);
-        if (found) {
-          const dup = clone(found);
-          if (dup.id) dup.id = dup.id + '-copy';
-          newNodes.push(dup);
-        }
+        const found = findNode(s.pageNodes, id);
+        if (found) newNodes.push(_reassignIds(clone(found)));
       }
+      const nodes = [...s.pageNodes];
       const lastIdx = nodes.findIndex(n => ids.includes(n.id ?? ''));
       const insertAt = lastIdx >= 0 ? lastIdx + 1 : nodes.length;
       nodes.splice(insertAt, 0, ...newNodes);
@@ -785,7 +910,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
 
   moveSection: (fromIdx, toIdx) => {
     set(s => {
-      const nodes = clone(s.pageNodes);
+      const nodes = [...s.pageNodes];
       const [moved] = nodes.splice(fromIdx, 1);
       nodes.splice(toIdx, 0, moved);
       return { pageNodes: nodes };
@@ -819,18 +944,18 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
         if (targetIdx < 0) return s;
       }
 
-      const newNodes = clone(s.pageNodes);
       const move = (arr: SDUINode[], from: number, to: number) => {
         const [item] = arr.splice(from, 1);
         arr.splice(to, 0, item);
       };
       if (!parent) {
+        const newNodes = [...s.pageNodes];
         move(newNodes, idx, targetIdx);
         return { pageNodes: newNodes };
       }
       return {
-        pageNodes: patchNodeById(newNodes, parent.id!, p => {
-          const ch = clone((p.children ?? []) as SDUINode[]);
+        pageNodes: patchNodeById(s.pageNodes, parent.id!, p => {
+          const ch = [...((p.children ?? []) as SDUINode[])];
           move(ch, idx, targetIdx);
           return { ...p, children: ch };
         }),
@@ -852,11 +977,9 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
         /\b(absolute|fixed)\b/.test((n.props as { className?: string })?.className ?? '');
       const currentIsAbs = isAbsCls(siblings[idx]);
 
-      // Absolute "Move Down" = send backward = earlier DOM index (lower z-index).
-      // Flow    "Move Down" = later DOM index, skipping any abs siblings below.
       let targetIdx: number;
       if (currentIsAbs) {
-        if (idx <= 0) return s; // already at bottom of stacking
+        if (idx <= 0) return s;
         targetIdx = idx - 1;
       } else {
         if (idx >= siblings.length - 1) return s;
@@ -865,18 +988,18 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
         if (targetIdx >= siblings.length) return s;
       }
 
-      const newNodes = clone(s.pageNodes);
       const move = (arr: SDUINode[], from: number, to: number) => {
         const [item] = arr.splice(from, 1);
         arr.splice(to, 0, item);
       };
       if (!parent) {
+        const newNodes = [...s.pageNodes];
         move(newNodes, idx, targetIdx);
         return { pageNodes: newNodes };
       }
       return {
-        pageNodes: patchNodeById(newNodes, parent.id!, p => {
-          const ch = clone((p.children ?? []) as SDUINode[]);
+        pageNodes: patchNodeById(s.pageNodes, parent.id!, p => {
+          const ch = [...((p.children ?? []) as SDUINode[])];
           move(ch, idx, targetIdx);
           return { ...p, children: ch };
         }),
@@ -886,38 +1009,38 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   },
 
   patchProp: (id, propPath, value) => {
-    set(s => ({
-      pageNodes: patchNodeById(s.pageNodes, id, node => {
-        const parts = propPath.split('.');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const patched: any = clone(node);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let obj: any = patched;
-        for (let i = 0; i < parts.length - 1; i++) {
-          if (!(parts[i] in obj)) obj[parts[i]] = {};
-          obj = obj[parts[i]];
-        }
-        obj[parts[parts.length - 1]] = value;
-        return patched;
-      }),
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => {
+      const parts = propPath.split('.');
+      if (parts.length === 1) {
+        return { ...node, [parts[0]]: value };
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const root: any = { ...node };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let obj: any = root;
+      for (let i = 0; i < parts.length - 1; i++) {
+        const next = obj[parts[i]] != null ? { ...obj[parts[i]] } : {};
+        obj[parts[i]] = next;
+        obj = next;
+      }
+      obj[parts[parts.length - 1]] = value;
+      return root;
     }));
   },
 
   patchClassName: (id, oldToken, newToken) => {
-    set(s => ({
-      pageNodes: patchNodeById(s.pageNodes, id, node => {
-        const cls: string = (node.props as { className?: string })?.className ?? '';
-        const newCls = oldToken
-          ? cls.replace(new RegExp(`\\b${oldToken.replace('*', '[^\\s]+')}\\b`, 'g'), newToken).trim()
-          : `${cls} ${newToken}`.trim();
-        return { ...node, props: { ...(node.props as object), className: newCls } };
-      }),
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => {
+      const cls: string = (node.props as { className?: string })?.className ?? '';
+      const newCls = oldToken
+        ? cls.replace(new RegExp(`\\b${oldToken.replace('*', '[^\\s]+')}\\b`, 'g'), newToken).trim()
+        : `${cls} ${newToken}`.trim();
+      return { ...node, props: { ...(node.props as object), className: newCls } };
     }));
   },
 
   renameNode: (id, newId) => {
     set(s => ({
-      pageNodes: patchNodeById(s.pageNodes, id, node => ({ ...node, id: newId })),
+      ...patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => ({ ...node, id: newId })),
       selectedIds: s.selectedIds.map(sid => (sid === id ? newId : sid)),
     }));
     get()._pushHistory();
@@ -925,8 +1048,8 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
 
   // ── Selection ───────────────────────────────────────────────────────────────
 
-  select: (id, multi = false) => {
-    if (id === null) { set({ selectedIds: [], aiSelectedNodeIds: [] }); return; }
+  select: (id, multi = false, mapIndex) => {
+    if (id === null) { set({ selectedIds: [], selectedMapIndex: null, aiSelectedNodeIds: [] }); return; }
     if (get().lockedIds.has(id)) return;
     set(s => {
       if (multi) {
@@ -938,11 +1061,13 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
         const newAiIds = s.aiMode
           ? (already ? s.aiSelectedNodeIds.filter(aid => aid !== id) : [...s.aiSelectedNodeIds, id])
           : s.aiSelectedNodeIds;
-        return { selectedIds: newSelectedIds, aiSelectedNodeIds: newAiIds };
+        // Multi-select clears map index (can't track per-instance for multiple selections)
+        return { selectedIds: newSelectedIds, selectedMapIndex: null, aiSelectedNodeIds: newAiIds };
       }
       // Single select: in AI mode, replace aiSelectedNodeIds; otherwise keep
       return {
         selectedIds: [id],
+        selectedMapIndex: mapIndex ?? null,
         aiSelectedNodeIds: s.aiMode ? [id] : s.aiSelectedNodeIds,
       };
     });
@@ -966,7 +1091,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     if (first?.id) get().select(first.id);
   },
 
-  hover: (id) => set({ hoveredId: id }),
+  hover: (id, mapIndex) => set({ hoveredId: id, hoveredMapIndex: mapIndex ?? null }),
   setAltMode: (on) => set({ altMode: on }),
   setAltHovered: (id) => set({ altHoveredId: id }),
 
@@ -1003,7 +1128,52 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
 
   setZoom: (z) => set({ zoom: z }),
   setPan:  (x, y) => set({ panX: x, panY: y }),
-  setViewport: (v) => set({ viewport: v }),
+  setViewport: (v) => set({ viewport: v, activeBreakpoint: v }),
+
+  setActiveBreakpoint: (bp) => set({ activeBreakpoint: bp }),
+
+  patchResponsive: (id, breakpoint, field, value) => {
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => {
+      const patched = clone(node);
+      if (!patched.responsive) patched.responsive = {};
+      if (!patched.responsive[breakpoint]) patched.responsive[breakpoint] = {};
+      const parts = field.split('.');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let obj: any = patched.responsive[breakpoint];
+      for (let i = 0; i < parts.length - 1; i++) {
+        if (!(parts[i] in obj)) obj[parts[i]] = {};
+        obj = obj[parts[i]];
+      }
+      obj[parts[parts.length - 1]] = value;
+      return patched;
+    }));
+  },
+
+  removeResponsiveOverride: (id, breakpoint, field) => {
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => {
+        if (!node.responsive?.[breakpoint]) return node;
+        const patched = clone(node);
+        if (field) {
+          const parts = field.split('.');
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          let obj: any = patched.responsive![breakpoint];
+          for (let i = 0; i < parts.length - 1; i++) {
+            if (!obj || !(parts[i] in obj)) return node;
+            obj = obj[parts[i]];
+          }
+          delete obj[parts[parts.length - 1]];
+          if (Object.keys(patched.responsive![breakpoint]!).length === 0) {
+            delete patched.responsive![breakpoint];
+          }
+        } else {
+          delete patched.responsive![breakpoint];
+        }
+        if (patched.responsive && Object.keys(patched.responsive).length === 0) {
+          delete patched.responsive;
+        }
+        return patched;
+      }));
+  },
 
   setGridOverlay: (cfg) => set(s => ({ gridOverlay: { ...s.gridOverlay, ...cfg } })),
 
@@ -1018,17 +1188,13 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   pasteFromClipboard: () => {
     const { clipboard, selectedIds, pageNodes } = get();
     if (!clipboard.length) return;
-    const pasted = clipboard.map(n => {
-      const c = clone(n);
-      if (c.id) c.id = `${c.id}-paste-${Date.now()}`;
-      return c;
-    });
+    const pasted = clipboard.map(n => _reassignIds(clone(n)));
     const lastIdx = selectedIds.length
       ? pageNodes.findIndex(n => selectedIds.includes(n.id ?? ''))
       : -1;
     const insertAt = lastIdx >= 0 ? lastIdx + 1 : pageNodes.length;
     set(s => {
-      const nodes = clone(s.pageNodes);
+      const nodes = [...s.pageNodes];
       nodes.splice(insertAt, 0, ...pasted);
       return {
         pageNodes: nodes,
@@ -1039,17 +1205,11 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   },
 
   pasteInPlace: () => {
-    // Same as pasteFromClipboard but preserves the original style.left/top so
-    // the node lands at the exact same position (useful for "Paste in place").
     const { clipboard, pageNodes } = get();
     if (!clipboard.length) return;
-    const pasted = clipboard.map(n => {
-      const c = clone(n);
-      if (c.id) c.id = `${c.id}-pip-${Date.now()}`;
-      return c;
-    });
+    const pasted = clipboard.map(n => _reassignIds(clone(n)));
     set(s => {
-      const nodes = clone(s.pageNodes);
+      const nodes = [...s.pageNodes];
       nodes.splice(pageNodes.length, 0, ...pasted);
       return {
         pageNodes: nodes,
@@ -1080,7 +1240,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     }
 
     set(s => {
-      let nodes = clone(s.pageNodes);
+      let nodes = s.pageNodes;
       ids.forEach((id, i) => {
         const r = validRects[i];
         const node = findNode(nodes, id);
@@ -1095,6 +1255,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
         else if (edge === 'bottom') newStyle = { ...existingStyle, position: 'absolute', top: `${targetValue - r.bottom + parseFloat(existingStyle.top ?? '0')}px` };
         else                        newStyle = { ...existingStyle, position: 'absolute', top: `${targetValue - r.top - r.height / 2 + parseFloat(existingStyle.top ?? '0')}px` };
 
+        // patchNodeById creates new arrays — no pre-clone needed
         nodes = patchNodeById(nodes, id, n => ({
           ...n,
           props: { ...(n.props as object), style: newStyle },
@@ -1121,7 +1282,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
       const gap = (totalSpace - totalWidth) / (sorted.length - 1);
       let cursor = sorted[0].rect.left;
       set(s => {
-        let nodes = clone(s.pageNodes);
+        let nodes = s.pageNodes;
         sorted.forEach(({ id, rect }) => {
           const node = findNode(nodes, id);
           if (!node) return;
@@ -1143,7 +1304,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
       const gap = (totalSpace - totalHeight) / (sorted.length - 1);
       let cursor = sorted[0].rect.top;
       set(s => {
-        let nodes = clone(s.pageNodes);
+        let nodes = s.pageNodes;
         sorted.forEach(({ id, rect }) => {
           const node = findNode(nodes, id);
           if (!node) return;
@@ -1183,11 +1344,160 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   _clearHistory: () => {
     set(s => ({
       pageNodes: [],
-      history: [[]],
+      history: [EMPTY_SNAPSHOT],
       historyIdx: 0,
       selectedIds: [],
-      pages: s.pages.map(p => p.id === s.currentPageId ? { ...p } : p),
+      canvasNodes: [],
     }));
+  },
+
+  // ── Page position ─────────────────────────────────────────────────────────────
+
+  movePagePosition: (pageId, wx, wy) => {
+    set(s => ({
+      pages: (s.pages as BuilderPage[]).map(p =>
+        p.id === pageId ? { ...p, wx, wy } : p
+      ),
+    }));
+  },
+
+  // ── Page focus ────────────────────────────────────────────────────────────────
+
+  focusPageForNode: (nodeId) => {
+    const s = get();
+    // Already on the right page?
+    if (findNode(s.pageNodes as SDUINode[], nodeId)) return;
+    // Search all other pages
+    for (const page of s.pages as BuilderPage[]) {
+      if (page.id === s.focusedPageId) continue;
+      if (findNode(page.nodes as SDUINode[], nodeId)) {
+        get().focusPage(page.id);
+        return;
+      }
+    }
+    // Also check canvas nodes
+    const inCanvas = (s.canvasNodes as CanvasNode[]).find(n => n.id === nodeId);
+    if (inCanvas) {
+      // Canvas node selected — no page focus change needed
+    }
+  },
+
+  // ── Freeform canvas nodes ──────────────────────────────────────────────────
+
+  moveNodeToCanvas: (nodeId, cx, cy, cw, ch) => {
+    set(s => {
+      const idSet = new Set([nodeId]);
+      const canvasNodeData: CanvasNode = (() => {
+        // Search focused page first
+        const inFocused = findNode(s.pageNodes as SDUINode[], nodeId);
+        if (inFocused) return { ...(clone(inFocused) as SDUINode), _cx: cx, _cy: cy, ...(cw != null && ch != null ? { _cw: cw, _ch: ch } : {}) } as CanvasNode;
+        // Search other pages
+        for (const pg of s.pages as BuilderPage[]) {
+          if (pg.id === s.focusedPageId) continue;
+          const found = findNode(pg.nodes as SDUINode[], nodeId);
+          if (found) return { ...(clone(found) as SDUINode), _cx: cx, _cy: cy, ...(cw != null && ch != null ? { _cw: cw, _ch: ch } : {}) } as CanvasNode;
+        }
+        return null as unknown as CanvasNode;
+      })();
+      if (!canvasNodeData) return s;
+
+      // Strip absolute/fixed positioning from className — the canvas wrapper
+      // handles positioning via _cx/_cy. Keeping these classes would cause the
+      // inner node to escape the wrapper (position: absolute within the wrapper).
+      // Save originals so they can be restored when the node returns to a page.
+      const rawCls = ((canvasNodeData.props as Record<string, unknown>)?.className as string) ?? '';
+      if (/\b(absolute|fixed)\b/.test(rawCls)) {
+        canvasNodeData._originalCls = rawCls;
+        const rawStyle = (canvasNodeData.props as Record<string, unknown>)?.style as Record<string, unknown> | undefined;
+        if (rawStyle) canvasNodeData._originalStyle = { ...rawStyle };
+
+        // Keep the absolute/fixed keyword so the right panel shows the correct
+        // position mode. Only strip position VALUES (left/top/right/bottom/inset/z)
+        // that would conflict with the canvas wrapper's positioning.
+        const stripped = rawCls
+          .replace(/\b(left|top|right|bottom)-\[[^\]]*\]/g, '')
+          .replace(/\b(inset|inset-x|inset-y)-\[[^\]]*\]/g, '')
+          .replace(/\bz-\[[^\]]*\]/g, '')
+          .replace(/\s{2,}/g, ' ')
+          .trim();
+        (canvasNodeData.props as Record<string, unknown>).className = stripped;
+        const st = rawStyle;
+        if (st) {
+          const { left: _l, top: _t, right: _r, bottom: _b, zIndex: _z, ...rest } = st;
+          (canvasNodeData.props as Record<string, unknown>).style = Object.keys(rest).length ? rest : undefined;
+        }
+      }
+
+      // Remove from focused page
+      const newPageNodes = removeNodesByIds(clone(s.pageNodes as SDUINode[]), idSet);
+      // Remove from all other pages too
+      const newPages = (s.pages as BuilderPage[]).map(p => {
+        if (p.id === s.focusedPageId) return p;
+        const cleaned = removeNodesByIds(clone(p.nodes as SDUINode[]), idSet);
+        return cleaned !== p.nodes ? { ...p, nodes: cleaned } : p;
+      });
+
+      return {
+        pageNodes: newPageNodes,
+        pages: newPages,
+        canvasNodes: [...(s.canvasNodes as CanvasNode[]), canvasNodeData],
+        selectedIds: canvasNodeData.id ? [canvasNodeData.id] : s.selectedIds,
+      };
+    });
+    get()._pushHistory();
+  },
+
+  moveCanvasNodeToPage: (nodeId, pageId, parentId, atIdx) => {
+    set(s => {
+      const canvasNode = (s.canvasNodes as CanvasNode[]).find(n => n.id === nodeId);
+      if (!canvasNode) return s;
+      // Strip canvas-only props. The current className already has absolute/fixed
+      // (kept by moveNodeToCanvas). Only restore the z-index token from
+      // _originalCls if it's missing from the current className.
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { _cx, _cy, _cw, _ch, _originalCls, _originalStyle, ...node } = canvasNode;
+      if (_originalCls) {
+        const currentCls = ((node.props as Record<string, unknown>)?.className as string) ?? '';
+        const zToken = _originalCls.match(/\bz-\[[^\]]*\]/)?.[0] ?? '';
+        const needsZ = zToken && !currentCls.includes(zToken);
+        if (needsZ) {
+          (node.props as Record<string, unknown>).className = `${zToken} ${currentCls}`.trim();
+        }
+      }
+      if (_originalStyle) {
+        const currentStyle = ((node.props as Record<string, unknown>)?.style ?? {}) as Record<string, unknown>;
+        const restoreKeys: Record<string, unknown> = {};
+        if ('zIndex' in _originalStyle && !('zIndex' in currentStyle)) restoreKeys.zIndex = _originalStyle.zIndex;
+        if (Object.keys(restoreKeys).length > 0) {
+          (node.props as Record<string, unknown>).style = { ...currentStyle, ...restoreKeys };
+        }
+      }
+      const newCanvasNodes = (s.canvasNodes as CanvasNode[]).filter(n => n.id !== nodeId);
+
+      if (pageId === s.focusedPageId) {
+        // Insert into active page
+        const newPageNodes = insertNode(clone(s.pageNodes as SDUINode[]), node as SDUINode, parentId, atIdx);
+        return { pageNodes: newPageNodes, canvasNodes: newCanvasNodes, selectedIds: nodeId ? [nodeId] : s.selectedIds };
+      } else {
+        // Insert into a different page
+        const pages = (s.pages as BuilderPage[]).map(p => {
+          if (p.id !== pageId) return p;
+          const newNodes = insertNode(clone(p.nodes as SDUINode[]), node as SDUINode, parentId, atIdx);
+          return { ...p, nodes: newNodes };
+        });
+        return { pages, canvasNodes: newCanvasNodes, selectedIds: nodeId ? [nodeId] : s.selectedIds };
+      }
+    });
+    get()._pushHistory();
+  },
+
+  moveCanvasNodePosition: (nodeId, cx, cy) => {
+    set(s => ({
+      canvasNodes: (s.canvasNodes as CanvasNode[]).map(n =>
+        n.id === nodeId ? { ...n, _cx: cx, _cy: cy } : n
+      ),
+    }));
+    // Position-only move — push history on drag end, not during live drag
   },
   _requestOverlayUpdate: () => {},
   _setOverlayUpdateCallback: (fn) => set({ _requestOverlayUpdate: fn ?? (() => {}) }),
@@ -1250,39 +1560,42 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   }),
 
   _pushHistory: () => {
-    set(s => {
-      const snap = clone(s.pageNodes);
-      const prev = s.history.slice(0, s.historyIdx + 1);
-      const next = [...prev, snap].slice(-MAX_HISTORY);
-      // Sync current pageNodes back to the pages array so switching pages preserves work
-      const pages = s.pages.map(p =>
-        p.id === s.currentPageId ? { ...p, nodes: clone(s.pageNodes) } : p
-      );
-      return { history: next, historyIdx: next.length - 1, pages };
+    if (_historyTimer) cancelAnimationFrame(_historyTimer);
+    _historyTimer = requestAnimationFrame(() => {
+      _historyTimer = 0;
+      _flushHistory(set);
     });
   },
 
   undo: () => {
+    _flushHistoryIfPending(set);
     set(s => {
       if (s.historyIdx <= 0) return s;
       const idx = s.historyIdx - 1;
-      const nodes = clone(s.history[idx]);
-      const pages = s.pages.map(p =>
-        p.id === s.currentPageId ? { ...p, nodes } : p
-      );
-      return { pageNodes: nodes, historyIdx: idx, selectedIds: [], pages };
+      const snap = s.history[idx];
+      // Snapshot data is immutable (created once, never modified) — reference directly.
+      // Subsequent edits clone pageNodes before mutating, so snapshot refs stay safe.
+      const pages = (s.pages as BuilderPage[]).map(p => {
+        const pg = snap.pages[p.id];
+        if (!pg) return p;
+        return { ...p, nodes: pg.nodes, wx: pg.wx, wy: pg.wy };
+      });
+      return { historyIdx: idx, selectedIds: [], pages, canvasNodes: snap.canvasNodes as CanvasNode[] };
     });
   },
 
   redo: () => {
+    _flushHistoryIfPending(set);
     set(s => {
       if (s.historyIdx >= s.history.length - 1) return s;
       const idx = s.historyIdx + 1;
-      const nodes = clone(s.history[idx]);
-      const pages = s.pages.map(p =>
-        p.id === s.currentPageId ? { ...p, nodes } : p
-      );
-      return { pageNodes: nodes, historyIdx: idx, selectedIds: [], pages };
+      const snap = s.history[idx];
+      const pages = (s.pages as BuilderPage[]).map(p => {
+        const pg = snap.pages[p.id];
+        if (!pg) return p;
+        return { ...p, nodes: pg.nodes, wx: pg.wx, wy: pg.wy };
+      });
+      return { historyIdx: idx, selectedIds: [], pages, canvasNodes: snap.canvasNodes as CanvasNode[] };
     });
   },
 
@@ -1290,101 +1603,106 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
 
   addPage: (route, name, id?) => {
     set(s => {
-      // Guard: don't add a page for a route that already exists
       const existing = s.pages.find(p => p.route === route);
-      if (existing) return s; // duplicate — caller should use navigatePage instead
+      if (existing) return s;
 
-      // Persist current page nodes before switching
-      const savedPages = s.pages.map(p =>
-        p.id === s.currentPageId ? { ...p, nodes: clone(s.pageNodes) } : p
-      );
+      // pages[focusedIdx].nodes is already in sync via middleware — no clone needed
+      const vpWidth = VIEWPORT_WIDTHS[s.viewport as import('./_store-types').ViewportSize] ?? 1280;
+      const GAP = 80;
+      const rightmostWx = (s.pages as BuilderPage[]).reduce((max, p) => Math.max(max, (p.wx ?? 0) + vpWidth), 0);
+      const newWx = s.pages.length > 0 ? rightmostWx + GAP : 0;
+
       const newPage: BuilderPage = {
         id: id ?? `page-${Date.now()}`,
         name: name ?? route,
         route,
         nodes: [],
+        wx: newWx,
+        wy: 0,
       };
       return {
-        pages: [...savedPages, newPage],
-        currentPageId: newPage.id,
+        pages: [...(s.pages as BuilderPage[]), newPage],
+        focusedPageId: newPage.id,
         pageNodes: [],
         selectedIds: [],
         hoveredId: null,
-        history: [[]],
-        historyIdx: 0,
         pendingFitToPage: true,
       };
     });
+    get()._pushHistory();
   },
 
-  switchPage: (pageId) => {
-    const s = get();
-    const target = s.pages.find(p => p.id === pageId);
-    if (!target || target.id === s.currentPageId) return;
-
-    // 1. Save current popup edits and get clean page nodes (no popup roots).
-    const { cleanNodes } = _flushEditingPopups(s);
-
-    // 2. Save the leaving page cleanly.
-    const savedPages = (s.pages as BuilderPage[]).map(p =>
-      p.id === s.currentPageId ? { ...p, nodes: clone(cleanNodes) } : p
-    );
-
-    // 3. Re-append each popup to the new page so editing continues seamlessly.
-    const { newNodes, newContentsMap } = _reattachPopups(s, clone(target.nodes) as SDUINode[]);
-
-    set({
-      pages: savedPages,
-      currentPageId: pageId,
-      pageNodes: newNodes,
-      editingPopupContentsMap: newContentsMap,
-      _savedPageNodes: clone(target.nodes) as SDUINode[],
-      selectedIds: [],
-      hoveredId: null,
-      history: [clone(newNodes)],
-      historyIdx: 0,
+  addPageAt: (name, wx, wy, initialNode) => {
+    set(s => {
+      const newPage: BuilderPage = {
+        id: `page-${Date.now()}`,
+        name,
+        route: '',
+        nodes: initialNode ? [initialNode] : [],
+        wx,
+        wy,
+      };
+      return {
+        pages: [...(s.pages as BuilderPage[]), newPage],
+        focusedPageId: newPage.id,
+        pageNodes: initialNode ? [initialNode] : [],
+        selectedIds: initialNode?.id ? [initialNode.id] : [],
+        hoveredId: null,
+      };
     });
+    get()._pushHistory();
+  },
+
+  focusPage: (pageId) => {
+    const s = get();
+    if (pageId === s.focusedPageId) return;
+    if (!s.pages.find(p => p.id === pageId)) return;
+
+    // Auto-exit popup edit mode if active (save + flush)
+    if (s.editingPopupIds.length > 0) {
+      const { cleanNodes } = _flushEditingPopups(s);
+      const pages = (s.pages as BuilderPage[]).map(p =>
+        p.id === s.focusedPageId ? { ...p, nodes: cleanNodes as SDUINode[] } : p
+      );
+      set({
+        pages: pages as BuilderPage[],
+        focusedPageId: pageId,
+        selectedIds: [],
+        hoveredId: null,
+        editingPopupIds: [],
+        editingPopupId: null,
+        editingPopupContentsMap: {},
+        editingPopupModelsMap: {},
+        editingPopupContent: null,
+        editingPopupModel: null,
+        _savedPageNodes: null,
+      });
+      return;
+    }
+
+    // Auto-exit shared component edit if active
+    if (s.editingSharedComponentId) {
+      get().exitSharedComponentEdit();
+    }
+
+    // Lightweight focus change — middleware auto-derives pageNodes
+    set({ focusedPageId: pageId, selectedIds: [], hoveredId: null });
   },
 
   navigatePage: (pageId) => {
     const s = get();
     const target = s.pages.find(p => p.id === pageId);
     if (!target) return;
-    if (target.id === s.currentPageId) {
+    if (target.id === s.focusedPageId) {
       set({ pendingFitToPage: true });
       return;
     }
 
-    const doSwitch = (targetNodes: SDUINode[]) => {
-      const currentS = get();
-      const { cleanNodes } = _flushEditingPopups(currentS);
-      const savedPages = (currentS.pages as BuilderPage[]).map(p =>
-        p.id === currentS.currentPageId ? { ...p, nodes: clone(cleanNodes) } : p
-      );
-      const { newNodes, newContentsMap } = _reattachPopups(currentS, clone(targetNodes));
-      set({
-        pages: savedPages,
-        currentPageId: pageId,
-        pageNodes: newNodes,
-        editingPopupContentsMap: newContentsMap,
-        _savedPageNodes: clone(targetNodes),
-        selectedIds: [],
-        hoveredId: null,
-        history: [clone(newNodes)],
-        historyIdx: 0,
-        pendingFitToPage: true,
-      });
-    };
-
-    // If the page nodes haven't been loaded yet AND the page has no nodes (stub from /config/meta),
-    // fetch them from the backend before switching.
+    // Lazy-load if page nodes haven't been fetched from backend yet
     const isLoaded = s.loadedPageIds.has(pageId);
     const hasNodes = target.nodes.length > 0;
 
     if (!isLoaded && !hasNodes) {
-      // Resolve projectId from either ?projectId= query param (legacy/admin mode)
-      // or from the /builder/<id> pathname (protected platform route — the browser
-      // URL stays as /builder/<id> even though middleware rewrites internally).
       const projectId = typeof window !== 'undefined'
         ? (new URLSearchParams(window.location.search).get('projectId') ??
            (window.location.pathname.startsWith('/builder/')
@@ -1397,23 +1715,23 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
           .then(res => res.ok ? res.json() as Promise<{ page?: { nodes?: SDUINode[] } }> : null)
           .then(data => {
             const fetchedNodes = (data?.page?.nodes ?? []) as SDUINode[];
-            // Update the page in the pages array with the fetched nodes, mark as loaded
             set(st => ({
               pages: st.pages.map(p => p.id === pageId ? { ...p, nodes: fetchedNodes } : p),
               loadedPageIds: new Set([...st.loadedPageIds, pageId]),
             }));
-            doSwitch(fetchedNodes);
+            get().focusPage(pageId);
+            set({ pendingFitToPage: true });
           })
           .catch(() => {
-            // On error, just switch with empty nodes
-            doSwitch([]);
+            get().focusPage(pageId);
+            set({ pendingFitToPage: true });
           });
-        return; // async — switch happens in the then() above
+        return;
       }
     }
 
-    // Already loaded or admin mode — switch immediately
-    doSwitch(clone(target.nodes) as SDUINode[]);
+    get().focusPage(pageId);
+    set({ pendingFitToPage: true });
   },
 
   clearPendingFit: () => set({ pendingFitToPage: false }),
@@ -1463,7 +1781,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
         editingPopupContent: content,
         editingPopupModel: model,
         selectedIds: [],
-        history: [nextNodes],
+        history: [makeSnapshot(s.pages as BuilderPage[], s.focusedPageId, nextNodes, s.canvasNodes)],
         historyIdx: 0,
       };
     }),
@@ -1559,6 +1877,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
         const newLastId      = newEditingIds[newEditingIds.length - 1] ?? null;
         const allClosed      = newEditingIds.length === 0;
 
+        const s2 = get();
         set({
           pageNodes: newPageNodes,
           _savedPageNodes: allClosed ? null : _savedPageNodes,
@@ -1569,7 +1888,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
           editingPopupContent: newLastId ? newContentsMap[newLastId] ?? null : null,
           editingPopupModel: newLastId ? newModelsMap[newLastId] ?? null : null,
           selectedIds: [],
-          history: [clone(newPageNodes)],
+          history: [makeSnapshot(s2.pages as BuilderPage[], s2.focusedPageId, newPageNodes, s2.canvasNodes)],
           historyIdx: 0,
         });
         return;
@@ -1582,6 +1901,7 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     const newContentsMap = Object.fromEntries(Object.entries(editingPopupContentsMap).filter(([k]) => k !== targetId));
     const newModelsMap   = Object.fromEntries(Object.entries(editingPopupModelsMap).filter(([k]) => k !== targetId));
     const newLastId      = newEditingIds[newEditingIds.length - 1] ?? null;
+    const s3 = get();
 
     set({
       pageNodes: pageNodes as SDUINode[],   // keep current page untouched
@@ -1593,7 +1913,159 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
       editingPopupContent: newLastId ? newContentsMap[newLastId] ?? null : null,
       editingPopupModel: newLastId ? newModelsMap[newLastId] ?? null : null,
       selectedIds: [],
-      history: [clone(pageNodes as SDUINode[])],
+      history: [makeSnapshot(s3.pages as BuilderPage[], s3.focusedPageId, pageNodes as SDUINode[], s3.canvasNodes)],
+      historyIdx: 0,
+    });
+  },
+
+  // ── Shared Component edit mode ───────────────────────────────────────────────
+
+  enterSharedComponentEdit: (modelId, content, model) => set(s => {
+    const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
+    if (s.editingSharedComponentIds.includes(modelId)) return s;
+
+    const contentNode = clone(content) as SDUINode;
+
+    // Apply positioning so the component is visible in the canvas
+    const builderContent: SDUINode = {
+      ...contentNode,
+      props: {
+        ...(contentNode.props ?? {}),
+        style: {
+          ...((contentNode.props as Record<string, unknown> | undefined)?.style as Record<string, unknown> | undefined ?? {}),
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 50 + s.editingSharedComponentIds.length,
+        },
+      },
+    } as SDUINode;
+
+    const nextNodes = [...clone(s.pageNodes), builderContent] as SDUINode[];
+    const savedPageNodes = s._savedPageNodes ?? clone(s.pageNodes);
+
+    return {
+      _savedPageNodes: savedPageNodes,
+      pageNodes: nextNodes,
+      editingSharedComponentIds: [...s.editingSharedComponentIds, modelId],
+      editingSharedComponentId: modelId,
+      editingSharedComponentContentsMap: { ...s.editingSharedComponentContentsMap, [modelId]: content },
+      editingSharedComponentModelsMap: { ...s.editingSharedComponentModelsMap, [modelId]: model as Record<string, unknown> },
+      editingSharedComponentContent: content,
+      editingSharedComponentModel: model as Record<string, unknown>,
+      selectedIds: [],
+      history: [makeSnapshot(s.pages as BuilderPage[], s.focusedPageId, nextNodes, s.canvasNodes)],
+      historyIdx: 0,
+    };
+  }),
+
+  saveEditingSharedComponent: (modelId) => {
+    const { editingSharedComponentContentsMap, editingSharedComponentModelsMap, pageNodes } = get();
+    const targetContent = editingSharedComponentContentsMap[modelId];
+    const targetModel   = getSharedComponents()[modelId] ?? editingSharedComponentModelsMap[modelId];
+    if (!targetContent || !targetModel) return;
+
+    const contentRootId = (targetContent as unknown as { id?: string }).id;
+    const liveNode = contentRootId
+      ? (pageNodes as SDUINode[]).find(n => (n as unknown as { id?: string }).id === contentRootId)
+      : undefined;
+
+    if (liveNode) {
+      const BUILDER_KEYS = new Set(['position', 'top', 'left', 'right', 'zIndex']);
+      const rawStyle = ((liveNode.props as Record<string, unknown>)?.style ?? {}) as Record<string, unknown>;
+      const cleanStyle = Object.fromEntries(Object.entries(rawStyle).filter(([k]) => !BUILDER_KEYS.has(k)));
+      const originalStyle = (targetContent.props as Record<string, unknown> | undefined)?.style as Record<string, unknown> | undefined;
+      if (!originalStyle?.['height']) delete cleanStyle['height'];
+
+      const savedNode = {
+        ...liveNode,
+        props: { ...(liveNode.props ?? {}), style: Object.keys(cleanStyle).length > 0 ? cleanStyle : undefined },
+      };
+      updateSharedComponent({ ...(targetModel as { id: string }), content: savedNode as Record<string, unknown> });
+    }
+  },
+
+  exitSharedComponentEdit: (modelId?) => {
+    const {
+      editingSharedComponentId: lastId,
+      editingSharedComponentIds,
+      editingSharedComponentContentsMap,
+      editingSharedComponentModelsMap,
+      pageNodes,
+      _savedPageNodes,
+    } = get();
+
+    const targetId = modelId ?? lastId;
+    if (!targetId) return;
+
+    const targetContent = editingSharedComponentContentsMap[targetId];
+    const targetModel   = getSharedComponents()[targetId] ?? editingSharedComponentModelsMap[targetId];
+
+    if (targetContent) {
+      const contentRootId = (targetContent as unknown as { id?: string }).id;
+      const liveNode = contentRootId
+        ? (pageNodes as SDUINode[]).find(n => (n as unknown as { id?: string }).id === contentRootId)
+        : undefined;
+
+      if (liveNode) {
+        const BUILDER_KEYS = new Set(['position', 'top', 'left', 'right', 'zIndex']);
+        const rawStyle = ((liveNode.props as Record<string, unknown>)?.style ?? {}) as Record<string, unknown>;
+        const cleanStyle = Object.fromEntries(Object.entries(rawStyle).filter(([k]) => !BUILDER_KEYS.has(k)));
+        const originalStyle = (targetContent.props as Record<string, unknown> | undefined)?.style as Record<string, unknown> | undefined;
+        if (!originalStyle?.['height']) delete cleanStyle['height'];
+
+        const savedNode = {
+          ...liveNode,
+          props: { ...(liveNode.props ?? {}), style: Object.keys(cleanStyle).length > 0 ? cleanStyle : undefined },
+        };
+        updateSharedComponent({ id: targetId, ...(targetModel as Record<string, unknown>), content: savedNode as Record<string, unknown> });
+
+        const newPageNodes = (pageNodes as SDUINode[]).filter(
+          n => (n as unknown as { id?: string }).id !== contentRootId
+        ) as SDUINode[];
+        const newEditingIds  = editingSharedComponentIds.filter(id => id !== targetId);
+        const newContentsMap = Object.fromEntries(Object.entries(editingSharedComponentContentsMap).filter(([k]) => k !== targetId));
+        const newModelsMap   = Object.fromEntries(Object.entries(editingSharedComponentModelsMap).filter(([k]) => k !== targetId));
+        const newLastId      = newEditingIds[newEditingIds.length - 1] ?? null;
+        const allClosed      = newEditingIds.length === 0;
+
+        const sc2 = get();
+        set({
+          pageNodes: newPageNodes,
+          _savedPageNodes: allClosed ? null : _savedPageNodes,
+          editingSharedComponentIds: newEditingIds,
+          editingSharedComponentId: newLastId,
+          editingSharedComponentContentsMap: newContentsMap,
+          editingSharedComponentModelsMap: newModelsMap,
+          editingSharedComponentContent: newLastId ? newContentsMap[newLastId] ?? null : null,
+          editingSharedComponentModel: newLastId ? newModelsMap[newLastId] ?? null : null,
+          selectedIds: [],
+          history: [makeSnapshot(sc2.pages as BuilderPage[], sc2.focusedPageId, newPageNodes, sc2.canvasNodes)],
+          historyIdx: 0,
+        });
+        return;
+      }
+    }
+
+    // Fallback: content root not in current pageNodes
+    const newEditingIds  = editingSharedComponentIds.filter(id => id !== targetId);
+    const newContentsMap = Object.fromEntries(Object.entries(editingSharedComponentContentsMap).filter(([k]) => k !== targetId));
+    const newModelsMap   = Object.fromEntries(Object.entries(editingSharedComponentModelsMap).filter(([k]) => k !== targetId));
+    const newLastId      = newEditingIds[newEditingIds.length - 1] ?? null;
+    const sc3 = get();
+
+    set({
+      pageNodes: pageNodes as SDUINode[],
+      _savedPageNodes: newEditingIds.length === 0 ? null : _savedPageNodes,
+      editingSharedComponentIds: newEditingIds,
+      editingSharedComponentId: newLastId,
+      editingSharedComponentContentsMap: newContentsMap,
+      editingSharedComponentModelsMap: newModelsMap,
+      editingSharedComponentContent: newLastId ? newContentsMap[newLastId] ?? null : null,
+      editingSharedComponentModel: newLastId ? newModelsMap[newLastId] ?? null : null,
+      selectedIds: [],
+      history: [makeSnapshot(sc3.pages as BuilderPage[], sc3.focusedPageId, pageNodes as SDUINode[], sc3.canvasNodes)],
       historyIdx: 0,
     });
   },
@@ -1630,73 +2102,59 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
   // ── Logic / Behavior helpers ─────────────────────────────────────────────────
 
   patchCondition: (id, condition) => {
-    set(s => ({
-      pageNodes: patchNodeById(s.pageNodes, id, node =>
-        condition === null
-          ? (({ condition: _c, ...rest }) => rest)(node as SDUINode & { condition?: unknown }) as SDUINode
-          : { ...node, condition } as SDUINode
-      ),
-    }));
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node =>
+      condition === null
+        ? (({ condition: _c, ...rest }) => rest)(node as SDUINode & { condition?: unknown }) as SDUINode
+        : { ...node, condition } as SDUINode
+    ));
     get()._pushHistory();
   },
 
   patchActions: (id, actions) => {
-    set(s => ({
-      pageNodes: patchNodeById(s.pageNodes, id, node =>
-        actions === null
-          ? (({ actions: _a, ...rest }) => rest)(node as SDUINode & { actions?: unknown }) as SDUINode
-          : { ...node, actions } as SDUINode
-      ),
-    }));
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node =>
+      actions === null
+        ? (({ actions: _a, ...rest }) => rest)(node as SDUINode & { actions?: unknown }) as SDUINode
+        : { ...node, actions } as SDUINode
+    ));
     get()._pushHistory();
   },
 
   patchMap: (id, mapPath, keyField) => {
-    set(s => ({
-      pageNodes: patchNodeById(s.pageNodes, id, node => {
-        if (mapPath === null) {
-          const { map: _m, key: _k, ...rest } = node as SDUINode & { map?: unknown; key?: unknown };
-          return rest as SDUINode;
-        }
-        return { ...node, map: mapPath, ...(keyField !== undefined ? { key: keyField } : {}) } as SDUINode;
-      }),
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => {
+      if (mapPath === null) {
+        const { map: _m, key: _k, ...rest } = node as SDUINode & { map?: unknown; key?: unknown };
+        return rest as SDUINode;
+      }
+      return { ...node, map: mapPath, ...(keyField !== undefined ? { key: keyField } : {}) } as SDUINode;
     }));
     get()._pushHistory();
   },
 
   patchDataSource: (id, ds) => {
-    set(s => ({
-      pageNodes: patchNodeById(s.pageNodes, id, node =>
-        ds === null
-          ? (({ dataSource: _d, ...rest }) => rest)(node as SDUINode & { dataSource?: unknown }) as SDUINode
-          : { ...node, dataSource: ds } as unknown as SDUINode
-      ),
-    }));
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node =>
+      ds === null
+        ? (({ dataSource: _d, ...rest }) => rest)(node as SDUINode & { dataSource?: unknown }) as SDUINode
+        : { ...node, dataSource: ds } as unknown as SDUINode
+    ));
     get()._pushHistory();
   },
 
   patchVariant: (id, variants) => {
-    set(s => ({
-      pageNodes: patchNodeById(s.pageNodes, id, node =>
-        variants === null
-          ? (({ _variants: _v, ...rest }) => rest)(node as SDUINode & { _variants?: unknown }) as SDUINode
-          : { ...node, _variants: variants } as SDUINode
-      ),
-    }));
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node =>
+      variants === null
+        ? (({ _variants: _v, ...rest }) => rest)(node as SDUINode & { _variants?: unknown }) as SDUINode
+        : { ...node, _variants: variants } as SDUINode
+    ));
     get()._pushHistory();
   },
 
   patchNodeField: (id, field, value) => {
-    set(s => ({
-      pageNodes: patchNodeById(s.pageNodes, id, node => ({ ...node, [field]: value }) as SDUINode),
-    }));
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => ({ ...node, [field]: value }) as SDUINode));
     get()._pushHistory();
   },
 
   patchNodeFieldLive: (id, field, value) => {
-    set(s => ({
-      pageNodes: patchNodeById(s.pageNodes, id, node => ({ ...node, [field]: value }) as SDUINode),
-    }));
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => ({ ...node, [field]: value }) as SDUINode));
     // Intentionally no _pushHistory — caller must call _pushHistory() once on commit.
   },
 
@@ -1711,17 +2169,17 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     }),
   setCurrentPagePreviewData: (data) =>
     set((s) => ({
-      pages: s.pages.map((p) => p.id === s.currentPageId ? { ...p, previewData: data } : p),
+      pages: s.pages.map((p) => p.id === s.focusedPageId ? { ...p, previewData: data } : p),
     })),
 
   setCurrentPageMeta: (meta) =>
     set((s) => ({
-      pages: s.pages.map((p) => p.id === s.currentPageId ? { ...p, meta: { ...p.meta, ...meta } } : p),
+      pages: s.pages.map((p) => p.id === s.focusedPageId ? { ...p, meta: { ...p.meta, ...meta } } : p),
     })),
 
   setCurrentPageInteractions: (interactions) =>
     set((s) => ({
-      pages: s.pages.map((p) => p.id === s.currentPageId ? { ...p, pageInteractions: interactions } : p),
+      pages: s.pages.map((p) => p.id === s.focusedPageId ? { ...p, pageInteractions: interactions } : p),
     })),
 
   setAppPreviewData: (data) => set({ appPreviewData: data }),
@@ -1881,20 +2339,28 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
           const firstPageId = pageStubs[0].id;
           const firstPageNodes = nodesByPageId.get(firstPageId) ?? [];
 
-          const pages: BuilderPage[] = pageStubs.map(stub => ({
+          // Restore positions from saved config if available
+          const savedPositions = (saved?.pagePositions ?? {}) as Record<string, { wx: number; wy: number }>;
+          const vpWidth = VIEWPORT_WIDTHS['desktop'];
+          const GAP = 80;
+          const rawPages: BuilderPage[] = pageStubs.map((stub, i) => ({
             id: stub.id,
             name: stub.name,
             route: stub.route,
             nodes: nodesByPageId.get(stub.id) ?? [],
+            wx: savedPositions[stub.id]?.wx ?? (i * (vpWidth + GAP)),
+            wy: savedPositions[stub.id]?.wy ?? 0,
           }));
+          const pages = assignDefaultPagePositions(rawPages, vpWidth);
 
           set(s => {
             const next: Partial<typeof s> = {};
             next.pages = pages;
             next.loadedPageIds = new Set(pageStubs.map(s => s.id)); // all loaded
-            next.currentPageId = pages[0].id;
+            next.focusedPageId = pages[0].id;
+            next.currentPageId = pages[0].id;  // keep deprecated alias in sync
             next.pageNodes = clone(firstPageNodes);
-            next.history = [clone(firstPageNodes)];
+            next.history = [makeSnapshot(pages, pages[0].id, firstPageNodes, [])];
             next.historyIdx = 0;
             if (saved?.pageWorkflows) next.pageWorkflows = saved.pageWorkflows as typeof s.pageWorkflows;
             if (saved?.pageWorkflowMeta) next.pageWorkflowMeta = saved.pageWorkflowMeta as typeof s.pageWorkflowMeta;
@@ -1949,13 +2415,14 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
         } else {
           // ── Brand new project (no pages) — seed a default Home page ──────────
           const homeId = crypto.randomUUID();
-          const homePage: BuilderPage = { id: homeId, name: 'Home', route: '/', nodes: [] };
+          const homePage: BuilderPage = { id: homeId, name: 'Home', route: '/', nodes: [], wx: 0, wy: 0 };
 
           set(() => ({
             pages: [homePage],
-            currentPageId: homeId,
+            focusedPageId: homeId,
+            currentPageId: homeId,  // keep deprecated alias in sync
             pageNodes: [],
-            history: [[]],
+            history: [EMPTY_SNAPSHOT],
             historyIdx: 0,
             loadedPageIds: new Set<string>([homeId]),
             pageWorkflows: {},
@@ -1990,9 +2457,11 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
         // Still clear & return — don't show static config for a real project.
         set(() => ({
           pages: [],
-          currentPageId: '',
+          focusedPageId: '',
+          currentPageId: '',  // keep deprecated alias in sync
+          canvasNodes: [],
           pageNodes: [],
-          history: [[]],
+          history: [EMPTY_SNAPSHOT],
           historyIdx: 0,
           loadedPageIds: new Set<string>(),
         }));
@@ -2007,9 +2476,11 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
       resetToConfigPopups();
       set(() => ({
         pages: INITIAL_PAGES,
-        currentPageId: SHOWCASE_PAGE.id,
+        focusedPageId: SHOWCASE_PAGE.id,
+        currentPageId: SHOWCASE_PAGE.id,  // keep deprecated alias in sync
+        canvasNodes: [],
         pageNodes: clone(showcaseNodes),
-        history: [clone(showcaseNodes)],
+        history: [makeSnapshot(INITIAL_PAGES, SHOWCASE_PAGE.id, clone(showcaseNodes), [])],
         historyIdx: 0,
       }));
     }
@@ -2151,36 +2622,37 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
 
   removePage: (pageId) => {
     set(s => {
-      const remaining = s.pages.filter(p => p.id !== pageId);
+      const remaining = (s.pages as BuilderPage[]).filter(p => p.id !== pageId);
       if (remaining.length === 0) {
         return {
           pages: [],
-          currentPageId: null,
+          focusedPageId: '',
+          canvasNodes: [],
           pageNodes: [],
           selectedIds: [],
           hoveredId: null,
-          history: [[]],
+          history: [EMPTY_SNAPSHOT],
           historyIdx: 0,
         };
       }
-      if (s.currentPageId !== pageId) {
+      if (s.focusedPageId !== pageId) {
         return { pages: remaining };
       }
-      // Switching to the previous page (or first remaining)
-      const removedIdx = s.pages.findIndex(p => p.id === pageId);
+      // Removed the focused page — focus the previous (or first remaining)
+      const removedIdx = (s.pages as BuilderPage[]).findIndex(p => p.id === pageId);
       const fallback = remaining[Math.max(0, removedIdx - 1)];
+      // Middleware auto-derives pageNodes from new focusedPageId
       return {
         pages: remaining,
-        currentPageId: fallback.id,
-        pageNodes: clone(fallback.nodes),
+        focusedPageId: fallback.id,
         selectedIds: [],
         hoveredId: null,
-        history: [clone(fallback.nodes)],
-        historyIdx: 0,
       };
     });
+    get()._pushHistory();
   },
-}));
+});
+});
 
 // Expose store for E2E tests as early as possible (module-level, not useEffect)
 // so it's available as soon as the JS bundle loads — before React hydration.

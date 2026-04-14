@@ -14,7 +14,7 @@
  *  - LayerTree       — recursive tree renderer
  */
 
-import React, { useState, useRef, useCallback, useEffect, memo } from 'react';
+import React, { useState, useRef, useCallback, useEffect, memo, useMemo } from 'react';
 import { useBuilderStore, findParentNode, findNode } from './_store';
 import type { BuilderStore } from './_store';
 import type { SDUINode } from '@/lib/sdui/types/node';
@@ -45,6 +45,43 @@ export interface ContextMenuProps {
 
 export function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps) {
   const store = useBuilderStore();
+
+  // Resolve the selected node to check _shared metadata
+  const targetNode = useMemo(() => {
+    function findN(nodes: SDUINode[], id: string): SDUINode | null {
+      for (const n of nodes) {
+        if ((n as { id?: string }).id === id) return n;
+        const found = findN((n.children ?? []) as SDUINode[], id);
+        if (found) return found;
+      }
+      return null;
+    }
+    return findN(store.pageNodes as SDUINode[], nodeId)
+      ?? findN(store.canvasNodes as SDUINode[], nodeId);
+  }, [store.pageNodes, store.canvasNodes, nodeId]);
+
+  const nodeShared = (targetNode as unknown as Record<string, unknown> | null)?._shared as { id: string; name: string } | undefined;
+  const isShared = !!nodeShared;
+
+  const handleToggleShared = () => {
+    if (isShared && nodeShared) {
+      if (window.confirm(`Remove "${nodeShared.name}" as a shared component? Instances on other pages will become detached.`)) {
+        store.patchNodeField(nodeId, '_shared', undefined);
+        // Dynamic import to avoid circular deps
+        import('@/lib/builder/shared-component-data').then(m => m.deleteSharedComponent(nodeShared.id)).catch(() => {});
+      }
+    } else if (targetNode) {
+      const scId = `sc-${crypto.randomUUID()}`;
+      const scName = (targetNode as unknown as { name?: string }).name || targetNode.type || 'Shared Component';
+      const content = JSON.parse(JSON.stringify(targetNode)) as Record<string, unknown>;
+      delete content._shared;
+      import('@/lib/builder/shared-component-data').then(m => {
+        m.createSharedComponent({ id: scId, name: String(scName), properties: [], content });
+      }).catch(() => {});
+      store.patchNodeField(nodeId, '_shared', { id: scId, name: scName });
+    }
+  };
+
   const items = [
     { label: 'Move Up',   action: () => store.moveNodeUp(nodeId) },
     { label: 'Move Down', action: () => store.moveNodeDown(nodeId) },
@@ -53,6 +90,12 @@ export function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps) {
     { label: 'Copy',      action: () => { store.select(nodeId); store.copyToClipboard(); } },
     { label: 'Paste',     action: () => store.pasteFromClipboard() },
     { label: 'Group',     action: () => store.groupNodes(store.selectedIds.includes(nodeId) ? store.selectedIds : [nodeId]) },
+    null, // divider
+    {
+      label: isShared ? `Detach from Shared "${nodeShared?.name}"` : 'Make Shared',
+      action: handleToggleShared,
+      shared: true,
+    },
     null, // divider
     { label: 'Delete',    action: () => store.deleteNodes(store.selectedIds.includes(nodeId) ? store.selectedIds : [nodeId]), danger: true },
   ];
@@ -80,7 +123,7 @@ export function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps) {
               padding: '7px 14px',
               background: 'none',
               border: 'none',
-              color: item.danger ? '#f87171' : '#d1d5db',
+              color: item.danger ? '#f87171' : (item as { shared?: boolean }).shared ? '#60a5fa' : '#d1d5db',
               fontSize: 12,
               fontFamily: 'system-ui',
               textAlign: 'left',
@@ -213,6 +256,21 @@ export const LayerRow = memo(function LayerRow_({
   const ds = (node as { dataSource?: unknown }).dataSource;
   if (ds != null) {
     badges.push({ key: 'ds', label: '↓', icon: '↓', color: '#34d399', bg: '#022c22', title: 'Has data source' });
+  }
+
+  const nodeSharedMeta = (node as unknown as Record<string, unknown>)._shared as { id: string; name: string } | undefined;
+  if (nodeSharedMeta) {
+    badges.push({ key: 'shared', label: 'SC', icon: 'SC', color: '#60a5fa', bg: '#1e3a5f', title: `Shared component: ${nodeSharedMeta.name}` });
+  }
+
+  const responsive = (node as unknown as Record<string, unknown>).responsive as Record<string, unknown> | undefined;
+  if (responsive && typeof responsive === 'object') {
+    const bps = Object.keys(responsive);
+    if (bps.length > 0) {
+      const bpIcons: Record<string, string> = { laptop: '💻', tablet: '📱', mobile: '📲' };
+      const bpLabels = bps.map(b => bpIcons[b] ?? b).join(' ');
+      badges.push({ key: 'resp', label: bpLabels, icon: '📐', color: '#f59e0b', bg: '#451a03', title: `Responsive: ${bps.join(', ')}` });
+    }
   }
 
   const stateTag = (node as unknown as Record<string, unknown>)._stateTag as string | undefined;

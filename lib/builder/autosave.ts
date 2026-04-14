@@ -29,6 +29,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import type { BuilderStore, BuilderPage } from '@/app/dev/builder/_store-types';
+import { useBuilderStore } from '@/app/dev/builder/_store';
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -103,7 +104,6 @@ function serializeMeta(store: BuilderStore): Record<string, unknown> {
  */
 export function useBuilderAutosave(
   projectId: string | null,
-  store: BuilderStore,
   onStatus: (s: SaveStatus) => void,
 ): (s: BuilderStore) => void {
   const timerRef       = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -111,15 +111,9 @@ export function useBuilderAutosave(
   const onStatusRef    = useRef(onStatus);
   onStatusRef.current  = onStatus;
 
-  // Snapshot maps — updated after each successful save tick
-  const pageSnapshotsRef = useRef<Map<string, string>>(new Map()); // pageId → JSON(page)
+  const pageSnapshotsRef = useRef<Map<string, string>>(new Map());
   const metaSnapshotRef  = useRef('');
 
-  /**
-   * Pre-populate snapshots from the given store state.
-   * Call this once after the initial backend load so that the first debounced
-   * tick sees no diffs and does not trigger an erroneous save.
-   */
   const seedBaseline = useCallback((s: BuilderStore) => {
     pageSnapshotsRef.current.clear();
     for (const page of s.pages) {
@@ -128,13 +122,9 @@ export function useBuilderAutosave(
     metaSnapshotRef.current = JSON.stringify(serializeMeta(s));
   }, []);
 
-  // Keep a stable reference to the store that the save closure captures
-  const storeRef = useRef(store);
-  storeRef.current = store;
-
   const save = useCallback(async () => {
     if (!projectId) return;
-    const s = storeRef.current;
+    const s = useBuilderStore.getState() as BuilderStore;
 
     // ── Find dirty pages ─────────────────────────────────────────────────────
     const dirtyPages: BuilderPage[] = [];
@@ -195,37 +185,37 @@ export function useBuilderAutosave(
     }
   }, [projectId]);
 
+  const saveRef = useRef(save);
+  saveRef.current = save;
+
+  const prevSliceRef = useRef<unknown[]>([]);
+
   useEffect(() => {
-    // Skip the very first render — we don't want to save on mount before
-    // the store has loaded project data from the backend.
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
     if (!projectId) return;
+    const selectSlice = (s: BuilderStore) => [
+      s.pages, s.pageWorkflows, s.pageWorkflowMeta,
+      s.globalWorkflows, s.globalWorkflowMeta,
+      s.customVars, s.varFolders,
+      s.pageDataSources, s.dsFolders,
+      s.themeOverrides, s.themeDarkOverrides,
+    ];
+    prevSliceRef.current = selectSlice(useBuilderStore.getState() as BuilderStore);
 
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => { void save(); }, DEBOUNCE_MS);
+    const unsub = useBuilderStore.subscribe(() => {
+      const next = selectSlice(useBuilderStore.getState() as BuilderStore);
+      const prev = prevSliceRef.current;
+      if (next.length === prev.length && next.every((v, i) => v === prev[i])) return;
+      prevSliceRef.current = next;
 
+      if (isFirstRender.current) { isFirstRender.current = false; return; }
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => { void saveRef.current(); }, DEBOUNCE_MS);
+    });
     return () => {
+      unsub();
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [
-    projectId,
-    // Watch all saveable fields individually so the effect fires on any change
-    store.pages,
-    store.pageWorkflows,
-    store.pageWorkflowMeta,
-    store.globalWorkflows,
-    store.globalWorkflowMeta,
-    store.customVars,
-    store.varFolders,
-    store.pageDataSources,
-    store.dsFolders,
-    store.themeOverrides,
-    store.themeDarkOverrides,
-    save,
-  ]);
+  }, [projectId]);
 
   return seedBaseline;
 }

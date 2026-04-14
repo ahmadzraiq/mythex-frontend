@@ -92,7 +92,7 @@
                       "type": "Icon",
                       "id": "b86567cb-bec1-4a0e-9268-7bc71439c4d3",
                       "props": {
-                        "icon": "X",
+                        "icon": "lucide:x",
                         "size": 16,
                         "color": "#9ca3af"
                       }
@@ -295,7 +295,7 @@
                       "type": "Icon",
                       "id": "alert-close-icon",
                       "props": {
-                        "icon": "X",
+                        "icon": "lucide:x",
                         "size": 14,
                         "color": "#9ca3af"
                       }
@@ -412,7 +412,7 @@
                       "type": "Icon",
                       "id": "wait-close-icon",
                       "props": {
-                        "icon": "X",
+                        "icon": "lucide:x",
                         "size": 16,
                         "color": "#9ca3af"
                       }
@@ -634,7 +634,7 @@
                       "type": "Icon",
                       "id": "stacked-close-icon",
                       "props": {
-                        "icon": "X",
+                        "icon": "lucide:x",
                         "size": 14,
                         "color": "#9ca3af"
                       }
@@ -730,7 +730,7 @@
                     {
                       "type": "Icon",
                       "props": {
-                        "icon": "X",
+                        "icon": "lucide:x",
                         "size": 18,
                         "color": "#6b7280"
                       },

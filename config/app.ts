@@ -27,4 +27,5 @@ export default {
   registry,
   actions: root.actions,
   dataSources: root.dataSources,
+  sharedComponents: root.sharedComponents,
 } as const;

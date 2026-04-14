@@ -22,9 +22,14 @@ import { createVariableStore, useVariablePaths } from './variable-store';
 import { extractNodeDependencies } from './dependency-extractor';
 import type { SDUINode, SDUIContext } from './types';
 import { isScreenScopedPath } from './path-utils';
+
+const _warnedTypes = new Set<string>();
+const _ACCEPTS_ON_VALUE_CHANGE = new Set(['Select', 'Switch', 'Accordion', 'RadioGroup', 'Slider']);
+const _CONTROLLED_VALUE_KEYS = ['value', 'selectedValue', 'defaultValue', 'isChecked', 'isSelected'];
 import { createGet } from './create-get';
 import { bindActionsToProps } from './action-binding';
 import { useBuilderMode } from './builder-context';
+import { resolveResponsiveNode } from './responsive-resolver';
 import { InputParentContext, useParentInputId } from './input-parent-context';
 import { PARENT_CONTEXT_PROVIDER_TYPES } from './controlled-component-registry';
 import {
@@ -70,9 +75,10 @@ function tokenizeClassName(className: string): string[] {
   return tokens;
 }
 
-function classToInlineStyle(className: string | undefined): Record<string, string> {
+function classToInlineStyle(className: string | undefined): Record<string, string> & { _consumed?: Set<string> } {
   if (!className) return {};
-  const style: Record<string, string> = {};
+  const style: Record<string, string> & { _consumed?: Set<string> } = {};
+  const consumed = new Set<string>();
 
   // Handle non-arbitrary position and inset keywords (no [value] suffix).
   // These are bare Tailwind utilities compiled by JIT for source files but NOT for
@@ -166,6 +172,7 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
     // Tailwind uses underscores for spaces inside arbitrary values (e.g. calc(33%_-_22px)).
     // Convert them back to spaces so the CSS value is valid.
     const value = rawValue.replace(/_/g, ' ');
+    const _sizeBefore = Object.keys(style).length;
 
     // Determine value category so we can apply the right CSS property below.
     const isNumeric  = /^-?\d/.test(value);           // 96px, 900px, 80vh, -10px
@@ -328,8 +335,10 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
         if (isHexColor || isCssFn) (style as Record<string, string>).textDecorationColor = value;
         break;
     }
+    if (Object.keys(style).length > _sizeBefore) consumed.add(token);
   }
 
+  if (consumed.size > 0) style._consumed = consumed;
   return style;
 }
 
@@ -338,7 +347,7 @@ const NOOP_SUBSCRIBE_FN = (_cb: () => void) => () => {};
 
 interface RendererContext {
   store: ReturnType<typeof createVariableStore>;
-  mergedStore?: { getState: () => { merged: Record<string, unknown> }; subscribe: (cb: () => void) => () => void };
+  mergedStore?: { getState: () => { merged: Record<string, unknown>; patchVersion: number }; subscribe: (cb: () => void) => () => void };
   mergedState?: Record<string, unknown>;
   runAction: SDUIContext['runAction'];
   fetchData: SDUIContext['fetchData'];
@@ -355,27 +364,37 @@ interface RendererProps {
   scope?: Record<string, unknown>;
   /** Stable tree path string used for builder node IDs (e.g. "0", "0-1", "0-1-2") */
   builderPath?: string;
+  /** When this node is a rendered instance of a map/repeat template, the 0-based
+   *  instance index. Written as `data-builder-map-index` so the builder overlay can
+   *  identify the specific instance that was clicked (weWeb-style repeat selection). */
+  builderMapIndex?: number;
 }
 
-const SDURendererInner = memo(function SDURendererInner({ node, context, scope, builderPath = '0' }: RendererProps) {
-  const { builderMode } = useBuilderMode();
+const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context, scope, builderPath = '0', builderMapIndex }: RendererProps) {
+  const { builderMode, activeBreakpoint } = useBuilderMode();
+
+  // Resolve responsive overrides before any other processing.
+  // In builder mode, activeBreakpoint comes from the builder's viewport preset.
+  // In production, it comes from the engine's BreakpointContext (window.innerWidth).
+  const node = activeBreakpoint ? resolveResponsiveNode(rawNode, activeBreakpoint) : rawNode;
+
   const { store, mergedStore, mergedState, runAction, fetchData, actionsConfig, screenName, screenScopedAliases = [], previewState } = context;
 
-  // Builder needs full subscription so preview-state patches (loading/error/disabled overlays
-  // applied in applyBuilderPatches) immediately trigger a re-render on every setMerged call.
+  // Both builder and production read merged at render time (not via blanket subscription).
+  // useVariablePaths (below) is the sole re-render scheduler — it subscribes to mergedStore
+  // with JSON.stringify comparison on specific dep values, so only nodes whose deps actually
+  // changed will re-render.
   //
-  // Production: skip the blanket subscription — it causes O(N) re-renders per rAF tick because
-  // Zustand always creates a new { merged: newObj } reference, making Object.is always fail for
-  // every mounted SDURendererInner regardless of whether its deps changed. Instead, read merged
-  // directly at render time; useVariablePaths (below) is the sole re-render scheduler and only
-  // fires for components whose specific dep values actually changed.
-  const mergedFromStore = useSyncExternalStore(
+  // Builder additionally subscribes to patchVersion — a counter that bumps only when preview
+  // states or preview data change (rare). This forces a full re-render for those operations
+  // without causing O(N) re-renders on every normal setMerged call.
+  useSyncExternalStore(
     builderMode && mergedStore ? mergedStore.subscribe : NOOP_SUBSCRIBE_FN,
-    () => builderMode && mergedStore ? mergedStore.getState().merged : STABLE_EMPTY_OBJECT,
-    () => STABLE_EMPTY_OBJECT,
+    () => builderMode && mergedStore ? mergedStore.getState().patchVersion : 0,
+    () => 0,
   );
   const merged = mergedStore
-    ? (builderMode ? mergedFromStore : mergedStore.getState().merged)
+    ? mergedStore.getState().merged
     : (mergedState ?? STABLE_EMPTY_OBJECT);
 
   // FormScopeContext: set by FormContainer — scopes local.data.form.* to the
@@ -555,6 +574,7 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
               context={context}
               scope={{ ...scope, $item: item, $index: index, $parent: scope?.$item, context: { item: itemCtx, index, parent: outerItemCtx } }}
               builderPath={`${builderPath}-m${index}`}
+              builderMapIndex={index}
             />
           );
         })}
@@ -562,9 +582,83 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
     );
   }
 
+  // ── SharedComponent — render a shared component definition with scoped props ──
+  if ((node.type as string) === 'SharedComponent') {
+    const componentId = (node.props as Record<string, unknown> | undefined)?.componentId as string | undefined;
+    const instanceProps = { ...(node.props as Record<string, unknown> | undefined ?? {}) };
+    delete instanceProps.componentId;
+
+    // Resolve prop values via evaluateFormula so formula-capable overrides work
+    const resolvedInstanceProps: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(instanceProps)) {
+      if (val && typeof val === 'object' && ('formula' in val || 'expr' in val)) {
+        const fVal = (val as { formula?: string; expr?: string });
+        const expr = fVal.formula ?? fVal.expr ?? '';
+        resolvedInstanceProps[key] = evaluateFormula(expr, stateWithScope).value;
+      } else {
+        resolvedInstanceProps[key] = val;
+      }
+    }
+
+    // Dynamically resolve model — prefers live builder store, falls back to static JSON
+    let scModel: { properties?: Array<{ name: string; defaultValue?: unknown }>; content?: unknown } | undefined;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const scData = require('@/lib/builder/shared-component-data');
+      const live = scData.getSharedComponents() as Record<string, { properties: Array<{ name: string; defaultValue?: unknown }>; content: unknown }>;
+      scModel = componentId ? (live[componentId] ?? undefined) : undefined;
+    } catch { /* builder data not available */ }
+    if (!scModel && componentId) {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const staticJson = require('@/config/shared-components.json') as Record<string, { properties: Array<{ name: string; defaultValue?: unknown }>; content: unknown }>;
+      scModel = staticJson[componentId];
+    }
+
+    if (!scModel) {
+      if (process.env.NODE_ENV !== 'production') {
+        return (
+          <div style={{ border: '1px dashed #ef4444', padding: '8px 12px', borderRadius: 6, fontSize: 12, color: '#ef4444', background: '#fef2f2' }}>
+            SharedComponent: unknown id &quot;{componentId ?? '(none)'}&quot;
+          </div>
+        );
+      }
+      return null;
+    }
+
+    // Merge declared property defaults with instance overrides
+    const resolvedProps: Record<string, unknown> = {};
+    for (const prop of (scModel.properties ?? [])) {
+      resolvedProps[prop.name] = prop.name in resolvedInstanceProps ? resolvedInstanceProps[prop.name] : prop.defaultValue;
+    }
+    for (const [key, val] of Object.entries(resolvedInstanceProps)) {
+      if (!(key in resolvedProps)) resolvedProps[key] = val;
+    }
+
+    const scScope = {
+      ...scope,
+      context: {
+        ...(scope?.context as Record<string, unknown> | undefined ?? {}),
+        component: { props: resolvedProps, id: componentId, name: (scModel as { name?: string }).name },
+      },
+    };
+
+    return (
+      <SDURendererInner
+        node={scModel.content as Parameters<typeof SDURendererInner>[0]['node']}
+        context={context}
+        scope={scScope}
+        builderPath={builderPath}
+        builderMapIndex={builderMapIndex}
+      />
+    );
+  }
+
   const Component = getComponent(node.type);
   if (!Component) {
-    console.warn(`[SDUI] Unknown component type: ${node.type}`);
+    if (!_warnedTypes.has(node.type)) {
+      _warnedTypes.add(node.type);
+      console.warn(`[SDUI] Unknown component type: ${node.type}`);
+    }
     return null;
   }
 
@@ -586,6 +680,17 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
     Object.entries(resolvedProps).filter(([k]) => !k.startsWith('$') && k !== '_meta' && k !== 'animation')
   ) as Record<string, unknown>;
 
+  for (const ck of _CONTROLLED_VALUE_KEYS) {
+    if (ck in cleanProps && cleanProps[ck] === undefined) {
+      const nodeProps = (node.props ?? {}) as Record<string, unknown>;
+      if (ck in nodeProps && (ck === 'value' || ck === 'selectedValue')) {
+        cleanProps[ck] = '';
+      } else {
+        delete cleanProps[ck];
+      }
+    }
+  }
+
   // Map data-testid → testID so Gluestack Button surfaces it in the DOM.
   // React Native uses testID (rendered as data-testid by RN-Web); plain HTML elements
   // (e.g. Text → span) forward data-* directly, but Gluestack compound components may not.
@@ -603,12 +708,27 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
   applyFormContextBindings(node, cleanProps, formCtx, actionsConfig);
   trackFormFieldProps(node, cleanProps, formCtx, parentInputId);
   injectControlledProps(cleanProps, externalValue, externalIsChecked);
+  if ('onValueChange' in cleanProps && !_ACCEPTS_ON_VALUE_CHANGE.has(node.type as string)) {
+    delete cleanProps.onValueChange;
+  }
 
   // Pass the SDUI node ID to FormContainer so it can sync to variables['{id}-form'].
   // When the node has no explicit id (e.g. screen JSON loaded from config), pass an empty
   // string so FormContainer falls back to its own stable internal ID (see FormContainer.tsx).
   if ((node.type as string) === 'FormContainer') {
     cleanProps._formNodeId = node.id ?? '';
+  }
+
+  if ((node.type as string) === 'CheckboxGroup' && !cleanProps['aria-label'] && !cleanProps['aria-labelledby']) {
+    cleanProps['aria-label'] = 'checkbox group';
+  }
+
+  if ('pointerEvents' in cleanProps) {
+    const pe = cleanProps.pointerEvents;
+    delete cleanProps.pointerEvents;
+    if (pe && typeof pe === 'string') {
+      cleanProps.style = { ...(cleanProps.style as Record<string, unknown> ?? {}), pointerEvents: pe };
+    }
   }
 
   // Detect animation config early so we can choose between:
@@ -657,23 +777,22 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
   // outer Animated.View in AnimatedNode). Single-element nodes keep normal annotation.
   const animNodeOwnsId = !!(builderMode && node.id && animCfgObj && !useSingleElementPath);
   if (!animNodeOwnsId) {
-    applyBuilderAnnotation(node, cleanProps, builderMode);
+    applyBuilderAnnotation(node, cleanProps, builderMode, builderMapIndex);
   }
 
   const textContent = node.text != null ? resolveText(node.text, sduiContext, scope) : undefined;
 
   let children: React.ReactNode = null;
   if (node.children?.length) {
+    const _seenKeys = new Set<string>();
     const childElements = node.children.map((child, i) => {
       if (child == null) return null;
       const childKey = child.key;
       const isScopeVar = childKey === '$index' || childKey === '$item';
-      // Use the SDUI node's stable id as the React key when available.
-      // This prevents React from reusing DOM elements when siblings are reordered
-      // (e.g. inserting a node before an existing one in the builder), which would
-      // otherwise cause imperatively-applied inline styles to bleed onto the wrong node.
-      const key = child.id ?? (childKey && !isScopeVar ? childKey : `child-${i}`);
-      return <SDURendererInner key={key} node={child} context={context} scope={scope} builderPath={`${builderPath}-${i}`} />;
+      let key = child.id ?? (childKey && !isScopeVar ? childKey : `child-${i}`);
+      if (_seenKeys.has(key)) key = `${key}-${i}`;
+      _seenKeys.add(key);
+      return <SDURendererInner key={key} node={child} context={context} scope={scope} builderPath={`${builderPath}-${i}`} builderMapIndex={builderMapIndex} />;
     });
     // Provide parent Input ID to descendant InputField nodes so they can write to
     // variables['{inputId}-value'] on change (formula live-binding).
@@ -742,7 +861,13 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
   // Tailwind JIT only compiles classes from scanned source files, not from JSON config —
   // so arbitrary values from the SDUI config need an inline style equivalent to render correctly.
   // props.style wins over the extracted values (e.g. transform stays intact).
-  const arbStyles = classToInlineStyle(cleanProps.className as string | undefined);
+  const arbStylesRaw = classToInlineStyle(cleanProps.className as string | undefined);
+  const consumedTokens = arbStylesRaw._consumed;
+  delete arbStylesRaw._consumed;
+  const arbStyles = arbStylesRaw as Record<string, string>;
+  if (consumedTokens && consumedTokens.size > 0 && typeof cleanProps.className === 'string') {
+    cleanProps.className = tokenizeClassName(cleanProps.className).filter(t => !consumedTokens.has(t)).join(' ');
+  }
   // Detect animation config early. When the node is animated AND absolutely/fixed positioned,
   // the outer Animated.View wrapper owns position/insets — stripping them from the inner
   // element prevents doubled offsets (inner positioned relative to outer which is itself
@@ -1178,6 +1303,7 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
           nodeId={node.id}
           nodeType={node.type as string | undefined}
           builderMode={builderMode}
+          nodeMapIndex={builderMapIndex}
           componentType={Component as React.ComponentType<Record<string, unknown>>}
           componentProps={{ ...cleanProps }}
           componentChildren={children}
@@ -1401,6 +1527,7 @@ const SDURendererInner = memo(function SDURendererInner({ node, context, scope, 
         nodeId={node.id}
         nodeType={node.type as string | undefined}
         builderMode={builderMode}
+        nodeMapIndex={builderMapIndex}
       >
         {element}
       </AnimatedNode>

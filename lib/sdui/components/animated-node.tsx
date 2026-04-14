@@ -435,6 +435,9 @@ interface AnimatedNodeProps {
   nodeId?: string;
   nodeType?: string;
   builderMode?: boolean;
+  /** When this is a map/repeat instance, the 0-based instance index.
+   *  Written as `data-builder-map-index` so the overlay can target the specific instance. */
+  nodeMapIndex?: number;
   componentType?: React.ComponentType<Record<string, unknown>>;
   componentProps?: Record<string, unknown>;
   componentChildren?: React.ReactNode;
@@ -814,6 +817,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   nodeId,
   nodeType,
   builderMode = false,
+  nodeMapIndex,
   componentType,
   componentProps,
   componentChildren,
@@ -858,8 +862,11 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     if (!el || typeof el.setAttribute !== 'function') return;
     el.setAttribute('data-builder-id', nodeId);
     el.setAttribute('data-builder-type', nodeType ?? 'Box');
+    if (nodeMapIndex !== undefined) {
+      el.setAttribute('data-builder-map-index', String(nodeMapIndex));
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [builderMode, nodeId, nodeType]);
+  }, [builderMode, nodeId, nodeType, nodeMapIndex]);
 
   // ── Reanimated shared values ────────────────────────────────────────────────
   // scrollActive: treat scroll as active when type is set (enabled: true is optional).
@@ -2287,11 +2294,12 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   }, []);
 
   const dragGesture = useMemo(() => {
-    if (!drag?.enabled) return Gesture.Pan().enabled(false);
+    if (!drag?.enabled) return Gesture.Pan().runOnJS(true).enabled(false);
     const axis   = drag.axis ?? 'both';
     const bounds = drag.bounds;
 
     return Gesture.Pan()
+      .runOnJS(true)
       .onBegin(() => {
         dragging.value = true;
         dragStartX.value = dragX.value;
@@ -2317,11 +2325,12 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   }, [runAction]);
 
   const swipeGesture = useMemo(() => {
-    if (!gesture?.enabled || !gesture.swipe) return Gesture.Pan().enabled(false);
+    if (!gesture?.enabled || !gesture.swipe) return Gesture.Pan().runOnJS(true).enabled(false);
     const thr  = gesture.swipeThreshold    ?? 40;
     const vthr = gesture.velocityThreshold ?? 0.05;
 
     return Gesture.Pan()
+      .runOnJS(true)
       .onUpdate((e: GestureUpdateEvent<PanGestureHandlerEventPayload>) => {
         if (!gesture.dragFeedback) return;
         isDraggingRef.current = true;
@@ -2363,11 +2372,12 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // ── Tap gesture (press + flip click) ──────────────────────────────────────
   const tapGesture = useMemo(() => {
     const hasTap = press || (flip?.trigger === 'click');
-    if (!hasTap) return Gesture.Tap().enabled(false);
+    if (!hasTap) return Gesture.Tap().runOnJS(true).enabled(false);
     const targetScale   = press?.scale   ?? 0.95;
     const targetOpacity = press?.opacity ?? 1;
     const dur = press?.duration ?? 120;
     return Gesture.Tap()
+      .runOnJS(true)
       .onBegin(() => {
         if (press) {
           pressScale.value   = withTiming(targetScale,   { duration: dur });
@@ -2391,31 +2401,24 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // ── Hover gesture — hover effects + flip hover + pseudo-element ────────────
   const hoverGesture = useMemo(() => {
     const hasHover = hover || (flip && (flip.trigger === 'hover' || !flip.trigger)) || pseudoElCfg?.enabled;
-    if (!hasHover) return Gesture.Hover().enabled(false);
+    if (!hasHover) return Gesture.Hover().runOnJS(true).enabled(false);
     const targetScale   = hover?.scale   ?? 1;
     const targetOpacity = hover?.opacity ?? 1;
     const targetY       = hover?.y       ?? 0;
     const dur = hover?.duration ?? 200;
     return Gesture.Hover()
+      .runOnJS(true)
       .onBegin(() => {
         if (hover) {
           hoverScale.value   = withTiming(targetScale,   { duration: dur });
           hoverOpacity.value = withTiming(targetOpacity, { duration: dur });
           hoverTransY.value  = withTiming(targetY,       { duration: dur });
         }
-        // flip hover is handled via DOM mouseenter/mouseleave on web to avoid
-        // preserve-3d child-pointer flicker; Gesture.Hover handles native only
         if (flip && (flip.trigger === 'hover' || !flip.trigger)) {
           if (typeof document === 'undefined') {
             runOnJS(setIsFlipped)(true);
           }
         }
-        // Only update React state when a pseudo-element hover effect actually needs it.
-        // Calling runOnJS(setHovering) unconditionally causes React re-renders on every
-        // Gesture.Hover event → GestureDetector reinstalls handlers → onEnd fires →
-        // setHovering(false) → re-render → infinite loop and "None of callbacks are
-        // worklets" warning on every hover. Gate it on pseudoElCfg so flip cards (and
-        // any other node without pseudo-hover) never trigger this re-render cycle.
         if (pseudoElCfg?.enabled && pseudoElCfg?.trigger === 'hover') {
           runOnJS(setHovering)(true);
         }
@@ -2440,12 +2443,13 @@ export const AnimatedNode = React.memo(function AnimatedNode({
 
   // ── Tilt gesture — Gesture.Hover() cross-platform ─────────────────────────
   const tiltGesture = useMemo(() => {
-    if (!tilt?.enabled) return Gesture.Hover().enabled(false);
+    if (!tilt?.enabled) return Gesture.Hover().runOnJS(true).enabled(false);
     const maxX      = tilt.maxX ?? 15;
     const maxY      = tilt.maxY ?? 15;
     const resetDur  = tilt.duration ?? 200; // duration used only for the reset-on-leave
     const scale     = tilt.scale ?? 1;
     return Gesture.Hover()
+      .runOnJS(true)
       .onBegin(() => {
         if (scale !== 1) tiltScaleSv.value = withSpring(scale, { damping: 15, stiffness: 250 });
       })
@@ -2474,10 +2478,11 @@ export const AnimatedNode = React.memo(function AnimatedNode({
 
   // ── MouseParallax gesture — Gesture.Hover() cross-platform ────────────────
   const mouseParallaxGesture = useMemo(() => {
-    if (!mouseParallax?.enabled) return Gesture.Hover().enabled(false);
+    if (!mouseParallax?.enabled) return Gesture.Hover().runOnJS(true).enabled(false);
     const strength = mouseParallax.strength ?? 0.05;
     const axis     = mouseParallax.axis ?? 'both';
     return Gesture.Hover()
+      .runOnJS(true)
       .onChange((e: { absoluteX: number; absoluteY: number }) => {
         const cx = typeof window !== 'undefined' ? window.innerWidth / 2 : e.absoluteX;
         const cy = typeof window !== 'undefined' ? window.innerHeight / 2 : e.absoluteY;
@@ -2636,13 +2641,16 @@ export const AnimatedNode = React.memo(function AnimatedNode({
             elevation: loopShadowRadius.value,
           }
       ) : {}),
-      // Focus shadow (cross-platform: RN maps shadowColor/Radius/Opacity → box-shadow on web)
-      ...(focus?.enabled && isFocusedSv.value > 0 ? {
-        shadowColor: focusColor,
-        shadowRadius: isFocusedSv.value * (focusBlur + focusSpread),
-        shadowOpacity: isFocusedSv.value * 0.5,
-        elevation: isFocusedSv.value * 4,
-      } : {}),
+      ...(focus?.enabled && isFocusedSv.value > 0 ? (
+        Platform.OS === 'web'
+          ? { boxShadow: `0 0 ${isFocusedSv.value * focusBlur}px ${isFocusedSv.value * focusSpread}px ${focusColor}` } as object
+          : {
+              shadowColor: focusColor,
+              shadowRadius: isFocusedSv.value * (focusBlur + focusSpread),
+              shadowOpacity: isFocusedSv.value * 0.5,
+              elevation: isFocusedSv.value * 4,
+            }
+      ) : {}),
       // gradientDrift — shift backgroundPosition on the Animated.View wrapper.
       // Uses the `backgroundPosition` shorthand (not backgroundPositionX longhand) for
       // maximum browser compatibility. The gradient must live on animation.outerStyle

@@ -1776,6 +1776,77 @@ const handlers: Record<string, Handler> = {
     const nodeErr = requireNode(store, nodeId);
     if (nodeErr) return nodeErr;
 
+    // ── Responsive breakpoint routing ──────────────────────────────────────────
+    // When a non-desktop breakpoint is specified, route style overrides to
+    // node.responsive.{bp}.styles instead of modifying the base className.
+    const bp = (input.breakpoint as string | undefined) ?? 'desktop';
+    if (bp !== 'desktop' && (bp === 'laptop' || bp === 'tablet' || bp === 'mobile')) {
+      const styleOverrides: Record<string, string | number | null> = {};
+      const CSS_MAP: Record<string, string> = {
+        direction: 'flexDirection', gap: 'gap',
+        p: '_padding', px: '_paddingX', py: '_paddingY',
+        pt: 'paddingTop', pr: 'paddingRight', pb: 'paddingBottom', pl: 'paddingLeft',
+        m: '_margin', mx: '_marginX', my: '_marginY',
+        mt: 'marginTop', mr: 'marginRight', mb: 'marginBottom', ml: 'marginLeft',
+        width: 'width', height: 'height',
+        minWidth: 'minWidth', maxWidth: 'maxWidth', minHeight: 'minHeight', maxHeight: 'maxHeight',
+        fontSize: 'fontSize', position: 'position', zIndex: 'zIndex',
+        top: 'top', right: 'right', bottom: 'bottom', left: 'left',
+        bg: 'backgroundColor', color: 'color',
+        radius: 'borderRadius', borderWidth: 'borderWidth', borderColor: 'borderColor',
+        opacity: 'opacity', overflow: 'overflow', display: 'display',
+      };
+      const DIRECTION_MAP: Record<string, string> = { row: 'row', column: 'column' };
+      for (const [key, cssProp] of Object.entries(CSS_MAP)) {
+        if (!(key in input)) continue;
+        let val = input[key];
+        if (key === 'direction') val = DIRECTION_MAP[String(val)] ?? val;
+        if (key === 'gap' || key === 'pt' || key === 'pr' || key === 'pb' || key === 'pl' ||
+            key === 'mt' || key === 'mr' || key === 'mb' || key === 'ml' ||
+            key === 'top' || key === 'right' || key === 'bottom' || key === 'left') {
+          val = `${val}px`;
+        }
+        if (cssProp === '_padding') {
+          const v = `${val}px`;
+          styleOverrides.paddingTop = v; styleOverrides.paddingRight = v;
+          styleOverrides.paddingBottom = v; styleOverrides.paddingLeft = v;
+        } else if (cssProp === '_paddingX') {
+          const v = `${val}px`; styleOverrides.paddingLeft = v; styleOverrides.paddingRight = v;
+        } else if (cssProp === '_paddingY') {
+          const v = `${val}px`; styleOverrides.paddingTop = v; styleOverrides.paddingBottom = v;
+        } else if (cssProp === '_margin') {
+          const v = `${val}px`;
+          styleOverrides.marginTop = v; styleOverrides.marginRight = v;
+          styleOverrides.marginBottom = v; styleOverrides.marginLeft = v;
+        } else if (cssProp === '_marginX') {
+          const v = val === 'auto' ? 'auto' : `${val}px`;
+          styleOverrides.marginLeft = v; styleOverrides.marginRight = v;
+        } else if (cssProp === '_marginY') {
+          const v = val === 'auto' ? 'auto' : `${val}px`;
+          styleOverrides.marginTop = v; styleOverrides.marginBottom = v;
+        } else {
+          styleOverrides[cssProp] = typeof val === 'number' ? `${val}px` : String(val);
+        }
+      }
+      if (input.align) styleOverrides._alignItems = String(input.align);
+      if (input.justify) styleOverrides._justifyContent = String(input.justify);
+      if (Object.keys(styleOverrides).length > 0) {
+        for (const [prop, val] of Object.entries(styleOverrides)) {
+          store.patchResponsive(nodeId, bp, `styles.${prop}`, val);
+        }
+      }
+      // Handle non-style responsive overrides
+      if ('condition' in input) {
+        const cond = input.condition;
+        store.patchResponsive(nodeId, bp, 'condition', cond === '' ? null : cond === 'false' ? false : cond);
+      }
+      store._pushHistory();
+      return {
+        success: true,
+        data: { message: `Applied responsive overrides for ${bp} breakpoint` },
+      };
+    }
+
     const node = findNode(store.pageNodes as SDUINode[], nodeId);
     const componentType = (node?.type as string | undefined) ?? 'Unknown';
     const caps = getCapabilities(componentType); // null = no restriction

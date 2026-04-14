@@ -236,6 +236,37 @@ export interface BuilderPage {
   meta?: PageMeta;
   /** Page-level interactions keyed by event name (e.g. "mount") */
   pageInteractions?: Record<string, { workflow?: string }>;
+  /** World-space X position of the page frame (top-left corner). Used for free canvas layout. */
+  wx: number;
+  /** World-space Y position of the page frame (top-left corner). Used for free canvas layout. */
+  wy: number;
+}
+
+/**
+ * A single global history snapshot — covers ALL pages + freeform canvas nodes.
+ * Replaces the old per-page SDUINode[][] history format.
+ */
+export interface HistorySnapshot {
+  /** Per-page state keyed by pageId */
+  pages: Record<string, { nodes: SDUINode[]; wx: number; wy: number }>;
+  /** Freeform canvas nodes (outside any page frame) */
+  canvasNodes: SDUINode[];
+}
+
+/**
+ * A freeform canvas node that lives outside any page frame.
+ * The _cx/_cy store world-space position; _cw/_ch optional captured size. Stripped before export / when moving back to a page.
+ */
+export interface CanvasNode extends SDUINode {
+  _cx: number;
+  _cy: number;
+  /** Captured rendered size (world px) so w-full children keep width off-page */
+  _cw?: number;
+  _ch?: number;
+  /** Original className before stripping absolute positioning (restored on drop-back) */
+  _originalCls?: string;
+  /** Original inline style before stripping position props (restored on drop-back) */
+  _originalStyle?: Record<string, unknown>;
 }
 
 // ─── Workflow types ────────────────────────────────────────────────────────────
@@ -265,9 +296,17 @@ export type WorkflowCanvasTarget =
 export interface BuilderStore {
   // ── Multi-page state ────────────────────────────────────────────────────────
   pages: BuilderPage[];
+  /** The page currently shown in the Layers panel and targeted by node operations.
+   *  Auto-updates when the user clicks a node on any page. */
+  focusedPageId: string;
+  /** @deprecated Use focusedPageId. Alias kept for backward compat. */
   currentPageId: string;
   /** Set of page IDs whose nodes have been fetched from the backend. */
   loadedPageIds: Set<string>;
+
+  // ── Freeform canvas nodes (outside any page frame) ─────────────────────────
+  /** Nodes placed freely on the canvas, not inside any page. */
+  canvasNodes: CanvasNode[];
 
   // ── Page state (active page working copy) ───────────────────────────────────
   pageNodes: SDUINode[];
@@ -285,7 +324,7 @@ export interface BuilderStore {
   editingPopupContent: SDUINode | null;
   /** Convenience alias: model of the most-recently-opened popup (right-panel compat) */
   editingPopupModel: Record<string, unknown> | null;
-  /** Original page nodes saved on the FIRST enterPopupEdit call; cleared when all popups are closed */
+  /** @deprecated No longer used — kept for backward compat with popup edit. */
   _savedPageNodes: SDUINode[] | null;
   /** Enter popup-edit mode: appends popup to pageNodes; supports multiple concurrent popup edits */
   enterPopupEdit: (modelId: string, content: SDUINode, model: Record<string, unknown>) => void;
@@ -296,9 +335,34 @@ export interface BuilderStore {
    *  Called automatically on a debounce whenever pageNodes changes during popup edit. */
   saveEditingPopup: (modelId: string) => void;
 
+  // ── Shared Component edit mode ───────────────────────────────────────────────
+  /** IDs of ALL shared component models currently open for editing in the canvas */
+  editingSharedComponentIds: string[];
+  /** The most-recently-opened shared component being edited */
+  editingSharedComponentId: string | null;
+  /** Root content node map per shared component being edited (keyed by modelId) */
+  editingSharedComponentContentsMap: Record<string, SDUINode>;
+  /** Full shared component model map per component being edited (keyed by modelId) */
+  editingSharedComponentModelsMap: Record<string, Record<string, unknown>>;
+  /** Convenience alias: content of the most-recently-opened shared component */
+  editingSharedComponentContent: SDUINode | null;
+  /** Convenience alias: model of the most-recently-opened shared component */
+  editingSharedComponentModel: Record<string, unknown> | null;
+  /** Enter shared-component-edit mode: appends the component content to pageNodes */
+  enterSharedComponentEdit: (modelId: string, content: SDUINode, model: Record<string, unknown>) => void;
+  /** Exit shared-component-edit mode for a specific model (or the last opened if omitted) */
+  exitSharedComponentEdit: (modelId?: string) => void;
+  /** Save the current live state of a shared component being edited without exiting */
+  saveEditingSharedComponent: (modelId: string) => void;
+
   // ── Selection ───────────────────────────────────────────────────────────────
   selectedIds: string[];
+  /** When the selected node is a map/repeat template, which instance (0-based) is
+   *  the primary selection. Other instances show a dim sibling outline in the overlay. */
+  selectedMapIndex: number | null;
   hoveredId: string | null;
+  /** When the hovered node is a map/repeat template, which instance is under the cursor. */
+  hoveredMapIndex: number | null;
   altHoveredId: string | null;
   altMode: boolean;
 
@@ -317,6 +381,9 @@ export interface BuilderStore {
 
   // ── Responsive viewport ──────────────────────────────────────────────────────
   viewport: ViewportSize;
+  /** Active responsive editing breakpoint — linked to viewport by default.
+   *  When editing at a non-desktop breakpoint, style changes go to responsive overrides. */
+  activeBreakpoint: 'desktop' | 'laptop' | 'tablet' | 'mobile';
 
   // ── Grid overlay ─────────────────────────────────────────────────────────────
   gridOverlay: GridOverlayConfig;
@@ -325,7 +392,9 @@ export interface BuilderStore {
   clipboard: SDUINode[];
 
   // ── History ─────────────────────────────────────────────────────────────────
-  history: SDUINode[][];
+  /** Global history — each entry is a full snapshot of ALL pages + canvas nodes.
+   *  Undo/redo restores the entire canvas state simultaneously. */
+  history: HistorySnapshot[];
   historyIdx: number;
 
   // ── Actions ─────────────────────────────────────────────────────────────────
@@ -354,11 +423,11 @@ export interface BuilderStore {
   renameNode: (id: string, newId: string) => void;
 
   // Selection
-  select: (id: string | null, multi?: boolean) => void;
+  select: (id: string | null, multi?: boolean, mapIndex?: number) => void;
   selectAll: () => void;
   selectParent: (id: string) => void;
   selectFirstChild: (id: string) => void;
-  hover: (id: string | null) => void;
+  hover: (id: string | null, mapIndex?: number) => void;
   setAltMode: (on: boolean) => void;
   setAltHovered: (id: string | null) => void;
 
@@ -375,6 +444,12 @@ export interface BuilderStore {
   setZoom: (z: number) => void;
   setPan:  (x: number, y: number) => void;
   setViewport: (v: ViewportSize) => void;
+  /** Set the active editing breakpoint (linked to viewport by default) */
+  setActiveBreakpoint: (bp: 'desktop' | 'laptop' | 'tablet' | 'mobile') => void;
+  /** Set a responsive override on a node for a specific breakpoint */
+  patchResponsive: (id: string, breakpoint: 'laptop' | 'tablet' | 'mobile', field: string, value: unknown) => void;
+  /** Remove a responsive override from a node (or entire breakpoint if field is omitted) */
+  removeResponsiveOverride: (id: string, breakpoint: 'laptop' | 'tablet' | 'mobile', field?: string) => void;
 
   // Grid overlay
   setGridOverlay: (cfg: Partial<GridOverlayConfig>) => void;
@@ -397,11 +472,24 @@ export interface BuilderStore {
 
   // Pages
   addPage: (route: string, name?: string, id?: string) => void;
-  switchPage: (pageId: string) => void;
+  addPageAt: (name: string, wx: number, wy: number, initialNode?: SDUINode) => void;
+  focusPage: (pageId: string) => void;
   /** Switch to a page AND signal the canvas to pan/zoom to it. */
   navigatePage: (pageId: string) => void;
   renamePage: (pageId: string, name: string) => void;
   removePage: (pageId: string) => void;
+  /** Update the free-canvas position of a page frame. Pushes history. */
+  movePagePosition: (pageId: string, wx: number, wy: number) => void;
+  /** Auto-focus the page that contains a given node (for layers panel). No-op if not found. */
+  focusPageForNode: (nodeId: string) => void;
+
+  // Freeform canvas nodes
+  /** Remove a node from its page and place it on the canvas at world coords (cx, cy). */
+  moveNodeToCanvas: (nodeId: string, cx: number, cy: number, cw?: number, ch?: number) => void;
+  /** Move a canvas node to a specific page, inserting at (parentId, atIdx). */
+  moveCanvasNodeToPage: (nodeId: string, pageId: string, parentId: string | null, atIdx: number) => void;
+  /** Update the world position of a freeform canvas node (during drag). */
+  moveCanvasNodePosition: (nodeId: string, cx: number, cy: number) => void;
 
   // Canvas navigation trigger (set by navigatePage, consumed by _canvas.tsx)
   pendingFitToPage: boolean;

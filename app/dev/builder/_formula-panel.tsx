@@ -15,6 +15,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FormulaEditor } from './_formula-editor';
+import { ResponsiveDot } from './_panel-primitives';
 import { isBoundValue, type FormulaValue } from '@/lib/sdui/formula-evaluator';
 export type { FormulaValue } from '@/lib/sdui/formula-evaluator';
 export { isBoundValue } from '@/lib/sdui/formula-evaluator';
@@ -115,10 +116,21 @@ interface FieldWithBindingProps {
    * Use for tall controls like textarea where the icon should appear at the start.
    */
   topAlign?: boolean;
+  /** @deprecated Use responsiveOverrides instead */
+  responsiveDot?: boolean;
+  /** Breakpoints that have overrides for this field's CSS property */
+  responsiveOverrides?: string[];
+  /** Called when user clicks X on a breakpoint in the responsive popover */
+  onResponsiveRemove?: (breakpoint: string, cssProp: string) => void;
+  /** Called when user clicks "Reset Style" */
+  onResponsiveReset?: (cssProp: string) => void;
+  /** CSS property name for the responsive popover */
+  responsiveCssProp?: string;
 }
 
 export function FieldWithBinding({
   label, displayLabel, hint, value, onChange, children, expectedType = 'any', stackLayout = false, headerTitle, topAlign = false,
+  responsiveDot = false, responsiveOverrides, onResponsiveRemove, onResponsiveReset, responsiveCssProp,
 }: FieldWithBindingProps) {
   const [panelOpen, setPanelOpen] = useState(false);
   const bound = isBoundValue(value);
@@ -149,11 +161,21 @@ export function FieldWithBinding({
   ) : null;
 
   // ── Stack layout: label on top, content + bind icon on bottom row ────────────
+  const bps = responsiveOverrides ?? (responsiveDot ? ['_legacy'] : []);
+  const dotEl = bps.length > 0 && onResponsiveRemove ? (
+    <ResponsiveDot
+      cssProp={responsiveCssProp ?? label}
+      overriddenBreakpoints={bps}
+      onRemove={onResponsiveRemove}
+      onResetAll={onResponsiveReset}
+    />
+  ) : null;
+
   if (stackLayout) {
     return (
       <div data-field={label} style={{ position: 'relative', flex: 1 }}>
         {displayLabel && (
-          <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>{displayLabel}</span>
+          <span style={{ fontSize: 9, color: '#6b7280', display: 'flex', alignItems: 'center', marginBottom: 2 }}>{displayLabel}{dotEl}</span>
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {bound ? (
@@ -184,8 +206,8 @@ export function FieldWithBinding({
       <div data-field={label} style={{ position: 'relative' }}>
         {/* Title row — bind icon flush right */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-          <span style={{ fontSize: 9, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            {headerTitle}
+          <span style={{ fontSize: 9, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center' }}>
+            {headerTitle}{dotEl}
           </span>
           <BindingIcon isBound={bound} onClick={openEditor} />
         </div>
@@ -209,12 +231,25 @@ export function FieldWithBinding({
   }
 
   // ── Default layout: children + icon side-by-side ─────────────────────────────
+  // Inject responsive dot into the first child that accepts afterLabel (e.g. NumberInput).
+  // If the child doesn't accept it, place dot absolutely at top-right of field.
+  let childrenRendered: React.ReactNode = children;
+  let floatingDot: React.ReactNode = null;
+  if (dotEl) {
+    if (React.isValidElement(children) && typeof children.type === 'function') {
+      childrenRendered = React.cloneElement(children as React.ReactElement<{ afterLabel?: React.ReactNode }>, { afterLabel: dotEl });
+    } else {
+      floatingDot = <span style={{ position: 'absolute', top: 1, right: 26, zIndex: 2 }}>{dotEl}</span>;
+    }
+  }
+
   return (
     <div data-field={label} style={{ position: 'relative', flex: 1 }}>
+      {!bound && floatingDot}
       {bound ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {displayLabel && (
-            <span style={{ fontSize: 9, color: '#6b7280' }}>{displayLabel}</span>
+            <span style={{ fontSize: 9, color: '#6b7280', display: 'flex', alignItems: 'center' }}>{displayLabel}{dotEl}</span>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button
@@ -232,9 +267,8 @@ export function FieldWithBinding({
           </div>
         </div>
       ) : (
-        /* alignItems: flex-end — bind icon aligns with the bottom (control row), not the label row above it */
         <div style={{ display: 'flex', alignItems: topAlign ? 'flex-start' : 'flex-end', gap: 4 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>{children}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>{childrenRendered}</div>
           <BindingIcon isBound={false} onClick={openEditor} />
         </div>
       )}

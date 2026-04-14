@@ -16,6 +16,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { isBoundValue, type FormulaValue, BindingIcon } from './_formula-panel';
 import { FormulaEditor } from './_formula-editor';
+import { ResponsiveDot } from './_panel-primitives';
 
 // Suppress browser number spinner arrows via a globally-injected style block.
 if (typeof document !== 'undefined' && !document.getElementById('spatial-no-spin')) {
@@ -162,6 +163,7 @@ type SpacingSide = 'top' | 'right' | 'bottom' | 'left';
 function SpacingCell({
   side, value, icon, isHoriz, onChange,
   formulaValue, onFormulaChange, fieldLabel, testId,
+  dotEl,
 }: {
   side: SpacingSide;
   value: number;
@@ -172,6 +174,7 @@ function SpacingCell({
   onFormulaChange?: (v: FormulaValue) => void;
   fieldLabel: string;
   testId?: string;
+  dotEl?: React.ReactNode;
 }) {
   const [editorOpen, setEditorOpen] = useState(false);
   const showBind = !!onFormulaChange;
@@ -184,7 +187,9 @@ function SpacingCell({
       alignItems: 'center',
       gap: isHoriz ? 2 : 2,
     }}>
-      {icon}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+        {icon}{dotEl}
+      </div>
       <div style={{ position: 'relative', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 1 }}>
         <PanelInput
           value={value}
@@ -233,6 +238,8 @@ export interface SpacingValues { top: number; right: number; bottom: number; lef
 
 export function SpacingDiagram({
   values, onChange, onChangeAll, formulaValues, onFormulaChange, label = 'padding', testIdPrefix,
+  responsiveOverrides, onResponsiveRemove, onResponsiveReset,
+  perSideOverrides, onPerSideRemove, onPerSideReset,
 }: {
   values: SpacingValues;
   onChange: (side: SpacingSide, v: number) => void;
@@ -241,6 +248,13 @@ export function SpacingDiagram({
   onFormulaChange?: (side: SpacingSide, v: FormulaValue) => void;
   label?: string;
   testIdPrefix?: string;
+  responsiveOverrides?: string[];
+  onResponsiveRemove?: (breakpoint: string, cssProp: string) => void;
+  onResponsiveReset?: (cssProp: string) => void;
+  /** Per-side overrides: { top: ['tablet'], right: ['mobile'], ... } */
+  perSideOverrides?: Partial<Record<SpacingSide, string[]>>;
+  onPerSideRemove?: (breakpoint: string, cssProp: string) => void;
+  onPerSideReset?: (cssProp: string) => void;
 }) {
   const [linked, setLinked] = useState(
     values.top === values.right && values.right === values.bottom && values.bottom === values.left
@@ -263,25 +277,55 @@ export function SpacingDiagram({
     top: <ArrowUp />, right: <ArrowRight />, bottom: <ArrowDown />, left: <ArrowLeft />,
   };
 
-  const cell = (side: SpacingSide, isHoriz: boolean) => (
-    <SpacingCell
-      key={side}
-      side={side}
-      value={values[side]}
-      icon={icons[side]}
-      isHoriz={isHoriz}
-      onChange={v => handleChange(side, v)}
-      fieldLabel={label}
-      testId={testIdPrefix ? `input-${testIdPrefix}-${side}` : undefined}
-    />
-  );
+  const SIDE_CSS_MAP: Record<SpacingSide, string> = {
+    top: `${label === 'padding' ? 'padding' : 'margin'}Top`,
+    right: `${label === 'padding' ? 'padding' : 'margin'}Right`,
+    bottom: `${label === 'padding' ? 'padding' : 'margin'}Bottom`,
+    left: `${label === 'padding' ? 'padding' : 'margin'}Left`,
+  };
+
+  const cell = (side: SpacingSide, isHoriz: boolean) => {
+    const sideBps = perSideOverrides?.[side];
+    const cssProp = SIDE_CSS_MAP[side];
+    const sideDot = sideBps && sideBps.length > 0 && onPerSideRemove ? (
+      <ResponsiveDot
+        cssProp={cssProp}
+        testId={`responsive-dot-${cssProp}`}
+        overriddenBreakpoints={sideBps}
+        onRemove={onPerSideRemove}
+        onResetAll={onPerSideReset}
+      />
+    ) : null;
+    return (
+      <SpacingCell
+        key={side}
+        side={side}
+        value={values[side]}
+        icon={icons[side]}
+        isHoriz={isHoriz}
+        onChange={v => handleChange(side, v)}
+        fieldLabel={label}
+        testId={testIdPrefix ? `input-${testIdPrefix}-${side}` : undefined}
+        dotEl={sideDot}
+      />
+    );
+  };
 
   return (
     <div>
-      {/* Header row: label + bind button */}
+      {/* Header row: label + responsive dot + bind button */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{ fontSize: 9, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+        <span style={{ fontSize: 9, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'flex', alignItems: 'center' }}>
           {label}
+          {responsiveOverrides && responsiveOverrides.length > 0 && onResponsiveRemove && (
+            <ResponsiveDot
+              cssProp={`section-${label}`}
+              testId={`responsive-dot-${label}`}
+              overriddenBreakpoints={responsiveOverrides}
+              onRemove={onResponsiveRemove}
+              onResetAll={onResponsiveReset}
+            />
+          )}
         </span>
         {onFormulaChange && (
           <div style={{ position: 'relative' }}>
@@ -365,20 +409,24 @@ const CORNER_SVG_D: Record<CornerKey, string> = {
 const CORNER_ORDER: CornerKey[] = ['tl', 'tr', 'bl', 'br'];
 
 function CornerCell({
-  corner, value, onChange, bound,
+  corner, value, onChange, bound, dotEl,
 }: {
   corner: CornerKey; value: number;
   onChange: (v: number) => void;
   bound?: boolean;
+  dotEl?: React.ReactNode;
 }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 4,
       background: '#1f2937', border: `1px solid ${bound ? '#6366f1' : '#374151'}`, borderRadius: 4, padding: '3px 6px',
     }}>
-      <svg width={10} height={10} viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
-        <path d={CORNER_SVG_D[corner]} stroke="#4b5563" strokeWidth="1.8" strokeLinecap="round" fill="none" />
-      </svg>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 0, flexShrink: 0 }}>
+        <svg width={10} height={10} viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
+          <path d={CORNER_SVG_D[corner]} stroke="#4b5563" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+        </svg>
+        {dotEl}
+      </div>
       <PanelInput
         value={value}
         onChange={onChange}
@@ -393,16 +441,27 @@ function CornerCell({
 
 export function CornerRadiusDiagram({
   values, onChange, onChangeAll,
+  perCornerOverrides, onPerCornerRemove, onPerCornerReset,
 }: {
   values: CornerValues;
   onChange: (corner: CornerKey, v: number) => void;
   onChangeAll?: (v: number) => void;
+  perCornerOverrides?: Partial<Record<CornerKey, string[]>>;
+  onPerCornerRemove?: (breakpoint: string, cssProp: string) => void;
+  onPerCornerReset?: (cssProp: string) => void;
 }) {
   const [linked, setLinked] = useState(
     values.tl === values.tr && values.tr === values.br && values.br === values.bl
   );
 
   const corners: CornerKey[] = ['tl', 'tr', 'br', 'bl'];
+
+  const CORNER_CSS_MAP: Record<CornerKey, string> = {
+    tl: 'borderTopLeftRadius',
+    tr: 'borderTopRightRadius',
+    br: 'borderBottomRightRadius',
+    bl: 'borderBottomLeftRadius',
+  };
 
   const handleChange = (corner: CornerKey, v: number) => {
     if (linked && onChangeAll) { onChangeAll(v); return; }
@@ -413,14 +472,28 @@ export function CornerRadiusDiagram({
   return (
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
-        {CORNER_ORDER.map(corner => (
-          <CornerCell
-            key={corner}
-            corner={corner}
-            value={values[corner]}
-            onChange={v => handleChange(corner, v)}
-          />
-        ))}
+        {CORNER_ORDER.map(corner => {
+          const bps = perCornerOverrides?.[corner];
+          const cssProp = CORNER_CSS_MAP[corner];
+          const dotEl = bps && bps.length > 0 && onPerCornerRemove ? (
+            <ResponsiveDot
+              cssProp={cssProp}
+              testId={`responsive-dot-${cssProp}`}
+              overriddenBreakpoints={bps}
+              onRemove={onPerCornerRemove}
+              onResetAll={onPerCornerReset}
+            />
+          ) : null;
+          return (
+            <CornerCell
+              key={corner}
+              corner={corner}
+              value={values[corner]}
+              onChange={v => handleChange(corner, v)}
+              dotEl={dotEl}
+            />
+          );
+        })}
       </div>
 
       <button

@@ -35,6 +35,7 @@ import { CountdownTimer } from '@/lib/sdui/components/CountdownTimer';
 import { ScrollView } from '@/components/ui/scroll-view';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 
+import { Button, ButtonText, ButtonSpinner, ButtonIcon, ButtonGroup } from '@/components/ui/button';
 import { NextImage, HtmlContent, InputWithField } from './components';
 import IconifyIcon from './components/IconifyIcon';
 import LottiePlayer from './components/LottiePlayer';
@@ -84,6 +85,7 @@ import {
   Select,
   SelectTrigger,
   SelectInput,
+  SelectIcon,
   SelectPortal,
   SelectBackdrop,
   SelectContent,
@@ -122,13 +124,22 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   Spinner,
   Image: NextImage,
   FormContainer,
+  Button,
+  ButtonText,
+  ButtonSpinner,
+  ButtonIcon,
+  ButtonGroup,
   Input: InputWithField,
+  InputField,
+  InputSlot,
+  InputIcon,
   Tooltip,
   TooltipContent,
   TooltipText,
   Checkbox,
   CheckboxGroup,
   CheckboxIndicator,
+  CheckboxIcon,
   CheckboxLabel,
   Switch,
   Textarea,
@@ -164,6 +175,7 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   Select,
   SelectTrigger,
   SelectInput,
+  SelectIcon,
   SelectPortal,
   SelectBackdrop,
   SelectContent,

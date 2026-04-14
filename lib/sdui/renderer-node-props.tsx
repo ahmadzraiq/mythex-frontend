@@ -235,11 +235,16 @@ export function injectControlledProps(
  * only reliable way to set them.
  * Nodes without an explicit id get NO annotation so clicking the page background
  * correctly deselects.
+ *
+ * When `mapIndex` is provided (i.e. this node is one instance of a repeated/map
+ * template), `data-builder-map-index` is also written so the overlay can identify
+ * which specific instance was clicked and draw per-instance selection rings.
  */
 export function applyBuilderAnnotation(
   node: SDUINode,
   cleanProps: Record<string, unknown>,
   builderMode: boolean,
+  mapIndex?: number,
 ): void {
   if (!builderMode || !node.id) return;
   const _bId   = node.id;
@@ -249,6 +254,9 @@ export function applyBuilderAnnotation(
     if (el && typeof (el as Element).setAttribute === 'function') {
       (el as Element).setAttribute('data-builder-id',   _bId);
       (el as Element).setAttribute('data-builder-type', _bType);
+      if (mapIndex !== undefined) {
+        (el as Element).setAttribute('data-builder-map-index', String(mapIndex));
+      }
     }
     if (typeof _prevRef === 'function') {
       _prevRef(el);

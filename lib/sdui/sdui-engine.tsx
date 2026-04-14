@@ -45,6 +45,7 @@ export function SDUIEngine({
   builderMode = false,
   showPopups = true,
   builderViewportHeight,
+  builderViewport,
   popupModels,
   previewState,
   previewStates,
@@ -55,6 +56,16 @@ export function SDUIEngine({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { setColorScheme } = useColorScheme();
+
+  const routerRef = useRef(router);
+  routerRef.current = router;
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
+  const searchParamsRef = useRef(searchParams);
+  searchParamsRef.current = searchParams;
+  const setColorSchemeRef = useRef(setColorScheme);
+  setColorSchemeRef.current = setColorScheme;
+
   const setLoading = useSduiStore((s) => s.setLoading);
   const setData = useSduiStore((s) => s.setData);
   const setError = useSduiStore((s) => s.setError);
@@ -69,16 +80,15 @@ export function SDUIEngine({
     setDsRefetchKeys(prev => ({ ...prev, [name]: (prev[name] ?? 0) + 1 }));
   };
 
+  const configState = config.state;
+  const configMeta = config.meta;
   const computeMergedState = useCallback(
     (state: { data: Record<string, unknown>; loading: Record<string, boolean>; error: Record<string, string | null> }) => ({
-      ...computeMergedStateFn(state, config as { state?: Record<string, unknown>; meta?: Record<string, unknown> }, []),
-      // Always inject static theme + pages so every subscription update preserves them.
-      // Without this, any setMerged call derived from computeMergedState would strip theme,
-      // making theme?.['colors']?.['x'] formulas resolve to undefined after data fetches.
+      ...computeMergedStateFn(state, { state: configState, meta: configMeta }, []),
       theme: THEME_OBJ,
       pages: PAGES_MAP,
     }),
-    [config]
+    [configState, configMeta]
   );
 
   const mergedStore = useMemo(() => {
@@ -107,10 +117,14 @@ export function SDUIEngine({
     initial = { ...initial, theme: THEME_OBJ, pages: PAGES_MAP };
     return create<{
       merged: Record<string, unknown>;
+      patchVersion: number;
       setMerged: (m: Record<string, unknown> | ((prev: Record<string, unknown>) => Record<string, unknown>)) => void;
+      bumpPatchVersion: () => void;
     }>()((set) => ({
       merged: initial,
+      patchVersion: 0,
       setMerged: (m) => set((s) => ({ merged: typeof m === 'function' ? m(s.merged) : m })),
+      bumpPatchVersion: () => set((s) => ({ patchVersion: s.patchVersion + 1 })),
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -163,6 +177,28 @@ export function SDUIEngine({
     return next;
   }, []);
 
+  // ── Responsive breakpoint ─────────────────────────────────────────────────────
+  // In builder mode: derived from the builder's viewport preset (simulated width).
+  // In production: derived from window.innerWidth with a resize listener.
+  const [productionBreakpoint, setProductionBreakpoint] = useState<import('./responsive-resolver').ActiveBreakpoint>('desktop');
+
+  useEffect(() => {
+    if (builderMode || typeof window === 'undefined') return;
+    const { getBreakpointFromWidth } = require('./responsive-resolver') as typeof import('./responsive-resolver');
+    const update = () => setProductionBreakpoint(getBreakpointFromWidth(window.innerWidth));
+    update();
+    let rafId: number | null = null;
+    const onResize = () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => { update(); rafId = null; });
+    };
+    window.addEventListener('resize', onResize);
+    return () => { window.removeEventListener('resize', onResize); if (rafId !== null) cancelAnimationFrame(rafId); };
+  }, [builderMode]);
+
+  const activeBreakpoint: import('./responsive-resolver').ActiveBreakpoint =
+    builderMode ? (builderViewport ?? 'desktop') : productionBreakpoint;
+
   // ── globalContext: browser/screen runtime object — injected into merged state ──
   // We update this whenever pathname or searchParams changes so formulas that
   // reference globalContext.browser.path / query / etc. always see fresh values.
@@ -182,14 +218,7 @@ export function SDUIEngine({
         baseUrl,
         query,
         // breakpoint / environment / theme are best-effort at this point
-        breakpoint: (() => {
-          const w = window.innerWidth;
-          if (w < 640) return 'sm';
-          if (w < 768) return 'md';
-          if (w < 1024) return 'lg';
-          if (w < 1280) return 'xl';
-          return '2xl';
-        })(),
+        breakpoint: activeBreakpoint,
         environment: process.env.NODE_ENV ?? 'production',
       },
       screen: {
@@ -213,7 +242,7 @@ export function SDUIEngine({
       pages: PAGES_MAP,
       theme: THEME_OBJ,
     }));
-  }, [pathname, searchParams, mergedStore]);
+  }, [pathname, searchParams, mergedStore, activeBreakpoint]);
 
   useEffect(() => {
     const base = computeMergedState(useSduiStore.getState());
@@ -279,10 +308,16 @@ export function SDUIEngine({
       const merged = computeMergedState(state);
       const vs = store.getState().getFullState();
       const withVs = finalizeMergedWithVariableStore(merged, vs);
-      const next = builderMode ? applyBuilderPatches(withVs) : withVs;
-      mergedStore.getState().setMerged(next);
+      const prev = mergedStore.getState().merged;
+      const next = {
+        ...withVs,
+        globalContext: prev.globalContext,
+        theme: prev.theme ?? THEME_OBJ,
+        pages: prev.pages ?? PAGES_MAP,
+      };
+      mergedStore.getState().setMerged(builderMode ? applyBuilderPatches(next) : next);
     });
-  }, [computeMergedState, config, mergedStore, store, applyBuilderPatches, builderMode]);
+  }, [computeMergedState, mergedStore, store, applyBuilderPatches, builderMode]);
 
   // Re-apply patches whenever previewState/previewStates/previewData/configName changes in builder mode.
   // Uses serialization guards so only actual content changes trigger a re-computation — prevents
@@ -308,6 +343,7 @@ export function SDUIEngine({
       const vs = store.getState().getFullState();
       const withVs = finalizeMergedWithVariableStore(base, vs);
       mergedStore.getState().setMerged(applyBuilderPatches(withVs));
+      mergedStore.getState().bumpPatchVersion();
     });
     return () => cancelAnimationFrame(raf);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -397,11 +433,11 @@ export function SDUIEngine({
           payload,
           scope,
           event,
-          router,
-          pathname: pathname ?? '/',
-          searchParams: searchParams ?? null,
+          router: routerRef.current,
+          pathname: pathnameRef.current ?? '/',
+          searchParams: searchParamsRef.current ?? null,
           routes,
-          setColorScheme,
+          setColorScheme: setColorSchemeRef.current,
           useSduiStore: useSduiStore as { getState: () => { setData: (path: string, value: unknown) => void } },
           triggerDataSourceRefetch: (name: string) => triggerDataSourceRefetchRef.current(name),
           setStepResult: (result) => { resultRef.current = result; },
@@ -447,7 +483,7 @@ export function SDUIEngine({
         }
       }
     },
-    [router, pathname, searchParams, setColorScheme, fetchDataStable, actionsConfig, store, mergedStore, setLoading, setData, setError, append, routes, configName]
+    [fetchDataStable, actionsConfig, store, mergedStore, setLoading, setData, setError, append, routes, configName]
   );
 
   const runActionStable = useCallback(
@@ -474,12 +510,30 @@ export function SDUIEngine({
     }
   }, [paramChangeAction]);
 
+  // Defensive ref-based stabilization: if config.state is shallowly equal to
+  // the previous value, keep the old reference to prevent context invalidation.
+  const prevConfigStateRef = useRef(config.state);
+  const stableConfigState = useMemo(() => {
+    const prev = prevConfigStateRef.current;
+    const next = config.state;
+    if (prev === next) return prev;
+    if (prev && next && typeof prev === 'object' && typeof next === 'object') {
+      const prevKeys = Object.keys(prev);
+      const nextKeys = Object.keys(next);
+      if (prevKeys.length === nextKeys.length && prevKeys.every(k => (prev as Record<string, unknown>)[k] === (next as Record<string, unknown>)[k])) {
+        return prev;
+      }
+    }
+    prevConfigStateRef.current = next;
+    return next;
+  }, [config.state]);
+
   const variableStoreConfig = useMemo(
     () => ({
-      initialState: config.state ?? {},
+      initialState: stableConfigState ?? {},
       adapters: [] as { slice: string; getState: () => Record<string, unknown> }[],
     }),
-    [config.state]
+    [stableConfigState]
   );
 
   // For per-node _stateOverrides, use the first non-normal active state
@@ -506,7 +560,7 @@ export function SDUIEngine({
   // Fetch named data sources (REST + GraphQL) on mount and on explicit refetch triggers.
   useNamedDataSourceFetcher(dataSources, dsRefetchKeys, config, useSduiStore);
 
-  const builderContextValue = useMemo(() => ({ builderMode }), [builderMode]);
+  const builderContextValue = useMemo(() => ({ builderMode, activeBreakpoint }), [builderMode, activeBreakpoint]);
 
   return (
     <BuilderContext.Provider value={builderContextValue}>

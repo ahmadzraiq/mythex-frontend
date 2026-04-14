@@ -69,6 +69,7 @@ import routes from '@/config/routes.json';
 import { WorkflowCanvas } from './_workflow-canvas';
 import { getPopups } from '@/lib/builder/popup-data';
 import { useBuilderAutosave, type SaveStatus } from '@/lib/builder/autosave';
+import { useShallow } from 'zustand/react/shallow';
 
 void useRef; void useState; // suppress unused-import lint
 
@@ -131,7 +132,13 @@ const VIEWPORT_ICONS: Record<ViewportSize, string> = {
 // ─── Pages Picker Dropdown ────────────────────────────────────────────────────
 
 function PagesPicker() {
-  const { pages, currentPageId, addPage, navigatePage, renamePage, removePage } = useBuilderStore();
+  const { pages, currentPageId, addPage, navigatePage, renamePage, removePage } = useBuilderStore(
+    useShallow(s => ({
+      pages: s.pages, currentPageId: s.currentPageId,
+      addPage: s.addPage, navigatePage: s.navigatePage,
+      renamePage: s.renamePage, removePage: s.removePage,
+    }))
+  );
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [showAdd, setShowAdd] = useState(false);
@@ -394,7 +401,14 @@ function TopBar({
   saveStatus: SaveStatus;
   projectId: string | null;
 }) {
-  const { undo, redo, historyIdx, history, selectedIds, pageNodes, viewport, setViewport, pages, currentPageId, aiMode, toggleAiMode } = useBuilderStore();
+  const { undo, redo, historyIdx, history, selectedIds, pageNodes, viewport, setViewport, pages, currentPageId, aiMode, toggleAiMode } = useBuilderStore(
+    useShallow(s => ({
+      undo: s.undo, redo: s.redo, historyIdx: s.historyIdx, history: s.history,
+      selectedIds: s.selectedIds, pageNodes: s.pageNodes, viewport: s.viewport,
+      setViewport: s.setViewport, pages: s.pages, currentPageId: s.currentPageId,
+      aiMode: s.aiMode, toggleAiMode: s.toggleAiMode,
+    }))
+  );
   const canUndo = historyIdx > 0;
   const canRedo = historyIdx < history.length - 1;
   const currentPageForPreview = pages.find(p => p.id === currentPageId);
@@ -712,7 +726,6 @@ function leftSlideTitle(state: LeftSlideState): string {
 }
 
 export default function BuilderPage() {
-  const store = useBuilderStore();
   const initTheme = useBuilderStore(s => s.initTheme);
   const loadFromConfig = useBuilderStore(s => s.loadFromConfig);
   const setProjectContext = useBuilderStore(s => s.setProjectContext);
@@ -745,7 +758,7 @@ export default function BuilderPage() {
   // Autosave: debounced 1-second save to backend whenever store state changes.
   // seedAutosaveBaseline must be called once after the initial backend load so
   // that the autosave snapshots match the loaded state and no bogus save fires.
-  const seedAutosaveBaseline = useBuilderAutosave(projectId, store, setSaveStatus);
+  const seedAutosaveBaseline = useBuilderAutosave(projectId, setSaveStatus);
 
   // Load config from backend (real projectId) or static config (admin / no id).
   // After the async load settles, seed the autosave baseline so it doesn't
@@ -1027,42 +1040,43 @@ export default function BuilderPage() {
 
       // Alt mode
       if (e.key === 'Alt') {
-        store.setAltMode(true);
+        useBuilderStore.getState().setAltMode(true);
         e.preventDefault();
         return;
       }
 
       if (isInput && !(e.key === 'Escape')) return;
 
-      if (isCmd && e.key === 'z' && !e.shiftKey) { e.preventDefault(); store.undo(); return; }
-      if (isCmd && (e.key === 'z' && e.shiftKey || e.key === 'y')) { e.preventDefault(); store.redo(); return; }
-      if (isCmd && e.key === 'c') { e.preventDefault(); store.copyToClipboard(); return; }
-      if (isCmd && e.key === 'v') { e.preventDefault(); store.pasteFromClipboard(); return; }
-      if (isCmd && e.key === 'd') { e.preventDefault(); store.duplicateNodes(store.selectedIds); return; }
-      if (isCmd && e.key === 'g') { e.preventDefault(); store.groupNodes(store.selectedIds); return; }
-      if (isCmd && e.key === 'a') { e.preventDefault(); store.selectAll(); return; }
+      const s = useBuilderStore.getState();
+      if (isCmd && e.key === 'z' && !e.shiftKey) { e.preventDefault(); s.undo(); return; }
+      if (isCmd && (e.key === 'z' && e.shiftKey || e.key === 'y')) { e.preventDefault(); s.redo(); return; }
+      if (isCmd && e.key === 'c') { e.preventDefault(); s.copyToClipboard(); return; }
+      if (isCmd && e.key === 'v') { e.preventDefault(); s.pasteFromClipboard(); return; }
+      if (isCmd && e.key === 'd') { e.preventDefault(); s.duplicateNodes(s.selectedIds); return; }
+      if (isCmd && e.key === 'g') { e.preventDefault(); s.groupNodes(s.selectedIds); return; }
+      if (isCmd && e.key === 'a') { e.preventDefault(); s.selectAll(); return; }
 
       if ((e.key === 'Delete' || e.key === 'Backspace') && !isInput) {
         e.preventDefault();
-        if (store.selectedIds.length) store.deleteNodes(store.selectedIds);
+        if (s.selectedIds.length) s.deleteNodes(s.selectedIds);
         return;
       }
 
       if (e.key === 'Escape') {
-        if (store.selectedIds.length > 0) store.selectParent(store.selectedIds[0]);
-        else store.select(null);
+        if (s.selectedIds.length > 0) s.selectParent(s.selectedIds[0]);
+        else s.select(null);
         return;
       }
-      if (e.key === 'Enter' && store.selectedIds.length > 0) {
-        store.selectFirstChild(store.selectedIds[0]);
+      if (e.key === 'Enter' && s.selectedIds.length > 0) {
+        s.selectFirstChild(s.selectedIds[0]);
         return;
       }
-      if ((e.key === 'v' || e.key === 'V') && !isCmd) { store.setTool('select'); return; }
+      if ((e.key === 'v' || e.key === 'V') && !isCmd) { s.setTool('select'); return; }
     };
 
     const onKeyUp = (e: KeyboardEvent) => {
       if (useBuilderStore.getState().workflowCanvasTarget) return;
-      if (e.key === 'Alt') store.setAltMode(false);
+      if (e.key === 'Alt') useBuilderStore.getState().setAltMode(false);
     };
 
     window.addEventListener('keydown', onKeyDown);
@@ -1071,7 +1085,7 @@ export default function BuilderPage() {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [store, openPreview]);
+  }, [openPreview]);
 
   if (configLoading) {
     return (
@@ -1136,7 +1150,7 @@ export default function BuilderPage() {
               if (leftSlide.kind === 'data' && leftSlide.subState?.kind === 'dataSource') {
                 const id = leftSlide.subState.editingId;
                 if (!id) return 'New Data Source';
-                const ds = store.pageDataSources.find(s => s.id === id);
+                const ds = useBuilderStore.getState().pageDataSources.find(s => s.id === id);
                 if (!ds) return 'Data Source';
                 const typeLabel = ds.type === 'graphql' ? 'GraphQL' : 'REST';
                 const dsDisplayName = (ds as { _label?: string })._label ?? ds.name ?? ds.id;

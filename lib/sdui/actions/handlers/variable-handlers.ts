@@ -54,15 +54,14 @@ export const setVarHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef
         const sduiData = ((ctx.useSduiStore?.getState() as Record<string, unknown> | undefined)?.data ?? {}) as Record<string, unknown>;
         const storeState = ctx.store?.getState?.() as { getFullState?: () => Record<string, unknown>; data?: Record<string, unknown> } | undefined;
         const vsData = (storeState?.getFullState?.() ?? storeState?.data ?? {}) as Record<string, unknown>;
+        const mergedState = ctx.getFullMergedState?.() ?? {};
         const evalCtx = {
+          ...mergedState,
           ...sduiData,
           ...vsData,
           ...(ctx.scope ?? {}),
           variables: vsData,
           collections: (sduiData?.collections ?? sduiData?.['collections'] ?? {}) as Record<string, unknown>,
-          // Use the live global store's context (set by forEach's setState call) so
-          // context.item.data.value resolves correctly inside loop bodies.
-          // ctx.scope.context is captured at workflow invocation time and never updated.
           context: (ctx.scope?.context ?? (vsData['context'] as Record<string, unknown> | undefined) ?? {}) as Record<string, unknown>,
           event: (ctx.event as Record<string, unknown> | undefined) ?? {},
         };

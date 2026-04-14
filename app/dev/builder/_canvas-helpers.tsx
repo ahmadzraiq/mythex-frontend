@@ -10,10 +10,10 @@
  *  - VIEWPORT_H
  *  - CanvasContextMenu, CanvasCtxMenuProps
  *  - ZoomBtn, EmptyCanvas
- *  - PageEngine, InactivePageEngine, InactivePagesGrid
+ *  - PageEngine, InactivePageEngine, AllPagesGrid (formerly InactivePagesGrid)
  */
 
-import React, { useEffect, memo, useMemo, useState } from 'react';
+import React, { useEffect, useRef, memo, useMemo, useState, useCallback } from 'react';
 import { useBuilderStore } from './_store';
 import { SDUIEngine } from '@/lib/sdui/sdui-engine';
 import appConfig from '@/config/app';
@@ -21,11 +21,35 @@ import type { SDUIConfig } from '@/lib/sdui/types';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import { applyStateTagOverrides } from '@/lib/sdui/builder-preview';
 import { getPopups, subscribePopups } from '@/lib/builder/popup-data';
+import { computeSnap, type SnapGuide, type ContentRect } from './_snap-engine';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const app = appConfig as any;
 
 export const VIEWPORT_H = 900;
+
+const BUILDER_ATTRS = [
+  'data-builder-id', 'data-builder-type',
+  'data-builder-page-id', 'data-builder-page-frame',
+  'data-builder-canvas-node', 'data-builder-canvas-overlay',
+  'data-builder-inactive-overlay', 'data-builder-overlay',
+];
+
+/**
+ * Strip all builder-identity attributes from a ghost clone and every descendant.
+ * After this the clone is purely visual — invisible to findDropTargetElAt,
+ * querySelector('[data-builder-id]'), elementsFromPoint, etc.
+ * Runs once at clone creation, not per-frame.
+ */
+export function sanitizeGhostClone(el: HTMLElement) {
+  for (const attr of BUILDER_ATTRS) el.removeAttribute(attr);
+  const tagged = el.querySelectorAll(BUILDER_ATTRS.map(a => `[${a}]`).join(','));
+  for (const child of tagged) {
+    for (const attr of BUILDER_ATTRS) child.removeAttribute(attr);
+  }
+}
+
+const STABLE_EMPTY_STATE: Record<string, unknown> = {};
 
 // ─── ZoomBtn ─────────────────────────────────────────────────────────────────
 
@@ -58,8 +82,6 @@ export interface CanvasCtxMenuProps {
 }
 
 export function CanvasContextMenu({ x, y, nodeId, onClose }: CanvasCtxMenuProps) {
-  const store = useBuilderStore();
-
   useEffect(() => {
     const close = (e: MouseEvent) => { if (!(e.target as Element).closest('[data-canvas-ctx-menu]')) onClose(); };
     window.addEventListener('mousedown', close);
@@ -67,17 +89,17 @@ export function CanvasContextMenu({ x, y, nodeId, onClose }: CanvasCtxMenuProps)
   }, [onClose]);
 
   const nodeItems = nodeId ? [
-    { label: 'Copy',         action: () => { store.select(nodeId); store.copyToClipboard(); } },
-    { label: 'Duplicate',    action: () => store.duplicateNodes([nodeId]) },
-    { label: 'Move Up',      action: () => store.moveNodeUp(nodeId) },
-    { label: 'Move Down',    action: () => store.moveNodeDown(nodeId) },
-    { label: 'Select Parent',action: () => store.selectParent(nodeId) },
+    { label: 'Copy',         action: () => { const s = useBuilderStore.getState(); s.select(nodeId); s.copyToClipboard(); } },
+    { label: 'Duplicate',    action: () => useBuilderStore.getState().duplicateNodes([nodeId]) },
+    { label: 'Move Up',      action: () => useBuilderStore.getState().moveNodeUp(nodeId) },
+    { label: 'Move Down',    action: () => useBuilderStore.getState().moveNodeDown(nodeId) },
+    { label: 'Select Parent',action: () => useBuilderStore.getState().selectParent(nodeId) },
     null,
-    { label: 'Delete', action: () => store.deleteNodes(store.selectedIds.includes(nodeId) ? store.selectedIds : [nodeId]), danger: true },
+    { label: 'Delete', action: () => { const s = useBuilderStore.getState(); s.deleteNodes(s.selectedIds.includes(nodeId) ? s.selectedIds : [nodeId]); }, danger: true },
   ] : [
-    { label: 'Select All',    action: () => store.selectAll() },
-    { label: 'Paste',         action: () => store.pasteFromClipboard() },
-    { label: 'Paste in Place',action: () => store.pasteInPlace() },
+    { label: 'Select All',    action: () => useBuilderStore.getState().selectAll() },
+    { label: 'Paste',         action: () => useBuilderStore.getState().pasteFromClipboard() },
+    { label: 'Paste in Place',action: () => useBuilderStore.getState().pasteInPlace() },
   ];
 
   return (
@@ -105,35 +127,133 @@ export function CanvasContextMenu({ x, y, nodeId, onClose }: CanvasCtxMenuProps)
   );
 }
 
-// ─── InactivePagesGrid ────────────────────────────────────────────────────────
+// ─── AllPagesGrid ─────────────────────────────────────────────────────────────
 /**
- * Renders all inactive (background) page frames as a memoized component.
- * Isolated here so it does NOT re-render when the active page's hover/selection
- * state changes — only re-renders when the pages list or preview states change.
+ * Renders all pages EXCEPT the focused page as background frames.
+ * Each page gets a smart capture overlay that enables:
+ *   1. Hover highlights (pointer-events trick hit-test)
+ *   2. Auto-focus on pointer interaction (click/drag start)
+ *   3. Page frame drag handle (drag the page title to reposition it)
+ *
+ * Isolated here so it does NOT re-render when hover/selection state changes.
  */
-export const InactivePagesGrid = memo(function InactivePagesGrid({
+export const AllPagesGrid = memo(function AllPagesGrid({
   vpWidth,
-  PAGE_GAP,
+  overlayNotifyRef,
+  dragNodeIdSetter,
+  dragSourcePageSetter,
+  grabOffsetSetter,
+  onPageDragSnap,
 }: {
   vpWidth: number;
-  PAGE_GAP: number;
+  overlayNotifyRef: React.MutableRefObject<(() => void) | null>;
+  /** Called by the overlay's onDragStart to register the dragging node ID. */
+  dragNodeIdSetter: (id: string | null) => void;
+  /** Called by the overlay's onDragStart to record the source page ID for cross-page moves. */
+  dragSourcePageSetter: (pageId: string | null) => void;
+  /** Called by the overlay's onDragStart to pass the grab offset (screen px). */
+  grabOffsetSetter: (ox: number, oy: number) => void;
+  /** Called during page drag with snap guides (empty array on drag end). */
+  onPageDragSnap: (guides: SnapGuide[], isDragging: boolean) => void;
 }) {
   const pages = useBuilderStore(s => s.pages);
-  const currentPageId = useBuilderStore(s => s.currentPageId);
+  const focusedPageId = useBuilderStore(s => s.focusedPageId || s.currentPageId);
   const activePreviewStates = useBuilderStore(s => s.activePreviewStates);
-  const switchPage = useBuilderStore(s => s.switchPage);
+  const focusPage = useBuilderStore(s => s.focusPage);
+  const hover = useBuilderStore(s => s.hover);
+  const movePagePosition = useBuilderStore(s => s.movePagePosition);
+
+  // Track page dragging state (move page frame, not node)
+  const pageDragRef = React.useRef<{ pageId: string; startWx: number; startWy: number; startMx: number; startMy: number } | null>(null);
+
+  // Build sibling rects for page snap (all pages except the one being dragged)
+  const buildPageSiblings = React.useCallback((excludeId: string): ContentRect[] => {
+    const allPages = useBuilderStore.getState().pages;
+    return allPages
+      .filter(p => p.id !== excludeId)
+      .map(p => ({ id: p.id, x: (p as { wx?: number }).wx ?? 0, y: (p as { wy?: number }).wy ?? 0, w: vpWidth, h: VIEWPORT_H }));
+  }, [vpWidth]);
+
+  // Handle page frame repositioning via title bar drag
+  const handlePageTitleMouseDown = React.useCallback((e: React.MouseEvent, page: { id: string; wx: number; wy: number }) => {
+    e.preventDefault();
+    e.stopPropagation();
+    pageDragRef.current = { pageId: page.id, startWx: page.wx ?? 0, startWy: page.wy ?? 0, startMx: e.clientX, startMy: e.clientY };
+
+    const onMove = (mv: MouseEvent) => {
+      const d = pageDragRef.current;
+      if (!d) return;
+      const screenDx = mv.clientX - d.startMx;
+      const screenDy = mv.clientY - d.startMy;
+      const worldEl = document.querySelector('[data-builder-world]') as HTMLElement | null;
+      const mat = worldEl ? new DOMMatrix(getComputedStyle(worldEl).transform) : null;
+      const z = mat ? mat.a : 1;
+
+      const rawX = d.startWx + screenDx / z;
+      const rawY = d.startWy + screenDy / z;
+      const dragged: ContentRect = { id: d.pageId, x: rawX, y: rawY, w: vpWidth, h: VIEWPORT_H };
+      const siblings = buildPageSiblings(d.pageId);
+      const snap = computeSnap(dragged, siblings);
+
+      const dx = snap.x - d.startWx;
+      const dy = snap.y - d.startWy;
+      const frame = document.querySelector(`[data-builder-page-id="${d.pageId}"]`) as HTMLElement | null;
+      const label = document.querySelector(`[data-builder-page-label="${d.pageId}"]`) as HTMLElement | null;
+      if (frame) frame.style.transform = `translateZ(0) translate(${dx}px, ${dy}px)`;
+      if (label) label.style.transform = `translate(${dx}px, ${dy}px)`;
+      onPageDragSnap(snap.guides, true);
+    };
+
+    const onUp = (up: MouseEvent) => {
+      const d = pageDragRef.current;
+      if (!d) return;
+      const screenDx = up.clientX - d.startMx;
+      const screenDy = up.clientY - d.startMy;
+      const worldEl = document.querySelector('[data-builder-world]') as HTMLElement | null;
+      const mat = worldEl ? new DOMMatrix(getComputedStyle(worldEl).transform) : null;
+      const z = mat ? mat.a : 1;
+
+      const rawX = d.startWx + screenDx / z;
+      const rawY = d.startWy + screenDy / z;
+      const dragged: ContentRect = { id: d.pageId, x: rawX, y: rawY, w: vpWidth, h: VIEWPORT_H };
+      const siblings = buildPageSiblings(d.pageId);
+      const snap = computeSnap(dragged, siblings);
+
+      const frame = document.querySelector(`[data-builder-page-id="${d.pageId}"]`) as HTMLElement | null;
+      const label = document.querySelector(`[data-builder-page-label="${d.pageId}"]`) as HTMLElement | null;
+      if (frame) frame.style.transform = 'translateZ(0)';
+      if (label) label.style.transform = '';
+      movePagePosition(d.pageId, snap.x, snap.y);
+      onPageDragSnap([], false);
+      pageDragRef.current = null;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }, [movePagePosition, vpWidth, buildPageSiblings, onPageDragSnap]);
 
   return (
     <>
-      {pages.filter(p => p.id !== currentPageId).map(page => {
-        const absIdx = pages.findIndex(pg => pg.id === page.id);
-        const worldLeft = absIdx * (vpWidth + PAGE_GAP);
+      {pages.map(page => {
+        const isFocused = page.id === focusedPageId;
+        const wx = (page as { wx?: number }).wx ?? 0;
+        const wy = (page as { wy?: number }).wy ?? 0;
         return (
           <React.Fragment key={page.id}>
-            {/* Page name label — click to make this page active */}
-            <div
-              onClick={() => switchPage(page.id)}
-              style={{ position: 'absolute', left: worldLeft, top: -26, fontSize: 11, color: '#9ca3af', userSelect: 'none', fontFamily: 'system-ui', whiteSpace: 'nowrap', display: 'flex', gap: 6, alignItems: 'baseline', cursor: 'pointer' }}
+            {/* Label and overlay are rendered by _canvas.tsx for the focused page */}
+            {!isFocused && (
+              <div
+                data-builder-page-label={page.id}
+                onMouseDown={e => handlePageTitleMouseDown(e, { id: page.id, wx, wy })}
+                onClick={() => focusPage(page.id)}
+                style={{
+                  position: 'absolute', left: wx, top: wy - 26, fontSize: 11,
+                  color: '#9ca3af', userSelect: 'none', fontFamily: 'system-ui',
+                  whiteSpace: 'nowrap', display: 'flex', gap: 6, alignItems: 'baseline',
+                  cursor: 'grab', zIndex: 1,
+                }}
               onMouseEnter={e => (e.currentTarget.style.color = '#d1d5db')}
               onMouseLeave={e => (e.currentTarget.style.color = '#9ca3af')}
             >
@@ -141,26 +261,26 @@ export const InactivePagesGrid = memo(function InactivePagesGrid({
               {page.route && <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#4b5563' }}>{page.route}</span>}
               <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#374151' }}>{vpWidth}px</span>
             </div>
-            {/* Frame */}
+            )}
+
+            {/* Page frame — renders SDUI content for ALL pages (including focused).
+                Keeping the focused page here prevents unmount/remount on focus change,
+                eliminating animation replays. */}
             <div
               data-builder-page-id={page.id}
               data-builder-page-frame="0"
               style={{
                 position: 'absolute',
-                left: worldLeft,
-                top: 0,
+                left: wx,
+                top: wy,
                 width: vpWidth,
                 minHeight: VIEWPORT_H,
                 background: 'rgb(var(--background, 255 255 255))',
                 overflow: 'hidden',
-                boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
+                boxShadow: isFocused ? '0 8px 40px rgba(0,0,0,0.6)' : '0 8px 40px rgba(0,0,0,0.5)',
                 transform: 'translateZ(0)',
               }}
             >
-              {/* Viewport simulation — same as the active frame so min-h-screen /
-                  h-screen resolve to VIEWPORT_H, not the real browser 100vh.
-                  Without this, inactive frames have a different height than the
-                  active frame, causing a visible height jump when switching pages. */}
               <style>{`
                 [data-builder-page-frame="0"] .h-screen    { height: ${VIEWPORT_H}px !important; }
                 [data-builder-page-frame="0"] .min-h-screen { min-height: ${VIEWPORT_H}px !important; }
@@ -171,29 +291,126 @@ export const InactivePagesGrid = memo(function InactivePagesGrid({
                   --builder-vh: ${VIEWPORT_H / 100}px;
                 }
               `}</style>
-              <InactivePageEngine
+
+              <InactivePageWrapper
                 pageId={page.id}
-                configName={page.name || 'page'}
-                nodes={applyStateTagOverrides(page.nodes as SDUINode[], activePreviewStates)}
+                pageName={page.name || 'page'}
+                nodes={page.nodes as SDUINode[]}
                 previewStates={activePreviewStates}
               />
-              {/* Click-to-activate overlay */}
-              <div
-                data-builder-inactive-frame="1"
-                onClick={() => switchPage(page.id)}
-                title={`Click to edit ${page.name}`}
-                style={{ position: 'absolute', inset: 0, zIndex: 9998, cursor: 'pointer', background: 'transparent' }}
-              />
+
+              {/* Inactive capture overlay — only for non-focused pages */}
+              {!isFocused && (
+                <div
+                  draggable
+                  data-builder-inactive-overlay={page.id}
+                  style={{
+                    position: 'absolute', inset: 0, zIndex: 9998,
+                    cursor: 'default', background: 'transparent',
+                  }}
+                  onMouseMove={e => {
+                    const overlay = e.currentTarget;
+                    overlay.style.pointerEvents = 'none';
+                    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+                    overlay.style.pointerEvents = '';
+                    const builderEl = el?.closest('[data-builder-id]') as HTMLElement | null;
+                    const newHoverId = builderEl?.dataset.builderId ?? null;
+                    hover(newHoverId ?? null);
+                    overlayNotifyRef.current?.();
+                  }}
+                  onMouseLeave={() => {
+                    hover(null);
+                    overlayNotifyRef.current?.();
+                  }}
+                  onClick={() => {
+                    if (page.id !== focusedPageId) focusPage(page.id);
+                  }}
+                  onDragStart={e => {
+                    // Do NOT call focusPage here — removing the overlay (drag source)
+                    // from the DOM would cancel the drag in some browsers.
+                    // Focus is deferred to onDrop in _canvas.tsx.
+                    const overlay = e.currentTarget;
+                    overlay.style.pointerEvents = 'none';
+                    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+                    overlay.style.pointerEvents = '';
+                    const builderEl = el?.closest('[data-builder-id]') as HTMLElement | null;
+                    const nodeId = builderEl?.dataset.builderId;
+                    if (nodeId && builderEl) {
+                      e.dataTransfer.setData('text/canvas-node-id', nodeId);
+                      e.dataTransfer.effectAllowed = 'move';
+                      dragNodeIdSetter(nodeId);
+                      dragSourcePageSetter(page.id);
+                      const nr = builderEl.getBoundingClientRect();
+                      grabOffsetSetter(e.clientX - nr.left, e.clientY - nr.top);
+                      const z = useBuilderStore.getState().zoom;
+                      const ghostEl = document.createElement('div');
+                      ghostEl.style.cssText = `position:fixed;left:-9999px;top:-9999px;pointer-events:none;width:${nr.width}px;height:${nr.height}px;overflow:hidden;`;
+                      document.body.appendChild(ghostEl);
+                      const clone = builderEl.cloneNode(true) as HTMLElement;
+                      sanitizeGhostClone(clone);
+                      clone.style.position = 'absolute';
+                      clone.style.left = '0px';
+                      clone.style.top = '0px';
+                      clone.style.width = `${nr.width / z}px`;
+                      clone.style.height = `${nr.height / z}px`;
+                      clone.style.margin = '0';
+                      clone.style.transform = `scale(${z})`;
+                      clone.style.transformOrigin = 'top left';
+                      ghostEl.appendChild(clone);
+                      e.dataTransfer.setDragImage(ghostEl, e.clientX - nr.left, e.clientY - nr.top);
+                      requestAnimationFrame(() => document.body.removeChild(ghostEl));
+                    } else {
+                      e.preventDefault();
+                    }
+                  }}
+                  onDragEnd={() => {
+                    dragNodeIdSetter(null);
+                    dragSourcePageSetter(null);
+                  }}
+                />
+              )}
+
               {/* Fold line */}
               <div
                 data-builder-overlay="fold-line"
-                style={{ position: 'absolute', left: 0, right: 0, top: VIEWPORT_H, height: 0, borderTop: '1.5px dashed rgba(99,130,246,0.3)', pointerEvents: 'none', zIndex: 9990 }}
+                style={{ position: 'absolute', left: 0, right: 0, top: VIEWPORT_H, height: 0, borderTop: `1.5px dashed rgba(99,130,246,${isFocused ? '0.45' : '0.3'})`, pointerEvents: 'none', zIndex: 9990 }}
               />
             </div>
           </React.Fragment>
         );
       })}
     </>
+  );
+});
+
+// ─── InactivePageWrapper ───────────────────────────────────────────────────────
+/**
+ * Per-page memo wrapper that memoizes the `applyStateTagOverrides` result.
+ * When `movePagePosition` updates a page's wx/wy, unchanged pages keep the same
+ * `page.nodes` reference so this memo skips, preventing animation re-triggers.
+ */
+const InactivePageWrapper = memo(function InactivePageWrapper({
+  pageId,
+  pageName,
+  nodes,
+  previewStates,
+}: {
+  pageId: string;
+  pageName: string;
+  nodes: SDUINode[];
+  previewStates?: string[];
+}) {
+  const displayNodes = useMemo(
+    () => applyStateTagOverrides(nodes, previewStates ?? ['normal']),
+    [nodes, previewStates],
+  );
+  return (
+    <InactivePageEngine
+      pageId={pageId}
+      configName={pageName || 'page'}
+      nodes={displayNodes}
+      previewStates={previewStates}
+    />
   );
 });
 
@@ -206,6 +423,7 @@ export const PageEngine = memo(function PageEngine({
   previewData,
   actionsConfig: actionsConfigProp,
   showPopups: showPopupsProp,
+  viewport,
 }: {
   pageConfig: SDUIConfig;
   configName: string;
@@ -214,6 +432,8 @@ export const PageEngine = memo(function PageEngine({
   actionsConfig?: Record<string, unknown>;
   /** Whether to render popup overlays (false when popup content is the page itself). */
   showPopups?: boolean;
+  /** Current builder viewport preset — forwarded to the engine for responsive resolution. */
+  viewport?: 'mobile' | 'tablet' | 'laptop' | 'desktop';
 }) {
   // Subscribe to the in-memory popup store so live edits appear in PopupRenderer
   // without needing to write to disk.
@@ -231,6 +451,7 @@ export const PageEngine = memo(function PageEngine({
       builderMode
       showPopups={showPopupsProp ?? true}
       builderViewportHeight={VIEWPORT_H}
+      builderViewport={viewport}
       previewStates={previewStates}
       previewData={previewData}
       popupModels={livePopupModels as Record<string, unknown>}
@@ -261,17 +482,19 @@ export const InactivePageEngine = memo(function InactivePageEngine({
     [nodes, previewStates],
   );
 
-  const cfg = useMemo<SDUIConfig>(() => {
-    const screenState = (app.screens?.[configName] as { state?: Record<string, unknown> } | undefined)?.state ?? {};
-    return {
+  const screenState = useMemo(
+    () => (app.screens?.[configName] as { state?: Record<string, unknown> } | undefined)?.state ?? STABLE_EMPTY_STATE,
+    [configName],
+  );
+
+  const cfg = useMemo<SDUIConfig>(() => ({
       state: screenState,
       ui: {
         type: 'Box',
         props: { className: 'flex flex-col w-full min-h-screen items-start relative' },
         children: displayNodes,
       } as SDUIConfig['ui'],
-    };
-  }, [configName, displayNodes]);
+  }), [screenState, displayNodes]);
 
   if (!nodes.length) {
     return (
@@ -291,6 +514,34 @@ export const InactivePageEngine = memo(function InactivePageEngine({
       builderMode
       showPopups={false}
       previewStates={previewStates}
+    />
+  );
+});
+
+// ─── CanvasNodeEngine ─────────────────────────────────────────────────────────
+/**
+ * Renders a freeform canvas node (dropped outside any page frame) through the
+ * SDUI engine so it looks identical to how it appeared inside a page.
+ */
+export const CanvasNodeEngine = memo(function CanvasNodeEngine({
+  node,
+}: {
+  node: SDUINode;
+}) {
+  const cfg = useMemo<SDUIConfig>(() => ({
+    state: STABLE_EMPTY_STATE,
+    ui: node,
+  }), [node]);
+
+  return (
+    <SDUIEngine
+      key={`canvas-${node.id}`}
+      config={cfg}
+      configName="canvasNode"
+      actionsConfig={app.actions ?? {}}
+      routes={app.routes ?? []}
+      builderMode
+      showPopups={false}
     />
   );
 });

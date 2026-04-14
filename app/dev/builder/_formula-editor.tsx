@@ -20,6 +20,7 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useBuilderStore, findNode, findParentNode, type DataSourceConfig } from './_store';
+import { useShallow } from 'zustand/react/shallow';
 import { getPopups } from '@/lib/builder/popup-data';
 
 // ─── Tab content components (extracted to _formula-editor-tabs.tsx) ───────────
@@ -275,7 +276,15 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   const historyIdxRef = useRef(-1);
   const isUndoRedoRef = useRef(false);
   const historyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { globalFormulas, pageDataSources, customVars, varFolders, workflowTestResults, workflowCanvasTarget, pageWorkflows, globalWorkflows, liveCanvasSteps } = useBuilderStore();
+  const { globalFormulas, pageDataSources, customVars, varFolders, workflowTestResults, workflowCanvasTarget, pageWorkflows, globalWorkflows, liveCanvasSteps } = useBuilderStore(
+    useShallow(s => ({
+      globalFormulas: s.globalFormulas, pageDataSources: s.pageDataSources,
+      customVars: s.customVars, varFolders: s.varFolders,
+      workflowTestResults: s.workflowTestResults, workflowCanvasTarget: s.workflowCanvasTarget,
+      pageWorkflows: s.pageWorkflows, globalWorkflows: s.globalWorkflows,
+      liveCanvasSteps: s.liveCanvasSteps,
+    }))
+  );
   const selectedIds = useBuilderStore(s => s.selectedIds);
   const pageNodes = useBuilderStore(s => s.pageNodes);
   const editingPopupId = useBuilderStore(s => s.editingPopupId);
@@ -723,7 +732,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
         domain: window.location.hostname,
         baseUrl: window.location.origin,
         query: Object.fromEntries(new URLSearchParams(window.location.search)),
-        breakpoint: window.innerWidth < 640 ? 'xs' : window.innerWidth < 768 ? 'sm' : window.innerWidth < 1024 ? 'md' : window.innerWidth < 1280 ? 'lg' : 'xl',
+        breakpoint: window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : window.innerWidth < 1280 ? 'laptop' : 'desktop',
         environment: process.env.NODE_ENV ?? 'development',
         theme: 'system',
       },

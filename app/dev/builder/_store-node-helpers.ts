@@ -317,24 +317,44 @@ export function patchNodeById(
   targetId: string,
   patcher: (n: SDUINode) => SDUINode
 ): SDUINode[] {
-  return nodes.map(node => {
-    if (node.id === targetId) return patcher(node);
+  let changed = false;
+  const result = nodes.map(node => {
+    if (node.id === targetId) {
+      const patched = patcher(node);
+      if (patched !== node) changed = true;
+      return patched;
+    }
     if (node.children?.length) {
-      return { ...node, children: patchNodeById(node.children as SDUINode[], targetId, patcher) };
+      const newChildren = patchNodeById(node.children as SDUINode[], targetId, patcher);
+      if (newChildren !== node.children) {
+        changed = true;
+        return { ...node, children: newChildren };
+      }
     }
     return node;
   });
+  return changed ? result : nodes;
 }
 
 export function removeNodesByIds(nodes: SDUINode[], ids: Set<string>): SDUINode[] {
-  return nodes
-    .filter(n => !ids.has(n.id ?? ''))
-    .map(n => ({
-      ...n,
-      children: n.children?.length
-        ? removeNodesByIds(n.children as SDUINode[], ids)
-        : n.children,
-    }));
+  const filtered = nodes.filter(n => !ids.has(n.id ?? ''));
+  if (filtered.length === nodes.length) {
+    let changed = false;
+    const mapped = filtered.map(n => {
+      if (!n.children?.length) return n;
+      const newChildren = removeNodesByIds(n.children as SDUINode[], ids);
+      if (newChildren === n.children) return n;
+      changed = true;
+      return { ...n, children: newChildren };
+    });
+    return changed ? mapped : nodes;
+  }
+  return filtered.map(n => {
+    if (!n.children?.length) return n;
+    const newChildren = removeNodesByIds(n.children as SDUINode[], ids);
+    if (newChildren === n.children) return n;
+    return { ...n, children: newChildren };
+  });
 }
 
 /**
@@ -380,13 +400,13 @@ export function insertNode(
   atIdx?: number
 ): SDUINode[] {
   if (!parentId) {
-    const copy = clone(nodes);
+    const copy = [...nodes];
     const idx = atIdx !== undefined ? atIdx : copy.length;
     copy.splice(idx, 0, newNode);
     return copy;
   }
   return patchNodeById(nodes, parentId, parent => {
-    const children = clone((parent.children ?? []) as SDUINode[]);
+    const children = [...((parent.children ?? []) as SDUINode[])];
     const idx = atIdx !== undefined ? atIdx : children.length;
     children.splice(idx, 0, newNode);
     return { ...parent, children };

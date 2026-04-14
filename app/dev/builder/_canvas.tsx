@@ -16,20 +16,23 @@ import {
   VIEWPORT_H,
   CanvasContextMenu, type CanvasCtxMenuProps,
   ZoomBtn, EmptyCanvas,
-  PageEngine, InactivePagesGrid,
+  AllPagesGrid,
+  CanvasNodeEngine,
+  sanitizeGhostClone,
 } from './_canvas-helpers';
 import { useBuilderStore, findNode, findParentNode, VIEWPORT_WIDTHS, REQUIRED_PARENT, ALLOWED_CHILDREN } from './_store';
 import { useCanvasPanZoom, MIN_ZOOM, MAX_ZOOM, PAGE_GAP } from './_canvas-hooks';
 import BuilderOverlay, { type ResizeHandle } from './_overlay';
 import { SDUIEngine } from '@/lib/sdui/sdui-engine';
 import appConfig from '@/config/app';
-import type { SDUIConfig } from '@/lib/sdui/types';
+// SDUIConfig moved to AllPagesGrid
 import type { SDUINode } from '@/lib/sdui/types/node';
 import { computeSnap, snapResizeSize, SNAP_THRESHOLD, type SnapGuide, type ContentRect } from './_snap-engine';
 import { removeTwToken, styleToClassName, STYLE_TO_CLASS_KEYS, parseTwArbitraryWithUnit } from './_tw-utils';
 import { cancelPendingDimensionFlush } from './_panel-right';
+import type { CanvasNode } from './_store-types';
 import { StateBar } from './_state-bar';
-import { applyStateTagOverrides } from '@/lib/sdui/builder-preview';
+// applyStateTagOverrides moved to AllPagesGrid (unified rendering)
 
 /** Stable 'normal' preview-state array passed to inactive pages — never changes reference. */
 
@@ -98,49 +101,54 @@ export default function BuilderCanvas() {
   // Ref populated by BuilderOverlay — synchronous BCR update, zero lag during pan.
   const overlayInstantUpdateRef   = useRef<(() => void) | null>(null);
 
-  const {
-    pageNodes,
-    selectedIds,
-    hoveredId,
-    altHoveredId,
-    altMode,
-    tool,
-    zoom, panX, panY,
-    viewport,
-    setZoom, setPan,
-    gridOverlay,
-    select,
-    hover,
-    setAltMode,
-    setAltHovered,
-    addSection,
-    addNode,
-    moveNode,
-    moveNodes,
-    moveNodeFromPage,
-    patchProp,
-    _pushHistory,
-    pages,
-    currentPageId,
-    switchPage,
-    pendingFitToPage,
-    clearPendingFit,
-    showInteractionLines,
-    setShowInteractionLines,
-    duplicateNodes,
-    deleteNodes,
-    selectParent,
-    selectFirstChild,
-    copyToClipboard,
-    pasteFromClipboard,
-    setPreviewState,
-    activePreviewStates,
-    openLogicSection,
-    pageWorkflows,
-    pageWorkflowMeta,
-    globalWorkflows,
-    editingPopupId,
-  } = useBuilderStore();
+  // ── Granular store selectors — only re-render when the specific slice changes ──
+  const pageNodes = useBuilderStore(s => s.pageNodes);
+  const selectedIds = useBuilderStore(s => s.selectedIds);
+  const hoveredId = useBuilderStore(s => s.hoveredId);
+  const altHoveredId = useBuilderStore(s => s.altHoveredId);
+  const altMode = useBuilderStore(s => s.altMode);
+  const tool = useBuilderStore(s => s.tool);
+  const zoom = useBuilderStore(s => s.zoom);
+  const panX = useBuilderStore(s => s.panX);
+  const panY = useBuilderStore(s => s.panY);
+  const viewport = useBuilderStore(s => s.viewport);
+  const gridOverlay = useBuilderStore(s => s.gridOverlay);
+  const pages = useBuilderStore(s => s.pages);
+  const currentPageId = useBuilderStore(s => s.currentPageId);
+  const _focusedPageId = useBuilderStore(s => s.focusedPageId);
+  const pendingFitToPage = useBuilderStore(s => s.pendingFitToPage);
+  const showInteractionLines = useBuilderStore(s => s.showInteractionLines);
+  const activePreviewStates = useBuilderStore(s => s.activePreviewStates);
+  const canvasNodes = useBuilderStore(s => s.canvasNodes);
+  // Actions (stable references — never trigger re-renders)
+  const setZoom = useBuilderStore(s => s.setZoom);
+  const setPan = useBuilderStore(s => s.setPan);
+  const select = useBuilderStore(s => s.select);
+  const hover = useBuilderStore(s => s.hover);
+  const setAltMode = useBuilderStore(s => s.setAltMode);
+  const setAltHovered = useBuilderStore(s => s.setAltHovered);
+  const addSection = useBuilderStore(s => s.addSection);
+  const addNode = useBuilderStore(s => s.addNode);
+  const moveNode = useBuilderStore(s => s.moveNode);
+  const moveNodes = useBuilderStore(s => s.moveNodes);
+  const moveNodeFromPage = useBuilderStore(s => s.moveNodeFromPage);
+  const patchProp = useBuilderStore(s => s.patchProp);
+  const _pushHistory = useBuilderStore(s => s._pushHistory);
+  const focusPage = useBuilderStore(s => s.focusPage);
+  const movePagePosition = useBuilderStore(s => s.movePagePosition);
+  const clearPendingFit = useBuilderStore(s => s.clearPendingFit);
+  const setShowInteractionLines = useBuilderStore(s => s.setShowInteractionLines);
+  const duplicateNodes = useBuilderStore(s => s.duplicateNodes);
+  const deleteNodes = useBuilderStore(s => s.deleteNodes);
+  const selectParent = useBuilderStore(s => s.selectParent);
+  const selectFirstChild = useBuilderStore(s => s.selectFirstChild);
+  const copyToClipboard = useBuilderStore(s => s.copyToClipboard);
+  const pasteFromClipboard = useBuilderStore(s => s.pasteFromClipboard);
+  const setPreviewState = useBuilderStore(s => s.setPreviewState);
+  const openLogicSection = useBuilderStore(s => s.openLogicSection);
+
+  // Use focusedPageId with fallback to currentPageId for backward compat
+  const focusedPageId = _focusedPageId || currentPageId;
 
   // ── Pan / Zoom hook ───────────────────────────────────────────────────────
   const {
@@ -153,14 +161,47 @@ export default function BuilderCanvas() {
     { zoom, panX, panY, setZoom, setPan, pendingFitToPage, clearPendingFit, pageNodes },
   );
 
+  // Adjust zoom & pan when viewport breakpoint changes — keeps the same
+  // visual center instead of jumping to the active/selected page.
+  const prevViewportRef = useRef(viewport);
+  useEffect(() => {
+    if (viewport === prevViewportRef.current) return;
+    const oldVp = prevViewportRef.current;
+    prevViewportRef.current = viewport;
+
+    const c = canvasRef.current;
+    if (!c) return;
+
+    const oldW = VIEWPORT_WIDTHS[oldVp];
+    const newW = VIEWPORT_WIDTHS[viewport];
+    const oldZ = zoomRef.current;
+    const curPX = panXRef.current;
+    const curPY = panYRef.current;
+    const cW = c.clientWidth;
+    const cH = c.clientHeight;
+
+    const newZ = Math.min(cW / newW, cH / VIEWPORT_H) * 0.85;
+
+    // World-space center the user is currently looking at
+    const worldCX = (cW / 2 - curPX) / oldZ;
+    const worldCY = (cH / 2 - curPY) / oldZ;
+
+    // Pages are laid out horizontally; scale X proportionally for the width change
+    const slotRatio = (newW + PAGE_GAP) / (oldW + PAGE_GAP);
+    const newWorldCX = worldCX * slotRatio;
+
+    const newPX = cW / 2 - newWorldCX * newZ;
+    const newPY = cH / 2 - worldCY * newZ;
+
+    requestAnimationFrame(() => {
+      setPan(newPX, newPY);
+      setZoom(newZ);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewport]);
+
   // Tracks the page a canvas-node drag originated from, so cross-page drops work correctly.
   const dragSourcePageIdRef       = useRef<string | null>(null);
-
-  // Use the route config name (page.name) so screen-scoped paths (screens.signIn.form, etc.) resolve correctly
-  const currentPageConfigName = useMemo(() => {
-    const pg = pages.find(p => p.id === currentPageId);
-    return pg?.name ?? 'builder';
-  }, [pages, currentPageId]);
 
   // ── Selected node rect (for floating toolbar) ─────────────────────────────
 
@@ -233,11 +274,12 @@ export default function BuilderCanvas() {
   // ── Dynamic viewport width ────────────────────────────────────────────────
   const vpWidth = VIEWPORT_WIDTHS[viewport];
 
-  /** Index of the active page frame. */
-  const activePageIdx = pages.findIndex(p => p.id === currentPageId);
+  /** Index of the focused page frame (kept for backward-compat with any helpers that need it). */
+  const activePageIdx = pages.findIndex(p => p.id === focusedPageId);
 
-  /** Canvas-space left offset of the ACTIVE page frame. */
-  const activePanX = panX + activePageIdx * (vpWidth + PAGE_GAP) * zoom;
+  /** Canvas-space left offset of the ACTIVE page frame (world units, used by overlay). */
+  const focusedPage = pages.find(p => p.id === focusedPageId);
+  const activePanX = panX + (focusedPage?.wx ?? activePageIdx * (vpWidth + PAGE_GAP)) * zoom;
 
   // ── Absolute-position drag state ─────────────────────────────────────────
   // When dragging a node that has `position: absolute` (or fixed), bypass the
@@ -249,14 +291,20 @@ export default function BuilderCanvas() {
   // updates are async so onDrop would read stale null if it used the state
   // value directly (dragover → setAbsDragPos → drop fires before re-render).
   const [absDragPos, setAbsDragPos] = useState<{
-    x: number; y: number;             // content-space px (relative to parent)
+    x: number; y: number;             // content-space px (relative to parent or world)
     clientX: number; clientY: number; // screen px for tooltip placement
+    isWorldSpace?: boolean;           // true for canvas nodes (use panX, not activePanX)
   } | null>(null);
   const absDragPosRef = useRef<typeof absDragPos>(null);
 
   // ── Snap guides ───────────────────────────────────────────────────────────
   // Guide lines shown during absolute-node drag and resize.
   const [snapGuides, setSnapGuides] = useState<SnapGuide[]>([]);
+  // Page-level snap guides (world coords, rendered without activePanX offset).
+  const [pageSnapGuides, setPageSnapGuides] = useState<SnapGuide[]>([]);
+  const handlePageDragSnap = useCallback((guides: SnapGuide[], _dragging: boolean) => {
+    setPageSnapGuides(guides);
+  }, []);
 
   // ── Marquee selection ─────────────────────────────────────────────────────
   const [marquee, setMarquee] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
@@ -426,7 +474,7 @@ export default function BuilderCanvas() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Track the last page frame hovered during a panel drag (prevents redundant switchPage calls)
+  // Track the last page frame hovered during a panel drag (prevents redundant focusPage calls)
   const lastDragHoverPageRef = useRef<string | null>(null);
 
   // zoomRef, panXRef, panYRef and their sync effect are now owned by useCanvasPanZoom.
@@ -449,6 +497,9 @@ export default function BuilderCanvas() {
 
   /** ID of the canvas node currently being dragged (null = dragging from panel) */
   const draggingNodeIdRef = useRef<string | null>(null);
+
+  /** True when the node being dragged is a freeform canvas node (not inside a page). */
+  const draggingCanvasNodeRef = useRef(false);
 
   /** Tracks whether a canvas node is currently being dragged (drives overlay hide). */
   const [isDragging, setIsDragging] = React.useState(false);
@@ -493,6 +544,26 @@ export default function BuilderCanvas() {
   const dragStartStyleRef = useRef<{ left: string; top: string } | null>(null);
 
   /**
+   * Ancestors whose overflow was temporarily set to 'visible' during absolute-node
+   * drag so the node is not clipped when it crosses container boundaries.
+   * Each entry stores the element and its original overflow value for restoration.
+   */
+  const overflowPatchedRef = useRef<{ el: HTMLElement; orig: string }[]>([]);
+
+  /**
+   * Floating ghost clone shown when an absolute node is dragged outside the page.
+   * The real element stays clipped inside the page frame; this clone follows the
+   * cursor in world space so the user has visual feedback.
+   */
+  const absGhostRef = useRef<{ clone: HTMLElement; w: number; h: number } | null>(null);
+
+  /**
+   * The in-page element hidden (opacity:0) while the floating ghost is visible
+   * outside the page. Stored so we can restore opacity on cleanup.
+   */
+  const absHiddenElRef = useRef<HTMLElement | null>(null);
+
+  /**
    * Computed target for the next drop: where in the tree to insert.
    * Kept in a ref so onDrop can read the latest value without re-creating handlers.
    */
@@ -507,52 +578,8 @@ export default function BuilderCanvas() {
 
   // Apply state-tag-based show/hide overrides when loading/empty/disabled is active.
   // This produces a display-only clone of the node tree — pageNodes is never mutated.
-  const displayNodes = useMemo<SDUINode[]>(() => {
-    const needsOverrides = activePreviewStates.some(
-      s => s === 'loading' || s === 'empty' || s === 'disabled'
-    );
-    if (!needsOverrides) return pageNodes as SDUINode[];
-    return applyStateTagOverrides(pageNodes as SDUINode[], activePreviewStates);
-  }, [pageNodes, activePreviewStates]);
-
-  const pageConfig = useMemo<SDUIConfig>(() => {
-    // Include the screen's state (form fields, errors, etc.) so preview states like
-    // "validation" can find the form fields and inject per-field error messages.
-    const screenState = (app.screens?.[currentPageConfigName] as { state?: Record<string, unknown> } | undefined)?.state ?? {};
-
-    return {
-      state: screenState,
-      ui: {
-        type: 'Box',
-        // 'relative' is needed so the absolutely-positioned popup overlay node
-        // (added to pageNodes during popup edit mode) renders at the correct position.
-        props: { className: 'flex flex-col w-full min-h-screen items-start relative' },
-        children: displayNodes,
-      } as SDUIConfig['ui'],
-    };
-  }, [displayNodes, currentPageConfigName]);
-
-  // ── Merged actions config for the preview engine ─────────────────────────
-  // pageWorkflows + globalWorkflows are defined in the builder store but NOT in
-  // app.actions. We compile them into workflow action definitions and merge
-  // them into app.actions so the SDUI engine can execute them when the user
-  // interacts with elements in the preview (e.g. typing in an Input that has
-  // an onChange workflow bound to it).
-  const previewActionsConfig = useMemo<Record<string, unknown>>(() => {
-    const base = (app.actions ?? {}) as Record<string, unknown>;
-    const compiled: Record<string, unknown> = {};
-    for (const [uuid, steps] of Object.entries(pageWorkflows ?? {})) {
-      const meta = (pageWorkflowMeta ?? {})[uuid] ?? {};
-      compiled[uuid] = {
-        trigger: (meta as Record<string, unknown>).trigger ?? 'click',
-        steps,
-      };
-    }
-    for (const [id, steps] of Object.entries(globalWorkflows ?? {})) {
-      compiled[id] = { steps };
-    }
-    return { ...base, ...compiled };
-  }, [pageWorkflows, pageWorkflowMeta, globalWorkflows]);
+  // displayNodes, pageConfig and previewActionsConfig removed — SDUI rendering for ALL pages
+  // (including the focused page) is now handled by AllPagesGrid in _canvas-helpers.tsx.
 
   // Wheel handler (zoom + pan) is registered by useCanvasPanZoom.
 
@@ -575,20 +602,30 @@ export default function BuilderCanvas() {
         if (el.hasAttribute('data-builder-overlay') || el.closest('[data-builder-overlay]')) continue;
         // Skip the inactive-frame click catchers
         if (el.hasAttribute('data-builder-inactive-frame') || el.closest('[data-builder-inactive-frame]')) continue;
+        if (el.hasAttribute('data-builder-canvas-overlay') || el.closest('[data-builder-canvas-overlay]')) continue;
 
         const builderEl = el.hasAttribute('data-builder-id')
           ? el
           : (el.closest('[data-builder-id]') as HTMLElement | null);
 
         if (builderEl?.dataset.builderId) {
-          return builderEl.dataset.builderId;
+          const bid = builderEl.dataset.builderId;
+          // Use DOM-order index among all elements sharing this builder-id.
+          // data-builder-map-index only carries the innermost repeat index,
+          // which isn't unique with nested repeats. DOM order is always unique.
+          const allWithId = document.querySelectorAll(`[data-builder-id="${bid}"]`);
+          let mapIndex = 0;
+          for (let i = 0; i < allWithId.length; i++) {
+            if (allWithId[i] === builderEl) { mapIndex = i; break; }
+          }
+          return { id: bid, mapIndex };
         }
       }
       return null;
     };
 
     const found = checkElements(all);
-    if (found) return { kind: 'node' as const, id: found };
+    if (found) return { kind: 'node' as const, id: found.id, mapIndex: found.mapIndex };
 
     // At very low zoom, elements may be sub-pixel — expand the hit radius to
     // cover ~3 logical pixels in screen space so clicks still register.
@@ -599,7 +636,7 @@ export default function BuilderCanvas() {
       for (const [dx, dy] of offsets) {
         const nearby = document.elementsFromPoint(clientX + dx, clientY + dy) as HTMLElement[];
         const nearbyFound = checkElements(nearby);
-        if (nearbyFound) return { kind: 'node' as const, id: nearbyFound };
+        if (nearbyFound) return { kind: 'node' as const, id: nearbyFound.id, mapIndex: nearbyFound.mapIndex };
       }
     }
 
@@ -623,6 +660,10 @@ export default function BuilderCanvas() {
         (e.target as Element).closest('[data-more-menu]')) {
       return;
     }
+    // Don't start canvas drag/marquee when dragging a page title label.
+    // mousedown stopPropagation cannot cancel pointer events (they are a separate
+    // event type), so we guard explicitly here.
+    if ((e.target as Element).closest('[data-builder-page-label]')) return;
     const isPan = e.button === 1 || tool === 'hand';
     if (!isPan && e.button !== 0) return;
     dragRef.current = { active: true, startX: e.clientX, startY: e.clientY, startPX: panXRef.current, startPY: panYRef.current, moved: false };
@@ -748,26 +789,28 @@ export default function BuilderCanvas() {
           const nodeEl = document.querySelector(`[data-builder-id="${hit.id}"]`);
           const pageEl = nodeEl?.closest('[data-builder-page-id]') as HTMLElement | null;
           const nodePageId = pageEl?.dataset.builderPageId;
-          if (nodePageId && nodePageId !== useBuilderStore.getState().currentPageId) {
-            switchPage(nodePageId);
+          if (nodePageId && nodePageId !== (useBuilderStore.getState().focusedPageId || useBuilderStore.getState().currentPageId)) {
+            focusPage(nodePageId);
           }
-          select(hit.id, e.shiftKey || e.metaKey);
+          select(hit.id, e.shiftKey || e.metaKey, hit.mapIndex);
         } else {
           // Clicked empty space inside any page → just switch focus if needed
           const clickedPageEl = (e.target as Element).closest('[data-builder-page-id]') as HTMLElement | null;
           const pageId = clickedPageEl?.dataset.builderPageId;
-          if (pageId && pageId !== useBuilderStore.getState().currentPageId) {
-            switchPage(pageId);
+          if (pageId && pageId !== (useBuilderStore.getState().focusedPageId || useBuilderStore.getState().currentPageId)) {
+            focusPage(pageId);
           }
           select(null);
         }
       } else if (!insideToolbar) {
-        // Clicked on the dark canvas background → deselect
+        const insideCanvasNode = (e.target as Element).closest('[data-builder-canvas-node]');
+        if (!insideCanvasNode) {
         select(null);
+        }
       }
     }
     dragRef.current.active = false;
-  }, [hitTest, select, marquee, switchPage]);
+  }, [hitTest, select, marquee, focusPage]);
 
   // ── Capture overlay hover ─────────────────────────────────────────────────
 
@@ -776,9 +819,10 @@ export default function BuilderCanvas() {
     const id = hit.kind === 'node' ? hit.id : null;
     // Skip the Zustand update when the hovered node hasn't changed — avoids a
     // full BuilderCanvas re-render on every pixel of mouse movement.
+    const mapIndex = hit.kind === 'node' ? hit.mapIndex : undefined;
     if (id !== lastHoveredIdRef.current) {
       lastHoveredIdRef.current = id;
-      hover(id);
+      hover(id, mapIndex);
       if (altMode) setAltHovered(id);
       overlayNotifyRef.current?.();
     }
@@ -813,6 +857,7 @@ export default function BuilderCanvas() {
       if (el === capOverlay || capOverlay?.contains(el)) continue;
       if (el.hasAttribute('data-builder-overlay') || el.closest('[data-builder-overlay]')) continue;
       if (el.hasAttribute('data-builder-inactive-frame') || el.closest('[data-builder-inactive-frame]')) continue;
+      if (el.hasAttribute('data-builder-canvas-overlay') || el.closest('[data-builder-canvas-overlay]')) continue;
       const candidate = el.hasAttribute('data-builder-id')
         ? el
         : (el.closest('[data-builder-id]') as HTMLElement | null);
@@ -830,27 +875,66 @@ export default function BuilderCanvas() {
     clientX: number,
     clientY: number,
     skipIds: Set<string>,
+    anyPage = false,
   ): HTMLElement | null => {
     const capOverlay = captureOverlayRef.current;
     const all = document.elementsFromPoint(clientX, clientY) as HTMLElement[];
-    const activePgId = useBuilderStore.getState().currentPageId;
+    const activePgId = useBuilderStore.getState().focusedPageId || useBuilderStore.getState().currentPageId;
     for (const el of all) {
       if (el === capOverlay || capOverlay?.contains(el)) continue;
       if (el.hasAttribute('data-builder-overlay') || el.closest('[data-builder-overlay]')) continue;
-      // Resolve to nearest ancestor with data-builder-id
+      // Skip inactive page overlays so we can hit-test nodes underneath during cross-page drag
+      if (el.hasAttribute('data-builder-inactive-overlay') || el.closest('[data-builder-inactive-overlay]')) continue;
+      // Skip canvas node capture overlays
+      if (el.hasAttribute('data-builder-canvas-overlay') || el.closest('[data-builder-canvas-overlay]')) continue;
       const builderEl = el.hasAttribute('data-builder-id')
         ? el
         : (el.closest('[data-builder-id]') as HTMLElement | null);
       if (!builderEl) continue;
-      // Skip nodes being dragged so the parent container is found instead
       if (skipIds.has(builderEl.dataset.builderId ?? '')) continue;
-      // Only target nodes inside the active page
       const pageFrame = builderEl.closest('[data-builder-page-id]') as HTMLElement | null;
-      if (pageFrame && pageFrame.dataset.builderPageId !== activePgId) continue;
+      if (!anyPage && pageFrame && pageFrame.dataset.builderPageId !== activePgId) continue;
       return builderEl;
     }
     return null;
   }, []);
+
+  /** Find a node across ALL pages' node trees (not just the focused page's pageNodes). */
+  function findNodeAcrossPages(nodeId: string): SDUINode | null {
+    const s = useBuilderStore.getState();
+    const inFocused = findNode(s.pageNodes as SDUINode[], nodeId);
+    if (inFocused) return inFocused;
+    for (const pg of s.pages) {
+      if (pg.id === s.focusedPageId) continue;
+      const found = findNode(pg.nodes as SDUINode[], nodeId);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  /** Like findParentNode but searches across ALL pages. */
+  function findParentAcrossPages(nodeId: string): SDUINode | null {
+    const s = useBuilderStore.getState();
+    const inFocused = findParentNode(s.pageNodes as SDUINode[], nodeId);
+    if (inFocused) return inFocused;
+    for (const pg of s.pages) {
+      if (pg.id === s.focusedPageId) continue;
+      const found = findParentNode(pg.nodes as SDUINode[], nodeId);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  /** Get the root-level siblings list for a node, searching all pages. */
+  function getRootSiblingsForNode(nodeId: string): SDUINode[] {
+    const s = useBuilderStore.getState();
+    const parent = findParentAcrossPages(nodeId);
+    if (parent) return (parent.children ?? []) as SDUINode[];
+    for (const pg of s.pages) {
+      if ((pg.nodes as SDUINode[]).some(n => n.id === nodeId)) return pg.nodes as SDUINode[];
+    }
+    return s.pageNodes as SDUINode[];
+  }
 
   /**
    * Nearest-gap algorithm: given a list of siblings (at any nesting level) and
@@ -947,25 +1031,117 @@ export default function BuilderCanvas() {
    * Collect all sibling rects inside `parentEl` (excluding `excludeId`),
    * converted to content space (divided by zoom).
    */
+  /** Restore all overflow values patched during absolute-node drag. */
+  function restoreOverflowPatches() {
+    for (const { el, orig } of overflowPatchedRef.current) {
+      el.style.overflow = orig;
+    }
+    overflowPatchedRef.current = [];
+  }
+
+  /** Remove the floating ghost clone and restore the hidden in-page element. */
+  function removeAbsGhost() {
+    if (absGhostRef.current) {
+      absGhostRef.current.clone.remove();
+      absGhostRef.current = null;
+    }
+    if (absHiddenElRef.current) {
+      absHiddenElRef.current.style.opacity = '';
+      absHiddenElRef.current = null;
+    }
+  }
+
+  /**
+   * Set overflow:visible on all positioned ancestors between the node and the page
+   * frame so the absolute node is never clipped during drag. Records originals for
+   * restoration via restoreOverflowPatches().
+   */
+  function patchAncestorOverflow(nodeEl: HTMLElement) {
+    restoreOverflowPatches();
+    let el: HTMLElement | null = nodeEl.parentElement;
+    while (el) {
+      // Stop BEFORE page frames — the page frame's overflow:hidden must stay
+      // so the dragged element doesn't visually escape onto the side panels.
+      if (el.hasAttribute('data-builder-page-frame')) break;
+      const cs = getComputedStyle(el);
+      if (cs.overflow !== 'visible') {
+        overflowPatchedRef.current.push({ el, orig: el.style.overflow });
+        el.style.overflow = 'visible';
+      }
+      el = el.parentElement;
+    }
+  }
+
+  const HAS_POSITION_RE = /\b(relative|absolute|fixed|sticky)\b/;
+
+  /**
+   * Ensure a parent container has `position: relative` so that CSS left/top
+   * on an absolute child resolve against it.  Skips if the parent already has
+   * any CSS position keyword, or if parentId is null (page frame root).
+   */
+  function ensureParentRelative(parentId: string | null) {
+    if (!parentId) return;
+    const parentNode = findNode(useBuilderStore.getState().pageNodes as SDUINode[], parentId);
+    if (!parentNode) return;
+    const parentCls = (parentNode.props as { className?: string })?.className ?? '';
+    if (!HAS_POSITION_RE.test(parentCls)) {
+      patchProp(parentId, 'props.className', `relative ${parentCls}`.trim());
+    }
+  }
+
   function getAllSiblingRects(excludeId: string, parentEl: HTMLElement, z: number): ContentRect[] {
     const pr = parentEl.getBoundingClientRect();
-    const els = parentEl.querySelectorAll<HTMLElement>('[data-builder-id]');
+    const pcs = getComputedStyle(parentEl);
+    // Absolute elements position against the padding box (inner border edge).
+    // Only subtract border width, never padding.
+    const pBdrL = parseFloat(pcs.borderLeftWidth) || 0;
+    const pBdrT = parseFloat(pcs.borderTopWidth)  || 0;
     const rects: ContentRect[] = [];
-    for (const el of els) {
-      const id = el.dataset.builderId!;
-      if (id === excludeId) continue;
-      // Only direct children in the same positioning context
-      if ((el.parentElement?.closest('[data-builder-id]') as HTMLElement | null)?.dataset.builderId === excludeId) continue;
+
+    const parentBuilderId = parentEl.dataset?.builderId ?? null;
+    let siblingIds: string[] = [];
+    if (parentBuilderId) {
+      const parentNode = findNodeAcrossPages(parentBuilderId);
+      if (parentNode?.children) {
+        siblingIds = (parentNode.children as SDUINode[])
+          .map(c => c.id).filter((id): id is string => !!id && id !== excludeId);
+      }
+    } else {
+      const s = useBuilderStore.getState();
+      const pageId = parentEl.dataset?.builderPageId;
+      let nodes: SDUINode[] = s.pageNodes as SDUINode[];
+      if (pageId && pageId !== s.focusedPageId) {
+        const pg = s.pages.find(p => p.id === pageId);
+        if (pg) nodes = pg.nodes as SDUINode[];
+      }
+      siblingIds = nodes
+        .map(c => c.id).filter((id): id is string => !!id && id !== excludeId);
+    }
+
+    for (const id of siblingIds) {
+      const el = parentEl.querySelector<HTMLElement>(`[data-builder-id="${id}"]`);
+      if (!el) continue;
       const r = el.getBoundingClientRect();
       if (r.width === 0 && r.height === 0) continue;
       rects.push({
         id,
-        x: (r.left - pr.left) / z,
-        y: (r.top  - pr.top)  / z,
+        x: (r.left - pr.left) / z - pBdrL,
+        y: (r.top  - pr.top)  / z - pBdrT,
         w: r.width  / z,
         h: r.height / z,
       });
     }
+
+    // Parent's padding-box as a snap target (the full area absolute children
+    // can position within).
+    const pBdrR = parseFloat(pcs.borderRightWidth)  || 0;
+    const pBdrB = parseFloat(pcs.borderBottomWidth) || 0;
+    const parentW = pr.width  / z - pBdrL - pBdrR;
+    const parentH = pr.height / z - pBdrT - pBdrB;
+    if (parentW > 0 && parentH > 0) {
+      rects.push({ id: '__parent__', x: 0, y: 0, w: parentW, h: parentH });
+    }
+
     return rects;
   }
 
@@ -984,89 +1160,282 @@ export default function BuilderCanvas() {
     e.dataTransfer.dropEffect = isCanvasMove ? 'move' : 'copy';
     setIsDroppingVariant(true);
 
-    // ── Panel drops: auto-switch active page as cursor moves between frames ───
-    // Canvas-node moves stay within their source page (cross-page moves aren't
-    // supported because moveNode only operates on the current pageNodes tree).
-    if (!isCanvasMove) {
+    // ── Track hovered page during drag — only update blue outline imperatively ──
+    // Do NOT call focusPage here — it would re-render at 60fps
+    // on every dragover (60+ fps) which causes severe lag during cross-page drags.
+    // The actual focusPage is deferred to onDrop where it fires exactly once.
+    {
       const els = document.elementsFromPoint(e.clientX, e.clientY) as HTMLElement[];
       for (const el of els) {
         const pgEl = el.closest('[data-builder-page-id]') as HTMLElement | null;
         if (pgEl?.dataset.builderPageId) {
           const hovPageId = pgEl.dataset.builderPageId;
           if (hovPageId !== lastDragHoverPageRef.current) {
-            lastDragHoverPageRef.current = hovPageId;
-            if (hovPageId !== useBuilderStore.getState().currentPageId) {
-              useBuilderStore.getState().switchPage(hovPageId);
+            // Remove blue border from the previous page
+            if (lastDragHoverPageRef.current) {
+              const prevFrame = document.querySelector(`[data-builder-page-id="${lastDragHoverPageRef.current}"]`) as HTMLElement | null;
+              if (prevFrame) prevFrame.style.outline = '';
             }
+            lastDragHoverPageRef.current = hovPageId;
+            // Add blue border to the new hovered page (cheap DOM write, no re-render)
+            const hovFrame = document.querySelector(`[data-builder-page-id="${hovPageId}"]`) as HTMLElement | null;
+            if (hovFrame) hovFrame.style.outline = '2px solid rgba(59,130,246,0.7)';
           }
           break;
         }
       }
     }
 
-    // ── Absolute node: free-form positioning, skip drop-zone logic ────────────
+    // ── Absolute node / canvas node: free-form positioning, skip drop-zone logic ──
     // Exception 1: multi-drag — when multiple nodes are selected and dragged
     // together, ALL must move as a flow group (absolute path only moves one node).
     // Exception 2: reparenting — if cursor is over a DIFFERENT container, fall
     // through to normal flow-drop so the node can be reparented.
     const draggingId = draggingNodeIdRef.current;
+    const isCanvasNodeDrag = draggingCanvasNodeRef.current;
     // Compute multiDrag set early so the absolute-path check can use it.
     const earlyAllDraggingIds = multiDragIdsRef.current.length > 0
       ? multiDragIdsRef.current
       : (draggingId ? [draggingId] : []);
     if (draggingId) {
-      const draggedNode = findNode(useBuilderStore.getState().pageNodes, draggingId);
+      let draggedNode = findNode(useBuilderStore.getState().pageNodes, draggingId);
+      if (!draggedNode) {
+        const allPages = useBuilderStore.getState().pages as { nodes: SDUINode[] }[];
+        for (const pg of allPages) {
+          draggedNode = findNode(pg.nodes, draggingId);
+          if (draggedNode) break;
+        }
+      }
       const cls = (draggedNode?.props as { className?: string })?.className ?? '';
-      const isAbsPos = /\babsolute\b/.test(cls) || /\bfixed\b/.test(cls);
+      const isAbsPos = isCanvasNodeDrag || /\babsolute\b/.test(cls) || /\bfixed\b/.test(cls);
       // Only use the absolute-positioning path for single-node drags.
       // For multi-drags the flow-drop path handles all nodes together.
       if (isAbsPos && earlyAllDraggingIds.length <= 1) {
-        // Absolute nodes always follow the cursor absolutely — no drop-line mode.
-        // The "effective parent" (container the node will land in) is resolved
-        // dynamically from whatever is under the cursor right now:
-        //   • cursor over a named container  → use that container as parent
-        //   • cursor over a leaf node        → use that leaf's parent
-        //   • cursor over empty space        → use root (null)
-        // Position is always computed relative to the effective parent, so the
-        // node previews exactly where it will land.  On drop, onDrop reparents
-        // first (if the parent changed) then sets left/top.
         const absCanvas = canvasRef.current;
         const absRect   = absCanvas?.getBoundingClientRect();
         if (absCanvas && absRect) {
+          // ── Canvas node: position relative to world container ──────────────
+          if (isCanvasNodeDrag) {
+            const cnWrapper = document.querySelector(`[data-builder-canvas-node="${draggingId}"]`) as HTMLElement | null;
+            // Keep wrapper non-interactive during entire drag so hit-testing goes through to page elements
+            if (cnWrapper) cnWrapper.style.pointerEvents = 'none';
+
+            const topEl = document.elementFromPoint(e.clientX, e.clientY) as Element | null;
+            const overPage = !!topEl?.closest('[data-builder-page-id]');
+
+            // Always move the wrapper to follow the cursor (acts as visual ghost)
+            const wEl = worldRef.current;
+            if (wEl && cnWrapper) {
+              const wr = wEl.getBoundingClientRect();
+              const z = zoomRef.current;
+              const grab = grabOffsetRef.current;
+              const followX = Math.round((e.clientX - wr.left - grab.x) / z);
+              const followY = Math.round((e.clientY - wr.top  - grab.y) / z);
+              cnWrapper.style.left = `${followX}px`;
+              cnWrapper.style.top  = `${followY}px`;
+              cnWrapper.style.opacity = overPage ? '0.45' : '';
+            }
+
+            if (overPage) {
+              absDragPosRef.current = null;
+              setAbsDragPos(null);
+              setSnapGuides([]);
+              stickySnapRef.current = { x: null, y: null };
+              // Don't return — fall through to flow-based drop logic below
+            } else {
+            if (!wEl) return;
+            const wr = wEl.getBoundingClientRect();
+            const z = zoomRef.current;
+            const grab = grabOffsetRef.current;
+            const rawX = Math.round((e.clientX - wr.left - grab.x) / z);
+            const rawY = Math.round((e.clientY - wr.top  - grab.y) / z);
+
+            // Build snap siblings from other canvas nodes + page frame edges.
+            const canvasNs = useBuilderStore.getState().canvasNodes as { id: string; _cx: number; _cy: number }[];
+            const siblings: ContentRect[] = [];
+            for (const cn of canvasNs) {
+              if (cn.id === draggingId) continue;
+              const wrapper = document.querySelector(`[data-builder-canvas-node="${cn.id}"]`) as HTMLElement | null;
+              if (!wrapper) continue;
+              const r = wrapper.getBoundingClientRect();
+              siblings.push({
+                id: cn.id,
+                x: cn._cx,
+                y: cn._cy,
+                w: r.width / z,
+                h: r.height / z,
+              });
+            }
+            // Page frames as snap targets
+            const pageFrames = wEl.querySelectorAll<HTMLElement>('[data-builder-page-id]');
+            for (const pf of pageFrames) {
+              const r = pf.getBoundingClientRect();
+              siblings.push({
+                id: pf.dataset.builderPageId ?? 'page',
+                x: (r.left - wr.left) / z,
+                y: (r.top  - wr.top)  / z,
+                w: r.width  / z,
+                h: r.height / z,
+              });
+            }
+
+            const nodeW = cnWrapper ? cnWrapper.getBoundingClientRect().width  / z : 0;
+            const nodeH = cnWrapper ? cnWrapper.getBoundingClientRect().height / z : 0;
+
+            const SNAP_STICKY_RELEASE = SNAP_THRESHOLD * 2;
+            const sticky = stickySnapRef.current;
+            let effectiveX = rawX;
+            let effectiveY = rawY;
+            if (sticky.x !== null) {
+              if (Math.abs(rawX - sticky.x) <= SNAP_STICKY_RELEASE) effectiveX = sticky.x;
+              else sticky.x = null;
+            }
+            if (sticky.y !== null) {
+              if (Math.abs(rawY - sticky.y) <= SNAP_STICKY_RELEASE) effectiveY = sticky.y;
+              else sticky.y = null;
+            }
+
+            const dragged: ContentRect = { id: draggingId, x: effectiveX, y: effectiveY, w: nodeW, h: nodeH };
+            const { x, y, guides } = computeSnap(dragged, siblings);
+
+            if (x !== effectiveX) sticky.x = x;
+            if (y !== effectiveY) sticky.y = y;
+
+            setSnapGuides(guides);
+
+            if (cnWrapper) {
+              cnWrapper.style.left = `${x}px`;
+              cnWrapper.style.top  = `${y}px`;
+            }
+
+            const pos = { x, y, clientX: e.clientX, clientY: e.clientY, isWorldSpace: true };
+            absDragPosRef.current = pos;
+            setAbsDragPos(pos);
+
+            setDropLineY(null);
+            setDropLineX(null);
+            setDropContainerId(null);
+            return;
+            }
+          }
+
+          // ── In-page absolute node positioning ─────────────────────────────
+          if (!isCanvasNodeDrag) {
+
+          // ── Ghost clone is identity-free (sanitized at creation) ──────────
+          // No display toggling needed — the ghost has no data-builder-* attrs,
+          // so elementFromPoint / findDropTargetElAt / querySelector never match it.
+          const agClone = absGhostRef.current;
+
+          // Temporarily hide the real in-page element from hit-testing so
+          // elementFromPoint finds the page frame underneath, not the node itself.
+          const nodeEl = document.querySelector(`[data-builder-id="${draggingId}"]`) as HTMLElement | null;
+          if (nodeEl) nodeEl.style.pointerEvents = 'none';
+          const elUnder = document.elementFromPoint(e.clientX, e.clientY) as Element | null;
+          if (nodeEl) nodeEl.style.pointerEvents = '';
+          const overPageEl = elUnder?.closest('[data-builder-page-id]') as HTMLElement | null;
+          const overAnyPage = !!overPageEl;
+          const overPageId = overPageEl?.dataset.builderPageId ?? null;
+          const srcPageId = dragSourcePageIdRef.current
+            ?? useBuilderStore.getState().focusedPageId
+            ?? useBuilderStore.getState().currentPageId;
+          const isCrossPageDrag = overAnyPage && overPageId !== srcPageId;
+
+          if (!overAnyPage) {
+            // Outside all pages — position the ghost at cursor, hide in-page element.
+            if (nodeEl && absHiddenElRef.current !== nodeEl) {
+              nodeEl.style.opacity = '0';
+              absHiddenElRef.current = nodeEl;
+            }
+            if (agClone) {
+              const wEl = worldRef.current;
+              if (wEl) {
+                const wr = wEl.getBoundingClientRect();
+                const z = zoomRef.current;
+                const grab = grabOffsetRef.current;
+                agClone.clone.style.left = `${Math.round((e.clientX - wr.left - grab.x) / z)}px`;
+                agClone.clone.style.top  = `${Math.round((e.clientY - wr.top  - grab.y) / z)}px`;
+              }
+            }
+            absDragPosRef.current = null;
+            setAbsDragPos(null);
+            setSnapGuides([]);
+            stickySnapRef.current = { x: null, y: null };
+            setDropLineY(null);
+            setDropLineX(null);
+            setDropContainerId(null);
+            return;
+          }
+
+          // Show/hide in-page element based on cross-page status
+          if (isCrossPageDrag) {
+            if (nodeEl && absHiddenElRef.current !== nodeEl) {
+              nodeEl.style.opacity = '0';
+              absHiddenElRef.current = nodeEl;
+            }
+          } else {
+            if (absHiddenElRef.current) {
+              absHiddenElRef.current.style.opacity = '';
+              absHiddenElRef.current = null;
+            }
+          }
+
           const currentParentNode = findParentNode(useBuilderStore.getState().pageNodes, draggingId);
           const currentParentId   = currentParentNode?.id ?? null;
 
           // Find the deepest element under cursor (excluding the dragged node).
-          const hoveredEl  = findDropTargetElAt(e.clientX, e.clientY, new Set([draggingId]));
+          const hoveredEl  = findDropTargetElAt(e.clientX, e.clientY, new Set([draggingId]), true);
+
+          // Position ghost: at cursor for cross-page/off-page, off-screen for same-page.
+          if (agClone) {
+            if (isCrossPageDrag) {
+              const wEl = worldRef.current;
+              if (wEl) {
+                const wr = wEl.getBoundingClientRect();
+                const z = zoomRef.current;
+                const grab = grabOffsetRef.current;
+                agClone.clone.style.left = `${Math.round((e.clientX - wr.left - grab.x) / z)}px`;
+                agClone.clone.style.top  = `${Math.round((e.clientY - wr.top  - grab.y) / z)}px`;
+              }
+            } else {
+              agClone.clone.style.left = '-9999px';
+              agClone.clone.style.top = '-9999px';
+            }
+          }
           let effectiveParentId: string | null = null;
           let effectiveParentEl: HTMLElement | null = null;
 
           if (hoveredEl) {
             const hovId   = hoveredEl.dataset.builderId!;
             const hovType = hoveredEl.dataset.builderType ?? '';
-            const hovNode = findNode(useBuilderStore.getState().pageNodes, hovId);
+            const hovNode = findNodeAcrossPages(hovId);
             const hovIsContainer = CONTAINER_TYPES.has(hovType) ||
               ((hovNode?.children?.length ?? 0) > 0);
-            // If the hovered node is itself absolute/fixed it is a sibling, not a
-            // parent container — dropping "into" it makes no sense for an abs drag.
             const hovCls = (hovNode?.props as { className?: string })?.className ?? '';
             const hovIsAbs = /\b(absolute|fixed)\b/.test(hovCls);
 
             if (hovIsContainer && !hovIsAbs) {
-              // Cursor is directly over a flow container → use it as parent.
               effectiveParentId = hovId;
               effectiveParentEl = hoveredEl;
             } else {
-              // Cursor over a leaf node OR an absolute node → use that node's parent.
-              // Also walk up past any absolute/fixed ancestors (e.g. cursor is on
-              // ButtonText whose parent is an abs Button — still a sibling, not a
-              // container we want to drop into).
-              const pNodes = useBuilderStore.getState().pageNodes;
-              let resolvedParent = findParentNode(pNodes, hovId);
+              // Walk up the tree to find a non-absolute parent container.
+              // Use findNodeAcrossPages so this works when hovering over a non-focused page.
+              function findParentAcrossPages(nodeId: string): SDUINode | null | undefined {
+                const s = useBuilderStore.getState();
+                const inFocused = findParentNode(s.pageNodes as SDUINode[], nodeId);
+                if (inFocused !== undefined) return inFocused;
+                for (const pg of s.pages) {
+                  if (pg.id === s.focusedPageId) continue;
+                  const found = findParentNode(pg.nodes as SDUINode[], nodeId);
+                  if (found !== undefined) return found;
+                }
+                return null;
+              }
+              let resolvedParent = findParentAcrossPages(hovId);
               while (resolvedParent?.id) {
                 const pCls = (resolvedParent.props as { className?: string })?.className ?? '';
                 if (/\b(absolute|fixed)\b/.test(pCls)) {
-                  resolvedParent = findParentNode(pNodes, resolvedParent.id);
+                  resolvedParent = findParentAcrossPages(resolvedParent.id);
                 } else {
                   break;
                 }
@@ -1077,7 +1446,6 @@ export default function BuilderCanvas() {
                 : null;
             }
           }
-          // effectiveParentId === null means root level (cursor over empty space).
 
           // Reset sticky snap state when the effective parent changes so stale
           // snap offsets from the old container don't pollute the new one.
@@ -1085,27 +1453,53 @@ export default function BuilderCanvas() {
             stickySnapRef.current = { x: null, y: null };
           }
 
-          // Record which container we'd reparent into on drop.
           dropTargetRef.current = { parentId: effectiveParentId, index: 0 };
 
-          // Resolve the DOM element to measure position against.
           if (!effectiveParentEl) {
-            effectiveParentEl = effectiveParentId
-              ? (document.querySelector(`[data-builder-id="${effectiveParentId}"]`) as HTMLElement | null)
-              : (document.querySelector('[data-builder-page-frame]') as HTMLElement | null);
+            if (effectiveParentId) {
+              effectiveParentEl = document.querySelector(`[data-builder-id="${effectiveParentId}"]`) as HTMLElement | null;
+            } else {
+              // Use the page the cursor is actually hovering over, not the focused page
+              const hovPageId = lastDragHoverPageRef.current
+                ?? useBuilderStore.getState().focusedPageId
+                ?? useBuilderStore.getState().currentPageId;
+              effectiveParentEl = document.querySelector(`[data-builder-page-id="${hovPageId}"][data-builder-page-frame="0"]`) as HTMLElement | null;
+            }
           }
 
           if (effectiveParentEl) {
-            const pr   = effectiveParentEl.getBoundingClientRect();
             const z    = zoomRef.current;
             const grab = grabOffsetRef.current;
-            const rawX = Math.round((e.clientX - pr.left - grab.x) / z);
-            const rawY = Math.round((e.clientY - pr.top  - grab.y) / z);
 
-            // ── Snap to siblings within the effective parent ──────────────────
+            // ── Use effectiveParentEl as the coordinate origin ────────────────
+            // The builder writes `left-[Xpx] top-[Ypx]` Tailwind classes on the
+            // element AND ensures the parent gets `position: relative` on drop
+            // (see the drop handler below).  This means CSS left/top will always
+            // resolve against effectiveParentEl's padding box — so all coordinate
+            // math should use it directly.  Do NOT use findContainingBlock: the
+            // real DOM tree has AnimatedNode wrappers, NativeWind cssInterop divs,
+            // etc. that may have `position: relative` with zero padding, giving a
+            // wrong coordinate origin.
+            const pr   = effectiveParentEl.getBoundingClientRect();
+            const cs   = getComputedStyle(effectiveParentEl);
+            // CSS left/top on absolute elements resolve against the containing
+            // block's **padding box** (inner edge of border), NOT the content box.
+            // Only subtract border width, never padding.
+            const bdrL = parseFloat(cs.borderLeftWidth) || 0;
+            const bdrT = parseFloat(cs.borderTopWidth)  || 0;
+
+            const rawX = Math.round((e.clientX - pr.left - grab.x) / z - bdrL);
+            const rawY = Math.round((e.clientY - pr.top  - grab.y) / z - bdrT);
+
+            // ── Diagnostic: log once per drag to trace coordinate math ──
             const nodeEl = document.querySelector(`[data-builder-id="${draggingId}"]`) as HTMLElement | null;
-            const nodeW  = nodeEl ? nodeEl.getBoundingClientRect().width  / z : 0;
-            const nodeH  = nodeEl ? nodeEl.getBoundingClientRect().height / z : 0;
+            let nodeW  = nodeEl ? nodeEl.getBoundingClientRect().width  / z : 0;
+            let nodeH  = nodeEl ? nodeEl.getBoundingClientRect().height / z : 0;
+            if (isCrossPageDrag && absGhostRef.current && (nodeW === 0 || nodeH === 0)) {
+              nodeW = absGhostRef.current.w;
+              nodeH = absGhostRef.current.h;
+            }
+
             const siblings = getAllSiblingRects(draggingId, effectiveParentEl, z);
 
             const SNAP_STICKY_RELEASE = SNAP_THRESHOLD * 2;
@@ -1134,32 +1528,67 @@ export default function BuilderCanvas() {
             if (x !== effectiveX) sticky.x = x;
             if (y !== effectiveY) sticky.y = y;
 
-            setSnapGuides(guides);
+            // ── Offset guides to page-space / world-space for rendering ──────
+            // Guides from computeSnap are in effectiveParent-content-space.
+            // Convert to world-space first, then optionally to page-space.
+            const wEl = worldRef.current;
+            const wr = wEl?.getBoundingClientRect() ?? { left: 0, top: 0 };
+            const epToWorldX = (pr.left - wr.left + bdrL * z) / z;
+            const epToWorldY = (pr.top  - wr.top  + bdrT * z) / z;
 
-            if (nodeEl) {
-              // x/y are in the effective parent's coordinate space — correct for
-              // the eventual drop.  But for the live DOM preview the node is still
-              // inside its ACTUAL parent, so we must offset by the difference
-              // between the two parents' viewport origins.
+            const focusedPg = (useBuilderStore.getState().pages as { id: string; wx: number; wy: number }[])
+              .find(p => p.id === useBuilderStore.getState().focusedPageId);
+            const pageWX = focusedPg?.wx ?? 0;
+            const pageWY = focusedPg?.wy ?? 0;
+            const epToPageX = epToWorldX - pageWX;
+            const epToPageY = epToWorldY - pageWY;
+
+            if (isCrossPageDrag) {
+              setSnapGuides(guides.map(g => g.axis === 'x'
+                ? { ...g, position: g.position + epToWorldX, start: g.start + epToWorldY, end: g.end + epToWorldY }
+                : { ...g, position: g.position + epToWorldY, start: g.start + epToWorldX, end: g.end + epToWorldX }
+              ));
+            } else {
+              setSnapGuides(guides.map(g => g.axis === 'x'
+                ? { ...g, position: g.position + epToPageX, start: g.start + epToPageY, end: g.end + epToPageY }
+                : { ...g, position: g.position + epToPageY, start: g.start + epToPageX, end: g.end + epToPageX }
+              ));
+            }
+
+            // Live-position the element: x/y are in effectiveParent-content-space.
+            // When the effective parent differs from the node's current parent
+            // (cursor hovering over a new container), convert to the current
+            // parent's space so the in-DOM element tracks the cursor correctly
+            // until it is actually reparented on drop.
+            if (!isCrossPageDrag && nodeEl) {
               let liveLeft = x;
               let liveTop  = y;
               if (effectiveParentId !== currentParentId) {
                 const actualParentEl = currentParentId
                   ? (document.querySelector(`[data-builder-id="${currentParentId}"]`) as HTMLElement | null)
-                  : (document.querySelector('[data-builder-page-frame]') as HTMLElement | null);
+                  : (() => { const fp = useBuilderStore.getState().focusedPageId || useBuilderStore.getState().currentPageId; return document.querySelector(`[data-builder-page-id="${fp}"][data-builder-page-frame="0"]`) as HTMLElement | null; })();
                 if (actualParentEl) {
                   const ar = actualParentEl.getBoundingClientRect();
-                  liveLeft = x + (pr.left - ar.left) / z;
-                  liveTop  = y + (pr.top  - ar.top)  / z;
+                  const acs = getComputedStyle(actualParentEl);
+                  const aBdrL = parseFloat(acs.borderLeftWidth) || 0;
+                  const aBdrT = parseFloat(acs.borderTopWidth) || 0;
+                  liveLeft = x + (pr.left - ar.left) / z + bdrL - aBdrL;
+                  liveTop  = y + (pr.top  - ar.top)  / z + bdrT - aBdrT;
                 }
               }
               nodeEl.style.left = `${liveLeft}px`;
               nodeEl.style.top  = `${liveTop}px`;
             }
 
+            // absDragPosRef stores parent-content-relative coords for the drop handler.
             const pos = { x, y, clientX: e.clientX, clientY: e.clientY };
             absDragPosRef.current = pos;
-            setAbsDragPos(pos);
+
+            if (isCrossPageDrag) {
+              setAbsDragPos({ x: epToWorldX + x, y: epToWorldY + y, clientX: e.clientX, clientY: e.clientY, isWorldSpace: true });
+            } else {
+              setAbsDragPos({ x: epToPageX + x, y: epToPageY + y, clientX: e.clientX, clientY: e.clientY });
+            }
           }
 
           // No drop line, but highlight the target container (blue dashed border)
@@ -1173,11 +1602,13 @@ export default function BuilderCanvas() {
           );
           return;
         }
+        } else {
         // absCanvas unavailable — clear any stale indicators
         setDropLineY(null);
         setDropLineX(null);
         setDropContainerId(null);
         return;
+      }
       }
     }
     // Clear any stale absolute state when dragging a normal node
@@ -1219,36 +1650,27 @@ export default function BuilderCanvas() {
     // Find the SDUI node under cursor. Dragged nodes (opacity 0.3, still in DOM)
     // are skipped so we always resolve to their parent container instead of
     // treating the cursor position as empty/root-level.
-    const hovEl = findDropTargetElAt(e.clientX, e.clientY, draggingIdSet);
+    // anyPage=true allows finding nodes on non-focused pages for cross-page drops.
+    // Canvas wrapper already has pointer-events:none during drag (set in isCanvasNodeDrag block).
+    const hovEl = findDropTargetElAt(e.clientX, e.clientY, draggingIdSet, true);
 
     if (hovEl) {
       const nodeId   = hovEl.dataset.builderId!;
       const nodeType = hovEl.dataset.builderType ?? '';
       const nodeRect = hovEl.getBoundingClientRect();
 
-      // Check if the node is a container (by type or by having children)
-      const nodeInTree = findNode(useBuilderStore.getState().pageNodes, nodeId);
+      // Use cross-page lookups so drop indicators work on any page
+      const nodeInTree = findNodeAcrossPages(nodeId);
       const isContainer = CONTAINER_TYPES.has(nodeType) || (nodeInTree?.children?.length ?? 0) > 0;
 
-      // Prevent cycle drops: the hover container (nodeId) must NOT be inside the
-      // subtree of any dragged node (which would create a parent → descendant cycle).
-      // NOTE: the OLD check was inverted — it searched for dragged-id inside hovEl's
-      // children, which is NORMAL for re-ordering within a container and must be allowed.
       const isDroppingIntoSelf = isContainer &&
         allDraggingIds.some(id => {
-          const draggedNode = findNode(useBuilderStore.getState().pageNodes, id);
+          const draggedNode = findNodeAcrossPages(id);
           if (!draggedNode?.children?.length) return false;
-          // True only if the hover container lives inside the dragged node's subtree
           return !!findNode((draggedNode.children as SDUINode[]), nodeId);
         });
 
-      // Edge zones: when the cursor is near the leading/trailing edge of a node,
-      // drop BEFORE or AFTER it in its parent instead of inside it.
-      // Use a pixel-capped threshold so large (full-screen) containers respond
-      // immediately when the cursor enters — not only after crossing 20% of their size.
-      // Cap at 12px so you never have to go more than 12px inside a large container.
       const EDGE_ZONE_MAX_PX = 12;
-      // Row containers: check X-axis edges; column/default containers: check Y-axis edges.
       const isRowForEdge = isRowContainer(nodeInTree);
       const inDropZone = isRowForEdge
         ? (() => {
@@ -1262,21 +1684,13 @@ export default function BuilderCanvas() {
             return relYPx > edgePxV && relYPx < nodeRect.height - edgePxV;
           })();
 
-      // If the hovered container has ALLOWED restrictions, check whether ALL
-      // dragged nodes are permitted inside it. If any are blocked, fall through
-      // to "before/after in parent" so the user sees a visible drop indicator
-      // instead of a silent no-op on drop (e.g. dragging Input across Input2
-      // should show "insert before/after Input2" not "try to nest inside Input2").
       const allowedSet = ALLOWED_CHILDREN[nodeType];
       const allDraggedAllowed = !allowedSet || allDraggingIds.every(id => {
-        const dn = findNode(useBuilderStore.getState().pageNodes, id);
+        const dn = findNodeAcrossPages(id);
         return dn?.type && allowedSet.has(dn.type);
       });
 
       if (isContainer && !isDroppingIntoSelf && inDropZone && allDraggedAllowed) {
-        // ── Drop INSIDE the container ──
-        // Find the nearest gap within the container's children so we insert at
-        // the correct position and show the line exactly there.
         const children = (nodeInTree?.children ?? []) as SDUINode[];
         if (isRowContainer(nodeInTree)) {
           const { insertIdx, lineX } = nearestGapH(children, e.clientX, canvas, rect);
@@ -1293,11 +1707,11 @@ export default function BuilderCanvas() {
         }
       } else {
         // ── Drop BEFORE / AFTER this node in its parent ──
-        const parent   = findParentNode(useBuilderStore.getState().pageNodes, nodeId);
+        const parent   = findParentAcrossPages(nodeId);
         const parentId = parent?.id ?? null;
         const siblings: SDUINode[] = parent
           ? (parent.children as SDUINode[])
-          : useBuilderStore.getState().pageNodes;
+          : getRootSiblingsForNode(nodeId);
         if (isRowContainer(parent)) {
           const { insertIdx, lineX } = nearestGapH(siblings, e.clientX, canvas, rect);
           setDropContainerId(null);
@@ -1325,6 +1739,11 @@ export default function BuilderCanvas() {
   }, [findBuilderElAt]);
 
   const onDragLeave = useCallback(() => {
+    // Remove blue border from current hovered page
+    if (lastDragHoverPageRef.current) {
+      const prevFrame = document.querySelector(`[data-builder-page-id="${lastDragHoverPageRef.current}"]`) as HTMLElement | null;
+      if (prevFrame) prevFrame.style.outline = '';
+    }
     lastDragHoverPageRef.current = null;
     setIsDroppingVariant(false);
     setDropLineY(null);
@@ -1341,73 +1760,227 @@ export default function BuilderCanvas() {
     e.preventDefault();
     setIsDroppingVariant(false);
     setDropContainerId(null);
-    // Restore all faded source elements immediately on drop (onDragEnd fires
-    // after drop but draggingNodeIdRef is already null by then).
+    const dropTargetPageId = lastDragHoverPageRef.current;
+    if (lastDragHoverPageRef.current) {
+      const prevFrame = document.querySelector(`[data-builder-page-id="${lastDragHoverPageRef.current}"]`) as HTMLElement | null;
+      if (prevFrame) prevFrame.style.outline = '';
+      lastDragHoverPageRef.current = null;
+    }
     for (const el of draggedElRef.current) el.style.opacity = '';
     draggedElRef.current = [];
     setIsDragging(false);
 
     const target   = dropTargetRef.current ?? { parentId: null, index: useBuilderStore.getState().pageNodes.length };
-    // getData may return '' in CDP-simulated drags; fall back to the ref set in onDragStart
     const canvasNodeId = e.dataTransfer.getData('text/canvas-node-id') || draggingNodeIdRef.current || '';
     const variantId    = e.dataTransfer.getData('text/variant-id');
     const win = window as unknown as Record<string, unknown>;
     const primitive    = e.dataTransfer.getData('text/primitive-node') ||
-                         // CDP fallback: panel sets __primitiveDrag on dragstart
                          (win.__primitiveDrag as string | undefined) || '';
-    // Clear the CDP fallback regardless of whether it was used
     win.__primitiveDrag = undefined;
 
     if (canvasNodeId) {
-      // ── Absolute node: apply style.left / style.top, don't reorder ──────────
-      // Read from the ref (always current) rather than state (async, may be stale
-      // when drop fires synchronously right after dragover).
+      // ── Canvas node drag: commit position via absDragPosRef ───────────────
+      if (draggingCanvasNodeRef.current) {
+        const pos = absDragPosRef.current;
+        const cnWrap = document.querySelector(`[data-builder-canvas-node="${canvasNodeId}"]`) as HTMLElement | null;
+        if (cnWrap) cnWrap.style.pointerEvents = 'none';
+        const droppedOnPage = !!dropTargetPageId
+          || !!(document.elementFromPoint(e.clientX, e.clientY) as Element | null)?.closest('[data-builder-page-id]');
+        if (cnWrap) cnWrap.style.pointerEvents = '';
+        if (droppedOnPage) {
+          const curPage = useBuilderStore.getState().focusedPageId || useBuilderStore.getState().currentPageId;
+          const effectiveTargetPage = dropTargetPageId ?? curPage;
+          const cnData = (useBuilderStore.getState().canvasNodes as CanvasNode[]).find(n => n.id === canvasNodeId);
+
+          // Measure the parent element for abs positioning BEFORE focusPage
+          // changes the DOM (non-focused pages stay rendered by AllPagesGrid,
+          // but pageNodes swaps so patchProp only reaches the focused page).
+          const cnCls = ((cnData?.props as { className?: string })?.className) ?? '';
+          const isAbsOnCanvas = /\b(absolute|fixed)\b/.test(cnCls);
+          let absLeft: number | null = null;
+          let absTop: number | null = null;
+          if (isAbsOnCanvas) {
+            // Use the drop target parent directly — ensureParentRelative
+            // (called after insertion below) guarantees it gets position:relative
+            // so CSS left/top resolve against it.
+            const dropParentEl = target.parentId
+              ? document.querySelector(`[data-builder-id="${target.parentId}"]`) as HTMLElement | null
+              : document.querySelector(`[data-builder-page-id="${effectiveTargetPage}"][data-builder-page-frame="0"]`) as HTMLElement | null;
+            if (dropParentEl) {
+              const pr = dropParentEl.getBoundingClientRect();
+              const pcs = getComputedStyle(dropParentEl);
+              const pBdrL = parseFloat(pcs.borderLeftWidth) || 0;
+              const pBdrT = parseFloat(pcs.borderTopWidth) || 0;
+              const z = useBuilderStore.getState().zoom;
+              const grab = grabOffsetRef.current;
+              absLeft = Math.round((e.clientX - pr.left - grab.x) / z - pBdrL);
+              absTop  = Math.round((e.clientY - pr.top  - grab.y) / z - pBdrT);
+            }
+          }
+
+          // Focus the target page so the node ends up in pageNodes (patchProp
+          // only reaches the focused page via patchAnyNode).
+          if (effectiveTargetPage !== curPage) {
+            focusPage(effectiveTargetPage);
+          }
+          useBuilderStore.getState().moveCanvasNodeToPage(canvasNodeId, effectiveTargetPage, target.parentId, target.index);
+
+          if (isAbsOnCanvas && absLeft != null && absTop != null) {
+            const insertedNode = findNode(useBuilderStore.getState().pageNodes as SDUINode[], canvasNodeId);
+            const curCls = ((insertedNode?.props as { className?: string })?.className) ?? '';
+            const finalCls = `${removeTwToken(removeTwToken(curCls, 'left-'), 'top-')} left-[${absLeft}px] top-[${absTop}px]`.trim();
+            patchProp(canvasNodeId, 'props.className', finalCls);
+            ensureParentRelative(target.parentId);
+          }
+        } else if (pos) {
+          useBuilderStore.getState().moveCanvasNodePosition(canvasNodeId, pos.x, pos.y);
+        }
+        draggingCanvasNodeRef.current = false;
+        draggingNodeIdRef.current = null;
+        multiDragIdsRef.current = [];
+        absDragPosRef.current = null;
+        setAbsDragPos(null);
+        setSnapGuides([]);
+        stickySnapRef.current = { x: null, y: null };
+        setDropLineY(null);
+        setDropLineX(null);
+        setIsDragging(false);
+        return;
+      }
+
+      // ── Check if dropped outside any page frame → freeform canvas node ──────
+      // Must run BEFORE the absolute-node handler: an absolute node dragged off
+      // the page should become a freeform canvas node, not stay in the page.
+      const droppedOnPage = !!dropTargetPageId
+        || !!(document.elementFromPoint(e.clientX, e.clientY) as Element | null)?.closest('[data-builder-page-id]');
+
+      // ── Absolute node dropped ON a page: apply style.left / style.top ──────
       const pos = absDragPosRef.current;
-      const draggedNode = findNode(useBuilderStore.getState().pageNodes, canvasNodeId);
+      const draggedNode = findNodeAcrossPages(canvasNodeId);
       const cls = (draggedNode?.props as { className?: string })?.className ?? '';
       const isAbsNode = /\babsolute\b/.test(cls) || /\bfixed\b/.test(cls);
-      // For multi-drags: skip the absolute path and use the flow path for all nodes.
       const isMultiDrag = multiDragIdsRef.current.length > 1;
-      if (isAbsNode && !isMultiDrag) {
-        const currentParent  = findParentNode(useBuilderStore.getState().pageNodes, canvasNodeId);
-        const targetParentId = target.parentId;   // set by onDragOver abs path
-        const isSameParent   = targetParentId === (currentParent?.id ?? null);
+      if (isAbsNode && !isMultiDrag && droppedOnPage) {
+        restoreOverflowPatches();
+        removeAbsGhost();
 
-        // Reparent first (if the container changed), keeping the 'absolute' class.
-        // The node stays absolutely positioned relative to its new parent.
-        if (!isSameParent) {
-          moveNode(canvasNodeId, targetParentId, target.index);
+        const srcPage = dragSourcePageIdRef.current
+          ?? useBuilderStore.getState().focusedPageId
+          ?? useBuilderStore.getState().currentPageId;
+        const effectiveTargetPage = dropTargetPageId
+          ?? useBuilderStore.getState().focusedPageId
+          ?? useBuilderStore.getState().currentPageId;
+        const isCrossPage = srcPage !== effectiveTargetPage;
+
+        const targetParentId = target.parentId;
+
+        if (isCrossPage) {
+          focusPage(effectiveTargetPage);
+          moveNodeFromPage(canvasNodeId, srcPage, targetParentId, target.index);
+        } else {
+          const currentParent  = findParentNode(useBuilderStore.getState().pageNodes, canvasNodeId);
+          const isSameParent   = targetParentId === (currentParent?.id ?? null);
+          if (!isSameParent) {
+            moveNode(canvasNodeId, targetParentId, target.index);
+          }
         }
 
         // Apply the exact pixel position the user dragged to.
         if (pos) {
-          const existingStyle = (draggedNode?.props as { style?: Record<string, string> })?.style ?? {};
-          const absDragCls = (draggedNode?.props as { className?: string })?.className ?? '';
+          const freshNode = findNode(useBuilderStore.getState().pageNodes as SDUINode[], canvasNodeId);
+          const existingStyle = (freshNode?.props as { style?: Record<string, string> })?.style ?? {};
+          const absDragCls = (freshNode?.props as { className?: string })?.className ?? '';
           const absFinalCls = `${removeTwToken(removeTwToken(absDragCls, 'left-'), 'top-')} left-[${pos.x}px] top-[${pos.y}px]`.trim();
           patchProp(canvasNodeId, 'props.className', absFinalCls);
           const { left: _l, top: _t, ...styleWithoutPos } = existingStyle as Record<string, string>;
           patchProp(canvasNodeId, 'props.style', styleWithoutPos);
+
+          // Ensure the parent container has `position: relative` so CSS
+          // left/top on the absolute child resolve against it, not some
+          // ancestor further up the DOM.
+          ensureParentRelative(targetParentId);
         }
 
-        if (!isSameParent || pos) _pushHistory();
+        _pushHistory();
         absDragPosRef.current = null;
         setAbsDragPos(null);
         setSnapGuides([]);
         stickySnapRef.current = { x: null, y: null };
         dragStartStyleRef.current = null;
         draggingNodeIdRef.current = null;
+        dragSourcePageIdRef.current = null;
         setDropLineY(null);
         setDropLineX(null);
         return;
       }
+      if (!droppedOnPage) {
+        const z = useBuilderStore.getState().zoom;
+
+        // Measure the element BEFORE restoring overflow — after restore the
+        // ancestor overflow:hidden clips the node back to 0×0 because its
+        // inline left/top are still at the last drag position.
+        const store = useBuilderStore.getState();
+        const isAlreadyCanvas = (store.canvasNodes as { id: string }[]).some(n => n.id === canvasNodeId);
+        let cw: number | undefined;
+        let ch: number | undefined;
+        if (!isAlreadyCanvas) {
+          const _resizeMI = store.selectedMapIndex;
+          const _resizeEls = document.querySelectorAll(`[data-builder-id="${canvasNodeId}"]`);
+          const measureEl = (_resizeMI != null ? _resizeEls[_resizeMI] : _resizeEls[0]) as HTMLElement | null
+            ?? (_resizeEls[0] as HTMLElement | null);
+          if (measureEl) {
+            const r = measureEl.getBoundingClientRect();
+            cw = r.width / z;
+            ch = r.height / z;
+          }
+        }
+
+        // Now clean up drag visual state
+        restoreOverflowPatches();
+        removeAbsGhost();
+        dragStartStyleRef.current = null;
+
+        const worldEl = worldRef.current;
+        const worldRect = worldEl?.getBoundingClientRect() ?? { left: 0, top: 0 };
+        const grab = grabOffsetRef.current;
+        const cx = (e.clientX - worldRect.left - grab.x) / z;
+        const cy = (e.clientY - worldRect.top  - grab.y) / z;
+        if (isAlreadyCanvas) {
+          store.moveCanvasNodePosition(canvasNodeId, cx, cy);
+        } else {
+          store.moveNodeToCanvas(canvasNodeId, cx, cy, cw, ch);
+        }
+        multiDragIdsRef.current = [];
+        draggingNodeIdRef.current = null;
+        dragSourcePageIdRef.current = null;
+        absDragPosRef.current = null;
+        setAbsDragPos(null);
+        setSnapGuides([]);
+        stickySnapRef.current = { x: null, y: null };
+        setDropLineY(null);
+        setDropLineX(null);
+        return;
+      }
+
       // Moving an existing canvas node (or a group of selected nodes) to a new position
       const allIds = multiDragIdsRef.current;
       const srcPage = dragSourcePageIdRef.current;
-      const curPage = useBuilderStore.getState().currentPageId;
+      const curPage = useBuilderStore.getState().focusedPageId || useBuilderStore.getState().currentPageId;
       dragSourcePageIdRef.current = null;
 
-      if (srcPage && srcPage !== curPage) {
-        // Cross-page drag: node lives in a different page's nodes — use cross-page move
+      // Cross-page drop: if the user dragged to a different page, switch to that page
+      // first (deferred from onDragOver to avoid 60fps re-renders during drag).
+      // moveNodeFromPage inserts into s.pageNodes (the focused page), so the
+      // focused page must be the target page before calling it.
+      const effectiveTargetPage = dropTargetPageId ?? curPage;
+      if (srcPage && effectiveTargetPage && effectiveTargetPage !== curPage) {
+        focusPage(effectiveTargetPage);
+      }
+
+      const isFromCanvas = (useBuilderStore.getState().canvasNodes as { id: string }[]).some(n => n.id === canvasNodeId);
+      if (isFromCanvas) {
+        useBuilderStore.getState().moveCanvasNodeToPage(canvasNodeId, effectiveTargetPage, target.parentId, target.index);
+      } else if (srcPage && srcPage !== effectiveTargetPage) {
         moveNodeFromPage(canvasNodeId, srcPage, target.parentId, target.index);
       } else if (allIds.length > 1) {
         moveNodes(allIds, target.parentId, target.index);
@@ -1418,9 +1991,13 @@ export default function BuilderCanvas() {
     } else if (primitive) {
       try {
         const node = ensureIds(JSON.parse(primitive) as SDUINode);
-        // Guard: some containers only accept specific child types (e.g. Button → ButtonText).
+        const primTargetPage = lastDragHoverPageRef.current;
+        const primCurPage = useBuilderStore.getState().focusedPageId || useBuilderStore.getState().currentPageId;
+        if (primTargetPage && primTargetPage !== primCurPage) {
+          focusPage(primTargetPage);
+        }
         if (target.parentId) {
-          const parentNode = findNode(useBuilderStore.getState().pageNodes, target.parentId);
+          const parentNode = findNodeAcrossPages(target.parentId);
           const allowed = parentNode ? ALLOWED_CHILDREN[parentNode.type] : undefined;
           if (allowed && !allowed.has(node.type)) {
             console.warn(`Cannot drop "${node.type}" into "${parentNode?.type}" — incompatible child type.`);
@@ -1434,12 +2011,15 @@ export default function BuilderCanvas() {
       } catch (err) { console.warn('Primitive drop failed:', err); }
     }
 
+    restoreOverflowPatches();
+    removeAbsGhost();
     setDropLineY(null);
     setDropLineX(null);
     draggingNodeIdRef.current = null;
+    draggingCanvasNodeRef.current = false;
     dragSourcePageIdRef.current = null;
     lastDragHoverPageRef.current = null;
-  }, [addNode, addSection, moveNode, moveNodes, moveNodeFromPage, patchProp, _pushHistory]);
+  }, [addNode, addSection, moveNode, moveNodes, moveNodeFromPage, focusPage, patchProp, _pushHistory]);
 
   // ── Resize: pointer-capture drag on handle ───────────────────────────────
   //
@@ -1457,8 +2037,15 @@ export default function BuilderCanvas() {
     // and overwrite the committed resize result.
     cancelPendingDimensionFlush();
 
-    const el    = document.querySelector(`[data-builder-id="${id}"]`) as HTMLElement | null;
-    const frame = document.querySelector('[data-builder-page-frame]');
+    // Use selectedMapIndex to find the correct repeat instance.
+    // querySelector always returns the first DOM element; for repeated nodes all
+    // instances share the same data-builder-id, so we must pick the nth one.
+    const _resizeMI  = useBuilderStore.getState().selectedMapIndex;
+    const _resizeEls = document.querySelectorAll(`[data-builder-id="${id}"]`);
+    const el    = (_resizeMI !== null ? _resizeEls[_resizeMI] : _resizeEls[0]) as HTMLElement | null
+               ?? _resizeEls[0] as HTMLElement | null;
+    const frame = el.closest('[data-builder-canvas-node]') as HTMLElement
+      ?? (() => { const fp = useBuilderStore.getState().focusedPageId || useBuilderStore.getState().currentPageId; return document.querySelector(`[data-builder-page-id="${fp}"][data-builder-page-frame="0"]`) as HTMLElement ?? document.querySelector('[data-builder-page-frame]') as HTMLElement; })();
     if (!el || !frame) return;
 
     const r         = el.getBoundingClientRect();
@@ -1478,7 +2065,8 @@ export default function BuilderCanvas() {
         }
         return null;
       }
-      return find(useBuilderStore.getState().pageNodes, id);
+      return find(useBuilderStore.getState().pageNodes, id)
+        ?? find(useBuilderStore.getState().canvasNodes as SDUINode[], id);
     })();
     const existingStyle = (node?.props as { style?: Record<string, string> })?.style ?? {};
 
@@ -1508,8 +2096,12 @@ export default function BuilderCanvas() {
 
       // Apply size directly to DOM — zero React re-renders during the drag gesture.
       // Zustand is committed once on pointerup (same strategy as pan/zoom world container).
-      el.style.width  = `${newW}px`;
-      el.style.height = `${newH}px`;
+      // Also update all repeat-sibling instances so they resize in sync (weWeb-style).
+      const allResizeEls = document.querySelectorAll(`[data-builder-id="${id}"]`);
+      allResizeEls.forEach(sibEl => {
+        (sibEl as HTMLElement).style.width  = `${newW}px`;
+        (sibEl as HTMLElement).style.height = `${newH}px`;
+      });
 
       // Synchronous ring update so handles track the new size in the same frame
       overlayInstantUpdateRef.current?.();
@@ -1586,6 +2178,15 @@ export default function BuilderCanvas() {
       // Strip width/height from inline style — classes are now the source of truth
       const { width: _w, height: _h, ...styleWithoutDims } = existingStyle as Record<string, string>;
       useBuilderStore.getState().patchProp(id, 'props.style', styleWithoutDims);
+
+      // Update canvas node wrapper dimensions if the resized node is a top-level canvas node
+      const cnArr = useBuilderStore.getState().canvasNodes as import('./_store-types').CanvasNode[];
+      const cnIdx = cnArr.findIndex(n => n.id === id);
+      if (cnIdx >= 0) {
+        const updated = [...cnArr];
+        updated[cnIdx] = { ...updated[cnIdx], _cw: lastW, _ch: lastH };
+        useBuilderStore.setState({ canvasNodes: updated });
+      }
 
       useBuilderStore.getState()._pushHistory();
     };
@@ -1691,6 +2292,7 @@ export default function BuilderCanvas() {
            during scroll/pan so React never re-renders just for viewport movement. ── */}
       <div
         ref={worldRef}
+        data-builder-world="1"
         style={{
           position: 'absolute',
           left: 0,
@@ -1701,15 +2303,76 @@ export default function BuilderCanvas() {
         }}
       >
 
-        {/* ── All inactive page frames — isolated component; does NOT re-render
-              on hover/select changes in the active page, only on pages/state changes ── */}
-        {pages.length > 0 && <InactivePagesGrid vpWidth={vpWidth} PAGE_GAP={PAGE_GAP} />}
+        {/* ── All inactive page frames — isolated component; interactive, draggable ── */}
+        {pages.length > 0 && (
+          <AllPagesGrid
+            vpWidth={vpWidth}
+            overlayNotifyRef={overlayNotifyRef}
+            dragNodeIdSetter={(id) => { draggingNodeIdRef.current = id; }}
+            dragSourcePageSetter={(pgId) => { dragSourcePageIdRef.current = pgId; }}
+            grabOffsetSetter={(ox, oy) => { grabOffsetRef.current = { x: ox, y: oy }; multiDragIdsRef.current = []; }}
+            onPageDragSnap={handlePageDragSnap}
+          />
+        )}
 
-        {/* ── Active page — label ── */}
+        {/* ── Focused page — label (draggable to reposition the page) ── */}
         {pages.length > 0 && (() => {
-          const pg = pages.find(p => p.id === currentPageId);
+          const pg = focusedPage;
+          const pgLeft = pg?.wx ?? activePageIdx * (vpWidth + PAGE_GAP);
+          const pgTop  = pg?.wy ?? 0;
           return (
-            <div style={{ position: 'absolute', left: activePageIdx * (vpWidth + PAGE_GAP), top: -26, fontSize: 11, color: '#d1d5db', pointerEvents: 'none', userSelect: 'none', fontFamily: 'system-ui', whiteSpace: 'nowrap', display: 'flex', gap: 6, alignItems: 'baseline' }}>
+            <div
+              data-builder-page-label={pg?.id}
+              onMouseDown={pg ? (e: React.MouseEvent) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const startWx = pg.wx ?? 0;
+                const startWy = pg.wy ?? 0;
+                const startMx = e.clientX;
+                const startMy = e.clientY;
+                const getZoom = () => {
+                  const worldEl = document.querySelector('[data-builder-world]') as HTMLElement | null;
+                  const mat = worldEl ? new DOMMatrix(getComputedStyle(worldEl).transform) : null;
+                  return mat ? mat.a : 1;
+                };
+                const buildSiblings = (): ContentRect[] =>
+                  pages.filter(p => p.id !== pg.id).map(p => ({
+                    id: p.id, x: (p as { wx?: number }).wx ?? 0,
+                    y: (p as { wy?: number }).wy ?? 0, w: vpWidth, h: VIEWPORT_H,
+                  }));
+                const onMove = (mv: MouseEvent) => {
+                  const z = getZoom();
+                  const rawX = startWx + (mv.clientX - startMx) / z;
+                  const rawY = startWy + (mv.clientY - startMy) / z;
+                  const dragged: ContentRect = { id: pg.id, x: rawX, y: rawY, w: vpWidth, h: VIEWPORT_H };
+                  const snap = computeSnap(dragged, buildSiblings());
+                  const dx = snap.x - startWx;
+                  const dy = snap.y - startWy;
+                  const frame = document.querySelector(`[data-builder-page-id="${pg.id}"]`) as HTMLElement | null;
+                  const label = document.querySelector(`[data-builder-page-label="${pg.id}"]`) as HTMLElement | null;
+                  if (frame) frame.style.transform = `translateZ(0) translate(${dx}px, ${dy}px)`;
+                  if (label) label.style.transform = `translate(${dx}px, ${dy}px)`;
+                  handlePageDragSnap(snap.guides, true);
+                };
+                const onUp = (up: MouseEvent) => {
+                  const z = getZoom();
+                  const rawX = startWx + (up.clientX - startMx) / z;
+                  const rawY = startWy + (up.clientY - startMy) / z;
+                  const dragged: ContentRect = { id: pg.id, x: rawX, y: rawY, w: vpWidth, h: VIEWPORT_H };
+                  const snap = computeSnap(dragged, buildSiblings());
+                  const frame = document.querySelector(`[data-builder-page-id="${pg.id}"]`) as HTMLElement | null;
+                  const label = document.querySelector(`[data-builder-page-label="${pg.id}"]`) as HTMLElement | null;
+                  if (frame) frame.style.transform = 'translateZ(0)';
+                  if (label) label.style.transform = '';
+                  movePagePosition(pg.id, snap.x, snap.y);
+                  handlePageDragSnap([], false);
+                  window.removeEventListener('mousemove', onMove);
+                  window.removeEventListener('mouseup', onUp);
+                };
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('mouseup', onUp);
+              } : undefined}
+              style={{ position: 'absolute', left: pgLeft, top: pgTop - 26, fontSize: 11, color: '#d1d5db', userSelect: 'none', fontFamily: 'system-ui', whiteSpace: 'nowrap', display: 'flex', gap: 6, alignItems: 'baseline', cursor: 'grab' }}>
               <span style={{ fontWeight: 600, color: '#f3f4f6' }}>{pg?.name ?? 'Page'}</span>
               {pg?.route && <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#6b7280' }}>{pg.route}</span>}
               <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#4b5563' }}>{vpWidth}px</span>
@@ -1717,52 +2380,24 @@ export default function BuilderCanvas() {
           );
         })()}
 
-        {/* ── Active page frame: direct SDUI render (capture overlay lives here) ── */}
+        {/* ── Focused page overlay frame: capture overlay only (SDUI content is
+              rendered by AllPagesGrid for ALL pages, including the focused one, so
+              focus changes never unmount/remount the engine — no animation replays). ── */}
         {pages.length > 0 && <div
           ref={pageFrameRef}
           data-builder-page-frame="1"
-          data-builder-page-id={currentPageId}
+          data-builder-page-id={focusedPageId}
           style={{
             position: 'absolute',
-            left: activePageIdx * (vpWidth + PAGE_GAP),
-            top: 0,
+            left: focusedPage?.wx ?? activePageIdx * (vpWidth + PAGE_GAP),
+            top: focusedPage?.wy ?? 0,
             width: vpWidth,
             minHeight: VIEWPORT_H,
-            // Use the theme background CSS variable so the canvas reflects the
-            // user's chosen palette. Falls back to white when the variable is unset.
-            background: 'rgb(var(--background, 255 255 255))',
+            background: 'transparent',
             overflow: 'hidden',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
-            // Own transform context so position:fixed children (navbar, drawers)
-            // are contained within this frame, not the worldRef transform.
             transform: 'translateZ(0)',
           }}
         >
-        {/* ── Viewport simulation CSS ──────────────────────────────────────────
-            Inside the builder canvas the frame is NOT a real browser viewport.
-            100vh resolves to the browser window height, not the canvas frame.
-            This style tag overrides h-screen / min-h-screen / w-screen so they
-            resolve to the canvas frame dimensions (VIEWPORT_H × vpWidth) —
-            matching what the user will see in the real browser at that device size.
-            flex-1 also works correctly once its h-screen parent is 900px tall. */}
-        <style>{`
-          [data-builder-page-frame] .h-screen   { height: ${VIEWPORT_H}px !important; }
-          [data-builder-page-frame] .min-h-screen { min-height: ${VIEWPORT_H}px !important; }
-          [data-builder-page-frame] .w-screen   { width: ${vpWidth}px !important; }
-          [data-builder-page-frame] .max-h-screen { max-height: ${VIEWPORT_H}px !important; }
-          [data-builder-page-frame] {
-            --builder-vw: ${vpWidth / 100}px;
-            --builder-vh: ${VIEWPORT_H / 100}px;
-          }
-        `}</style>
-        <PageEngine
-          pageConfig={pageConfig}
-          configName={currentPageConfigName}
-          previewStates={activePreviewStates}
-          previewData={undefined}
-          actionsConfig={previewActionsConfig}
-          showPopups={!editingPopupId}
-        />
 
         {/* Viewport fold line — dashed line marking where the viewport ends.
             Content below this line exists on the page but is not visible
@@ -1869,7 +2504,7 @@ export default function BuilderCanvas() {
                 //    (onPointerUp will reduce to single-select if no drag actually happens)
                 //  • new node, no modifier: select immediately for instant feedback
                 if (!e.shiftKey && !e.metaKey && !curIds.includes(hit.id)) {
-                  select(hit.id, false);
+                  select(hit.id, false, hit.mapIndex);
                 }
               }
             }}
@@ -1891,7 +2526,7 @@ export default function BuilderCanvas() {
               if (hit.kind !== 'node') {
                 const { selectedIds } = useBuilderStore.getState();
                 if (selectedIds.length > 0) {
-                  hit = { kind: 'node' as const, id: selectedIds[0] };
+                  hit = { kind: 'node' as const, id: selectedIds[0], mapIndex: useBuilderStore.getState().selectedMapIndex ?? 0 };
                 }
               }
               if (hit.kind !== 'node') {
@@ -1945,7 +2580,7 @@ export default function BuilderCanvas() {
               }
 
               draggingNodeIdRef.current = dragId;
-              dragSourcePageIdRef.current = useBuilderStore.getState().currentPageId;
+              dragSourcePageIdRef.current = useBuilderStore.getState().focusedPageId || useBuilderStore.getState().currentPageId;
               e.dataTransfer.setData('text/canvas-node-id', dragId);
               e.dataTransfer.effectAllowed = 'move';
 
@@ -1972,11 +2607,44 @@ export default function BuilderCanvas() {
               const nodeClasses = (draggedNodeData?.props as { className?: string })?.className ?? '';
               const isAbsPos = /\babsolute\b/.test(nodeClasses) || /\bfixed\b/.test(nodeClasses);
               if (isAbsPos && allDragIds.length <= 1) {
+                // Force parent to have position:relative so CSS left/top
+                // resolve against it from the very first onDragOver frame.
+                const parentOfDragged = findParentNode(useBuilderStore.getState().pageNodes, dragId);
+                ensureParentRelative(parentOfDragged?.id ?? null);
+
                 const storedStyle = (draggedNodeData?.props as { style?: Record<string, string> })?.style ?? {};
                 dragStartStyleRef.current = {
                   left: storedStyle.left ?? '',
                   top:  storedStyle.top  ?? '',
                 };
+                // Set overflow:visible on internal ancestors (up to the page frame)
+                // so the node isn't clipped when dragged across container boundaries.
+                if (nodeEl) {
+                  patchAncestorOverflow(nodeEl);
+                }
+
+                // Pre-create a floating clone for when the element leaves the page.
+                // The real element is clipped by the page frame's overflow:hidden, so
+                // this clone follows the cursor in world space as visual feedback.
+                // Dimensions are in world-space px — the world container's
+                // transform:scale(zoom) brings them to screen size automatically.
+                if (nodeEl && nr) {
+                  const liveZoom = zoomRef.current;
+                  const clone = nodeEl.cloneNode(true) as HTMLElement;
+                  sanitizeGhostClone(clone);
+                  clone.style.position = 'absolute';
+                  clone.style.left = '-9999px';
+                  clone.style.top = '-9999px';
+                  clone.style.width = `${nr.width / liveZoom}px`;
+                  clone.style.height = `${nr.height / liveZoom}px`;
+                  clone.style.overflow = 'hidden';
+                  clone.style.opacity = '0.65';
+                  clone.style.pointerEvents = 'none';
+                  clone.style.zIndex = '10';
+                  worldRef.current?.appendChild(clone);
+                  absGhostRef.current = { clone, w: nr.width / liveZoom, h: nr.height / liveZoom };
+                }
+
                 // Invisible 1×1 offscreen element as ghost → browser shows nothing,
                 // the real element stays in place and we move it ourselves.
                 const ghost = document.createElement('div');
@@ -2012,31 +2680,40 @@ export default function BuilderCanvas() {
                   const maxX = Math.max(...rects.map(r => r.rect.right));
                   const maxY = Math.max(...rects.map(r => r.rect.bottom));
 
-                  // Ghost lives in body (no canvas transform) so divide screen px by
-                  // zoom to get the correct logical CSS size.
-                  const ghostW = (maxX - minX) / zoom;
-                  const ghostH = (maxY - minY) / zoom;
+                  // The elements on canvas are rendered inside transform:scale(zoom).
+                  // getBoundingClientRect() returns screen-space sizes (already zoomed).
+                  // The ghost lives in <body> (no canvas transform), so we size the
+                  // wrapper at screen-pixel dimensions and apply transform:scale(zoom)
+                  // on each clone so its internal children layout identically to how
+                  // they did inside the canvas. Without this, nested content expands
+                  // to its natural (unzoomed) size and the ghost appears too large.
+                  const liveZoom = zoomRef.current;
+                  const ghostW = maxX - minX;
+                  const ghostH = maxY - minY;
 
                   const ghostEl = document.createElement('div');
-                  ghostEl.style.cssText = `position:fixed;left:-9999px;top:-9999px;pointer-events:none;width:${ghostW}px;height:${ghostH}px;`;
+                  ghostEl.style.cssText = `position:fixed;left:-9999px;top:-9999px;pointer-events:none;width:${ghostW}px;height:${ghostH}px;overflow:hidden;`;
                   document.body.appendChild(ghostEl);
 
                   for (const { el, rect } of rects) {
                     const clone = el.cloneNode(true) as HTMLElement;
+                    sanitizeGhostClone(clone);
                     clone.style.position = 'absolute';
-                    clone.style.left     = `${(rect.left - minX) / zoom}px`;
-                    clone.style.top      = `${(rect.top  - minY) / zoom}px`;
-                    clone.style.width    = `${rect.width  / zoom}px`;
-                    clone.style.height   = `${rect.height / zoom}px`;
+                    clone.style.left     = `${rect.left - minX}px`;
+                    clone.style.top      = `${rect.top  - minY}px`;
+                    // Set dimensions to the LOGICAL (unzoomed) size and apply
+                    // scale(zoom) so the clone's internal layout matches the canvas.
+                    clone.style.width    = `${rect.width / liveZoom}px`;
+                    clone.style.height   = `${rect.height / liveZoom}px`;
                     clone.style.margin   = '0';
-                    clone.style.transform = '';
+                    clone.style.transform = `scale(${liveZoom})`;
+                    clone.style.transformOrigin = 'top left';
                     clone.style.opacity  = '1';
                     ghostEl.appendChild(clone);
                   }
 
-                  // Cursor hotspot relative to the ghost's top-left corner
-                  const ghostOx = (e.clientX - minX) / zoom;
-                  const ghostOy = (e.clientY - minY) / zoom;
+                  const ghostOx = e.clientX - minX;
+                  const ghostOy = e.clientY - minY;
                   e.dataTransfer.setDragImage(ghostEl, ghostOx, ghostOy);
 
                   requestAnimationFrame(() => {
@@ -2059,6 +2736,9 @@ export default function BuilderCanvas() {
               draggedElRef.current = [];
               multiDragIdsRef.current = [];
               setIsDragging(false);
+              // Restore overflow:visible patches and floating ghost
+              restoreOverflowPatches();
+              removeAbsGhost();
 
               // If we were dragging an absolute node and there was no drop (drag
               // cancelled / pressed Esc), restore the element to its original
@@ -2093,6 +2773,95 @@ export default function BuilderCanvas() {
         )}
       </div>}
       {/* ── End active page frame ── */}
+
+      {/* ── Inter-page measurement annotations (only during page drag) ── */}
+
+      {/* ── Freeform canvas nodes (Figma-style, outside page frames) ── */}
+      {canvasNodes.map((cn: CanvasNode) => (
+        <div
+          key={cn.id}
+          data-builder-canvas-node={cn.id}
+          style={{
+            position: 'absolute',
+            left: cn._cx,
+            top: cn._cy,
+            ...(cn._cw != null && cn._ch != null ? { width: cn._cw, height: cn._ch } : {}),
+            overflow: 'visible',
+            minWidth: cn._cw ?? 'max-content',
+            minHeight: cn._ch ?? 'max-content',
+          }}
+        >
+          <CanvasNodeEngine node={cn} />
+          {/* Capture overlay — blocks native interactions (text editing, button clicks)
+              and enables hit-testing for selection, hover, and drag */}
+          <div
+            draggable
+            data-builder-canvas-overlay={cn.id}
+            style={{ position: 'absolute', inset: 0, zIndex: 9999, cursor: 'default' }}
+            onMouseMove={e => {
+              const overlay = e.currentTarget;
+              overlay.style.pointerEvents = 'none';
+              const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+              overlay.style.pointerEvents = '';
+              const builderEl = el?.closest('[data-builder-id]') as HTMLElement | null;
+              const hid = builderEl?.dataset.builderId ?? cn.id;
+              hover(hid);
+              overlayNotifyRef.current?.();
+            }}
+            onMouseLeave={() => { hover(null); overlayNotifyRef.current?.(); }}
+            onClick={e => {
+              e.stopPropagation();
+              const overlay = e.currentTarget;
+              overlay.style.pointerEvents = 'none';
+              const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+              overlay.style.pointerEvents = '';
+              const builderEl = el?.closest('[data-builder-id]') as HTMLElement | null;
+              const nodeId = builderEl?.dataset.builderId ?? cn.id;
+              select(nodeId, e.shiftKey || e.metaKey);
+            }}
+            onDragStart={e => {
+              const wrapperEl = e.currentTarget.parentElement!;
+              e.dataTransfer.setData('text/canvas-node-id', cn.id);
+              e.dataTransfer.effectAllowed = 'move';
+              draggingNodeIdRef.current = cn.id;
+              draggingCanvasNodeRef.current = true;
+              const nr = wrapperEl.getBoundingClientRect();
+              grabOffsetRef.current = { x: e.clientX - nr.left, y: e.clientY - nr.top };
+              const ghost = document.createElement('div');
+              ghost.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;';
+              document.body.appendChild(ghost);
+              e.dataTransfer.setDragImage(ghost, 0, 0);
+              requestAnimationFrame(() => {
+                document.body.removeChild(ghost);
+                setIsDragging(true);
+              });
+            }}
+            onDragEnd={() => {
+              const prevId = draggingNodeIdRef.current;
+              draggingNodeIdRef.current = null;
+              if (draggingCanvasNodeRef.current && prevId) {
+                const cn2 = (useBuilderStore.getState().canvasNodes as { id: string; _cx: number; _cy: number }[]).find(n => n.id === prevId);
+                const wrapper = document.querySelector(`[data-builder-canvas-node="${prevId}"]`) as HTMLElement | null;
+                if (cn2 && wrapper) {
+                  wrapper.style.left = `${cn2._cx}px`;
+                  wrapper.style.top = `${cn2._cy}px`;
+                }
+                if (wrapper) {
+                  wrapper.style.opacity = '';
+                  wrapper.style.pointerEvents = '';
+                }
+              }
+              draggingCanvasNodeRef.current = false;
+              setIsDragging(false);
+              setAbsDragPos(null);
+              absDragPosRef.current = null;
+              setSnapGuides([]);
+              stickySnapRef.current = { x: null, y: null };
+            }}
+          />
+        </div>
+      ))}
+
       </div>
       {/* ── End world container ── */}
 
@@ -2148,9 +2917,10 @@ export default function BuilderCanvas() {
       )}
 
       {/* ── Snap guide lines ── */}
-      {snapGuides.map((g, i) =>
+      {(() => {
+        const snapPanX = absDragPos?.isWorldSpace ? panX : activePanX;
+        return snapGuides.map((g, i) =>
         g.axis === 'x' ? (
-          // Vertical guide line (marks an X-axis alignment: edges / centers)
           <div
             key={`sg-${i}`}
             data-testid="snap-guide"
@@ -2158,7 +2928,7 @@ export default function BuilderCanvas() {
             data-snap-axis="x"
             style={{
               position: 'absolute',
-              left:   activePanX + g.position * zoom,
+                left:   snapPanX + g.position * zoom,
               top:    panY + g.start    * zoom,
               width:  1,
               height: Math.max(1, (g.end - g.start) * zoom),
@@ -2168,7 +2938,6 @@ export default function BuilderCanvas() {
             }}
           />
         ) : (
-          // Horizontal guide line (marks a Y-axis alignment: edges / centers)
           <div
             key={`sg-${i}`}
             data-testid="snap-guide"
@@ -2176,7 +2945,43 @@ export default function BuilderCanvas() {
             data-snap-axis="y"
             style={{
               position: 'absolute',
-              left:   activePanX + g.start    * zoom,
+                left:   snapPanX + g.start    * zoom,
+                top:    panY + g.position * zoom,
+                width:  Math.max(1, (g.end - g.start) * zoom),
+                height: 1,
+                background: g.type === 'center' ? '#a78bfa' : g.type === 'spacing' ? '#34d399' : '#f43f5e',
+                pointerEvents: 'none',
+                zIndex: 9999,
+              }}
+            />
+          )
+        );
+      })()}
+
+      {/* ── Page-level snap guide lines (world coords) ── */}
+      {pageSnapGuides.map((g, i) =>
+        g.axis === 'x' ? (
+          <div
+            key={`psg-${i}`}
+            data-testid="page-snap-guide"
+            style={{
+              position: 'absolute',
+              left:   panX + g.position * zoom,
+              top:    panY + g.start    * zoom,
+              width:  1,
+              height: Math.max(1, (g.end - g.start) * zoom),
+              background: g.type === 'center' ? '#a78bfa' : g.type === 'spacing' ? '#34d399' : '#f43f5e',
+              pointerEvents: 'none',
+              zIndex: 9999,
+            }}
+          />
+        ) : (
+          <div
+            key={`psg-${i}`}
+            data-testid="page-snap-guide"
+            style={{
+              position: 'absolute',
+              left:   panX + g.start    * zoom,
               top:    panY + g.position * zoom,
               width:  Math.max(1, (g.end - g.start) * zoom),
               height: 1,
@@ -2189,12 +2994,14 @@ export default function BuilderCanvas() {
       )}
 
       {/* ── Absolute-drag crosshair + position tooltip ── */}
-      {absDragPos && (
+      {absDragPos && (() => {
+        const crosshairPanX = absDragPos.isWorldSpace ? panX : activePanX;
+        return (
         <>
           {/* Vertical line */}
           <div style={{
             position: 'absolute',
-            left: activePanX + absDragPos.x * zoom,
+              left: crosshairPanX + absDragPos.x * zoom,
             top: panY,
             bottom: 0,
             width: 1,
@@ -2205,7 +3012,7 @@ export default function BuilderCanvas() {
           {/* Horizontal line */}
           <div style={{
             position: 'absolute',
-            left: activePanX,
+              left: crosshairPanX,
             right: 0,
             top: panY + absDragPos.y * zoom,
             height: 1,
@@ -2229,10 +3036,11 @@ export default function BuilderCanvas() {
             border: '1px solid #334155',
             whiteSpace: 'nowrap',
           }}>
-            {absDragPos.x} × {absDragPos.y}
+              {Math.round(absDragPos.x)} × {Math.round(absDragPos.y)}
           </div>
         </>
-      )}
+        );
+      })()}
 
       {/* ── Zoom controls ── */}
       <div style={{ position: 'absolute', bottom: 16, right: 16, display: 'flex', gap: 4, background: '#1f2937', border: '1px solid #374151', borderRadius: 6, padding: '4px 6px', pointerEvents: 'all' }}>

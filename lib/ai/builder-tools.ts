@@ -717,6 +717,7 @@ const layoutTools: BuilderTool[] = [
       type: 'object',
       properties: {
         nodeId: { type: 'string', description: 'Node ID.' },
+        breakpoint: { type: 'string', enum: ['desktop', 'laptop', 'tablet', 'mobile'], description: 'Target responsive breakpoint. Omit or "desktop" for base styles.' },
         // ── Flex/Grid layout ──────────────────────────────────────────────────
         direction: { type: 'string', enum: ['row', 'column'], description: 'Flex direction.' },
         align: { type: 'string', enum: ['start', 'center', 'end', 'stretch', 'baseline'], description: 'Cross-axis alignment (items-*). Accepts formula string.' },
@@ -1430,6 +1431,7 @@ const setStyleTool: BuilderTool[] = [
       type: 'object',
       properties: {
         nodeId: { type: 'string', description: 'Node ID.' },
+        breakpoint: { type: 'string', enum: ['desktop', 'laptop', 'tablet', 'mobile'], description: 'Target responsive breakpoint. Omit or "desktop" for base styles. Set to "tablet" or "mobile" to make styles apply only at that breakpoint and smaller (desktop-first cascade).' },
 
         // ── Layout (flex/grid direction, alignment) ───────────────────────────
         direction: { type: 'string', enum: ['row', 'column'], description: 'Flex direction.' },

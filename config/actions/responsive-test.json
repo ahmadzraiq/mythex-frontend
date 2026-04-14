@@ -1,0 +1,60 @@
+{
+  "waRespIncrement": {
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-inc",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "resp0003-0000-0000-0000-000000000003",
+          "value": {
+            "formula": "(variables['resp0003-0000-0000-0000-000000000003'] || 0) + 1"
+          }
+        }
+      }
+    ]
+  },
+  "waRespDecrement": {
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-dec",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "resp0003-0000-0000-0000-000000000003",
+          "value": {
+            "formula": "max(0, (variables['resp0003-0000-0000-0000-000000000003'] || 0) - 1)"
+          }
+        }
+      }
+    ]
+  },
+  "waRespReset": {
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-reset",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "resp0003-0000-0000-0000-000000000003",
+          "value": 0
+        }
+      }
+    ]
+  },
+  "waRespSmartToggle": {
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-smart",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "resp0003-0000-0000-0000-000000000003",
+          "value": {
+            "formula": "(globalContext?.browser?.breakpoint === 'mobile' || globalContext?.browser?.breakpoint === 'tablet') ? max(0, (variables['resp0003-0000-0000-0000-000000000003'] || 0) - 1) : (variables['resp0003-0000-0000-0000-000000000003'] || 0) + 1"
+          }
+        }
+      }
+    ]
+  }
+}

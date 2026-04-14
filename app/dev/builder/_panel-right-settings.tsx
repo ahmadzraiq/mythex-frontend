@@ -17,6 +17,11 @@ import { FieldWithBinding, BindingIcon, isBoundValue, type FormulaValue, closeAl
 import { FormulaEditor } from './_formula-editor';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 import { FigmaColorPicker } from './_color-picker';
+import {
+  createSharedComponent,
+  updateSharedComponent as updateSCData,
+  deleteSharedComponent,
+} from '@/lib/builder/shared-component-data';
 
 // ─── Settings Tab ─────────────────────────────────────────────────────────────
 
@@ -842,6 +847,29 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
     }
   };
 
+  // ── Make Shared toggle state ─────────────────────────────────────────────────
+  const nodeShared = (node as unknown as Record<string, unknown>)._shared as { id: string; name: string } | undefined;
+  const isShared = !!nodeShared;
+
+  const handleToggleShared = useCallback(() => {
+    if (isShared && nodeShared) {
+      // Detach: remove _shared metadata and delete the shared component definition
+      if (window.confirm(`Remove "${nodeShared.name}" as a shared component? Instances on other pages will become detached.`)) {
+        store.patchNodeField(nodeId, '_shared', undefined);
+        deleteSharedComponent(nodeShared.id);
+      }
+    } else {
+      // Attach: register the current node's subtree as a shared component
+      const scId = `sc-${crypto.randomUUID()}`;
+      const scName = currentName || nodeType || 'Shared Component';
+      const content = JSON.parse(JSON.stringify(node)) as Record<string, unknown>;
+      // Remove the _shared field from the content itself (it's metadata, not content)
+      delete content._shared;
+      createSharedComponent({ id: scId, name: scName, properties: [], content });
+      store.patchNodeField(nodeId, '_shared', { id: scId, name: scName });
+    }
+  }, [isShared, nodeShared, store, nodeId, currentName, nodeType, node]);
+
   // Determine if there is anything specific to show for this node type
   const hasSpecific = nodeType === 'Icon' || nodeType === 'Image' || nodeType === 'Video'
     || nodeType === 'Button' || nodeType === 'FormContainer'
@@ -864,6 +892,33 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
             placeholder={`e.g. ${nodeType}`}
             style={{ width: '100%', boxSizing: 'border-box' as const, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '4px 7px', outline: 'none' }}
           />
+        </div>
+      )}
+
+      {/* ── Make Shared toggle (hidden for SharedComponent instances) ─────────── */}
+      {nodeType !== 'SharedComponent' && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', borderBottom: '1px solid #1f2937' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ fontSize: 11, color: isShared ? '#60a5fa' : '#d1d5db' }}>Shared</span>
+            {isShared && (
+              <span style={{ fontSize: 9, color: '#60a5fa', background: '#1e3a5f', borderRadius: 3, padding: '1px 5px', fontWeight: 700 }}>SC</span>
+            )}
+          </div>
+          <button
+            data-testid="settings-make-shared-toggle"
+            onClick={handleToggleShared}
+            title={isShared ? `Detach from shared component "${nodeShared?.name}"` : 'Mark as shared component'}
+            style={{
+              width: 32, height: 18, borderRadius: 9, border: 'none',
+              background: isShared ? '#1d4ed8' : '#374151',
+              cursor: 'pointer', position: 'relative', transition: 'background 150ms', flexShrink: 0,
+            }}
+          >
+            <span style={{
+              position: 'absolute', top: 2, left: isShared ? 16 : 2,
+              width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 150ms',
+            }} />
+          </button>
         </div>
       )}
 

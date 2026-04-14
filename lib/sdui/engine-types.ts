@@ -113,4 +113,8 @@ export interface SDUIEngineProps {
   /** Flat key-value data to overlay on top of merged state in builder mode.
    *  Used by the "Data" preview state to inject per-page dummy data. */
   previewData?: Record<string, unknown>;
+  /** In builder mode, the active viewport preset (e.g. 'mobile', 'tablet').
+   *  Used to derive the responsive breakpoint for the simulated canvas width
+   *  instead of reading window.innerWidth. */
+  builderViewport?: 'mobile' | 'tablet' | 'laptop' | 'desktop';
 }

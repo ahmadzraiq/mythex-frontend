@@ -503,8 +503,6 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
     submit: doSubmit,
   };
 
-  // In builder mode, render a plain <div> to prevent form submission from
-  // interfering with the builder UI (e.g. formula editor, binding icons).
   if (builderMode) {
     return (
       <FormScopeContext.Provider value={formStoreKey}>

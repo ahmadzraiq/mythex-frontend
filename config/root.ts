@@ -6,6 +6,7 @@
 import routes from './routes.json';
 import themeJson from './theme.json';
 import dataSourcesJson from './datasources.json';
+import sharedComponentsJson from './shared-components.json';
 
 // Screens
 import home from './screens/home.json';
@@ -51,6 +52,8 @@ import techHero from './screens/tech-hero.json';
 import calculator from './screens/calculator.json';
 import pricingNested from './screens/pricing-nested.json';
 import videoHeroTest from './screens/video-hero-test.json';
+import responsiveTest from './screens/responsive-test.json';
+import sharedComponentTest from './screens/shared-component-test.json';
 
 // Layouts
 import storeLayout from './layouts/store.json';
@@ -91,6 +94,7 @@ import popupTestActions from './actions/popup-test.json';
 import controlsShowcaseActions from './actions/controls-showcase.json';
 import calculatorActions from './actions/calculator.json';
 import pricingNestedActions from './actions/pricing-nested.json';
+import responsiveTestActions from './actions/responsive-test.json';
 
 const screens = {
   home,
@@ -136,6 +140,8 @@ const screens = {
   calculator,
   pricingNested,
   videoHeroTest,
+  responsiveTest,
+  sharedComponentTest,
 };
 
 const layouts = {
@@ -179,6 +185,7 @@ const actions = {
   ...controlsShowcaseActions,
   ...calculatorActions,
   ...pricingNestedActions,
+  ...responsiveTestActions,
 };
 
 const actionsByFile = {
@@ -195,6 +202,7 @@ const actionsByFile = {
   controlsShowcase: controlsShowcaseActions,
   calculator: calculatorActions,
   pricingNested: pricingNestedActions,
+  responsiveTest: responsiveTestActions,
 };
 
 export const root = {
@@ -207,6 +215,7 @@ export const root = {
   actions,
   actionsByFile,
   dataSources: dataSourcesJson as Record<string, import('./datasource-types').NamedDataSourceDef>,
+  sharedComponents: sharedComponentsJson as Record<string, import('./shared-component-types').SharedComponentModel>,
 };
 
 export default root;

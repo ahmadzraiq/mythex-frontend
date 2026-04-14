@@ -1317,6 +1317,31 @@
       "type": "boolean",
       "initialValue": false,
       "folder": "Nested Pricing"
+    },
+    "resp0001-0000-0000-0000-000000000001": {
+      "label": "Resp Test Items",
+      "type": "array",
+      "initialValue": [
+        { "id": "item-1", "title": "Alpha", "desc": "First item", "color": "#3b82f6" },
+        { "id": "item-2", "title": "Beta", "desc": "Second item", "color": "#10b981" },
+        { "id": "item-3", "title": "Gamma", "desc": "Third item", "color": "#f59e0b" },
+        { "id": "item-4", "title": "Delta", "desc": "Fourth item", "color": "#ef4444" },
+        { "id": "item-5", "title": "Epsilon", "desc": "Fifth item", "color": "#8b5cf6" },
+        { "id": "item-6", "title": "Zeta", "desc": "Sixth item", "color": "#ec4899" }
+      ],
+      "folder": "Responsive Test"
+    },
+    "resp0002-0000-0000-0000-000000000002": {
+      "label": "Resp Show Sidebar",
+      "type": "boolean",
+      "initialValue": true,
+      "folder": "Responsive Test"
+    },
+    "resp0003-0000-0000-0000-000000000003": {
+      "label": "Resp Counter",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Responsive Test"
     }
   },
   "varFolders": [
@@ -1411,6 +1436,10 @@
     {
       "id": "Nested Pricing",
       "label": "Nested Pricing"
+    },
+    {
+      "id": "Responsive Test",
+      "label": "Responsive Test"
     }
   ]
 }

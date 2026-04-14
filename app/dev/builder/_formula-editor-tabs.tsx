@@ -1693,7 +1693,7 @@ export function ContextDataSection({
       domain: window.location.hostname,
       baseUrl: window.location.origin,
       query: Object.fromEntries(new URLSearchParams(window.location.search)),
-      breakpoint: window.innerWidth < 640 ? 'xs' : window.innerWidth < 768 ? 'sm' : window.innerWidth < 1024 ? 'md' : window.innerWidth < 1280 ? 'lg' : 'xl',
+      breakpoint: window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : window.innerWidth < 1280 ? 'laptop' : 'desktop',
       environment: process.env.NODE_ENV ?? 'development',
       theme: 'system',
     };

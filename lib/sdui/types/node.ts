@@ -83,6 +83,40 @@ export interface SDUIAction {
   payload?: SetStatePayload | FetchPayload | NavigatePayload | Record<string, unknown>;
 }
 
+// ─── Responsive breakpoints ────────────────────────────────────────────────────
+
+/** Desktop-first breakpoint keys (desktop is base, not listed here) */
+export type BreakpointKey = 'laptop' | 'tablet' | 'mobile';
+
+/** Cascade order: laptop inherits desktop, tablet inherits laptop, mobile inherits tablet */
+export const BREAKPOINT_CASCADE: BreakpointKey[] = ['laptop', 'tablet', 'mobile'];
+
+/** Breakpoint max-width thresholds (desktop-first: value means "below this width") */
+export const BREAKPOINT_MAX_WIDTHS: Record<BreakpointKey, number> = {
+  laptop: 1280,
+  tablet: 1024,
+  mobile: 768,
+};
+
+/**
+ * Per-breakpoint overrides for a node. Only properties explicitly set here
+ * override the base; everything else cascades from the nearest ancestor
+ * breakpoint (desktop → laptop → tablet → mobile).
+ */
+export interface ResponsiveOverride {
+  /** Per-CSS-property style overrides (e.g. { flexDirection: 'column', gap: '16px' }).
+   *  null = explicitly remove this property at this breakpoint. */
+  styles?: Record<string, string | number | null>;
+  /** Condition override. false = hide at this breakpoint. null = remove condition (always show). */
+  condition?: ConditionValue | false | null;
+  /** Text override for this breakpoint */
+  text?: string | { expr: object; suffix?: string; prefix?: string; template?: string };
+  /** Shallow-merged into base props at this breakpoint */
+  props?: Record<string, unknown>;
+  /** Merged into props.style at this breakpoint */
+  style?: Record<string, unknown>;
+}
+
 /** Single UI node in the JSON tree */
 export interface SDUINode {
   type: SDUIComponentType;
@@ -114,4 +148,10 @@ export interface SDUINode {
   _disabledOverlay?: { color?: string; opacity?: number; blur?: number };
   /** When disabled is formula-bound, force the overlay to render in the builder canvas */
   _forceDisabledInEditor?: boolean;
+  /**
+   * Responsive overrides — desktop-first cascade.
+   * Desktop is the base (no key needed). Each breakpoint key overrides only the
+   * properties it specifies; everything else inherits from the nearest larger breakpoint.
+   */
+  responsive?: Partial<Record<BreakpointKey, ResponsiveOverride>>;
 }

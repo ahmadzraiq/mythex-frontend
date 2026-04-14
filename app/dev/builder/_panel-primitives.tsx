@@ -46,20 +46,157 @@ export const LABEL_STYLE: React.CSSProperties = {
 
 // ─── SectionHeader ────────────────────────────────────────────────────────────
 
-export function SectionHeader({ title, children }: { title: string; children?: React.ReactNode }) {
+export interface SectionHeaderProps {
+  title: string;
+  children?: React.ReactNode;
+  /** Breakpoints that have overrides for this section's properties */
+  overriddenBreakpoints?: string[];
+  /** Called when user clicks X on a breakpoint chip in the responsive popover */
+  onRemoveBreakpoint?: (breakpoint: string) => void;
+  /** Called when user clicks "Reset Style" in the responsive popover */
+  onResetAll?: () => void;
+}
+
+export function SectionHeader({ title, children, overriddenBreakpoints, onRemoveBreakpoint, onResetAll }: SectionHeaderProps) {
+  const sectionKey = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-      <span style={LABEL_STYLE}>{title}</span>
+      <span style={{ ...LABEL_STYLE, display: 'flex', alignItems: 'center', gap: 3 }}>
+        {title}
+        {overriddenBreakpoints && overriddenBreakpoints.length > 0 && onRemoveBreakpoint && (
+          <ResponsiveDot
+            cssProp={`section-${sectionKey}`}
+            testId={`responsive-dot-${sectionKey}`}
+            overriddenBreakpoints={overriddenBreakpoints}
+            onRemove={(bp) => onRemoveBreakpoint(bp)}
+            onResetAll={onResetAll ? () => onResetAll() : undefined}
+          />
+        )}
+      </span>
       {children}
     </div>
+  );
+}
+
+// ─── Responsive Dot & Popover ─────────────────────────────────────────────────
+
+const BP_LABELS: Record<string, string> = { laptop: 'Laptop', tablet: 'Tablet', mobile: 'Mobile' };
+const BP_ORDER = ['laptop', 'tablet', 'mobile'] as const;
+
+const BP_ICONS: Record<string, React.ReactNode> = {
+  laptop: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="2" y1="20" x2="22" y2="20"/></svg>,
+  tablet: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>,
+  mobile: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>,
+};
+
+export interface ResponsiveDotProps {
+  cssProp: string;
+  /** Breakpoints that have an override for this property, e.g. ['tablet','mobile'] */
+  overriddenBreakpoints: string[];
+  onRemove: (breakpoint: string, cssProp: string) => void;
+  onResetAll?: (cssProp: string) => void;
+  testId?: string;
+}
+
+export function ResponsiveDot({ cssProp, overriddenBreakpoints, onRemove, onResetAll, testId }: ResponsiveDotProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+  const [flipLeft, setFlipLeft] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !popRef.current) return;
+    const rect = popRef.current.getBoundingClientRect();
+    const panel = popRef.current.closest('[data-testid="panel-right"]') as HTMLElement | null;
+    const rightEdge = panel ? panel.getBoundingClientRect().right : window.innerWidth;
+    if (rect.right > rightEdge - 4) setFlipLeft(true);
+    else setFlipLeft(false);
+  }, [open]);
+
+  if (overriddenBreakpoints.length === 0) return null;
+
+  return (
+    <span ref={ref} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+      <span
+        data-testid={testId ?? `responsive-dot-${cssProp}`}
+        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        style={{
+          width: 6, height: 6, borderRadius: '50%',
+          backgroundColor: '#22c55e', flexShrink: 0,
+          cursor: 'pointer', marginLeft: 3,
+          boxShadow: '0 0 4px rgba(34,197,94,0.5)',
+        }}
+      />
+      {open && (
+        <div
+          ref={popRef}
+          data-testid={`responsive-popover-${cssProp}`}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: 'absolute', top: 14,
+            ...(flipLeft ? { right: -8 } : { left: -8 }),
+            zIndex: 100,
+            background: '#1f2937', border: '1px solid #374151', borderRadius: 8,
+            padding: '10px 12px', minWidth: 160,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+          }}
+        >
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#d1d5db', marginBottom: 8 }}>Responsive</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {overriddenBreakpoints.map(bp => (
+              <div key={bp} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ color: '#22c55e', display: 'flex', alignItems: 'center' }}>{BP_ICONS[bp]}</span>
+                <span style={{ fontSize: 10, color: '#9ca3af', flex: 1 }}>{BP_LABELS[bp] ?? bp}</span>
+                <button
+                  data-testid={`responsive-remove-${cssProp}-${bp}`}
+                  onClick={(e) => { e.stopPropagation(); onRemove(bp, cssProp); }}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: '#ef4444', fontSize: 13, lineHeight: 1, padding: '0 2px',
+                  }}
+                  title={`Remove ${BP_LABELS[bp] ?? bp} override`}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+          {onResetAll && (
+            <>
+              <div style={{ borderTop: '1px solid #374151', margin: '8px 0' }} />
+              <button
+                data-testid={`responsive-reset-${cssProp}`}
+                onClick={(e) => { e.stopPropagation(); onResetAll(cssProp); setOpen(false); }}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: '#9ca3af', fontSize: 10, display: 'flex', alignItems: 'center', gap: 4,
+                  padding: 0,
+                }}
+              >
+                <span style={{ fontSize: 13 }}>↵</span> Reset Style
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </span>
   );
 }
 
 // ─── NumberInput ──────────────────────────────────────────────────────────────
 
 export function NumberInput({
-  label, value, onChange, min = 0, max = 9999, step = 1, testId, onFocus,
-}: { label: string; value: number | string; onChange: (v: number) => void; min?: number; max?: number; step?: number; testId?: string; onFocus?: () => void }) {
+  label, value, onChange, min = 0, max = 9999, step = 1, testId, onFocus, afterLabel,
+}: { label: string; value: number | string; onChange: (v: number) => void; min?: number; max?: number; step?: number; testId?: string; onFocus?: () => void; afterLabel?: React.ReactNode }) {
   const [local, setLocal] = useState(String(value));
   const liveRef    = useRef(Number(value));
   const inputRef   = useRef<HTMLInputElement | null>(null);
@@ -114,7 +251,7 @@ export function NumberInput({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-      {label && <span style={{ fontSize: 9, color: '#6b7280' }}>{label}</span>}
+      {label && <span style={{ fontSize: 9, color: '#6b7280', display: 'flex', alignItems: 'center' }}>{label}{afterLabel}</span>}
       <input
         ref={inputRef}
         data-testid={testId}
@@ -140,11 +277,11 @@ export function NumberInput({
 // ─── SelectInput ──────────────────────────────────────────────────────────────
 
 export function SelectInput({
-  label, value, options, onChange, testId,
-}: { label: string; value: string; options: readonly string[] | string[]; onChange: (v: string) => void; testId?: string }) {
+  label, value, options, onChange, testId, afterLabel,
+}: { label: string; value: string; options: readonly string[] | string[]; onChange: (v: string) => void; testId?: string; afterLabel?: React.ReactNode }) {
   return (
     <div style={{ flex: 1 }}>
-      {label && <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>{label}</span>}
+      {label && <span style={{ fontSize: 9, color: '#6b7280', display: 'flex', alignItems: 'center', marginBottom: 2 }}>{label}{afterLabel}</span>}
       <select
         data-testid={testId}
         value={value} onChange={e => onChange(e.target.value)}
