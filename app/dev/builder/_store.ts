@@ -20,26 +20,26 @@ import routesConfig from '@/config/routes.json';
 import { showcaseNodes } from './_showcase';
 import root from '@/config/root';
 import { resolveScreenConfig, type ConfigRegistry } from '@/lib/sdui/config-resolver';
-import { updatePopup, getPopups } from '@/lib/builder/popup-data';
-import { updateSharedComponent, getSharedComponents } from '@/lib/builder/shared-component-data';
+import { updateSharedComponent, getSharedComponents, loadSharedComponents } from '@/lib/builder/shared-component-data';
 import { getBuilderConfig } from '@/lib/builder/config-data';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 
 // ─── Node-tree helpers (extracted to _store-node-helpers.ts) ────────────────
 // Single import for internal use; explicit re-exports for external consumers.
 import {
-  REQUIRED_PARENT, ALLOWED_CHILDREN,
+  REQUIRED_PARENT, ALLOWED_CHILDREN, isNonDraggable,
   findNode, findParentNode, patchNodeById, insertNode,
-  hasFormContainerAncestor,
+  hasFormContainerAncestor, getNodeSubtrees,
   clone, removeNodesByIds,
   _applyLightOverrides, _applyDarkOverrides, hexToRgbTriplet, _getManagedStyle,
   GLUESTACK_PRIMARY_BRIDGE, injectFontsFromOverrides,
+  findSharedRoot, cloneWithFreshIds,
 } from './_store-node-helpers';
 
 export {
-  REQUIRED_PARENT, ALLOWED_CHILDREN,
+  REQUIRED_PARENT, ALLOWED_CHILDREN, isNonDraggable,
   findNode, findParentNode, patchNodeById, insertNode,
-  hasFormContainerAncestor,
+  hasFormContainerAncestor, getNodeSubtrees,
 };
 
 const MAX_HISTORY = 50;
@@ -54,6 +54,14 @@ function _flushHistory(set: SetFn) {
     const prev = s.history.slice(0, s.historyIdx + 1);
     const next = [...prev, snap].slice(-MAX_HISTORY);
     return { history: next, historyIdx: next.length - 1 };
+  });
+}
+
+/** Broadcast a message so all animated nodes on the target page replay their enter animation. */
+function _broadcastPageEnterReplay(pageId: string) {
+  if (typeof window === 'undefined') return;
+  requestAnimationFrame(() => {
+    window.postMessage({ type: 'sdui-replay-page-enter', pageId }, '*');
   });
 }
 
@@ -122,7 +130,11 @@ function makeSnapshot(
       pagesSnap[p.id] = { nodes: p.nodes as SDUINode[], wx: p.wx ?? 0, wy: p.wy ?? 0 };
     }
   }
-  return { pages: pagesSnap, canvasNodes: [...canvasNodes] };
+  return {
+    pages: pagesSnap,
+    canvasNodes: [...canvasNodes],
+    sharedComponents: JSON.parse(JSON.stringify(getSharedComponents())),
+  };
 }
 
 /**
@@ -327,57 +339,22 @@ function _extractPageNodes(configName: string): SDUINode[] {
 
 // Initialise one page per route pre-populated with the screen's content nodes.
 const ROUTE_PAGES: BuilderPage[] = (routesConfig as { routes: Array<{ path: string; config: string }> })
-  .routes.map((r, i) => ({
-    id: `page-${r.config}`,
-    name: r.config,
-    route: r.path,
-    nodes: _extractPageNodes(r.config),
-    wx: (i + 1) * (1280 + 80),  // +1 because SHOWCASE_PAGE is at 0
-    wy: 0,
-  }));
+  .routes.map((r, i) => {
+    const screen = root.screens[r.config as keyof typeof root.screens] as
+      | { queryParams?: Array<{ name: string; value: string }> }
+      | undefined;
+    return {
+      id: `page-${r.config}`,
+      name: r.config,
+      route: r.path,
+      nodes: _extractPageNodes(r.config),
+      ...(screen?.queryParams ? { queryParams: screen.queryParams } : {}),
+      wx: (i + 1) * (1280 + 80),  // +1 because SHOWCASE_PAGE is at 0
+      wy: 0,
+    };
+  });
 
 const INITIAL_PAGES: BuilderPage[] = [SHOWCASE_PAGE, ...ROUTE_PAGES];
-
-/**
- * Strips popup root nodes from pageNodes, persists each popup's live content to
- * the in-memory popup store (stripping builder-injected styles), and returns
- * the cleaned node array plus the list of popup model IDs that were flushed.
- * Used by focusPage when exiting popup edit mode so page content is never polluted with
- * popup nodes after an in-progress popup edit.
- */
-function _flushEditingPopups(s: ReturnType<typeof useBuilderStore.getState>) {
-  const BUILDER_KEYS = new Set(['position', 'top', 'left', 'right', 'zIndex']);
-  let cleanNodes = s.pageNodes as SDUINode[];
-  const popupIdsToClose: string[] = [];
-
-  for (const popupId of s.editingPopupIds) {
-    const content = s.editingPopupContentsMap[popupId];
-    // Always use the live model so renames made while the popup was open are kept.
-    const model   = getPopups()[popupId] ?? s.editingPopupModelsMap[popupId];
-    if (!content || !model) { popupIdsToClose.push(popupId); continue; }
-
-    const rootId = (content as unknown as { id?: string }).id;
-    const liveNode = rootId
-      ? (cleanNodes as SDUINode[]).find(n => (n as unknown as { id?: string }).id === rootId)
-      : undefined;
-
-    if (liveNode) {
-      const rawStyle = ((liveNode.props as Record<string, unknown>)?.style ?? {}) as Record<string, unknown>;
-      const cleanStyle = Object.fromEntries(Object.entries(rawStyle).filter(([k]) => !BUILDER_KEYS.has(k)));
-      const originalStyle = (content.props as Record<string, unknown> | undefined)?.style as Record<string, unknown> | undefined;
-      if (!originalStyle?.['height']) delete cleanStyle['height'];
-      const savedNode = {
-        ...liveNode,
-        props: { ...(liveNode.props ?? {}), style: Object.keys(cleanStyle).length > 0 ? cleanStyle : undefined },
-      };
-      updatePopup({ id: popupId, ...(model as { id: string }), content: savedNode as Record<string, unknown> });
-      cleanNodes = cleanNodes.filter(n => (n as unknown as { id?: string }).id !== rootId) as SDUINode[];
-    }
-    popupIdsToClose.push(popupId);
-  }
-
-  return { cleanNodes, popupIdsToClose };
-}
 
 // ─── Auto-sync middleware: keeps pageNodes ↔ pages[focusedIdx].nodes in sync ──
 // Three cases:
@@ -466,6 +443,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   lockedIds: new Set(),
   hiddenIds: new Set(),
   expandedIds: new Set(),
+  shownPopovers: new Set(),
   tool: 'select',
   zoom: 0.75,
   panX: 0,
@@ -477,12 +455,6 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   history: [EMPTY_SNAPSHOT],
   historyIdx: 0,
   pendingFitToPage: false,
-  editingPopupIds: [],
-  editingPopupId: null,
-  editingPopupContentsMap: {},
-  editingPopupModelsMap: {},
-  editingPopupContent: null,
-  editingPopupModel: null,
   _savedPageNodes: null,
   editingSharedComponentIds: [],
   editingSharedComponentId: null,
@@ -647,6 +619,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         selectedIds: insertedId ? [insertedId] : s.selectedIds,
       };
     });
+    if (parentId) get()._syncSharedInstances(parentId);
     get()._pushHistory();
   },
 
@@ -733,6 +706,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     set(s => {
       const node = findNode(s.pageNodes, nodeId);
       if (!node) return s;
+      if (isNonDraggable(node)) return s;
 
       if (newParentId === nodeId) return s;
       if (newParentId && findNode((findNode(s.pageNodes, nodeId)?.children ?? []) as SDUINode[], newParentId)) return s;
@@ -763,6 +737,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       const newNodes = insertNode(withoutNode, node, newParentId, adjustedIdx);
       return { pageNodes: newNodes, selectedIds: [nodeId] };
     });
+    get()._syncSharedInstances(nodeId);
     get()._pushHistory();
   },
 
@@ -815,6 +790,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       }
       return { pageNodes: result, selectedIds: [...movingIds] };
     });
+    if (nodeIds[0]) get()._syncSharedInstances(nodeIds[0]);
     get()._pushHistory();
   },
 
@@ -846,19 +822,24 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   },
 
   deleteNodes: (ids) => {
-    // Protect ALL popup root nodes from being deleted while any popup is being edited.
-    const { editingPopupContentsMap } = get();
-    const popupRootIds = new Set(
-      Object.values(editingPopupContentsMap).map(c => (c as unknown as { id?: string }).id).filter(Boolean)
+    const { editingSharedComponentContentsMap, pageNodes: preNodes } = get();
+    const protectedRootIds = new Set(
+      Object.values(editingSharedComponentContentsMap).map(c => (c as unknown as { id?: string }).id).filter(Boolean)
     );
-    const idSet = new Set(ids.filter(id => !popupRootIds.has(id)));
+    const idSet = new Set(ids.filter(id => !protectedRootIds.has(id)));
     if (idSet.size === 0) return;
+    const affectedSharedRootIds = new Set<string>();
+    for (const id of idSet) {
+      const root = findSharedRoot(preNodes as SDUINode[], id);
+      if (root && root.id && !idSet.has(root.id)) affectedSharedRootIds.add(root.id);
+    }
     set(s => ({
       pageNodes: removeNodesByIds(s.pageNodes, idSet),
       canvasNodes: (s.canvasNodes as CanvasNode[]).filter(n => !idSet.has(n.id)),
       selectedIds: s.selectedIds.filter(id => !idSet.has(id)),
       aiSelectedNodeIds: s.aiSelectedNodeIds.filter(id => !idSet.has(id)),
     }));
+    for (const rootId of affectedSharedRootIds) get()._syncSharedInstances(rootId);
     get()._pushHistory();
   },
 
@@ -878,6 +859,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         selectedIds: newNodes.map(n => n.id ?? '').filter(Boolean),
       };
     });
+    if (ids[0]) get()._syncSharedInstances(ids[0]);
     get()._pushHistory();
   },
 
@@ -961,6 +943,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         }),
       };
     });
+    get()._syncSharedInstances(id);
     get()._pushHistory();
   },
 
@@ -1005,6 +988,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         }),
       };
     });
+    get()._syncSharedInstances(id);
     get()._pushHistory();
   },
 
@@ -1026,6 +1010,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       obj[parts[parts.length - 1]] = value;
       return root;
     }));
+    get()._syncSharedInstances(id);
   },
 
   patchClassName: (id, oldToken, newToken) => {
@@ -1036,6 +1021,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         : `${cls} ${newToken}`.trim();
       return { ...node, props: { ...(node.props as object), className: newCls } };
     }));
+    get()._syncSharedInstances(id);
   },
 
   renameNode: (id, newId) => {
@@ -1043,6 +1029,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       ...patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => ({ ...node, id: newId })),
       selectedIds: s.selectedIds.map(sid => (sid === id ? newId : sid)),
     }));
+    get()._syncSharedInstances(newId);
     get()._pushHistory();
   },
 
@@ -1123,6 +1110,32 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   },
 
   setExpandedIds: (ids) => set({ expandedIds: ids }),
+
+  // ── Popover builder preview ──────────────────────────────────────────────
+
+  togglePopoverShown: (nodeId) => {
+    set(s => {
+      const key = `popover:${nodeId}`;
+      const next = new Set(s.shownPopovers);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return { shownPopovers: next };
+    });
+  },
+
+  setPopoverConfig: (nodeId, config) => {
+    set(s => {
+      const patcher = (n: SDUINode) => {
+        if (config === null) {
+          const copy = { ...n } as Record<string, unknown>;
+          delete copy['popover'];
+          return copy as unknown as SDUINode;
+        }
+        return { ...n, popover: config } as unknown as SDUINode;
+      };
+      return patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, nodeId, patcher);
+    });
+    get()._pushHistory();
+  },
 
   setTool: (t) => set({ tool: t }),
 
@@ -1567,6 +1580,90 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     });
   },
 
+  _syncSharedInstances: (editedNodeId: string) => {
+    const { pageNodes, focusedPageId } = get();
+    const sharedRoot = findSharedRoot(pageNodes as SDUINode[], editedNodeId);
+    if (!sharedRoot) return;
+
+    const meta = (sharedRoot as unknown as Record<string, unknown>)._shared as { id: string; name: string };
+    if (!meta?.id) return;
+
+    const content = JSON.parse(JSON.stringify(sharedRoot)) as Record<string, unknown>;
+    delete content._shared;
+    const model = getSharedComponents()[meta.id];
+    // Declared property names — these are per-instance overrides that must be preserved
+    const declaredPropNames = new Set((model?.properties ?? []).map(p => p.name));
+
+    // Strip per-instance property overrides from model content before saving
+    if (declaredPropNames.size > 0 && content.props) {
+      const modelProps = { ...(content.props as Record<string, unknown>) };
+      for (const propName of declaredPropNames) delete modelProps[propName];
+      content.props = modelProps;
+    }
+    if (model) updateSharedComponent({ ...model, content });
+
+    // Build a replacement node from content while preserving the target's property overrides
+    const buildReplacement = (targetNode: SDUINode): SDUINode => {
+      const fresh = cloneWithFreshIds(JSON.parse(JSON.stringify(content)) as Record<string, unknown>);
+      const freshProps = (fresh.props ?? {}) as Record<string, unknown>;
+      const targetProps = ((targetNode as unknown as Record<string, unknown>).props ?? {}) as Record<string, unknown>;
+      // Restore each declared property value from the target (per-instance override)
+      for (const propName of declaredPropNames) {
+        if (propName in targetProps) {
+          freshProps[propName] = targetProps[propName];
+        }
+      }
+      fresh.props = freshProps;
+      return { ...fresh, id: targetNode.id, _shared: meta } as unknown as SDUINode;
+    };
+
+    // Sync other instances on the FOCUSED page
+    const otherRoots: SDUINode[] = [];
+    (function walk(nodes: SDUINode[]) {
+      for (const n of nodes) {
+        const s = (n as unknown as Record<string, unknown>)._shared as { id: string } | undefined;
+        if (s?.id === meta.id && n.id !== sharedRoot.id) otherRoots.push(n);
+        if (n.children?.length) walk(n.children as SDUINode[]);
+      }
+    })(pageNodes as SDUINode[]);
+
+    if (otherRoots.length > 0) {
+      set(s => {
+        let nodes = s.pageNodes as SDUINode[];
+        for (const other of otherRoots) {
+          const otherRef = other;
+          nodes = patchNodeById(nodes, other.id!, () => buildReplacement(otherRef));
+        }
+        return { pageNodes: nodes };
+      });
+    }
+
+    // Sync instances on OTHER pages (non-focused)
+    set(s => {
+      let pagesChanged = false;
+      const newPages = (s.pages as BuilderPage[]).map(page => {
+        if (page.id === focusedPageId) return page;
+        const roots: SDUINode[] = [];
+        (function walk(nodes: SDUINode[]) {
+          for (const n of nodes) {
+            const sm = (n as unknown as Record<string, unknown>)._shared as { id: string } | undefined;
+            if (sm?.id === meta.id) roots.push(n);
+            if (n.children?.length) walk(n.children as SDUINode[]);
+          }
+        })(page.nodes as SDUINode[]);
+        if (roots.length === 0) return page;
+        pagesChanged = true;
+        let nodes = page.nodes as SDUINode[];
+        for (const other of roots) {
+          const otherRef = other;
+          nodes = patchNodeById(nodes, other.id!, () => buildReplacement(otherRef));
+        }
+        return { ...page, nodes };
+      });
+      return pagesChanged ? { pages: newPages } : {};
+    });
+  },
+
   undo: () => {
     _flushHistoryIfPending(set);
     set(s => {
@@ -1580,6 +1677,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         if (!pg) return p;
         return { ...p, nodes: pg.nodes, wx: pg.wx, wy: pg.wy };
       });
+      if (snap.sharedComponents) loadSharedComponents(snap.sharedComponents);
       return { historyIdx: idx, selectedIds: [], pages, canvasNodes: snap.canvasNodes as CanvasNode[] };
     });
   },
@@ -1595,6 +1693,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         if (!pg) return p;
         return { ...p, nodes: pg.nodes, wx: pg.wx, wy: pg.wy };
       });
+      if (snap.sharedComponents) loadSharedComponents(snap.sharedComponents);
       return { historyIdx: idx, selectedIds: [], pages, canvasNodes: snap.canvasNodes as CanvasNode[] };
     });
   },
@@ -1658,28 +1757,6 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     if (pageId === s.focusedPageId) return;
     if (!s.pages.find(p => p.id === pageId)) return;
 
-    // Auto-exit popup edit mode if active (save + flush)
-    if (s.editingPopupIds.length > 0) {
-      const { cleanNodes } = _flushEditingPopups(s);
-      const pages = (s.pages as BuilderPage[]).map(p =>
-        p.id === s.focusedPageId ? { ...p, nodes: cleanNodes as SDUINode[] } : p
-      );
-      set({
-        pages: pages as BuilderPage[],
-        focusedPageId: pageId,
-        selectedIds: [],
-        hoveredId: null,
-        editingPopupIds: [],
-        editingPopupId: null,
-        editingPopupContentsMap: {},
-        editingPopupModelsMap: {},
-        editingPopupContent: null,
-        editingPopupModel: null,
-        _savedPageNodes: null,
-      });
-      return;
-    }
-
     // Auto-exit shared component edit if active
     if (s.editingSharedComponentId) {
       get().exitSharedComponentEdit();
@@ -1687,6 +1764,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
 
     // Lightweight focus change — middleware auto-derives pageNodes
     set({ focusedPageId: pageId, selectedIds: [], hoveredId: null });
+    _broadcastPageEnterReplay(pageId);
   },
 
   navigatePage: (pageId) => {
@@ -1736,229 +1814,62 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
 
   clearPendingFit: () => set({ pendingFitToPage: false }),
 
-  enterPopupEdit: (modelId, content, model) =>
+  // ── Shared Component edit mode ───────────────────────────────────────────────
+
+  enterSharedComponentEdit: (modelId, content, model) => {
     set(s => {
-      // Inject builder-specific absolute positioning and explicit height DIRECTLY
-      // onto the popup root (backdrop) node. Using inline `style` means React's
-      // specificity rules make it win over the Tailwind `h-full` class, so the
-      // backdrop is definitively 900px (= VIEWPORT_H) in the builder canvas.
-      // The page nodes remain in pageNodes so the page stays visible behind the popup,
-      // and ALL builder ops (add/delete/move/resize) work because everything is in the
-      // same pageNodes tree.
-      // Multiple popups can be open simultaneously — each is just appended to pageNodes.
-      const contentNode = clone(content as unknown as SDUINode);
-      const existingStyle = ((contentNode.props as Record<string, unknown>)?.style ?? {}) as Record<string, unknown>;
+      const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
+      if (s.editingSharedComponentIds.includes(modelId)) return s;
+
+      const contentNode = clone(content) as SDUINode;
+      const baseZ = 50 + s.editingSharedComponentIds.length;
+
+      const dimBackdrop: SDUINode = {
+        type: 'Box',
+        id: `__sc-edit-backdrop-${modelId}`,
+        props: {
+          style: {
+            position: 'absolute',
+            top: 0, left: 0, right: 0, bottom: 0,
+            minHeight: '100%',
+            zIndex: baseZ,
+            background: '#ffffff',
+          },
+        },
+      } as SDUINode;
+
       const builderContent: SDUINode = {
         ...contentNode,
         props: {
           ...(contentNode.props ?? {}),
           style: {
-            ...existingStyle,
+            ...((contentNode.props as Record<string, unknown> | undefined)?.style as Record<string, unknown> | undefined ?? {}),
             position: 'absolute',
             top: 0,
             left: 0,
             right: 0,
-            height: 900,
-            zIndex: 50 + s.editingPopupIds.length, // stack above existing open popups
+            zIndex: baseZ + 1,
           },
         },
-      };
+      } as SDUINode;
 
-      const nextNodes = [...clone(s.pageNodes), builderContent] as SDUINode[];
-
-      // Save the original page nodes only on the FIRST popup being opened for editing.
-      // Subsequent calls must NOT overwrite this snapshot — otherwise closing the
-      // second popup would restore to "page + popup1's content" instead of the real page.
+      const nextNodes = [...clone(s.pageNodes), dimBackdrop, builderContent] as SDUINode[];
       const savedPageNodes = s._savedPageNodes ?? clone(s.pageNodes);
 
       return {
         _savedPageNodes: savedPageNodes,
         pageNodes: nextNodes,
-        editingPopupIds: [...s.editingPopupIds, modelId],
-        editingPopupId: modelId,                          // most-recently-opened
-        editingPopupContentsMap: { ...s.editingPopupContentsMap, [modelId]: content },
-        editingPopupModelsMap: { ...s.editingPopupModelsMap, [modelId]: model },
-        editingPopupContent: content,
-        editingPopupModel: model,
+        editingSharedComponentIds: [...s.editingSharedComponentIds, modelId],
+        editingSharedComponentId: modelId,
+        editingSharedComponentContentsMap: { ...s.editingSharedComponentContentsMap, [modelId]: content },
+        editingSharedComponentModelsMap: { ...s.editingSharedComponentModelsMap, [modelId]: model as Record<string, unknown> },
+        editingSharedComponentContent: content,
+        editingSharedComponentModel: model as Record<string, unknown>,
         selectedIds: [],
-        history: [makeSnapshot(s.pages as BuilderPage[], s.focusedPageId, nextNodes, s.canvasNodes)],
-        historyIdx: 0,
       };
-    }),
-
-  saveEditingPopup: (modelId) => {
-    const { editingPopupContentsMap, editingPopupModelsMap, pageNodes } = get();
-    const targetContent = editingPopupContentsMap[modelId];
-    // Prefer the live in-memory model (may have been renamed/updated since edit started)
-    const targetModel   = getPopups()[modelId] ?? editingPopupModelsMap[modelId];
-    if (!targetContent || !targetModel) return;
-
-    const popupRootId = (targetContent as unknown as { id?: string }).id;
-    const liveNode = popupRootId
-      ? (pageNodes as SDUINode[]).find(n => (n as unknown as { id?: string }).id === popupRootId)
-      : undefined;
-    if (!liveNode) return;
-
-    // Strip builder-injected positioning/height before saving.
-    const rawStyle = ((liveNode.props as Record<string, unknown>)?.style ?? {}) as Record<string, unknown>;
-    const BUILDER_KEYS = new Set(['position', 'top', 'left', 'right', 'zIndex']);
-    const cleanStyle = Object.fromEntries(Object.entries(rawStyle).filter(([k]) => !BUILDER_KEYS.has(k)));
-    const originalStyle = (targetContent.props as Record<string, unknown> | undefined)?.style as Record<string, unknown> | undefined;
-    if (!originalStyle?.['height']) delete cleanStyle['height'];
-
-    const savedNode = {
-      ...liveNode,
-      props: {
-        ...(liveNode.props ?? {}),
-        style: Object.keys(cleanStyle).length > 0 ? cleanStyle : undefined,
-      },
-    };
-
-    updatePopup({ ...(targetModel as { id: string }), content: savedNode as Record<string, unknown> });
-  },
-
-  exitPopupEdit: (modelId?) => {
-    const {
-      editingPopupId: lastId,
-      editingPopupIds,
-      editingPopupContentsMap,
-      editingPopupModelsMap,
-      pageNodes,
-      _savedPageNodes,
-    } = get();
-
-    // Resolve which popup to close — default to the most-recently-opened one.
-    const targetId = modelId ?? lastId;
-    if (!targetId) return;
-
-    const targetContent = editingPopupContentsMap[targetId];
-    // Always use the freshest model from the in-memory store so that renames
-    // (or any other metadata changes made while the popup was open) are preserved.
-    const targetModel   = getPopups()[targetId] ?? editingPopupModelsMap[targetId];
-
-    if (targetContent) {
-      // Find the live (possibly edited) popup node by the original root ID.
-      const popupRootId = (targetContent as unknown as { id?: string }).id;
-      const liveNode = popupRootId
-        ? (pageNodes as SDUINode[]).find(n => (n as unknown as { id?: string }).id === popupRootId)
-        : undefined;
-
-      if (liveNode) {
-        // Strip the builder-injected positioning/height keys before saving.
-        // We only added these so the backdrop has a definite 900px in the canvas;
-        // the popup should use its own h-full / PopupRenderer positioning in production.
-        const rawStyle = ((liveNode.props as Record<string, unknown>)?.style ?? {}) as Record<string, unknown>;
-        const BUILDER_KEYS = new Set(['position', 'top', 'left', 'right', 'zIndex']);
-        const cleanStyle = Object.fromEntries(Object.entries(rawStyle).filter(([k]) => !BUILDER_KEYS.has(k)));
-
-        // Also remove `height` unless the original content already had an explicit height.
-        const originalStyle = (targetContent.props as Record<string, unknown> | undefined)?.style as Record<string, unknown> | undefined;
-        if (!originalStyle?.['height']) delete cleanStyle['height'];
-
-        const savedNode = {
-          ...liveNode,
-          props: {
-            ...(liveNode.props ?? {}),
-            style: Object.keys(cleanStyle).length > 0 ? cleanStyle : undefined,
-          },
-        };
-
-        const updatedModel = { ...(targetModel ?? {}), content: savedNode };
-        updatePopup({ id: targetId, ...(updatedModel as Record<string, unknown>), content: savedNode as Record<string, unknown> });
-
-        // Remove just this popup's root node from pageNodes — leave the rest intact.
-        const newPageNodes = (pageNodes as SDUINode[]).filter(
-          n => (n as unknown as { id?: string }).id !== popupRootId
-        ) as SDUINode[];
-
-        const newEditingIds  = editingPopupIds.filter(id => id !== targetId);
-        const newContentsMap = Object.fromEntries(Object.entries(editingPopupContentsMap).filter(([k]) => k !== targetId));
-        const newModelsMap   = Object.fromEntries(Object.entries(editingPopupModelsMap).filter(([k]) => k !== targetId));
-        const newLastId      = newEditingIds[newEditingIds.length - 1] ?? null;
-        const allClosed      = newEditingIds.length === 0;
-
-        const s2 = get();
-        set({
-          pageNodes: newPageNodes,
-          _savedPageNodes: allClosed ? null : _savedPageNodes,
-          editingPopupIds: newEditingIds,
-          editingPopupId: newLastId,
-          editingPopupContentsMap: newContentsMap,
-          editingPopupModelsMap: newModelsMap,
-          editingPopupContent: newLastId ? newContentsMap[newLastId] ?? null : null,
-          editingPopupModel: newLastId ? newModelsMap[newLastId] ?? null : null,
-          selectedIds: [],
-          history: [makeSnapshot(s2.pages as BuilderPage[], s2.focusedPageId, newPageNodes, s2.canvasNodes)],
-          historyIdx: 0,
-        });
-        return;
-      }
-    }
-
-    // Fallback: popup root not in current pageNodes (user switched pages while editing).
-    // Clean up tracking state only — do NOT touch pageNodes so the current page is preserved.
-    const newEditingIds  = editingPopupIds.filter(id => id !== targetId);
-    const newContentsMap = Object.fromEntries(Object.entries(editingPopupContentsMap).filter(([k]) => k !== targetId));
-    const newModelsMap   = Object.fromEntries(Object.entries(editingPopupModelsMap).filter(([k]) => k !== targetId));
-    const newLastId      = newEditingIds[newEditingIds.length - 1] ?? null;
-    const s3 = get();
-
-    set({
-      pageNodes: pageNodes as SDUINode[],   // keep current page untouched
-      _savedPageNodes: newEditingIds.length === 0 ? null : _savedPageNodes,
-      editingPopupIds: newEditingIds,
-      editingPopupId: newLastId,
-      editingPopupContentsMap: newContentsMap,
-      editingPopupModelsMap: newModelsMap,
-      editingPopupContent: newLastId ? newContentsMap[newLastId] ?? null : null,
-      editingPopupModel: newLastId ? newModelsMap[newLastId] ?? null : null,
-      selectedIds: [],
-      history: [makeSnapshot(s3.pages as BuilderPage[], s3.focusedPageId, pageNodes as SDUINode[], s3.canvasNodes)],
-      historyIdx: 0,
     });
+    get()._pushHistory();
   },
-
-  // ── Shared Component edit mode ───────────────────────────────────────────────
-
-  enterSharedComponentEdit: (modelId, content, model) => set(s => {
-    const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
-    if (s.editingSharedComponentIds.includes(modelId)) return s;
-
-    const contentNode = clone(content) as SDUINode;
-
-    // Apply positioning so the component is visible in the canvas
-    const builderContent: SDUINode = {
-      ...contentNode,
-      props: {
-        ...(contentNode.props ?? {}),
-        style: {
-          ...((contentNode.props as Record<string, unknown> | undefined)?.style as Record<string, unknown> | undefined ?? {}),
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 50 + s.editingSharedComponentIds.length,
-        },
-      },
-    } as SDUINode;
-
-    const nextNodes = [...clone(s.pageNodes), builderContent] as SDUINode[];
-    const savedPageNodes = s._savedPageNodes ?? clone(s.pageNodes);
-
-    return {
-      _savedPageNodes: savedPageNodes,
-      pageNodes: nextNodes,
-      editingSharedComponentIds: [...s.editingSharedComponentIds, modelId],
-      editingSharedComponentId: modelId,
-      editingSharedComponentContentsMap: { ...s.editingSharedComponentContentsMap, [modelId]: content },
-      editingSharedComponentModelsMap: { ...s.editingSharedComponentModelsMap, [modelId]: model as Record<string, unknown> },
-      editingSharedComponentContent: content,
-      editingSharedComponentModel: model as Record<string, unknown>,
-      selectedIds: [],
-      history: [makeSnapshot(s.pages as BuilderPage[], s.focusedPageId, nextNodes, s.canvasNodes)],
-      historyIdx: 0,
-    };
-  }),
 
   saveEditingSharedComponent: (modelId) => {
     const { editingSharedComponentContentsMap, editingSharedComponentModelsMap, pageNodes } = get();
@@ -2021,8 +1932,12 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         };
         updateSharedComponent({ id: targetId, ...(targetModel as Record<string, unknown>), content: savedNode as Record<string, unknown> });
 
+        const backdropId = `__sc-edit-backdrop-${targetId}`;
         const newPageNodes = (pageNodes as SDUINode[]).filter(
-          n => (n as unknown as { id?: string }).id !== contentRootId
+          n => {
+            const nid = (n as unknown as { id?: string }).id;
+            return nid !== contentRootId && nid !== backdropId;
+          }
         ) as SDUINode[];
         const newEditingIds  = editingSharedComponentIds.filter(id => id !== targetId);
         const newContentsMap = Object.fromEntries(Object.entries(editingSharedComponentContentsMap).filter(([k]) => k !== targetId));
@@ -2030,7 +1945,6 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         const newLastId      = newEditingIds[newEditingIds.length - 1] ?? null;
         const allClosed      = newEditingIds.length === 0;
 
-        const sc2 = get();
         set({
           pageNodes: newPageNodes,
           _savedPageNodes: allClosed ? null : _savedPageNodes,
@@ -2041,9 +1955,8 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
           editingSharedComponentContent: newLastId ? newContentsMap[newLastId] ?? null : null,
           editingSharedComponentModel: newLastId ? newModelsMap[newLastId] ?? null : null,
           selectedIds: [],
-          history: [makeSnapshot(sc2.pages as BuilderPage[], sc2.focusedPageId, newPageNodes, sc2.canvasNodes)],
-          historyIdx: 0,
         });
+        get()._pushHistory();
         return;
       }
     }
@@ -2053,7 +1966,6 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     const newContentsMap = Object.fromEntries(Object.entries(editingSharedComponentContentsMap).filter(([k]) => k !== targetId));
     const newModelsMap   = Object.fromEntries(Object.entries(editingSharedComponentModelsMap).filter(([k]) => k !== targetId));
     const newLastId      = newEditingIds[newEditingIds.length - 1] ?? null;
-    const sc3 = get();
 
     set({
       pageNodes: pageNodes as SDUINode[],
@@ -2065,9 +1977,8 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       editingSharedComponentContent: newLastId ? newContentsMap[newLastId] ?? null : null,
       editingSharedComponentModel: newLastId ? newModelsMap[newLastId] ?? null : null,
       selectedIds: [],
-      history: [makeSnapshot(sc3.pages as BuilderPage[], sc3.focusedPageId, pageNodes as SDUINode[], sc3.canvasNodes)],
-      historyIdx: 0,
     });
+    get()._pushHistory();
   },
 
   // ── Theme overrides ──────────────────────────────────────────────────────────
@@ -2150,6 +2061,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
 
   patchNodeField: (id, field, value) => {
     set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => ({ ...node, [field]: value }) as SDUINode));
+    get()._syncSharedInstances(id);
     get()._pushHistory();
   },
 
@@ -2180,6 +2092,11 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   setCurrentPageInteractions: (interactions) =>
     set((s) => ({
       pages: s.pages.map((p) => p.id === s.focusedPageId ? { ...p, pageInteractions: interactions } : p),
+    })),
+
+  setCurrentPageQueryParams: (params) =>
+    set((s) => ({
+      pages: s.pages.map((p) => p.id === s.focusedPageId ? { ...p, queryParams: params } : p),
     })),
 
   setAppPreviewData: (data) => set({ appPreviewData: data }),
@@ -2295,13 +2212,9 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   loadFromConfig: async (projectId?: string, opts?: { eagerAll?: boolean /* unused — always true for real projects now */ }) => {
     // ── Real backend project ──────────────────────────────────────────────────
     // Any projectId that is not the dev-only "admin" magic ID means a real
-    // backend project. We always clear popups and load exclusively from the
+    // backend project. We load exclusively from the
     // backend — never fall through to static config.
     if (projectId && projectId !== 'admin') {
-      // Clear the popup store immediately so non-admin projects start blank.
-      const { clearPopups } = await import('@/lib/builder/popup-data');
-      clearPopups();
-
       try {
         // ── Step 1: Load metadata (page list without nodes) + all non-page data
         const metaRes = await fetch(`/api/projects/${projectId}/config/meta`, { credentials: 'include' });
@@ -2470,10 +2383,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     }
 
     // ── Admin / dev mode (no projectId or projectId === 'admin') ──────────────
-    // Load the static showcase pages and reset popups to config/popups.json.
     {
-      const { resetToConfigPopups } = await import('@/lib/builder/popup-data');
-      resetToConfigPopups();
       set(() => ({
         pages: INITIAL_PAGES,
         focusedPageId: SHOWCASE_PAGE.id,

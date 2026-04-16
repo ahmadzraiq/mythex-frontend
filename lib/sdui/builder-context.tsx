@@ -17,6 +17,8 @@ export interface BuilderContextValue {
   builderMode: boolean;
   /** Active responsive breakpoint — derived from viewport width (production) or builder viewport preset (builder) */
   activeBreakpoint?: ActiveBreakpoint;
+  /** Node IDs whose popover is toggled "shown" in the builder (key = `popover:{id}`) */
+  shownPopovers?: Set<string>;
 }
 
 export const BuilderContext = createContext<BuilderContextValue>({ builderMode: false });

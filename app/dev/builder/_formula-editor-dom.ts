@@ -171,7 +171,7 @@ export const CHIP_STYLE: Record<string, string> = {
   form:       'background:#c2410c;color:#ffedd5;border:1px solid #ea580c',
   error:      'background:#991b1b;color:#fecaca;border:1px solid #b91c1c',
   event:      'background:#92400e;color:#fed7aa;border:1px solid #fb923c',
-  popup:      'background:#78350f;color:#fde68a;border:1px solid #d97706',
+  'shared-component': 'background:#78350f;color:#fde68a;border:1px solid #d97706',
 };
 
 // ─── Chip builders ────────────────────────────────────────────────────────────
@@ -179,7 +179,7 @@ export const CHIP_STYLE: Record<string, string> = {
 export function buildChipSpan(
   formulaPath: string,
   displayLabel: string,
-  type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'popup',
+  type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'shared-component',
 ): HTMLSpanElement {
   const span = document.createElement('span');
   span.contentEditable = 'false';
@@ -213,7 +213,7 @@ export function insertChipAtCaret(
   editorEl: HTMLElement,
   formulaPath: string,
   displayLabel: string,
-  type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'popup',
+  type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'shared-component',
 ): void {
   editorEl.focus();
   const sel = window.getSelection();
@@ -706,7 +706,7 @@ export function populateEditor(
   dsMap: Map<string, { label: string }>,
   varMap?: Map<string, { label: string }>,
   stepNameMap?: Map<string, string>,
-  popupPropMap?: Map<string, string>,
+  scPropMap?: Map<string, string>,
 ): void {
   el.innerHTML = '';
   if (!formula) return;
@@ -795,15 +795,13 @@ export function populateEditor(
       const isErrorPath = afterStepId.startsWith('.error');
       el.appendChild(buildChipSpan(formulaPath, friendly, isErrorPath ? 'error' : 'collection'));
     } else if (/^context\.component\?\.props\?\.\['([^']+)'\]$/.test(formulaPath)) {
-      // Popup property: context.component?.props?.['<uuid>'] → amber chip with prop name
       const propUUID = formulaPath.match(/^context\.component\?\.props\?\.\['([^']+)'\]$/)?.[1] ?? '';
-      const propName = popupPropMap?.get(propUUID) ?? propUUID;
-      el.appendChild(buildChipSpan(formulaPath, propName, 'popup'));
+      const propName = scPropMap?.get(propUUID) ?? propUUID;
+      el.appendChild(buildChipSpan(formulaPath, propName, 'shared-component'));
     } else if (formulaPath.startsWith('context.local')) {
-      // Popup local context: context.local.data?.['popup']?.['key'] → amber chip
       const keyMatch = formulaPath.match(/\?\.\['([^']+)'\]\s*$/);
       const friendly = keyMatch ? `local.${keyMatch[1]}` : 'local';
-      el.appendChild(buildChipSpan(formulaPath, friendly, 'popup'));
+      el.appendChild(buildChipSpan(formulaPath, friendly, 'shared-component'));
     } else if (formulaPath.startsWith('context.')) {
       if (!formulaPath.includes("?.['")) {
         formulaPath = contextPathToChipFormula(formulaPath);

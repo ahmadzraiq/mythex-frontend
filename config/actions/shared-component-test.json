@@ -1,0 +1,198 @@
+{
+  "toggleTestModal": {
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "sct-step-toggle-modal",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "sct-modal-0000-0000-0000-000000000001",
+          "value": { "formula": "!variables['sct-modal-0000-0000-0000-000000000001']" }
+        }
+      }
+    ]
+  },
+  "toggleTestBottomSheet": {
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "sct-step-toggle-bsheet",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "sct-bsheet-000-0000-0000-000000000002",
+          "value": { "formula": "!variables['sct-bsheet-000-0000-0000-000000000002']" }
+        }
+      }
+    ]
+  },
+  "toggleTestDrawer": {
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "sct-step-toggle-drawer",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "sct-drawer-000-0000-0000-000000000003",
+          "value": { "formula": "!variables['sct-drawer-000-0000-0000-000000000003']" }
+        }
+      }
+    ]
+  },
+  "toggleTestToast": {
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "sct-step-toggle-toast",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "sct-toast-0000-0000-0000-000000000004",
+          "value": { "formula": "!variables['sct-toast-0000-0000-0000-000000000004']" }
+        }
+      }
+    ]
+  },
+  "hideTestModal": {
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "sct-step-hide-modal",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "sct-modal-0000-0000-0000-000000000001",
+          "value": false
+        }
+      }
+    ]
+  },
+  "hideTestBottomSheet": {
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "sct-step-hide-bsheet",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "sct-bsheet-000-0000-0000-000000000002",
+          "value": false
+        }
+      }
+    ]
+  },
+  "hideTestDrawer": {
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "sct-step-hide-drawer",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "sct-drawer-000-0000-0000-000000000003",
+          "value": false
+        }
+      }
+    ]
+  },
+  "hideTestToast": {
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "sct-step-hide-toast",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "sct-toast-0000-0000-0000-000000000004",
+          "value": false
+        }
+      }
+    ]
+  },
+  "addDynamicModal": {
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "sct-step-add-modal",
+        "type": "addSharedComponent",
+        "config": {
+          "componentId": "sc-modal",
+          "props": {
+            "title": "Dynamic Modal",
+            "message": "This modal was added via addSharedComponent workflow action."
+          }
+        }
+      }
+    ]
+  },
+  "addDynamicBottomSheet": {
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "sct-step-add-bsheet",
+        "type": "addSharedComponent",
+        "config": {
+          "componentId": "sc-bottom-sheet",
+          "props": {
+            "title": "Dynamic Bottom Sheet"
+          }
+        }
+      }
+    ]
+  },
+  "addDynamicDrawer": {
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "sct-step-add-drawer",
+        "type": "addSharedComponent",
+        "config": {
+          "componentId": "sc-drawer",
+          "props": {
+            "title": "Dynamic Drawer"
+          }
+        }
+      }
+    ]
+  },
+  "addDynamicToast": {
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "sct-step-add-toast",
+        "type": "addSharedComponent",
+        "config": {
+          "componentId": "sc-toast",
+          "props": {
+            "message": "This is a dynamic toast notification!"
+          }
+        }
+      },
+      {
+        "id": "sct-step-toast-delay",
+        "type": "timeDelay",
+        "config": {
+          "duration": 3000
+        }
+      },
+      {
+        "id": "sct-step-toast-dismiss",
+        "type": "deleteSharedComponent",
+        "config": {}
+      }
+    ]
+  },
+  "closeDynamicOverlay": {
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "sct-step-close-overlay",
+        "type": "deleteSharedComponent",
+        "config": {}
+      }
+    ]
+  },
+  "stopClickPropagation": {
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "sct-stop-propagation",
+        "type": "stopPropagation"
+      }
+    ]
+  }
+}

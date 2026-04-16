@@ -13,14 +13,13 @@
  *  - PageEngine, InactivePageEngine, AllPagesGrid (formerly InactivePagesGrid)
  */
 
-import React, { useEffect, useRef, memo, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useRef, memo, useMemo, useCallback } from 'react';
 import { useBuilderStore } from './_store';
 import { SDUIEngine } from '@/lib/sdui/sdui-engine';
 import appConfig from '@/config/app';
 import type { SDUIConfig } from '@/lib/sdui/types';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import { applyStateTagOverrides } from '@/lib/sdui/builder-preview';
-import { getPopups, subscribePopups } from '@/lib/builder/popup-data';
 import { computeSnap, type SnapGuide, type ContentRect } from './_snap-engine';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -162,6 +161,7 @@ export const AllPagesGrid = memo(function AllPagesGrid({
   const focusPage = useBuilderStore(s => s.focusPage);
   const hover = useBuilderStore(s => s.hover);
   const movePagePosition = useBuilderStore(s => s.movePagePosition);
+  const shownPopovers = useBuilderStore(s => s.shownPopovers);
 
   // Track page dragging state (move page frame, not node)
   const pageDragRef = React.useRef<{ pageId: string; startWx: number; startWy: number; startMx: number; startMy: number } | null>(null);
@@ -297,6 +297,8 @@ export const AllPagesGrid = memo(function AllPagesGrid({
                 pageName={page.name || 'page'}
                 nodes={page.nodes as SDUINode[]}
                 previewStates={activePreviewStates}
+                shownPopovers={shownPopovers}
+                queryParams={page.queryParams}
               />
 
               {/* Inactive capture overlay — only for non-focused pages */}
@@ -394,11 +396,15 @@ const InactivePageWrapper = memo(function InactivePageWrapper({
   pageName,
   nodes,
   previewStates,
+  shownPopovers,
+  queryParams,
 }: {
   pageId: string;
   pageName: string;
   nodes: SDUINode[];
   previewStates?: string[];
+  shownPopovers?: Set<string>;
+  queryParams?: Array<{ name: string; value: string }>;
 }) {
   const displayNodes = useMemo(
     () => applyStateTagOverrides(nodes, previewStates ?? ['normal']),
@@ -410,6 +416,8 @@ const InactivePageWrapper = memo(function InactivePageWrapper({
       configName={pageName || 'page'}
       nodes={displayNodes}
       previewStates={previewStates}
+      shownPopovers={shownPopovers}
+      queryParams={queryParams}
     />
   );
 });
@@ -422,24 +430,20 @@ export const PageEngine = memo(function PageEngine({
   previewStates,
   previewData,
   actionsConfig: actionsConfigProp,
-  showPopups: showPopupsProp,
   viewport,
+  shownPopovers,
+  queryParams,
 }: {
   pageConfig: SDUIConfig;
   configName: string;
   previewStates?: string[];
   previewData?: Record<string, unknown>;
   actionsConfig?: Record<string, unknown>;
-  /** Whether to render popup overlays (false when popup content is the page itself). */
-  showPopups?: boolean;
   /** Current builder viewport preset — forwarded to the engine for responsive resolution. */
   viewport?: 'mobile' | 'tablet' | 'laptop' | 'desktop';
+  shownPopovers?: Set<string>;
+  queryParams?: Array<{ name: string; value: string }>;
 }) {
-  // Subscribe to the in-memory popup store so live edits appear in PopupRenderer
-  // without needing to write to disk.
-  const [livePopupModels, setLivePopupModels] = useState(() => getPopups());
-  useEffect(() => subscribePopups(() => setLivePopupModels(getPopups())), []);
-
   if (!pageConfig.ui) return <EmptyCanvas />;
   return (
     <SDUIEngine
@@ -449,12 +453,12 @@ export const PageEngine = memo(function PageEngine({
       actionsConfig={actionsConfigProp ?? app.actions}
       routes={app.routes}
       builderMode
-      showPopups={showPopupsProp ?? true}
       builderViewportHeight={VIEWPORT_H}
       builderViewport={viewport}
       previewStates={previewStates}
       previewData={previewData}
-      popupModels={livePopupModels as Record<string, unknown>}
+      shownPopovers={shownPopovers}
+      builderQueryParams={queryParams}
     />
   );
 });
@@ -469,11 +473,15 @@ export const InactivePageEngine = memo(function InactivePageEngine({
   configName,
   nodes,
   previewStates,
+  shownPopovers,
+  queryParams,
 }: {
   pageId: string;
   configName: string;
   nodes: SDUINode[];
   previewStates?: string[];
+  shownPopovers?: Set<string>;
+  queryParams?: Array<{ name: string; value: string }>;
 }) {
   // Apply state-tag overrides inside the memo so this only recomputes when
   // nodes or previewStates change — not on every canvas pan/zoom render.
@@ -512,8 +520,9 @@ export const InactivePageEngine = memo(function InactivePageEngine({
       actionsConfig={app.actions ?? {}}
       routes={app.routes ?? []}
       builderMode
-      showPopups={false}
       previewStates={previewStates}
+      shownPopovers={shownPopovers}
+      builderQueryParams={queryParams}
     />
   );
 });
@@ -541,7 +550,6 @@ export const CanvasNodeEngine = memo(function CanvasNodeEngine({
       actionsConfig={app.actions ?? {}}
       routes={app.routes ?? []}
       builderMode
-      showPopups={false}
     />
   );
 });

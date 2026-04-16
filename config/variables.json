@@ -900,12 +900,6 @@
       "initialValue": 0,
       "folder": "Animation Test"
     },
-    "popup-test-0000-0000-0000-wait-result": {
-      "label": "Popup Wait Close Result",
-      "type": "string",
-      "initialValue": "",
-      "folder": "Popup Test"
-    },
     "style-test-0000-0000-0000-width-pct": {
       "label": "ST Width %",
       "type": "number",
@@ -1106,10 +1100,22 @@
           "trustIndicator": "No credit card required",
           "isVisible": true,
           "features": [
-            { "id": "f1", "name": "Up to 5 projects" },
-            { "id": "f2", "name": "Basic analytics" },
-            { "id": "f3", "name": "Community support" },
-            { "id": "f4", "name": "1 GB storage" }
+            {
+              "id": "f1",
+              "name": "Up to 5 projects"
+            },
+            {
+              "id": "f2",
+              "name": "Basic analytics"
+            },
+            {
+              "id": "f3",
+              "name": "Community support"
+            },
+            {
+              "id": "f4",
+              "name": "1 GB storage"
+            }
           ]
         },
         {
@@ -1123,12 +1129,30 @@
           "trustIndicator": "14-day free trial included",
           "isVisible": true,
           "features": [
-            { "id": "f1", "name": "Unlimited projects" },
-            { "id": "f2", "name": "Advanced analytics" },
-            { "id": "f3", "name": "Priority support" },
-            { "id": "f4", "name": "100 GB storage" },
-            { "id": "f5", "name": "Team collaboration" },
-            { "id": "f6", "name": "Custom integrations" }
+            {
+              "id": "f1",
+              "name": "Unlimited projects"
+            },
+            {
+              "id": "f2",
+              "name": "Advanced analytics"
+            },
+            {
+              "id": "f3",
+              "name": "Priority support"
+            },
+            {
+              "id": "f4",
+              "name": "100 GB storage"
+            },
+            {
+              "id": "f5",
+              "name": "Team collaboration"
+            },
+            {
+              "id": "f6",
+              "name": "Custom integrations"
+            }
           ]
         },
         {
@@ -1142,12 +1166,30 @@
           "trustIndicator": "99.9% uptime SLA",
           "isVisible": true,
           "features": [
-            { "id": "f1", "name": "Unlimited everything" },
-            { "id": "f2", "name": "Real-time analytics" },
-            { "id": "f3", "name": "Dedicated account manager" },
-            { "id": "f4", "name": "Unlimited storage" },
-            { "id": "f5", "name": "Advanced security & SSO" },
-            { "id": "f6", "name": "API access & webhooks" }
+            {
+              "id": "f1",
+              "name": "Unlimited everything"
+            },
+            {
+              "id": "f2",
+              "name": "Real-time analytics"
+            },
+            {
+              "id": "f3",
+              "name": "Dedicated account manager"
+            },
+            {
+              "id": "f4",
+              "name": "Unlimited storage"
+            },
+            {
+              "id": "f5",
+              "name": "Advanced security & SSO"
+            },
+            {
+              "id": "f6",
+              "name": "API access & webhooks"
+            }
           ]
         }
       ],
@@ -1224,26 +1266,130 @@
       "label": "Calc Buttons",
       "type": "array",
       "initialValue": [
-        {"label": "AC", "type": "clear", "bg": "#a5a5a5", "color": "#000000"},
-        {"label": "+/-", "type": "negate", "bg": "#a5a5a5", "color": "#000000"},
-        {"label": "%", "type": "percent", "bg": "#a5a5a5", "color": "#000000"},
-        {"label": "\u00f7", "type": "operator", "op": "/", "bg": "#ff9f0a", "color": "#ffffff"},
-        {"label": "7", "type": "digit", "bg": "#333333", "color": "#ffffff"},
-        {"label": "8", "type": "digit", "bg": "#333333", "color": "#ffffff"},
-        {"label": "9", "type": "digit", "bg": "#333333", "color": "#ffffff"},
-        {"label": "\u00d7", "type": "operator", "op": "*", "bg": "#ff9f0a", "color": "#ffffff"},
-        {"label": "4", "type": "digit", "bg": "#333333", "color": "#ffffff"},
-        {"label": "5", "type": "digit", "bg": "#333333", "color": "#ffffff"},
-        {"label": "6", "type": "digit", "bg": "#333333", "color": "#ffffff"},
-        {"label": "\u2212", "type": "operator", "op": "-", "bg": "#ff9f0a", "color": "#ffffff"},
-        {"label": "1", "type": "digit", "bg": "#333333", "color": "#ffffff"},
-        {"label": "2", "type": "digit", "bg": "#333333", "color": "#ffffff"},
-        {"label": "3", "type": "digit", "bg": "#333333", "color": "#ffffff"},
-        {"label": "+", "type": "operator", "op": "+", "bg": "#ff9f0a", "color": "#ffffff"},
-        {"label": "0", "type": "digit", "bg": "#333333", "color": "#ffffff"},
-        {"label": ".", "type": "decimal", "bg": "#333333", "color": "#ffffff"},
-        {"label": "\u232b", "type": "backspace", "bg": "#a5a5a5", "color": "#000000"},
-        {"label": "=", "type": "equals", "bg": "#ff9f0a", "color": "#ffffff"}
+        {
+          "label": "AC",
+          "type": "clear",
+          "bg": "#a5a5a5",
+          "color": "#000000"
+        },
+        {
+          "label": "+/-",
+          "type": "negate",
+          "bg": "#a5a5a5",
+          "color": "#000000"
+        },
+        {
+          "label": "%",
+          "type": "percent",
+          "bg": "#a5a5a5",
+          "color": "#000000"
+        },
+        {
+          "label": "÷",
+          "type": "operator",
+          "op": "/",
+          "bg": "#ff9f0a",
+          "color": "#ffffff"
+        },
+        {
+          "label": "7",
+          "type": "digit",
+          "bg": "#333333",
+          "color": "#ffffff"
+        },
+        {
+          "label": "8",
+          "type": "digit",
+          "bg": "#333333",
+          "color": "#ffffff"
+        },
+        {
+          "label": "9",
+          "type": "digit",
+          "bg": "#333333",
+          "color": "#ffffff"
+        },
+        {
+          "label": "×",
+          "type": "operator",
+          "op": "*",
+          "bg": "#ff9f0a",
+          "color": "#ffffff"
+        },
+        {
+          "label": "4",
+          "type": "digit",
+          "bg": "#333333",
+          "color": "#ffffff"
+        },
+        {
+          "label": "5",
+          "type": "digit",
+          "bg": "#333333",
+          "color": "#ffffff"
+        },
+        {
+          "label": "6",
+          "type": "digit",
+          "bg": "#333333",
+          "color": "#ffffff"
+        },
+        {
+          "label": "−",
+          "type": "operator",
+          "op": "-",
+          "bg": "#ff9f0a",
+          "color": "#ffffff"
+        },
+        {
+          "label": "1",
+          "type": "digit",
+          "bg": "#333333",
+          "color": "#ffffff"
+        },
+        {
+          "label": "2",
+          "type": "digit",
+          "bg": "#333333",
+          "color": "#ffffff"
+        },
+        {
+          "label": "3",
+          "type": "digit",
+          "bg": "#333333",
+          "color": "#ffffff"
+        },
+        {
+          "label": "+",
+          "type": "operator",
+          "op": "+",
+          "bg": "#ff9f0a",
+          "color": "#ffffff"
+        },
+        {
+          "label": "0",
+          "type": "digit",
+          "bg": "#333333",
+          "color": "#ffffff"
+        },
+        {
+          "label": ".",
+          "type": "decimal",
+          "bg": "#333333",
+          "color": "#ffffff"
+        },
+        {
+          "label": "⌫",
+          "type": "backspace",
+          "bg": "#a5a5a5",
+          "color": "#000000"
+        },
+        {
+          "label": "=",
+          "type": "equals",
+          "bg": "#ff9f0a",
+          "color": "#ffffff"
+        }
       ],
       "folder": "Calculator"
     },
@@ -1289,25 +1435,70 @@
       "type": "array",
       "initialValue": [
         [
-          { "id": "s1", "text": "5 Projects" },
-          { "id": "s2", "text": "Basic Analytics" },
-          { "id": "s3", "text": "Email Support" },
-          { "id": "s4", "text": "1 GB Storage" }
+          {
+            "id": "s1",
+            "text": "5 Projects"
+          },
+          {
+            "id": "s2",
+            "text": "Basic Analytics"
+          },
+          {
+            "id": "s3",
+            "text": "Email Support"
+          },
+          {
+            "id": "s4",
+            "text": "1 GB Storage"
+          }
         ],
         [
-          { "id": "p1", "text": "Unlimited Projects" },
-          { "id": "p2", "text": "Advanced Analytics" },
-          { "id": "p3", "text": "Priority Support" },
-          { "id": "p4", "text": "100 GB Storage" },
-          { "id": "p5", "text": "Team Collaboration" }
+          {
+            "id": "p1",
+            "text": "Unlimited Projects"
+          },
+          {
+            "id": "p2",
+            "text": "Advanced Analytics"
+          },
+          {
+            "id": "p3",
+            "text": "Priority Support"
+          },
+          {
+            "id": "p4",
+            "text": "100 GB Storage"
+          },
+          {
+            "id": "p5",
+            "text": "Team Collaboration"
+          }
         ],
         [
-          { "id": "e1", "text": "Everything in Professional" },
-          { "id": "e2", "text": "Custom Integrations" },
-          { "id": "e3", "text": "Dedicated Support" },
-          { "id": "e4", "text": "Unlimited Storage" },
-          { "id": "e5", "text": "Advanced Security" },
-          { "id": "e6", "text": "SLA Guarantee" }
+          {
+            "id": "e1",
+            "text": "Everything in Professional"
+          },
+          {
+            "id": "e2",
+            "text": "Custom Integrations"
+          },
+          {
+            "id": "e3",
+            "text": "Dedicated Support"
+          },
+          {
+            "id": "e4",
+            "text": "Unlimited Storage"
+          },
+          {
+            "id": "e5",
+            "text": "Advanced Security"
+          },
+          {
+            "id": "e6",
+            "text": "SLA Guarantee"
+          }
         ]
       ],
       "folder": "Nested Pricing"
@@ -1322,12 +1513,42 @@
       "label": "Resp Test Items",
       "type": "array",
       "initialValue": [
-        { "id": "item-1", "title": "Alpha", "desc": "First item", "color": "#3b82f6" },
-        { "id": "item-2", "title": "Beta", "desc": "Second item", "color": "#10b981" },
-        { "id": "item-3", "title": "Gamma", "desc": "Third item", "color": "#f59e0b" },
-        { "id": "item-4", "title": "Delta", "desc": "Fourth item", "color": "#ef4444" },
-        { "id": "item-5", "title": "Epsilon", "desc": "Fifth item", "color": "#8b5cf6" },
-        { "id": "item-6", "title": "Zeta", "desc": "Sixth item", "color": "#ec4899" }
+        {
+          "id": "item-1",
+          "title": "Alpha",
+          "desc": "First item",
+          "color": "#3b82f6"
+        },
+        {
+          "id": "item-2",
+          "title": "Beta",
+          "desc": "Second item",
+          "color": "#10b981"
+        },
+        {
+          "id": "item-3",
+          "title": "Gamma",
+          "desc": "Third item",
+          "color": "#f59e0b"
+        },
+        {
+          "id": "item-4",
+          "title": "Delta",
+          "desc": "Fourth item",
+          "color": "#ef4444"
+        },
+        {
+          "id": "item-5",
+          "title": "Epsilon",
+          "desc": "Fifth item",
+          "color": "#8b5cf6"
+        },
+        {
+          "id": "item-6",
+          "title": "Zeta",
+          "desc": "Sixth item",
+          "color": "#ec4899"
+        }
       ],
       "folder": "Responsive Test"
     },
@@ -1342,7 +1563,524 @@
       "type": "number",
       "initialValue": 0,
       "folder": "Responsive Test"
-    }
+    },
+    "sct-modal-0000-0000-0000-000000000001": {
+      "label": "Show Test Modal",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Shared Component Test"
+    },
+    "sct-bsheet-000-0000-0000-000000000002": {
+      "label": "Show Test Bottom Sheet",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Shared Component Test"
+    },
+    "sct-drawer-000-0000-0000-000000000003": {
+      "label": "Show Test Drawer",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Shared Component Test"
+    },
+    "sct-toast-0000-0000-0000-000000000004": {
+      "label": "Show Test Toast",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Shared Component Test"
+    },
+    "scroll": {
+      "label": "Scroll State",
+      "type": "object",
+      "initialValue": {
+        "y": 0,
+        "direction": "none",
+        "yPercent": 0
+      },
+      "folder": "App"
+    },
+    "pop-test-0000-0000-0000-000000000001": {
+      "label": "PT: Programmatic Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Popover Test"
+    },
+    "pop-test-0000-0000-0000-000000000002": {
+      "label": "PT: Selected Item",
+      "type": "string",
+      "initialValue": "(none selected)",
+      "folder": "Popover Test"
+    },
+    "pop-test-0000-0000-0000-000000000003": {
+      "label": "PT: Dropdown Options",
+      "type": "array",
+      "initialValue": [
+        {
+          "id": "opt-1",
+          "name": "Dashboard",
+          "icon": "lucide:layout-dashboard"
+        },
+        {
+          "id": "opt-2",
+          "name": "Analytics",
+          "icon": "lucide:bar-chart-2"
+        },
+        {
+          "id": "opt-3",
+          "name": "Settings",
+          "icon": "lucide:settings"
+        },
+        {
+          "id": "opt-4",
+          "name": "Team",
+          "icon": "lucide:users"
+        },
+        {
+          "id": "opt-5",
+          "name": "Billing",
+          "icon": "lucide:credit-card"
+        }
+      ],
+      "folder": "Popover Test"
+    },
+    "pop-test-0000-0000-0000-000000000004": {
+      "label": "PT: Counter",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000001": {
+      "label": "AC: Basic Search",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000002": {
+      "label": "AC: Basic Selected",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000003": {
+      "label": "AC: Film Options",
+      "type": "array",
+      "initialValue": [
+        {
+          "id": "1",
+          "label": "The Shawshank Redemption",
+          "year": 1994
+        },
+        {
+          "id": "2",
+          "label": "The Godfather",
+          "year": 1972
+        },
+        {
+          "id": "3",
+          "label": "The Dark Knight",
+          "year": 2008
+        },
+        {
+          "id": "4",
+          "label": "Pulp Fiction",
+          "year": 1994
+        },
+        {
+          "id": "5",
+          "label": "Fight Club",
+          "year": 1999
+        },
+        {
+          "id": "6",
+          "label": "Forrest Gump",
+          "year": 1994
+        },
+        {
+          "id": "7",
+          "label": "Inception",
+          "year": 2010
+        },
+        {
+          "id": "8",
+          "label": "The Matrix",
+          "year": 1999
+        },
+        {
+          "id": "9",
+          "label": "Interstellar",
+          "year": 2014
+        },
+        {
+          "id": "10",
+          "label": "Parasite",
+          "year": 2019
+        },
+        {
+          "id": "11",
+          "label": "The Lord of the Rings",
+          "year": 2003
+        },
+        {
+          "id": "12",
+          "label": "Spirited Away",
+          "year": 2001
+        }
+      ],
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000004": {
+      "label": "AC: Multi Search",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000005": {
+      "label": "AC: Multi Selected",
+      "type": "array",
+      "initialValue": [],
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000006": {
+      "label": "AC: Grouped Search",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000007": {
+      "label": "AC: Grouped Selected",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000008": {
+      "label": "AC: Grouped Options",
+      "type": "array",
+      "initialValue": [
+        {
+          "id": "g1",
+          "label": "The Shawshank Redemption",
+          "year": 1994,
+          "group": "Drama"
+        },
+        {
+          "id": "g2",
+          "label": "The Godfather",
+          "year": 1972,
+          "group": "Drama"
+        },
+        {
+          "id": "g3",
+          "label": "Forrest Gump",
+          "year": 1994,
+          "group": "Drama"
+        },
+        {
+          "id": "g4",
+          "label": "The Dark Knight",
+          "year": 2008,
+          "group": "Action"
+        },
+        {
+          "id": "g5",
+          "label": "Fight Club",
+          "year": 1999,
+          "group": "Action"
+        },
+        {
+          "id": "g6",
+          "label": "The Matrix",
+          "year": 1999,
+          "group": "Action"
+        },
+        {
+          "id": "g7",
+          "label": "Inception",
+          "year": 2010,
+          "group": "Sci-Fi"
+        },
+        {
+          "id": "g8",
+          "label": "Interstellar",
+          "year": 2014,
+          "group": "Sci-Fi"
+        },
+        {
+          "id": "g9",
+          "label": "Spirited Away",
+          "year": 2001,
+          "group": "Sci-Fi"
+        },
+        {
+          "id": "g10",
+          "label": "Parasite",
+          "year": 2019,
+          "group": "Thriller"
+        },
+        {
+          "id": "g11",
+          "label": "Pulp Fiction",
+          "year": 1994,
+          "group": "Thriller"
+        }
+      ],
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000009": {
+      "label": "AC: FreeSolo Input",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000010": {
+      "label": "AC: FreeSolo Tags",
+      "type": "array",
+      "initialValue": [],
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000011": {
+      "label": "AC: Async Search",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000012": {
+      "label": "AC: Async Selected",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000013": {
+      "label": "AC: Async Loading",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000014": {
+      "label": "AC: Async Results",
+      "type": "array",
+      "initialValue": [],
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000015": {
+      "label": "AC: Disabled Search",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000016": {
+      "label": "AC: Disabled Selected",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000017": {
+      "label": "AC: Disabled Options",
+      "type": "array",
+      "initialValue": [
+        {
+          "id": "d1",
+          "label": "React",
+          "disabled": false
+        },
+        {
+          "id": "d2",
+          "label": "Vue",
+          "disabled": false
+        },
+        {
+          "id": "d3",
+          "label": "Angular",
+          "disabled": true
+        },
+        {
+          "id": "d4",
+          "label": "Svelte",
+          "disabled": false
+        },
+        {
+          "id": "d5",
+          "label": "Ember",
+          "disabled": true
+        },
+        {
+          "id": "d6",
+          "label": "Next.js",
+          "disabled": false
+        },
+        {
+          "id": "d7",
+          "label": "Nuxt",
+          "disabled": false
+        },
+        {
+          "id": "d8",
+          "label": "SolidJS",
+          "disabled": false
+        }
+      ],
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000018": {
+      "label": "AC: Custom Search",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000019": {
+      "label": "AC: Custom Selected",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000020": {
+      "label": "AC: Custom Options",
+      "type": "array",
+      "initialValue": [
+        {
+          "id": "c1",
+          "label": "Tony Stark",
+          "desc": "Iron Man",
+          "icon": "lucide:shield",
+          "status": "active"
+        },
+        {
+          "id": "c2",
+          "label": "Steve Rogers",
+          "desc": "Captain America",
+          "icon": "lucide:star",
+          "status": "active"
+        },
+        {
+          "id": "c3",
+          "label": "Bruce Banner",
+          "desc": "Hulk",
+          "icon": "lucide:zap",
+          "status": "active"
+        },
+        {
+          "id": "c4",
+          "label": "Thor Odinson",
+          "desc": "God of Thunder",
+          "icon": "lucide:cloud-lightning",
+          "status": "active"
+        },
+        {
+          "id": "c5",
+          "label": "Natasha Romanoff",
+          "desc": "Black Widow",
+          "icon": "lucide:target",
+          "status": "inactive"
+        },
+        {
+          "id": "c6",
+          "label": "Clint Barton",
+          "desc": "Hawkeye",
+          "icon": "lucide:crosshair",
+          "status": "inactive"
+        }
+      ],
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000021": {
+      "label": "AC: Basic Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000022": {
+      "label": "AC: Multi Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000023": {
+      "label": "AC: Grouped Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000024": {
+      "label": "AC: FreeSolo Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000025": {
+      "label": "AC: Async Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000026": {
+      "label": "AC: Disabled Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Popover Test"
+    },
+    "ac-test-0000-0000-0000-000000000027": {
+      "label": "AC: Custom Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Popover Test"
+    },
+    "menu-test-0000-0000-0000-000000000002": {
+      "label": "Menu: File Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Popover Test"
+    },
+    "menu-test-0000-0000-0000-000000000003": {
+      "label": "Menu: Edit Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Popover Test"
+    },
+    "menu-test-0000-0000-0000-000000000004": {
+      "label": "Menu: View Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Popover Test"
+    },
+
+    "dp-test-0000-0000-0000-000000000001": { "label": "DP1: Year", "type": "number", "initialValue": 2026, "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000002": { "label": "DP1: Month", "type": "number", "initialValue": 3, "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000003": { "label": "DP1: Selected", "type": "string", "initialValue": "", "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000004": { "label": "DP1: Grid", "type": "array", "initialValue": [], "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000005": { "label": "DP1: Open", "type": "boolean", "initialValue": false, "folder": "Popover Test" },
+
+    "dp-test-0000-0000-0000-000000000011": { "label": "DP2: Year", "type": "number", "initialValue": 2026, "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000012": { "label": "DP2: Month", "type": "number", "initialValue": 3, "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000013": { "label": "DP2: Selected", "type": "string", "initialValue": "", "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000014": { "label": "DP2: Grid", "type": "array", "initialValue": [], "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000015": { "label": "DP2: Open", "type": "boolean", "initialValue": false, "folder": "Popover Test" },
+
+    "dp-test-0000-0000-0000-000000000021": { "label": "TP: Selected Hour", "type": "number", "initialValue": 10, "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000022": { "label": "TP: Selected Minute", "type": "number", "initialValue": 30, "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000023": { "label": "TP: Open", "type": "boolean", "initialValue": false, "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000024": { "label": "TP: Hours", "type": "array", "initialValue": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23], "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000025": { "label": "TP: Minutes", "type": "array", "initialValue": [0,5,10,15,20,25,30,35,40,45,50,55], "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000026": { "label": "TP: Display", "type": "string", "initialValue": "10:00", "folder": "Popover Test" },
+
+    "dp-test-0000-0000-0000-000000000031": { "label": "DTP: Year", "type": "number", "initialValue": 2026, "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000032": { "label": "DTP: Month", "type": "number", "initialValue": 3, "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000033": { "label": "DTP: Selected Date", "type": "string", "initialValue": "", "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000034": { "label": "DTP: Grid", "type": "array", "initialValue": [], "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000035": { "label": "DTP: Hour", "type": "number", "initialValue": 12, "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000036": { "label": "DTP: Minute", "type": "number", "initialValue": 0, "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000037": { "label": "DTP: Open", "type": "boolean", "initialValue": false, "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000038": { "label": "DTP: Display", "type": "string", "initialValue": " 10:00", "folder": "Popover Test" },
+
+    "dp-test-0000-0000-0000-000000000041": { "label": "DR: Year", "type": "number", "initialValue": 2026, "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000042": { "label": "DR: Month", "type": "number", "initialValue": 3, "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000043": { "label": "DR: Start Date", "type": "string", "initialValue": "", "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000044": { "label": "DR: End Date", "type": "string", "initialValue": "", "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000045": { "label": "DR: Grid Left", "type": "array", "initialValue": [], "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000046": { "label": "DR: Grid Right", "type": "array", "initialValue": [], "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000047": { "label": "DR: Open", "type": "boolean", "initialValue": false, "folder": "Popover Test" },
+
+    "dp-test-0000-0000-0000-000000000051": { "label": "Static DP: Year", "type": "number", "initialValue": 2026, "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000052": { "label": "Static DP: Month", "type": "number", "initialValue": 3, "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000053": { "label": "Static DP: Selected", "type": "string", "initialValue": "", "folder": "Popover Test" },
+    "dp-test-0000-0000-0000-000000000054": { "label": "Static DP: Grid", "type": "array", "initialValue": [], "folder": "Popover Test" }
   },
   "varFolders": [
     {
@@ -1406,10 +2144,6 @@
       "label": "Animation Test"
     },
     {
-      "id": "Popup Test",
-      "label": "Popup Test"
-    },
-    {
       "id": "Styling Test",
       "label": "Styling Test"
     },
@@ -1440,6 +2174,18 @@
     {
       "id": "Responsive Test",
       "label": "Responsive Test"
+    },
+    {
+      "id": "Shared Component Test",
+      "label": "Shared Component Test"
+    },
+    {
+      "id": "Navbar Types",
+      "label": "Navbar Types"
+    },
+    {
+      "id": "Popover Test",
+      "label": "Popover Test"
     }
   ]
 }

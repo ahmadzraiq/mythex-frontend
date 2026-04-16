@@ -415,6 +415,100 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
         ],
       },
     },
+    {
+      type: 'Box',
+      label: 'Modal',
+      icon: '🗔',
+      defaultNode: {
+        type: 'Box',
+        condition: '',
+        props: { className: 'fixed inset-0 z-[50] flex items-center justify-center' },
+        children: [
+          { type: 'Box', props: { className: 'absolute inset-0 bg-black/50' } },
+          {
+            type: 'Box',
+            props: { className: 'relative z-[1] w-[480px] max-w-[90vw] bg-white dark:bg-gray-900 rounded-[12px] p-[24px] flex flex-col gap-[16px]', animation: { enter: { type: 'zoomIn', duration: 200 } } },
+            children: [
+              { type: 'Box', props: { className: 'flex flex-row items-center justify-between' }, children: [
+                { type: 'Heading', props: { size: 'lg', className: 'font-semibold text-gray-900 dark:text-white' }, text: 'Modal Title' },
+                { type: 'Box', props: { className: 'cursor-pointer p-[4px]' }, children: [{ type: 'Icon', props: { icon: 'lucide:x', size: 18, color: '#6b7280' } }] },
+              ] },
+              { type: 'Text', props: { className: 'text-[14px] text-gray-600 dark:text-gray-300' }, text: 'Modal body content goes here.' },
+              { type: 'Box', props: { className: 'flex flex-row justify-end gap-[8px] pt-[8px]' }, children: [
+                { type: 'Button', props: { action: 'default', className: '!bg-gray-200 dark:!bg-gray-700 !text-gray-800 dark:!text-gray-200' }, children: [{ type: 'ButtonText', text: 'Cancel' }] },
+                { type: 'Button', props: { action: 'primary' }, children: [{ type: 'ButtonText', text: 'Confirm' }] },
+              ] },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      type: 'Box',
+      label: 'Bottom Sheet',
+      icon: '⬆',
+      defaultNode: {
+        type: 'Box',
+        condition: '',
+        props: { className: 'fixed inset-0 z-[50] flex items-end' },
+        children: [
+          { type: 'Box', props: { className: 'absolute inset-0 bg-black/50' } },
+          {
+            type: 'Box',
+            props: { className: 'relative z-[1] w-full max-h-[70vh] bg-white dark:bg-gray-900 rounded-t-[16px] p-[24px] flex flex-col gap-[16px]', animation: { enter: { type: 'slideInUp', duration: 300 } } },
+            children: [
+              { type: 'Box', props: { className: 'flex justify-center' }, children: [
+                { type: 'Box', props: { className: 'w-[40px] h-[4px] rounded-full bg-gray-300 dark:bg-gray-600' } },
+              ] },
+              { type: 'Heading', props: { size: 'lg', className: 'font-semibold text-gray-900 dark:text-white' }, text: 'Bottom Sheet' },
+              { type: 'Text', props: { className: 'text-[14px] text-gray-600 dark:text-gray-300' }, text: 'Bottom sheet content goes here.' },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      type: 'Box',
+      label: 'Drawer',
+      icon: '☰',
+      defaultNode: {
+        type: 'Box',
+        condition: '',
+        props: { className: 'fixed inset-0 z-[50] flex flex-row' },
+        children: [
+          {
+            type: 'Box',
+            props: { className: 'relative z-[1] w-[320px] h-full bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]', animation: { enter: { type: 'slideInLeft', duration: 300 } } },
+            children: [
+              { type: 'Box', props: { className: 'flex flex-row items-center justify-between' }, children: [
+                { type: 'Heading', props: { size: 'lg', className: 'font-semibold text-gray-900 dark:text-white' }, text: 'Drawer' },
+                { type: 'Box', props: { className: 'cursor-pointer p-[4px]' }, children: [{ type: 'Icon', props: { icon: 'lucide:x', size: 18, color: '#6b7280' } }] },
+              ] },
+              { type: 'Text', props: { className: 'text-[14px] text-gray-600 dark:text-gray-300' }, text: 'Drawer content goes here.' },
+            ],
+          },
+          { type: 'Box', props: { className: 'flex-1 bg-black/50' } },
+        ],
+      },
+    },
+    {
+      type: 'Box',
+      label: 'Toast',
+      icon: '🔔',
+      defaultNode: {
+        type: 'Box',
+        condition: '',
+        props: { className: 'fixed top-[16px] right-[16px] z-[60] w-[360px] bg-white dark:bg-gray-900 rounded-[8px] p-[16px] border border-gray-200 dark:border-gray-700 flex flex-row items-start gap-[12px]', style: { boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)' }, animation: { enter: { type: 'slideInRight', duration: 200 } } },
+        children: [
+          { type: 'Icon', props: { icon: 'lucide:check-circle', size: 20, color: '#22c55e' } },
+          { type: 'Box', props: { className: 'flex-1 flex flex-col gap-[2px]' }, children: [
+            { type: 'Text', props: { className: 'text-[14px] font-semibold text-gray-900 dark:text-white' }, text: 'Success' },
+            { type: 'Text', props: { className: 'text-[12px] text-gray-500 dark:text-gray-400' }, text: 'Your action was completed successfully.' },
+          ] },
+          { type: 'Box', props: { className: 'cursor-pointer p-[2px]' }, children: [{ type: 'Icon', props: { icon: 'lucide:x', size: 16, color: '#9ca3af' } }] },
+        ],
+      },
+    },
   ],
 };
 

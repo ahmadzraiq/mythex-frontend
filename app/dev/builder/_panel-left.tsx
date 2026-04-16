@@ -36,7 +36,6 @@ import { LogicTab, type LogicSlideState } from './_logic-tab';
 import { Chevron, NodeIcon, ContextMenu, LayerRow, LayerTree, type LayerRowProps, type ContextMenuProps, type LayerDragState } from './_layers-panel';
 import { PRIMITIVE_COMPONENTS, SectionHeader, DraggablePrimitive, ComponentsTab } from './_components-tab';
 import { CustomVarsSection, VarsWorkflowsSection, VarsFormulasSection, VarsPanel } from './_vars-panel';
-import { PopupsTab } from './_popups-tab';
 import { AssetsTab } from './_assets-tab';
 import { SharedComponentsTab } from './_shared-components-tab';
 
@@ -810,14 +809,14 @@ export default function PanelLeft({
   onOpenPageConfig,
   onWidthChange,
 }: PanelLeftProps) {
-  const [tab, setTab] = useState<'layers' | 'components' | 'data' | 'logic' | 'popups' | 'assets' | 'shared'>('components');
+  const [tab, setTab] = useState<'layers' | 'components' | 'data' | 'logic' | 'assets' | 'shared'>('components');
   const [search, setSearch] = useState('');
   const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [layerDrag, setLayerDrag] = useState<LayerDragState>({ dragId: null, dropTargetId: null, dropPosition: 'above' });
 
   const store = useBuilderStore();
 
-  // (Removed: no longer auto-switching to layers when entering popup-edit mode)
+  // (Removed: no longer auto-switching to layers when entering edit mode)
 
   // Auto-expand ancestor nodes and scroll to the selected layer when canvas selection changes
   useEffect(() => {
@@ -901,8 +900,8 @@ export default function PanelLeft({
     setLayerDrag({ dragId: null, dropTargetId: null, dropPosition: 'above' });
   }, [layerDrag, store]);
 
-  // Show all pageNodes — in popup-edit mode this includes both the original page
-  // components AND the popup root appended at the end, so both are visible in layers.
+  // Show all pageNodes — in shared-component edit mode this includes both the original page
+  // content AND the component root appended at the end, so both are visible in layers.
   const baseNodes = store.pageNodes as SDUINode[];
 
   const filteredNodes = useMemo(() => {
@@ -952,7 +951,7 @@ export default function PanelLeft({
       )}
       {/* Tab bar */}
       <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-        {(['layers', 'components', 'data', 'logic', 'popups', 'shared', 'assets'] as const).map(t => (
+        {(['layers', 'components', 'data', 'logic', 'shared', 'assets'] as const).map(t => (
           <button
             key={t}
             data-testid={`tab-${t}`}
@@ -1040,8 +1039,6 @@ export default function PanelLeft({
       {tab === 'data' && <DataTab onSetSlide={onSetDataSlide} onWidthChange={onWidthChange} />}
 
       {tab === 'logic' && <LogicTab onSetSlide={onSetLogicSlide} />}
-
-      {tab === 'popups' && <PopupsTab />}
 
       {tab === 'shared' && <SharedComponentsTab />}
 

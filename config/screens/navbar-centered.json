@@ -1,0 +1,152 @@
+{
+  "meta": { "title": "Centered Logo Navbar" },
+  "state": {},
+  "ui": {
+    "type": "Box",
+    "props": { "className": "w-full min-h-screen bg-white dark:bg-gray-950" },
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full h-[64px] flex flex-row items-center px-6 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 fixed top-[0px] left-[0px] right-[0px] z-[50]"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex-1 flex flex-row items-center gap-6" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row items-center gap-2 cursor-pointer" },
+                "actions": [{ "action": "navigateToNavbarTypes" }],
+                "children": [{ "type": "Icon", "props": { "icon": "lucide:arrow-left", "size": 16, "color": "#6b7280" } }]
+              },
+              { "type": "Text", "props": { "className": "text-sm font-medium text-gray-600 dark:text-gray-300" }, "text": "Shop" },
+              { "type": "Text", "props": { "className": "text-sm font-medium text-gray-600 dark:text-gray-300" }, "text": "Collections" },
+              { "type": "Text", "props": { "className": "text-sm font-medium text-gray-600 dark:text-gray-300" }, "text": "Journal" }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex items-center justify-center" },
+            "children": [
+              { "type": "Text", "props": { "className": "font-serif text-2xl font-bold text-gray-900 dark:text-white tracking-widest" }, "text": "MAISON" }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex-1 flex flex-row items-center justify-end gap-6" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-sm font-medium text-gray-600 dark:text-gray-300" }, "text": "About" },
+              { "type": "Text", "props": { "className": "text-sm font-medium text-gray-600 dark:text-gray-300" }, "text": "Contact" },
+              { "type": "Icon", "props": { "icon": "lucide:search", "size": 18, "color": "#6b7280" } },
+              { "type": "Icon", "props": { "icon": "lucide:shopping-bag", "size": 18, "color": "#6b7280" } }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "w-full pt-[64px]" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "w-full min-h-[80vh] bg-gradient-to-b from-stone-100 to-stone-50 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center px-6" },
+            "children": [
+              { "type": "Box", "props": { "className": "bg-teal-100 dark:bg-teal-900/30 rounded-full px-4 py-1 mb-6" }, "children": [{ "type": "Text", "props": { "className": "text-sm font-medium text-teal-700 dark:text-teal-300" }, "text": "Centered Logo" }] },
+              { "type": "Heading", "props": { "size": "3xl", "className": "font-bold text-gray-900 dark:text-white text-center" }, "text": "Symmetrical Elegance" },
+              { "type": "Text", "props": { "className": "text-lg text-gray-600 dark:text-gray-300 text-center max-w-2xl mt-4" }, "text": "The logo sits at the exact horizontal center with navigation links split evenly on both sides. A fashion and editorial classic." },
+              { "type": "Text", "props": { "className": "text-sm text-gray-400 mt-8" }, "text": "Common in fashion, editorial, and luxury brands" }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "w-full max-w-6xl mx-auto px-6 py-20" },
+            "children": [
+              { "type": "Heading", "props": { "size": "2xl", "className": "font-bold text-gray-900 dark:text-white text-center mb-12" }, "text": "Features" },
+              {
+                "type": "Box",
+                "props": { "className": "grid grid-cols-1 md:grid-cols-3 gap-8" },
+                "children": [
+                  { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
+                    { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:align-center", "size": 24, "color": "#14b8a6" } }] },
+                    { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "Perfect Symmetry" },
+                    { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "Three-column layout ensures the logo is always perfectly centered." }
+                  ]},
+                  { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
+                    { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-stone-200 dark:bg-stone-800 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:crown", "size": 24, "color": "#78716c" } }] },
+                    { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "Brand Focus" },
+                    { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "The centered logo draws the eye first, reinforcing brand identity." }
+                  ]},
+                  { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
+                    { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:gem", "size": 24, "color": "#f59e0b" } }] },
+                    { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "Luxury Feel" },
+                    { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "A pattern associated with premium fashion and luxury brands." }
+                  ]}
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "w-full bg-gray-50 dark:bg-gray-900 py-20 px-6" },
+            "children": [
+              { "type": "Heading", "props": { "size": "2xl", "className": "font-bold text-gray-900 dark:text-white text-center mb-12" }, "text": "Testimonials" },
+              {
+                "type": "Box",
+                "props": { "className": "max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6" },
+                "children": [
+                  { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
+                    { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"The centered logo navbar elevates our brand perception significantly.\"" },
+                    { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "Claire Dupont" },
+                    { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "Brand Director" }
+                  ]},
+                  { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
+                    { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"Customers associate this layout with premium quality. It works.\"" },
+                    { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "Marco Rossi" },
+                    { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "E-commerce Lead" }
+                  ]},
+                  { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
+                    { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"The three-column grid makes implementing this pattern straightforward.\"" },
+                    { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "Yuki Tanaka" },
+                    { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "Developer" }
+                  ]}
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "w-full max-w-5xl mx-auto px-6 py-20" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row flex-wrap justify-center gap-12" },
+                "children": [
+                  { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-teal-500" }, "text": "3" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Column Grid" }] },
+                  { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-teal-500" }, "text": "50%" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Logo Position" }] },
+                  { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-teal-500" }, "text": "1:1" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Link Balance" }] },
+                  { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-teal-500" }, "text": "100%" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Brand Focus" }] }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "w-full bg-gray-900 dark:bg-gray-950 py-10 px-6" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "max-w-5xl mx-auto flex flex-row items-center justify-between" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-sm text-gray-400" }, "text": "NavbarDemo \u00a9 2026" },
+                  { "type": "Text", "props": { "className": "text-sm text-gray-500 cursor-pointer" }, "text": "\u2190 Back to all types", "actions": [{ "action": "navigateToNavbarTypes" }] }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

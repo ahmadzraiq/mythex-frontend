@@ -20,7 +20,8 @@ import {
   CanvasNodeEngine,
   sanitizeGhostClone,
 } from './_canvas-helpers';
-import { useBuilderStore, findNode, findParentNode, VIEWPORT_WIDTHS, REQUIRED_PARENT, ALLOWED_CHILDREN } from './_store';
+import { useBuilderStore, findNode, findParentNode, VIEWPORT_WIDTHS, REQUIRED_PARENT, ALLOWED_CHILDREN, isNonDraggable } from './_store';
+import { findSharedRoot, getNodeSubtrees } from './_store-node-helpers';
 import { useCanvasPanZoom, MIN_ZOOM, MAX_ZOOM, PAGE_GAP } from './_canvas-hooks';
 import BuilderOverlay, { type ResizeHandle } from './_overlay';
 import { SDUIEngine } from '@/lib/sdui/sdui-engine';
@@ -473,6 +474,32 @@ export default function BuilderCanvas() {
     return () => useBuilderStore.getState()._setOverlayUpdateCallback(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Sync overlay frame height with content frame ─────────────────────────
+  // The overlay frame (frame "1") only has minHeight: VIEWPORT_H and no content
+  // to push it taller. The content frame (frame "0") grows with SDUI content.
+  // Without this sync, the capture overlay doesn't cover content below the fold,
+  // breaking hover highlighting and drag for nodes below VIEWPORT_H.
+  useEffect(() => {
+    const overlayFrame = pageFrameRef.current;
+    if (!overlayFrame) return;
+    const pageId = overlayFrame.dataset.builderPageId;
+    if (!pageId) return;
+    const contentFrame = document.querySelector(
+      `[data-builder-page-id="${pageId}"][data-builder-page-frame="0"]`
+    ) as HTMLElement | null;
+    if (!contentFrame) return;
+
+    const sync = () => {
+      const h = contentFrame.scrollHeight;
+      overlayFrame.style.height = h > VIEWPORT_H ? `${h}px` : '';
+    };
+    sync();
+
+    const ro = new ResizeObserver(sync);
+    ro.observe(contentFrame);
+    return () => ro.disconnect();
+  }, [focusedPageId]);
 
   // Track the last page frame hovered during a panel drag (prevents redundant focusPage calls)
   const lastDragHoverPageRef = useRef<string | null>(null);
@@ -952,19 +979,22 @@ export default function BuilderCanvas() {
     canvasEl: HTMLElement,
     canvasRect: DOMRect,
   ): { insertIdx: number; lineY: number } {
+    const rectsMap = new Map<string, DOMRect>();
+    for (const sib of siblings) {
+      if (!sib.id) continue;
+      const el = canvasEl.querySelector(`[data-builder-id="${sib.id}"]`) as HTMLElement | null;
+      if (el) rectsMap.set(sib.id, el.getBoundingClientRect());
+    }
+
     let insertIdx = siblings.length;
     let lineY     = panYRef.current;
     let minDist   = Infinity;
 
     for (let gi = 0; gi <= siblings.length; gi++) {
-      const prevEl = gi > 0
-        ? canvasEl.querySelector(`[data-builder-id="${siblings[gi - 1].id}"]`)
-        : null;
-      const nextEl = gi < siblings.length
-        ? canvasEl.querySelector(`[data-builder-id="${siblings[gi].id}"]`)
-        : null;
-      const rawPrevBottom = prevEl?.getBoundingClientRect().bottom;
-      const rawNextTop    = nextEl?.getBoundingClientRect().top;
+      const prevRect = gi > 0 ? rectsMap.get(siblings[gi - 1].id!) : undefined;
+      const nextRect = gi < siblings.length ? rectsMap.get(siblings[gi].id!) : undefined;
+      const rawPrevBottom = prevRect?.bottom;
+      const rawNextTop    = nextRect?.top;
       // Symmetric fallback keeps boundaries reachable
       const prevBottom = rawPrevBottom ?? rawNextTop ?? (canvasRect.top + panYRef.current);
       const nextTop    = rawNextTop    ?? rawPrevBottom ?? (canvasRect.top + panYRef.current);
@@ -973,7 +1003,6 @@ export default function BuilderCanvas() {
       if (dist < minDist) {
         minDist   = dist;
         insertIdx = gi;
-        // Line sits at the actual boundary between the two elements
         lineY = (rawPrevBottom ?? rawNextTop ?? (canvasRect.top + panYRef.current)) - canvasRect.top;
       }
     }
@@ -1001,19 +1030,22 @@ export default function BuilderCanvas() {
     canvasEl: HTMLElement,
     canvasRect: DOMRect,
   ): { insertIdx: number; lineX: number } {
+    const rectsMap = new Map<string, DOMRect>();
+    for (const sib of siblings) {
+      if (!sib.id) continue;
+      const el = canvasEl.querySelector(`[data-builder-id="${sib.id}"]`) as HTMLElement | null;
+      if (el) rectsMap.set(sib.id, el.getBoundingClientRect());
+    }
+
     let insertIdx = siblings.length;
     let lineX     = panXRef.current ?? 0;
     let minDist   = Infinity;
 
     for (let gi = 0; gi <= siblings.length; gi++) {
-      const prevEl = gi > 0
-        ? canvasEl.querySelector(`[data-builder-id="${siblings[gi - 1].id}"]`)
-        : null;
-      const nextEl = gi < siblings.length
-        ? canvasEl.querySelector(`[data-builder-id="${siblings[gi].id}"]`)
-        : null;
-      const rawPrevRight = prevEl?.getBoundingClientRect().right;
-      const rawNextLeft  = nextEl?.getBoundingClientRect().left;
+      const prevRect = gi > 0 ? rectsMap.get(siblings[gi - 1].id!) : undefined;
+      const nextRect = gi < siblings.length ? rectsMap.get(siblings[gi].id!) : undefined;
+      const rawPrevRight = prevRect?.right;
+      const rawNextLeft  = nextRect?.left;
       const prevRight = rawPrevRight ?? rawNextLeft ?? (canvasRect.left + (panXRef.current ?? 0));
       const nextLeft  = rawNextLeft  ?? rawPrevRight ?? (canvasRect.left + (panXRef.current ?? 0));
       const gapMid = (prevRight + nextLeft) / 2;
@@ -1639,12 +1671,14 @@ export default function BuilderCanvas() {
     function collectSubtreeIds(nodes: SDUINode[], out: Set<string>) {
       for (const n of nodes) {
         if (n.id) out.add(n.id);
-        if (n.children?.length) collectSubtreeIds(n.children as SDUINode[], out);
+        for (const sub of getNodeSubtrees(n)) collectSubtreeIds(sub, out);
       }
     }
     for (const id of allDraggingIds) {
       const dragNode = findNode(pn, id);
-      if (dragNode?.children?.length) collectSubtreeIds(dragNode.children as SDUINode[], draggingIdSet);
+      if (dragNode) {
+        for (const sub of getNodeSubtrees(dragNode)) collectSubtreeIds(sub, draggingIdSet);
+      }
     }
 
     // Find the SDUI node under cursor. Dragged nodes (opacity 0.3, still in DOM)
@@ -1653,6 +1687,12 @@ export default function BuilderCanvas() {
     // anyPage=true allows finding nodes on non-focused pages for cross-page drops.
     // Canvas wrapper already has pointer-events:none during drag (set in isCanvasNodeDrag block).
     const hovEl = findDropTargetElAt(e.clientX, e.clientY, draggingIdSet, true);
+
+    // Scope querySelector to the page frame containing the hovered node.
+    // This avoids searching the entire multi-page canvas DOM for every sibling.
+    const scopeEl: HTMLElement = (hovEl
+      ? (hovEl.closest('[data-builder-page-id]') as HTMLElement | null)
+      : null) ?? canvas;
 
     if (hovEl) {
       const nodeId   = hovEl.dataset.builderId!;
@@ -1693,13 +1733,13 @@ export default function BuilderCanvas() {
       if (isContainer && !isDroppingIntoSelf && inDropZone && allDraggedAllowed) {
         const children = (nodeInTree?.children ?? []) as SDUINode[];
         if (isRowContainer(nodeInTree)) {
-          const { insertIdx, lineX } = nearestGapH(children, e.clientX, canvas, rect);
+          const { insertIdx, lineX } = nearestGapH(children, e.clientX, scopeEl, rect);
           setDropContainerId(nodeId);
           setDropLineX(lineX);
           setDropLineY(null);
           dropTargetRef.current = { parentId: nodeId, index: insertIdx };
         } else {
-          const { insertIdx, lineY } = nearestGap(children, e.clientY, canvas, rect);
+          const { insertIdx, lineY } = nearestGap(children, e.clientY, scopeEl, rect);
           setDropContainerId(nodeId);
           setDropLineY(lineY);
           setDropLineX(null);
@@ -1713,13 +1753,13 @@ export default function BuilderCanvas() {
           ? (parent.children as SDUINode[])
           : getRootSiblingsForNode(nodeId);
         if (isRowContainer(parent)) {
-          const { insertIdx, lineX } = nearestGapH(siblings, e.clientX, canvas, rect);
+          const { insertIdx, lineX } = nearestGapH(siblings, e.clientX, scopeEl, rect);
           setDropContainerId(null);
           setDropLineX(lineX);
           setDropLineY(null);
           dropTargetRef.current = { parentId, index: insertIdx };
         } else {
-          const { insertIdx, lineY } = nearestGap(siblings, e.clientY, canvas, rect);
+          const { insertIdx, lineY } = nearestGap(siblings, e.clientY, scopeEl, rect);
           setDropContainerId(null);
           setDropLineY(lineY);
           setDropLineX(null);
@@ -1729,13 +1769,25 @@ export default function BuilderCanvas() {
     } else {
       // ── No node under cursor (or cursor is over a dragged node): use
       //    nearest-gap on root-level nodes (always column at root level).
-      const nodes = useBuilderStore.getState().pageNodes;
-      const { insertIdx, lineY } = nearestGap(nodes, e.clientY, canvas, rect);
+      const hovPageId = lastDragHoverPageRef.current;
+      const hovPageEl = hovPageId
+        ? (document.querySelector(`[data-builder-page-id="${hovPageId}"]`) as HTMLElement | null)
+        : null;
+      const s = useBuilderStore.getState();
+      let rootNodes: SDUINode[];
+      if (hovPageId && hovPageId !== s.focusedPageId) {
+        const pg = s.pages.find(p => p.id === hovPageId);
+        rootNodes = (pg?.nodes ?? s.pageNodes) as SDUINode[];
+      } else {
+        rootNodes = s.pageNodes as SDUINode[];
+      }
+      const { insertIdx, lineY } = nearestGap(rootNodes, e.clientY, hovPageEl ?? canvas, rect);
       setDropContainerId(null);
       setDropLineY(lineY);
       setDropLineX(null);
       dropTargetRef.current = { parentId: null, index: insertIdx };
     }
+
   }, [findBuilderElAt]);
 
   const onDragLeave = useCallback(() => {
@@ -1991,10 +2043,9 @@ export default function BuilderCanvas() {
     } else if (primitive) {
       try {
         const node = ensureIds(JSON.parse(primitive) as SDUINode);
-        const primTargetPage = lastDragHoverPageRef.current;
         const primCurPage = useBuilderStore.getState().focusedPageId || useBuilderStore.getState().currentPageId;
-        if (primTargetPage && primTargetPage !== primCurPage) {
-          focusPage(primTargetPage);
+        if (dropTargetPageId && dropTargetPageId !== primCurPage) {
+          focusPage(dropTargetPageId);
         }
         if (target.parentId) {
           const parentNode = findNodeAcrossPages(target.parentId);
@@ -2057,18 +2108,60 @@ export default function BuilderCanvas() {
 
     // Read existing style once — we apply size imperatively during the drag
     // and only commit to Zustand on pointerup (same pattern as pan/zoom world container).
-    const node = (() => {
-      function find(nodes: SDUINode[], targetId: string): SDUINode | null {
-        for (const n of nodes) {
-          if (n.id === targetId) return n;
-          if (n.children?.length) { const f = find(n.children as SDUINode[], targetId); if (f) return f; }
-        }
-        return null;
-      }
-      return find(useBuilderStore.getState().pageNodes, id)
-        ?? find(useBuilderStore.getState().canvasNodes as SDUINode[], id);
-    })();
+    const node = findNode(useBuilderStore.getState().pageNodes, id)
+      ?? findNode(useBuilderStore.getState().canvasNodes as SDUINode[], id);
     const existingStyle = (node?.props as { style?: Record<string, string> })?.style ?? {};
+
+    // Collect DOM elements of other shared instances (same model ID) for live resize sync.
+    // Search ALL pages (not just focused) since multiple page frames are visible on the canvas.
+    const sharedSiblingEls: HTMLElement[] = [];
+    (() => {
+      const s = useBuilderStore.getState();
+      // Build a flat list of all nodes across every page
+      const allNodes: SDUINode[] = [];
+      for (const page of s.pages as Array<{ nodes: SDUINode[] }>) {
+        allNodes.push(...(page.nodes as SDUINode[]));
+      }
+      const sharedRoot = findSharedRoot(allNodes, id);
+      if (!sharedRoot) return;
+      const sharedMeta = (sharedRoot as unknown as Record<string, unknown>)._shared as { id: string } | undefined;
+      if (!sharedMeta?.id) return;
+
+      // Build path from resized node to shared root (list of child indices)
+      const pathFromRoot: number[] = [];
+      let cur = id;
+      while (cur !== sharedRoot.id) {
+        const parent = findParentNode(allNodes, cur);
+        if (!parent) break;
+        const idx = ((parent.children ?? []) as SDUINode[]).findIndex(c => c.id === cur);
+        if (idx < 0) break;
+        pathFromRoot.unshift(idx);
+        cur = parent.id!;
+      }
+
+      // Find other shared roots with the same model ID across all pages
+      const otherRoots: SDUINode[] = [];
+      (function walk(nodes: SDUINode[]) {
+        for (const n of nodes) {
+          const sm = (n as unknown as Record<string, unknown>)._shared as { id: string } | undefined;
+          if (sm?.id === sharedMeta.id && n.id !== sharedRoot.id) otherRoots.push(n);
+          if (n.children?.length) walk(n.children as SDUINode[]);
+        }
+      })(allNodes);
+
+      for (const otherRoot of otherRoots) {
+        let target: SDUINode = otherRoot;
+        let valid = true;
+        for (const childIdx of pathFromRoot) {
+          const ch = (target.children ?? []) as SDUINode[];
+          if (childIdx >= ch.length) { valid = false; break; }
+          target = ch[childIdx];
+        }
+        if (!valid || !target.id) continue;
+        const targetEl = document.querySelector(`[data-builder-id="${target.id}"]`) as HTMLElement | null;
+        if (targetEl) sharedSiblingEls.push(targetEl);
+      }
+    })();
 
     // Track final committed size for the onUp handler
     let lastW = startW;
@@ -2102,6 +2195,11 @@ export default function BuilderCanvas() {
         (sibEl as HTMLElement).style.width  = `${newW}px`;
         (sibEl as HTMLElement).style.height = `${newH}px`;
       });
+      // Live-sync: update other shared instances' DOM elements
+      for (const sibEl of sharedSiblingEls) {
+        sibEl.style.width  = `${newW}px`;
+        sibEl.style.height = `${newH}px`;
+      }
 
       // Synchronous ring update so handles track the new size in the same frame
       overlayInstantUpdateRef.current?.();
@@ -2550,7 +2648,8 @@ export default function BuilderCanvas() {
                     found = true;
                     break;
                   }
-                  // Keep walking up to find the root ancestor
+                  const ancestorNode = findNode(useBuilderStore.getState().pageNodes, el.dataset.builderId);
+                  if (isNonDraggable(ancestorNode)) break;
                   dragId = el.dataset.builderId;
                 }
                 // If we walked up without finding a selected ancestor, dragId is now
@@ -2579,6 +2678,11 @@ export default function BuilderCanvas() {
                 }
               }
 
+              const dragNode = findNode(useBuilderStore.getState().pageNodes, dragId);
+              if (isNonDraggable(dragNode)) {
+                e.preventDefault();
+                return;
+              }
               draggingNodeIdRef.current = dragId;
               dragSourcePageIdRef.current = useBuilderStore.getState().focusedPageId || useBuilderStore.getState().currentPageId;
               e.dataTransfer.setData('text/canvas-node-id', dragId);

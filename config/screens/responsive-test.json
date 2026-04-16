@@ -657,30 +657,30 @@
             },
             "children": [
               {
-                "type": "Button",
+                "type": "Box",
                 "id": "resp-s24w-dec",
-                "props": { "className": "!bg-[#ef4444] !text-white rounded-[8px] px-[20px] py-[10px]" },
+                "props": { "className": "bg-[#ef4444] text-white rounded-[8px] px-[20px] py-[10px] flex flex-row items-center justify-center cursor-pointer" },
                 "actions": [{ "action": "waRespDecrement" }],
                 "children": [
-                  { "type": "ButtonText", "text": { "expr": "'- ' + (globalContext?.browser?.breakpoint === 'mobile' ? '1' : globalContext?.browser?.breakpoint === 'tablet' ? '3' : globalContext?.browser?.breakpoint === 'laptop' ? '5' : '10')" } }
+                  { "type": "Text", "props": { "className": "text-white" }, "text": { "expr": "'- ' + (globalContext?.browser?.breakpoint === 'mobile' ? '1' : globalContext?.browser?.breakpoint === 'tablet' ? '3' : globalContext?.browser?.breakpoint === 'laptop' ? '5' : '10')" } }
                 ]
               },
               {
-                "type": "Button",
+                "type": "Box",
                 "id": "resp-s24w-reset",
-                "props": { "className": "!bg-[#475569] !text-white rounded-[8px] px-[20px] py-[10px]" },
+                "props": { "className": "bg-[#475569] text-white rounded-[8px] px-[20px] py-[10px] flex flex-row items-center justify-center cursor-pointer" },
                 "actions": [{ "action": "waRespReset" }],
                 "children": [
-                  { "type": "ButtonText", "text": "Reset" }
+                  { "type": "Text", "props": { "className": "text-white" }, "text": "Reset" }
                 ]
               },
               {
-                "type": "Button",
+                "type": "Box",
                 "id": "resp-s24w-inc",
-                "props": { "className": "!bg-[#22c55e] !text-white rounded-[8px] px-[20px] py-[10px]" },
+                "props": { "className": "bg-[#22c55e] text-white rounded-[8px] px-[20px] py-[10px] flex flex-row items-center justify-center cursor-pointer" },
                 "actions": [{ "action": "waRespIncrement" }],
                 "children": [
-                  { "type": "ButtonText", "text": { "expr": "'+ ' + (globalContext?.browser?.breakpoint === 'mobile' ? '1' : globalContext?.browser?.breakpoint === 'tablet' ? '3' : globalContext?.browser?.breakpoint === 'laptop' ? '5' : '10')" } }
+                  { "type": "Text", "props": { "className": "text-white" }, "text": { "expr": "'+ ' + (globalContext?.browser?.breakpoint === 'mobile' ? '1' : globalContext?.browser?.breakpoint === 'tablet' ? '3' : globalContext?.browser?.breakpoint === 'laptop' ? '5' : '10')" } }
                 ]
               }
             ]

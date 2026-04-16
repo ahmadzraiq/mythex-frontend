@@ -59,7 +59,7 @@ function main() {
   assert.ok(phaseW.static.includes('uploadFile'), 'Phase W prompt should document uploadFile');
   assert.ok(phaseW.static.includes('printPdf'), 'Phase W prompt should document printPdf');
   assert.ok(phaseW.static.includes('downloadFileFromUrl'), 'Phase W prompt should document downloadFileFromUrl');
-  assert.ok(phaseW.static.includes('closePopup'), 'Phase W prompt should document closePopup');
+  assert.ok(phaseW.static.includes('deleteSharedComponent'), 'Phase W prompt should document deleteSharedComponent');
   assert.ok(!phaseW.static.includes('## Prohibited'), 'Phase W prompt should not use obsolete prohibited section');
   assert.ok(!phaseW.static.includes('NOT functional'), 'Phase W prompt should not contain obsolete NOT functional wording');
 

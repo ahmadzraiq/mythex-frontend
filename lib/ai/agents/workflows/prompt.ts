@@ -94,10 +94,10 @@ ${SHARED_FORMULA_SYNTAX}
 - \`breakLoop\` — exits current loop.
 - \`continueLoop\` — skips to next iteration.
 
-### Popup
-- \`openPopup\` — config: \`popupId\` (Modal node UUID), \`props\` (per-prop values), \`waitClose\` (boolean).
-- \`closePopup\` — closes the currently open popup.
-- \`closeAllPopups\` — no config.
+### Shared Component
+- \`addSharedComponent\` — config: \`componentId\` (shared component model ID), \`props\` (per-prop values), \`waitClose\` (boolean).
+- \`deleteSharedComponent\` — removes the current dynamic shared component instance.
+- \`deleteAllSharedComponents\` — config: optional \`componentId\` (removes all instances of that component, or all if omitted).
 
 ### Form (inside FormContainer only)
 - \`setFormState\` — config: \`isSubmitting\` (boolean), \`isSubmitted\` (boolean).
@@ -126,7 +126,7 @@ These config fields accept \`{ formula: "..." }\`:
 - \`updateCollection.data\`
 - \`branch.condition\`, \`multiOptionBranch.condition\`, \`whileLoop.condition\`, \`passThroughCondition.condition\`
 - \`forEach.items\` (as formula object)
-- \`openPopup.props\` (per-prop)
+- \`addSharedComponent.props\` (per-prop)
 - \`returnValue.value\`, \`copyToClipboard.value\`
 
 ## Step Result Access

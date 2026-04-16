@@ -9,9 +9,10 @@
  * hook orchestration, and JSX composition.
  */
 
-import React, { memo, useSyncExternalStore, useContext, useEffect, useRef, useMemo } from 'react';
+import React, { memo, useSyncExternalStore, useContext, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import { AnimatedNode } from './components/animated-node';
 import type { AnimationConfig } from './components/animated-node';
+import type { PopoverHostProps } from './components/PopoverHost';
 import { FormContext, FormScopeContext } from './form-context';
 import { getNestedValue } from './nested-utils';
 import { trackFormFieldProps, useFormFieldRegistration, useExternalNodeValueSync, useExternalFormSync } from './form-field-tracker';
@@ -370,8 +371,23 @@ interface RendererProps {
   builderMapIndex?: number;
 }
 
+const LazyPopoverHost = lazy(() => import('./components/PopoverHost'));
+
+function PopoverHostLazy(props: Omit<PopoverHostProps, 'builderPopoverShown'> & { shownPopovers?: Set<string> }) {
+  const { shownPopovers, ...rest } = props;
+  return (
+    <Suspense fallback={rest.trigger}>
+      <LazyPopoverHost
+        {...rest}
+        builderPopoverShown={shownPopovers?.has(`popover:${rest.nodeId}`)}
+      />
+    </Suspense>
+  );
+}
+
 const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context, scope, builderPath = '0', builderMapIndex }: RendererProps) {
-  const { builderMode, activeBreakpoint } = useBuilderMode();
+  const builderCtx = useBuilderMode();
+  const { builderMode, activeBreakpoint } = builderCtx;
 
   // Resolve responsive overrides before any other processing.
   // In builder mode, activeBreakpoint comes from the builder's viewport preset.
@@ -379,6 +395,42 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   const node = activeBreakpoint ? resolveResponsiveNode(rawNode, activeBreakpoint) : rawNode;
 
   const { store, mergedStore, mergedState, runAction, fetchData, actionsConfig, screenName, screenScopedAliases = [], previewState } = context;
+
+  // ── _shared scope injection: make context.component.props available to children ──
+  let effectiveScope = scope;
+  const _sharedMeta = (node as unknown as Record<string, unknown>)._shared as { id: string; name: string } | undefined;
+  if (_sharedMeta) {
+    let scModel: { properties?: Array<{ name: string; defaultValue?: unknown }> } | undefined;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const scData = require('@/lib/builder/shared-component-data');
+      scModel = scData.getSharedComponents()[_sharedMeta.id];
+    } catch { /* builder data not available */ }
+    if (!scModel) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        scModel = require('@/config/shared-components.json')[_sharedMeta.id];
+      } catch { /* static data not available */ }
+    }
+    const nodeProps = (node.props ?? {}) as Record<string, unknown>;
+    const resolvedProps: Record<string, unknown> = {};
+    for (const prop of (scModel?.properties ?? [])) {
+      let val = prop.name in nodeProps ? nodeProps[prop.name] : prop.defaultValue;
+      if (val && typeof val === 'object' && 'formula' in (val as Record<string, unknown>)) {
+        const _merged = mergedStore ? mergedStore.getState().merged : (mergedState ?? {});
+        const _evalState = _merged ? { ...store.getState().getFullState(), ..._merged } : store.getState().getFullState();
+        val = evaluateFormula((val as { formula: string }).formula, _evalState).value;
+      }
+      resolvedProps[prop.name] = val;
+    }
+    effectiveScope = {
+      ...scope,
+      context: {
+        ...((scope?.context as Record<string, unknown>) ?? {}),
+        component: { props: resolvedProps, id: _sharedMeta.id, name: _sharedMeta.name },
+      },
+    };
+  }
 
   // Both builder and production read merged at render time (not via blanket subscription).
   // useVariablePaths (below) is the sole re-render scheduler — it subscribes to mergedStore
@@ -418,22 +470,21 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
       })
     : screenMappedDeps;
 
-  useVariablePaths(store, deps, scope, mergedStore);
-  const get = createGet(store, merged, scope, mergedStore, screenName, screenScopedAliases);
+  useVariablePaths(store, deps, effectiveScope, mergedStore);
+  const get = createGet(store, merged, effectiveScope, mergedStore, screenName, screenScopedAliases);
   const storeState = store.getState().getFullState();
   const state = merged ? { ...storeState, ...merged } : storeState;
-  const stateBase = scope
+  const stateBase = effectiveScope
     ? {
         ...state,
         // Legacy scope vars — kept for backward compat
-        $item: scope.$item, $index: scope.$index, $parent: scope.$parent,
+        $item: effectiveScope.$item, $index: effectiveScope.$index, $parent: effectiveScope.$parent,
         // Pass through the already-structured context.item built by the map loop above,
         // so context.item.data / context.item.parent / context.item.index all resolve correctly.
-        context: scope.context ?? { item: scope.$item, index: scope.$index, parent: scope.$parent },
-        // Spread any additional custom scope keys (e.g. `popup` for popup instances,
-        // so {{popup.props.title}} resolves in templates and formula expressions).
+        context: effectiveScope.context ?? { item: effectiveScope.$item, index: effectiveScope.$index, parent: effectiveScope.$parent },
+        // Spread any additional custom scope keys (e.g. shared component context).
         ...Object.fromEntries(
-          Object.entries(scope).filter(([k]) => !['$item', '$index', '$parent', 'context'].includes(k))
+          Object.entries(effectiveScope).filter(([k]) => !['$item', '$index', '$parent', 'context'].includes(k))
         ),
       }
     : state;
@@ -502,7 +553,7 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
     if (!lifecycleRefs || builderMode || lifecycleRanRef.current) return;
     lifecycleRanRef.current = true;
     for (const a of lifecycleRefs) {
-      Promise.resolve(runAction(a as Parameters<typeof runAction>[0], undefined, scope)).catch(() => {});
+      Promise.resolve(runAction(a as Parameters<typeof runAction>[0], undefined, effectiveScope)).catch(() => {});
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // mount-once: lifecycle triggers fire exactly once when the node mounts
@@ -537,7 +588,7 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
     if (!Array.isArray(arr)) return null;
 
     // The outer repeat's context.item becomes the `parent` for nested repeats
-    const outerItemCtx = (scope?.context as { item?: unknown } | undefined)?.item ?? null;
+    const outerItemCtx = (effectiveScope?.context as { item?: unknown } | undefined)?.item ?? null;
 
     return (
       <>
@@ -572,84 +623,13 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
               key={node.key ? `${node.key}-${index}` : index}
               node={{ ...node, map: undefined, key: node.key ? `${node.key}-${index}` : String(index) }}
               context={context}
-              scope={{ ...scope, $item: item, $index: index, $parent: scope?.$item, context: { item: itemCtx, index, parent: outerItemCtx } }}
+              scope={{ ...effectiveScope, $item: item, $index: index, $parent: effectiveScope?.$item, context: { item: itemCtx, index, parent: outerItemCtx } }}
               builderPath={`${builderPath}-m${index}`}
               builderMapIndex={index}
             />
           );
         })}
       </>
-    );
-  }
-
-  // ── SharedComponent — render a shared component definition with scoped props ──
-  if ((node.type as string) === 'SharedComponent') {
-    const componentId = (node.props as Record<string, unknown> | undefined)?.componentId as string | undefined;
-    const instanceProps = { ...(node.props as Record<string, unknown> | undefined ?? {}) };
-    delete instanceProps.componentId;
-
-    // Resolve prop values via evaluateFormula so formula-capable overrides work
-    const resolvedInstanceProps: Record<string, unknown> = {};
-    for (const [key, val] of Object.entries(instanceProps)) {
-      if (val && typeof val === 'object' && ('formula' in val || 'expr' in val)) {
-        const fVal = (val as { formula?: string; expr?: string });
-        const expr = fVal.formula ?? fVal.expr ?? '';
-        resolvedInstanceProps[key] = evaluateFormula(expr, stateWithScope).value;
-      } else {
-        resolvedInstanceProps[key] = val;
-      }
-    }
-
-    // Dynamically resolve model — prefers live builder store, falls back to static JSON
-    let scModel: { properties?: Array<{ name: string; defaultValue?: unknown }>; content?: unknown } | undefined;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const scData = require('@/lib/builder/shared-component-data');
-      const live = scData.getSharedComponents() as Record<string, { properties: Array<{ name: string; defaultValue?: unknown }>; content: unknown }>;
-      scModel = componentId ? (live[componentId] ?? undefined) : undefined;
-    } catch { /* builder data not available */ }
-    if (!scModel && componentId) {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const staticJson = require('@/config/shared-components.json') as Record<string, { properties: Array<{ name: string; defaultValue?: unknown }>; content: unknown }>;
-      scModel = staticJson[componentId];
-    }
-
-    if (!scModel) {
-      if (process.env.NODE_ENV !== 'production') {
-        return (
-          <div style={{ border: '1px dashed #ef4444', padding: '8px 12px', borderRadius: 6, fontSize: 12, color: '#ef4444', background: '#fef2f2' }}>
-            SharedComponent: unknown id &quot;{componentId ?? '(none)'}&quot;
-          </div>
-        );
-      }
-      return null;
-    }
-
-    // Merge declared property defaults with instance overrides
-    const resolvedProps: Record<string, unknown> = {};
-    for (const prop of (scModel.properties ?? [])) {
-      resolvedProps[prop.name] = prop.name in resolvedInstanceProps ? resolvedInstanceProps[prop.name] : prop.defaultValue;
-    }
-    for (const [key, val] of Object.entries(resolvedInstanceProps)) {
-      if (!(key in resolvedProps)) resolvedProps[key] = val;
-    }
-
-    const scScope = {
-      ...scope,
-      context: {
-        ...(scope?.context as Record<string, unknown> | undefined ?? {}),
-        component: { props: resolvedProps, id: componentId, name: (scModel as { name?: string }).name },
-      },
-    };
-
-    return (
-      <SDURendererInner
-        node={scModel.content as Parameters<typeof SDURendererInner>[0]['node']}
-        context={context}
-        scope={scScope}
-        builderPath={builderPath}
-        builderMapIndex={builderMapIndex}
-      />
     );
   }
 
@@ -673,7 +653,7 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
     },
     sduiContext,
     runAction,
-    scope
+    effectiveScope
   );
 
   const cleanProps = Object.fromEntries(
@@ -704,7 +684,7 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   applyClassFormulas(node, cleanProps, sduiContext);
   applyAutofill(node, cleanProps, builderMode);
 
-  Object.assign(cleanProps, bindActionsToProps(node.actions, runAction, actionsConfig, scope, node.type));
+  Object.assign(cleanProps, bindActionsToProps(node.actions, runAction, actionsConfig, effectiveScope, node.type));
   applyFormContextBindings(node, cleanProps, formCtx, actionsConfig);
   trackFormFieldProps(node, cleanProps, formCtx, parentInputId);
   injectControlledProps(cleanProps, externalValue, externalIsChecked);
@@ -780,19 +760,29 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
     applyBuilderAnnotation(node, cleanProps, builderMode, builderMapIndex);
   }
 
-  const textContent = node.text != null ? resolveText(node.text, sduiContext, scope) : undefined;
+  const textContent = node.text != null ? resolveText(node.text, sduiContext, effectiveScope) : undefined;
+
+  // When the node has a popover config, separate PopoverContent children from
+  // regular children. PopoverContent is rendered by PopoverHost, not inline.
+  let _popoverContentNode: SDUINode | undefined;
+  const renderableNodeChildren = node.popover && node.children?.length
+    ? (node.children as SDUINode[]).filter(c => {
+        if ((c as SDUINode)._popoverContent) { _popoverContentNode = c; return false; }
+        return true;
+      })
+    : node.children;
 
   let children: React.ReactNode = null;
-  if (node.children?.length) {
+  if (renderableNodeChildren?.length) {
     const _seenKeys = new Set<string>();
-    const childElements = node.children.map((child, i) => {
+    const childElements = renderableNodeChildren.map((child, i) => {
       if (child == null) return null;
       const childKey = child.key;
       const isScopeVar = childKey === '$index' || childKey === '$item';
       let key = child.id ?? (childKey && !isScopeVar ? childKey : `child-${i}`);
       if (_seenKeys.has(key)) key = `${key}-${i}`;
       _seenKeys.add(key);
-      return <SDURendererInner key={key} node={child} context={context} scope={scope} builderPath={`${builderPath}-${i}`} builderMapIndex={builderMapIndex} />;
+      return <SDURendererInner key={key} node={child} context={context} scope={effectiveScope} builderPath={`${builderPath}-${i}`} builderMapIndex={builderMapIndex} />;
     });
     // Provide parent Input ID to descendant InputField nodes so they can write to
     // variables['{inputId}-value'] on change (formula live-binding).
@@ -1109,13 +1099,13 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   const animCfg = (node.props as Record<string, unknown> | undefined)?.animation
     ?? (node as unknown as Record<string, unknown>).animation;
   if (animCfg && typeof animCfg === 'object') {
-    // $index is the top-level map iteration index set on scope (scope.$index = index).
-    // repeatIndex lives inside scope.context.item, not at scope root — use $index.
+    // $index is the top-level map iteration index set on effectiveScope (effectiveScope.$index = index).
+    // repeatIndex lives inside effectiveScope.context.item, not at effectiveScope root — use $index.
     const staggerIndex =
-      typeof (scope as { $index?: number } | undefined)?.$index === 'number'
-        ? (scope as { $index: number }).$index
-        : typeof (scope as { repeatIndex?: number } | undefined)?.repeatIndex === 'number'
-          ? (scope as { repeatIndex: number }).repeatIndex
+      typeof (effectiveScope as { $index?: number } | undefined)?.$index === 'number'
+        ? (effectiveScope as { $index: number }).$index
+        : typeof (effectiveScope as { repeatIndex?: number } | undefined)?.repeatIndex === 'number'
+          ? (effectiveScope as { repeatIndex: number }).repeatIndex
           : 0;
     // Resolve any formula-value objects in animation config numeric fields.
     // The builder stores { formula: "variables['UUID']" } when a field is bound.
@@ -1551,6 +1541,25 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   const disabledElement = renderWithDisabledOverlay(element, node, resolvedProps, builderMode);
   if (disabledElement) return disabledElement;
 
+  // ── Popover host ────────────────────────────────────────────────────────────
+  const popCfg = node.popover;
+  if (popCfg && _popoverContentNode) {
+    const pcNode = _popoverContentNode;
+    const renderOverlayContent = () =>
+      <SDURendererInner key={(pcNode as { id?: string }).id || 'popover-content'} node={pcNode} context={context} scope={scope} />;
+
+    return (
+      <PopoverHostLazy
+        popoverConfig={popCfg}
+        nodeId={node.id}
+        trigger={element}
+        renderPopoverContent={renderOverlayContent}
+        builderMode={builderMode}
+        shownPopovers={builderCtx.shownPopovers}
+      />
+    );
+  }
+
   return element;
 });
 
@@ -1558,7 +1567,7 @@ export function SDURenderer({ node, context }: Omit<RendererProps, 'scope'>) {
   return <SDURendererInner node={node} context={context} />;
 }
 
-/** Scoped renderer — like SDURenderer but accepts an initial scope (e.g. popup.props). */
+/** Scoped renderer — like SDURenderer but accepts an initial scope (e.g. shared component props). */
 export function SDURendererScoped({ node, context, scope }: RendererProps) {
   return <SDURendererInner node={node} context={context} scope={scope} />;
 }

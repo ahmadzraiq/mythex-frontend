@@ -16,11 +16,13 @@ import productsActions from '@/config/actions/products.json';
 import layoutActions from '@/config/actions/layout.json';
 import workflowTestActions from '@/config/actions/workflow-test.json';
 import animationTestActions from '@/config/actions/animation-test.json';
-import popupTestActions from '@/config/actions/popup-test.json';
 import dsActionsJson from '@/config/actions/datasource-actions.json';
 import calculatorActions from '@/config/actions/calculator.json';
 import pricingNestedActions from '@/config/actions/pricing-nested.json';
 import responsiveTestActions from '@/config/actions/responsive-test.json';
+import sharedComponentTestActions from '@/config/actions/shared-component-test.json';
+import popoverTestActions from '@/config/actions/popover-test.json';
+import animationShowcaseActions from '@/config/actions/animation-showcase.json';
 import type { NamedDataSourceDef } from '@/config/datasource-types';
 
 // ── In-memory variable additions (lost on reload) ─────────────────────────────
@@ -136,10 +138,12 @@ export function getBuilderConfig() {
     ...(layoutActions as Record<string, Record<string, unknown>>),
     ...(workflowTestActions as Record<string, Record<string, unknown>>),
     ...(animationTestActions as Record<string, Record<string, unknown>>),
-    ...(popupTestActions as Record<string, Record<string, unknown>>),
     ...(calculatorActions as Record<string, Record<string, unknown>>),
     ...(pricingNestedActions as Record<string, Record<string, unknown>>),
     ...(responsiveTestActions as Record<string, Record<string, unknown>>),
+    ...(sharedComponentTestActions as Record<string, Record<string, unknown>>),
+    ...(popoverTestActions as Record<string, Record<string, unknown>>),
+    ...(animationShowcaseActions as Record<string, Record<string, unknown>>),
   };
 
   // A workflow def has a steps array. A direct action has a specific type (graphql, fetch, etc.)

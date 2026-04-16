@@ -61,8 +61,10 @@ export function extractNodeDependencies(node: Pick<SDUINode, 'text' | 'props' | 
   if (node.text != null) {
     if (typeof node.text === 'string') paths.push(...extractPathsFromTemplate(node.text));
     else if (typeof node.text === 'object' && 'expr' in node.text) {
-      const exprPaths = extractPathsFromObject((node.text as { expr: unknown }).expr);
+      const exprVal = (node.text as { expr: unknown }).expr;
+      const exprPaths = extractPathsFromObject(exprVal);
       paths.push(...exprPaths.filter((p) => p !== 'current' && p !== 'accumulator' && !p.startsWith('current.')));
+      if (typeof exprVal === 'string') paths.push(...extractFormulaVarPaths(exprVal));
     } else if (typeof node.text === 'object' && 'formula' in node.text) {
       // Builder formula binding: treat the formula expression as the subscription path.
       // getNestedValue now handles bracket-notation (components?.['id']?.['value']).

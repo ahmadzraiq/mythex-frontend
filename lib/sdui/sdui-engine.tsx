@@ -26,7 +26,7 @@ import { dispatchToHandler } from './actions/handlers';
 import type { ValidationRule, ActionsConfig, EngineConfig, RouteConfig, SDUIEngineProps, NamedDataSourceDef } from './engine-types';
 import { applyPreviewStatePatch, applyPreviewDataPatch } from './builder-preview';
 import { useNamedDataSourceFetcher } from './named-datasource-fetcher';
-import { PopupRenderer } from './components/PopupRenderer';
+import { SharedComponentDynamicRenderer } from './components/SharedComponentDynamicRenderer';
 
 export type { ValidationRule, ActionsConfig, EngineConfig, RouteConfig, SDUIEngineProps, NamedDataSourceDef } from './engine-types';
 
@@ -43,14 +43,14 @@ export function SDUIEngine({
   routes = [],
   paramChangeAction,
   builderMode = false,
-  showPopups = true,
   builderViewportHeight,
   builderViewport,
-  popupModels,
+  shownPopovers,
   previewState,
   previewStates,
   previewData,
   dataSources,
+  builderQueryParams,
 }: SDUIEngineProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -196,6 +196,26 @@ export function SDUIEngine({
     return () => { window.removeEventListener('resize', onResize); if (rafId !== null) cancelAnimationFrame(rafId); };
   }, [builderMode]);
 
+  // ── Live scroll tracking — writes { y, direction, yPercent } to variables['scroll'] ──
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let prevY = window.scrollY;
+    let rafId = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const y = window.scrollY;
+        const totalH = document.documentElement.scrollHeight - window.innerHeight;
+        const yPercent = totalH > 0 ? Math.round((y / totalH) * 100) : 0;
+        const direction = y > prevY + 4 ? 'down' : y < prevY - 4 ? 'up' : 'none';
+        if (direction !== 'none') prevY = y;
+        getGlobalVariableStore().getState().set('scroll', { y, direction, yPercent });
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(rafId); };
+  }, []);
+
   const activeBreakpoint: import('./responsive-resolver').ActiveBreakpoint =
     builderMode ? (builderViewport ?? 'desktop') : productionBreakpoint;
 
@@ -207,6 +227,12 @@ export function SDUIEngine({
     if (typeof window === 'undefined') return;
     const query: Record<string, string> = {};
     searchParams?.forEach((v, k) => { query[k] = v; });
+    // In builder mode, overlay per-page query param definitions so formulas see them
+    if (builderMode && builderQueryParams) {
+      for (const p of builderQueryParams) {
+        if (p.name.trim()) query[p.name] = p.value;
+      }
+    }
     const url = window.location.href;
     const domain = window.location.hostname;
     const baseUrl = window.location.origin;
@@ -217,7 +243,6 @@ export function SDUIEngine({
         domain,
         baseUrl,
         query,
-        // breakpoint / environment / theme are best-effort at this point
         breakpoint: activeBreakpoint,
         environment: process.env.NODE_ENV ?? 'production',
       },
@@ -242,16 +267,22 @@ export function SDUIEngine({
       pages: PAGES_MAP,
       theme: THEME_OBJ,
     }));
-  }, [pathname, searchParams, mergedStore, activeBreakpoint]);
+  }, [pathname, searchParams, mergedStore, activeBreakpoint, builderMode, builderQueryParams]);
 
   useEffect(() => {
     const base = computeMergedState(useSduiStore.getState());
     const vs = store.getState().getFullState();
     const withVs = finalizeMergedWithVariableStore(base, vs);
-    // Preserve static theme + pages so they are never lost when this effect replaces
-    // the full merged state (they were already pre-seeded in useMemo but this effect
-    // runs last on mount and would overwrite them without the spread below).
-    const withStatic = { ...withVs, theme: THEME_OBJ, pages: PAGES_MAP };
+    // Preserve static theme + pages + globalContext so they are never lost when
+    // this effect replaces the full merged state (they were already set by
+    // earlier effects but this runs last on mount and would overwrite them).
+    const prev = mergedStore.getState().merged;
+    const withStatic = {
+      ...withVs,
+      globalContext: prev.globalContext,
+      theme: THEME_OBJ,
+      pages: PAGES_MAP,
+    };
     mergedStore.getState().setMerged(builderMode ? applyBuilderPatches(withStatic) : withStatic);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -342,7 +373,14 @@ export function SDUIEngine({
       const base = computeMergedState(useSduiStore.getState());
       const vs = store.getState().getFullState();
       const withVs = finalizeMergedWithVariableStore(base, vs);
-      mergedStore.getState().setMerged(applyBuilderPatches(withVs));
+      const prev = mergedStore.getState().merged;
+      const next = {
+        ...withVs,
+        globalContext: prev.globalContext,
+        theme: prev.theme ?? THEME_OBJ,
+        pages: prev.pages ?? PAGES_MAP,
+      };
+      mergedStore.getState().setMerged(applyBuilderPatches(next));
       mergedStore.getState().bumpPatchVersion();
     });
     return () => cancelAnimationFrame(raf);
@@ -451,7 +489,7 @@ export function SDUIEngine({
         // as a single-step workflow so the step converter can handle canvas types like
         // navigateTo, changeVariableValue, etc. (backward compat with flat element workflows).
         // Guard: skip if this is already a fallback-wrapped step (prevents infinite loop when
-        // stepToSdui returns the same type and no handler exists, e.g. openPopup, closeAllPopups).
+        // stepToSdui returns the same type and no handler exists).
         const fbType = actionDef?.type;
         const alreadyWrapped = actionDef != null && !!(actionDef as Record<string, unknown>).__fallbackWrapped;
         if (fbType && typeof fbType === 'string' && !alreadyWrapped) {
@@ -560,13 +598,13 @@ export function SDUIEngine({
   // Fetch named data sources (REST + GraphQL) on mount and on explicit refetch triggers.
   useNamedDataSourceFetcher(dataSources, dsRefetchKeys, config, useSduiStore);
 
-  const builderContextValue = useMemo(() => ({ builderMode, activeBreakpoint }), [builderMode, activeBreakpoint]);
+  const builderContextValue = useMemo(() => ({ builderMode, activeBreakpoint, shownPopovers }), [builderMode, activeBreakpoint, shownPopovers]);
 
   return (
     <BuilderContext.Provider value={builderContextValue}>
       <RunActionProvider value={runActionStable}>
         <SDURenderer node={config.ui} context={context} />
-        {showPopups && <PopupRenderer context={context} viewportHeight={builderViewportHeight} popupModels={popupModels as Record<string, import('./actions/handlers/popup-handlers').PopupModel> | undefined} />}
+        <SharedComponentDynamicRenderer context={context} viewportHeight={builderViewportHeight} />
       </RunActionProvider>
     </BuilderContext.Provider>
   );

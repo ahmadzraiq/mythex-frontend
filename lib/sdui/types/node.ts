@@ -117,6 +117,31 @@ export interface ResponsiveOverride {
   style?: Record<string, unknown>;
 }
 
+// ─── Popover / Tooltip config ────────────────────────────────────────────────
+
+export type PopoverPlacement =
+  | 'top' | 'top-start' | 'top-end'
+  | 'bottom' | 'bottom-start' | 'bottom-end'
+  | 'left' | 'left-start' | 'left-end'
+  | 'right' | 'right-start' | 'right-end';
+
+export interface PopoverConfig {
+  trigger: 'click' | 'hover';
+  placement: PopoverPlacement;
+  /** Pixel gap between trigger and floating content (default: 4) */
+  offset?: number;
+  /** Close when clicking outside the floating content (default: true) */
+  closeOnOutsideClick?: boolean;
+  /** Close when pressing Escape (default: true) */
+  closeOnEscape?: boolean;
+  /** Set floating content min-width to match trigger width — useful for dropdowns */
+  matchTriggerWidth?: boolean;
+  /** Variable UUID — when set, open/close state syncs to this variable for programmatic control */
+  openVariable?: string;
+  /** Shared component reference — alternative to inline content */
+  componentId?: string;
+}
+
 /** Single UI node in the JSON tree */
 export interface SDUINode {
   type: SDUIComponentType;
@@ -154,4 +179,8 @@ export interface SDUINode {
    * properties it specifies; everything else inherits from the nearest larger breakpoint.
    */
   responsive?: Partial<Record<BreakpointKey, ResponsiveOverride>>;
+  /** Floating panel — click-triggered dropdown/context menu, or hover-triggered tooltip */
+  popover?: PopoverConfig;
+  /** Marks this Box as the popover content container (rendered in the floating panel) */
+  _popoverContent?: boolean;
 }

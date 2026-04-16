@@ -23,7 +23,9 @@ import CodeMirror from '@uiw/react-codemirror';
 import { json } from '@codemirror/lang-json';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { useBuilderStore } from './_store';
-import { getPopupList, subscribePopups } from '@/lib/builder/popup-data';
+import { getSharedComponentList, subscribeSharedComponents } from '@/lib/builder/shared-component-data';
+import type { SharedComponentModel } from '@/lib/builder/shared-component-data';
+import { FigmaColorPicker } from './_color-picker';
 import { BindingIcon, isBoundValue, type FormulaValue } from './_formula-panel';
 import { FormulaEditor, storedValueToFormula } from './_formula-editor';
 import { collectPageComponents } from './_formula-editor-tabs';
@@ -942,23 +944,15 @@ export function NavigateToConfig({
   );
 }
 
-// ─── OpenPopupConfig ──────────────────────────────────────────────────────────
+// ─── AddSharedComponentConfig ─────────────────────────────────────────────────
 
-interface PopupModelBrief {
-  id: string;
-  name: string;
-  type: string;
-  properties: Array<{ id: string; name: string; type: string; defaultValue?: unknown }>;
-}
-
-/** Searchable popup-model picker — same visual style as TypeSearchDropdown. */
-function PopupModelDropdown({
+function SCModelDropdown({
   value,
   models,
   onChange,
 }: {
   value: string;
-  models: PopupModelBrief[];
+  models: SharedComponentModel[];
   onChange: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -969,7 +963,7 @@ function PopupModelDropdown({
     if (!open) return;
     searchRef.current?.focus();
     const handler = (e: MouseEvent) => {
-      if (!(e.target as HTMLElement).closest('[data-popover="popup-model-search"]')) {
+      if (!(e.target as HTMLElement).closest('[data-popover="sc-model-search"]')) {
         setOpen(false);
         setSearch('');
       }
@@ -979,44 +973,27 @@ function PopupModelDropdown({
   }, [open]);
 
   const q = search.toLowerCase();
-  const filtered = models.filter(m => m.name.toLowerCase().includes(q) || m.type.toLowerCase().includes(q));
+  const filtered = models.filter(m => m.name.toLowerCase().includes(q));
   const selectedModel = models.find(m => m.id === value);
 
   return (
-    <div data-popover="popup-model-search" style={{ position: 'relative', width: '100%' }}>
+    <div data-popover="sc-model-search" style={{ position: 'relative', width: '100%' }}>
       <button
-        data-testid="openPopup-model-select"
-        style={{
-          ...S.fieldSelect,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          cursor: 'pointer',
-          textAlign: 'left',
-          paddingRight: 28,
-        }}
+        data-testid="addSC-model-select"
+        style={{ ...S.fieldSelect, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', textAlign: 'left', paddingRight: 28 }}
         onClick={e => { e.stopPropagation(); setOpen(v => !v); setSearch(''); }}
       >
         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: value ? '#f3f4f6' : '#6b7280' }}>
-          {selectedModel ? `${selectedModel.name} (${selectedModel.type})` : 'Choose a popup model'}
+          {selectedModel ? selectedModel.name : 'Choose a shared component'}
         </span>
         <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: '#6b7280', pointerEvents: 'none' }}>
-          {open ? '▴' : '▾'}
+          {open ? '\u25B4' : '\u25BE'}
         </span>
       </button>
-
       {open && (
         <div style={{ ...S.dropdown, position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 300, minWidth: 'unset', width: '100%', maxHeight: 260 }}>
-          <input
-            ref={searchRef}
-            style={S.dropdownSearch}
-            placeholder="Search popups…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          {filtered.length === 0 && (
-            <div style={{ padding: '8px 12px', fontSize: 11, color: '#6b7280' }}>No popups found</div>
-          )}
+          <input ref={searchRef} style={S.dropdownSearch} placeholder="Search components\u2026" value={search} onChange={e => setSearch(e.target.value)} />
+          {filtered.length === 0 && <div style={{ padding: '8px 12px', fontSize: 11, color: '#6b7280' }}>No components found</div>}
           {filtered.map(m => (
             <button
               key={m.id}
@@ -1026,8 +1003,8 @@ function PopupModelDropdown({
               onClick={e => { e.stopPropagation(); onChange(m.id); setOpen(false); setSearch(''); }}
             >
               <span style={{ flex: 1 }}>{m.name}</span>
-              <span style={{ fontSize: 10, color: '#6b7280' }}>{m.type}</span>
-              {m.id === value && <span style={{ color: '#3b82f6', fontSize: 10, marginLeft: 4 }}>✓</span>}
+              <span style={{ fontSize: 9, color: '#60a5fa', background: '#1e3a5f', borderRadius: 3, padding: '1px 5px', fontWeight: 700 }}>SC</span>
+              {m.id === value && <span style={{ color: '#3b82f6', fontSize: 10, marginLeft: 4 }}>{'\u2713'}</span>}
             </button>
           ))}
         </div>
@@ -1036,72 +1013,124 @@ function PopupModelDropdown({
   );
 }
 
-export function OpenPopupConfig({
+function SCPropInput({ prop, value, onChange, onFormulaClick, formulaOpen }: {
+  prop: SharedComponentModel['properties'][0];
+  value: FormulaValue | string | unknown;
+  onChange: (v: FormulaValue | string | unknown) => void;
+  onFormulaClick: () => void;
+  formulaOpen: boolean;
+}) {
+  const isBound = isBoundValue(value as FormulaValue);
+
+  if (isBound) {
+    return (
+      <button
+        onClick={onFormulaClick}
+        style={{ flex: 1, padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed', borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}
+      >{'\u0192'} Edit formula</button>
+    );
+  }
+
+  if (prop.type === 'boolean') {
+    return (
+      <div style={{ ...S.toggleGroup, flex: 1 }}>
+        <button style={S.toggleBtn(!!value)} onClick={() => onChange(true)}>On</button>
+        <button style={S.toggleBtn(!value)} onClick={() => onChange(false)}>Off</button>
+      </div>
+    );
+  }
+
+  if (prop.type === 'number') {
+    return (
+      <input
+        type="number"
+        style={{ ...S.fieldInput, flex: 1 }}
+        placeholder={prop.defaultValue != null ? String(prop.defaultValue) : `${prop.name}\u2026`}
+        value={typeof value === 'number' ? value : (typeof value === 'string' ? value : '')}
+        onChange={e => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+      />
+    );
+  }
+
+  if (prop.type === 'color') {
+    const colorVal = String(value ?? prop.defaultValue ?? '#000000');
+    return (
+      <div style={{ display: 'flex', gap: 4, alignItems: 'center', flex: 1 }}>
+        <FigmaColorPicker value={colorVal} onChange={c => onChange(c)} label="" />
+        <input
+          style={{ ...S.fieldInput, flex: 1 }}
+          value={colorVal}
+          onChange={e => onChange(e.target.value)}
+          placeholder={String(prop.defaultValue ?? '#000000')}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <input
+      style={{ ...S.fieldInput, flex: 1 }}
+      placeholder={prop.defaultValue != null ? String(prop.defaultValue) : `${prop.name}\u2026`}
+      value={typeof value === 'string' ? value : ''}
+      onChange={e => onChange(e.target.value)}
+    />
+  );
+}
+
+export function AddSharedComponentConfig({
   cfg,
   setCfg,
 }: {
   cfg: Record<string, unknown>;
   setCfg: (key: string, value: unknown) => void;
 }) {
-  const [models, setModels] = useState<PopupModelBrief[]>([]);
+  const [models, setModels] = useState<SharedComponentModel[]>([]);
   const [openField, setOpenField] = useState<string | null>(null);
 
-  // Load popup models from in-memory store (no API route needed) and subscribe to changes
   useEffect(() => {
-    const refresh = () => setModels(getPopupList() as PopupModelBrief[]);
+    const refresh = () => setModels(getSharedComponentList());
     refresh();
-    const unsub = subscribePopups(refresh);
-    return unsub;
+    return subscribeSharedComponents(refresh);
   }, []);
 
-  const selectedModel = models.find(m => m.id === cfg.popupId);
-  // props are keyed by property UUID so context.component?.props?.['uuid'] resolves
+  const selectedModel = models.find(m => m.id === cfg.componentId);
   const propValues = (cfg.props ?? {}) as Record<string, FormulaValue | string>;
 
-  // key: property UUID (not name) so the formula context.component?.props?.['uuid'] resolves
-  const setPropValue = (propId: string, value: FormulaValue | string) => {
-    setCfg('props', { ...propValues, [propId]: value });
+  const setPropValue = (propName: string, value: FormulaValue | string | unknown) => {
+    setCfg('props', { ...propValues, [propName]: value });
   };
 
   return (
     <>
-      {/* Popup model selector — custom searchable dropdown */}
-      <label style={{ ...S.fieldLabel, marginTop: 10 }}>Popup model</label>
-      <PopupModelDropdown
-        value={(cfg.popupId as string) ?? ''}
+      <label style={{ ...S.fieldLabel, marginTop: 10 }}>Shared Component</label>
+      <SCModelDropdown
+        value={(cfg.componentId as string) ?? ''}
         models={models}
-        onChange={id => { setCfg('popupId', id); setCfg('props', {}); }}
+        onChange={id => { setCfg('componentId', id); setCfg('props', {}); }}
       />
 
-      {/* Dynamic property inputs — keyed by prop.id (UUID) */}
       {selectedModel && selectedModel.properties.length > 0 && (
         <>
           <div style={{ fontSize: 10, color: '#6b7280', marginTop: 10, marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Properties</div>
           {selectedModel.properties.map(prop => {
             const fieldKey = `prop_${prop.id}`;
-            // Key by UUID so context.component?.props?.['uuid'] resolves at runtime
-            const currentVal = propValues[prop.id];
-            const isBound = isBoundValue(currentVal as FormulaValue);
+            const currentVal = propValues[prop.name];
             return (
               <React.Fragment key={prop.id}>
-                <label style={{ ...S.fieldLabel, marginTop: 6 }}>{prop.name}</label>
+                <label style={{ ...S.fieldLabel, marginTop: 6 }}>
+                  {prop.name}
+                  <span style={{ fontSize: 9, color: '#4b5563', marginLeft: 4 }}>({prop.type})</span>
+                </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {isBound ? (
-                    <button
-                      onClick={() => setOpenField(f => f === fieldKey ? null : fieldKey)}
-                      style={{ flex: 1, padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed',
-                        borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}
-                    >ƒ Edit formula</button>
-                  ) : (
-                    <input
-                      style={{ ...S.fieldInput, flex: 1 }}
-                      placeholder={prop.defaultValue != null ? String(prop.defaultValue) : `${prop.name}…`}
-                      value={typeof currentVal === 'string' ? currentVal : ''}
-                      onChange={e => setPropValue(prop.id, e.target.value)}
-                    />
-                  )}
+                  <SCPropInput
+                    prop={prop}
+                    value={currentVal}
+                    onChange={v => setPropValue(prop.name, v)}
+                    onFormulaClick={() => setOpenField(f => f === fieldKey ? null : fieldKey)}
+                    formulaOpen={openField === fieldKey}
+                  />
                   <BindingIcon
-                    isBound={isBound}
+                    isBound={isBoundValue(currentVal as FormulaValue)}
                     onClick={() => setOpenField(f => f === fieldKey ? null : fieldKey)}
                   />
                 </div>
@@ -1109,7 +1138,7 @@ export function OpenPopupConfig({
                   <FormulaEditor
                     label={prop.name}
                     value={(currentVal as FormulaValue) ?? null}
-                    onChange={v => { setPropValue(prop.id, v); setOpenField(null); }}
+                    onChange={v => { setPropValue(prop.name, v); setOpenField(null); }}
                     onClose={() => setOpenField(null)}
                     anchorRight={292}
                   />
@@ -1120,21 +1149,91 @@ export function OpenPopupConfig({
         </>
       )}
 
-      {/* Wait close event */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
-        <span style={{ fontSize: 12, color: '#9ca3af' }}>Wait close event</span>
-        <div style={S.toggleGroup}>
-          <button
-            data-testid="openPopup-waitClose-on"
-            style={S.toggleBtn(!!(cfg.waitClose))}
-            onClick={() => setCfg('waitClose', true)}
-          >On</button>
-          <button
-            data-testid="openPopup-waitClose-off"
-            style={S.toggleBtn(!(cfg.waitClose))}
-            onClick={() => setCfg('waitClose', false)}
-          >Off</button>
+        <span style={{ fontSize: 12, color: '#9ca3af' }}>Wait close</span>
+        <div style={{ ...S.toggleGroup, width: 90 }}>
+          <button data-testid="addSC-waitClose-on" style={S.toggleBtn(!!(cfg.waitClose))} onClick={() => setCfg('waitClose', true)}>On</button>
+          <button data-testid="addSC-waitClose-off" style={S.toggleBtn(!(cfg.waitClose))} onClick={() => setCfg('waitClose', false)}>Off</button>
         </div>
+      </div>
+      <div style={{ fontSize: 10, color: '#4b5563', marginTop: 4 }}>
+        When on, the workflow pauses until the instance is deleted. The delete step{'\u2019'}s return value becomes this step{'\u2019'}s result.
+      </div>
+    </>
+  );
+}
+
+export function DeleteSharedComponentConfig({
+  cfg,
+  setCfg,
+}: {
+  cfg: Record<string, unknown>;
+  setCfg: (key: string, value: unknown) => void;
+}) {
+  const [openField, setOpenField] = useState<string | null>(null);
+  const currentVal = cfg.returnValue as FormulaValue | string | undefined;
+  const isBound = isBoundValue(currentVal as FormulaValue);
+
+  return (
+    <>
+      <label style={{ ...S.fieldLabel, marginTop: 10 }}>Return value (optional)</label>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        {isBound ? (
+          <button
+            onClick={() => setOpenField(f => f === 'returnValue' ? null : 'returnValue')}
+            style={{ flex: 1, padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed', borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}
+          >{'\u0192'} Edit formula</button>
+        ) : (
+          <input
+            style={{ ...S.fieldInput, flex: 1 }}
+            placeholder="e.g. confirmed"
+            value={typeof currentVal === 'string' ? currentVal : ''}
+            onChange={e => setCfg('returnValue', e.target.value)}
+          />
+        )}
+        <BindingIcon isBound={isBound} onClick={() => setOpenField(f => f === 'returnValue' ? null : 'returnValue')} />
+      </div>
+      {openField === 'returnValue' && (
+        <FormulaEditor
+          label="Return value"
+          value={(currentVal as FormulaValue) ?? null}
+          onChange={v => { setCfg('returnValue', v); setOpenField(null); }}
+          onClose={() => setOpenField(null)}
+          anchorRight={292}
+        />
+      )}
+      <div style={{ fontSize: 10, color: '#4b5563', marginTop: 6 }}>
+        Deletes the current shared component instance. If Wait Close was used, the return value is sent back as context.workflow[{'\u2018'}stepId{'\u2019'}].result.
+      </div>
+    </>
+  );
+}
+
+export function DeleteAllSharedComponentsConfig({
+  cfg,
+  setCfg,
+}: {
+  cfg: Record<string, unknown>;
+  setCfg: (key: string, value: unknown) => void;
+}) {
+  const [models, setModels] = useState<SharedComponentModel[]>([]);
+
+  useEffect(() => {
+    const refresh = () => setModels(getSharedComponentList());
+    refresh();
+    return subscribeSharedComponents(refresh);
+  }, []);
+
+  return (
+    <>
+      <label style={{ ...S.fieldLabel, marginTop: 10 }}>Shared Component (optional)</label>
+      <SCModelDropdown
+        value={(cfg.componentId as string) ?? ''}
+        models={models}
+        onChange={id => setCfg('componentId', id || undefined)}
+      />
+      <div style={{ fontSize: 10, color: '#4b5563', marginTop: 6 }}>
+        If set, only deletes instances of this component. If empty, deletes all dynamic shared component instances.
       </div>
     </>
   );
@@ -1454,6 +1553,36 @@ function WorkflowKvEditor({
           anchorRight={292}
         />
       )}
+    </div>
+  );
+}
+
+// ─── PopoverStepConfig ────────────────────────────────────────────────────────
+
+function PopoverStepConfig({
+  cfg,
+  setCfg,
+}: {
+  cfg: Record<string, unknown>;
+  setCfg: (key: string, value: unknown) => void;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <label style={S.fieldLabel}>Node ID</label>
+      <input
+        style={S.fieldInput}
+        value={(cfg.nodeId as string) ?? ''}
+        placeholder="Target node ID (popover trigger)"
+        onChange={e => setCfg('nodeId', e.target.value)}
+      />
+      <label style={S.fieldLabel}>Field</label>
+      <select
+        style={S.fieldInput}
+        value={(cfg.field as string) ?? 'popover'}
+        onChange={e => setCfg('field', e.target.value)}
+      >
+        <option value="popover">Popover</option>
+      </select>
     </div>
   );
 }
@@ -3151,14 +3280,16 @@ export function NodePropsPanel({
         </>
       )}
 
-      {step.type === 'openPopup' && (
-        <OpenPopupConfig cfg={cfg} setCfg={setCfg} />
+      {step.type === 'addSharedComponent' && (
+        <AddSharedComponentConfig cfg={cfg} setCfg={setCfg} />
       )}
 
-      {step.type === 'closeAllPopups' && (
-        <div style={{ marginTop: 10, fontSize: 11, color: '#6b7280', fontStyle: 'italic' }}>
-          Closes all currently open popup instances.
-        </div>
+      {step.type === 'deleteSharedComponent' && (
+        <DeleteSharedComponentConfig cfg={cfg} setCfg={setCfg} />
+      )}
+
+      {step.type === 'deleteAllSharedComponents' && (
+        <DeleteAllSharedComponentsConfig cfg={cfg} setCfg={setCfg} />
       )}
 
       {step.type === 'setFormState' && (
@@ -3175,6 +3306,10 @@ export function NodePropsPanel({
 
       {step.type === 'fetchData' && (
         <FetchDataStepConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
+      )}
+
+      {(step.type === 'openPopover' || step.type === 'closePopover' || step.type === 'togglePopover') && (
+        <PopoverStepConfig cfg={cfg} setCfg={setCfg} />
       )}
 
       <label style={{ ...S.fieldLabel, marginTop: 12 }}>Description</label>

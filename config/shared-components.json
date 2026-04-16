@@ -3,8 +3,8 @@
     "id": "sc-status-badge",
     "name": "Status Badge",
     "properties": [
-      { "id": "prop-sb-status", "name": "status", "type": "string", "defaultValue": "active" },
-      { "id": "prop-sb-label", "name": "label", "type": "string", "defaultValue": "Active" }
+      { "id": "prop-sb-status", "name": "status", "type": "text", "defaultValue": "active" },
+      { "id": "prop-sb-label", "name": "label", "type": "text", "defaultValue": "Active" }
     ],
     "content": {
       "type": "Box",
@@ -12,98 +12,240 @@
         "className": "inline-flex flex-row items-center gap-[6px] px-[10px] py-[4px] rounded-[9999px] bg-green-100 dark:bg-green-900/30"
       },
       "children": [
-        {
-          "type": "Box",
-          "props": {
-            "className": "w-[6px] h-[6px] rounded-[9999px] bg-green-500"
-          }
-        },
+        { "type": "Box", "props": { "className": "w-[6px] h-[6px] rounded-[9999px] bg-green-500" } },
         {
           "type": "Text",
-          "props": {
-            "className": "text-[11px] font-semibold text-green-700 dark:text-green-300"
-          },
+          "props": { "className": "text-[11px] font-semibold text-green-700 dark:text-green-300" },
           "text": "{{context.component.props.label}}"
         }
       ]
     }
   },
+
   "sc-info-card": {
     "id": "sc-info-card",
     "name": "Info Card",
     "properties": [
-      { "id": "prop-ic-title", "name": "title", "type": "string", "defaultValue": "Card Title" },
-      { "id": "prop-ic-description", "name": "description", "type": "string", "defaultValue": "A description goes here." },
-      { "id": "prop-ic-accent", "name": "accent", "type": "string", "defaultValue": "#6366f1" }
+      { "id": "prop-ic-title", "name": "title", "type": "text", "defaultValue": "Card Title" },
+      { "id": "prop-ic-description", "name": "description", "type": "text", "defaultValue": "A description goes here." },
+      { "id": "prop-ic-accent", "name": "accent", "type": "color", "defaultValue": "#6366f1" }
     ],
     "content": {
       "type": "Box",
-      "props": {
-        "className": "w-full rounded-[12px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden"
-      },
+      "props": { "className": "w-full rounded-[12px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden" },
       "children": [
         {
           "type": "Box",
-          "props": {
-            "className": "h-[4px]",
-            "style": { "backgroundColor": "{{context.component.props.accent}}" }
-          }
+          "props": { "className": "h-[4px]", "style": { "backgroundColor": "{{context.component.props.accent}}" } }
         },
         {
           "type": "Box",
-          "props": {
-            "className": "px-[20px] py-[16px] flex flex-col gap-[8px]"
-          },
+          "props": { "className": "px-[20px] py-[16px] flex flex-col gap-[8px]" },
+          "children": [
+            { "type": "Text", "props": { "className": "text-[15px] font-semibold text-gray-900 dark:text-white" }, "text": "{{context.component.props.title}}" },
+            { "type": "Text", "props": { "className": "text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed" }, "text": "{{context.component.props.description}}" }
+          ]
+        }
+      ]
+    }
+  },
+
+  "sc-cta-button": {
+    "id": "sc-cta-button",
+    "name": "CTA Button",
+    "properties": [
+      { "id": "prop-cta-text", "name": "buttonText", "type": "text", "defaultValue": "Get Started" },
+      { "id": "prop-cta-variant", "name": "variant", "type": "text", "defaultValue": "primary" }
+    ],
+    "content": {
+      "type": "Box",
+      "props": { "className": "inline-flex flex-row items-center justify-center gap-[8px] px-[20px] py-[10px] rounded-[8px] bg-[#6366f1] hover:opacity-90 cursor-pointer" },
+      "children": [
+        { "type": "Text", "props": { "className": "text-[14px] font-semibold text-white" }, "text": "{{context.component.props.buttonText}}" },
+        { "type": "Icon", "props": { "icon": "lucide:arrow-right", "size": 14, "color": "#ffffff" } }
+      ]
+    }
+  },
+
+  "sc-modal": {
+    "id": "sc-modal",
+    "name": "Modal",
+    "properties": [
+      { "id": "prop-modal-title", "name": "title", "type": "text", "defaultValue": "Modal Title" },
+      { "id": "prop-modal-message", "name": "message", "type": "text", "defaultValue": "This is a modal message." },
+      { "id": "prop-modal-showFooter", "name": "showFooter", "type": "boolean", "defaultValue": true }
+    ],
+    "content": {
+      "type": "Box",
+      "props": { "className": "fixed inset-0 z-[50] flex items-center justify-center" },
+      "children": [
+        {
+          "type": "Box",
+          "props": { "className": "fixed inset-0 bg-black/50 cursor-pointer" },
+          "actions": [{ "action": "closeDynamicOverlay" }]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "relative z-[1] w-[480px] max-w-[90vw] bg-white dark:bg-gray-900 rounded-[12px] p-[24px] flex flex-col gap-[16px]", "animation": { "enter": { "type": "zoomIn", "duration": 200 }, "exit": { "type": "zoomOut", "duration": 160 } } },
+          "actions": [{ "type": "stopPropagation" }],
           "children": [
             {
-              "type": "Text",
-              "props": {
-                "className": "text-[15px] font-semibold text-gray-900 dark:text-white",
-                "data-testid": "card-title"
-              },
-              "text": "{{context.component.props.title}}"
+              "type": "Box",
+              "props": { "className": "flex flex-row items-center justify-between" },
+              "children": [
+                { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-gray-900 dark:text-white" }, "text": "{{context.component.props.title}}" },
+                {
+                  "type": "Box",
+                  "props": { "className": "cursor-pointer p-[4px] rounded-[4px] hover:bg-gray-100 dark:hover:bg-gray-800" },
+                  "actions": [{ "action": "closeDynamicOverlay" }],
+                  "children": [{ "type": "Icon", "props": { "icon": "lucide:x", "size": 18, "color": "#6b7280" } }]
+                }
+              ]
             },
             {
               "type": "Text",
-              "props": {
-                "className": "text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed",
-                "data-testid": "card-description"
-              },
-              "text": "{{context.component.props.description}}"
+              "props": { "className": "text-[14px] text-gray-600 dark:text-gray-300" },
+              "text": "{{context.component.props.message}}"
+            },
+            {
+              "type": "Box",
+              "props": { "className": "flex flex-row justify-end gap-[8px] pt-[8px]" },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": { "className": "flex flex-row items-center justify-center px-[16px] py-[8px] rounded-[8px] bg-gray-200 dark:bg-gray-700 cursor-pointer hover:opacity-90" },
+                  "actions": [{ "action": "closeDynamicOverlay" }],
+                  "children": [{ "type": "Text", "props": { "className": "text-[14px] font-medium text-gray-800 dark:text-gray-200" }, "text": "Cancel" }]
+                },
+                {
+                  "type": "Box",
+                  "props": { "className": "flex flex-row items-center justify-center px-[16px] py-[8px] rounded-[8px] bg-[#6366f1] cursor-pointer hover:opacity-90" },
+                  "actions": [{ "action": "closeDynamicOverlay" }],
+                  "children": [{ "type": "Text", "props": { "className": "text-[14px] font-semibold text-white" }, "text": "Confirm" }]
+                }
+              ]
             }
           ]
         }
       ]
     }
   },
-  "sc-cta-button": {
-    "id": "sc-cta-button",
-    "name": "CTA Button",
+
+  "sc-bottom-sheet": {
+    "id": "sc-bottom-sheet",
+    "name": "Bottom Sheet",
     "properties": [
-      { "id": "prop-cta-text", "name": "buttonText", "type": "string", "defaultValue": "Get Started" },
-      { "id": "prop-cta-variant", "name": "variant", "type": "string", "defaultValue": "primary" }
+      { "id": "prop-bs-title", "name": "title", "type": "text", "defaultValue": "Bottom Sheet" }
+    ],
+    "content": {
+      "type": "Box",
+      "props": { "className": "fixed inset-0 z-[50] flex flex-col justify-end" },
+      "children": [
+        {
+          "type": "Box",
+          "props": { "className": "fixed inset-0 bg-black/50 cursor-pointer" },
+          "actions": [{ "action": "closeDynamicOverlay" }]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "relative z-[1] w-full max-h-[70vh] bg-white dark:bg-gray-900 rounded-t-[16px] p-[24px] flex flex-col gap-[16px]", "animation": { "enter": { "type": "slideInUp", "duration": 300 }, "exit": { "type": "slideOutDown", "to": { "translateY": 800, "opacity": 1 }, "duration": 260 } } },
+          "actions": [{ "type": "stopPropagation" }],
+          "children": [
+            {
+              "type": "Box",
+              "props": { "className": "flex justify-center" },
+              "children": [{ "type": "Box", "props": { "className": "w-[40px] h-[4px] rounded-full bg-gray-300 dark:bg-gray-600" } }]
+            },
+            { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-gray-900 dark:text-white" }, "text": "{{context.component.props.title}}" },
+            { "type": "Text", "props": { "className": "text-[14px] text-gray-600 dark:text-gray-300" }, "text": "Bottom sheet content goes here. Tap the backdrop or Dismiss to close." },
+            {
+              "type": "Box",
+              "props": { "className": "flex flex-row justify-end" },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": { "className": "flex flex-row items-center justify-center px-[16px] py-[8px] rounded-[8px] bg-gray-200 dark:bg-gray-700 cursor-pointer hover:opacity-90" },
+                  "actions": [{ "action": "closeDynamicOverlay" }],
+                  "children": [{ "type": "Text", "props": { "className": "text-[14px] font-medium text-gray-800 dark:text-gray-200" }, "text": "Dismiss" }]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "sc-drawer": {
+    "id": "sc-drawer",
+    "name": "Drawer",
+    "properties": [
+      { "id": "prop-dr-title", "name": "title", "type": "text", "defaultValue": "Drawer" }
+    ],
+    "content": {
+      "type": "Box",
+      "props": { "className": "fixed inset-0 z-[50]" },
+      "children": [
+        {
+          "type": "Box",
+          "props": { "className": "absolute inset-0 bg-black/50 cursor-pointer" },
+          "actions": [{ "action": "closeDynamicOverlay" }]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "absolute top-0 left-0 bottom-0 w-[80vw] max-w-[380px] bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px] z-[1]", "animation": { "enter": { "type": "slideInLeft", "from": { "translateX": -800, "opacity": 1 }, "duration": 320 }, "exit": { "type": "slideOutLeft", "to": { "translateX": -800, "opacity": 1 }, "duration": 280 } } },
+          "actions": [{ "type": "stopPropagation" }],
+          "children": [
+            {
+              "type": "Box",
+              "props": { "className": "flex flex-row items-center justify-between" },
+              "children": [
+                { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-gray-900 dark:text-white" }, "text": "{{context.component.props.title}}" },
+                {
+                  "type": "Box",
+                  "props": { "className": "cursor-pointer p-[4px] rounded-[4px] hover:bg-gray-100 dark:hover:bg-gray-800" },
+                  "actions": [{ "action": "closeDynamicOverlay" }],
+                  "children": [{ "type": "Icon", "props": { "icon": "lucide:x", "size": 18, "color": "#6b7280" } }]
+                }
+              ]
+            },
+            { "type": "Text", "props": { "className": "text-[14px] text-gray-600 dark:text-gray-300" }, "text": "Drawer content goes here." }
+          ]
+        }
+      ]
+    }
+  },
+
+  "sc-toast": {
+    "id": "sc-toast",
+    "name": "Toast",
+    "properties": [
+      { "id": "prop-toast-message", "name": "message", "type": "text", "defaultValue": "Action completed successfully." },
+      { "id": "prop-toast-variant", "name": "variant", "type": "text", "defaultValue": "success" }
     ],
     "content": {
       "type": "Box",
       "props": {
-        "className": "inline-flex flex-row items-center justify-center gap-[8px] px-[20px] py-[10px] rounded-[8px] bg-[#6366f1] hover:bg-[#4f46e5] cursor-pointer"
+        "className": "fixed top-[16px] right-[16px] z-[60] w-[360px] bg-white dark:bg-gray-900 rounded-[8px] p-[16px] border border-gray-200 dark:border-gray-700 flex flex-row items-start gap-[12px]",
+        "style": { "boxShadow": "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)" },
+        "animation": { "enter": { "type": "slideInRight", "duration": 200 }, "exit": { "type": "slideOutRight", "to": { "translateX": 800, "opacity": 1 }, "duration": 180 } }
       },
+      "actions": [{ "type": "stopPropagation" }],
       "children": [
+        { "type": "Icon", "props": { "icon": "lucide:check-circle", "size": 20, "color": "#22c55e" } },
         {
-          "type": "Text",
-          "props": {
-            "className": "text-[14px] font-semibold text-white",
-            "data-testid": "cta-text"
-          },
-          "text": "{{context.component.props.buttonText}}"
+          "type": "Box",
+          "props": { "className": "flex-1 flex flex-col gap-[2px]" },
+          "children": [
+            { "type": "Text", "props": { "className": "text-[14px] font-semibold text-gray-900 dark:text-white" }, "text": "Success" },
+            { "type": "Text", "props": { "className": "text-[12px] text-gray-500 dark:text-gray-400" }, "text": "{{context.component.props.message}}" }
+          ]
         },
         {
-          "type": "Icon",
-          "props": {
-            "icon": "lucide:arrow-right",
-            "size": 14,
-            "color": "#ffffff"
-          }
+          "type": "Box",
+          "props": { "className": "cursor-pointer p-[2px] rounded-[4px] hover:bg-gray-100 dark:hover:bg-gray-800" },
+          "actions": [{ "action": "closeDynamicOverlay" }],
+          "children": [{ "type": "Icon", "props": { "icon": "lucide:x", "size": 16, "color": "#9ca3af" } }]
         }
       ]
     }

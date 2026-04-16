@@ -3,10 +3,12 @@
  * Used by config/root.ts and lib/sdui/components/SharedComponentNode.tsx.
  */
 
+export type SharedComponentPropertyType = 'text' | 'number' | 'boolean' | 'color' | 'any';
+
 export interface SharedComponentProperty {
   id: string;
   name: string;
-  type: 'string' | 'number' | 'boolean' | 'object' | 'array';
+  type: SharedComponentPropertyType;
   defaultValue?: unknown;
 }
 

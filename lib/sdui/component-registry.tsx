@@ -20,7 +20,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
 
 // Overlay — only Tooltip and Menu remain; Modal/Drawer/Popover/AlertDialog/Actionsheet
-// are replaced by the generic popup system (see lib/sdui/popup-store.ts + PopupRenderer).
+// are replaced by the shared component system (see lib/sdui/shared-component-instance-store.ts).
 import { Tooltip, TooltipContent, TooltipText } from '@/components/ui/tooltip';
 
 // Form

@@ -761,26 +761,64 @@
       }
     ]
   },
-  "closeAllPopups": {
-    "name": "closeAllPopups",
+  "closeDynamicOverlay": {
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "closeAllPopups", "config": {} }
+      {
+        "id": "close-dynamic-overlay-step",
+        "type": "deleteSharedComponent",
+        "config": {}
+      }
     ]
   },
-  "closePopup": {
-    "name": "closePopup",
+  "closeAllDynamicOverlays": {
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "closePopup", "config": {} }
+      {
+        "id": "close-all-dynamic-overlays-step",
+        "type": "deleteAllSharedComponents",
+        "config": {}
+      }
     ]
   },
-  "autoCloseToast": {
-    "name": "autoCloseToast",
-    "trigger": "created",
-    "steps": [
-      { "id": "s1", "type": "timeDelay", "config": { "time": 4000 } },
-      { "id": "s2", "type": "closePopup", "config": {} }
-    ]
+  "navigateToNavbarTypes": {
+    "trigger": "click",
+    "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/navbar-types", "linkType": "internal" } }]
+  },
+  "navigateToNavbarFixed": {
+    "trigger": "click",
+    "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/navbar-fixed", "linkType": "internal" } }]
+  },
+  "navigateToNavbarSticky": {
+    "trigger": "click",
+    "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/navbar-sticky", "linkType": "internal" } }]
+  },
+  "navigateToNavbarTransparent": {
+    "trigger": "click",
+    "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/navbar-transparent", "linkType": "internal" } }]
+  },
+  "navigateToNavbarBlur": {
+    "trigger": "click",
+    "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/navbar-blur", "linkType": "internal" } }]
+  },
+  "navigateToNavbarFloating": {
+    "trigger": "click",
+    "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/navbar-floating", "linkType": "internal" } }]
+  },
+  "navigateToNavbarCentered": {
+    "trigger": "click",
+    "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/navbar-centered", "linkType": "internal" } }]
+  },
+  "navigateToNavbarSidebar": {
+    "trigger": "click",
+    "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/navbar-sidebar", "linkType": "internal" } }]
+  },
+  "navigateToNavbarBottom": {
+    "trigger": "click",
+    "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/navbar-bottom", "linkType": "internal" } }]
+  },
+  "navigateToNavbarScrollAware": {
+    "trigger": "click",
+    "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/navbar-scroll-aware", "linkType": "internal" } }]
   }
 }

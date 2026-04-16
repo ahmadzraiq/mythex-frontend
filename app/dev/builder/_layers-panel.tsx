@@ -15,7 +15,7 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect, memo, useMemo } from 'react';
-import { useBuilderStore, findParentNode, findNode } from './_store';
+import { useBuilderStore, findParentNode, findNode, isNonDraggable } from './_store';
 import type { BuilderStore } from './_store';
 import type { SDUINode } from '@/lib/sdui/types/node';
 
@@ -48,16 +48,8 @@ export function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps) {
 
   // Resolve the selected node to check _shared metadata
   const targetNode = useMemo(() => {
-    function findN(nodes: SDUINode[], id: string): SDUINode | null {
-      for (const n of nodes) {
-        if ((n as { id?: string }).id === id) return n;
-        const found = findN((n.children ?? []) as SDUINode[], id);
-        if (found) return found;
-      }
-      return null;
-    }
-    return findN(store.pageNodes as SDUINode[], nodeId)
-      ?? findN(store.canvasNodes as SDUINode[], nodeId);
+    return findNode(store.pageNodes as SDUINode[], nodeId)
+      ?? findNode(store.canvasNodes as SDUINode[], nodeId);
   }, [store.pageNodes, store.canvasNodes, nodeId]);
 
   const nodeShared = (targetNode as unknown as Record<string, unknown> | null)?._shared as { id: string; name: string } | undefined;
@@ -219,7 +211,7 @@ export const LayerRow = memo(function LayerRow_({
 }: LayerRowProps) {
   const nodeId = (node as { id?: string }).id ?? node.type;
   const nodeName = (node as { name?: string }).name;
-  const displayLabel = nodeName || node.type;
+  const displayLabel = nodeName || (node._popoverContent ? 'PopoverContent' : node.type);
   const [editing, setEditing] = useState(false);
   const [editVal, setEditVal] = useState(displayLabel);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -273,6 +265,10 @@ export const LayerRow = memo(function LayerRow_({
     }
   }
 
+  if (node.popover) {
+    badges.push({ key: 'pop', label: 'Popover', icon: '◱', color: '#a78bfa', bg: '#312e81', title: 'Has popover config' });
+  }
+
   const stateTag = (node as unknown as Record<string, unknown>)._stateTag as string | undefined;
   if (stateTag === 'loading') {
     badges.push({ key: 'state', label: 'loading', icon: '⟳', color: '#fbbf24', bg: '#451a03', title: 'State: Loading' });
@@ -304,13 +300,15 @@ export const LayerRow = memo(function LayerRow_({
     ? 'rgba(59,130,246,0.15)'
     : 'transparent';
 
+  const isDragLocked = isNonDraggable(node);
+
   return (
     <div
       data-testid="layer-row"
       data-layer-row
       data-node-id={nodeId}
       data-node-type={node.type}
-      draggable
+      draggable={!isDragLocked}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -319,7 +317,7 @@ export const LayerRow = memo(function LayerRow_({
         paddingRight: 4,
         height: 22,
         background: bg,
-        cursor: 'grab',
+        cursor: isDragLocked ? 'default' : 'grab',
         opacity: isHidden ? 0.4 : 1,
         userSelect: 'none',
         borderRadius: 2,
@@ -468,8 +466,8 @@ export function LayerTree({
     <>
       {nodes.map(node => {
         const nodeId = (node as { id?: string }).id ?? node.type;
-        const children = node.children as SDUINode[] | undefined;
-        const hasChildren = !!(children?.length);
+        const allChildren = (node.children ?? []) as SDUINode[];
+        const hasChildren = allChildren.length > 0;
         const isExpanded = store.expandedIds.has(nodeId);
         const isContainer = LAYER_CONTAINER_TYPES.has(node.type) || hasChildren;
         const isDragOverAbove  = dragState.dropTargetId === nodeId && dragState.dropPosition === 'above';
@@ -486,11 +484,11 @@ export function LayerTree({
               isExpanded={isExpanded}
               isHidden={store.hiddenIds.has(nodeId)}
               isLocked={store.lockedIds.has(nodeId)}
-          hasChildren={hasChildren}
-            isContainer={isContainer}
-            isDragOverAbove={isDragOverAbove}
-            isDragOverBelow={isDragOverBelow}
-            isDragOverInside={isDragOverInside}
+              hasChildren={hasChildren}
+              isContainer={isContainer}
+              isDragOverAbove={isDragOverAbove}
+              isDragOverBelow={isDragOverBelow}
+              isDragOverInside={isDragOverInside}
               onSelect={store.select}
               onHover={store.hover}
               onToggleExpand={store.toggleExpanded}
@@ -504,7 +502,7 @@ export function LayerTree({
             />
             {hasChildren && isExpanded && (
               <LayerTree
-                nodes={children!}
+                nodes={allChildren}
                 depth={depth + 1}
                 store={store}
                 contextMenuHandlers={contextMenuHandlers}

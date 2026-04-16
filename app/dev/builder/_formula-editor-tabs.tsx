@@ -19,7 +19,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useBuilderStore, findNode, findParentNode, type DataSourceConfig, type CustomVar, type SDUINode } from './_store';
-import { getPopups } from '@/lib/builder/popup-data';
+import { getSharedComponents } from '@/lib/builder/shared-component-data';
 import { useSduiStore } from '@/store/sdui-store';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 import routesConfig from '@/config/routes.json';
@@ -100,7 +100,7 @@ const TYPE_BADGE_COLOR: Record<string, string> = {
 export interface VarRowItem {
   formulaPath: string;
   displayLabel: string;
-  type: 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'event' | 'popup';
+  type: 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'shared-component';
   typeName: string;
   /** Sub-items for expandable types (form fields, object keys, etc.) */
   children?: VarRowItem[];
@@ -1684,20 +1684,33 @@ export function ContextDataSection({
 }) {
   const [open, setOpen] = useState(false);
 
-  // Build Browser data object for display
+  // Read per-page query param definitions from the builder store
+  const pageQueryParams = useBuilderStore(s => {
+    const page = s.pages.find(p => p.id === s.focusedPageId);
+    return page?.queryParams;
+  });
+
+  // Build Browser data object for display, merging builder-defined query params
   const browserData = useMemo(() => {
     if (typeof window === 'undefined') return null;
+    const baseQuery = Object.fromEntries(new URLSearchParams(window.location.search));
+    const query = { ...baseQuery };
+    if (pageQueryParams) {
+      for (const p of pageQueryParams) {
+        if (p.name.trim()) query[p.name] = p.value;
+      }
+    }
     return {
       url: window.location.href,
       path: window.location.pathname,
       domain: window.location.hostname,
       baseUrl: window.location.origin,
-      query: Object.fromEntries(new URLSearchParams(window.location.search)),
+      query,
       breakpoint: window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : window.innerWidth < 1280 ? 'laptop' : 'desktop',
       environment: process.env.NODE_ENV ?? 'development',
       theme: 'system',
     };
-  }, []);
+  }, [pageQueryParams]);
 
   const screenData = useMemo(() => {
     if (typeof window === 'undefined') return null;
@@ -2350,17 +2363,13 @@ function EventFieldGroup({
   );
 }
 
-// ─── PopupContextSection ─────────────────────────────────────────────────────
-// Shown in the "Quick" tab when the selected node is inside a popup being edited.
-// Renders three groups matching the WeWeb design:
-//   PROPERTIES — one chip per defined popup property  → context.component?.props?.['<id>']
-//   LOCAL       — instancesCount / index / totalCount  → context.local.data?.['popup']?.['index']
-//   INSTANCE    — thisInstance (runtime props object)  → context.local.data?.['popup']?.['props']
+// ─── SharedComponentContextSection ───────────────────────────────────────────
+// Shown in the "Quick" tab when the selected node is inside a shared component being edited.
+// Renders property chips → context.component?.props?.['<name>']
 
-// Amber — matches CHIP_STYLE.popup in _formula-editor-dom.ts
-const POPUP_CHIP = { bg: '#78350f', border: '#d97706', text: '#fde68a' };
+const SC_CHIP = { bg: '#78350f', border: '#d97706', text: '#fde68a' };
 
-function PopupPropChip({
+function SCPropChip({
   icon, label, value, onInsert, formula,
 }: {
   icon: string; label: string; value?: unknown;
@@ -2378,13 +2387,13 @@ function PopupPropChip({
       onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
     >
       <span
-      onClick={() => onInsert(formula, label, 'popup')}
+      onClick={() => onInsert(formula, label, 'shared-component')}
       title={formula}
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 4,
-          background: POPUP_CHIP.bg, border: `1px solid ${POPUP_CHIP.border}`,
+          background: SC_CHIP.bg, border: `1px solid ${SC_CHIP.border}`,
           borderRadius: 4, padding: '1px 6px', cursor: 'pointer', userSelect: 'none',
-          fontSize: 11, color: POPUP_CHIP.text, fontWeight: 500,
+          fontSize: 11, color: SC_CHIP.text, fontWeight: 500,
         }}
       >
         <span style={{ fontSize: 9, opacity: 0.8 }}>{icon}</span>
@@ -2399,7 +2408,7 @@ function PopupPropChip({
   );
 }
 
-function PopupSectionHeader({ label, open, onToggle }: { label: string; open: boolean; onToggle: () => void }) {
+function SCSectionHeader({ label, open, onToggle }: { label: string; open: boolean; onToggle: () => void }) {
   return (
     <button
       onClick={onToggle}
@@ -2413,43 +2422,45 @@ function PopupSectionHeader({ label, open, onToggle }: { label: string; open: bo
   );
 }
 
-export function PopupContextSection({
+export function SharedComponentContextSection({
   onInsert,
+  overrideModelId,
 }: {
   onInsert: (formulaPath: string, displayLabel: string, type: VarRowItem['type']) => void;
+  overrideModelId?: string | null;
 }) {
-  const editingPopupId = useBuilderStore(s => s.editingPopupId);
-  const editingPopupModelsMap = useBuilderStore(s => s.editingPopupModelsMap);
+  const editingId = useBuilderStore(s => s.editingSharedComponentId);
+  const editingModelsMap = useBuilderStore(s => s.editingSharedComponentModelsMap);
+  const effectiveId = overrideModelId ?? editingId;
 
   const [propsOpen, setPropsOpen] = useState(true);
   const [localOpen, setLocalOpen] = useState(true);
 
-  const popupModel = useMemo(() => {
-    if (!editingPopupId) return null;
-    // Prefer fresh in-memory model (captures renames done while popup is open)
-    const live = getPopups()[editingPopupId];
-    return live ?? (editingPopupModelsMap[editingPopupId] as { properties?: Array<{ id: string; name: string; defaultValue?: unknown }> } | undefined) ?? null;
-  }, [editingPopupId, editingPopupModelsMap]);
+  const scModel = useMemo(() => {
+    if (!effectiveId) return null;
+    const live = getSharedComponents()[effectiveId];
+    return live ?? (editingModelsMap[effectiveId] as { properties?: Array<{ id: string; name: string; defaultValue?: unknown }> } | undefined) ?? null;
+  }, [effectiveId, editingModelsMap]);
 
-  if (!popupModel) return null;
+  if (!scModel) return null;
 
-  const properties = (popupModel as { properties?: Array<{ id: string; name: string; defaultValue?: unknown }> }).properties ?? [];
+  const properties = (scModel as { properties?: Array<{ id: string; name: string; defaultValue?: unknown }> }).properties ?? [];
 
   return (
     <div style={{ borderTop: '1px solid #1f2937' }}>
       {/* PROPERTIES */}
-      <PopupSectionHeader label="Properties" open={propsOpen} onToggle={() => setPropsOpen(o => !o)} />
+      <SCSectionHeader label="Properties" open={propsOpen} onToggle={() => setPropsOpen(o => !o)} />
       {propsOpen && (
         <div style={{ paddingBottom: 4 }}>
           {properties.length === 0 ? (
             <div style={{ padding: '2px 22px 6px', fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>No properties defined</div>
           ) : properties.map(prop => (
-            <PopupPropChip
+            <SCPropChip
               key={prop.id}
               icon="T"
               label={prop.name}
               value={prop.defaultValue}
-              formula={`context.component?.props?.['${prop.id}']`}
+              formula={`context.component?.props?.['${prop.name}']`}
               onInsert={onInsert}
             />
           ))}
@@ -2457,15 +2468,15 @@ export function PopupContextSection({
       )}
 
       {/* LOCAL */}
-      <PopupSectionHeader label="Local" open={localOpen} onToggle={() => setLocalOpen(o => !o)} />
+      <SCSectionHeader label="Local" open={localOpen} onToggle={() => setLocalOpen(o => !o)} />
       {localOpen && (
         <div style={{ paddingBottom: 4 }}>
           {[
-            { icon: '#', label: 'instancesCount', value: 1,   formula: `context.local.data?.['popup']?.['instancesCount']` },
-            { icon: '#', label: 'index',           value: 0,   formula: `context.local.data?.['popup']?.['index']` },
-            { icon: '#', label: 'totalCount',      value: 1,   formula: `context.local.data?.['popup']?.['totalCount']` },
+            { icon: '#', label: 'instancesCount', value: 1,   formula: `context.local.data?.['sharedComponent']?.['instancesCount']` },
+            { icon: '#', label: 'index',           value: 0,   formula: `context.local.data?.['sharedComponent']?.['index']` },
+            { icon: '#', label: 'totalCount',      value: 1,   formula: `context.local.data?.['sharedComponent']?.['totalCount']` },
           ].map(item => (
-            <PopupPropChip key={item.label} icon={item.icon} label={item.label} value={item.value} formula={item.formula} onInsert={onInsert} />
+            <SCPropChip key={item.label} icon={item.icon} label={item.label} value={item.value} formula={item.formula} onInsert={onInsert} />
           ))}
         </div>
       )}

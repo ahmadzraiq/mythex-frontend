@@ -54,8 +54,15 @@ export type ActionStepType =
   | 'downloadFileFromUrl'
   | 'createUrlFromBase64'
   | 'encodeFileAsBase64'
-  | 'openPopup'
-  | 'closeAllPopups'
+  | 'scrollToElement'
+  // Shared Component
+  | 'addSharedComponent'
+  | 'deleteSharedComponent'
+  | 'deleteAllSharedComponents'
+  // Popover / Tooltip
+  | 'openPopover'
+  | 'closePopover'
+  | 'togglePopover'
   // Data / API
   | 'graphql'
   | 'fetchData'
@@ -366,15 +373,24 @@ export const ACTION_CATEGORIES: { category: string; items: ActionTypeDef[] }[] =
       { type: 'downloadFileFromUrl', label: 'Download file from URL', icon: '</>' },
       { type: 'createUrlFromBase64', label: 'Create URL from Base64', icon: '</>' },
       { type: 'encodeFileAsBase64', label: 'Encode file as Base64', icon: '</>' },
+      { type: 'scrollToElement', label: 'Scroll to element', icon: '↓' },
       { type: 'animate', label: 'Trigger animation', icon: '✨' },
     ],
   },
   {
-    category: 'Popup',
+    category: 'Shared Component',
     items: [
-      { type: 'openPopup', label: 'Open popup', icon: '⊞' },
-      { type: 'closeAllPopups', label: 'Close all popups', icon: '⊞' },
-      { type: 'closePopup', label: 'Close popup', icon: '⊞' },
+      { type: 'addSharedComponent', label: 'Add shared component', icon: '⧉' },
+      { type: 'deleteSharedComponent', label: 'Delete shared component', icon: '⧉' },
+      { type: 'deleteAllSharedComponents', label: 'Delete all shared components', icon: '⧉' },
+    ],
+  },
+  {
+    category: 'Popover',
+    items: [
+      { type: 'openPopover', label: 'Open popover', icon: '◱' },
+      { type: 'closePopover', label: 'Close popover', icon: '◱' },
+      { type: 'togglePopover', label: 'Toggle popover', icon: '◱' },
     ],
   },
 ];
@@ -569,10 +585,16 @@ export function isStepComplete(step: ActionStep): boolean {
       return Boolean(cfg.time ?? cfg.delay ?? cfg.ms);
     case 'copyToClipboard':
       return Boolean(cfg.value);
+    case 'scrollToElement':
+      return Boolean(cfg.elementId ?? cfg.targetId);
     case 'downloadFileFromUrl':
       return Boolean(cfg.url);
-    case 'openPopup':
-      return Boolean(cfg.popupId);
+    case 'addSharedComponent':
+      return Boolean(cfg.componentId);
+    case 'deleteSharedComponent':
+      return true;
+    case 'deleteAllSharedComponents':
+      return true;
     case 'resetVariableValue': {
       const names = cfg.variableNames as string[] | undefined;
       return (Array.isArray(names) && names.some(Boolean)) || Boolean(cfg.variableName);
@@ -591,7 +613,7 @@ export function isStepComplete(step: ActionStep): boolean {
     case 'passThroughCondition':
     case 'stopPropagation':
     case 'printPdf':
-    case 'closeAllPopups':
+    case 'deleteAllSharedComponents':
     case 'resetForm':
     case 'uploadFile':
     case 'encodeFileAsBase64':
@@ -669,6 +691,8 @@ export function getStepSummary(
       return cfg.condition ? String(cfg.condition).slice(0, 40) : null;
     case 'copyToClipboard':
       return cfg.value ? String(cfg.value).slice(0, 30) : null;
+    case 'scrollToElement':
+      return cfg.elementId ? String(cfg.elementId).slice(0, 30) : cfg.targetId ? String(cfg.targetId).slice(0, 30) : null;
     case 'returnValue':
       return cfg.value !== undefined ? String(cfg.value).slice(0, 30) : null;
     default:

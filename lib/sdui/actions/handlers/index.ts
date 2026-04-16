@@ -28,7 +28,8 @@ import {
   mergeAtPathHandler,
 } from './misc-handlers';
 import { workflowStepsHandler } from './workflow-steps-handler';
-import { openPopupHandler, closeAllPopupsHandler, closePopupHandler } from './popup-handlers';
+import { addSharedComponentHandler, deleteSharedComponentHandler, deleteAllSharedComponentsHandler } from './shared-component-handlers';
+import { openPopoverHandler, closePopoverHandler, togglePopoverHandler } from './popover-handlers';
 
 type HandlerFactory = (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<unknown>;
 
@@ -59,10 +60,14 @@ export const ACTION_HANDLERS: Record<string, HandlerFactory> = {
   submitForm: submitFormHandler,
   // Visual workflow canvas step runner
   workflowSteps: workflowStepsHandler,
-  // Popup actions
-  openPopup: openPopupHandler,
-  closeAllPopups: closeAllPopupsHandler,
-  closePopup: closePopupHandler,
+  // Shared Component actions
+  addSharedComponent: addSharedComponentHandler,
+  deleteSharedComponent: deleteSharedComponentHandler,
+  deleteAllSharedComponents: deleteAllSharedComponentsHandler,
+  // Popover actions
+  openPopover: openPopoverHandler,
+  closePopover: closePopoverHandler,
+  togglePopover: togglePopoverHandler,
 };
 
 /**

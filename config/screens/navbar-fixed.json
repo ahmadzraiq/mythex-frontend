@@ -1,0 +1,146 @@
+{
+  "meta": { "title": "Fixed Navbar" },
+  "state": {},
+  "ui": {
+    "type": "Box",
+    "props": { "className": "w-full min-h-screen bg-white dark:bg-gray-950" },
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full h-[64px] flex flex-row items-center px-6 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 fixed top-[0px] left-[0px] right-[0px] z-[50]"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row items-center gap-3 cursor-pointer" },
+            "actions": [{ "action": "navigateToNavbarTypes" }],
+            "children": [
+              { "type": "Icon", "props": { "icon": "lucide:arrow-left", "size": 18, "color": "#6b7280" } },
+              { "type": "Text", "props": { "className": "font-bold text-lg text-gray-900 dark:text-white" }, "text": "NavbarDemo" }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex-1 flex flex-row items-center justify-center gap-8" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-sm font-medium text-gray-600 dark:text-gray-300 cursor-pointer" }, "text": "Home" },
+              { "type": "Text", "props": { "className": "text-sm font-medium text-gray-600 dark:text-gray-300 cursor-pointer" }, "text": "Features" },
+              { "type": "Text", "props": { "className": "text-sm font-medium text-gray-600 dark:text-gray-300 cursor-pointer" }, "text": "About" },
+              { "type": "Text", "props": { "className": "text-sm font-medium text-gray-600 dark:text-gray-300 cursor-pointer" }, "text": "Contact" }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "bg-blue-600 rounded-lg px-4 py-2 cursor-pointer" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-sm font-medium text-white" }, "text": "Get Started" }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "w-full pt-[64px]" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "w-full min-h-[80vh] bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center px-6" },
+            "children": [
+              { "type": "Box", "props": { "className": "bg-blue-100 dark:bg-blue-900/30 rounded-full px-4 py-1 mb-6" }, "children": [{ "type": "Text", "props": { "className": "text-sm font-medium text-blue-700 dark:text-blue-300" }, "text": "Fixed Navbar Demo" }] },
+              { "type": "Heading", "props": { "size": "3xl", "className": "font-bold text-gray-900 dark:text-white text-center" }, "text": "Always Visible Navigation" },
+              { "type": "Text", "props": { "className": "text-lg text-gray-600 dark:text-gray-300 text-center max-w-2xl mt-4" }, "text": "The classic fixed navbar stays anchored to the viewport top as you scroll. It provides constant access to navigation links regardless of scroll position." },
+              { "type": "Text", "props": { "className": "text-sm text-gray-400 dark:text-gray-500 mt-8" }, "text": "Scroll down to see the navbar stay fixed" }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "w-full max-w-6xl mx-auto px-6 py-20" },
+            "children": [
+              { "type": "Heading", "props": { "size": "2xl", "className": "font-bold text-gray-900 dark:text-white text-center mb-12" }, "text": "Features" },
+              {
+                "type": "Box",
+                "props": { "className": "grid grid-cols-1 md:grid-cols-3 gap-8" },
+                "children": [
+                  { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
+                    { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:zap", "size": 24, "color": "#3b82f6" } }] },
+                    { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "Lightning Fast" },
+                    { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "Optimized for speed with zero layout shift. The navbar is always ready." }
+                  ]},
+                  { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
+                    { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:shield", "size": 24, "color": "#a855f7" } }] },
+                    { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "Reliable Access" },
+                    { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "Navigation is always one click away, no matter how far you scroll." }
+                  ]},
+                  { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
+                    { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:layout", "size": 24, "color": "#10b981" } }] },
+                    { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "Consistent Layout" },
+                    { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "Content always starts below the navbar. No jumping or overlapping." }
+                  ]}
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "w-full bg-gray-50 dark:bg-gray-900 py-20 px-6" },
+            "children": [
+              { "type": "Heading", "props": { "size": "2xl", "className": "font-bold text-gray-900 dark:text-white text-center mb-12" }, "text": "What People Say" },
+              {
+                "type": "Box",
+                "props": { "className": "max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6" },
+                "children": [
+                  { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
+                    { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"The fixed navbar is the most reliable pattern. Users always know where to find navigation.\"" },
+                    { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "Sarah Chen" },
+                    { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "UX Designer" }
+                  ]},
+                  { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
+                    { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"Simple, predictable, and works everywhere. The fixed navbar pattern is a timeless classic.\"" },
+                    { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "Mark Johnson" },
+                    { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "Frontend Developer" }
+                  ]},
+                  { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
+                    { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"I always recommend fixed navbars for content-heavy sites. Users need that anchor point.\"" },
+                    { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "Lena Park" },
+                    { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "Product Manager" }
+                  ]}
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "w-full max-w-5xl mx-auto px-6 py-20" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row flex-wrap justify-center gap-12" },
+                "children": [
+                  { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-blue-600" }, "text": "99%" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Browser Support" }] },
+                  { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-blue-600" }, "text": "0ms" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "JS Required" }] },
+                  { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-blue-600" }, "text": "64px" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Standard Height" }] },
+                  { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-blue-600" }, "text": "#1" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Most Used Pattern" }] }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "w-full bg-gray-900 dark:bg-gray-950 py-10 px-6" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "max-w-5xl mx-auto flex flex-row items-center justify-between" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-sm text-gray-400" }, "text": "NavbarDemo \u00a9 2026" },
+                  { "type": "Text", "props": { "className": "text-sm text-gray-500 cursor-pointer" }, "text": "\u2190 Back to all types", "actions": [{ "action": "navigateToNavbarTypes" }] }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

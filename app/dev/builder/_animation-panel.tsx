@@ -69,7 +69,7 @@ const LOOP_TYPES = [
 const EASING_OPTS = ['easeInOut', 'easeIn', 'easeOut', 'linear', 'circIn', 'circOut', 'circInOut', 'backIn', 'backOut', 'backInOut'] as const;
 const AXIS_OPTS   = ['both', 'x', 'y'] as const;
 const LAYOUT_TYPES = ['spring', 'linear', 'sequenced', 'fading'] as const;
-const COLOR_PROPS  = ['backgroundColor', 'borderColor'] as const;
+const COLOR_PROPS  = ['backgroundColor', 'borderColor', 'color', 'outlineColor', 'fill', 'stroke', 'custom'] as const;
 const COLOR_TRIGS  = ['enter', 'loop'] as const;
 const LOOP_DIRS    = ['normal', 'alternate'] as const;
 
@@ -261,6 +261,78 @@ function PRow({ children }: { children: React.ReactNode }) {
   return <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>{children}</div>;
 }
 
+// ─── FromOverride / ToOverride field row ─────────────────────────────────────
+// Compact row: label + number input + optional "px" unit + clear button.
+// When value is undefined the input shows as empty/placeholder.
+
+interface OverrideRowProps {
+  label: string;
+  value: number | undefined;
+  placeholder?: string;
+  unit?: string;
+  step?: number;
+  onChange: (v: number | undefined) => void;
+}
+
+function OverrideRow({ label, value, placeholder = '—', unit, step = 1, onChange }: OverrideRowProps) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+      <span style={{ fontSize: 10, color: '#9ca3af', minWidth: 72, flexShrink: 0 }}>{label}</span>
+      <input
+        type="number"
+        step={step}
+        value={value ?? ''}
+        placeholder={placeholder}
+        onChange={e => {
+          const raw = e.target.value;
+          onChange(raw === '' ? undefined : Number(raw));
+        }}
+        style={{
+          flex: 1, fontSize: 10, padding: '3px 5px', borderRadius: 3,
+          border: `1px solid ${value !== undefined ? '#4f6b8f' : '#374151'}`,
+          background: '#111827', color: '#f9fafb',
+          fontFamily: 'monospace', boxSizing: 'border-box' as const,
+        }}
+      />
+      {unit && <span style={{ fontSize: 9, color: '#6b7280', flexShrink: 0 }}>{unit}</span>}
+      {value !== undefined && (
+        <button
+          onClick={() => onChange(undefined)}
+          title="Clear override"
+          style={{ fontSize: 11, lineHeight: 1, padding: '1px 4px', border: '1px solid #374151', borderRadius: 3, background: 'transparent', color: '#6b7280', cursor: 'pointer', flexShrink: 0 }}
+        >×</button>
+      )}
+    </div>
+  );
+}
+
+function FromOverrideSection({
+  label, from, patch,
+}: {
+  label: string;
+  from: Record<string, number | undefined> | undefined;
+  patch: (p: Record<string, number | undefined>) => void;
+}) {
+  return (
+    <div style={{ borderTop: '1px solid #1e293b', paddingTop: 10, marginTop: 2 }}>
+      <span style={{ fontSize: 9, color: '#6366f1', fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>
+        {label}
+      </span>
+      <span style={{ fontSize: 9, color: '#4b5563', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
+        Override preset starting values. Leave blank to use type defaults.
+      </span>
+      <OverrideRow label="Opacity"     value={from?.opacity}     placeholder="auto" step={0.05}  onChange={v => patch({ opacity: v })} />
+      <OverrideRow label="Translate X" value={from?.translateX}  placeholder="auto" step={1} unit="px" onChange={v => patch({ translateX: v })} />
+      <OverrideRow label="Translate Y" value={from?.translateY}  placeholder="auto" step={1} unit="px" onChange={v => patch({ translateY: v })} />
+      <OverrideRow label="Scale"       value={from?.scale}       placeholder="auto" step={0.05}  onChange={v => patch({ scale: v })} />
+      <OverrideRow label="Rotate"      value={from?.rotate}      placeholder="auto" step={5} unit="°" onChange={v => patch({ rotate: v })} />
+      <OverrideRow label="Blur"        value={from?.blur}        placeholder="auto" step={1} unit="px" onChange={v => patch({ blur: v })} />
+      <OverrideRow label="Skew X"      value={from?.skewX}       placeholder="auto" step={5} unit="°" onChange={v => patch({ skewX: v })} />
+      <OverrideRow label="Skew Y"      value={from?.skewY}       placeholder="auto" step={5} unit="°" onChange={v => patch({ skewY: v })} />
+    </div>
+  );
+}
+
 // ─── AnimConfigPopover ────────────────────────────────────────────────────────
 // Fixed-position floating panel to the LEFT of the right panel (right: 268px).
 // Closes on outside click (ignores clicks inside the right panel) or Escape.
@@ -385,6 +457,24 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
   const patchEnter    = (p: object) => patch({ enter:             { ...cfg.enter,            ...p } });
   const patchExit     = (p: object) => patch({ exit:              { ...cfg.exit,             ...p } });
   const patchLoop     = (p: object) => patch({ loop:              { ...cfg.loop,             ...p } });
+
+  // Helpers for from/to overrides
+  const patchEnterFrom = (p: Record<string, number | undefined>) => {
+    const merged = { ...(cfg.enter?.from ?? {}), ...p };
+    // Drop keys explicitly set to undefined
+    const clean = Object.fromEntries(Object.entries(merged).filter(([, v]) => v !== undefined));
+    patchEnter({ from: Object.keys(clean).length ? clean : undefined });
+  };
+  const patchExitTo = (p: Record<string, number | undefined>) => {
+    const merged = { ...(cfg.exit?.to ?? {}), ...p };
+    const clean = Object.fromEntries(Object.entries(merged).filter(([, v]) => v !== undefined));
+    patchExit({ to: Object.keys(clean).length ? clean : undefined });
+  };
+  const patchScrollFrom = (p: Record<string, number | undefined>) => {
+    const merged = { ...(cfg.scroll?.from ?? {}), ...p };
+    const clean = Object.fromEntries(Object.entries(merged).filter(([, v]) => v !== undefined));
+    patchScroll({ from: Object.keys(clean).length ? clean : undefined });
+  };
   const patchPress    = (p: object) => patch({ press:             { ...cfg.press,            ...p } });
   const patchHover    = (p: object) => patch({ hover:             { ...cfg.hover,            ...p } });
   const patchScroll   = (p: object) => patch({ scroll:            { ...cfg.scroll,           ...p } });
@@ -1206,6 +1296,11 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
                   <NumberInput label="Mass"      value={enter.mass      ?? 1}   min={0.1} max={10} step={0.1} onChange={v => patchEnter({ mass: v })} />
                 </Row>
               )}
+              <FromOverrideSection
+                label="Start values"
+                from={enter.from as Record<string, number | undefined> | undefined}
+                patch={patchEnterFrom}
+              />
             </>
           )}
 
@@ -1219,6 +1314,11 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
                 <SliderField label="Delay" value={animNum(exit.delay, 0)} min={0} max={2000} step={50} unit="ms" onChange={v => patchExit({ delay: v })} />
               </FieldWithBinding>
               <SelectInput label="Easing" value={exit.easing ?? 'easeIn'} options={EASING_OPTS as unknown as string[]} onChange={v => patchExit({ easing: v })} />
+              <FromOverrideSection
+                label="End values"
+                from={exit.to as Record<string, number | undefined> | undefined}
+                patch={patchExitTo}
+              />
             </>
           )}
 
@@ -1259,6 +1359,24 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
                 <SliderField label="Duration" value={animNum(press.duration, 120)} min={50} max={800} step={10} unit="ms" onChange={v => patchPress({ duration: v })} />
               </FieldWithBinding>
               <SelectInput label="Easing" value={press.easing ?? 'easeOut'} options={EASING_OPTS as unknown as string[]} onChange={v => patchPress({ easing: v })} />
+              {/* Style targets */}
+              <div style={{ marginTop: 6 }}>
+                <span style={{ fontSize: 10, color: '#9ca3af', fontWeight: 600 }}>Style targets</span>
+                {Object.entries(press.styles ?? {}).map(([k, v]) => (
+                  <div key={k} style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 3 }}>
+                    <input type="text" value={k} readOnly style={{ flex: 1, fontSize: 10, padding: '2px 4px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#d1d5db', fontFamily: 'monospace', boxSizing: 'border-box' }} />
+                    <input type="text" value={String(v)} onChange={e => { const s = { ...(press.styles ?? {}), [k]: e.target.value }; patchPress({ styles: s }); }}
+                      style={{ flex: 1, fontSize: 10, padding: '2px 4px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', fontFamily: 'monospace', boxSizing: 'border-box' }} />
+                    <button onClick={() => { const s = { ...(press.styles ?? {}) }; delete s[k]; patchPress({ styles: Object.keys(s).length ? s : undefined }); }}
+                      style={{ fontSize: 10, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>✕</button>
+                  </div>
+                ))}
+                <button onClick={() => {
+                  const name = prompt('CSS property name (e.g. backgroundColor, borderRadius, boxShadow)');
+                  if (!name) return;
+                  patchPress({ styles: { ...(press.styles ?? {}), [name]: '' } });
+                }} style={{ fontSize: 10, color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', marginTop: 3, padding: 0 }}>+ Add style target</button>
+              </div>
             </>
           )}
 
@@ -1278,6 +1396,24 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
                 <SliderField label="Duration" value={animNum(hover.duration, 200)} min={50} max={800} step={10} unit="ms" onChange={v => patchHover({ duration: v })} />
               </FieldWithBinding>
               <SelectInput label="Easing" value={hover.easing ?? 'easeOut'} options={EASING_OPTS as unknown as string[]} onChange={v => patchHover({ easing: v })} />
+              {/* Style targets */}
+              <div style={{ marginTop: 6 }}>
+                <span style={{ fontSize: 10, color: '#9ca3af', fontWeight: 600 }}>Style targets</span>
+                {Object.entries(hover.styles ?? {}).map(([k, v]) => (
+                  <div key={k} style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 3 }}>
+                    <input type="text" value={k} readOnly style={{ flex: 1, fontSize: 10, padding: '2px 4px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#d1d5db', fontFamily: 'monospace', boxSizing: 'border-box' }} />
+                    <input type="text" value={String(v)} onChange={e => { const s = { ...(hover.styles ?? {}), [k]: e.target.value }; patchHover({ styles: s }); }}
+                      style={{ flex: 1, fontSize: 10, padding: '2px 4px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', fontFamily: 'monospace', boxSizing: 'border-box' }} />
+                    <button onClick={() => { const s = { ...(hover.styles ?? {}) }; delete s[k]; patchHover({ styles: Object.keys(s).length ? s : undefined }); }}
+                      style={{ fontSize: 10, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>✕</button>
+                  </div>
+                ))}
+                <button onClick={() => {
+                  const name = prompt('CSS property name (e.g. backgroundColor, borderRadius, boxShadow)');
+                  if (!name) return;
+                  patchHover({ styles: { ...(hover.styles ?? {}), [name]: '' } });
+                }} style={{ fontSize: 10, color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', marginTop: 3, padding: 0 }}>+ Add style target</button>
+              </div>
             </>
           )}
 
@@ -1339,6 +1475,11 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
                 <SliderField label="Delay" value={animNum(scroll.delay, 0)} min={0} max={2000} step={50} unit="ms" onChange={v => patchScroll({ delay: v })} />
               </FieldWithBinding>
               <SelectInput label="Easing" value={scroll.easing ?? 'easeOut'} options={EASING_OPTS as unknown as string[]} onChange={v => patchScroll({ easing: v })} />
+              <FromOverrideSection
+                label="Start values"
+                from={scroll.from as Record<string, number | undefined> | undefined}
+                patch={patchScrollFrom}
+              />
             </>
           )}
 
@@ -1356,34 +1497,80 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
           )}
 
           {/* ── Scroll Progress ── */}
-          {popover.category === 'scrollProgress' && (
-            <>
+          {popover.category === 'scrollProgress' && (() => {
+            const SCROLL_PROG_PROPS = ['opacity', 'scale', 'translateY', 'translateX', 'rotate', 'blur', 'backgroundOpacity', 'backgroundColor', 'color', 'borderColor', 'borderRadius', 'fontSize', 'borderWidth', 'custom'];
+            const currentProp = scrollProg.property ?? 'opacity';
+            const isCustomProp = currentProp === 'custom' || !SCROLL_PROG_PROPS.includes(currentProp);
+            const COLOR_SCROLL_PROPS = new Set(['backgroundColor', 'color', 'borderColor']);
+            const isColorProp = COLOR_SCROLL_PROPS.has(currentProp) ||
+              (typeof scrollProg.from === 'string' && (String(scrollProg.from).startsWith('#') || String(scrollProg.from).startsWith('rgb')));
+            return <>
               <ToggleRow label="Pin (sticky)" active={scrollProg.pin} onChange={() => patchScrollProg({ pin: !scrollProg.pin })} />
-              <SelectInput label="Property" value={scrollProg.property ?? 'opacity'}
-                options={['opacity', 'scale', 'translateY', 'translateX', 'rotate', 'blur']}
-                onChange={v => patchScrollProg({ property: v })} />
-              <Row>
-                <NumberInput label="From" value={scrollProg.from ?? 0}   min={-1000} max={1000} step={0.01} onChange={v => patchScrollProg({ from: v })} />
-                <NumberInput label="To"   value={scrollProg.to   ?? 1}   min={-1000} max={1000} step={0.01} onChange={v => patchScrollProg({ to: v })} />
-              </Row>
-              <div>
-                <span style={{ fontSize: 10, color: '#6b7280', display: 'block', marginBottom: 3 }}>Unit (px/deg/%, auto)</span>
-                <input type="text" value={scrollProg.unit ?? ''} placeholder="px"
-                  onChange={e => patchScrollProg({ unit: e.target.value || undefined })}
-                  style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', fontFamily: 'monospace', boxSizing: 'border-box' }} />
-              </div>
+              <ToggleRow label="Use window scroll" active={scrollProg.useWindowScroll ?? false} onChange={() => patchScrollProg({ useWindowScroll: !scrollProg.useWindowScroll })} />
+              <SelectInput label="Property" value={isCustomProp ? 'custom' : currentProp}
+                options={SCROLL_PROG_PROPS}
+                onChange={v => patchScrollProg({ property: v === 'custom' ? '' : v })} />
+              {isCustomProp && (
+                <div>
+                  <span style={{ fontSize: 10, color: '#6b7280', display: 'block', marginBottom: 3 }}>CSS property name</span>
+                  <input type="text" value={currentProp === 'custom' ? '' : currentProp} placeholder="e.g. letterSpacing"
+                    onChange={e => patchScrollProg({ property: e.target.value || 'custom' })}
+                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', fontFamily: 'monospace', boxSizing: 'border-box' }} />
+                </div>
+              )}
+              {(currentProp === 'backgroundOpacity') && (
+                <div>
+                  <span style={{ fontSize: 10, color: '#6b7280', display: 'block', marginBottom: 3 }}>RGB base (e.g. 255,255,255)</span>
+                  <input type="text" value={(scrollProg as Record<string, unknown>).rgb as string ?? '255,255,255'} placeholder="255,255,255"
+                    onChange={e => patchScrollProg({ rgb: e.target.value || undefined } as Record<string, unknown>)}
+                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', fontFamily: 'monospace', boxSizing: 'border-box' }} />
+                </div>
+              )}
+              {isColorProp ? (
+                <Row>
+                  <ColorInput label="From" value={String(scrollProg.from ?? '#000000')} onChange={v => patchScrollProg({ from: v })} />
+                  <ColorInput label="To"   value={String(scrollProg.to   ?? '#ffffff')} onChange={v => patchScrollProg({ to: v })} />
+                </Row>
+              ) : (
+                <Row>
+                  <NumberInput label="From" value={typeof scrollProg.from === 'number' ? scrollProg.from : Number(scrollProg.from) || 0}   min={-1000} max={1000} step={0.01} onChange={v => patchScrollProg({ from: v })} />
+                  <NumberInput label="To"   value={typeof scrollProg.to   === 'number' ? scrollProg.to   : Number(scrollProg.to)   || 1}   min={-1000} max={1000} step={0.01} onChange={v => patchScrollProg({ to: v })} />
+                </Row>
+              )}
+              {!isColorProp && (
+                <div>
+                  <span style={{ fontSize: 10, color: '#6b7280', display: 'block', marginBottom: 3 }}>Unit (px/deg/%, auto)</span>
+                  <input type="text" value={scrollProg.unit ?? ''} placeholder="px"
+                    onChange={e => patchScrollProg({ unit: e.target.value || undefined })}
+                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', fontFamily: 'monospace', boxSizing: 'border-box' }} />
+                </div>
+              )}
               <Row>
                 <NumberInput label="Viewport start (0–1)" value={scrollProg.start ?? 0} min={0} max={1} step={0.05} onChange={v => patchScrollProg({ start: v })} />
                 <NumberInput label="Viewport end (0–1)"   value={scrollProg.end   ?? 1} min={0} max={1} step={0.05} onChange={v => patchScrollProg({ end: v })} />
               </Row>
-            </>
-          )}
+            </>;
+          })()}
 
           {/* ── Color Transition ── */}
           {popover.category === 'colorTransition' && (
             <>
               <ToggleRow label="Loop" active={color.loop} onChange={() => patchColor({ loop: !color.loop })} />
-              <SelectInput label="Property" value={color.property ?? 'backgroundColor'} options={COLOR_PROPS as unknown as string[]} onChange={v => patchColor({ property: v })} />
+              {(() => {
+                const cp = color.property ?? 'backgroundColor';
+                const isCustom = cp === 'custom' || !(COLOR_PROPS as readonly string[]).includes(cp);
+                return <>
+                  <SelectInput label="Property" value={isCustom ? 'custom' : cp} options={COLOR_PROPS as unknown as string[]} onChange={v => patchColor({ property: v === 'custom' ? '' : v })} />
+                  {isCustom && (
+                    <div>
+                      <span style={{ fontSize: 10, color: '#6b7280', display: 'block', marginBottom: 3 }}>CSS property name</span>
+                      <input type="text" value={cp === 'custom' ? '' : cp} placeholder="e.g. caretColor"
+                        onChange={e => patchColor({ property: e.target.value || 'custom' })}
+                        style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', fontFamily: 'monospace', boxSizing: 'border-box' }} />
+                    </div>
+                  )}
+                </>;
+              })()}
               <ColorInput label="From" value={color.from ?? '#3b82f6'} onChange={v => patchColor({ from: v })} />
               <ColorInput label="To"   value={color.to   ?? '#ef4444'} onChange={v => patchColor({ to: v })} />
               <Row>

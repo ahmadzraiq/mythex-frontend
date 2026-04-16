@@ -52,6 +52,14 @@ export const REQUIRED_PARENT: Record<string, string> = {
 };
 
 /**
+ * Returns true when a node is a structural container that cannot be
+ * dragged/reordered (e.g. a popover content wrapper).
+ */
+export function isNonDraggable(node: SDUINode | null | undefined): boolean {
+  return !!node?._popoverContent;
+}
+
+/**
  * Nodes that may only accept a specific set of child types.
  * Exported so _canvas.tsx can pre-check before routing a drag "inside".
  */
@@ -282,11 +290,21 @@ export function clone<T>(v: T): T {
   return structuredClone(v);
 }
 
+/**
+ * Returns all traversable child arrays for a node.
+ * Used by tree walkers to search/patch/remove across all sub-trees.
+ */
+export function getNodeSubtrees(node: SDUINode): SDUINode[][] {
+  const subs: SDUINode[][] = [];
+  if (node.children?.length) subs.push(node.children as SDUINode[]);
+  return subs;
+}
+
 export function findNode(nodes: SDUINode[], targetId: string): SDUINode | null {
   for (const node of nodes) {
     if (node.id === targetId) return node;
-    if (node.children?.length) {
-      const found = findNode(node.children as SDUINode[], targetId);
+    for (const sub of getNodeSubtrees(node)) {
+      const found = findNode(sub, targetId);
       if (found) return found;
     }
   }
@@ -304,8 +322,8 @@ export function findParentNode(
 ): SDUINode | null | undefined {
   for (const node of nodes) {
     if (node.id === targetId) return _parent;
-    if (node.children?.length) {
-      const result = findParentNode(node.children as SDUINode[], targetId, node);
+    for (const sub of getNodeSubtrees(node)) {
+      const result = findParentNode(sub, targetId, node);
       if (result !== undefined) return result;
     }
   }
@@ -338,23 +356,24 @@ export function patchNodeById(
 
 export function removeNodesByIds(nodes: SDUINode[], ids: Set<string>): SDUINode[] {
   const filtered = nodes.filter(n => !ids.has(n.id ?? ''));
+  const recurse = (n: SDUINode): SDUINode => {
+    let patched = n;
+    if (n.children?.length) {
+      const newC = removeNodesByIds(n.children as SDUINode[], ids);
+      if (newC !== n.children) patched = { ...patched, children: newC };
+    }
+    return patched;
+  };
   if (filtered.length === nodes.length) {
     let changed = false;
     const mapped = filtered.map(n => {
-      if (!n.children?.length) return n;
-      const newChildren = removeNodesByIds(n.children as SDUINode[], ids);
-      if (newChildren === n.children) return n;
-      changed = true;
-      return { ...n, children: newChildren };
+      const p = recurse(n);
+      if (p !== n) changed = true;
+      return p;
     });
     return changed ? mapped : nodes;
   }
-  return filtered.map(n => {
-    if (!n.children?.length) return n;
-    const newChildren = removeNodesByIds(n.children as SDUINode[], ids);
-    if (newChildren === n.children) return n;
-    return { ...n, children: newChildren };
-  });
+  return filtered.map(recurse);
 }
 
 /**
@@ -384,9 +403,8 @@ export function hasFormContainerAncestor(nodes: SDUINode[], targetId: string, _p
     if (node.id === targetId) {
       return _path.some((a) => (a.type as string) === FORM_CONTAINER_TYPE);
     }
-    if (node.children?.length) {
-      const found = hasFormContainerAncestor(node.children as SDUINode[], targetId, pathHere);
-      if (found) return true;
+    for (const sub of getNodeSubtrees(node)) {
+      if (hasFormContainerAncestor(sub, targetId, pathHere)) return true;
     }
   }
   return false;
@@ -411,5 +429,31 @@ export function insertNode(
     children.splice(idx, 0, newNode);
     return { ...parent, children };
   });
+}
+
+/**
+ * Walk up from `nodeId` through parent chain to find the nearest ancestor (or self)
+ * with `_shared` metadata. Returns null if no shared ancestor exists.
+ */
+export function findSharedRoot(nodes: SDUINode[], nodeId: string): SDUINode | null {
+  let current: string | undefined = nodeId;
+  while (current) {
+    const node = findNode(nodes, current);
+    if (node && (node as unknown as Record<string, unknown>)._shared) return node;
+    const parent = findParentNode(nodes, current);
+    if (parent === null || parent === undefined) break;
+    current = parent.id;
+  }
+  return null;
+}
+
+/** Deep-clone a node tree, assigning fresh UUIDs to every node. */
+export function cloneWithFreshIds(node: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = { ...node, id: crypto.randomUUID() };
+  const children = (result.children ?? []) as Record<string, unknown>[];
+  if (children.length > 0) {
+    result.children = children.map(c => cloneWithFreshIds(JSON.parse(JSON.stringify(c)) as Record<string, unknown>));
+  }
+  return result;
 }
 

@@ -1,0 +1,140 @@
+{
+  "meta": { "title": "Sticky Navbar" },
+  "state": {},
+  "ui": {
+    "type": "Box",
+    "props": { "className": "w-full min-h-screen bg-white dark:bg-gray-950" },
+    "children": [
+      {
+        "type": "Box",
+        "props": { "className": "w-full min-h-screen bg-gradient-to-br from-purple-600 to-indigo-700 flex flex-col items-center justify-center px-6" },
+        "children": [
+          { "type": "Heading", "props": { "size": "4xl", "className": "font-bold text-white text-center" }, "text": "Sticky Navbar" },
+          { "type": "Text", "props": { "className": "text-xl text-white/80 text-center mt-4 max-w-2xl" }, "text": "Scroll down past this hero to see the navbar appear and stick to the top of the viewport." },
+          { "type": "Box", "props": { "className": "mt-8 flex flex-row items-center gap-2" }, "children": [
+            { "type": "Icon", "props": { "icon": "lucide:chevron-down", "size": 20, "color": "#ffffff" } },
+            { "type": "Text", "props": { "className": "text-white/60 text-sm" }, "text": "Scroll down" }
+          ]}
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full h-[64px] flex flex-row items-center px-6 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 sticky top-[0px] z-[40]"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row items-center gap-3 cursor-pointer" },
+            "actions": [{ "action": "navigateToNavbarTypes" }],
+            "children": [
+              { "type": "Icon", "props": { "icon": "lucide:arrow-left", "size": 18, "color": "#6b7280" } },
+              { "type": "Text", "props": { "className": "font-bold text-lg text-gray-900 dark:text-white" }, "text": "NavbarDemo" }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex-1 flex flex-row items-center justify-center gap-8" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-sm font-medium text-gray-600 dark:text-gray-300" }, "text": "Home" },
+              { "type": "Text", "props": { "className": "text-sm font-medium text-gray-600 dark:text-gray-300" }, "text": "Features" },
+              { "type": "Text", "props": { "className": "text-sm font-medium text-gray-600 dark:text-gray-300" }, "text": "About" },
+              { "type": "Text", "props": { "className": "text-sm font-medium text-gray-600 dark:text-gray-300" }, "text": "Contact" }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "bg-purple-600 rounded-lg px-4 py-2 cursor-pointer" },
+            "children": [{ "type": "Text", "props": { "className": "text-sm font-medium text-white" }, "text": "Get Started" }]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "w-full max-w-6xl mx-auto px-6 py-20" },
+        "children": [
+          { "type": "Heading", "props": { "size": "2xl", "className": "font-bold text-gray-900 dark:text-white text-center mb-12" }, "text": "Features" },
+          {
+            "type": "Box",
+            "props": { "className": "grid grid-cols-1 md:grid-cols-3 gap-8" },
+            "children": [
+              { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
+                { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:code", "size": 24, "color": "#a855f7" } }] },
+                { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "Pure CSS" },
+                { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "No JavaScript needed. Uses native CSS position: sticky for smooth behavior." }
+              ]},
+              { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
+                { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:layers", "size": 24, "color": "#6366f1" } }] },
+                { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "Natural Flow" },
+                { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "The navbar starts in the document flow, allowing the hero to take full attention." }
+              ]},
+              { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
+                { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:monitor", "size": 24, "color": "#8b5cf6" } }] },
+                { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "No Layout Shift" },
+                { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "Content doesn't need top padding since the navbar is part of the document flow." }
+              ]}
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "w-full bg-gray-50 dark:bg-gray-900 py-20 px-6" },
+        "children": [
+          { "type": "Heading", "props": { "size": "2xl", "className": "font-bold text-gray-900 dark:text-white text-center mb-12" }, "text": "Testimonials" },
+          {
+            "type": "Box",
+            "props": { "className": "max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6" },
+            "children": [
+              { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
+                { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"Sticky navbars are perfect when you want a hero section to have maximum impact.\"" },
+                { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "Alex Rivera" },
+                { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "Designer" }
+              ]},
+              { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
+                { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"The transition from scrolling past the hero to seeing the navbar stick is so satisfying.\"" },
+                { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "Jamie Lee" },
+                { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "Developer" }
+              ]},
+              { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
+                { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"Pure CSS, no JS dependencies, and it just works. What more could you ask for?\"" },
+                { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "Pat Morgan" },
+                { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "Architect" }
+              ]}
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "w-full max-w-5xl mx-auto px-6 py-20" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row flex-wrap justify-center gap-12" },
+            "children": [
+              { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-purple-600" }, "text": "0" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Lines of JS" }] },
+              { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-purple-600" }, "text": "97%" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Browser Support" }] },
+              { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-purple-600" }, "text": "100vh" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Hero Height" }] },
+              { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-purple-600" }, "text": "1px" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "CSS Property" }] }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": { "className": "w-full bg-gray-900 dark:bg-gray-950 py-10 px-6" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "max-w-5xl mx-auto flex flex-row items-center justify-between" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-sm text-gray-400" }, "text": "NavbarDemo \u00a9 2026" },
+              { "type": "Text", "props": { "className": "text-sm text-gray-500 cursor-pointer" }, "text": "\u2190 Back to all types", "actions": [{ "action": "navigateToNavbarTypes" }] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,7 +1,7 @@
 /**
  * Workflow Actions E2E Tests (WA series)
  *
- * Tests all workflow action types (excluding uploadFile, openPopup, closeAllPopups)
+ * Tests all workflow action types (excluding uploadFile)
  * across all relevant triggers, on /workflow-test.
  *
  * Cards on /workflow-test:

@@ -236,6 +236,8 @@ export interface BuilderPage {
   meta?: PageMeta;
   /** Page-level interactions keyed by event name (e.g. "mount") */
   pageInteractions?: Record<string, { workflow?: string }>;
+  /** Per-page URL query parameter definitions (name + test value for builder preview). */
+  queryParams?: Array<{ name: string; value: string }>;
   /** World-space X position of the page frame (top-left corner). Used for free canvas layout. */
   wx: number;
   /** World-space Y position of the page frame (top-left corner). Used for free canvas layout. */
@@ -251,6 +253,8 @@ export interface HistorySnapshot {
   pages: Record<string, { nodes: SDUINode[]; wx: number; wy: number }>;
   /** Freeform canvas nodes (outside any page frame) */
   canvasNodes: SDUINode[];
+  /** Snapshot of all shared component models so rename/delete/property changes are undoable */
+  sharedComponents?: Record<string, unknown>;
 }
 
 /**
@@ -311,29 +315,8 @@ export interface BuilderStore {
   // ── Page state (active page working copy) ───────────────────────────────────
   pageNodes: SDUINode[];
 
-  // ── Popup edit mode ─────────────────────────────────────────────────────────
-  /** IDs of ALL popup models currently open for editing in the canvas */
-  editingPopupIds: string[];
-  /** The most-recently-opened editing popup — used for right-panel fallback */
-  editingPopupId: string | null;
-  /** Root content node map per popup being edited (keyed by modelId) */
-  editingPopupContentsMap: Record<string, SDUINode>;
-  /** Full popup model map per popup being edited (keyed by modelId) */
-  editingPopupModelsMap: Record<string, Record<string, unknown>>;
-  /** Convenience alias: content of the most-recently-opened popup (right-panel compat) */
-  editingPopupContent: SDUINode | null;
-  /** Convenience alias: model of the most-recently-opened popup (right-panel compat) */
-  editingPopupModel: Record<string, unknown> | null;
-  /** @deprecated No longer used — kept for backward compat with popup edit. */
+  /** Snapshot of pageNodes before entering edit mode — restored when all editors close */
   _savedPageNodes: SDUINode[] | null;
-  /** Enter popup-edit mode: appends popup to pageNodes; supports multiple concurrent popup edits */
-  enterPopupEdit: (modelId: string, content: SDUINode, model: Record<string, unknown>) => void;
-  /** Exit popup-edit mode for a specific popup (or the last opened if omitted).
-   *  Saves that popup to the API and removes its root node from pageNodes. */
-  exitPopupEdit: (modelId?: string) => void;
-  /** Save the current live state of a popup being edited to the API without exiting edit mode.
-   *  Called automatically on a debounce whenever pageNodes changes during popup edit. */
-  saveEditingPopup: (modelId: string) => void;
 
   // ── Shared Component edit mode ───────────────────────────────────────────────
   /** IDs of ALL shared component models currently open for editing in the canvas */
@@ -370,6 +353,12 @@ export interface BuilderStore {
   lockedIds: Set<string>;
   hiddenIds: Set<string>;
   expandedIds: Set<string>;
+
+  // ── Popover builder preview ──────────────────────────────────────────────
+  /** Keys are `popover:{nodeId}` — tracks which overlays are shown on canvas */
+  shownPopovers: Set<string>;
+  togglePopoverShown: (nodeId: string) => void;
+  setPopoverConfig: (nodeId: string, config: Record<string, unknown> | null) => void;
 
   // ── Tool ────────────────────────────────────────────────────────────────────
   tool: 'select' | 'hand';
@@ -523,6 +512,8 @@ export interface BuilderStore {
   setCurrentPageMeta: (meta: PageMeta) => void;
   /** Set page-level interactions for the current page */
   setCurrentPageInteractions: (interactions: Record<string, { workflow?: string }>) => void;
+  /** Set per-page URL query parameter definitions for the current page */
+  setCurrentPageQueryParams: (params: Array<{ name: string; value: string }>) => void;
   /** Engine conventions loaded from store.json (graphqlEndpoint, graphqlHeaders, etc.) */
   engineConventions: {
     graphqlEndpoint?: string;
@@ -681,6 +672,8 @@ export interface BuilderStore {
 
   // Internal (debounce wrapper)
   _pushHistory: () => void;
+  /** Propagate edits from a `_shared` node to the model and all other instances. */
+  _syncSharedInstances: (editedNodeId: string) => void;
   _setPageNodes: (nodes: SDUINode[]) => void;
   /** E2E only — resets undo/redo history to a single empty snapshot so tests start clean. */
   _clearHistory: () => void;

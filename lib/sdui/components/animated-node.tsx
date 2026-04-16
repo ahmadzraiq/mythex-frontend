@@ -46,6 +46,7 @@ import Animated, {
   FadeOutLeft,
   FadeOutRight,
   ZoomOut,
+  Keyframe,
   type BaseAnimationBuilder,
 } from 'react-native-reanimated';
 import {
@@ -86,6 +87,19 @@ const MaskedViewComponent = MaskedViewRaw ?? null;
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
+export interface AnimFromTo {
+  opacity?: number;
+  translateX?: number;
+  translateY?: number;
+  scale?: number;
+  rotateX?: number;
+  rotateY?: number;
+  rotate?: number;
+  blur?: number;
+  skewX?: number;
+  skewY?: number;
+}
+
 export interface EnterConfig {
   type?: string;
   duration?: number;
@@ -96,6 +110,9 @@ export interface EnterConfig {
   damping?: number;
   mass?: number;
   stagger?: number;
+  /** Override or extend the preset `from` values. Merged on top of ENTER_FROM[type].
+   *  e.g. `{ translateX: -800, opacity: 1 }` for a full-width slide without fade. */
+  from?: AnimFromTo;
 }
 
 export interface ExitConfig {
@@ -109,6 +126,8 @@ export interface ExitConfig {
   /** When set, the exit animation fires automatically when the states machine
    *  watchVar equals this string (instead of via external triggerExitAnimation). */
   stateTrigger?: string;
+  /** Override or extend the preset `to` values. Merged on top of EXIT_TO[type]. */
+  to?: AnimFromTo;
 }
 
 export interface LoopConfig {
@@ -134,6 +153,8 @@ export interface PressConfig {
   y?: number;
   duration?: number;
   easing?: string;
+  /** Arbitrary CSS property targets animated via CSS transition on web */
+  styles?: Record<string, string | number>;
 }
 
 export interface HoverConfig {
@@ -142,6 +163,8 @@ export interface HoverConfig {
   y?: number;
   duration?: number;
   easing?: string;
+  /** Arbitrary CSS property targets animated via CSS transition on web */
+  styles?: Record<string, string | number>;
 }
 
 export interface ScrollConfig {
@@ -152,6 +175,8 @@ export interface ScrollConfig {
   duration?: number;
   delay?: number;
   easing?: string;
+  /** Override or extend the preset `from` values for scroll-triggered entry. */
+  from?: AnimFromTo;
 }
 
 export interface ParallaxConfig {
@@ -171,7 +196,8 @@ export interface DragConfig {
 
 export interface ColorConfig {
   enabled?: boolean;
-  property?: 'backgroundColor' | 'borderColor';
+  /** Any CSS color property (e.g. backgroundColor, borderColor, color, outlineColor, fill, stroke) */
+  property?: string;
   from?: string;
   to?: string;
   trigger?: 'enter' | 'loop';
@@ -254,13 +280,21 @@ export interface SvgStrokeConfig {
 
 export interface ScrollProgressConfig {
   enabled?: boolean;
-  property?: 'opacity' | 'scale' | 'translateY' | 'translateX' | 'rotate' | 'blur';
-  from?: number;
-  to?: number;
+  /** Any CSS property name. Known fast-path: opacity, scale, translateY, translateX, rotate, blur, backgroundOpacity.
+   *  Unknown properties use generic auto-detection: color strings → color interpolation, numbers → numeric interpolation. */
+  property?: string;
+  from?: number | string;
+  to?: number | string;
   unit?: string;
   start?: number;
   end?: number;
   pin?: boolean;
+  /** Use window.scrollY directly instead of element bounding rect.
+   *  Required for position:fixed elements where getBoundingClientRect never changes.
+   *  When true, `start` and `end` are pixel values of window.scrollY. */
+  useWindowScroll?: boolean;
+  /** RGB string for backgroundOpacity, e.g. "255,255,255". Default: "255,255,255" */
+  rgb?: string;
 }
 
 export interface FlipConfig {
@@ -485,6 +519,38 @@ const CSS_EASING: Record<string, string> = {
 };
 const cssEase = (name?: string) => CSS_EASING[name ?? ''] ?? 'ease-in-out';
 
+// ── Color interpolation helpers for generic scrollProgress / color animation ──
+function isColorString(v: unknown): boolean {
+  if (typeof v !== 'string') return false;
+  return v.startsWith('#') || v.startsWith('rgb');
+}
+function parseColorToRgba(s: string): [number, number, number, number | undefined] {
+  if (s.startsWith('#')) {
+    let hex = s.slice(1);
+    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+    if (hex.length === 4) hex = hex.split('').map(c => c + c).join('');
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    const a = hex.length >= 8 ? parseInt(hex.slice(6, 8), 16) / 255 : undefined;
+    return [r, g, b, a];
+  }
+  const nums = s.match(/[\d.]+/g)?.map(Number) ?? [0, 0, 0];
+  return [nums[0] ?? 0, nums[1] ?? 0, nums[2] ?? 0, nums[3]];
+}
+function lerpColor(from: string, to: string, t: number): string {
+  const [fr, fg, fb, fa] = parseColorToRgba(from);
+  const [tr, tg, tb, ta] = parseColorToRgba(to);
+  const r = Math.round(fr + (tr - fr) * t);
+  const g = Math.round(fg + (tg - fg) * t);
+  const b = Math.round(fb + (tb - fb) * t);
+  if (fa != null && ta != null) {
+    const a = fa + (ta - fa) * t;
+    return `rgba(${r},${g},${b},${a.toFixed(3)})`;
+  }
+  return `rgb(${r},${g},${b})`;
+}
+
 const RN_EASING: Record<string, typeof ReanimatedEasing.linear> = {
   linear:    ReanimatedEasing.linear,
   easeIn:    ReanimatedEasing.in(ReanimatedEasing.quad),
@@ -506,15 +572,15 @@ const rnEase = (name?: string, bezier?: [number, number, number, number]) => {
 
 // ─── Named animation → initial/target value maps ─────────────────────────────
 
-interface AnimValues { opacity?: number; translateX?: number; translateY?: number; scale?: number; rotateX?: number; rotateY?: number }
+interface AnimValues { opacity?: number; translateX?: number; translateY?: number; scale?: number; rotateX?: number; rotateY?: number; rotate?: number; blur?: number; skewX?: number; skewY?: number }
 
 const ENTER_FROM: Record<string, AnimValues> = {
   fadeIn:       { opacity: 0 },
   slideInUp:    { opacity: 0, translateY: 40 },
   slideInDown:  { opacity: 0, translateY: -40 },
-  slideInLeft:  { opacity: 0, translateX: -40 },
+  slideInLeft:       { opacity: 0, translateX: -40 },
   slideInLeftSubtle: { opacity: 0, translateX: -28 },
-  slideInRight: { opacity: 0, translateX: 40 },
+  slideInRight:      { opacity: 0, translateX: 40 },
   zoomIn:       { opacity: 0, scale: 0.6 },
   bounceIn:     { opacity: 0, scale: 0.3 },
   flipInX:      { opacity: 0, rotateX: 90 },
@@ -661,7 +727,7 @@ export const triggerAnimationNode    = (id: string, type: string, duration: numb
   animationRegistry.get(id)?.(type, duration);
 
 // ─── Exit animation registry ──────────────────────────────────────────────────
-// Allows external callers (e.g. PopupRenderer) to trigger a node's exit animation
+// Allows external callers (e.g. SharedComponentDynamicRenderer) to trigger a node's exit animation
 // and receive a callback when it completes, before unmounting the node.
 
 type ExitFn = (onDone: () => void) => void;
@@ -879,16 +945,20 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   const enterOpacity    = useSharedValue(
     // Enter animation (no scroll) — start hidden if from-value has opacity
     (enter?.type && enter.type !== 'none' && !scrollActive &&
-     (ENTER_FROM[enter.type]?.opacity ?? null) != null) ? 0 :
+     ({ ...(ENTER_FROM[enter.type] ?? {}), ...(enter.from ?? {}) }.opacity ?? null) != null) ? 0 :
     // Scroll animation — start hidden so the element is invisible until IntersectionObserver fires
     (scrollActive && scroll?.type && scroll.type !== 'none' &&
-     (ENTER_FROM[scroll.type as string]?.opacity ?? null) != null) ? 0 : 1
+     ({ ...(ENTER_FROM[scroll.type as string] ?? {}), ...(scroll.from ?? {}) }.opacity ?? null) != null) ? 0 : 1
   );
   const enterTranslateX = useSharedValue(0);
   const enterTranslateY = useSharedValue(0);
   const enterScale      = useSharedValue(1);
   const enterRotateX    = useSharedValue(0);
   const enterRotateY    = useSharedValue(0);
+  const enterRotateZ    = useSharedValue(0);
+  const enterBlur       = useSharedValue(0);
+  const enterSkewX      = useSharedValue(0);
+  const enterSkewY      = useSharedValue(0);
 
   // Loop — one shared value per animated property so each type is applied correctly
   const loopScale        = useSharedValue(1);   // scale animations (pulse, breathe, heartbeat)
@@ -1046,7 +1116,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     const easing    = rnEase(enter?.easing ?? 'easeOut');
     const isSpring  = enter?.spring;
 
-    const from = ENTER_FROM[type] ?? { opacity: 0 };
+    const from = { ...(ENTER_FROM[type] ?? { opacity: 0 }), ...(enter?.from ?? {}) };
     const springCfg = isSpring
       ? { damping: enter?.damping ?? 20, stiffness: enter?.stiffness ?? 200, mass: enter?.mass ?? 1 }
       : null;
@@ -1059,9 +1129,63 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     if (from.scale       != null) { enterScale.value      = from.scale;      enterScale.value      = anim(from.scale,      1); }
     if (from.rotateX     != null) { enterRotateX.value    = from.rotateX;    enterRotateX.value    = anim(from.rotateX,    0); }
     if (from.rotateY     != null) { enterRotateY.value    = from.rotateY;    enterRotateY.value    = anim(from.rotateY,    0); }
+    if (from.rotate      != null) { enterRotateZ.value    = from.rotate;     enterRotateZ.value    = anim(from.rotate,     0); }
+    if (from.blur        != null) { enterBlur.value       = from.blur;       enterBlur.value       = anim(from.blur,       0); }
+    if (from.skewX       != null) { enterSkewX.value      = from.skewX;      enterSkewX.value      = anim(from.skewX,      0); }
+    if (from.skewY       != null) { enterSkewY.value      = from.skewY;      enterSkewY.value      = anim(from.skewY,      0); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [builderMode, enter?.type, enter?.duration, enter?.delay, enter?.easing, enter?.stagger,
       enter?.spring, enter?.stiffness, enter?.damping, enter?.mass, staggerIndex, scrollActive]);
+
+  // ── Shared replay helper — cancels running enter animations and replays from scratch ──
+  const replayEnterAnimation = useCallback(() => {
+    const type = enter?.type;
+    if (!type || type === 'none') return;
+    const delay     = (enter?.delay ?? 0) + staggerIndex * (enter?.stagger ?? 0);
+    const dur       = enter?.duration ?? 400;
+    const easing    = rnEase(enter?.easing ?? 'easeOut');
+    const isSpring  = enter?.spring;
+    const from      = { ...(ENTER_FROM[type] ?? { opacity: 0 }), ...(enter?.from ?? {}) };
+    const springCfg = isSpring
+      ? { damping: enter?.damping ?? 20, stiffness: enter?.stiffness ?? 200, mass: enter?.mass ?? 1 }
+      : null;
+    const anim = (f: number, to: number) =>
+      withDelay(delay, springCfg ? withSpring(to, springCfg) : withTiming(to, { duration: dur, easing }));
+
+    cancelAnimation(enterOpacity);
+    cancelAnimation(enterTranslateX);
+    cancelAnimation(enterTranslateY);
+    cancelAnimation(enterScale);
+    cancelAnimation(enterRotateX);
+    cancelAnimation(enterRotateY);
+    cancelAnimation(enterRotateZ);
+    cancelAnimation(enterBlur);
+    cancelAnimation(enterSkewX);
+    cancelAnimation(enterSkewY);
+
+    if (from.opacity     != null) { enterOpacity.value = from.opacity;    enterOpacity.value    = anim(from.opacity,    1); }
+    else                          { enterOpacity.value = 1; }
+    if (from.translateX  != null) { enterTranslateX.value = from.translateX; enterTranslateX.value = anim(from.translateX, 0); }
+    else                          { enterTranslateX.value = 0; }
+    if (from.translateY  != null) { enterTranslateY.value = from.translateY; enterTranslateY.value = anim(from.translateY, 0); }
+    else                          { enterTranslateY.value = 0; }
+    if (from.scale       != null) { enterScale.value = from.scale;        enterScale.value      = anim(from.scale,      1); }
+    else                          { enterScale.value = 1; }
+    if (from.rotateX     != null) { enterRotateX.value = from.rotateX;   enterRotateX.value    = anim(from.rotateX,    0); }
+    else                          { enterRotateX.value = 0; }
+    if (from.rotateY     != null) { enterRotateY.value = from.rotateY;   enterRotateY.value    = anim(from.rotateY,    0); }
+    else                          { enterRotateY.value = 0; }
+    if (from.rotate      != null) { enterRotateZ.value = from.rotate;    enterRotateZ.value    = anim(from.rotate,     0); }
+    else                          { enterRotateZ.value = 0; }
+    if (from.blur        != null) { enterBlur.value    = from.blur;      enterBlur.value       = anim(from.blur,       0); }
+    else                          { enterBlur.value    = 0; }
+    if (from.skewX       != null) { enterSkewX.value   = from.skewX;    enterSkewX.value      = anim(from.skewX,      0); }
+    else                          { enterSkewX.value   = 0; }
+    if (from.skewY       != null) { enterSkewY.value   = from.skewY;    enterSkewY.value      = anim(from.skewY,      0); }
+    else                          { enterSkewY.value   = 0; }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enter?.type, enter?.duration, enter?.delay, enter?.easing,
+      enter?.spring, enter?.stiffness, enter?.damping, enter?.mass, staggerIndex]);
 
   // ── Builder "Preview animation" button — postMessage replay ───────────────
   // The animation panel posts { type: 'sdui-preview-animation', nodeId } to the iframe.
@@ -1070,45 +1194,44 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     if (Platform.OS !== 'web' || !nodeId) return;
     const handler = (ev: MessageEvent) => {
       if (ev.data?.type !== 'sdui-preview-animation' || ev.data?.nodeId !== nodeId) return;
-      const type = enter?.type;
-      if (!type || type === 'none') return;
-      const delay     = (enter?.delay ?? 0) + staggerIndex * (enter?.stagger ?? 0);
-      const dur       = enter?.duration ?? 400;
-      const easing    = rnEase(enter?.easing ?? 'easeOut');
-      const isSpring  = enter?.spring;
-      const from      = ENTER_FROM[type] ?? { opacity: 0 };
-      const springCfg = isSpring
-        ? { damping: enter?.damping ?? 20, stiffness: enter?.stiffness ?? 200, mass: enter?.mass ?? 1 }
-        : null;
-      const anim = (f: number, to: number) =>
-        withDelay(delay, springCfg ? withSpring(to, springCfg) : withTiming(to, { duration: dur, easing }));
-
-      // Cancel running animations and reset all shared values to start position
-      cancelAnimation(enterOpacity);
-      cancelAnimation(enterTranslateX);
-      cancelAnimation(enterTranslateY);
-      cancelAnimation(enterScale);
-      cancelAnimation(enterRotateX);
-      cancelAnimation(enterRotateY);
-
-      if (from.opacity     != null) { enterOpacity.value = from.opacity;    enterOpacity.value    = anim(from.opacity,    1); }
-      else                          { enterOpacity.value = 1; }
-      if (from.translateX  != null) { enterTranslateX.value = from.translateX; enterTranslateX.value = anim(from.translateX, 0); }
-      else                          { enterTranslateX.value = 0; }
-      if (from.translateY  != null) { enterTranslateY.value = from.translateY; enterTranslateY.value = anim(from.translateY, 0); }
-      else                          { enterTranslateY.value = 0; }
-      if (from.scale       != null) { enterScale.value = from.scale;        enterScale.value      = anim(from.scale,      1); }
-      else                          { enterScale.value = 1; }
-      if (from.rotateX     != null) { enterRotateX.value = from.rotateX;   enterRotateX.value    = anim(from.rotateX,    0); }
-      else                          { enterRotateX.value = 0; }
-      if (from.rotateY     != null) { enterRotateY.value = from.rotateY;   enterRotateY.value    = anim(from.rotateY,    0); }
-      else                          { enterRotateY.value = 0; }
+      replayEnterAnimation();
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodeId, enter?.type, enter?.duration, enter?.delay, enter?.easing,
-      enter?.spring, enter?.stiffness, enter?.damping, enter?.mass, staggerIndex]);
+  }, [nodeId, replayEnterAnimation]);
+
+  // ── Builder page-focus replay — replay enter animations when a page gains focus ──
+  // When the user switches to a different page in the builder, all animated nodes
+  // on the newly focused page replay their enter animation.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !builderMode || !nodeId) return;
+    const handler = (ev: MessageEvent) => {
+      if (ev.data?.type !== 'sdui-replay-page-enter') return;
+      const targetPageId = ev.data?.pageId;
+      if (!targetPageId) return;
+      const el = animatedRef.current as unknown as HTMLElement | null;
+      if (!el) return;
+      const pageFrame = el.closest('[data-builder-page-id]') as HTMLElement | null;
+      if (pageFrame?.dataset.builderPageId !== targetPageId) return;
+      replayEnterAnimation();
+      // Also replay blurIn/glowIn CSS filter animation
+      const type = enter?.type;
+      if (type === 'blurIn' || type === 'glowIn') {
+        const dur   = enter?.duration ?? 600;
+        const delay = (enter?.delay ?? 0) + staggerIndex * (enter?.stagger ?? 0);
+        const startFilter = type === 'blurIn'
+          ? 'blur(16px)'
+          : 'brightness(2.5) drop-shadow(0 0 18px rgba(255,255,255,0.9))';
+        el.style.filter = startFilter;
+        el.style.transition = `filter ${dur}ms ease-out ${delay}ms`;
+        requestAnimationFrame(() => { el.style.filter = 'none'; });
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [builderMode, nodeId, replayEnterAnimation, enter?.type, enter?.duration, enter?.delay, enter?.stagger, staggerIndex]);
 
   // ── blurIn / glowIn — CSS filter animation on web (Reanimated handles opacity) ──
   useEffect(() => {
@@ -1312,14 +1435,14 @@ export const AnimatedNode = React.memo(function AnimatedNode({
 
   // ── Exit animation registry ────────────────────────────────────────────────
   // When animation.exit is configured and the node has an id, register an exit
-  // handler so external callers (e.g. PopupRenderer) can trigger the exit animation
+  // handler so external callers (e.g. SharedComponentDynamicRenderer) can trigger the exit animation
   // and wait for it to complete before unmounting the node.
   useEffect(() => {
     if (!nodeId || !exit?.type || exit.type === 'none') return;
     const exitType = exit.type;
     const dur      = exit.duration ?? 300;
     const easing   = rnEase(exit.easing ?? 'easeIn');
-    const targets  = EXIT_TO[exitType] ?? { opacity: 0 };
+    const targets  = { ...(EXIT_TO[exitType] ?? { opacity: 0 }), ...(exit.to ?? {}) };
 
     const exitHandler: ExitFn = (onDone) => {
       // Track how many shared values are animating so we call onDone exactly once
@@ -1346,15 +1469,42 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // ── Exit animation on unmount — Reanimated predefined (cross-platform) ───────
   // Reanimated's `exiting` prop keeps the element in the tree until the
   // animation finishes, then removes it. Works on iOS, Android, and web.
-  // On web, only predefined animation classes (with a `presetName`) are supported.
-  // The parent container must have overflow-hidden to clip translateY movement.
+  // When exit.to has custom values (e.g. translateX: -800), use Reanimated Keyframe
+  // so the element slides the full custom distance rather than the preset's small offset.
+  // Falls back to the predefined class when no custom to is set.
   const exitingAnimation = useMemo(() => {
     if (!exit?.type || exit.type === 'none') return undefined;
+    const dur = exit.duration ?? 300;
+
+    if (exit.to && Object.keys(exit.to).length > 0) {
+      const base    = EXIT_TO[exit.type] ?? { opacity: 0 };
+      const targets = { ...base, ...(exit.to as AnimValues) };
+      try {
+        const fromTransform = [{ translateX: 0 }, { translateY: 0 }, { scale: 1 }] as { [k: string]: string | number }[];
+        const toTransform = [
+          { translateX: targets.translateX ?? 0 },
+          { translateY: targets.translateY ?? 0 },
+          { scale:      targets.scale      ?? 1 },
+        ] as { [k: string]: string | number }[];
+        if (targets.rotate  != null) { fromTransform.push({ rotate: '0deg' }); toTransform.push({ rotate: `${targets.rotate}deg` }); }
+        if (targets.rotateX != null) { fromTransform.push({ rotateX: '0deg' }); toTransform.push({ rotateX: `${targets.rotateX}deg` }); }
+        if (targets.rotateY != null) { fromTransform.push({ rotateY: '0deg' }); toTransform.push({ rotateY: `${targets.rotateY}deg` }); }
+        if (targets.skewX   != null) { fromTransform.push({ skewX: '0deg' }); toTransform.push({ skewX: `${targets.skewX}deg` }); }
+        if (targets.skewY   != null) { fromTransform.push({ skewY: '0deg' }); toTransform.push({ skewY: `${targets.skewY}deg` }); }
+        return new Keyframe({
+          0: { opacity: 1, transform: fromTransform as never },
+          100: { opacity: targets.opacity ?? 0, transform: toTransform as never },
+        }).duration(dur);
+      } catch {
+        // Keyframe not available in this Reanimated build — fall through to preset
+      }
+    }
+
     const AnimClass = REANIMATED_EXIT_MAP[exit.type];
     if (!AnimClass) return undefined;
-    const dur = exit.duration ?? 250;
     return (AnimClass as typeof FadeOut).duration(dur);
-  }, [exit?.type, exit?.duration]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exit?.type, exit?.duration, exit?.to]);
 
   // ── Exit animation triggered by states machine watchVar ────────────────────
   // When exit.stateTrigger is set and statesMachine.watchVar matches it,
@@ -1367,7 +1517,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     const currentState = String(statesMachine?.watchVar ?? '');
     if (currentState !== triggerState) return;
 
-    const targets       = EXIT_TO[exitType] ?? { opacity: 0 };
+    const targets       = { ...(EXIT_TO[exitType] ?? { opacity: 0 }), ...(exit.to ?? {}) };
     const dur           = exit.duration ?? enter?.duration ?? 350;
     const easing        = rnEase(exit.easing ?? 'easeIn');
     const opacityEasing = rnEase(exit.opacityEasing ?? exit.easing ?? 'easeIn');
@@ -1380,6 +1530,10 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     if (targets.scale      != null) { cancelAnimation(enterScale);      enterScale.value      = withTiming(targets.scale,      cfg); }
     if (targets.rotateY    != null) { cancelAnimation(enterRotateY);    enterRotateY.value    = withTiming(targets.rotateY,    cfg); }
     if (targets.rotateX    != null) { cancelAnimation(enterRotateX);    enterRotateX.value    = withTiming(targets.rotateX,    cfg); }
+    if (targets.rotate     != null) { cancelAnimation(enterRotateZ);    enterRotateZ.value    = withTiming(targets.rotate,     cfg); }
+    if (targets.blur       != null) { cancelAnimation(enterBlur);       enterBlur.value       = withTiming(targets.blur,       cfg); }
+    if (targets.skewX      != null) { cancelAnimation(enterSkewX);      enterSkewX.value      = withTiming(targets.skewX,      cfg); }
+    if (targets.skewY      != null) { cancelAnimation(enterSkewY);      enterSkewY.value      = withTiming(targets.skewY,      cfg); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statesMachine?.watchVar, exit?.type, exit?.stateTrigger, exit?.duration, exit?.easing, exit?.opacityEasing]);
 
@@ -1972,7 +2126,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   useEffect(() => {
     if (!scrollActive || !scroll?.type || scroll.type === 'none') return;
     const type = scroll.type as string;
-    const from = ENTER_FROM[type] ?? { opacity: 0 };
+    const from = { ...(ENTER_FROM[type] ?? { opacity: 0 }), ...(scroll.from ?? {}) };
     const dur     = scroll.duration ?? 500;
     const delay   = scroll.delay ?? 0;
     const easing  = rnEase(scroll.easing ?? 'easeOut');
@@ -1986,6 +2140,10 @@ export const AnimatedNode = React.memo(function AnimatedNode({
       if (from.scale      != null) { enterScale.value      = from.scale;      enterScale.value      = anim(from.scale,      1); }
       if (from.rotateX    != null) { enterRotateX.value    = from.rotateX;    enterRotateX.value    = anim(from.rotateX,    0); }
       if (from.rotateY    != null) { enterRotateY.value    = from.rotateY;    enterRotateY.value    = anim(from.rotateY,    0); }
+      if (from.rotate     != null) { enterRotateZ.value    = from.rotate;     enterRotateZ.value    = anim(from.rotate,     0); }
+      if (from.blur       != null) { enterBlur.value       = from.blur;       enterBlur.value       = anim(from.blur,       0); }
+      if (from.skewX      != null) { enterSkewX.value      = from.skewX;      enterSkewX.value      = anim(from.skewX,      0); }
+      if (from.skewY      != null) { enterSkewY.value      = from.skewY;      enterSkewY.value      = anim(from.skewY,      0); }
     } else {
       // Reset to hidden state when element leaves viewport
       enterOpacity.value   = from.opacity    ?? 1;
@@ -1994,6 +2152,10 @@ export const AnimatedNode = React.memo(function AnimatedNode({
       enterScale.value      = from.scale      ?? 1;
       enterRotateX.value    = from.rotateX    ?? 0;
       enterRotateY.value    = from.rotateY    ?? 0;
+      enterRotateZ.value    = from.rotate     ?? 0;
+      enterBlur.value       = from.blur       ?? 0;
+      enterSkewX.value      = from.skewX      ?? 0;
+      enterSkewY.value      = from.skewY      ?? 0;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scrollVisible, scroll?.type, scroll?.duration, scroll?.delay, scroll?.easing]);
@@ -2043,22 +2205,29 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // ── Scroll progress — web: window.scroll + getBoundingClientRect ─────────────
   useEffect(() => {
     if (!scrollProgress?.enabled || typeof window === 'undefined') return;
-    const el = getDOMEl(animatedRef, nodeId);
-    if (!el) return;
-    const startFrac = scrollProgress.start ?? 0;
-    const endFrac   = scrollProgress.end   ?? 1;
+    const useWinScroll = scrollProgress.useWindowScroll;
+    const el = useWinScroll ? null : getDOMEl(animatedRef, nodeId);
+    if (!useWinScroll && !el) return;
+    const startVal = scrollProgress.start ?? 0;
+    const endVal   = scrollProgress.end   ?? 1;
     const update = () => {
-      const rect  = el.getBoundingClientRect();
-      const vh    = window.innerHeight;
-      const total = rect.height * (endFrac - startFrac) + vh;
-      const passed= vh - rect.top - rect.height * startFrac;
-      setScrollProg(Math.min(1, Math.max(0, passed / total)));
+      if (useWinScroll) {
+        const range = endVal - startVal;
+        const progress = range > 0 ? (window.scrollY - startVal) / range : 0;
+        setScrollProg(Math.min(1, Math.max(0, progress)));
+      } else {
+        const rect  = el!.getBoundingClientRect();
+        const vh    = window.innerHeight;
+        const total = rect.height * (endVal - startVal) + vh;
+        const passed= vh - rect.top - rect.height * startVal;
+        setScrollProg(Math.min(1, Math.max(0, passed / total)));
+      }
     };
     window.addEventListener('scroll', update, { passive: true });
     update();
     return () => window.removeEventListener('scroll', update);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scrollProgress?.enabled, scrollProgress?.start, scrollProgress?.end]);
+  }, [scrollProgress?.enabled, scrollProgress?.start, scrollProgress?.end, scrollProgress?.useWindowScroll]);
 
   // ── Scroll progress — native: ScrollOffsetContext + Reanimated measure ────────
   useAnimatedReaction(
@@ -2234,6 +2403,10 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hovering, pseudoElCfg?.enabled, pseudoElCfg?.trigger]);
 
+  // ── Hover/Press CSS styles state (web) — for arbitrary style targets via CSS transition ──
+  const [hoverCssActive, setHoverCssActive] = useState(false);
+  const [pressCssActive, setPressCssActive] = useState(false);
+
   // ── Press state ────────────────────────────────────────────────────────────
   const [pressing, setPressing] = useState(false);
 
@@ -2383,6 +2556,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
           pressScale.value   = withTiming(targetScale,   { duration: dur });
           pressOpacity.value = withTiming(targetOpacity, { duration: dur });
           runOnJS(setPressing)(true);
+          if (press.styles) runOnJS(setPressCssActive)(true);
         }
       })
       .onFinalize(() => {
@@ -2390,6 +2564,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
           pressScale.value   = withTiming(1, { duration: dur });
           pressOpacity.value = withTiming(1, { duration: dur });
           runOnJS(setPressing)(false);
+          if (press.styles) runOnJS(setPressCssActive)(false);
         }
         if (flip?.trigger === 'click') {
           runOnJS(setIsFlipped)((f: boolean) => !f);
@@ -2413,6 +2588,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
           hoverScale.value   = withTiming(targetScale,   { duration: dur });
           hoverOpacity.value = withTiming(targetOpacity, { duration: dur });
           hoverTransY.value  = withTiming(targetY,       { duration: dur });
+          if (hover.styles) runOnJS(setHoverCssActive)(true);
         }
         if (flip && (flip.trigger === 'hover' || !flip.trigger)) {
           if (typeof document === 'undefined') {
@@ -2428,6 +2604,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
           hoverScale.value   = withTiming(1, { duration: dur });
           hoverOpacity.value = withTiming(1, { duration: dur });
           hoverTransY.value  = withTiming(0, { duration: dur });
+          if (hover.styles) runOnJS(setHoverCssActive)(false);
         }
         if (flip && (flip.trigger === 'hover' || !flip.trigger)) {
           if (typeof document === 'undefined') {
@@ -2530,6 +2707,9 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     if (enterScale.value !== 1)      transforms.push({ scale: enterScale.value });
     if (enterRotateX.value !== 0)    transforms.push({ rotateX: `${enterRotateX.value}deg` });
     if (enterRotateY.value !== 0)    transforms.push({ rotateY: `${enterRotateY.value}deg` });
+    if (enterRotateZ.value !== 0)    transforms.push({ rotate: `${enterRotateZ.value}deg` });
+    if (enterSkewX.value   !== 0)    transforms.push({ skewX: `${enterSkewX.value}deg` });
+    if (enterSkewY.value   !== 0)    transforms.push({ skewY: `${enterSkewY.value}deg` });
 
     // Loop — each property applied to the correct transform/style slot
     if (loopScale.value !== 1)   transforms.push({ scale: loopScale.value });
@@ -2602,11 +2782,16 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     const focusSpread = focus?.spread ?? 3;
     const focusColor  = focus?.color  ?? '#3b82f6';
 
+    // Enter blur filter (web only — Reanimated can't natively animate CSS filter)
+    const enterFilterParts: string[] = [];
+    if (enterBlur.value !== 0) enterFilterParts.push(`blur(${enterBlur.value}px)`);
+
     return {
       opacity: enterOpacity.value * pressOpacity.value * hoverOpacity.value * smOpacity.value * timelineOpacity.value * loopOpac.value,
       ...(transforms.length ? { transform: transforms } : {}),
+      ...(enterFilterParts.length ? { filter: enterFilterParts.join(' ') } as object : {}),
       ...(smBg ? { backgroundColor: smBg } : {}),
-      ...(colorBg && !smBg ? { backgroundColor: colorBg } : {}),
+      ...(colorBg && !smBg ? { [color?.property ?? 'backgroundColor']: colorBg } : {}),
       ...(smBorderRadius.value !== undefined ? { borderRadius: smBorderRadius.value } : {}),
       ...(smWidth.value  !== undefined ? { width:  smWidth.value  } : {}),
       ...(smHeight.value !== undefined ? { height: smHeight.value } : {}),
@@ -2661,7 +2846,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // Explicit deps required for web (no Babel/SWC plugin).
   }, [
     parsedStaticTransforms,
-    enterOpacity, enterTranslateX, enterTranslateY, enterScale, enterRotateX, enterRotateY,
+    enterOpacity, enterTranslateX, enterTranslateY, enterScale, enterRotateX, enterRotateY, enterRotateZ, enterBlur, enterSkewX, enterSkewY,
     loopScale, loopTransX, loopTransY, loopOpac, loopRotate,
     loopShadowRadius, loopShadowOpac, loopShadowR, loopShadowG, loopShadowB, loopBgPosX,
     pressScale, pressOpacity,
@@ -2696,20 +2881,41 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // ── Scroll progress style (web — CSS transform/filter strings) ─────────────
   const scrollProgressCssStyle = useMemo((): CSSProperties => {
     if (Platform.OS !== 'web' || !scrollProgress?.enabled) return {};
-    const prop = scrollProgress.property ?? 'opacity';
-    const from = scrollProgress.from ?? 0;
-    const to   = scrollProgress.to   ?? 1;
-    const val  = from + (to - from) * scrollProg;
-    switch (prop) {
-      case 'opacity':    return { opacity: Math.min(1, Math.max(0, val)) };
-      case 'scale':      return { transform: `scale(${val.toFixed(4)})` };
-      case 'translateY': return { transform: `translateY(${val.toFixed(2)}${scrollProgress.unit ?? 'px'})` };
-      case 'translateX': return { transform: `translateX(${val.toFixed(2)}${scrollProgress.unit ?? 'px'})` };
-      case 'rotate':     return { transform: `rotate(${val.toFixed(2)}${scrollProgress.unit ?? 'deg'})` };
-      case 'blur':       return { filter: `blur(${val.toFixed(2)}${scrollProgress.unit ?? 'px'})` };
-      default:           return {};
+    const prop    = scrollProgress.property ?? 'opacity';
+    const fromRaw = scrollProgress.from ?? 0;
+    const toRaw   = scrollProgress.to   ?? 1;
+
+    // Known fast-path handlers (backward compat) — these expect numeric from/to
+    const KNOWN_NUMERIC = new Set(['opacity', 'scale', 'translateY', 'translateX', 'rotate', 'blur', 'backgroundOpacity']);
+    if (KNOWN_NUMERIC.has(prop)) {
+      const numFrom = typeof fromRaw === 'number' ? fromRaw : Number(fromRaw) || 0;
+      const numTo   = typeof toRaw   === 'number' ? toRaw   : Number(toRaw)   || 1;
+      const val = numFrom + (numTo - numFrom) * scrollProg;
+      switch (prop) {
+        case 'opacity':    return { opacity: Math.min(1, Math.max(0, val)) };
+        case 'scale':      return { transform: `scale(${val.toFixed(4)})` };
+        case 'translateY': return { transform: `translateY(${val.toFixed(2)}${scrollProgress.unit ?? 'px'})` };
+        case 'translateX': return { transform: `translateX(${val.toFixed(2)}${scrollProgress.unit ?? 'px'})` };
+        case 'rotate':     return { transform: `rotate(${val.toFixed(2)}${scrollProgress.unit ?? 'deg'})` };
+        case 'blur':       return { filter: `blur(${val.toFixed(2)}${scrollProgress.unit ?? 'px'})` };
+        case 'backgroundOpacity': {
+          const rgb = (scrollProgress as Record<string, unknown>).rgb as string ?? '255,255,255';
+          return { backgroundColor: `rgba(${rgb},${Math.min(1, Math.max(0, val)).toFixed(4)})` };
+        }
+        default: return {};
+      }
     }
-  }, [scrollProgress?.enabled, scrollProgress?.property, scrollProgress?.from, scrollProgress?.to, scrollProgress?.unit, scrollProg]);
+
+    // Generic fallback — auto-detect color vs numeric interpolation
+    if (isColorString(fromRaw) && isColorString(toRaw)) {
+      return { [prop]: lerpColor(String(fromRaw), String(toRaw), scrollProg) };
+    }
+    const numFrom = typeof fromRaw === 'number' ? fromRaw : Number(fromRaw) || 0;
+    const numTo   = typeof toRaw   === 'number' ? toRaw   : Number(toRaw)   || 1;
+    const val = numFrom + (numTo - numFrom) * scrollProg;
+    const unit = scrollProgress.unit ?? '';
+    return { [prop]: unit ? `${val.toFixed(2)}${unit}` : val };
+  }, [scrollProgress?.enabled, scrollProgress?.property, scrollProgress?.from, scrollProgress?.to, scrollProgress?.unit, scrollProg, scrollProgress?.rgb]);
 
   // ── Filter style — platform-split: CSS string on web, RN 0.76+ array on native ─
   const filterStyle = useMemo(() => {
@@ -2792,6 +2998,23 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     return { WebkitMaskImage: maskCfg.image, WebkitMaskSize: size, WebkitMaskRepeat: 'no-repeat', WebkitMaskPosition: maskCfg.position ?? 'left center', maskImage: maskCfg.image, maskSize: size, maskRepeat: 'no-repeat', maskPosition: maskCfg.position ?? 'left center', transition: maskCfg.animateSize ? `mask-size ${dur} ${ez}, -webkit-mask-size ${dur} ${ez}` : 'none' } as CSSProperties;
   }, [maskCfg?.enabled, maskCfg?.image, maskCfg?.size, maskCfg?.position, maskCfg?.animateSize, maskCfg?.duration, maskCfg?.easing, maskActive]);
 
+  // ── Hover/Press CSS styles (web only) — arbitrary style targets via CSS transition ──
+  const hoverPressCssStyle = useMemo((): CSSProperties => {
+    if (Platform.OS !== 'web') return {};
+    const hoverStyles = hover?.styles;
+    const pressStyles = press?.styles;
+    if (!hoverStyles && !pressStyles) return {};
+    const dur = hover?.duration ?? press?.duration ?? 200;
+    const properties = new Set<string>();
+    if (hoverStyles) Object.keys(hoverStyles).forEach(k => properties.add(k));
+    if (pressStyles) Object.keys(pressStyles).forEach(k => properties.add(k));
+    const transition = Array.from(properties).map(p => `${p} ${dur}ms ease`).join(', ');
+    const activeStyles: Record<string, string | number> = {};
+    if (hoverCssActive && hoverStyles) Object.assign(activeStyles, hoverStyles);
+    if (pressCssActive && pressStyles) Object.assign(activeStyles, pressStyles);
+    return { transition, ...activeStyles } as CSSProperties;
+  }, [hover?.styles, press?.styles, hover?.duration, press?.duration, hoverCssActive, pressCssActive]);
+
   // ── Merged style (applied to Animated.View as object) ─────────────────────
   const mergedStyle = useMemo(() => ({
     ...scrollCssStyle,
@@ -2800,6 +3023,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     ...backdropStyle,
     ...clipPathStyle,
     ...maskCssStyle,
+    ...hoverPressCssStyle,
     // Gradient: keep background-size hint on wrapper so tests/CSS inspectors detect it
     ...(gradientAnimation?.enabled ? { backgroundSize: '200% 200%' } as object : {}),
     // When outerStyle provides its own position (e.g. absolute for a full-track slider overlay),
@@ -2821,7 +3045,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     ...(Platform.OS === 'web' && focus?.enabled ? { outline: 'none' } as CSSProperties : {}),
     ...(flip ? { transformStyle: 'preserve-3d' } as CSSProperties : {}),
     ...(statesMachine?.defaultState && !statesMachine.watchVar ? statesMachine.states[statesMachine.defaultState] ?? {} : {}),
-  }), [scrollCssStyle, scrollProgressCssStyle, filterStyle, backdropStyle, clipPathStyle, maskCssStyle,
+  }), [scrollCssStyle, scrollProgressCssStyle, filterStyle, backdropStyle, clipPathStyle, maskCssStyle, hoverPressCssStyle,
        parallax?.enabled, drag?.enabled, noise, particles, scrollProgress?.pin, focus?.enabled,
        flip, statesMachine, morphShape?.enabled, gesture?.enabled, outerClassName, outerStyle, builderMode]);
 

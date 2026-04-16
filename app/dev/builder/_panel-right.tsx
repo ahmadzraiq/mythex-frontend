@@ -61,10 +61,6 @@ import { useBuilderStore, findParentNode } from './_store';
 import { useShallow } from 'zustand/react/shallow';
 import type { BuilderStore } from './_store-types';
 import { findNode } from './_store-node-helpers';
-import { updatePopup as updatePopupData } from '@/lib/builder/popup-data';
-import { usePopupStore } from '@/lib/sdui/popup-store';
-import { getSharedComponents, updateSharedComponent as updateSCData } from '@/lib/builder/shared-component-data';
-import type { SharedComponentModel } from '@/lib/builder/shared-component-data';
 import { WorkflowBindButton, toHumanName } from './_workflow-canvas'; // used only for unbound slot picker
 import { ThemePanel } from './_theme-panel';
 import { AiChatPanel } from './_ai-chat-panel';
@@ -2877,401 +2873,6 @@ import {
 } from './_panel-right-design-sections';
 
 
-// ─── Property Flyout (create + edit) ─────────────────────────────────────────
-
-interface PropertyFlyoutProps {
-  /** When provided — edit mode; when null — create mode */
-  initialProp?: { id: string; name: string; defaultValue?: unknown } | null;
-  onClose: () => void;
-  onSave: (prop: { id?: string; name: string; defaultValue: string }) => void;
-}
-
-function PropertyFlyout({ initialProp, onClose, onSave }: PropertyFlyoutProps) {
-  const isEdit = !!initialProp;
-  const [name, setName] = React.useState(initialProp?.name ?? '');
-  const [defaultValue, setDefaultValue] = React.useState<string>(() => {
-    const v = initialProp?.defaultValue;
-    if (v === undefined || v === null || v === '') return '';
-    if (typeof v === 'string') return v;
-    try { return JSON.stringify(v, null, 2); } catch { return String(v); }
-  });
-
-  // Close on Escape
-  React.useEffect(() => {
-    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  }, [onClose]);
-
-  const handleSave = () => {
-    if (!name.trim()) return;
-    onSave({ id: initialProp?.id, name: name.trim(), defaultValue });
-    onClose();
-  };
-
-  return (
-    <div
-      style={{
-        position: 'fixed', top: 40, right: 240, width: 300, zIndex: 10000,
-        background: '#111827', border: '1px solid #374151', borderRadius: 8,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
-      }}
-      onClick={e => e.stopPropagation()}
-    >
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 14px 9px', borderBottom: '1px solid #374151' }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: '#f3f4f6' }}>{isEdit ? 'Edit property' : 'Create property'}</span>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 15, cursor: 'pointer', lineHeight: 1, padding: '0 2px' }}>✕</button>
-      </div>
-
-      <div style={{ padding: '12px 14px 14px' }}>
-        {/* Name */}
-        <label style={{ display: 'block', fontSize: 10, color: '#9ca3af', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-          Label <span style={{ color: '#ef4444' }}>*</span>
-        </label>
-        <input
-          autoFocus
-          value={name}
-          onChange={e => setName(e.target.value)}
-          placeholder="e.g. title"
-          onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
-          style={{
-            width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 5,
-            color: '#f3f4f6', fontSize: 12, padding: '6px 8px', boxSizing: 'border-box', marginBottom: 12, outline: 'none',
-          }}
-          onFocus={e => { e.currentTarget.style.borderColor = '#3b82f6'; }}
-          onBlur={e => { e.currentTarget.style.borderColor = '#374151'; }}
-        />
-
-        {/* Default value — CodeMirror */}
-        <label style={{ display: 'block', fontSize: 10, color: '#9ca3af', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Default value</label>
-        <div style={{ borderRadius: 5, overflow: 'hidden', border: '1px solid #374151', marginBottom: 14, fontSize: 12 }}>
-          <Suspense fallback={
-            <textarea
-              value={defaultValue}
-              onChange={e => setDefaultValue(e.target.value)}
-              rows={4}
-              style={{ width: '100%', background: '#1f2937', border: 'none', color: '#d1d5db', fontSize: 12, padding: '6px 8px', boxSizing: 'border-box', resize: 'vertical', outline: 'none', fontFamily: 'monospace' }}
-            />
-          }>
-            <CodeMirror
-              value={defaultValue}
-              onChange={v => setDefaultValue(v)}
-              extensions={[cmJson()]}
-              theme={oneDark}
-              height="100px"
-              basicSetup={{ lineNumbers: false, foldGutter: false, highlightActiveLine: false }}
-              style={{ fontSize: 12 }}
-            />
-          </Suspense>
-        </div>
-
-        {/* Save / Create */}
-        <button
-          onClick={handleSave}
-          disabled={!name.trim()}
-          style={{
-            width: '100%', padding: '7px', borderRadius: 5, fontSize: 12, fontWeight: 600,
-            cursor: name.trim() ? 'pointer' : 'default', border: 'none',
-            background: name.trim() ? '#2563eb' : '#374151',
-            color: name.trim() ? '#fff' : '#6b7280',
-          }}
-        >
-          {isEdit ? 'Save' : 'Create'}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Shared Component Properties Section ─────────────────────────────────────
-// Shown in the right panel when a shared component is open for editing (in-canvas).
-
-interface SharedComponentPropertiesSectionProps {
-  model: SharedComponentModel;
-  onUpdate: (updated: SharedComponentModel) => void;
-}
-
-function SharedComponentPropertiesSection({ model, onUpdate }: SharedComponentPropertiesSectionProps) {
-  const [propertiesOpen, setPropertiesOpen] = React.useState(true);
-  const [flyout, setFlyout] = React.useState<'create' | string | null>(null);
-  const editingProp = flyout && flyout !== 'create'
-    ? model.properties.find(p => p.id === flyout) ?? null
-    : null;
-
-  const syncContext = (props: typeof model.properties) => {
-    const defaults: Record<string, unknown> = {};
-    for (const p of props) defaults[p.name] = p.defaultValue ?? '';
-    getGlobalVariableStore().getState().setState(prev => ({ ...prev, context: { component: { props: defaults } } }));
-  };
-
-  const handleAdd = ({ name, defaultValue }: { name: string; defaultValue: string }) => {
-    const newProp = { id: crypto.randomUUID(), name, type: 'string' as const, defaultValue };
-    const updated = { ...model, properties: [...model.properties, newProp] };
-    onUpdate(updated);
-    updateSCData(updated);
-    syncContext(updated.properties);
-  };
-
-  const handleUpdate = ({ id, name, defaultValue }: { id: string; name: string; defaultValue: string }) => {
-    const updated = { ...model, properties: model.properties.map(p => p.id === id ? { ...p, name, defaultValue } : p) };
-    onUpdate(updated);
-    updateSCData(updated);
-    syncContext(updated.properties);
-  };
-
-  const handleDelete = (propId: string) => {
-    const updated = { ...model, properties: model.properties.filter(p => p.id !== propId) };
-    onUpdate(updated);
-    updateSCData(updated);
-    syncContext(updated.properties);
-    if (flyout === propId) setFlyout(null);
-  };
-
-  return (
-    <div style={{ borderBottom: '1px solid #1f2937' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px 6px', borderBottom: '1px solid #1f2937' }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: '#d1d5db' }}>Shared Component</span>
-        <span style={{ fontSize: 9, color: '#60a5fa', background: '#1e3a5f', borderRadius: 3, padding: '1px 5px', fontWeight: 700 }}>SC</span>
-      </div>
-      <div style={{ padding: '4px 12px 6px' }}>
-        <span style={{ fontSize: 10, color: '#6b7280' }}>Name: </span>
-        <span style={{ fontSize: 10, color: '#d1d5db' }}>{model.name}</span>
-      </div>
-
-      {/* Properties list */}
-      <div style={{ borderTop: '1px solid #1f2937' }}>
-        <button
-          onClick={() => setPropertiesOpen(o => !o)}
-          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 10, color: '#6b7280' }}>⬡</span>
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#d1d5db' }}>Properties</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <button
-              onClick={e => { e.stopPropagation(); setFlyout('create'); }}
-              style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#9ca3af', fontSize: 10, padding: '2px 7px', cursor: 'pointer' }}
-            >
-              + New
-            </button>
-            <span style={{ fontSize: 10, color: '#6b7280' }}>{propertiesOpen ? '▾' : '▸'}</span>
-          </div>
-        </button>
-
-        {propertiesOpen && (
-          <div style={{ paddingBottom: 4 }}>
-            {model.properties.length === 0 ? (
-              <div style={{ padding: '4px 12px 8px', fontSize: 11, color: '#4b5563' }}>No properties yet.</div>
-            ) : (
-              model.properties.map(prop => (
-                <div
-                  key={prop.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setFlyout(flyout === prop.id ? null : prop.id)}
-                  onKeyDown={e => { if (e.key === 'Enter') setFlyout(prop.id); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', cursor: 'pointer', borderLeft: flyout === prop.id ? '2px solid #3b82f6' : '2px solid transparent' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#1f2937')}
-                  onMouseLeave={e => (e.currentTarget.style.background = '')}
-                >
-                  <span style={{ fontSize: 10, color: '#60a5fa', flexShrink: 0 }}>ƒ</span>
-                  <span style={{ flex: 1, fontSize: 11, color: '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{prop.name}</span>
-                  <span style={{ fontSize: 9, color: '#4b5563' }}>{prop.type}</span>
-                  <button
-                    onClick={e => { e.stopPropagation(); handleDelete(prop.id); }}
-                    style={{ background: 'none', border: 'none', color: '#4b5563', fontSize: 11, cursor: 'pointer', padding: '0 2px', lineHeight: 1, flexShrink: 0 }}
-                    onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-                    onMouseLeave={e => (e.currentTarget.style.color = '#4b5563')}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-      </div>
-
-      {flyout && (
-        <PropertyFlyout
-          initialProp={editingProp}
-          onClose={() => setFlyout(null)}
-          onSave={({ id, name, defaultValue }) => {
-            if (id) { handleUpdate({ id, name, defaultValue }); }
-            else { handleAdd({ name, defaultValue }); }
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-// ─── SharedComponent Instance Props Panel ─────────────────────────────────────
-// Shown in the right panel when a SharedComponent instance node is selected.
-
-function SharedComponentInstancePanel({ node, onPatchProp }: { node: { props?: Record<string, unknown> }; onPatchProp: (key: string, value: unknown) => void }) {
-  const componentId = (node.props?.componentId as string | undefined);
-  const models = getSharedComponents();
-  const model = componentId ? models[componentId] : undefined;
-
-  if (!model) {
-    return (
-      <div style={{ padding: '8px 12px', fontSize: 11, color: '#ef4444', borderBottom: '1px solid #1f2937' }}>
-        SharedComponent: unknown componentId &quot;{componentId ?? '(none)'}&quot;
-      </div>
-    );
-  }
-
-  const instanceProps = node.props ?? {};
-
-  return (
-    <div style={{ borderBottom: '1px solid #1f2937' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px 6px', borderBottom: '1px solid #1f2937' }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: '#d1d5db' }}>Instance of &ldquo;{model.name}&rdquo;</span>
-        <span style={{ fontSize: 9, color: '#60a5fa', background: '#1e3a5f', borderRadius: 3, padding: '1px 5px', fontWeight: 700 }}>SC</span>
-      </div>
-      {model.properties.length === 0 ? (
-        <div style={{ padding: '6px 12px 8px', fontSize: 11, color: '#4b5563' }}>This component has no declared properties.</div>
-      ) : (
-        <div style={{ padding: '6px 12px 8px' }}>
-          {model.properties.map(prop => (
-            <div key={prop.id} style={{ marginBottom: 6 }}>
-              <div style={{ fontSize: 10, color: '#9ca3af', marginBottom: 2 }}>{prop.name} <span style={{ color: '#4b5563' }}>({prop.type})</span></div>
-              <input
-                value={String((instanceProps[prop.name] !== undefined ? instanceProps[prop.name] : prop.defaultValue) ?? '')}
-                onChange={e => onPatchProp(prop.name, e.target.value)}
-                placeholder={String(prop.defaultValue ?? '')}
-                style={{ width: '100%', background: '#111827', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '4px 8px', boxSizing: 'border-box' }}
-              />
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Popup Properties Section ─────────────────────────────────────────────────
-
-interface PopupPropertiesSectionProps {
-  model: {
-    id: string; name: string; type: string; allowStacking: boolean;
-    properties: Array<{ id: string; name: string; type: string; defaultValue?: unknown }>;
-  };
-  allowStacking: boolean;
-  onToggleStacking: () => void;
-  onAddProperty: (prop: { name: string; defaultValue: string }) => void;
-  onUpdateProperty: (prop: { id: string; name: string; defaultValue: string }) => void;
-  onDeleteProperty: (propId: string) => void;
-}
-
-function PopupPropertiesSection({
-  model, allowStacking, onToggleStacking, onAddProperty, onUpdateProperty, onDeleteProperty,
-}: PopupPropertiesSectionProps) {
-  const [flyout, setFlyout] = React.useState<'create' | string | null>(null);
-  const [propertiesOpen, setPropertiesOpen] = React.useState(true);
-
-  const editingProp = flyout && flyout !== 'create'
-    ? model.properties.find(p => p.id === flyout) ?? null
-    : null;
-
-  return (
-    <div style={{ borderBottom: '1px solid #1f2937' }}>
-      {/* Section header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px 6px', borderBottom: '1px solid #1f2937' }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: '#d1d5db' }}>Popup properties</span>
-        <span style={{ fontSize: 9, color: '#6b7280', background: '#1f2937', borderRadius: 3, padding: '1px 5px' }}>{model.type}</span>
-      </div>
-
-      {/* Allow stacking */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px' }}>
-        <span style={{ fontSize: 11, color: '#9ca3af' }}>Allow stacking</span>
-        <button
-          data-testid="popup-model-allow-stacking"
-          onClick={onToggleStacking}
-          style={{ width: 32, height: 18, borderRadius: 9, border: 'none', background: allowStacking ? '#3b82f6' : '#374151', cursor: 'pointer', position: 'relative', transition: 'background 150ms', flexShrink: 0 }}
-        >
-          <span style={{ position: 'absolute', top: 2, left: allowStacking ? 16 : 2, width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 150ms' }} />
-        </button>
-      </div>
-
-      {/* Properties list */}
-      <div style={{ borderTop: '1px solid #1f2937' }}>
-        <button
-          onClick={() => setPropertiesOpen(o => !o)}
-          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 10, color: '#6b7280' }}>⬡</span>
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#d1d5db' }}>Properties</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <button
-              onClick={e => { e.stopPropagation(); setFlyout('create'); }}
-              style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#9ca3af', fontSize: 10, padding: '2px 7px', cursor: 'pointer' }}
-              data-testid="popup-add-property-btn"
-            >
-              + New
-            </button>
-            <span style={{ fontSize: 10, color: '#6b7280' }}>{propertiesOpen ? '▾' : '▸'}</span>
-          </div>
-        </button>
-
-        {propertiesOpen && (
-          <div style={{ paddingBottom: 4 }}>
-            {model.properties.length === 0 ? (
-              <div style={{ padding: '4px 12px 8px', fontSize: 11, color: '#4b5563' }}>No properties yet.</div>
-            ) : (
-              model.properties.map(prop => (
-                <div
-                  key={prop.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setFlyout(flyout === prop.id ? null : prop.id)}
-                  onKeyDown={e => { if (e.key === 'Enter') setFlyout(prop.id); }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px',
-                    cursor: 'pointer', borderLeft: flyout === prop.id ? '2px solid #3b82f6' : '2px solid transparent',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#1f2937')}
-                  onMouseLeave={e => (e.currentTarget.style.background = '')}
-                >
-                  <span style={{ fontSize: 10, color: '#3b82f6', flexShrink: 0 }}>ƒ</span>
-                  <span style={{ flex: 1, fontSize: 11, color: '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{prop.name}</span>
-                  <button
-                    onClick={e => { e.stopPropagation(); onDeleteProperty(prop.id); if (flyout === prop.id) setFlyout(null); }}
-                    style={{ background: 'none', border: 'none', color: '#4b5563', fontSize: 11, cursor: 'pointer', padding: '0 2px', lineHeight: 1, flexShrink: 0 }}
-                    onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-                    onMouseLeave={e => (e.currentTarget.style.color = '#4b5563')}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Property flyout (create or edit) */}
-      {flyout && (
-        <PropertyFlyout
-          initialProp={editingProp}
-          onClose={() => setFlyout(null)}
-          onSave={({ id, name, defaultValue }) => {
-            if (id) {
-              onUpdateProperty({ id, name, defaultValue });
-            } else {
-              onAddProperty({ name, defaultValue });
-            }
-          }}
-        />
-      )}
-    </div>
-  );
-}
 
 // ─── Main Panel ───────────────────────────────────────────────────────────────
 
@@ -3279,24 +2880,19 @@ export default function PanelRight() {
   const [tab, setTab] = useState<'design' | 'theme' | 'workflows' | 'json'>('design');
   const {
     selectedIds, pageNodes, activePreviewStates,
-    editingPopupId, editingPopupContent, editingPopupModel, exitPopupEdit,
-    editingSharedComponentId, editingSharedComponentContent, editingSharedComponentModel,
+    editingSharedComponentId, editingSharedComponentContent,
     patchProp,
     aiMode, activeBreakpoint,
   } = useBuilderStore(useShallow(s => ({
     selectedIds: s.selectedIds, pageNodes: s.pageNodes, activePreviewStates: s.activePreviewStates,
-    editingPopupId: s.editingPopupId, editingPopupContent: s.editingPopupContent,
-    editingPopupModel: s.editingPopupModel, exitPopupEdit: s.exitPopupEdit,
     editingSharedComponentId: s.editingSharedComponentId,
     editingSharedComponentContent: s.editingSharedComponentContent,
-    editingSharedComponentModel: s.editingSharedComponentModel,
     patchProp: s.patchProp, aiMode: s.aiMode, activeBreakpoint: s.activeBreakpoint,
   })));
 
   const activePreviewState = activePreviewStates?.[0] ?? 'normal';
 
-  // pageNodes is always the source of truth — popup content is swapped into
-  // pageNodes during popup-edit mode so no special-casing needed.
+  // pageNodes is the source of truth — shared component content is swapped in during edit mode.
   const searchNodes = pageNodes as SDUINode[];
 
   // Listen for external tab-switch requests (design only now; logic/data moved to left panel)
@@ -3315,17 +2911,7 @@ export default function PanelRight() {
 
   const selectedNode = useMemo(() => {
     if (selectedIds.length !== 1) return null;
-    function findNode(nodes: SDUINode[], id: string): SDUINode | null {
-      for (const n of nodes) {
-        if ((n as { id?: string }).id === id) return n;
-        if (n.children?.length) {
-          const found = findNode(n.children as SDUINode[], id);
-          if (found) return found;
-        }
-      }
-      return null;
-    }
-    // Search page nodes, then canvas nodes (freeform nodes outside pages)
+    // Uses imported findNode from _store-node-helpers (searches children + popover/tooltip content)
     return findNode(searchNodes, selectedIds[0])
       ?? findNode(canvasNodes, selectedIds[0]);
   }, [selectedIds, searchNodes, canvasNodes]);
@@ -3369,84 +2955,10 @@ export default function PanelRight() {
     },
   ];
 
-  // ── Shared component model properties panel ───────────────────────────────
-  const [scModelState, setScModelState] = React.useState<SharedComponentModel | null>(null);
-  React.useEffect(() => {
-    if (!editingSharedComponentId || !editingSharedComponentModel) {
-      setScModelState(null);
-      return;
-    }
-    // Prefer live in-memory store for the latest model (properties may have changed)
-    const live = getSharedComponents()[editingSharedComponentId];
-    setScModelState(live ?? (editingSharedComponentModel as unknown as SharedComponentModel));
-  }, [editingSharedComponentId, editingSharedComponentModel]);
-
-  // ── Popup model properties panel ──────────────────────────────────────────
-  const popupModel = editingPopupModel as {
-    id: string; name: string; type: string; allowStacking: boolean;
-    properties: Array<{ id: string; name: string; type: string; defaultValue?: unknown }>;
-  } | null;
-
-  const [popupAllowStacking, setPopupAllowStacking] = React.useState(popupModel?.allowStacking ?? false);
-  const [popupProperties, setPopupProperties] = React.useState<Array<{ id: string; name: string; type: string; defaultValue?: unknown }>>(popupModel?.properties ?? []);
-
-  React.useEffect(() => {
-    setPopupAllowStacking(popupModel?.allowStacking ?? false);
-    setPopupProperties(popupModel?.properties ?? []);
-  }, [editingPopupId]); // eslint-disable-line react-hooks/exhaustive-deps
-
   // All hooks are above — safe to early-return here
   if (aiMode) {
     return <AiChatPanel />;
   }
-
-  const patchPopupModel = (patch: Partial<typeof popupModel>) => {
-    if (!popupModel) return;
-    updatePopupData({ ...(popupModel as unknown as Parameters<typeof updatePopupData>[0]), ...patch } as Parameters<typeof updatePopupData>[0]);
-  };
-
-  const handleToggleStacking = () => {
-    if (!popupModel) return;
-    const next = !popupAllowStacking;
-    setPopupAllowStacking(next);
-    patchPopupModel({ allowStacking: next });
-  };
-
-  const refreshPopupInstanceProps = (props: Array<{ id: string; defaultValue?: unknown }>) => {
-    if (!editingPopupId) return;
-    const defaults: Record<string, unknown> = {};
-    for (const p of props) defaults[p.id] = p.defaultValue ?? '';
-    // Refresh the popup store instance so PopupRenderer has current props
-    usePopupStore.getState().updateInstanceProps(editingPopupId, defaults);
-    // Also sync context.component.props in the variable store so canvas rendering
-    // (popup nodes in pageNodes without scope) resolves the formula correctly
-    getGlobalVariableStore().getState().setState(prev => ({ ...prev, context: { component: { props: defaults } } }));
-  };
-
-  const handleAddProperty = ({ name, defaultValue }: { name: string; defaultValue: string }) => {
-    const newProp = { id: crypto.randomUUID(), name, type: 'any', defaultValue };
-    const next = [...popupProperties, newProp];
-    setPopupProperties(next);
-    patchPopupModel({ properties: next });
-    refreshPopupInstanceProps(next);
-  };
-
-  const handleUpdateProperty = ({ id, name, defaultValue }: { id: string; name: string; defaultValue: string }) => {
-    const next = popupProperties.map(p => p.id === id ? { ...p, name, defaultValue } : p);
-    setPopupProperties(next);
-    patchPopupModel({ properties: next });
-    refreshPopupInstanceProps(next);
-  };
-
-  const handleDeleteProperty = (propId: string) => {
-    const next = popupProperties.filter(p => p.id !== propId);
-    setPopupProperties(next);
-    patchPopupModel({ properties: next });
-    refreshPopupInstanceProps(next);
-  };
-
-  // Build resolved model with live local state (allowStacking, properties)
-  const resolvedPopupModel = popupModel ? { ...popupModel, allowStacking: popupAllowStacking, properties: popupProperties } : null;
 
   return (
     <div data-testid="panel-right" style={PANEL_STYLE}>
@@ -3471,43 +2983,10 @@ export default function PanelRight() {
 
       {tab === 'design' && (
         <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
-          {/* Shared component properties — shown when editing a shared component in the canvas */}
-          {editingSharedComponentId && scModelState && (
-            <SharedComponentPropertiesSection
-              model={scModelState}
-              onUpdate={updated => setScModelState(updated)}
-            />
-          )}
-
-          {/* SharedComponent instance props — shown when a SharedComponent instance node is selected */}
-          {selectedNode && (selectedNode as unknown as { type?: string }).type === 'SharedComponent' && !editingSharedComponentId && (
-            <SharedComponentInstancePanel
-              node={selectedNode as unknown as { props?: Record<string, unknown> }}
-              onPatchProp={(key, value) => {
-                const id = (selectedNode as unknown as { id?: string }).id;
-                if (!id) return;
-                patchProp(id, `props.${key}`, value);
-              }}
-            />
-          )}
-
-          {/* Popup properties — scrolls with the rest of the panel */}
-          {editingPopupId && resolvedPopupModel && (
-            <PopupPropertiesSection
-              model={resolvedPopupModel}
-              allowStacking={popupAllowStacking}
-              onToggleStacking={handleToggleStacking}
-              onAddProperty={handleAddProperty}
-              onUpdateProperty={handleUpdateProperty}
-              onDeleteProperty={handleDeleteProperty}
-            />
-          )}
-
           {/* Multi-select align/distribute */}
           {selectedIds.length > 1 && <AlignDistributePanel ids={selectedIds} />}
 
-          {/* No node selected (not in popup-edit mode) */}
-          {!selectedNode && selectedIds.length <= 1 && !editingPopupId && (
+          {!selectedNode && selectedIds.length <= 1 && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4b5563', fontSize: 12, textAlign: 'center', padding: 16 }}>
               Select a node to edit its properties
             </div>
@@ -3518,18 +2997,10 @@ export default function PanelRight() {
             <SettingsTab node={selectedNode} pageNodes={searchNodes} />
           )}
 
-          {/* Design panel — selected node, OR popup root when nothing is explicitly selected */}
-          {(() => {
-            let designNode = selectedNode as SDUINode | null;
-            if (!designNode && editingPopupId && editingPopupContent) {
-              const rootId = (editingPopupContent as unknown as { id?: string }).id;
-              designNode = rootId
-                ? (pageNodes as SDUINode[]).find(n => (n as unknown as { id?: string }).id === rootId) ?? null
-                : null;
-            }
-            if (!designNode || selectedIds.length > 1) return null;
-            return <DesignTab node={designNode} />;
-          })()}
+          {/* Design panel for selected node */}
+          {selectedNode && selectedIds.length <= 1 && (
+            <DesignTab node={selectedNode} />
+          )}
         </div>
       )}
 

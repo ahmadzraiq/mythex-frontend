@@ -134,13 +134,21 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
       // Store return value at a configurable path
       return cfg.path ? { type: 'set', path: cfg.path, value: cfg.value } : null;
 
-    // ── UI ───────────────────────────────────────────────────────────────────
-    case 'openPopup':
-      return { type: 'openPopup', ...cfg };
-    case 'closeAllPopups':
-      return { type: 'closeAllPopups' };
-    case 'closePopup':
-      return { type: 'closePopup' };
+    // ── Shared Component ─────────────────────────────────────────────────────
+    case 'addSharedComponent':
+      return { type: 'addSharedComponent', ...cfg };
+    case 'deleteSharedComponent':
+      return { type: 'deleteSharedComponent', ...cfg };
+    case 'deleteAllSharedComponents':
+      return { type: 'deleteAllSharedComponents', ...cfg };
+
+    // ── Popover ───────────────────────────────────────────────────────────
+    case 'openPopover':
+      return { type: 'openPopover', ...cfg };
+    case 'closePopover':
+      return { type: 'closePopover', ...cfg };
+    case 'togglePopover':
+      return { type: 'togglePopover', ...cfg };
 
     // ── Misc ─────────────────────────────────────────────────────────────────
     case 'stopPropagation':
@@ -158,6 +166,8 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
       return { type: '__createUrlFromBase64', ...cfg };
     case 'uploadFile':
       return { type: '__uploadFile', ...cfg };
+    case 'scrollToElement':
+      return null; // handled inline in runSteps
 
     // ── Structural / utility (handled in runSteps, not via stepToSdui) ────────
     case 'branch':
@@ -511,6 +521,19 @@ async function runSteps(
           workflowCtx[step.id] = { result: base64 ?? '', error: null };
           flushWorkflowCtx(workflowCtx);
         }
+      }
+      continue;
+    }
+
+    // ── Scroll to element by selector or data-builder-id ────────────────────
+    if (step.type === 'scrollToElement') {
+      const targetId = String(step.config?.elementId ?? step.config?.targetId ?? '');
+      const behavior = (step.config?.behavior as ScrollBehavior | undefined) ?? 'smooth';
+      const block = (step.config?.block as ScrollLogicalPosition | undefined) ?? 'start';
+      if (targetId && typeof document !== 'undefined') {
+        const el = document.getElementById(targetId)
+          ?? document.querySelector(`[data-section-id="${targetId}"]`) as HTMLElement | null;
+        if (el) el.scrollIntoView({ behavior, block });
       }
       continue;
     }

@@ -7,7 +7,7 @@ export function isScreenScopedPath(path: string, aliases: string[]): boolean {
   return aliases.some((a) => path === a || path.startsWith(`${a}.`));
 }
 
-/** Check if path is a scope variable ($item, $index, $parent, context.*, or popup.*) - not a store path */
+/** Check if path is a scope variable ($item, $index, $parent, context.*) - not a store path */
 export function isScopeVariable(path: string): boolean {
   return (
     path === '$item' ||
@@ -21,10 +21,6 @@ export function isScopeVariable(path: string): boolean {
     //         context.item.index, context.item.repeatIndex, context.item.isACopy,
     //         context.item.repeatedItems, context.index, context.parent.*
     path === 'context' ||
-    path.startsWith('context.') ||
-    // popup.* scope variables — injected by PopupRenderer for open popup instances
-    // so {{popup.props.title}}, {{popup.instanceId}}, {{popup.modelId}} resolve correctly
-    path === 'popup' ||
-    path.startsWith('popup.')
+    path.startsWith('context.')
   );
 }

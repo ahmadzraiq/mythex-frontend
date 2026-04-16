@@ -19,9 +19,10 @@ import React, {
   useState, useRef, useEffect, useCallback, useMemo,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { useBuilderStore, findNode, findParentNode, type DataSourceConfig } from './_store';
+import { useBuilderStore, findNode, findParentNode, type DataSourceConfig, type SDUINode } from './_store';
+import { findSharedRoot } from './_store-node-helpers';
 import { useShallow } from 'zustand/react/shallow';
-import { getPopups } from '@/lib/builder/popup-data';
+import { getSharedComponents } from '@/lib/builder/shared-component-data';
 
 // ─── Tab content components (extracted to _formula-editor-tabs.tsx) ───────────
 export { Tooltip, VariableTree, CollectionEntry, DataTreeNode, FunctionLibrary, FnRow,
@@ -32,7 +33,7 @@ import {
   Tooltip, VariableTree, CollectionEntry, FunctionLibrary,
   CollectionsDataTab, PageComponentsSection, FormLocalSection, ItemContextGroup,
   DataTreeNode, FEChevron, collectPageComponents, EVENT_SHAPES, EventContextSection,
-  PopupContextSection,
+  SharedComponentContextSection,
   type VarRowItem,
 } from './_formula-editor-tabs';
 import { useSduiStore } from '@/store/sdui-store';
@@ -287,7 +288,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   );
   const selectedIds = useBuilderStore(s => s.selectedIds);
   const pageNodes = useBuilderStore(s => s.pageNodes);
-  const editingPopupId = useBuilderStore(s => s.editingPopupId);
+  const editingSharedComponentId = useBuilderStore(s => s.editingSharedComponentId);
   const [isFocused, setIsFocused] = useState(false);
 
   // Detect if the selected node is inside a repeated context (has a map ancestor)
@@ -383,16 +384,25 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     ) as typeof workflowTestResults;
   }, [workflowTestResults, workflowCanvasTarget]);
 
-  const isInsidePopup = !!editingPopupId;
-  const showQuickTab = isInsideRepeat || isInsideForm || isInsidePopup;
+  const sharedAncestorModelId = useMemo(() => {
+    if (editingSharedComponentId) return editingSharedComponentId;
+    const id = selectedIds[0];
+    if (!id) return null;
+    const root = findSharedRoot(pageNodes as SDUINode[], id);
+    if (!root) return null;
+    const meta = (root as unknown as Record<string, unknown>)._shared as { id: string } | undefined;
+    return meta?.id ?? null;
+  }, [editingSharedComponentId, selectedIds, pageNodes]);
 
-  // Build a map from popup property UUID → property name for chip display
-  const popupPropMap = useMemo((): Map<string, string> => {
-    if (!editingPopupId) return new Map();
-    const model = getPopups()[editingPopupId];
+  const isInsideSharedComponent = !!sharedAncestorModelId;
+  const showQuickTab = isInsideRepeat || isInsideForm || isInsideSharedComponent;
+
+  const scPropMap = useMemo((): Map<string, string> => {
+    if (!sharedAncestorModelId) return new Map();
+    const model = getSharedComponents()[sharedAncestorModelId];
     const props = (model as { properties?: Array<{ id: string; name: string }> } | undefined)?.properties ?? [];
-    return new Map(props.map(p => [p.id, p.name]));
-  }, [editingPopupId]);
+    return new Map(props.map(p => [p.name, p.name]));
+  }, [sharedAncestorModelId]);
   // Show Workflow tab when there are test results OR when a trigger with event data is active
   const hasEventContext = !!(workflowTrigger && Object.keys(EVENT_SHAPES[workflowTrigger] ?? {}).length > 0);
   const showWorkflowTab = hasEventContext || Object.keys(currentWorkflowTestResults ?? {}).length > 0;
@@ -404,9 +414,9 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   // When a workflow trigger with event data is active, open the Workflow tab
   useEffect(() => {
     if (hasEventContext) setTab('workflow');
-    else if (isInsideRepeat || isInsideForm) setTab('quick');
+    else if (isInsideRepeat || isInsideForm || isInsideSharedComponent) setTab('quick');
     else if (tab === 'quick') setTab('variables');
-  }, [isInsideRepeat, isInsideForm, hasEventContext]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isInsideRepeat, isInsideForm, isInsideSharedComponent, hasEventContext]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Map UUID → label for collection chip display
   const dsMap = useMemo(
@@ -539,7 +549,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   useEffect(() => {
     const el = editorRef.current;
     if (!el) return;
-    populateEditor(el, initialFormula, dsMap, varMap, stepNameMap, popupPropMap);
+    populateEditor(el, initialFormula, dsMap, varMap, stepNameMap, scPropMap);
     setFormula(initialFormula);
     historyRef.current = [initialFormula];
     historyIdxRef.current = 0;
@@ -765,19 +775,35 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       workflowMap[key] = { result: entry.result, error: entry.error };
     }
 
-    // Build context.component.props from popup property defaultValues
-    const popupComponentContext = (() => {
-      if (!editingPopupId) return undefined;
-      const model = getPopups()[editingPopupId];
-      const props = (model as { properties?: Array<{ id: string; defaultValue?: unknown }> } | undefined)?.properties ?? [];
+    const scComponentContext = (() => {
+      if (!sharedAncestorModelId) return undefined;
+      const model = getSharedComponents()[sharedAncestorModelId];
+      const props = (model as { properties?: Array<{ id: string; name: string; defaultValue?: unknown }> } | undefined)?.properties ?? [];
+      // Read the actual instance's property overrides from the shared root node
+      const selId = selectedIds[0];
+      const sharedRootNode = selId ? findSharedRoot(pageNodes as SDUINode[], selId) : null;
+      const instanceProps = sharedRootNode
+        ? ((sharedRootNode as unknown as Record<string, unknown>).props ?? {}) as Record<string, unknown>
+        : {};
       const propsMap: Record<string, unknown> = {};
-      for (const p of props) propsMap[p.id] = p.defaultValue ?? '';
+      for (const p of props) {
+        let val = p.name in instanceProps ? instanceProps[p.name] : (p.defaultValue ?? '');
+        // Unwrap FormulaValue objects so the preview shows the resolved value
+        if (val && typeof val === 'object' && 'formula' in (val as Record<string, unknown>)) {
+          const f = (val as { formula: string }).formula;
+          try {
+            val = evaluateFormula(f, { ...zustandData, ...vs, variables: vs }).value;
+          } catch {
+            val = f;
+          }
+        }
+        propsMap[p.name] = val;
+      }
       return { props: propsMap };
     })();
 
-    // Build context.local for popup instance info
-    const popupLocalContext = editingPopupId ? {
-      data: { popup: { instancesCount: 1, index: 0, totalCount: 1 } },
+    const scLocalContext = sharedAncestorModelId ? {
+      data: { sharedComponent: { instancesCount: 1, index: 0, totalCount: 1 } },
     } : undefined;
 
     return {
@@ -811,14 +837,14 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
           };
         })() : {}),
         workflow: workflowMap,
-        ...(popupComponentContext ? { component: popupComponentContext } : {}),
-        ...(popupLocalContext ? { local: popupLocalContext } : {}),
+        ...(scComponentContext ? { component: scComponentContext } : {}),
+        ...(scLocalContext ? { local: scLocalContext } : {}),
       },
       globalContext,
       pages,
       theme,
     };
-  }, [vsData, zustandData, selectedIds, pageNodes, currentWorkflowTestResults, editingPopupId]);
+  }, [vsData, zustandData, selectedIds, pageNodes, currentWorkflowTestResults, editingSharedComponentId]);
 
   // When a workflowTrigger is set, inject the trigger's event shape as preview context
   const contextWithEvent = useMemo(() => {
@@ -869,7 +895,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     const el = editorRef.current;
     if (!el) return;
     isUndoRedoRef.current = true;
-    populateEditor(el, f, dsMap, varMap, stepNameMap, popupPropMap);
+    populateEditor(el, f, dsMap, varMap, stepNameMap, scPropMap);
     setFormula(f);
     // Move cursor to end
     const r = document.createRange();
@@ -893,7 +919,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   }, []);
 
   // Insert a chip at the current caret position
-  const insertChip = useCallback((formulaPath: string, displayLabel: string, type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'popup') => {
+  const insertChip = useCallback((formulaPath: string, displayLabel: string, type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'shared-component') => {
     const el = editorRef.current;
     if (!el) return;
     restoreCaret();
@@ -1357,8 +1383,8 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
         )}
         {tab === 'quick' && (
           <div style={{ overflowY: 'auto', flex: 1 }}>
-            {isInsidePopup && (
-              <PopupContextSection onInsert={insertChip} />
+            {isInsideSharedComponent && (
+              <SharedComponentContextSection onInsert={insertChip} overrideModelId={sharedAncestorModelId} />
             )}
             {isInsideForm && (
               <FormLocalSection onInsert={insertChip} pageFormFields={pageFormFields} nearestFormContainerId={nearestFormContainerId} />

@@ -67,7 +67,6 @@ import {
 } from './_logic-tab';
 import routes from '@/config/routes.json';
 import { WorkflowCanvas } from './_workflow-canvas';
-import { getPopups } from '@/lib/builder/popup-data';
 import { useBuilderAutosave, type SaveStatus } from '@/lib/builder/autosave';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -374,6 +373,305 @@ function PagesPicker() {
   );
 }
 
+// ─── URL Parameters Popover ──────────────────────────────────────────────────
+
+type QueryParam = { name: string; value: string };
+
+function URLParamsPopover() {
+  const { pages, currentPageId, setCurrentPageQueryParams } = useBuilderStore(
+    useShallow(s => ({
+      pages: s.pages,
+      currentPageId: s.currentPageId,
+      setCurrentPageQueryParams: s.setCurrentPageQueryParams,
+    }))
+  );
+
+  const currentPage = pages.find(p => p.id === currentPageId);
+  const savedParams = currentPage?.queryParams ?? [];
+
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<QueryParam[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Sync draft from store when opening
+  useEffect(() => {
+    if (open) {
+      setDraft(savedParams.length > 0 ? savedParams.map(p => ({ ...p })) : []);
+    }
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [open]);
+
+  const updateParam = (idx: number, field: 'name' | 'value', val: string) => {
+    setDraft(prev => prev.map((p, i) => i === idx ? { ...p, [field]: val } : p));
+  };
+
+  const removeParam = (idx: number) => {
+    setDraft(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const addParam = () => {
+    setDraft(prev => [...prev, { name: '', value: '' }]);
+  };
+
+  const handleSave = () => {
+    const cleaned = draft.filter(p => p.name.trim());
+    setCurrentPageQueryParams(cleaned);
+    setOpen(false);
+  };
+
+  const handleReset = () => {
+    setDraft([]);
+  };
+
+  // Build URL preview from draft params
+  const paramCount = savedParams.filter(p => p.name.trim()).length;
+  const previewUrl = (() => {
+    const validParams = draft.filter(p => p.name.trim());
+    if (validParams.length === 0) return 'https://yourdomain.com/';
+    const qs = validParams.map(p => `${encodeURIComponent(p.name)}=${encodeURIComponent(p.value)}`).join('&');
+    return `https://yourdomain.com/${currentPage?.route ? currentPage.route.replace(/^\//, '') : ''}?${qs}`;
+  })();
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative' }} data-testid="url-params-popover">
+      {/* Trigger button */}
+      <button
+        data-testid="url-params-trigger"
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          padding: '4px 10px',
+          background: open ? '#1f2937' : 'transparent',
+          border: `1px solid ${open ? '#3b82f6' : '#374151'}`,
+          borderRadius: 6,
+          color: '#d1d5db',
+          cursor: 'pointer',
+          fontSize: 11,
+          fontFamily: 'system-ui',
+          fontWeight: 500,
+          transition: 'all 0.15s',
+        }}
+      >
+        <span style={{ fontSize: 11, opacity: 0.8 }}>(x)</span>
+        <span>URL Parameters</span>
+        {paramCount > 0 && (
+          <span style={{
+            background: '#3b82f6',
+            color: '#fff',
+            fontSize: 9,
+            fontWeight: 700,
+            borderRadius: 10,
+            padding: '1px 5px',
+            minWidth: 16,
+            textAlign: 'center',
+            lineHeight: '14px',
+          }}>
+            {paramCount}
+          </span>
+        )}
+      </button>
+
+      {/* Popover dropdown */}
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 6px)',
+            left: 0,
+            width: 520,
+            background: '#1e293b',
+            border: '1px solid #334155',
+            borderRadius: 10,
+            boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+            zIndex: 99999,
+            fontFamily: 'system-ui',
+            overflow: 'hidden',
+          }}
+        >
+          {/* URL Preview */}
+          <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid #334155' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#e2e8f0', marginBottom: 4 }}>URL Preview</div>
+            <div style={{
+              fontSize: 11,
+              color: '#94a3b8',
+              fontFamily: 'monospace',
+              wordBreak: 'break-all',
+              lineHeight: 1.5,
+            }}>
+              {previewUrl}
+            </div>
+          </div>
+
+          {/* Query parameters */}
+          <div style={{ padding: '12px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: '#e2e8f0',
+                border: '1px solid #475569',
+                borderRadius: 6,
+                padding: '4px 10px',
+                background: '#0f172a',
+              }}>
+                Query parameters
+              </div>
+              <span
+                title="Define query parameters that are accessible in formulas via globalContext.browser.query"
+                style={{ cursor: 'help', fontSize: 14, color: '#6b7280' }}
+              >
+                ⓘ
+              </span>
+            </div>
+
+            {/* Column headers */}
+            {draft.length > 0 && (
+              <div style={{ display: 'flex', gap: 8, marginBottom: 6, paddingRight: 30 }}>
+                <div style={{ flex: 1, fontSize: 10, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Name</div>
+                <div style={{ flex: 1, fontSize: 10, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current value</div>
+              </div>
+            )}
+
+            {/* Param rows */}
+            {draft.map((param, idx) => (
+              <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center' }}>
+                <input
+                  data-testid={`url-param-name-${idx}`}
+                  value={param.name}
+                  onChange={e => updateParam(idx, 'name', e.target.value)}
+                  placeholder="Name"
+                  style={{
+                    flex: 1,
+                    padding: '6px 10px',
+                    background: '#0f172a',
+                    border: '1px solid #334155',
+                    borderRadius: 6,
+                    color: '#e2e8f0',
+                    fontSize: 12,
+                    fontFamily: 'system-ui',
+                    outline: 'none',
+                  }}
+                  onFocus={e => (e.currentTarget.style.borderColor = '#3b82f6')}
+                  onBlur={e => (e.currentTarget.style.borderColor = '#334155')}
+                />
+                <input
+                  data-testid={`url-param-value-${idx}`}
+                  value={param.value}
+                  onChange={e => updateParam(idx, 'value', e.target.value)}
+                  placeholder="Value"
+                  style={{
+                    flex: 1,
+                    padding: '6px 10px',
+                    background: '#0f172a',
+                    border: '1px solid #334155',
+                    borderRadius: 6,
+                    color: '#e2e8f0',
+                    fontSize: 12,
+                    fontFamily: 'system-ui',
+                    outline: 'none',
+                  }}
+                  onFocus={e => (e.currentTarget.style.borderColor = '#3b82f6')}
+                  onBlur={e => (e.currentTarget.style.borderColor = '#334155')}
+                />
+                <button
+                  data-testid={`url-param-remove-${idx}`}
+                  onClick={() => removeParam(idx)}
+                  title="Remove parameter"
+                  style={{
+                    width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: '#6b7280', fontSize: 14, borderRadius: 4,
+                    flexShrink: 0,
+                    transition: 'color 0.1s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+                  onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+
+            {/* Add parameter button */}
+            <button
+              data-testid="url-param-add"
+              onClick={addParam}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '6px 0',
+                background: 'none', border: 'none',
+                color: '#3b82f6', fontSize: 12, fontWeight: 500,
+                cursor: 'pointer', fontFamily: 'system-ui',
+                transition: 'color 0.1s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#60a5fa')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#3b82f6')}
+            >
+              + Add query parameter
+            </button>
+          </div>
+
+          {/* Footer */}
+          <div style={{
+            display: 'flex', justifyContent: 'flex-end', gap: 8,
+            padding: '10px 16px',
+            borderTop: '1px solid #334155',
+          }}>
+            <button
+              data-testid="url-params-reset"
+              onClick={handleReset}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '5px 12px',
+                background: 'none',
+                border: '1px solid #475569',
+                borderRadius: 6,
+                color: '#94a3b8',
+                fontSize: 11, fontWeight: 500,
+                cursor: 'pointer', fontFamily: 'system-ui',
+                transition: 'all 0.1s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#6b7280'; e.currentTarget.style.color = '#d1d5db'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#475569'; e.currentTarget.style.color = '#94a3b8'; }}
+            >
+              ↻ Reset
+            </button>
+            <button
+              data-testid="url-params-save"
+              onClick={handleSave}
+              style={{
+                padding: '5px 16px',
+                background: '#7c3aed',
+                border: 'none',
+                borderRadius: 6,
+                color: '#fff',
+                fontSize: 11, fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'system-ui',
+                transition: 'background 0.1s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#6d28d9')}
+              onMouseLeave={e => (e.currentTarget.style.background = '#7c3aed')}
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SaveStatusBadge({ status }: { status: SaveStatus }) {
   if (status === 'idle') return null;
   const config: Record<SaveStatus, { label: string; color: string }> = {
@@ -466,6 +764,9 @@ function TopBar({
 
       {/* Pages picker dropdown (replaces the static page name in the centre) */}
       <PagesPicker />
+
+      {/* URL query parameter definitions for the current page */}
+      <URLParamsPopover />
 
       <div style={{ flex: 1 }} />
 
@@ -916,7 +1217,6 @@ export default function BuilderPage() {
       pageWorkflowMeta,
       globalWorkflows,
       globalWorkflowMeta,
-      popupModels: getPopups(),
       customVars,
     }));
 

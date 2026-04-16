@@ -5040,6 +5040,200 @@
             ]
           }
         ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "flex flex-col gap-[8px]" },
+        "children": [
+          { "type": "Heading", "props": { "size": "xl", "className": "font-bold text-gray-900 dark:text-gray-100" }, "text": "Generic Animation Properties" },
+          { "type": "Text", "props": { "className": "text-[12px] text-gray-400 dark:text-gray-500" }, "text": "Demonstrating the new generic/extensible animation capabilities." }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "grid grid-cols-2 gap-[16px]" },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "rounded-[12px] p-[20px] h-[140px] flex flex-col justify-end",
+              "animation": {
+                "scrollProgress": {
+                  "enabled": true,
+                  "property": "backgroundColor",
+                  "from": "#3b82f6",
+                  "to": "#ef4444",
+                  "start": 0.2,
+                  "end": 0.8
+                }
+              }
+            },
+            "children": [
+              { "type": "Text", "props": { "className": "font-semibold text-white" }, "text": "ScrollProgress: backgroundColor" },
+              { "type": "Text", "props": { "className": "text-white/80 text-[11px]" }, "text": "Blue → Red on scroll" }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "rounded-[12px] bg-gray-800 p-[20px] h-[140px] flex flex-col justify-end"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "font-semibold",
+                  "animation": {
+                    "scrollProgress": {
+                      "enabled": true,
+                      "property": "color",
+                      "from": "#60a5fa",
+                      "to": "#f97316",
+                      "start": 0.2,
+                      "end": 0.8
+                    }
+                  }
+                },
+                "text": "ScrollProgress: color"
+              },
+              { "type": "Text", "props": { "className": "text-gray-400 text-[11px]" }, "text": "Text blue → orange on scroll" }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "bg-indigo-600 p-[20px] h-[140px] flex flex-col justify-end",
+              "animation": {
+                "scrollProgress": {
+                  "enabled": true,
+                  "property": "borderRadius",
+                  "from": 0,
+                  "to": 32,
+                  "unit": "px",
+                  "start": 0.2,
+                  "end": 0.8
+                }
+              }
+            },
+            "children": [
+              { "type": "Text", "props": { "className": "font-semibold text-white" }, "text": "ScrollProgress: borderRadius" },
+              { "type": "Text", "props": { "className": "text-white/80 text-[11px]" }, "text": "0px → 32px on scroll" }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "rounded-[12px] bg-emerald-600 p-[20px] h-[140px] flex flex-col justify-end cursor-pointer",
+              "animation": {
+                "hover": {
+                  "scale": 1.03,
+                  "y": -2,
+                  "duration": 250,
+                  "styles": {
+                    "backgroundColor": "#059669",
+                    "borderRadius": "20px",
+                    "boxShadow": "0 12px 30px rgba(5,150,105,0.4)"
+                  }
+                }
+              }
+            },
+            "children": [
+              { "type": "Text", "props": { "className": "font-semibold text-white" }, "text": "Hover: styles map" },
+              { "type": "Text", "props": { "className": "text-white/80 text-[11px]" }, "text": "bg + borderRadius + boxShadow" }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "rounded-[12px] bg-amber-500 p-[20px] h-[140px] flex flex-col justify-end cursor-pointer",
+              "animation": {
+                "press": {
+                  "scale": 0.92,
+                  "duration": 100,
+                  "styles": {
+                    "backgroundColor": "#d97706",
+                    "boxShadow": "inset 0 2px 8px rgba(0,0,0,0.3)"
+                  }
+                }
+              }
+            },
+            "children": [
+              { "type": "Text", "props": { "className": "font-semibold text-white" }, "text": "Press: styles map" },
+              { "type": "Text", "props": { "className": "text-white/80 text-[11px]" }, "text": "Press → darker bg + inset shadow" }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "rounded-[12px] bg-gray-900 p-[20px] h-[140px] flex flex-col justify-end"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "font-semibold text-[18px]",
+                  "animation": {
+                    "color": {
+                      "enabled": true,
+                      "property": "color",
+                      "from": "#818cf8",
+                      "to": "#f472b6",
+                      "loop": true,
+                      "duration": 2000
+                    }
+                  }
+                },
+                "text": "Color Transition: text"
+              },
+              { "type": "Text", "props": { "className": "text-gray-500 text-[11px]" }, "text": "Indigo ↔ Pink looping text color" }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "rounded-[12px] bg-violet-600 p-[20px] h-[140px] flex flex-col justify-center items-center",
+              "animation": {
+                "enter": {
+                  "type": "fadeIn",
+                  "duration": 800,
+                  "from": {
+                    "blur": 20,
+                    "rotate": -15,
+                    "opacity": 0
+                  }
+                }
+              }
+            },
+            "children": [
+              { "type": "Text", "props": { "className": "font-bold text-white text-[20px]" }, "text": "Enter: blur + rotate" },
+              { "type": "Text", "props": { "className": "text-white/70 text-[11px]" }, "text": "Deblur + unrotate on appear" }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "rounded-[12px] bg-rose-600 p-[20px] h-[140px] flex flex-col justify-center items-center",
+              "animation": {
+                "enter": {
+                  "type": "fadeIn",
+                  "duration": 800,
+                  "from": {
+                    "skewX": 20,
+                    "skewY": 5,
+                    "translateX": -60,
+                    "opacity": 0
+                  }
+                }
+              }
+            },
+            "children": [
+              { "type": "Text", "props": { "className": "font-bold text-white text-[20px]" }, "text": "Enter: skewX + skewY" },
+              { "type": "Text", "props": { "className": "text-white/70 text-[11px]" }, "text": "Skew + slide on appear" }
+            ]
+          }
+        ]
       }
     ]
   }

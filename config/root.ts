@@ -29,7 +29,6 @@ import orderConfirmation from './screens/order-confirmation.json';
 import notFound from './screens/not-found.json';
 import workflowTest from './screens/workflow-test.json';
 import animationTest from './screens/animation-test.json';
-import popupTest from './screens/popup-test.json';
 import heroShowcase from './screens/hero-showcase.json';
 import pricingCardTest from './screens/pricing-card-test.json';
 import stylingTest from './screens/styling-test.json';
@@ -54,6 +53,19 @@ import pricingNested from './screens/pricing-nested.json';
 import videoHeroTest from './screens/video-hero-test.json';
 import responsiveTest from './screens/responsive-test.json';
 import sharedComponentTest from './screens/shared-component-test.json';
+import navbarTypes from './screens/navbar-types.json';
+import navbarFixed from './screens/navbar-fixed.json';
+import navbarSticky from './screens/navbar-sticky.json';
+import navbarTransparent from './screens/navbar-transparent.json';
+import navbarBlur from './screens/navbar-blur.json';
+import navbarFloating from './screens/navbar-floating.json';
+import navbarCentered from './screens/navbar-centered.json';
+import navbarSidebar from './screens/navbar-sidebar.json';
+import navbarBottom from './screens/navbar-bottom.json';
+import navbarScrollAware from './screens/navbar-scroll-aware.json';
+import popoverTest from './screens/popover-test.json';
+import animationShowcase from './screens/animation-showcase.json';
+import queryParamsTest from './screens/query-params-test.json';
 
 // Layouts
 import storeLayout from './layouts/store.json';
@@ -90,11 +102,13 @@ import layoutActions from './actions/layout.json';
 import dataSourceActions from './actions/datasource-actions.json';
 import workflowTestActions from './actions/workflow-test.json';
 import animationTestActions from './actions/animation-test.json';
-import popupTestActions from './actions/popup-test.json';
 import controlsShowcaseActions from './actions/controls-showcase.json';
 import calculatorActions from './actions/calculator.json';
 import pricingNestedActions from './actions/pricing-nested.json';
 import responsiveTestActions from './actions/responsive-test.json';
+import sharedComponentTestActions from './actions/shared-component-test.json';
+import popoverTestActions from './actions/popover-test.json';
+import animationShowcaseActions from './actions/animation-showcase.json';
 
 const screens = {
   home,
@@ -117,7 +131,6 @@ const screens = {
   notFound,
   workflowTest,
   animationTest,
-  popupTest,
   heroShowcase,
   pricingCardTest,
   stylingTest,
@@ -142,6 +155,19 @@ const screens = {
   videoHeroTest,
   responsiveTest,
   sharedComponentTest,
+  navbarTypes,
+  navbarFixed,
+  navbarSticky,
+  navbarTransparent,
+  navbarBlur,
+  navbarFloating,
+  navbarCentered,
+  navbarSidebar,
+  navbarBottom,
+  navbarScrollAware,
+  popoverTest,
+  animationShowcase,
+  queryParamsTest,
 };
 
 const layouts = {
@@ -181,11 +207,13 @@ const actions = {
   ...dataSourceActions,
   ...workflowTestActions,
   ...animationTestActions,
-  ...popupTestActions,
   ...controlsShowcaseActions,
   ...calculatorActions,
   ...pricingNestedActions,
   ...responsiveTestActions,
+  ...sharedComponentTestActions,
+  ...popoverTestActions,
+  ...animationShowcaseActions,
 };
 
 const actionsByFile = {
@@ -198,11 +226,13 @@ const actionsByFile = {
   dataSources: dataSourceActions,
   workflowTest: workflowTestActions,
   animationTest: animationTestActions,
-  popupTest: popupTestActions,
   controlsShowcase: controlsShowcaseActions,
   calculator: calculatorActions,
   pricingNested: pricingNestedActions,
   responsiveTest: responsiveTestActions,
+  sharedComponentTest: sharedComponentTestActions,
+  popoverTest: popoverTestActions,
+  animationShowcase: animationShowcaseActions,
 };
 
 export const root = {

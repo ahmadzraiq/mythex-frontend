@@ -26,7 +26,6 @@ import { SDUIEngine } from '@/lib/sdui/sdui-engine';
 import type { SDUIConfig } from '@/lib/sdui/types';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import appConfig from '@/config/app';
-import { loadPopups } from '@/lib/builder/popup-data';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -60,7 +59,6 @@ interface ProjectConfig {
   globalWorkflowMeta?: Record<string, WorkflowMeta>;
   themeOverrides?: Record<string, string>;
   themeDarkOverrides?: Record<string, string>;
-  popupModels?: Record<string, unknown>;
   customVars?: Array<{ id?: string; type?: string; initialValue?: unknown }>;
 }
 
@@ -247,7 +245,6 @@ export default function AppPreviewPage() {
         const cached = sessionStorage.getItem(cacheKey);
         if (cached) {
           const cfg = JSON.parse(cached) as ProjectConfig;
-          if (cfg.popupModels) loadPopups(cfg.popupModels as Record<string, unknown>);
           if (cfg.themeOverrides || cfg.themeDarkOverrides) {
             applyTheme(cfg.themeOverrides ?? {}, cfg.themeDarkOverrides ?? {});
           }
@@ -277,9 +274,6 @@ export default function AppPreviewPage() {
 
       // Cache in sessionStorage — valid for this tab's lifetime (1 hour token)
       try { sessionStorage.setItem(cacheKey, JSON.stringify(cfg)); } catch { /* quota */ }
-
-      // Seed popup store
-      if (cfg.popupModels) loadPopups(cfg.popupModels as Record<string, unknown>);
 
       // Apply theme overrides
       if (cfg.themeOverrides || cfg.themeDarkOverrides) {

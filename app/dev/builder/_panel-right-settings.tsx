@@ -9,9 +9,12 @@
  * Exports: SettingsTab, AlignDistributePanel
  */
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
+import { json as cmJson } from '@codemirror/lang-json';
+import { oneDark } from '@codemirror/theme-one-dark';
+const CodeMirror = lazy(() => import('@uiw/react-codemirror'));
 import { useBuilderStore, findParentNode } from './_store';
-import type { SDUINode } from '@/lib/sdui/types/node';
+import type { SDUINode, PopoverConfig } from '@/lib/sdui/types/node';
 import { SECTION_STYLE, LABEL_STYLE, SectionHeader, ToggleBtn } from './_panel-primitives';
 import { FieldWithBinding, BindingIcon, isBoundValue, type FormulaValue, closeAllEditors, registerEditorClose } from './_formula-panel';
 import { FormulaEditor } from './_formula-editor';
@@ -21,7 +24,10 @@ import {
   createSharedComponent,
   updateSharedComponent as updateSCData,
   deleteSharedComponent,
+  getSharedComponents,
 } from '@/lib/builder/shared-component-data';
+import type { SharedComponentProperty } from '@/lib/builder/shared-component-data';
+import { findSharedRoot } from './_store-node-helpers';
 
 // ─── Settings Tab ─────────────────────────────────────────────────────────────
 
@@ -183,6 +189,52 @@ const RULE_DEFAULTS: Record<ValidationRuleType, Partial<ValidationRule>> = {
 
 const ICONIFY_API_BASE = 'https://api.iconify.design';
 
+// ── AnyPropEditor: compact CodeMirror with expand toggle ─────────────────────
+
+function AnyPropEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div style={{ position: 'relative', width: 130, boxSizing: 'border-box' as const, borderRadius: 4, overflow: 'hidden', border: '1px solid #374151' }}>
+      <Suspense fallback={
+        <textarea
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          rows={expanded ? 5 : 1}
+          style={{ width: '100%', background: '#1f2937', border: 'none', color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', resize: 'none', fontFamily: 'monospace', boxSizing: 'border-box' as const, height: expanded ? 110 : 26 }}
+        />
+      }>
+        <CodeMirror
+          value={value}
+          height={expanded ? '110px' : '26px'}
+          extensions={[cmJson()]}
+          theme={oneDark}
+          onChange={v => onChange(v)}
+          basicSetup={{ lineNumbers: false, foldGutter: false, highlightActiveLine: expanded, closeBrackets: false, autocompletion: false }}
+          style={{ fontSize: 11 }}
+        />
+      </Suspense>
+      {/* Expand / collapse toggle */}
+      <button
+        onClick={() => setExpanded(e => !e)}
+        title={expanded ? 'Collapse' : 'Expand'}
+        style={{ position: 'absolute', bottom: 3, right: 3, width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#374151', border: 'none', borderRadius: 3, cursor: 'pointer', padding: 0, zIndex: 10 }}
+      >
+        {expanded ? (
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
+            <line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/>
+          </svg>
+        ) : (
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+            <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+          </svg>
+        )}
+      </button>
+    </div>
+  );
+}
+
 // ── SpecificRow: SettingsRow label + FieldWithBinding bind button ────────────
 
 /** A settings row that includes a formula-binding button beside every field. */
@@ -193,6 +245,7 @@ function SpecificRow({
   onChange,
   hint,
   expectedType = 'string' as const,
+  topAlign = false,
   children,
 }: {
   label: string;
@@ -201,14 +254,17 @@ function SpecificRow({
   onChange: (v: FormulaValue) => void;
   hint?: string;
   expectedType?: 'string' | 'number' | 'boolean' | 'any';
+  topAlign?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', padding: '3px 12px', gap: 8 }}>
-      <span style={{ fontSize: 11, color: '#d1d5db', flexShrink: 0, minWidth: 80 }}>{label}</span>
-      <FieldWithBinding label={fieldKey} value={value} onChange={onChange} hint={hint} expectedType={expectedType}>
-        {children}
-      </FieldWithBinding>
+    <div style={{ display: 'flex', alignItems: topAlign ? 'flex-start' : 'center', justifyContent: 'space-between', gap: 8, padding: topAlign ? '6px 12px' : '3px 12px' }}>
+      <span style={{ fontSize: 11, color: '#d1d5db', flexShrink: 0, minWidth: 80, paddingTop: topAlign ? 4 : 0 }}>{label}</span>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: topAlign ? 'flex-start' : 'center', justifyContent: 'flex-end' }}>
+        <FieldWithBinding label={fieldKey} value={value} onChange={onChange} hint={hint} expectedType={expectedType} topAlign={topAlign}>
+          {children}
+        </FieldWithBinding>
+      </div>
     </div>
   );
 }
@@ -895,32 +951,103 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
         </div>
       )}
 
-      {/* ── Make Shared toggle (hidden for SharedComponent instances) ─────────── */}
-      {nodeType !== 'SharedComponent' && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', borderBottom: '1px solid #1f2937' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ fontSize: 11, color: isShared ? '#60a5fa' : '#d1d5db' }}>Shared</span>
-            {isShared && (
-              <span style={{ fontSize: 9, color: '#60a5fa', background: '#1e3a5f', borderRadius: 3, padding: '1px 5px', fontWeight: 700 }}>SC</span>
-            )}
-          </div>
-          <button
-            data-testid="settings-make-shared-toggle"
-            onClick={handleToggleShared}
-            title={isShared ? `Detach from shared component "${nodeShared?.name}"` : 'Mark as shared component'}
-            style={{
-              width: 32, height: 18, borderRadius: 9, border: 'none',
-              background: isShared ? '#1d4ed8' : '#374151',
-              cursor: 'pointer', position: 'relative', transition: 'background 150ms', flexShrink: 0,
-            }}
-          >
-            <span style={{
-              position: 'absolute', top: 2, left: isShared ? 16 : 2,
-              width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 150ms',
-            }} />
-          </button>
+      {/* ── Make Shared toggle ─────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', borderBottom: '1px solid #1f2937' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ fontSize: 11, color: isShared ? '#60a5fa' : '#d1d5db' }}>Shared</span>
+          {isShared && (
+            <span style={{ fontSize: 9, color: '#60a5fa', background: '#1e3a5f', borderRadius: 3, padding: '1px 5px', fontWeight: 700 }}>SC</span>
+          )}
         </div>
-      )}
+        <button
+          data-testid="settings-make-shared-toggle"
+          onClick={handleToggleShared}
+          title={isShared ? `Detach from shared component "${nodeShared?.name}"` : 'Mark as shared component'}
+          style={{
+            width: 32, height: 18, borderRadius: 9, border: 'none',
+            background: isShared ? '#1d4ed8' : '#374151',
+            cursor: 'pointer', position: 'relative', transition: 'background 150ms', flexShrink: 0,
+          }}
+        >
+          <span style={{
+            position: 'absolute', top: 2, left: isShared ? 16 : 2,
+            width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 150ms',
+          }} />
+        </button>
+      </div>
+
+      {/* ── Component Properties — shown when inside a _shared tree ──────── */}
+      {(() => {
+        const sharedRoot = findSharedRoot(store.pageNodes as SDUINode[], nodeId);
+        const sharedMeta = sharedRoot ? (sharedRoot as unknown as Record<string, unknown>)._shared as { id: string; name: string } | undefined : undefined;
+        if (!sharedMeta) return null;
+        const scModel = getSharedComponents()[sharedMeta.id];
+        if (!scModel || !scModel.properties?.length) return null;
+        const rootProps = (sharedRoot!.props ?? {}) as Record<string, unknown>;
+        return (
+          <div style={{ borderBottom: '1px solid #1f2937', overflow: 'hidden' }}>
+            <div style={{ padding: '6px 12px 2px', fontSize: 10, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <span style={{ fontSize: 9, color: '#60a5fa', background: '#1e3a5f', borderRadius: 3, padding: '1px 4px', fontWeight: 700 }}>SC</span>
+              Component Properties
+            </div>
+            {(scModel.properties as SharedComponentProperty[]).map(prop => {
+              const rawVal = rootProps[prop.name] ?? prop.defaultValue;
+              const patchProp = (v: unknown) => { if (sharedRoot?.id) store.patchProp(sharedRoot.id, `props.${prop.name}`, v); };
+              const isAny = prop.type === 'any';
+              const strVal = isAny ? (typeof rawVal === 'string' ? rawVal : (rawVal !== undefined ? JSON.stringify(rawVal, null, 2) : '')) : '';
+              return (
+                <SpecificRow
+                  key={prop.id}
+                  label={prop.name}
+                  fieldKey={`_sc_${prop.name}`}
+                  value={(rawVal as FormulaValue)}
+                  onChange={v => patchProp(v)}
+                  expectedType={isAny ? 'any' : prop.type === 'number' ? 'number' : prop.type === 'boolean' ? 'boolean' : 'string'}
+                >
+                  {isAny ? (
+                    <AnyPropEditor value={strVal} onChange={v => patchProp(v)} />
+                  ) : prop.type === 'boolean' ? (
+                    <div style={{ display: 'flex', border: '1px solid #374151', borderRadius: 6, overflow: 'hidden', width: 130, boxSizing: 'border-box' as const }}>
+                      {[{ label: 'On', val: true }, { label: 'Off', val: false }].map(({ label, val }) => {
+                        const active = (!!rawVal) === val;
+                        return (
+                          <button
+                            key={label}
+                            style={{ flex: 1, padding: '5px 0', background: active ? '#1f2937' : 'transparent', border: 'none', fontSize: 12, color: active ? '#f3f4f6' : '#6b7280', cursor: 'pointer', fontWeight: active ? 600 : 400 }}
+                            onClick={() => patchProp(val)}
+                          >{label}</button>
+                        );
+                      })}
+                    </div>
+                  ) : prop.type === 'color' ? (
+                    <div style={{ width: 130, boxSizing: 'border-box' as const }}>
+                      <FigmaColorPicker
+                        value={String(rawVal ?? '#000000')}
+                        onChange={c => patchProp(c)}
+                      />
+                    </div>
+                  ) : prop.type === 'number' ? (
+                    <input
+                      type="number"
+                      value={rawVal !== undefined ? Number(rawVal) : ''}
+                      onChange={e => patchProp(e.target.value === '' ? undefined : Number(e.target.value))}
+                      placeholder={String(prop.defaultValue ?? '')}
+                      style={{ width: 130, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', boxSizing: 'border-box' as const }}
+                    />
+                  ) : (
+                    <input
+                      value={String(rawVal ?? '')}
+                      onChange={e => patchProp(e.target.value)}
+                      placeholder={String(prop.defaultValue ?? '')}
+                      style={{ width: 130, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', boxSizing: 'border-box' as const }}
+                    />
+                  )}
+                </SpecificRow>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* ── "Specific" section header — only shown when there IS component-specific content ── */}
       {hasSpecific && (
@@ -1219,10 +1346,379 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
           )}
         </div>
       )}
+
+      {/* ── Popover section (all node types) ──────────────────────────── */}
+      <PopoverSection nodeId={nodeId} node={node} />
     </div>
   );
 }
 
+// ─── OpenVariable Picker (searchable, workflow-style) ─────────────────────────
+
+const OV_TYPE_COLOR: Record<string, string> = { string: '#fbbf24', number: '#60a5fa', boolean: '#34d399', object: '#a78bfa', array: '#fb923c' };
+
+function OpenVariablePicker({ value, customVars, onChange }: {
+  value: string | undefined;
+  customVars: Array<{ id?: string; name: string; label?: string; type: string }>;
+  onChange: (varId: string | undefined) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const boolVars = useMemo(() => customVars.filter(v => v.type === 'boolean'), [customVars]);
+  const filtered = useMemo(() => {
+    if (!search) return boolVars;
+    const q = search.toLowerCase();
+    return boolVars.filter(v => (v.label || v.name).toLowerCase().includes(q));
+  }, [boolVars, search]);
+
+  const selected = value ? boolVars.find(v => (v.id ?? v.name) === value) : null;
+  const isUnknown = !!value && !selected;
+
+  return (
+    <div style={{ fontSize: 10, color: '#6b7280', display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span>Control variable</span>
+        {value && (
+          <button
+            onClick={() => onChange(undefined)}
+            style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 9, cursor: 'pointer', textDecoration: 'underline' }}
+          >
+            unbind
+          </button>
+        )}
+      </div>
+      <div ref={ref} style={{ position: 'relative' }}>
+        <button
+          onClick={() => { setOpen(v => !v); setSearch(''); }}
+          style={{
+            width: '100%', textAlign: 'left', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4,
+            background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
+            color: '#f3f4f6', fontSize: 10, padding: '3px 6px',
+          }}
+        >
+          {selected ? (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1, minWidth: 0 }}>
+              <span style={{ fontSize: 8, color: OV_TYPE_COLOR.boolean, fontFamily: 'monospace',
+                background: 'rgba(255,255,255,0.07)', border: `1px solid ${OV_TYPE_COLOR.boolean}`,
+                borderRadius: 3, padding: '0 3px', flexShrink: 0 }}>bool</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {selected.label || selected.name}
+              </span>
+            </span>
+          ) : isUnknown ? (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1, minWidth: 0 }}>
+              <span style={{ fontSize: 8, color: '#f87171', fontFamily: 'monospace',
+                background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+                borderRadius: 3, padding: '0 3px', flexShrink: 0 }}>!</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#f87171' }}>
+                Unknown variable
+              </span>
+            </span>
+          ) : (
+            <span style={{ color: '#4b5563' }}>(none)</span>
+          )}
+          <span style={{ color: '#6b7280', fontSize: 9, flexShrink: 0 }}>{open ? '▴' : '▾'}</span>
+        </button>
+
+        {open && (
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+              background: '#111827', border: '1px solid #374151', borderRadius: 6,
+              marginTop: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+              maxHeight: 200, display: 'flex', flexDirection: 'column',
+            }}
+          >
+            <div style={{ padding: '5px 6px', borderBottom: '1px solid #1f2937' }}>
+              <input
+                autoFocus
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search boolean variables…"
+                style={{
+                  width: '100%', boxSizing: 'border-box', background: '#1f2937',
+                  border: '1px solid #374151', borderRadius: 4, color: '#d1d5db',
+                  fontSize: 10, padding: '3px 6px', outline: 'none',
+                }}
+              />
+            </div>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {/* None option */}
+              <button
+                onClick={() => { onChange(undefined); setOpen(false); setSearch(''); }}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px',
+                  background: !value ? '#1e3a5f' : 'none', border: 'none', cursor: 'pointer',
+                  color: !value ? '#93c5fd' : '#9ca3af', fontSize: 10, textAlign: 'left',
+                }}
+              >
+                (none)
+              </button>
+              {filtered.length === 0 && (
+                <div style={{ padding: '8px 10px', fontSize: 10, color: '#6b7280' }}>No boolean variables found</div>
+              )}
+              {filtered.map(v => {
+                const key = v.id ?? v.name;
+                const isActive = key === value;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => { onChange(key); setOpen(false); setSearch(''); }}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px',
+                      background: isActive ? '#1e3a5f' : 'none', border: 'none', cursor: 'pointer',
+                      color: isActive ? '#93c5fd' : '#d1d5db', fontSize: 10, textAlign: 'left',
+                    }}
+                  >
+                    <span style={{ fontSize: 8, color: OV_TYPE_COLOR.boolean, fontFamily: 'monospace',
+                      background: 'rgba(255,255,255,0.07)', border: `1px solid ${OV_TYPE_COLOR.boolean}`,
+                      borderRadius: 3, padding: '0 3px', flexShrink: 0 }}>bool</span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {v.label || v.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Popover Section ──────────────────────────────────────────────────────────
+
+const PLACEMENT_GRID: Array<{ placement: string; row: number; col: number }> = [
+  { placement: 'top-start',    row: 0, col: 0 },
+  { placement: 'top',          row: 0, col: 1 },
+  { placement: 'top-end',      row: 0, col: 2 },
+  { placement: 'left',         row: 1, col: 0 },
+  { placement: '',             row: 1, col: 1 },
+  { placement: 'right',        row: 1, col: 2 },
+  { placement: 'bottom-start', row: 2, col: 0 },
+  { placement: 'bottom',       row: 2, col: 1 },
+  { placement: 'bottom-end',   row: 2, col: 2 },
+];
+
+function PopoverSection({ nodeId, node }: { nodeId: string; node: SDUINode }) {
+  const store = useBuilderStore();
+  const [expanded, setExpanded] = useState(false);
+  const config = node.popover as PopoverConfig | undefined;
+  const hasConfig = !!config;
+  const pcChildren = ((node.children ?? []) as SDUINode[]).filter(c => c._popoverContent);
+  const contentCount = pcChildren.reduce((n, pc) => n + ((pc.children as SDUINode[] | undefined)?.length ?? 0), 0);
+  const shownKey = `popover:${nodeId}`;
+  const isShown = store.shownPopovers.has(shownKey);
+
+  const handleAdd = useCallback(() => {
+    const pcWrapper: SDUINode = {
+      type: 'Box' as SDUINode['type'],
+      id: crypto.randomUUID(),
+      _popoverContent: true,
+      props: { className: 'bg-white rounded-lg shadow-lg border border-gray-200 p-2' },
+      children: [{
+        type: 'Text' as SDUINode['type'],
+        id: crypto.randomUUID(),
+        text: 'Popover content',
+      }],
+    };
+    store.setPopoverConfig(nodeId, {
+      trigger: 'click',
+      placement: 'bottom-start',
+      offset: 4,
+      closeOnOutsideClick: true,
+      closeOnEscape: true,
+    });
+    store.addNode(pcWrapper, nodeId);
+    setExpanded(true);
+    if (!isShown) store.togglePopoverShown(nodeId);
+  }, [store, nodeId, isShown]);
+
+  const handleRemove = useCallback(() => {
+    if (!window.confirm('Remove Popover?')) return;
+    store.setPopoverConfig(nodeId, null);
+    const pcIds = pcChildren.map(c => c.id).filter(Boolean) as string[];
+    if (pcIds.length) store.deleteNodes(pcIds);
+    if (isShown) store.togglePopoverShown(nodeId);
+  }, [store, nodeId, isShown, pcChildren]);
+
+  const patchConfig = useCallback((key: string, value: unknown) => {
+    store.setPopoverConfig(nodeId, { ...(config ?? {}), [key]: value });
+  }, [store, nodeId, config]);
+
+  return (
+    <div style={{ borderBottom: '1px solid #1f2937' }}>
+      <div
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', cursor: 'pointer' }}
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 11, color: hasConfig ? '#60a5fa' : '#9ca3af', fontWeight: hasConfig ? 600 : 400 }}>Popover</span>
+          {hasConfig && <span style={{ fontSize: 9, color: '#3b82f6', background: '#1e3a5f', borderRadius: 3, padding: '1px 5px' }}>{contentCount} node{contentCount !== 1 ? 's' : ''}</span>}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {hasConfig && (
+            <button
+              title={isShown ? 'Hide on canvas' : 'Show on canvas'}
+              onClick={e => { e.stopPropagation(); store.togglePopoverShown(nodeId); }}
+              style={{
+                background: isShown ? '#1e3a5f' : 'transparent',
+                border: `1px solid ${isShown ? '#3b82f6' : '#374151'}`,
+                borderRadius: 4, padding: '2px 6px', cursor: 'pointer', color: isShown ? '#60a5fa' : '#6b7280', fontSize: 10,
+              }}
+            >
+              {isShown ? 'Showing' : 'Show'}
+            </button>
+          )}
+          <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </div>
+      </div>
+
+      {expanded && (
+        <div style={{ padding: '0 12px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {!hasConfig ? (
+            <button
+              onClick={handleAdd}
+              style={{ width: '100%', padding: '6px 0', background: '#1e293b', border: '1px solid #374151', borderRadius: 4, color: '#d1d5db', fontSize: 11, cursor: 'pointer' }}
+            >
+              + Add Popover
+            </button>
+          ) : (
+            <>
+              {/* Trigger */}
+              <SettingsRow label="Trigger">
+                <select
+                  value={(config?.trigger as string) || 'click'}
+                  onChange={e => patchConfig('trigger', e.target.value)}
+                  style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 10, padding: '2px 4px' }}
+                >
+                  <option value="click">Click</option>
+                  <option value="hover">Hover</option>
+                </select>
+              </SettingsRow>
+
+              {/* Placement — 3x3 dot matrix */}
+              <div>
+                <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 3 }}>Placement</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, width: 72 }}>
+                  {PLACEMENT_GRID.map(({ placement, row, col }) => {
+                    const isCenter = row === 1 && col === 1;
+                    const isActive = !isCenter && config?.placement === placement;
+                    const dotV = (['flex-start', 'center', 'flex-end'] as const)[row];
+                    const dotH = (['flex-start', 'center', 'flex-end'] as const)[col];
+                    return (
+                      <div
+                        key={`${row}-${col}`}
+                        onClick={isCenter ? undefined : () => patchConfig('placement', placement)}
+                        style={{
+                          width: 20, height: 20,
+                          background: isCenter ? '#0f172a' : isActive ? '#3b82f6' : '#1f2937',
+                          border: `1px solid ${isCenter ? '#1e293b' : isActive ? '#3b82f6' : '#374151'}`,
+                          borderRadius: 3,
+                          cursor: isCenter ? 'default' : 'pointer',
+                          display: 'flex', alignItems: dotV, justifyContent: dotH,
+                          padding: 3,
+                        }}
+                      >
+                        <div style={{
+                          width: isCenter ? 8 : 4, height: isCenter ? 8 : 4,
+                          borderRadius: isCenter ? 2 : '50%', flexShrink: 0,
+                          background: isCenter ? '#374151' : isActive ? 'rgba(255,255,255,0.9)' : '#4b5563',
+                        }} />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Offset */}
+              <SettingsRow label="Offset">
+                <input
+                  type="number"
+                  value={(config?.offset as number) ?? 4}
+                  onChange={e => patchConfig('offset', Number(e.target.value))}
+                  style={{ width: 48, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 10, padding: '2px 4px', textAlign: 'right' as const }}
+                />
+              </SettingsRow>
+
+              {/* Options */}
+              <SettingsRow label="Match width">
+                <input type="checkbox" checked={!!config?.matchTriggerWidth} onChange={e => patchConfig('matchTriggerWidth', e.target.checked)} />
+              </SettingsRow>
+              <SettingsRow label="Close on outside">
+                <input type="checkbox" checked={config?.closeOnOutsideClick !== false} onChange={e => patchConfig('closeOnOutsideClick', e.target.checked)} />
+              </SettingsRow>
+              <SettingsRow label="Close on Escape">
+                <input type="checkbox" checked={config?.closeOnEscape !== false} onChange={e => patchConfig('closeOnEscape', e.target.checked)} />
+              </SettingsRow>
+
+              {/* Control variable — programmatic open/close */}
+              <OpenVariablePicker
+                value={config?.openVariable}
+                customVars={store.customVars}
+                onChange={varId => {
+                  if (varId) patchConfig('openVariable', varId);
+                  else {
+                    const next = { ...(config ?? {}) };
+                    delete (next as Record<string, unknown>).openVariable;
+                    store.setPopoverConfig(nodeId, next);
+                  }
+                }}
+              />
+
+              {/* Content summary */}
+              <div style={{ fontSize: 10, color: '#6b7280', paddingTop: 4 }}>
+                {contentCount} content node{contentCount !== 1 ? 's' : ''}
+                {contentCount === 0 && pcChildren.length === 0 && (
+                  <button
+                    onClick={() => {
+                      const pcWrapper: SDUINode = {
+                        type: 'Box' as SDUINode['type'],
+                        id: crypto.randomUUID(),
+                        _popoverContent: true,
+                        props: { className: 'p-2' },
+                        children: [],
+                      };
+                      store.addNode(pcWrapper, nodeId);
+                    }}
+                    style={{ marginLeft: 6, fontSize: 10, color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    + Add container
+                  </button>
+                )}
+              </div>
+
+              {/* Remove */}
+              <button
+                onClick={handleRemove}
+                style={{ width: '100%', padding: '4px 0', background: 'transparent', border: '1px solid #7f1d1d', borderRadius: 4, color: '#ef4444', fontSize: 10, cursor: 'pointer', marginTop: 2 }}
+              >
+                Remove Popover
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── Align / Distribute Panel ─────────────────────────────────────────────────
 

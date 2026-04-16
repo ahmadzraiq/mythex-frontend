@@ -1,112 +1,192 @@
 {
-  "meta": {
-    "title": "Shared Component Test"
-  },
-  "layout": "store",
-  "content": {
+  "meta": { "title": "Shared Component Test" },
+  "state": {},
+  "ui": {
     "type": "Box",
-    "props": {
-      "className": "w-full max-w-3xl mx-auto px-[16px] py-[40px] flex flex-col gap-[32px]"
-    },
+    "props": { "className": "w-full min-h-screen bg-gray-50 dark:bg-gray-950" },
     "children": [
+
       {
         "type": "Box",
-        "props": {
-          "className": "flex flex-col gap-[4px]"
-        },
+        "props": { "className": "max-w-[960px] mx-auto flex flex-col gap-[40px] py-[40px] px-[24px]" },
         "children": [
           {
             "type": "Heading",
-            "props": {
-              "size": "2xl",
-              "className": "font-bold text-gray-900 dark:text-gray-100"
-            },
-            "text": "Shared Component System"
+            "props": { "size": "2xl", "className": "font-bold text-gray-900 dark:text-white" },
+            "text": "Shared Component Test Page"
           },
-          {
-            "type": "Text",
-            "props": {
-              "className": "text-[14px] text-gray-500 dark:text-gray-400"
-            },
-            "text": "A shared component is defined once and placed as instances anywhere on any page. Each instance can pass its own prop values via context.component.props."
-          }
-        ]
-      },
-      {
-        "type": "Box",
-        "props": {
-          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden"
-        },
-        "children": [
+
           {
             "type": "Box",
-            "props": {
-              "className": "px-[20px] py-[16px] border-b border-gray-100 dark:border-gray-800 flex flex-row items-center gap-[8px]"
-            },
+            "props": { "className": "flex flex-col gap-[16px]" },
             "children": [
               {
-                "type": "Icon",
-                "props": {
-                  "icon": "lucide:badge-check",
-                  "size": 15,
-                  "color": "#22c55e"
-                }
+                "type": "Heading",
+                "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-200" },
+                "text": "Section A — Visibility-Based Overlays"
               },
               {
                 "type": "Text",
-                "props": {
-                  "className": "text-[14px] font-semibold text-gray-900 dark:text-white"
-                },
-                "text": "Status Badge Component — Three Instances"
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "p-[20px] flex flex-col gap-[16px]"
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[13px] text-gray-500 dark:text-gray-400"
-                },
-                "text": "Each badge instance passes different label and status props, all rendered from the same sc-status-badge shared component definition."
+                "props": { "className": "text-[14px] text-gray-500 dark:text-gray-400" },
+                "text": "These overlays are placed on the page and controlled by a boolean variable. The backdrop and close button both set the variable to false."
               },
               {
                 "type": "Box",
-                "props": {
-                  "className": "flex flex-row flex-wrap gap-[12px] items-center",
-                  "data-testid": "badge-row"
-                },
+                "props": { "className": "flex flex-row flex-wrap gap-[12px]" },
                 "children": [
                   {
-                    "type": "SharedComponent",
-                    "props": {
-                      "componentId": "sc-status-badge",
-                      "label": "Published",
-                      "status": "active",
-                      "data-testid": "badge-instance-1"
-                    }
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center justify-center px-[20px] py-[10px] rounded-[8px] bg-[#6366f1] cursor-pointer hover:opacity-90 active:opacity-70" },
+                    "actions": [{ "action": "toggleTestModal" }],
+                    "children": [{ "type": "Text", "props": { "className": "text-[14px] font-semibold text-white" }, "text": "Show Modal" }]
                   },
                   {
-                    "type": "SharedComponent",
-                    "props": {
-                      "componentId": "sc-status-badge",
-                      "label": "Draft",
-                      "status": "draft",
-                      "data-testid": "badge-instance-2"
-                    }
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center justify-center px-[20px] py-[10px] rounded-[8px] bg-[#6366f1] cursor-pointer hover:opacity-90 active:opacity-70" },
+                    "actions": [{ "action": "toggleTestBottomSheet" }],
+                    "children": [{ "type": "Text", "props": { "className": "text-[14px] font-semibold text-white" }, "text": "Show Bottom Sheet" }]
                   },
                   {
-                    "type": "SharedComponent",
-                    "props": {
-                      "componentId": "sc-status-badge",
-                      "label": "Archived",
-                      "status": "archived",
-                      "data-testid": "badge-instance-3"
-                    }
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center justify-center px-[20px] py-[10px] rounded-[8px] bg-[#6366f1] cursor-pointer hover:opacity-90 active:opacity-70" },
+                    "actions": [{ "action": "toggleTestDrawer" }],
+                    "children": [{ "type": "Text", "props": { "className": "text-[14px] font-semibold text-white" }, "text": "Show Drawer" }]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center justify-center px-[20px] py-[10px] rounded-[8px] bg-[#6366f1] cursor-pointer hover:opacity-90 active:opacity-70" },
+                    "actions": [{ "action": "toggleTestToast" }],
+                    "children": [{ "type": "Text", "props": { "className": "text-[14px] font-semibold text-white" }, "text": "Show Toast" }]
+                  }
+                ]
+              }
+            ]
+          },
+
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[16px]" },
+            "children": [
+              {
+                "type": "Heading",
+                "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-200" },
+                "text": "Section B — Dynamic Shared Component Overlays"
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-[14px] text-gray-500 dark:text-gray-400" },
+                "text": "These add a shared component instance dynamically at runtime. The shared component's close button uses the closeDynamicOverlay action (deleteSharedComponent)."
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row flex-wrap gap-[12px]" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center justify-center px-[20px] py-[10px] rounded-[8px] bg-[#4f46e5] cursor-pointer hover:opacity-90 active:opacity-70" },
+                    "actions": [{ "action": "addDynamicModal" }],
+                    "children": [{ "type": "Text", "props": { "className": "text-[14px] font-semibold text-white" }, "text": "Add Dynamic Modal" }]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center justify-center px-[20px] py-[10px] rounded-[8px] bg-[#4f46e5] cursor-pointer hover:opacity-90 active:opacity-70" },
+                    "actions": [{ "action": "addDynamicBottomSheet" }],
+                    "children": [{ "type": "Text", "props": { "className": "text-[14px] font-semibold text-white" }, "text": "Add Dynamic Bottom Sheet" }]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center justify-center px-[20px] py-[10px] rounded-[8px] bg-[#4f46e5] cursor-pointer hover:opacity-90 active:opacity-70" },
+                    "actions": [{ "action": "addDynamicDrawer" }],
+                    "children": [{ "type": "Text", "props": { "className": "text-[14px] font-semibold text-white" }, "text": "Add Dynamic Drawer" }]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center justify-center px-[20px] py-[10px] rounded-[8px] bg-[#4f46e5] cursor-pointer hover:opacity-90 active:opacity-70" },
+                    "actions": [{ "action": "addDynamicToast" }],
+                    "children": [{ "type": "Text", "props": { "className": "text-[14px] font-semibold text-white" }, "text": "Add Dynamic Toast (auto-dismiss)" }]
+                  }
+                ]
+              }
+            ]
+          },
+
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[16px]" },
+            "children": [
+              {
+                "type": "Heading",
+                "props": { "size": "lg", "className": "font-semibold text-gray-800 dark:text-gray-200" },
+                "text": "Section C — Existing Shared Component Examples"
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-[14px] text-gray-500 dark:text-gray-400" },
+                "text": "These demonstrate property overrides on static shared component instances."
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row flex-wrap gap-[16px] items-start" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": { "className": "inline-flex flex-row items-center gap-[6px] px-[10px] py-[4px] rounded-[9999px] bg-green-100 dark:bg-green-900/30" },
+                    "children": [
+                      { "type": "Box", "props": { "className": "w-[6px] h-[6px] rounded-[9999px] bg-green-500" } },
+                      { "type": "Text", "props": { "className": "text-[11px] font-semibold text-green-700 dark:text-green-300" }, "text": "Active" }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "inline-flex flex-row items-center gap-[6px] px-[10px] py-[4px] rounded-[9999px] bg-gray-100 dark:bg-gray-800" },
+                    "children": [
+                      { "type": "Box", "props": { "className": "w-[6px] h-[6px] rounded-[9999px] bg-gray-400" } },
+                      { "type": "Text", "props": { "className": "text-[11px] font-semibold text-gray-500 dark:text-gray-400" }, "text": "Paused" }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "inline-flex flex-row items-center justify-center gap-[8px] px-[20px] py-[10px] rounded-[8px] bg-[#6366f1] hover:opacity-80 cursor-pointer" },
+                    "children": [
+                      { "type": "Text", "props": { "className": "text-[14px] font-semibold text-white" }, "text": "Learn More" },
+                      { "type": "Icon", "props": { "icon": "lucide:arrow-right", "size": 14, "color": "#ffffff" } }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-[16px] mt-[8px]" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": { "className": "max-w-[400px] w-full rounded-[12px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden" },
+                    "children": [
+                      { "type": "Box", "props": { "className": "h-[4px]", "style": { "backgroundColor": "#6366f1" } } },
+                      {
+                        "type": "Box",
+                        "props": { "className": "px-[20px] py-[16px] flex flex-col gap-[8px]" },
+                        "children": [
+                          { "type": "Text", "props": { "className": "text-[15px] font-semibold text-gray-900 dark:text-white" }, "text": "Default Accent Card" },
+                          { "type": "Text", "props": { "className": "text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed" }, "text": "Uses a purple accent bar. This could be a shared component with the accent as a property." }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "max-w-[400px] w-full rounded-[12px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden" },
+                    "children": [
+                      { "type": "Box", "props": { "className": "h-[4px]", "style": { "backgroundColor": "#22c55e" } } },
+                      {
+                        "type": "Box",
+                        "props": { "className": "px-[20px] py-[16px] flex flex-col gap-[8px]" },
+                        "children": [
+                          { "type": "Text", "props": { "className": "text-[15px] font-semibold text-gray-900 dark:text-white" }, "text": "Green Accent Card" },
+                          { "type": "Text", "props": { "className": "text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed" }, "text": "Same structure with a green accent, demonstrating property overrides on shared instances." }
+                        ]
+                      }
+                    ]
                   }
                 ]
               }
@@ -114,84 +194,45 @@
           }
         ]
       },
+
       {
         "type": "Box",
-        "props": {
-          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden"
-        },
+        "condition": "variables?.['sct-modal-0000-0000-0000-000000000001']",
+        "props": { "className": "fixed inset-0 z-[50] flex items-center justify-center" },
         "children": [
           {
             "type": "Box",
-            "props": {
-              "className": "px-[20px] py-[16px] border-b border-gray-100 dark:border-gray-800 flex flex-row items-center gap-[8px]"
-            },
-            "children": [
-              {
-                "type": "Icon",
-                "props": {
-                  "icon": "lucide:layout-template",
-                  "size": 15,
-                  "color": "#6366f1"
-                }
-              },
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[14px] font-semibold text-gray-900 dark:text-white"
-                },
-                "text": "Info Card Component — Three Instances"
-              }
-            ]
+            "props": { "className": "fixed inset-0 bg-black/50 cursor-pointer" },
+            "actions": [{ "action": "hideTestModal" }]
           },
           {
             "type": "Box",
-            "props": {
-              "className": "p-[20px] flex flex-col gap-[16px]"
-            },
+          "props": { "className": "relative z-[1] w-[480px] max-w-[90vw] bg-white dark:bg-gray-900 rounded-[12px] p-[24px] flex flex-col gap-[16px]", "animation": { "enter": { "type": "zoomIn", "duration": 200 }, "exit": { "type": "zoomOut", "duration": 160 } } },
+          "actions": [{ "type": "stopPropagation" }],
             "children": [
               {
-                "type": "Text",
-                "props": {
-                  "className": "text-[13px] text-gray-500 dark:text-gray-400"
-                },
-                "text": "Each card passes a different title, description, and accent color. The shared component definition renders context.component.props.title etc."
+                "type": "Box",
+                "props": { "className": "flex flex-row items-center justify-between" },
+                "children": [
+                  { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-gray-900 dark:text-white" }, "text": "Visibility Modal" },
+                  {
+                    "type": "Box",
+                    "props": { "className": "cursor-pointer p-[4px] rounded-[4px] hover:bg-gray-100 dark:hover:bg-gray-800" },
+                    "actions": [{ "action": "hideTestModal" }],
+                    "children": [{ "type": "Icon", "props": { "icon": "lucide:x", "size": 18, "color": "#6b7280" } }]
+                  }
+                ]
               },
+              { "type": "Text", "props": { "className": "text-[14px] text-gray-600 dark:text-gray-300" }, "text": "This modal is controlled by a boolean variable. Click the backdrop or Close to dismiss." },
               {
                 "type": "Box",
-                "props": {
-                  "className": "flex flex-col gap-[12px]",
-                  "data-testid": "card-section"
-                },
+                "props": { "className": "flex flex-row justify-end gap-[8px] pt-[8px]" },
                 "children": [
                   {
-                    "type": "SharedComponent",
-                    "props": {
-                      "componentId": "sc-info-card",
-                      "title": "Getting Started",
-                      "description": "Learn the basics of the shared component system. Define once, reuse everywhere.",
-                      "accent": "#6366f1",
-                      "data-testid": "info-card-1"
-                    }
-                  },
-                  {
-                    "type": "SharedComponent",
-                    "props": {
-                      "componentId": "sc-info-card",
-                      "title": "Prop Passing",
-                      "description": "Instance props override the component's default values at render time.",
-                      "accent": "#f59e0b",
-                      "data-testid": "info-card-2"
-                    }
-                  },
-                  {
-                    "type": "SharedComponent",
-                    "props": {
-                      "componentId": "sc-info-card",
-                      "title": "No Duplication",
-                      "description": "The component tree is defined once in shared-components.json. Updates propagate to every instance automatically.",
-                      "accent": "#22c55e",
-                      "data-testid": "info-card-3"
-                    }
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center justify-center px-[16px] py-[8px] rounded-[8px] bg-gray-200 dark:bg-gray-700 cursor-pointer hover:opacity-90" },
+                    "actions": [{ "action": "hideTestModal" }],
+                    "children": [{ "type": "Text", "props": { "className": "text-[14px] font-medium text-gray-800 dark:text-gray-200" }, "text": "Close" }]
                   }
                 ]
               }
@@ -199,69 +240,34 @@
           }
         ]
       },
+
       {
         "type": "Box",
-        "props": {
-          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden"
-        },
+        "condition": "variables?.['sct-bsheet-000-0000-0000-000000000002']",
+        "props": { "className": "fixed inset-0 z-[50] flex flex-col justify-end" },
         "children": [
           {
             "type": "Box",
-            "props": {
-              "className": "px-[20px] py-[16px] border-b border-gray-100 dark:border-gray-800 flex flex-row items-center gap-[8px]"
-            },
-            "children": [
-              {
-                "type": "Icon",
-                "props": {
-                  "icon": "lucide:mouse-pointer-click",
-                  "size": 15,
-                  "color": "#f59e0b"
-                }
-              },
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[14px] font-semibold text-gray-900 dark:text-white"
-                },
-                "text": "CTA Button Component — Default Props Fallback"
-              }
-            ]
+            "props": { "className": "fixed inset-0 bg-black/50 cursor-pointer" },
+            "actions": [{ "action": "hideTestBottomSheet" }]
           },
           {
             "type": "Box",
-            "props": {
-              "className": "p-[20px] flex flex-col gap-[16px]"
-            },
+          "props": { "className": "relative z-[1] w-full max-h-[70vh] bg-white dark:bg-gray-900 rounded-t-[16px] p-[24px] flex flex-col gap-[16px]", "animation": { "enter": { "type": "slideInUp", "duration": 300 }, "exit": { "type": "slideOutDown", "to": { "translateY": 800, "opacity": 1 }, "duration": 260 } } },
+          "actions": [{ "type": "stopPropagation" }],
             "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[13px] text-gray-500 dark:text-gray-400"
-                },
-                "text": "The first button overrides buttonText. The second passes no props — falling back to the component's defaultValue (\"Get Started\")."
-              },
+              { "type": "Box", "props": { "className": "flex justify-center" }, "children": [{ "type": "Box", "props": { "className": "w-[40px] h-[4px] rounded-full bg-gray-300 dark:bg-gray-600" } }] },
+              { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-gray-900 dark:text-white" }, "text": "Visibility Bottom Sheet" },
+              { "type": "Text", "props": { "className": "text-[14px] text-gray-600 dark:text-gray-300" }, "text": "This bottom sheet is controlled by a boolean variable. Tap the backdrop or Dismiss to close." },
               {
                 "type": "Box",
-                "props": {
-                  "className": "flex flex-row flex-wrap gap-[12px]",
-                  "data-testid": "cta-row"
-                },
+                "props": { "className": "flex flex-row justify-end" },
                 "children": [
                   {
-                    "type": "SharedComponent",
-                    "props": {
-                      "componentId": "sc-cta-button",
-                      "buttonText": "Sign Up Free",
-                      "data-testid": "cta-instance-custom"
-                    }
-                  },
-                  {
-                    "type": "SharedComponent",
-                    "props": {
-                      "componentId": "sc-cta-button",
-                      "data-testid": "cta-instance-default"
-                    }
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center justify-center px-[16px] py-[8px] rounded-[8px] bg-gray-200 dark:bg-gray-700 cursor-pointer hover:opacity-90" },
+                    "actions": [{ "action": "hideTestBottomSheet" }],
+                    "children": [{ "type": "Text", "props": { "className": "text-[14px] font-medium text-gray-800 dark:text-gray-200" }, "text": "Dismiss" }]
                   }
                 ]
               }
@@ -269,35 +275,69 @@
           }
         ]
       },
+
       {
         "type": "Box",
-        "props": {
-          "className": "bg-gray-50 dark:bg-gray-800/50 rounded-[12px] p-[16px] flex flex-col gap-[8px]"
-        },
+        "condition": "variables?.['sct-drawer-000-0000-0000-000000000003']",
+        "props": { "className": "fixed inset-0 z-[50]" },
         "children": [
           {
-            "type": "Text",
-            "props": {
-              "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
-            },
-            "text": "Unknown component fallback"
+            "type": "Box",
+            "props": { "className": "absolute inset-0 bg-black/50 cursor-pointer" },
+            "actions": [{ "action": "hideTestDrawer" }]
           },
           {
-            "type": "Text",
-            "props": {
-              "className": "text-[13px] text-gray-500 dark:text-gray-400"
-            },
-            "text": "The next element uses an unknown componentId — the renderer shows a red error boundary in dev mode."
+            "type": "Box",
+            "props": { "className": "absolute top-0 left-0 bottom-0 w-[80vw] max-w-[380px] bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px] z-[1]", "animation": { "enter": { "type": "slideInLeft", "from": { "translateX": -800, "opacity": 1 }, "duration": 320 }, "exit": { "type": "slideOutLeft", "to": { "translateX": -800, "opacity": 1 }, "duration": 280 } } },
+            "actions": [{ "type": "stopPropagation" }],
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row items-center justify-between" },
+                "children": [
+                  { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-gray-900 dark:text-white" }, "text": "Visibility Drawer" },
+                  {
+                    "type": "Box",
+                    "props": { "className": "cursor-pointer p-[4px] rounded-[4px] hover:bg-gray-100 dark:hover:bg-gray-800" },
+                    "actions": [{ "action": "hideTestDrawer" }],
+                    "children": [{ "type": "Icon", "props": { "icon": "lucide:x", "size": 18, "color": "#6b7280" } }]
+                  }
+                ]
+              },
+              { "type": "Text", "props": { "className": "text-[14px] text-gray-600 dark:text-gray-300" }, "text": "This drawer is controlled by a boolean variable. Click the backdrop or X to close." }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "condition": "variables?.['sct-toast-0000-0000-0000-000000000004']",
+        "props": {
+          "className": "fixed top-[16px] right-[16px] z-[60] w-[360px] bg-white dark:bg-gray-900 rounded-[8px] p-[16px] border border-gray-200 dark:border-gray-700 flex flex-row items-start gap-[12px]",
+          "style": { "boxShadow": "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)" },
+          "animation": { "enter": { "type": "slideInRight", "duration": 200 }, "exit": { "type": "slideOutRight", "to": { "translateX": 800, "opacity": 1 }, "duration": 180 } }
+        },
+        "actions": [{ "type": "stopPropagation" }],
+        "children": [
+          { "type": "Icon", "props": { "icon": "lucide:check-circle", "size": 20, "color": "#22c55e" } },
+          {
+            "type": "Box",
+            "props": { "className": "flex-1 flex flex-col gap-[2px]" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-[14px] font-semibold text-gray-900 dark:text-white" }, "text": "Visibility Toast" },
+              { "type": "Text", "props": { "className": "text-[12px] text-gray-500 dark:text-gray-400" }, "text": "Click the X to dismiss." }
+            ]
           },
           {
-            "type": "SharedComponent",
-            "props": {
-              "componentId": "sc-does-not-exist",
-              "data-testid": "unknown-component"
-            }
+            "type": "Box",
+            "props": { "className": "cursor-pointer p-[2px]" },
+            "actions": [{ "action": "hideTestToast" }],
+            "children": [{ "type": "Icon", "props": { "icon": "lucide:x", "size": 16, "color": "#9ca3af" } }]
           }
         ]
       }
+
     ]
   }
 }

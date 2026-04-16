@@ -132,12 +132,6 @@
       "layout": "full"
     },
     {
-      "path": "/popup-test",
-      "config": "popupTest",
-      "auth": false,
-      "layout": "full"
-    },
-    {
       "path": "/hero-showcase",
       "config": "heroShowcase",
       "auth": false,
@@ -278,6 +272,84 @@
     {
       "path": "/shared-component-test",
       "config": "sharedComponentTest",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/navbar-types",
+      "config": "navbarTypes",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/navbar-fixed",
+      "config": "navbarFixed",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/navbar-sticky",
+      "config": "navbarSticky",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/navbar-transparent",
+      "config": "navbarTransparent",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/navbar-blur",
+      "config": "navbarBlur",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/navbar-floating",
+      "config": "navbarFloating",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/navbar-centered",
+      "config": "navbarCentered",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/navbar-sidebar",
+      "config": "navbarSidebar",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/navbar-bottom",
+      "config": "navbarBottom",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/navbar-scroll-aware",
+      "config": "navbarScrollAware",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/popover-test",
+      "config": "popoverTest",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/animation-showcase",
+      "config": "animationShowcase",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/query-params-test",
+      "config": "queryParamsTest",
       "auth": false,
       "layout": "full"
     }

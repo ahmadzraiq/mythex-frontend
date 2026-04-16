@@ -5,7 +5,7 @@
  * All mutations live entirely in memory — no server or file-system involved.
  * Changes are lost on page reload (dev-tool behaviour).
  *
- * Mirrors the pattern established by lib/builder/popup-data.ts.
+ * In-memory store for shared component models used by the builder.
  */
 
 import initialData from '@/config/shared-components.json';
