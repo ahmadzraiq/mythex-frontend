@@ -6,7 +6,421 @@
     },
     "children": [
       {
-        "$ref": "fragments/layout/navbar"
+        "type": "Box",
+        "id": "navbar-root",
+        "_shared": {
+          "id": "sc-navbar",
+          "name": "Navbar"
+        },
+        "props": {
+          "className": "fixed top-0 left-0 right-0 z-[50] border-b border-[var(--theme-border)] bg-[var(--theme-background)] w-full"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "id": "navbar-inner",
+            "props": {
+              "className": "w-full max-w-screen-xl mx-auto px-[16px]"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "id": "navbar-row",
+                "props": {
+                  "className": "w-full flex flex-row items-center justify-between h-[64px]"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "id": "navbar-left",
+                    "props": {
+                      "className": "flex flex-row items-center gap-[24px]"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "id": "navbar-logo",
+                        "actions": [
+                          {
+                            "action": "9e33ef0a-706f-4555-b2ee-60fd95ebf416"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Image",
+                            "id": "navbar-logo-image",
+                            "props": {
+                              "src": "/vendure.svg",
+                              "alt": "Vendure",
+                              "width": 36,
+                              "height": 24,
+                              "className": "h-[20px] w-auto dark:invert"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "id": "navbar-collections",
+                        "props": {
+                          "className": "hidden md:flex flex-row items-center gap-[4px]"
+                        },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "map": "collections.a7b8c9d0-e1f2-3456-abcd-567890123456.data.collections.items",
+                            "key": "navCollection",
+                            "props": {
+                              "className": "contents"
+                            },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "props": {
+                                  "className": "px-[8px] py-[6px] rounded-[4px] text-[14px] hover:bg-[var(--theme-card-foreground)]/10 text-[var(--theme-foreground)]"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "7ae5e4b1-51c4-4266-b001-971a30296623"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[14px] font-medium text-[var(--theme-foreground)]"
+                                    },
+                                    "text": "{{context.item.data.name}}"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "id": "navbar-right",
+                    "props": {
+                      "className": "flex flex-row items-center gap-[8px]"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "id": "navbar-search",
+                        "props": {
+                          "className": "hidden"
+                        },
+                        "children": []
+                      },
+                      {
+                        "type": "Box",
+                        "id": "navbar-actions",
+                        "props": {
+                          "className": "flex flex-row items-center gap-[4px]"
+                        },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "id": "navbar-theme",
+                            "props": {
+                              "className": "relative"
+                            },
+                            "popover": {
+                              "trigger": "click",
+                              "placement": "bottom-end",
+                              "openVariable": "e4f5a6b7-c8d9-0123-efab-234567890123"
+                            },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "id": "navbar-theme-button",
+                                "props": {
+                                  "className": "inline-flex items-center justify-center h-[32px] w-[32px] rounded-[4px] hover:bg-[var(--theme-card-foreground)]/10"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Icon",
+                                    "props": {
+                                      "icon": "lucide:sun",
+                                      "size": 18,
+                                      "className": "text-[var(--theme-foreground)]"
+                                    },
+                                    "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] === 'dark'"
+                                  },
+                                  {
+                                    "type": "Icon",
+                                    "props": {
+                                      "icon": "lucide:moon",
+                                      "size": 18,
+                                      "className": "text-[var(--theme-foreground)]"
+                                    },
+                                    "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] !== 'dark'"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Box",
+                                "_popoverContent": true,
+                                "props": {
+                                  "className": "w-[144px] rounded-[6px] border-[1px] border-[var(--border)] bg-[var(--theme-card)] shadow-md py-[4px]"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Box",
+                                    "props": {
+                                      "className": "w-full flex flex-row items-center gap-[8px] px-[12px] py-[8px] hover:bg-[var(--theme-card-foreground)]/10"
+                                    },
+                                    "actions": [
+                                      {
+                                        "action": "6e3af5bc-85bf-491e-984e-55faa5e975f9"
+                                      }
+                                    ],
+                                    "children": [
+                                      {
+                                        "type": "Icon",
+                                        "props": {
+                                          "icon": "lucide:sun",
+                                          "size": 16,
+                                          "className": "text-[var(--theme-foreground)]"
+                                        }
+                                      },
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "flex-1 text-left text-[14px] text-[var(--theme-foreground)]"
+                                        },
+                                        "text": "Light"
+                                      },
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[12px] text-[var(--theme-muted-foreground)]"
+                                        },
+                                        "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] === 'light'",
+                                        "text": "✓"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "props": {
+                                      "className": "w-full flex flex-row items-center gap-[8px] px-[12px] py-[8px] hover:bg-[var(--theme-card-foreground)]/10"
+                                    },
+                                    "actions": [
+                                      {
+                                        "action": "36658639-6572-46b6-b296-8a92ab9592b2"
+                                      }
+                                    ],
+                                    "children": [
+                                      {
+                                        "type": "Icon",
+                                        "props": {
+                                          "icon": "lucide:moon",
+                                          "size": 16,
+                                          "className": "text-[var(--theme-foreground)]"
+                                        }
+                                      },
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "flex-1 text-left text-[14px] text-[var(--theme-foreground)]"
+                                        },
+                                        "text": "Dark"
+                                      },
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[12px] text-[var(--theme-muted-foreground)]"
+                                        },
+                                        "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] === 'dark'",
+                                        "text": "✓"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "props": {
+                                      "className": "w-full flex flex-row items-center gap-[8px] px-[12px] py-[8px] hover:bg-[var(--theme-card-foreground)]/10"
+                                    },
+                                    "actions": [
+                                      {
+                                        "action": "05784685-1412-4e52-81d7-026aa7a40663"
+                                      }
+                                    ],
+                                    "children": [
+                                      {
+                                        "type": "Icon",
+                                        "props": {
+                                          "icon": "lucide:monitor",
+                                          "size": 16,
+                                          "className": "text-[var(--theme-foreground)]"
+                                        }
+                                      },
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "flex-1 text-left text-[14px] text-[var(--theme-foreground)]"
+                                        },
+                                        "text": "System"
+                                      },
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[12px] text-[var(--theme-muted-foreground)]"
+                                        },
+                                        "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] === 'system'",
+                                        "text": "✓"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "id": "navbar-cart",
+                            "props": {},
+                            "children": [
+                              {
+                                "type": "Box",
+                                "id": "navbar-cart-button",
+                                "props": {
+                                  "className": "relative inline-flex items-center justify-center h-[32px] w-[32px] rounded-[4px] hover:bg-[var(--theme-card-foreground)]/10"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "398b94ec-901a-49c6-b19d-198854cefd07"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Icon",
+                                    "props": {
+                                      "icon": "lucide:shopping-bag",
+                                      "size": 18,
+                                      "className": "text-[var(--theme-foreground)]"
+                                    }
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "id": "navbar-cart-badge",
+                                    "props": {
+                                      "className": "absolute -top-[2px] -right-[2px] h-[14px] w-[14px] rounded-[9999px] bg-[var(--theme-primary)] flex items-center justify-center pointer-events-none"
+                                    },
+                                    "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity > 0",
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[var(--theme-primary-foreground)] text-[9px] font-bold"
+                                        },
+                                        "text": "{{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.totalQuantity}}"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "id": "navbar-auth",
+                            "props": {},
+                            "children": [
+                              {
+                                "type": "Box",
+                                "id": "navbar-sign-in",
+                                "props": {
+                                  "className": "inline-flex flex-row items-center h-[32px] px-[8px] rounded-[4px] hover:bg-[var(--theme-card-foreground)]/10"
+                                },
+                                "condition": "!auth?.user",
+                                "actions": [
+                                  {
+                                    "action": "3517ed88-9e35-42fd-8d44-650cb590d210"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[14px] font-medium text-[var(--theme-foreground)]"
+                                    },
+                                    "text": "Sign in"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Box",
+                                "props": {
+                                  "className": "flex flex-row items-center gap-[4px]"
+                                },
+                                "condition": "auth?.user",
+                                "children": [
+                                  {
+                                    "type": "Box",
+                                    "props": {
+                                      "className": "inline-flex flex-row items-center gap-[6px] h-[32px] px-[8px] rounded-[4px] hover:bg-[var(--theme-muted)]"
+                                    },
+                                    "actions": [
+                                      {
+                                        "action": "d5d15a7d-ea78-467a-a181-2e801e93ce0f"
+                                      }
+                                    ],
+                                    "children": [
+                                      {
+                                        "type": "Icon",
+                                        "props": {
+                                          "icon": "lucide:user",
+                                          "size": 16,
+                                          "className": "text-[var(--theme-foreground)]"
+                                        }
+                                      },
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "hidden sm:flex text-[14px] font-medium text-[var(--theme-foreground)]"
+                                        },
+                                        "text": "Hi, {{auth.user.firstName}}"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "props": {
+                                      "className": "h-[32px] px-[8px] rounded-[4px] hover:bg-[var(--theme-muted)]"
+                                    },
+                                    "actions": [
+                                      {
+                                        "action": "f9a0b1c2-d3e4-5678-fabc-901234567890"
+                                      }
+                                    ],
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[14px] text-[var(--theme-muted-foreground)]"
+                                        },
+                                        "text": "Sign out"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       {
         "type": "Box",
@@ -20,10 +434,466 @@
         ]
       },
       {
-        "$ref": "fragments/layout/footer"
+        "type": "Box",
+        "_shared": {
+          "id": "sc-footer",
+          "name": "Footer"
+        },
+        "props": {
+          "className": "w-full border-t border-[var(--theme-border)] mt-auto bg-[var(--theme-background)]"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "w-full max-w-screen-xl mx-auto px-[16px] py-[48px]"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-full grid grid-cols-1 md:grid-cols-4 gap-[32px]"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[14px] font-semibold mb-[16px] uppercase tracking-wider text-[var(--theme-foreground)]"
+                        },
+                        "text": "Vendure Store"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[14px] font-semibold mb-[16px] text-[var(--theme-foreground)]"
+                        },
+                        "text": "Categories"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-col gap-[8px]"
+                        },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "map": "collections.a7b8c9d0-e1f2-3456-abcd-567890123456.data.collections.items",
+                            "key": "footerCol",
+                            "props": {
+                              "className": "contents"
+                            },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "actions": [
+                                  {
+                                    "action": "7ae5e4b1-51c4-4266-b001-971a30296623"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[14px] text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)]"
+                                    },
+                                    "text": "{{context.item.data.name}}"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[14px] font-semibold mb-[16px] text-[var(--theme-foreground)]"
+                        },
+                        "text": "Vendure"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-col gap-[8px]"
+                        },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[14px] text-[var(--theme-muted-foreground)]"
+                                },
+                                "text": "GitHub"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[14px] text-[var(--theme-muted-foreground)]"
+                                },
+                                "text": "Documentation"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[14px] text-[var(--theme-muted-foreground)]"
+                                },
+                                "text": "Source code"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-full mt-[48px] pt-[32px] border-t border-[var(--theme-border)] flex flex-col md:flex-row justify-between items-center gap-[16px]"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[14px] text-[var(--theme-muted-foreground)]"
+                    },
+                    "text": "© 2025 Vendure Store. All rights reserved."
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-row items-center gap-[8px]"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[14px] text-[var(--theme-muted-foreground)]"
+                        },
+                        "text": "Powered by"
+                      },
+                      {
+                        "type": "Image",
+                        "props": {
+                          "src": "/vendure.svg",
+                          "alt": "Vendure",
+                          "width": 40,
+                          "height": 27,
+                          "className": "h-[16px] w-auto dark:invert"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[14px] text-[var(--theme-muted-foreground)]"
+                        },
+                        "text": "&"
+                      },
+                      {
+                        "type": "Image",
+                        "props": {
+                          "src": "/next.svg",
+                          "alt": "Next.js",
+                          "width": 16,
+                          "height": 16,
+                          "className": "h-[20px] w-auto dark:invert"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       {
-        "$ref": "fragments/layout/cart-drawer"
+        "type": "Drawer",
+        "props": {
+          "anchor": "right"
+        },
+        "condition": "variables['c2d3e4f5-a6b7-8901-cdef-012345678901']",
+        "children": [
+          {
+            "type": "DrawerBackdrop",
+            "actions": [
+              {
+                "action": "90ca7f64-f883-45db-95b6-b2bb3c46033e"
+              }
+            ]
+          },
+          {
+            "type": "DrawerContent",
+            "props": {
+              "className": "w-full max-w-[384px]"
+            },
+            "children": [
+              {
+                "type": "DrawerHeader",
+                "props": {
+                  "className": "border-b border-[var(--theme-border)] pb-[16px]"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center justify-between flex-row"
+                    },
+                    "children": [
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "className": "text-[18px] font-bold"
+                        },
+                        "text": "Shopping Cart"
+                      },
+                      {
+                        "type": "DrawerCloseButton",
+                        "props": {
+                          "className": "h-[32px] w-[32px] rounded-[6px] border-[0px] bg-transparent hover:bg-[var(--theme-muted)] flex items-center justify-center"
+                        },
+                        "actions": [
+                          {
+                            "action": "90ca7f64-f883-45db-95b6-b2bb3c46033e"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "DrawerBody",
+                "props": {
+                  "className": "overflow-y-auto flex-1 py-[16px]"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-col items-center justify-center py-[48px] text-center"
+                    },
+                    "condition": "(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity || 0) === 0",
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:shopping-bag",
+                          "className": "h-[48px] w-[48px] text-[var(--theme-muted-foreground)] mb-[16px]"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[var(--theme-muted-foreground)]"
+                        },
+                        "text": "Your cart is empty"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "space-y-[12px] flex flex-col"
+                    },
+                    "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity > 0",
+                    "map": "collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.lines",
+                    "key": "drawerLine",
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex gap-[12px] items-start flex-row"
+                        },
+                        "children": [
+                          {
+                            "type": "Image",
+                            "props": {
+                              "src": "{{context.item.data.productVariant.product.featuredAsset.preview}}",
+                              "alt": "{{context.item.data.productVariant.product.name}}",
+                              "width": 64,
+                              "height": 64,
+                              "className": "rounded-[6px] object-cover w-[64px] h-[64px] flex-shrink-0 border-[1px] border-[var(--theme-border)]"
+                            }
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "flex-1 min-w-0"
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[14px] font-medium truncate"
+                                },
+                                "text": "{{context.item.data.productVariant.product.name}}"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[12px] text-[var(--theme-muted-foreground)] mt-[2px]"
+                                },
+                                "text": "{{context.item.data.productVariant.name}}"
+                              },
+                              {
+                                "type": "Box",
+                                "props": {
+                                  "className": "flex items-center justify-between mt-[8px] flex-row"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[14px]"
+                                    },
+                                    "text": "Qty: {{context.item.data.quantity}}"
+                                  },
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[14px] font-medium"
+                                    },
+                                    "text": {
+                                      "formula": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "text-[var(--theme-muted-foreground)] hover:text-red-500 transition-colors p-[4px]"
+                            },
+                            "actions": [
+                              {
+                                "action": "aa100003-0000-0000-0000-000000000003"
+                              }
+                            ],
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[14px]"
+                                },
+                                "text": "✕"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "DrawerFooter",
+                "props": {
+                  "className": "border-t border-[var(--theme-border)] pt-[16px] space-y-[12px]"
+                },
+                "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity > 0",
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex justify-between items-center mb-[8px] flex-row"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[14px] text-[var(--theme-muted-foreground)]"
+                        },
+                        "text": "Subtotal"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "font-semibold"
+                        },
+                        "text": {
+                          "formula": "formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.subTotalWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-full bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] h-[44px] font-medium flex flex-row items-center justify-center rounded-[6px]"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-white"
+                        },
+                        "text": "View Cart"
+                      }
+                    ],
+                    "actions": [
+                      {
+                        "action": "398b94ec-901a-49c6-b19d-198854cefd07"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-full border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] text-[var(--theme-foreground)] hover:bg-[var(--theme-muted)] h-[40px] flex flex-row items-center justify-center rounded-[6px]"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[var(--theme-foreground)]"
+                        },
+                        "text": "Checkout"
+                      }
+                    ],
+                    "actions": [
+                      {
+                        "action": "13a93f84-964f-4116-84da-d2af7cc3bc81"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "_shared": {
+          "id": "sc-cart-drawer",
+          "name": "Cart Drawer"
+        }
       }
     ]
   }

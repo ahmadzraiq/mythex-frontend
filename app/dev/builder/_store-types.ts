@@ -242,6 +242,44 @@ export interface BuilderPage {
   wx: number;
   /** World-space Y position of the page frame (top-left corner). Used for free canvas layout. */
   wy: number;
+  // ── Access control ──────────────────────────────────────────────────────────
+  /** Who can access this page. 'everyone' = public, 'authenticated' = logged-in only. */
+  access?: 'everyone' | 'authenticated';
+  /** Optional JS formula for fine-grained access (role/permission/plan).
+   *  Evaluated after the auth check. Falsy → redirect to authConfig.unauthorizedRedirect. */
+  accessCondition?: string;
+  /** If true, authenticated users are redirected away (e.g. /sign-in, /register pages). */
+  guestOnly?: boolean;
+}
+
+/** Global authentication configuration stored in the builder project. */
+export interface AuthRole {
+  id: string;
+  name: string;
+  createdAt: number;
+}
+
+export interface AuthUserGroup {
+  id: string;
+  name: string;
+  roles: string[];  // role ids
+  createdAt: number;
+}
+
+export interface AuthConfig {
+  tokenType?: 'bearer' | 'basic' | 'custom';
+  tokenStorageKey?: string;
+  userQuery?: string;
+  userQueryEndpoint?: string;
+  userQueryHeaders?: Record<string, string>;
+  userEndpoint?: string;
+  refreshEndpoint?: string;
+  unauthenticatedRedirect?: string;
+  unauthorizedRedirect?: string;
+  authenticatedRedirect?: string;
+  roleProperty?: string;
+  roles?: AuthRole[];
+  userGroups?: AuthUserGroup[];
 }
 
 /**
@@ -275,6 +313,37 @@ export interface CanvasNode extends SDUINode {
 
 // ─── Workflow types ────────────────────────────────────────────────────────────
 
+// ─── Global Formula types ──────────────────────────────────────────────────────
+
+export interface GlobalFormulaParam {
+  id: string;
+  name: string;
+  type: 'Text' | 'Number' | 'Boolean' | 'Object' | 'Array';
+  /** Test value shown in the formula editor PARAMETERS section when editing the formula body */
+  testValue?: unknown;
+}
+
+export interface GlobalFormulaDef {
+  /** Human-readable display name (also used as the function name — no spaces) */
+  name: string;
+  folder?: string;
+  description?: string;
+  /** Positional parameters — mapped in order when the formula is called as a function */
+  params: GlobalFormulaParam[];
+  /** JS expression string, may reference parameters?.['paramName'] */
+  formula: string;
+}
+
+export interface WorkflowParam {
+  id: string;
+  name: string;
+  type: 'Text' | 'Number' | 'Boolean' | 'Object' | 'Array';
+  /** When true, the param accepts multiple values (stored as an array) */
+  allowMultiple?: boolean;
+  /** Test value used in the formula editor preview when editing the global workflow */
+  testValue?: unknown;
+}
+
 export interface WorkflowMeta {
   id: string;
   name: string;
@@ -287,13 +356,28 @@ export interface WorkflowMeta {
    * system-managed and should not appear as user-editable entries in the right panel.
    */
   isSystem?: boolean;
+  /**
+   * True for workflows created via the Triggers tab (appLoad, pageLoad, scroll, etc.).
+   * These are page-level workflows but should NOT appear in the right panel's
+   * WorkflowsSection or the Logic tab.
+   */
+  isTrigger?: boolean;
+  /**
+   * For page-scoped trigger workflows: the route config name (e.g. "home", "product")
+   * that this trigger should fire on. Empty / undefined = fires on all pages.
+   */
+  pageScope?: string;
+  /** Declared input parameters for global workflows */
+  params?: WorkflowParam[];
 }
 
 export type WorkflowCanvasTarget =
   | { kind: 'element'; nodeId: string; event: string }
   | { kind: 'pageTrigger'; trigger: string }
   | { kind: 'pageWorkflow'; name: string; isNew?: boolean; nodeId?: string }
-  | { kind: 'globalWorkflow'; id: string; isNew?: boolean };
+  | { kind: 'globalWorkflow'; id: string; isNew?: boolean }
+  /** A workflow scoped to a shared component model. */
+  | { kind: 'componentWorkflow'; modelId: string; workflowId: string; isNew?: boolean };
 
 // ─── Full store shape ──────────────────────────────────────────────────────────
 
@@ -319,6 +403,11 @@ export interface BuilderStore {
   _savedPageNodes: SDUINode[] | null;
 
   // ── Shared Component edit mode ───────────────────────────────────────────────
+  /**
+   * The node ID (and page ID) the user was on when they entered component edit mode.
+   * Used by "Back to instance" to restore the selection on exit.
+   */
+  _editEntrySelection: { nodeId: string; pageId: string } | null;
   /** IDs of ALL shared component models currently open for editing in the canvas */
   editingSharedComponentIds: string[];
   /** The most-recently-opened shared component being edited */
@@ -331,8 +420,11 @@ export interface BuilderStore {
   editingSharedComponentContent: SDUINode | null;
   /** Convenience alias: model of the most-recently-opened shared component */
   editingSharedComponentModel: Record<string, unknown> | null;
-  /** Enter shared-component-edit mode: appends the component content to pageNodes */
-  enterSharedComponentEdit: (modelId: string, content: SDUINode, model: Record<string, unknown>) => void;
+  /** Enter shared-component-edit mode.
+   *  Pass `entryNodeId` to record which instance the user came from (for Back to instance).
+   *  Pass `simple: true` to open the panel without inserting a backdrop/overlay into the canvas
+   *  (the component stays in its normal position — used by the right-panel Edit button). */
+  enterSharedComponentEdit: (modelId: string, content: SDUINode, model: Record<string, unknown>, entryNodeId?: string, simple?: boolean) => void;
   /** Exit shared-component-edit mode for a specific model (or the last opened if omitted) */
   exitSharedComponentEdit: (modelId?: string) => void;
   /** Save the current live state of a shared component being edited without exiting */
@@ -514,6 +606,12 @@ export interface BuilderStore {
   setCurrentPageInteractions: (interactions: Record<string, { workflow?: string }>) => void;
   /** Set per-page URL query parameter definitions for the current page */
   setCurrentPageQueryParams: (params: Array<{ name: string; value: string }>) => void;
+  /** Set per-page access control (who can see the page, optional formula, guestOnly flag) */
+  setCurrentPageAccess: (access: 'everyone' | 'authenticated', guestOnly: boolean, accessCondition?: string) => void;
+  /** Global authentication configuration for the project */
+  authConfig?: AuthConfig;
+  /** Update the global auth configuration */
+  setAuthConfig: (config: AuthConfig) => void;
   /** Engine conventions loaded from store.json (graphqlEndpoint, graphqlHeaders, etc.) */
   engineConventions: {
     graphqlEndpoint?: string;
@@ -541,15 +639,18 @@ export interface BuilderStore {
   globalWorkflows: Record<string, object[]>;
   /** Metadata (name, folder, description, params) for each global workflow, keyed by id */
   globalWorkflowMeta: Record<string, WorkflowMeta>;
-  /** Named JSON Logic expressions usable as {{formula.name}} anywhere */
-  globalFormulas: Record<string, object>;
+  /** Global reusable formulas callable as functions — keyed by formula id */
+  globalFormulas: Record<string, GlobalFormulaDef>;
   setPageWorkflow: (name: string, actions: object[]) => void;
   removePageWorkflow: (name: string) => void;
   setPageWorkflowMeta: (name: string, meta: Partial<WorkflowMeta>) => void;
   setGlobalWorkflow: (name: string, actions: object[]) => void;
   removeGlobalWorkflow: (name: string) => void;
   setGlobalWorkflowMeta: (id: string, meta: Partial<WorkflowMeta>) => void;
-  setGlobalFormula: (name: string, expr: object) => void;
+  /** Legacy — sets a formula by id (keeps name = id for backward compat) */
+  setGlobalFormula: (id: string, def: GlobalFormulaDef | null) => void;
+  /** Set a full GlobalFormulaDef by id, also syncing the evaluator registry */
+  setGlobalFormulaFull: (id: string, def: GlobalFormulaDef | null) => void;
   removeGlobalFormula: (name: string) => void;
 
   // ── Workflow Test Results ─────────────────────────────────────────────────────

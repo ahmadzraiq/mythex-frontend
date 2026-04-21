@@ -18,11 +18,14 @@ import workflowTestActions from '@/config/actions/workflow-test.json';
 import animationTestActions from '@/config/actions/animation-test.json';
 import dsActionsJson from '@/config/actions/datasource-actions.json';
 import calculatorActions from '@/config/actions/calculator.json';
+import counterExampleActions from '@/config/actions/counter-example.json';
 import pricingNestedActions from '@/config/actions/pricing-nested.json';
 import responsiveTestActions from '@/config/actions/responsive-test.json';
 import sharedComponentTestActions from '@/config/actions/shared-component-test.json';
 import popoverTestActions from '@/config/actions/popover-test.json';
 import animationShowcaseActions from '@/config/actions/animation-showcase.json';
+import triggersTestActions from '@/config/actions/triggers-test.json';
+import formulasJson from '@/config/formulas.json';
 import type { NamedDataSourceDef } from '@/config/datasource-types';
 
 // ── In-memory variable additions (lost on reload) ─────────────────────────────
@@ -57,7 +60,11 @@ export function getBuilderConfig() {
 
     if (def.type === 'graphql') {
       const headersArr = def.headers
-        ? Object.entries(def.headers).map(([key, value]) => ({ key, value, enabled: true }))
+        ? Object.entries(def.headers).map(([key, value]) => ({
+            key,
+            value: typeof value === 'string' ? value : JSON.stringify(value),
+            enabled: true,
+          }))
         : [];
       const opMatch = def.query.match(/^\s*(?:query|mutation|subscription)\s+(\w+)/i);
       const operationName = opMatch?.[1] ?? uuid;
@@ -79,7 +86,11 @@ export function getBuilderConfig() {
     const headersArr = Array.isArray(def.headers)
       ? def.headers
       : def.headers
-        ? Object.entries(def.headers as Record<string, string>).map(([key, value]) => ({ key, value, enabled: true }))
+        ? Object.entries(def.headers as Record<string, unknown>).map(([key, value]) => ({
+            key,
+            value: typeof value === 'string' ? value : JSON.stringify(value),
+            enabled: true,
+          }))
         : [];
 
     return {
@@ -106,6 +117,7 @@ export function getBuilderConfig() {
     type?: string;
     initialValue?: unknown;
     folder?: string;
+    saveInLocalStorage?: boolean;
     fields?: Array<{ name: string; type?: string; initialValue?: unknown; validation?: Record<string, unknown> }>;
   };
   const varsConfig = variablesJson as { variables: Record<string, VarDef>; varFolders: Array<{ id: string; label: string }> };
@@ -115,6 +127,7 @@ export function getBuilderConfig() {
     type: def.type ?? 'string',
     initialValue: def.initialValue,
     folder: def.folder,
+    saveInLocalStorage: def.saveInLocalStorage,
     fields: def.fields,
     _fromConfig: true,
   }));
@@ -139,11 +152,13 @@ export function getBuilderConfig() {
     ...(workflowTestActions as Record<string, Record<string, unknown>>),
     ...(animationTestActions as Record<string, Record<string, unknown>>),
     ...(calculatorActions as Record<string, Record<string, unknown>>),
+    ...(counterExampleActions as Record<string, Record<string, unknown>>),
     ...(pricingNestedActions as Record<string, Record<string, unknown>>),
     ...(responsiveTestActions as Record<string, Record<string, unknown>>),
     ...(sharedComponentTestActions as Record<string, Record<string, unknown>>),
     ...(popoverTestActions as Record<string, Record<string, unknown>>),
     ...(animationShowcaseActions as Record<string, Record<string, unknown>>),
+    ...(triggersTestActions as Record<string, Record<string, unknown>>),
   };
 
   // A workflow def has a steps array. A direct action has a specific type (graphql, fetch, etc.)
@@ -155,6 +170,10 @@ export function getBuilderConfig() {
       trigger: (def.trigger as string) ?? 'click',
       steps: (def.steps as object[]) ?? [],
       onErrorSteps: (def.onErrorSteps as object[] | undefined),
+      isTrigger: (def.isTrigger as boolean | undefined),
+      pageScope: (def.pageScope as string | undefined),
+      // Pass through params so global workflows (those with params) are detected by the store
+      params: (def.params as Array<{ id: string; name: string; type: string; allowMultiple?: boolean; testValue?: unknown }> | undefined),
     }));
 
   const directActions = Object.fromEntries(
@@ -168,7 +187,9 @@ export function getBuilderConfig() {
     }
   }
 
-  return { dataSources: dataSourceList, dsFolders, variables, varFolders, workflows, directActions, dsActionsMap };
+  const formulas = formulasJson as Record<string, import('@/app/dev/builder/_store-types').GlobalFormulaDef>;
+
+  return { dataSources: dataSourceList, dsFolders, variables, varFolders, workflows, directActions, dsActionsMap, formulas };
 }
 
 // ── Backend project config load / save ────────────────────────────────────────

@@ -34,6 +34,9 @@ export type { ValidationRule, ActionsConfig, EngineConfig, RouteConfig, SDUIEngi
 /** Ref for page to trigger fetch when searchParams change (avoids engine remount) */
 export const paramChangeRunActionRef: { current: ((action: string) => void) | null } = { current: null };
 
+/** Ref always populated by SDUIEngine so page.tsx can trigger startupAction regardless of paramChangeAction. */
+export const startupRunActionRef: { current: ((action: string) => void) | null } = { current: null };
+
 
 export function SDUIEngine({
   config,
@@ -42,6 +45,7 @@ export function SDUIEngine({
   engineConfig,
   routes = [],
   paramChangeAction,
+  authConfig,
   builderMode = false,
   builderViewportHeight,
   builderViewport,
@@ -220,28 +224,24 @@ export function SDUIEngine({
     builderMode ? (builderViewport ?? 'desktop') : productionBreakpoint;
 
   // ── globalContext: browser/screen runtime object — injected into merged state ──
-  // We update this whenever pathname or searchParams changes so formulas that
-  // reference globalContext.browser.path / query / etc. always see fresh values.
+  // Computed at render time via useMemo so datasource fetcher always sees fresh
+  // query params on the same render cycle (useEffect would be one cycle late).
   const globalContextRef = useRef<Record<string, unknown>>({});
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
+  const globalContext = useMemo(() => {
+    if (typeof window === 'undefined') return {};
     const query: Record<string, string> = {};
     searchParams?.forEach((v, k) => { query[k] = v; });
-    // In builder mode, overlay per-page query param definitions so formulas see them
     if (builderMode && builderQueryParams) {
       for (const p of builderQueryParams) {
         if (p.name.trim()) query[p.name] = p.value;
       }
     }
-    const url = window.location.href;
-    const domain = window.location.hostname;
-    const baseUrl = window.location.origin;
-    globalContextRef.current = {
+    return {
       browser: {
-        url,
+        url: window.location.href,
         path: pathname ?? window.location.pathname,
-        domain,
-        baseUrl,
+        domain: window.location.hostname,
+        baseUrl: window.location.origin,
         query,
         breakpoint: activeBreakpoint,
         environment: process.env.NODE_ENV ?? 'production',
@@ -249,25 +249,20 @@ export function SDUIEngine({
       screen: {
         width: window.innerWidth,
         height: window.innerHeight,
-        scroll: {
-          x: window.scrollX,
-          y: window.scrollY,
-          xPercent: document.documentElement.scrollWidth > window.innerWidth
-            ? Math.round((window.scrollX / (document.documentElement.scrollWidth - window.innerWidth)) * 100)
-            : 0,
-          yPercent: document.documentElement.scrollHeight > window.innerHeight
-            ? Math.round((window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100)
-            : 0,
-        },
+        scroll: { x: 0, y: 0, xPercent: 0, yPercent: 0 },
       },
     };
+  }, [pathname, searchParams, activeBreakpoint, builderMode, builderQueryParams]);
+  globalContextRef.current = globalContext;
+
+  useEffect(() => {
     mergedStore.getState().setMerged((prev) => ({
       ...prev,
-      globalContext: globalContextRef.current,
+      globalContext,
       pages: PAGES_MAP,
       theme: THEME_OBJ,
     }));
-  }, [pathname, searchParams, mergedStore, activeBreakpoint, builderMode, builderQueryParams]);
+  }, [globalContext, mergedStore]);
 
   useEffect(() => {
     const base = computeMergedState(useSduiStore.getState());
@@ -479,6 +474,12 @@ export function SDUIEngine({
           useSduiStore: useSduiStore as { getState: () => { setData: (path: string, value: unknown) => void } },
           triggerDataSourceRefetch: (name: string) => triggerDataSourceRefetchRef.current(name),
           setStepResult: (result) => { resultRef.current = result; },
+          getAuthConfig: () => authConfig,
+          getGraphqlEndpoint: () => {
+            const ep = authConfig?.userQueryEndpoint;
+            return ep?.startsWith('http') ? ep : undefined;
+          },
+          getGraphqlHeaders: () => authConfig?.userQueryHeaders,
         };
         const handlerResult = await dispatchToHandler(actionDef as import('./actions/handlers/types').ActionDef, handlerCtx);
         if (handlerResult !== false) {
@@ -538,6 +539,13 @@ export function SDUIEngine({
   const runActionRef = useRef(runActionStable);
   runActionRef.current = runActionStable;
 
+  // Always expose a way for page.tsx to trigger actions (e.g. startupAction)
+  // regardless of whether paramChangeAction is set on this route.
+  useEffect(() => {
+    startupRunActionRef.current = (action: string) => runActionRef.current({ action });
+    return () => { startupRunActionRef.current = null; };
+  });
+
   useEffect(() => {
     if (paramChangeAction) {
       paramChangeRunActionRef.current = (action: string) =>
@@ -595,8 +603,102 @@ export function SDUIEngine({
     [store, mergedStore, variableStoreConfig, runActionStable, fetchDataStable, actionsConfig, configName, activePreviewStateForOverrides]
   );
 
+  // Collect collectionFetchError trigger workflows once (stable ref).
+  const collectionFetchErrorWorkflowsRef = useRef<string[]>([]);
+  useEffect(() => {
+    type TriggerDef = { trigger?: string; isTrigger?: boolean; pageScope?: string };
+    collectionFetchErrorWorkflowsRef.current = Object.entries(actionsConfig as Record<string, TriggerDef>)
+      .filter(([, def]) => def.isTrigger && def.trigger === 'collectionFetchError' && (!def.pageScope || def.pageScope === configName))
+      .map(([key]) => key);
+  }, [actionsConfig, configName]);
+
   // Fetch named data sources (REST + GraphQL) on mount and on explicit refetch triggers.
-  useNamedDataSourceFetcher(dataSources, dsRefetchKeys, config, useSduiStore);
+  // Pass an error callback so collectionFetchError trigger workflows fire automatically.
+  const onDatasourceError = useCallback((datasourceId: string, error: string) => {
+    for (const key of collectionFetchErrorWorkflowsRef.current) {
+      runActionRef.current({ action: key }, { datasourceId, error });
+    }
+  }, []);
+
+  useNamedDataSourceFetcher(dataSources, dsRefetchKeys, config, useSduiStore, globalContext, authConfig, onDatasourceError);
+
+  // ── Declarative trigger listeners ─────────────────────────────────────────────
+  // Scans actionsConfig for workflows with isTrigger:true and wires up the
+  // appropriate lifecycle or browser event handler automatically.
+  // pageScope (if set) is matched against configName so page-scoped triggers
+  // only fire on their assigned page.
+  const actionsConfigRef = useRef(actionsConfig);
+  actionsConfigRef.current = actionsConfig;
+
+  useEffect(() => {
+    if (builderMode) return;
+
+    type TriggerDef = { trigger?: string; isTrigger?: boolean; pageScope?: string };
+
+    const cfg = actionsConfigRef.current as Record<string, TriggerDef>;
+    const matchesPage = (scope: string | undefined) => !scope || scope === configName;
+
+    // Group workflow keys by trigger type, filtered by page scope.
+    const byTrigger = new Map<string, string[]>();
+    for (const [key, def] of Object.entries(cfg)) {
+      if (!def.isTrigger || !def.trigger) continue;
+      if (!matchesPage(def.pageScope)) continue;
+      let list = byTrigger.get(def.trigger);
+      if (!list) { list = []; byTrigger.set(def.trigger, list); }
+      list.push(key);
+    }
+
+    const run = (key: string, eventData?: Record<string, unknown>) => {
+      runActionRef.current({ action: key }, eventData);
+    };
+
+    // Lifecycle — fire on mount
+    for (const t of ['appLoadBefore', 'pageLoadBefore', 'appLoad', 'pageLoad'] as const) {
+      for (const key of (byTrigger.get(t) ?? [])) run(key);
+    }
+
+    // Browser event listeners
+    const scrollKeys = byTrigger.get('scroll') ?? [];
+    const resizeKeys = byTrigger.get('resize') ?? [];
+    const keydownKeys = byTrigger.get('keydown') ?? [];
+    const keyupKeys = byTrigger.get('keyup') ?? [];
+
+    const handleScroll = () => {
+      const eventData = { scrollY: window.scrollY, scrollX: window.scrollX };
+      for (const key of scrollKeys) run(key, eventData);
+    };
+    const handleResize = () => {
+      const eventData = { width: window.innerWidth, height: window.innerHeight };
+      for (const key of resizeKeys) run(key, eventData);
+    };
+    const handleKeydown = (e: KeyboardEvent) => {
+      const eventData = { key: e.key, code: e.code, shiftKey: e.shiftKey, ctrlKey: e.ctrlKey, altKey: e.altKey };
+      for (const key of keydownKeys) run(key, eventData);
+    };
+    const handleKeyup = (e: KeyboardEvent) => {
+      const eventData = { key: e.key, code: e.code, shiftKey: e.shiftKey, ctrlKey: e.ctrlKey, altKey: e.altKey };
+      for (const key of keyupKeys) run(key, eventData);
+    };
+
+    if (scrollKeys.length) window.addEventListener('scroll', handleScroll, { passive: true });
+    if (resizeKeys.length) window.addEventListener('resize', handleResize);
+    if (keydownKeys.length) window.addEventListener('keydown', handleKeydown);
+    if (keyupKeys.length) window.addEventListener('keyup', handleKeyup);
+
+    // pageUnload — fire on unmount
+    const pageUnloadKeys = byTrigger.get('pageUnload') ?? [];
+    const appUnloadKeys = byTrigger.get('appUnload') ?? [];
+
+    return () => {
+      for (const key of [...pageUnloadKeys, ...appUnloadKeys]) run(key);
+      if (scrollKeys.length) window.removeEventListener('scroll', handleScroll);
+      if (resizeKeys.length) window.removeEventListener('resize', handleResize);
+      if (keydownKeys.length) window.removeEventListener('keydown', handleKeydown);
+      if (keyupKeys.length) window.removeEventListener('keyup', handleKeyup);
+    };
+  // Re-run when the page changes (configName) so page-scoped triggers re-bind.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [builderMode, configName]);
 
   const builderContextValue = useMemo(() => ({ builderMode, activeBreakpoint, shownPopovers }), [builderMode, activeBreakpoint, shownPopovers]);
 

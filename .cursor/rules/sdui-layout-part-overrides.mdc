@@ -13,11 +13,11 @@ When working on layout parts (navbar, hero, footer, product-grid, etc.) that sup
 | Override | Schema | Behavior |
 |----------|--------|----------|
 | `conditionOverrides` | `Record<nodeId, boolean \| string>` | Set node visibility: `false` = hide, `true` = show, or a formula string |
-| `mapSourceOverrides` | `Record<nodeId, string \| { expr }>` | Change data source for mapped nodes; `{ expr }` for runtime transforms (e.g. `reverseArray`) |
+| `mapSourceOverrides` | `Record<nodeId, string \| { formula }>` | Change data source for mapped nodes; `{ formula }` for runtime transforms (e.g. `reverseArray`) |
 | `propsOverrides` | `Record<nodeId, Record<string, unknown>>` | Shallow merge props (src, icon, placeholder, etc.) |
 | `classNameOverrides` | `Record<nodeId, string>` | Merge Tailwind classes via `twMerge` (override wins on conflicts) |
 | `styleOverrides` | `Record<nodeId, Record<string, string>>` | Shallow merge inline styles |
-| `textOverrides` | `Record<nodeId, string \| { expr }>` | Replace node text (string or computed) |
+| `textOverrides` | `Record<nodeId, string \| { formula }>` | Replace node text (string or computed) |
 | `actionsOverrides` | `Record<nodeId, Record<string, unknown>>` | Shallow merge actions (click, change, etc.) |
 | `childOrder` | `Record<parentId, string[]>` | Reorder children by id; ids in order array; nodes without id stay at end |
 | `addNodes` | `Array<{ parentId, position, node }>` | Insert new nodes at position; `node` must match SDUI schema |

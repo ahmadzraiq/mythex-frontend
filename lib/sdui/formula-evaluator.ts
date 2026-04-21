@@ -38,6 +38,52 @@ export { FORMULA_FNS } from './formula-functions';
 import { resolveVar } from './formula-utils';
 import { FORMULA_FNS } from './formula-functions';
 
+// ─── Global Formula Registry ──────────────────────────────────────────────────
+
+/** Shape of a global formula definition (mirrors GlobalFormulaDef from _store-types.ts) */
+interface _GlobalFormulaDef {
+  name: string;
+  folder?: string;
+  description?: string;
+  params: Array<{ id: string; name: string; type: string; testValue?: unknown }>;
+  formula: string;
+}
+
+/** Module-level registry, updated via registerGlobalFormulas() */
+let _registeredFormulas: Record<string, _GlobalFormulaDef> = {};
+
+/**
+ * Register (or replace) the full set of global formula definitions.
+ * Called by the builder store whenever formulas are loaded or changed.
+ * Normalises the `formula` field to always be a string.
+ */
+export function registerGlobalFormulas(formulas: Record<string, unknown>): void {
+  // Normalise each entry: extract formula string if stored as { formula: '...' } object
+  const normalised: Record<string, _GlobalFormulaDef> = {};
+  for (const [key, rawDef] of Object.entries(formulas)) {
+    if (!rawDef || typeof rawDef !== 'object') continue;
+    const def = rawDef as Record<string, unknown>;
+    const rawFormula = def.formula;
+    const formulaStr = typeof rawFormula === 'string'
+      ? rawFormula
+      : (rawFormula && typeof rawFormula === 'object' && 'formula' in (rawFormula as object)
+          ? String((rawFormula as { formula: unknown }).formula ?? '')
+          : '');
+    normalised[key] = { ...(def as unknown as _GlobalFormulaDef), formula: formulaStr };
+  }
+  _registeredFormulas = normalised;
+  if (typeof window !== 'undefined') {
+    (globalThis as Record<string, unknown>).__debugRegisteredFormulas = normalised;
+  }
+}
+
+/**
+ * Get the current global formula registry (read-only snapshot).
+ */
+export function getRegisteredFormulas(): Record<string, _GlobalFormulaDef> {
+  return _registeredFormulas;
+}
+
 // ─── Core evaluator ───────────────────────────────────────────────────────────
 
 /**
@@ -48,12 +94,12 @@ import { FORMULA_FNS } from './formula-functions';
  *   - Function calls: "if(variables['UUID'], null, variables['UUID2'])", "sum(1, 2, 3)"
  */
 export function evaluateFormula(formula: string | object, context: Record<string, unknown>, ctxGet?: (path: string) => unknown): EvalResult {
-  // { "expr": formula } — wrapper for inline formula; evaluate the inner expression
-  if (typeof formula === 'object' && formula !== null && 'expr' in formula) {
-    const inner = (formula as { expr: string | object }).expr;
+  // { "formula": "expression" } — wrapper for inline formula; evaluate the inner expression
+  if (typeof formula === 'object' && formula !== null && 'formula' in formula) {
+    const inner = (formula as { formula: string | object }).formula;
     return evaluateFormula(inner as string | object, context, ctxGet);
   }
-  // Non-string, non-expr object — not a supported formula type
+  // Non-string, non-formula object — not a supported formula type
   if (typeof formula === 'object' && formula !== null) {
     return { value: null, error: 'Invalid formula' };
   }
@@ -73,12 +119,50 @@ export function evaluateFormula(formula: string | object, context: Record<string
   // Using bracket notation handles reserved keywords like 'if', 'switch'
   // Negative lookbehind (?<![.\w]) prevents matching method calls like Math.max(
   // so "Math.max(0, x)" is NOT rewritten to "Math.__fns__['max'](0, x)" (invalid)
+  //
+  // JS_KEYWORD_FNS — names that collide with JS reserved keywords (`if`, `switch`).
+  // Inside IIFEs (detected by `function` or arrow-function presence), these keywords
+  // are likely used as JS statements, not formula-function calls. Rewriting `if(` to
+  // `__fns__['if'](` breaks `if(cond) stmt;` syntax → SyntaxError.
+  const JS_KEYWORD_FNS = new Set(['if', 'switch']);
+  const hasStatementBlock = /\bfunction\s*\(|=>\s*\{/.test(resolved);
   let processed = resolved;
   for (const name of Object.keys(FORMULA_FNS)) {
+    if (hasStatementBlock && JS_KEYWORD_FNS.has(name)) continue;
     processed = processed.replace(
       new RegExp(`(?<![.\\w])\\b${name}\\s*\\(`, 'g'),
       `__fns__['${name}'](`
     );
+  }
+
+  // Rewrite user-defined global formula calls: formatFullName( → __userFns__['formatFullName'](
+  // Uses def.name (not the registry key) so user-created formulas with UUID keys also work.
+  // Same negative-lookbehind guard — won't rewrite method calls (obj.formatFullName())
+  for (const [, def] of Object.entries(_registeredFormulas)) {
+    const fnName = (def as _GlobalFormulaDef)?.name;
+    if (!fnName) continue;
+    processed = processed.replace(
+      new RegExp(`(?<![.\\w])\\b${fnName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\(`, 'g'),
+      `__userFns__['${fnName}'](`
+    );
+  }
+
+  // Build userFns wrapper object — keyed by def.name so both UUID-keyed and name-keyed
+  // registry entries are callable by their human-readable function name.
+  const userFns: Record<string, (...args: unknown[]) => unknown> = {};
+  for (const [, def] of Object.entries(_registeredFormulas)) {
+    const formulaDef = def as _GlobalFormulaDef;
+    const fnName = formulaDef?.name;
+    if (!fnName) continue;
+    userFns[fnName] = (...args: unknown[]) => {
+      const paramCtx: Record<string, unknown> = {};
+      (formulaDef.params ?? []).forEach((p, i) => {
+        paramCtx[p.name] = args[i];
+      });
+      const innerCtx = { ...context, parameters: paramCtx };
+      const result = evaluateFormula(formulaDef.formula, innerCtx, ctxGet);
+      return result.value;
+    };
   }
 
   try {
@@ -87,7 +171,7 @@ export function evaluateFormula(formula: string | object, context: Record<string
     // get('path') is an escape hatch for arbitrary flat-key state access.
     // eslint-disable-next-line no-new-func
     const fn = new Function(
-      '__fns__', '__collections__', '__variables__', '__ctx__', '__globalCtx__', '__pages__', '__theme__', '__event__', '__state__', '__ctxGet__',
+      '__fns__', '__userFns__', '__collections__', '__variables__', '__ctx__', '__globalCtx__', '__pages__', '__theme__', '__event__', '__state__', '__ctxGet__', '__parameters__',
       `"use strict"; ` +
       `const collections = __collections__ ?? {}; ` +
       `const variables = __variables__ ?? {}; ` +
@@ -96,6 +180,7 @@ export function evaluateFormula(formula: string | object, context: Record<string
       `const pages = __pages__ ?? {}; ` +
       `const theme = __theme__ ?? {}; ` +
       `const event = __event__ ?? {}; ` +
+      `const parameters = __parameters__ ?? {}; ` +
       `const route = (__state__ ?? {})['route'] ?? {}; ` +
       `const auth = (__state__ ?? {})['auth'] ?? {}; ` +
       `const _workflow = (__state__ ?? {})['_workflow'] ?? {}; ` +
@@ -105,6 +190,7 @@ export function evaluateFormula(formula: string | object, context: Record<string
     );
     const value = fn(
       FORMULA_FNS,
+      userFns,
       (context.collections ?? {}) as Record<string, unknown>,
       (context.variables ?? {}) as Record<string, unknown>,
       (context.context ?? {}) as Record<string, unknown>,
@@ -114,6 +200,7 @@ export function evaluateFormula(formula: string | object, context: Record<string
       (context.event ?? {}) as Record<string, unknown>,
       context,
       ctxGet ?? null,
+      (context.parameters ?? {}) as Record<string, unknown>,
     );
     return { value, error: null };
   } catch (e) {
@@ -161,8 +248,6 @@ export function storedValueToFormula(value: FormulaValue): string {
   if (typeof value === 'object') {
     const v = value as Record<string, unknown>;
     if (typeof v.formula === 'string') return v.formula;
-    // { expr: "..." } inline expression — show just the expression
-    if (typeof v.expr === 'string') return v.expr;
     // Fallback: show raw JSON for JSON Logic or other object conditions so the editor isn't blank
     try { return JSON.stringify(value); } catch { return ''; }
   }

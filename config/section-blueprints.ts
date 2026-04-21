@@ -1,28 +1,19 @@
 /**
- * Section blueprint registry - maps layout schema section types to fragments.
- * Single variant per section (no variant selection).
+ * Section blueprint registry - maps section types to shared component IDs.
  */
 
 export type SectionBlueprint = {
-  $ref: string;
+  sharedComponentId: string;
   defaultProps?: Record<string, unknown>;
 };
 
-/** Get fragment $ref for a layout part (navbar, footer). */
-export function getLayoutPartRef(part: 'navbar' | 'footer'): string | null {
-  return SECTION_BLUEPRINTS[part]?.$ref ?? null;
-}
-
 const SECTION_BLUEPRINTS: Record<string, SectionBlueprint> = {
-  navbar: { $ref: 'fragments/layout/navbar' },
-  footer: { $ref: 'fragments/layout/footer' },
-  'product-carousel': {
-    $ref: 'fragments/sections/product-carousel',
-    defaultProps: {},
-  },
-  hero: { $ref: 'fragments/sections/hero' },
-  'product-grid': { $ref: 'fragments/sections/product-grid', defaultProps: { columns: 4 } },
-  'feature-grid': { $ref: 'fragments/sections/feature-grid', defaultProps: { items: 3 } },
+  navbar:            { sharedComponentId: 'sc-navbar' },
+  footer:            { sharedComponentId: 'sc-footer' },
+  'product-carousel':{ sharedComponentId: 'sc-product-carousel' },
+  hero:              { sharedComponentId: 'sc-hero' },
+  'product-grid':    { sharedComponentId: 'sc-product-grid', defaultProps: { columns: 4 } },
+  'feature-grid':    { sharedComponentId: 'sc-feature-grid', defaultProps: { items: 3 } },
 };
 
 export function getSectionBlueprint(
@@ -40,7 +31,7 @@ export function getSectionBlueprint(
     defaultProps.items = sectionProps.items;
   }
   return {
-    $ref: blueprint.$ref,
+    sharedComponentId: blueprint.sharedComponentId,
     defaultProps: Object.keys(defaultProps).length ? defaultProps : undefined,
   };
 }

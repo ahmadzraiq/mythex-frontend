@@ -266,7 +266,7 @@
                                       "className": "font-semibold text-[18px]"
                                     },
                                     "text": {
-                                      "expr": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+                                      "formula": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
                                     }
                                   },
                                   {
@@ -275,7 +275,7 @@
                                       "className": "text-[14px] text-[var(--theme-muted-foreground)] mt-[4px]"
                                     },
                                     "text": {
-                                      "expr": "formatCurrency(context?.item?.data?.unitPriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD') + ' each'"
+                                      "formula": "formatCurrency(context?.item?.data?.unitPriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD') + ' each'"
                                     }
                                   }
                                 ]
@@ -296,7 +296,7 @@
                               "className": "font-semibold text-[18px]"
                             },
                             "text": {
-                              "expr": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+                              "formula": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
                             }
                           },
                           {
@@ -305,7 +305,7 @@
                               "className": "text-[14px] text-[var(--theme-muted-foreground)] mt-[4px]"
                             },
                             "text": {
-                              "expr": "formatCurrency(context?.item?.data?.unitPriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD') + ' each'"
+                              "formula": "formatCurrency(context?.item?.data?.unitPriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD') + ' each'"
                             }
                           }
                         ]
@@ -357,7 +357,7 @@
                           {
                             "type": "Text",
                             "text": {
-                              "expr": "formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.subTotalWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+                              "formula": "formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.subTotalWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
                             }
                           }
                         ]
@@ -384,7 +384,7 @@
                               {
                                 "type": "Text",
                                 "text": {
-                                  "expr": "formatCurrency(context?.item?.data?.amountWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+                                  "formula": "formatCurrency(context?.item?.data?.amountWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
                                 }
                               }
                             ]
@@ -407,7 +407,7 @@
                           {
                             "type": "Text",
                             "text": {
-                              "expr": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.shippingWithTax > 0 ? formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.shippingWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD') : 'Calculated at checkout'"
+                              "formula": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.shippingWithTax > 0 ? formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.shippingWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD') : 'Calculated at checkout'"
                             }
                           }
                         ]
@@ -433,7 +433,7 @@
                           {
                             "type": "Text",
                             "text": {
-                              "expr": "formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+                              "formula": "formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
                             }
                           }
                         ]
@@ -600,11 +600,18 @@
                         "id": "835d52a6-ac9f-4c42-90ef-90f286617010",
                         "props": {
                           "variant": "outline",
-                          "size": "sm",
-                          "className": "!text-[var(--theme-foreground)]",
-                          "placeholder": "Enter code",
-                          "value": "{{local.data.form.formData.couponCode}}"
-                        }
+                          "size": "sm"
+                        },
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": {
+                              "className": "!text-[var(--theme-foreground)]",
+                              "placeholder": "Enter code",
+                              "name": "couponCode"
+                            }
+                          }
+                        ]
                       },
                       {
                         "type": "Box",

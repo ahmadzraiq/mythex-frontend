@@ -18,7 +18,7 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { useBuilderStore, findNode, findParentNode, type DataSourceConfig, type CustomVar, type SDUINode } from './_store';
+import { useBuilderStore, findNode, findParentNode, type DataSourceConfig, type CustomVar, type SDUINode, type WorkflowParam } from './_store';
 import { getSharedComponents } from '@/lib/builder/shared-component-data';
 import { useSduiStore } from '@/store/sdui-store';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
@@ -100,7 +100,7 @@ const TYPE_BADGE_COLOR: Record<string, string> = {
 export interface VarRowItem {
   formulaPath: string;
   displayLabel: string;
-  type: 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'shared-component';
+  type: 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'shared-component' | 'auth';
   typeName: string;
   /** Sub-items for expandable types (form fields, object keys, etc.) */
   children?: VarRowItem[];
@@ -1219,9 +1219,7 @@ export function ItemContextGroup({
         const mapVal = typeof node.map === 'string'
           ? node.map
           : (typeof node.map === 'object' && node.map !== null)
-            ? ((node.map as { formula?: string; expr?: string }).formula
-              ?? (node.map as { formula?: string; expr?: string }).expr
-              ?? null)
+            ? ((node.map as { formula?: string }).formula ?? null)
             : null;
         if (mapVal) {
           if (!inner) { inner = mapVal; }
@@ -2082,9 +2080,21 @@ export function FunctionLibrary({ onInsert, onInsertFn, search, globalFormulas }
 
   const q = search.toLowerCase();
 
-  const fromProject = Object.keys(globalFormulas).map(name => ({
-    name, signature: `${name}(...)`, description: 'Global formula defined in this project.', returnType: 'any', insert: `${name}(`,
-  }));
+  // Build From Project entries with proper param-based signatures from GlobalFormulaDef
+  const fromProject = Object.entries(globalFormulas).map(([, def]) => {
+    const d = def as { name?: string; params?: Array<{ name?: string }>; description?: string; folder?: string };
+    const fnName = d.name ?? 'formula';
+    const paramNames = (d.params ?? []).map(p => p.name || 'param').join(', ');
+    const signature = `${fnName}(${paramNames})`;
+    const description = d.description || `Global formula${d.folder ? ` [${d.folder}]` : ''} defined in this project.`;
+    return {
+      name: fnName,
+      signature,
+      description,
+      returnType: 'any',
+      insert: `${fnName}(`,
+    };
+  }).filter(f => f.name);
 
   const allCategories = q
     ? null  // when searching, flatten all
@@ -2187,12 +2197,26 @@ export const EVENT_SHAPES: Record<string, Record<string, unknown>> = {
   touchMove:             { touches: [{ x: 0, y: 0 }] },
   touchEnd:              { changedTouches: [{ x: 0, y: 0 }] },
   touchCancel:           { changedTouches: [{ x: 0, y: 0 }] },
-  // Scroll
-  scroll:                { scrollTop: 0, scrollLeft: 0 },
+  // Scroll — matches engine handler: { scrollY, scrollX }
+  scroll:                { scrollY: 0, scrollX: 0 },
+  // Resize — matches engine handler: { width, height }
+  resize:                { width: 0, height: 0 },
+  // Keyboard — matches engine handler: { key, code, shiftKey, ctrlKey, altKey }
+  keydown:               { key: '', code: '', shiftKey: false, ctrlKey: false, altKey: false },
+  keyup:                 { key: '', code: '', shiftKey: false, ctrlKey: false, altKey: false },
   // Lifecycle — no event payload
   created:               {},
   mounted:               {},
   beforeUnmount:         {},
+  // App-level lifecycle — no event payload
+  appLoadBefore:         {},
+  appLoad:               {},
+  // Page-level lifecycle — no event payload
+  pageLoadBefore:        {},
+  pageLoad:              {},
+  pageUnload:            {},
+  // Error — matches engine: _workflow.lastError carries the message
+  collectionFetchError:  { error: '' },
 };
 
 // ─── EventContextSection ─────────────────────────────────────────────────────
@@ -2434,17 +2458,28 @@ export function SharedComponentContextSection({
   const effectiveId = overrideModelId ?? editingId;
 
   const [propsOpen, setPropsOpen] = useState(true);
-  const [localOpen, setLocalOpen] = useState(true);
+  const [varsOpen, setVarsOpen] = useState(true);
+  const [formulasOpen, setFormulasOpen] = useState(true);
+  const [localOpen, setLocalOpen] = useState(false);
 
   const scModel = useMemo(() => {
     if (!effectiveId) return null;
     const live = getSharedComponents()[effectiveId];
-    return live ?? (editingModelsMap[effectiveId] as { properties?: Array<{ id: string; name: string; defaultValue?: unknown }> } | undefined) ?? null;
+    return live ?? (editingModelsMap[effectiveId] as {
+      properties?: Array<{ id: string; name: string; defaultValue?: unknown }>;
+      variables?: Record<string, { label?: string; type?: string; initialValue?: unknown }>;
+      formulas?: Record<string, { name: string; formula?: string; params?: Array<{ name: string }> }>;
+    } | undefined) ?? null;
   }, [effectiveId, editingModelsMap]);
 
   if (!scModel) return null;
 
   const properties = (scModel as { properties?: Array<{ id: string; name: string; defaultValue?: unknown }> }).properties ?? [];
+  const variables = (scModel as { variables?: Record<string, { label?: string; type?: string; initialValue?: unknown }> }).variables ?? {};
+  const formulas = (scModel as { formulas?: Record<string, { name: string; formula?: string; params?: Array<{ name: string }> }> }).formulas ?? {};
+
+  const varEntries = Object.entries(variables);
+  const formulaEntries = Object.entries(formulas);
 
   return (
     <div style={{ borderTop: '1px solid #1f2937' }}>
@@ -2467,6 +2502,48 @@ export function SharedComponentContextSection({
         </div>
       )}
 
+      {/* VARIABLES */}
+      <SCSectionHeader label="Variables" open={varsOpen} onToggle={() => setVarsOpen(o => !o)} />
+      {varsOpen && (
+        <div style={{ paddingBottom: 4 }}>
+          {varEntries.length === 0 ? (
+            <div style={{ padding: '2px 22px 6px', fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>No variables defined</div>
+          ) : varEntries.map(([uuid, def]) => (
+            <SCPropChip
+              key={uuid}
+              icon="V"
+              label={def.label ?? uuid.slice(0, 8)}
+              value={def.initialValue}
+              formula={`context.component?.variables?.['${uuid}']`}
+              onInsert={onInsert}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* FORMULAS */}
+      <SCSectionHeader label="Formulas" open={formulasOpen} onToggle={() => setFormulasOpen(o => !o)} />
+      {formulasOpen && (
+        <div style={{ paddingBottom: 4 }}>
+          {formulaEntries.length === 0 ? (
+            <div style={{ padding: '2px 22px 6px', fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>No formulas defined</div>
+          ) : formulaEntries.map(([id, def]) => {
+            const paramList = (def.params ?? []).map(p => `/* ${p.name} */`).join(', ');
+            const formula = `context.component?.model?.formulas?.['${id}']?.formula`;
+            return (
+              <SCPropChip
+                key={id}
+                icon="ƒ"
+                label={def.name || id.slice(0, 8)}
+                value={def.formula ? `${def.formula.slice(0, 30)}${def.formula.length > 30 ? '…' : ''}` : undefined}
+                formula={paramList ? `/* ${def.name}(${paramList}) */ ${formula}` : formula}
+                onInsert={onInsert}
+              />
+            );
+          })}
+        </div>
+      )}
+
       {/* LOCAL */}
       <SCSectionHeader label="Local" open={localOpen} onToggle={() => setLocalOpen(o => !o)} />
       {localOpen && (
@@ -2481,6 +2558,267 @@ export function SharedComponentContextSection({
         </div>
       )}
 
+    </div>
+  );
+}
+
+// ─── Auth Data Section ────────────────────────────────────────────────────────
+
+/** Amber color scheme for auth DataTreeNode chips — matches CHIP_STYLE.auth */
+const AUTH_CHIP_COLOR = { bg: '#92400e', bgHover: '#b45309', border: '#d97706', text: '#fde68a' };
+
+/** One auth field row — same header pattern as VariableRow / CollectionEntry */
+function AuthFieldRow({
+  label,
+  formula,
+  value,
+  onInsert,
+}: {
+  label: string;
+  formula: string;
+  value: unknown;
+  onInsert: (formulaPath: string, displayLabel: string, type: VarRowItem['type']) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [arrayIndices, setArrayIndices] = useState<Map<string, number>>(new Map());
+
+  const toggleExpand = (p: string) => setExpanded(prev => { const n = new Set(prev); n.has(p) ? n.delete(p) : n.add(p); return n; });
+  const setArrayIndex = (p: string, idx: number) => setArrayIndices(prev => new Map(prev).set(p, idx));
+
+  const type = feInferType(value);
+  const isExpandable = (type === 'object' || type === 'array') && value !== null;
+
+  const handleNodeInsert = (nodePath: string) => {
+    // nodePath is relative like "user.emailAddress" — convert to auth formula
+    const segs = nodePath.split('.').filter(Boolean);
+    // first segment is the label itself (e.g. "user"), rest are sub-keys
+    const sub = segs.slice(1);
+    const chained = sub.map(s => `?.['${s}']`).join('');
+    const fullFormula = `${formula}${chained}`;
+    const friendly = `auth.${nodePath}`;
+    onInsert(fullFormula, friendly, 'auth');
+  };
+
+  return (
+    <div>
+      {/* Header row — exact same structure as CollectionEntry / VariableRow */}
+      <div
+        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', cursor: 'default' }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+      >
+        {/* Chevron — only shown when value is expandable */}
+        <span
+          style={{ color: '#4b5563', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: isExpandable ? 'pointer' : 'default', padding: '2px', width: 14 }}
+          onClick={() => isExpandable && setIsOpen(o => !o)}
+        >
+          {isExpandable && <FEChevron open={isOpen} size={8} />}
+        </span>
+
+        {/* Amber pill — click inserts chip */}
+        <div
+          style={{ display: 'inline-flex', alignItems: 'center', background: AUTH_CHIP_COLOR.bg, border: `1px solid ${AUTH_CHIP_COLOR.border}`, borderRadius: 5, padding: '2px 6px', flexShrink: 0, cursor: 'pointer' }}
+          onClick={() => onInsert(formula, `auth.${label}`, 'auth')}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = AUTH_CHIP_COLOR.bgHover; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = AUTH_CHIP_COLOR.bg; }}
+        >
+          <span style={{ fontSize: 11, color: AUTH_CHIP_COLOR.text, fontWeight: 600, fontFamily: 'monospace' }}>{label}</span>
+        </div>
+
+        {/* Value preview */}
+        {value === null || value === undefined ? (
+          <span style={{ fontSize: 9, color: '#374151', fontStyle: 'italic', marginLeft: 'auto' }}>null</span>
+        ) : !isExpandable ? (
+          <span style={{ fontSize: 10, color: FE_VALUE_COLOR[type] ?? '#9ca3af', fontFamily: 'monospace', marginLeft: 'auto', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>
+            {feValuePreview(value)}
+          </span>
+        ) : (
+          <span style={{ fontSize: 9, color: '#4b5563', marginLeft: 'auto', fontStyle: 'italic' }}>
+            {type === 'array' ? `${(value as unknown[]).length} items` : '{…}'}
+          </span>
+        )}
+      </div>
+
+      {/* Expanded tree — same as CollectionEntry */}
+      {isOpen && isExpandable && (
+        <div>
+          {type === 'object' ? (
+            Object.entries(value as Record<string, unknown>).map(([k, v]) => (
+              <DataTreeNode
+                key={k}
+                fieldName={k}
+                path={`${label}.${k}`}
+                value={v}
+                depth={1}
+                onInsert={handleNodeInsert}
+                expanded={expanded}
+                toggleExpand={toggleExpand}
+                arrayIndices={arrayIndices}
+                setArrayIndex={setArrayIndex}
+                chipColor={AUTH_CHIP_COLOR}
+              />
+            ))
+          ) : (
+            // Array root
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 8px 3px 28px' }}>
+                <span style={{ fontSize: 9, color: AUTH_CHIP_COLOR.text, fontFamily: 'monospace', fontWeight: 700, minWidth: 14 }}>[]</span>
+                <select
+                  value={arrayIndices.get(label) ?? 0}
+                  onChange={e => { e.stopPropagation(); setArrayIndex(label, Number(e.target.value)); }}
+                  onClick={e => e.stopPropagation()}
+                  style={{ background: '#1f2937', color: '#d1d5db', border: '1px solid #374151', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
+                >
+                  {Array.from({ length: Math.min((value as unknown[]).length, 50) }, (_, i) => (
+                    <option key={i} value={i}>{i}</option>
+                  ))}
+                </select>
+                <span style={{ fontSize: 9, color: '#4b5563' }}>{(value as unknown[]).length} items</span>
+              </div>
+              {(value as unknown[]).length > 0 && (() => {
+                const idx = arrayIndices.get(label) ?? 0;
+                const item = (value as unknown[])[idx];
+                if (typeof item !== 'object' || item === null) return null;
+                return Object.entries(item as Record<string, unknown>).map(([k, v]) => (
+                  <DataTreeNode
+                    key={k}
+                    fieldName={k}
+                    path={`${label}[${idx}].${k}`}
+                    value={v}
+                    depth={1}
+                    onInsert={handleNodeInsert}
+                    expanded={expanded}
+                    toggleExpand={toggleExpand}
+                    arrayIndices={arrayIndices}
+                    setArrayIndex={setArrayIndex}
+                    chipColor={AUTH_CHIP_COLOR}
+                  />
+                ));
+              })()}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** AUTH section — auth.user, auth.accessToken, auth.refreshToken, isAuthenticated */
+export function AuthDataSection({
+  onInsert,
+}: {
+  onInsert: (formulaPath: string, displayLabel: string, type: VarRowItem['type']) => void;
+}) {
+  // Subscribe to auth keys so the tab re-renders after login / page restore.
+  const authUser         = useSduiStore(s => s.data['auth.user'] ?? null);
+  const authAccessToken  = useSduiStore(s => s.data['auth.accessToken'] ?? s.data['auth.token'] ?? null);
+  const authRefreshToken = useSduiStore(s => s.data['auth.refreshToken'] ?? null);
+  const isAuthenticated  = !!authUser;
+
+  return (
+    <div style={{ padding: '8px 0', flex: 1 }}>
+      <div style={{ padding: '4px 12px 8px', fontSize: 10, color: '#9ca3af', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', borderBottom: '1px solid #1f2937' }}>
+        TOKEN BASED AUTH
+      </div>
+      <AuthFieldRow label="user"            formula="auth?.['user']"          value={authUser}         onInsert={onInsert} />
+      <AuthFieldRow label="accessToken"     formula="auth?.['accessToken']"   value={authAccessToken}  onInsert={onInsert} />
+      <AuthFieldRow label="refreshToken"    formula="auth?.['refreshToken']"  value={authRefreshToken} onInsert={onInsert} />
+      <AuthFieldRow label="isAuthenticated" formula="!!auth?.['user']"        value={isAuthenticated}  onInsert={onInsert} />
+    </div>
+  );
+}
+
+// ─── ParametersSection ────────────────────────────────────────────────────────
+// Shown in the Workflow tab when editing a global workflow that has declared
+// parameters. Clicking a row inserts parameters['paramName'] into the formula.
+
+const PARAM_TYPE_ICONS_FE: Record<string, string> = {
+  Text: 'T',
+  Number: '#',
+  Boolean: '◎',
+  Object: '{}',
+  Array: '[]',
+};
+
+export function ParametersSection({
+  params,
+  onInsert,
+}: {
+  params: WorkflowParam[];
+  onInsert: (formula: string, label: string, type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'shared-component' | 'parameter') => void;
+}) {
+  const [open, setOpen] = useState(true);
+
+  if (params.length === 0) return null;
+
+  return (
+    <div style={{ borderBottom: '1px solid #1f2937' }}>
+      {/* Section header */}
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6, width: '100%',
+          padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer',
+          borderBottom: open ? '1px solid #1f2937' : 'none',
+        }}
+        onMouseEnter={ev => (ev.currentTarget.style.background = '#0f172a')}
+        onMouseLeave={ev => (ev.currentTarget.style.background = 'none')}
+      >
+        <span style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center' }}>
+          <FEChevron open={open} size={8} />
+        </span>
+        <span style={{ fontSize: 10, fontWeight: 600, color: '#60a5fa', letterSpacing: '0.04em' }}>
+          PARAMETERS
+        </span>
+      </button>
+
+      {open && (
+        <div style={{ paddingBottom: 4 }}>
+          {params.map(p => {
+            const formula = `parameters?.['${p.name}']`;
+            const displayVal = p.testValue !== undefined
+              ? (Array.isArray(p.testValue) ? `[${(p.testValue as unknown[]).join(', ')}]` : String(p.testValue))
+              : 'undefined';
+
+            return (
+              <div
+                key={p.id}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 10px', cursor: 'pointer' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                onClick={() => onInsert(formula, `param: ${p.name}`, 'parameter')}
+              >
+                {/* Type icon */}
+                <span style={{
+                  fontSize: 9, color: '#60a5fa', fontFamily: 'monospace',
+                  background: '#1e3a5f', borderRadius: 3, padding: '1px 4px',
+                  flexShrink: 0, minWidth: 22, textAlign: 'center', fontWeight: 700,
+                }}>
+                  {PARAM_TYPE_ICONS_FE[p.type] ?? 'T'}
+                </span>
+                {/* Name */}
+                <span style={{ fontSize: 11, color: '#d1d5db', flex: 1, fontWeight: 500 }}>
+                  {p.name || <em style={{ color: '#6b7280' }}>Unnamed</em>}
+                  {p.allowMultiple && <span style={{ fontSize: 9, color: '#6b7280', marginLeft: 4 }}>[ ]</span>}
+                </span>
+                {/* Test value preview */}
+                <span style={{ fontSize: 10, color: '#6b7280', fontFamily: 'monospace', maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  {displayVal}
+                </span>
+                {/* Type badge */}
+                <span style={{
+                  background: '#1e3a5f', color: '#60a5fa', borderRadius: 4,
+                  padding: '1px 6px', fontSize: 10, border: '1px solid #1d4ed8',
+                  fontFamily: 'monospace', flexShrink: 0,
+                }}>
+                  {p.type.toLowerCase()}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

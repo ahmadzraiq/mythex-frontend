@@ -423,7 +423,7 @@ export function styleToClassName(
   if (style.gap !== undefined) {
     cls = removeTwToken(cls, 'gap-');
     const p = px(style.gap);
-    if (p) cls = `${cls} gap-[${p}]`.trim();
+    if (p && p !== '0px') cls = `${cls} gap-[${p}]`.trim();
   }
 
   // ── Opacity ──────────────────────────────────────────────────────────────────
@@ -463,7 +463,7 @@ export function styleToClassName(
       .replace(/\brounded\b/g, '')
       .replace(/\s+/g, ' ').trim();
     const p = px(style.borderRadius);
-    if (p) cls = `${cls} rounded-[${p}]`.trim();
+    if (p && p !== '0px') cls = `${cls} rounded-[${p}]`.trim();
   }
 
   // ── Border radius (per-corner) ────────────────────────────────────────────────
@@ -477,7 +477,7 @@ export function styleToClassName(
     if (style[key] !== undefined) {
       cls = removeTwToken(cls, cornerPrefix);
       const p = px(style[key]);
-      if (p) cls = `${cls} ${cornerPrefix}[${p}]`.trim();
+      if (p && p !== '0px') cls = `${cls} ${cornerPrefix}[${p}]`.trim();
     }
   }
 
@@ -485,7 +485,7 @@ export function styleToClassName(
   if (style.zIndex !== undefined) {
     cls = removeTwToken(cls, 'z-');
     const z = parseInt(style.zIndex);
-    if (!Number.isNaN(z)) cls = `${cls} z-[${z}]`.trim();
+    if (!Number.isNaN(z) && z !== 0) cls = `${cls} z-[${z}]`.trim();
   }
 
   // ── Border width ──────────────────────────────────────────────────────────────
@@ -498,7 +498,7 @@ export function styleToClassName(
       .replace(/(?:^| )border(?= |$)/g, ' ')
       .replace(/\s+/g, ' ').trim();
     const p = px(style.borderWidth);
-    if (p) cls = `${cls} border-[${p}]`.trim();
+    if (p && p !== '0px') cls = `${cls} border-[${p}]`.trim();
   }
 
   // ── Font size ─────────────────────────────────────────────────────────────────

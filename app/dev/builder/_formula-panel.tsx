@@ -15,7 +15,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FormulaEditor } from './_formula-editor';
-import { ResponsiveDot } from './_panel-primitives';
+import { ResponsiveDot, ChangedLabel } from './_panel-primitives';
 import { isBoundValue, type FormulaValue } from '@/lib/sdui/formula-evaluator';
 export type { FormulaValue } from '@/lib/sdui/formula-evaluator';
 export { isBoundValue } from '@/lib/sdui/formula-evaluator';
@@ -126,11 +126,17 @@ interface FieldWithBindingProps {
   onResponsiveReset?: (cssProp: string) => void;
   /** CSS property name for the responsive popover */
   responsiveCssProp?: string;
+  /**
+   * CSS property name used for changed-from-default highlighting.
+   * When provided, the displayLabel / headerTitle turns orange when
+   * the field differs from its default and shows a Reset popup on hover.
+   */
+  cssProp?: string;
 }
 
 export function FieldWithBinding({
   label, displayLabel, hint, value, onChange, children, expectedType = 'any', stackLayout = false, headerTitle, topAlign = false,
-  responsiveDot = false, responsiveOverrides, onResponsiveRemove, onResponsiveReset, responsiveCssProp,
+  responsiveDot = false, responsiveOverrides, onResponsiveRemove, onResponsiveReset, responsiveCssProp, cssProp,
 }: FieldWithBindingProps) {
   const [panelOpen, setPanelOpen] = useState(false);
   const bound = isBoundValue(value);
@@ -175,7 +181,10 @@ export function FieldWithBinding({
     return (
       <div data-field={label} style={{ position: 'relative', flex: 1 }}>
         {displayLabel && (
-          <span style={{ fontSize: 9, color: '#6b7280', display: 'flex', alignItems: 'center', marginBottom: 2 }}>{displayLabel}{dotEl}</span>
+          <span style={{ display: 'flex', alignItems: 'center', marginBottom: 2 }}>
+            <ChangedLabel text={displayLabel} cssProp={cssProp} />
+            {dotEl}
+          </span>
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {bound ? (
@@ -206,8 +215,9 @@ export function FieldWithBinding({
       <div data-field={label} style={{ position: 'relative' }}>
         {/* Title row — bind icon flush right */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-          <span style={{ fontSize: 9, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center' }}>
-            {headerTitle}{dotEl}
+          <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center' }}>
+            <ChangedLabel text={headerTitle!} cssProp={cssProp} style={{ fontSize: 9 }} />
+            {dotEl}
           </span>
           <BindingIcon isBound={bound} onClick={openEditor} />
         </div>
@@ -249,7 +259,10 @@ export function FieldWithBinding({
       {bound ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {displayLabel && (
-            <span style={{ fontSize: 9, color: '#6b7280', display: 'flex', alignItems: 'center' }}>{displayLabel}{dotEl}</span>
+            <span style={{ display: 'flex', alignItems: 'center' }}>
+              <ChangedLabel text={displayLabel} cssProp={cssProp} />
+              {dotEl}
+            </span>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button

@@ -25,6 +25,12 @@ function extractFormulaVarPaths(expr: string): string[] {
   while ((m = re.exec(expr)) !== null) {
     paths.push(`${m[1]}.${m[2]}`);
   }
+  // Extract globalContext paths (e.g. globalContext?.browser?.query?.sort → globalContext.browser.query.sort)
+  const gcRe = /\bglobalContext(?:\?\.|\.)(\w+(?:(?:\?\.|\.)?\w+)*)/g;
+  let gc: RegExpExecArray | null;
+  while ((gc = gcRe.exec(expr)) !== null) {
+    paths.push(`globalContext.${gc[1].replace(/\?\./g, '.')}`);
+  }
   return paths;
 }
 
@@ -60,16 +66,14 @@ export function extractNodeDependencies(node: Pick<SDUINode, 'text' | 'props' | 
   const paths: string[] = [];
   if (node.text != null) {
     if (typeof node.text === 'string') paths.push(...extractPathsFromTemplate(node.text));
-    else if (typeof node.text === 'object' && 'expr' in node.text) {
-      const exprVal = (node.text as { expr: unknown }).expr;
-      const exprPaths = extractPathsFromObject(exprVal);
-      paths.push(...exprPaths.filter((p) => p !== 'current' && p !== 'accumulator' && !p.startsWith('current.')));
-      if (typeof exprVal === 'string') paths.push(...extractFormulaVarPaths(exprVal));
-    } else if (typeof node.text === 'object' && 'formula' in node.text) {
-      // Builder formula binding: treat the formula expression as the subscription path.
-      // getNestedValue now handles bracket-notation (components?.['id']?.['value']).
-      const f = (node.text as { formula: unknown }).formula;
-      if (typeof f === 'string' && f.trim()) paths.push(f.trim());
+    else if (typeof node.text === 'object' && 'formula' in node.text) {
+      const formulaVal = (node.text as { formula: unknown }).formula;
+      const formulaPaths = extractPathsFromObject(formulaVal);
+      paths.push(...formulaPaths.filter((p) => p !== 'current' && p !== 'accumulator' && !p.startsWith('current.')));
+      if (typeof formulaVal === 'string') {
+        paths.push(formulaVal.trim());
+        paths.push(...extractFormulaVarPaths(formulaVal));
+      }
     }
   }
   if (node.props) paths.push(...extractPathsFromObject(node.props));
@@ -83,8 +87,7 @@ export function extractNodeDependencies(node: Pick<SDUINode, 'text' | 'props' | 
   if (node.map) {
     if (typeof node.map === 'string') paths.push(node.map);
     else if (typeof node.map === 'object' && node.map !== null) {
-      if ('expr' in node.map) paths.push(...extractPathsFromObject((node.map as { expr: unknown }).expr));
-      else if ('formula' in node.map) paths.push(...extractPathsFromObject(node.map as { formula: unknown }));
+      if ('formula' in node.map) paths.push(...extractPathsFromObject(node.map as { formula: unknown }));
     }
   }
   // animation.imperativeTrigger.watchVar and animation.states.watchVar are formula expressions

@@ -3,8 +3,18 @@
     "id": "sc-status-badge",
     "name": "Status Badge",
     "properties": [
-      { "id": "prop-sb-status", "name": "status", "type": "text", "defaultValue": "active" },
-      { "id": "prop-sb-label", "name": "label", "type": "text", "defaultValue": "Active" }
+      {
+        "id": "prop-sb-status",
+        "name": "status",
+        "type": "text",
+        "defaultValue": "active"
+      },
+      {
+        "id": "prop-sb-label",
+        "name": "label",
+        "type": "text",
+        "defaultValue": "Active"
+      }
     ],
     "content": {
       "type": "Box",
@@ -12,116 +22,276 @@
         "className": "inline-flex flex-row items-center gap-[6px] px-[10px] py-[4px] rounded-[9999px] bg-green-100 dark:bg-green-900/30"
       },
       "children": [
-        { "type": "Box", "props": { "className": "w-[6px] h-[6px] rounded-[9999px] bg-green-500" } },
+        {
+          "type": "Box",
+          "props": {
+            "className": "w-[6px] h-[6px] rounded-[9999px] bg-green-500"
+          }
+        },
         {
           "type": "Text",
-          "props": { "className": "text-[11px] font-semibold text-green-700 dark:text-green-300" },
+          "props": {
+            "className": "text-[11px] font-semibold text-green-700 dark:text-green-300"
+          },
           "text": "{{context.component.props.label}}"
         }
       ]
     }
   },
-
   "sc-info-card": {
     "id": "sc-info-card",
     "name": "Info Card",
     "properties": [
-      { "id": "prop-ic-title", "name": "title", "type": "text", "defaultValue": "Card Title" },
-      { "id": "prop-ic-description", "name": "description", "type": "text", "defaultValue": "A description goes here." },
-      { "id": "prop-ic-accent", "name": "accent", "type": "color", "defaultValue": "#6366f1" }
+      {
+        "id": "prop-ic-title",
+        "name": "title",
+        "type": "text",
+        "defaultValue": "Card Title"
+      },
+      {
+        "id": "prop-ic-description",
+        "name": "description",
+        "type": "text",
+        "defaultValue": "A description goes here."
+      },
+      {
+        "id": "prop-ic-accent",
+        "name": "accent",
+        "type": "color",
+        "defaultValue": "#6366f1"
+      }
     ],
     "content": {
       "type": "Box",
-      "props": { "className": "w-full rounded-[12px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden" },
+      "props": {
+        "className": "w-full rounded-[12px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden"
+      },
       "children": [
         {
           "type": "Box",
-          "props": { "className": "h-[4px]", "style": { "backgroundColor": "{{context.component.props.accent}}" } }
+          "props": {
+            "className": "h-[4px]",
+            "style": {
+              "backgroundColor": "{{context.component.props.accent}}"
+            }
+          }
         },
         {
           "type": "Box",
-          "props": { "className": "px-[20px] py-[16px] flex flex-col gap-[8px]" },
+          "props": {
+            "className": "px-[20px] py-[16px] flex flex-col gap-[8px]"
+          },
           "children": [
-            { "type": "Text", "props": { "className": "text-[15px] font-semibold text-gray-900 dark:text-white" }, "text": "{{context.component.props.title}}" },
-            { "type": "Text", "props": { "className": "text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed" }, "text": "{{context.component.props.description}}" }
+            {
+              "type": "Text",
+              "props": {
+                "className": "text-[15px] font-semibold text-gray-900 dark:text-white"
+              },
+              "text": "{{context.component.props.title}}"
+            },
+            {
+              "type": "Text",
+              "props": {
+                "className": "text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed"
+              },
+              "text": "{{context.component.props.description}}"
+            }
           ]
         }
       ]
     }
   },
-
   "sc-cta-button": {
     "id": "sc-cta-button",
     "name": "CTA Button",
     "properties": [
-      { "id": "prop-cta-text", "name": "buttonText", "type": "text", "defaultValue": "Get Started" },
-      { "id": "prop-cta-variant", "name": "variant", "type": "text", "defaultValue": "primary" }
+      {
+        "id": "prop-cta-text",
+        "name": "buttonText",
+        "type": "text",
+        "defaultValue": "Get Started"
+      },
+      {
+        "id": "prop-cta-variant",
+        "name": "variant",
+        "type": "text",
+        "defaultValue": "primary"
+      }
     ],
     "content": {
       "type": "Box",
-      "props": { "className": "inline-flex flex-row items-center justify-center gap-[8px] px-[20px] py-[10px] rounded-[8px] bg-[#6366f1] hover:opacity-90 cursor-pointer" },
+      "props": {
+        "className": "inline-flex flex-row items-center justify-center gap-[8px] px-[20px] py-[10px] rounded-[8px] bg-[#6366f1] hover:opacity-90 cursor-pointer"
+      },
       "children": [
-        { "type": "Text", "props": { "className": "text-[14px] font-semibold text-white" }, "text": "{{context.component.props.buttonText}}" },
-        { "type": "Icon", "props": { "icon": "lucide:arrow-right", "size": 14, "color": "#ffffff" } }
+        {
+          "type": "Text",
+          "props": {
+            "className": "text-[14px] font-semibold text-white"
+          },
+          "text": "{{context.component.props.buttonText}}"
+        },
+        {
+          "type": "Icon",
+          "props": {
+            "icon": "lucide:arrow-right",
+            "size": 14,
+            "color": "#ffffff"
+          }
+        }
       ]
     }
   },
-
   "sc-modal": {
     "id": "sc-modal",
     "name": "Modal",
     "properties": [
-      { "id": "prop-modal-title", "name": "title", "type": "text", "defaultValue": "Modal Title" },
-      { "id": "prop-modal-message", "name": "message", "type": "text", "defaultValue": "This is a modal message." },
-      { "id": "prop-modal-showFooter", "name": "showFooter", "type": "boolean", "defaultValue": true }
+      {
+        "id": "prop-modal-title",
+        "name": "title",
+        "type": "text",
+        "defaultValue": "Modal Title"
+      },
+      {
+        "id": "prop-modal-message",
+        "name": "message",
+        "type": "text",
+        "defaultValue": "This is a modal message."
+      },
+      {
+        "id": "prop-modal-showFooter",
+        "name": "showFooter",
+        "type": "boolean",
+        "defaultValue": true
+      }
     ],
     "content": {
       "type": "Box",
-      "props": { "className": "fixed inset-0 z-[50] flex items-center justify-center" },
+      "props": {
+        "className": "fixed inset-0 z-[50] flex items-center justify-center"
+      },
       "children": [
         {
           "type": "Box",
-          "props": { "className": "fixed inset-0 bg-black/50 cursor-pointer" },
-          "actions": [{ "action": "closeDynamicOverlay" }]
+          "props": {
+            "className": "fixed inset-0 bg-black/50 cursor-pointer"
+          },
+          "actions": [
+            {
+              "action": "closeDynamicOverlay"
+            }
+          ]
         },
         {
           "type": "Box",
-          "props": { "className": "relative z-[1] w-[480px] max-w-[90vw] bg-white dark:bg-gray-900 rounded-[12px] p-[24px] flex flex-col gap-[16px]", "animation": { "enter": { "type": "zoomIn", "duration": 200 }, "exit": { "type": "zoomOut", "duration": 160 } } },
-          "actions": [{ "type": "stopPropagation" }],
+          "props": {
+            "className": "relative z-[1] w-[480px] max-w-[90vw] bg-white dark:bg-gray-900 rounded-[12px] p-[24px] flex flex-col gap-[16px]",
+            "animation": {
+              "enter": {
+                "type": "zoomIn",
+                "duration": 200
+              },
+              "exit": {
+                "type": "zoomOut",
+                "duration": 160
+              }
+            }
+          },
+          "actions": [
+            {
+              "type": "stopPropagation"
+            }
+          ],
           "children": [
             {
               "type": "Box",
-              "props": { "className": "flex flex-row items-center justify-between" },
+              "props": {
+                "className": "flex flex-row items-center justify-between"
+              },
               "children": [
-                { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-gray-900 dark:text-white" }, "text": "{{context.component.props.title}}" },
+                {
+                  "type": "Heading",
+                  "props": {
+                    "size": "lg",
+                    "className": "font-semibold text-gray-900 dark:text-white"
+                  },
+                  "text": "{{context.component.props.title}}"
+                },
                 {
                   "type": "Box",
-                  "props": { "className": "cursor-pointer p-[4px] rounded-[4px] hover:bg-gray-100 dark:hover:bg-gray-800" },
-                  "actions": [{ "action": "closeDynamicOverlay" }],
-                  "children": [{ "type": "Icon", "props": { "icon": "lucide:x", "size": 18, "color": "#6b7280" } }]
+                  "props": {
+                    "className": "cursor-pointer p-[4px] rounded-[4px] hover:bg-gray-100 dark:hover:bg-gray-800"
+                  },
+                  "actions": [
+                    {
+                      "action": "closeDynamicOverlay"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "props": {
+                        "icon": "lucide:x",
+                        "size": 18,
+                        "color": "#6b7280"
+                      }
+                    }
+                  ]
                 }
               ]
             },
             {
               "type": "Text",
-              "props": { "className": "text-[14px] text-gray-600 dark:text-gray-300" },
+              "props": {
+                "className": "text-[14px] text-gray-600 dark:text-gray-300"
+              },
               "text": "{{context.component.props.message}}"
             },
             {
               "type": "Box",
-              "props": { "className": "flex flex-row justify-end gap-[8px] pt-[8px]" },
+              "props": {
+                "className": "flex flex-row justify-end gap-[8px] pt-[8px]"
+              },
               "children": [
                 {
                   "type": "Box",
-                  "props": { "className": "flex flex-row items-center justify-center px-[16px] py-[8px] rounded-[8px] bg-gray-200 dark:bg-gray-700 cursor-pointer hover:opacity-90" },
-                  "actions": [{ "action": "closeDynamicOverlay" }],
-                  "children": [{ "type": "Text", "props": { "className": "text-[14px] font-medium text-gray-800 dark:text-gray-200" }, "text": "Cancel" }]
+                  "props": {
+                    "className": "flex flex-row items-center justify-center px-[16px] py-[8px] rounded-[8px] bg-gray-200 dark:bg-gray-700 cursor-pointer hover:opacity-90"
+                  },
+                  "actions": [
+                    {
+                      "action": "closeDynamicOverlay"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-[14px] font-medium text-gray-800 dark:text-gray-200"
+                      },
+                      "text": "Cancel"
+                    }
+                  ]
                 },
                 {
                   "type": "Box",
-                  "props": { "className": "flex flex-row items-center justify-center px-[16px] py-[8px] rounded-[8px] bg-[#6366f1] cursor-pointer hover:opacity-90" },
-                  "actions": [{ "action": "closeDynamicOverlay" }],
-                  "children": [{ "type": "Text", "props": { "className": "text-[14px] font-semibold text-white" }, "text": "Confirm" }]
+                  "props": {
+                    "className": "flex flex-row items-center justify-center px-[16px] py-[8px] rounded-[8px] bg-[#6366f1] cursor-pointer hover:opacity-90"
+                  },
+                  "actions": [
+                    {
+                      "action": "closeDynamicOverlay"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-[14px] font-semibold text-white"
+                      },
+                      "text": "Confirm"
+                    }
+                  ]
                 }
               ]
             }
@@ -130,43 +300,113 @@
       ]
     }
   },
-
   "sc-bottom-sheet": {
     "id": "sc-bottom-sheet",
     "name": "Bottom Sheet",
     "properties": [
-      { "id": "prop-bs-title", "name": "title", "type": "text", "defaultValue": "Bottom Sheet" }
+      {
+        "id": "prop-bs-title",
+        "name": "title",
+        "type": "text",
+        "defaultValue": "Bottom Sheet"
+      }
     ],
     "content": {
       "type": "Box",
-      "props": { "className": "fixed inset-0 z-[50] flex flex-col justify-end" },
+      "props": {
+        "className": "fixed inset-0 z-[50] flex flex-col justify-end"
+      },
       "children": [
         {
           "type": "Box",
-          "props": { "className": "fixed inset-0 bg-black/50 cursor-pointer" },
-          "actions": [{ "action": "closeDynamicOverlay" }]
+          "props": {
+            "className": "fixed inset-0 bg-black/50 cursor-pointer"
+          },
+          "actions": [
+            {
+              "action": "closeDynamicOverlay"
+            }
+          ]
         },
         {
           "type": "Box",
-          "props": { "className": "relative z-[1] w-full max-h-[70vh] bg-white dark:bg-gray-900 rounded-t-[16px] p-[24px] flex flex-col gap-[16px]", "animation": { "enter": { "type": "slideInUp", "duration": 300 }, "exit": { "type": "slideOutDown", "to": { "translateY": 800, "opacity": 1 }, "duration": 260 } } },
-          "actions": [{ "type": "stopPropagation" }],
+          "props": {
+            "className": "relative z-[1] w-full max-h-[70vh] bg-white dark:bg-gray-900 rounded-t-[16px] p-[24px] flex flex-col gap-[16px]",
+            "animation": {
+              "enter": {
+                "type": "slideInUp",
+                "duration": 300
+              },
+              "exit": {
+                "type": "slideOutDown",
+                "to": {
+                  "translateY": 800,
+                  "opacity": 1
+                },
+                "duration": 260
+              }
+            }
+          },
+          "actions": [
+            {
+              "type": "stopPropagation"
+            }
+          ],
           "children": [
             {
               "type": "Box",
-              "props": { "className": "flex justify-center" },
-              "children": [{ "type": "Box", "props": { "className": "w-[40px] h-[4px] rounded-full bg-gray-300 dark:bg-gray-600" } }]
-            },
-            { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-gray-900 dark:text-white" }, "text": "{{context.component.props.title}}" },
-            { "type": "Text", "props": { "className": "text-[14px] text-gray-600 dark:text-gray-300" }, "text": "Bottom sheet content goes here. Tap the backdrop or Dismiss to close." },
-            {
-              "type": "Box",
-              "props": { "className": "flex flex-row justify-end" },
+              "props": {
+                "className": "flex justify-center"
+              },
               "children": [
                 {
                   "type": "Box",
-                  "props": { "className": "flex flex-row items-center justify-center px-[16px] py-[8px] rounded-[8px] bg-gray-200 dark:bg-gray-700 cursor-pointer hover:opacity-90" },
-                  "actions": [{ "action": "closeDynamicOverlay" }],
-                  "children": [{ "type": "Text", "props": { "className": "text-[14px] font-medium text-gray-800 dark:text-gray-200" }, "text": "Dismiss" }]
+                  "props": {
+                    "className": "w-[40px] h-[4px] rounded-full bg-gray-300 dark:bg-gray-600"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "Heading",
+              "props": {
+                "size": "lg",
+                "className": "font-semibold text-gray-900 dark:text-white"
+              },
+              "text": "{{context.component.props.title}}"
+            },
+            {
+              "type": "Text",
+              "props": {
+                "className": "text-[14px] text-gray-600 dark:text-gray-300"
+              },
+              "text": "Bottom sheet content goes here. Tap the backdrop or Dismiss to close."
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "flex flex-row justify-end"
+              },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "flex flex-row items-center justify-center px-[16px] py-[8px] rounded-[8px] bg-gray-200 dark:bg-gray-700 cursor-pointer hover:opacity-90"
+                  },
+                  "actions": [
+                    {
+                      "action": "closeDynamicOverlay"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-[14px] font-medium text-gray-800 dark:text-gray-200"
+                      },
+                      "text": "Dismiss"
+                    }
+                  ]
                 }
               ]
             }
@@ -175,77 +415,3752 @@
       ]
     }
   },
-
   "sc-drawer": {
     "id": "sc-drawer",
     "name": "Drawer",
     "properties": [
-      { "id": "prop-dr-title", "name": "title", "type": "text", "defaultValue": "Drawer" }
+      {
+        "id": "prop-dr-title",
+        "name": "title",
+        "type": "text",
+        "defaultValue": "Drawer"
+      }
     ],
     "content": {
       "type": "Box",
-      "props": { "className": "fixed inset-0 z-[50]" },
+      "props": {
+        "className": "fixed inset-0 z-[50]"
+      },
       "children": [
         {
           "type": "Box",
-          "props": { "className": "absolute inset-0 bg-black/50 cursor-pointer" },
-          "actions": [{ "action": "closeDynamicOverlay" }]
+          "props": {
+            "className": "absolute inset-0 bg-black/50 cursor-pointer"
+          },
+          "actions": [
+            {
+              "action": "closeDynamicOverlay"
+            }
+          ]
         },
         {
           "type": "Box",
-          "props": { "className": "absolute top-0 left-0 bottom-0 w-[80vw] max-w-[380px] bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px] z-[1]", "animation": { "enter": { "type": "slideInLeft", "from": { "translateX": -800, "opacity": 1 }, "duration": 320 }, "exit": { "type": "slideOutLeft", "to": { "translateX": -800, "opacity": 1 }, "duration": 280 } } },
-          "actions": [{ "type": "stopPropagation" }],
+          "props": {
+            "className": "absolute top-0 left-0 bottom-0 w-[80vw] max-w-[380px] bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px] z-[1]",
+            "animation": {
+              "enter": {
+                "type": "slideInLeft",
+                "from": {
+                  "translateX": -800,
+                  "opacity": 1
+                },
+                "duration": 320
+              },
+              "exit": {
+                "type": "slideOutLeft",
+                "to": {
+                  "translateX": -800,
+                  "opacity": 1
+                },
+                "duration": 280
+              }
+            }
+          },
+          "actions": [
+            {
+              "type": "stopPropagation"
+            }
+          ],
           "children": [
             {
               "type": "Box",
-              "props": { "className": "flex flex-row items-center justify-between" },
+              "props": {
+                "className": "flex flex-row items-center justify-between"
+              },
               "children": [
-                { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-gray-900 dark:text-white" }, "text": "{{context.component.props.title}}" },
+                {
+                  "type": "Heading",
+                  "props": {
+                    "size": "lg",
+                    "className": "font-semibold text-gray-900 dark:text-white"
+                  },
+                  "text": "{{context.component.props.title}}"
+                },
                 {
                   "type": "Box",
-                  "props": { "className": "cursor-pointer p-[4px] rounded-[4px] hover:bg-gray-100 dark:hover:bg-gray-800" },
-                  "actions": [{ "action": "closeDynamicOverlay" }],
-                  "children": [{ "type": "Icon", "props": { "icon": "lucide:x", "size": 18, "color": "#6b7280" } }]
+                  "props": {
+                    "className": "cursor-pointer p-[4px] rounded-[4px] hover:bg-gray-100 dark:hover:bg-gray-800"
+                  },
+                  "actions": [
+                    {
+                      "action": "closeDynamicOverlay"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "props": {
+                        "icon": "lucide:x",
+                        "size": 18,
+                        "color": "#6b7280"
+                      }
+                    }
+                  ]
                 }
               ]
             },
-            { "type": "Text", "props": { "className": "text-[14px] text-gray-600 dark:text-gray-300" }, "text": "Drawer content goes here." }
+            {
+              "type": "Text",
+              "props": {
+                "className": "text-[14px] text-gray-600 dark:text-gray-300"
+              },
+              "text": "Drawer content goes here."
+            }
           ]
         }
       ]
     }
   },
-
   "sc-toast": {
     "id": "sc-toast",
     "name": "Toast",
     "properties": [
-      { "id": "prop-toast-message", "name": "message", "type": "text", "defaultValue": "Action completed successfully." },
-      { "id": "prop-toast-variant", "name": "variant", "type": "text", "defaultValue": "success" }
+      {
+        "id": "prop-toast-message",
+        "name": "message",
+        "type": "text",
+        "defaultValue": "Action completed successfully."
+      },
+      {
+        "id": "prop-toast-variant",
+        "name": "variant",
+        "type": "text",
+        "defaultValue": "success"
+      }
     ],
     "content": {
       "type": "Box",
       "props": {
         "className": "fixed top-[16px] right-[16px] z-[60] w-[360px] bg-white dark:bg-gray-900 rounded-[8px] p-[16px] border border-gray-200 dark:border-gray-700 flex flex-row items-start gap-[12px]",
-        "style": { "boxShadow": "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)" },
-        "animation": { "enter": { "type": "slideInRight", "duration": 200 }, "exit": { "type": "slideOutRight", "to": { "translateX": 800, "opacity": 1 }, "duration": 180 } }
+        "style": {
+          "boxShadow": "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)"
+        },
+        "animation": {
+          "enter": {
+            "type": "slideInRight",
+            "duration": 200
+          },
+          "exit": {
+            "type": "slideOutRight",
+            "to": {
+              "translateX": 800,
+              "opacity": 1
+            },
+            "duration": 180
+          }
+        }
       },
-      "actions": [{ "type": "stopPropagation" }],
+      "actions": [
+        {
+          "type": "stopPropagation"
+        }
+      ],
       "children": [
-        { "type": "Icon", "props": { "icon": "lucide:check-circle", "size": 20, "color": "#22c55e" } },
+        {
+          "type": "Icon",
+          "props": {
+            "icon": "lucide:check-circle",
+            "size": 20,
+            "color": "#22c55e"
+          }
+        },
         {
           "type": "Box",
-          "props": { "className": "flex-1 flex flex-col gap-[2px]" },
+          "props": {
+            "className": "flex-1 flex flex-col gap-[2px]"
+          },
           "children": [
-            { "type": "Text", "props": { "className": "text-[14px] font-semibold text-gray-900 dark:text-white" }, "text": "Success" },
-            { "type": "Text", "props": { "className": "text-[12px] text-gray-500 dark:text-gray-400" }, "text": "{{context.component.props.message}}" }
+            {
+              "type": "Text",
+              "props": {
+                "className": "text-[14px] font-semibold text-gray-900 dark:text-white"
+              },
+              "text": "Success"
+            },
+            {
+              "type": "Text",
+              "props": {
+                "className": "text-[12px] text-gray-500 dark:text-gray-400"
+              },
+              "text": "{{context.component.props.message}}"
+            }
           ]
         },
         {
           "type": "Box",
-          "props": { "className": "cursor-pointer p-[2px] rounded-[4px] hover:bg-gray-100 dark:hover:bg-gray-800" },
-          "actions": [{ "action": "closeDynamicOverlay" }],
-          "children": [{ "type": "Icon", "props": { "icon": "lucide:x", "size": 16, "color": "#9ca3af" } }]
+          "props": {
+            "className": "cursor-pointer p-[2px] rounded-[4px] hover:bg-gray-100 dark:hover:bg-gray-800"
+          },
+          "actions": [
+            {
+              "action": "closeDynamicOverlay"
+            }
+          ],
+          "children": [
+            {
+              "type": "Icon",
+              "props": {
+                "icon": "lucide:x",
+                "size": 16,
+                "color": "#9ca3af"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "sc-navbar": {
+    "id": "sc-navbar",
+    "name": "Navbar",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "id": "navbar-root",
+      "props": {
+        "className": "fixed top-0 left-0 right-0 z-[50] border-b border-[var(--theme-border)] bg-[var(--theme-background)] w-full"
+      },
+      "children": [
+        {
+          "type": "Box",
+          "id": "navbar-inner",
+          "props": {
+            "className": "w-full max-w-screen-xl mx-auto px-[16px]"
+          },
+          "children": [
+            {
+              "type": "Box",
+              "id": "navbar-row",
+              "props": {
+                "className": "w-full flex flex-row items-center justify-between h-[64px]"
+              },
+              "children": [
+                {
+                  "type": "Box",
+                  "id": "navbar-left",
+                  "props": {
+                    "className": "flex flex-row items-center gap-[24px]"
+                  },
+                  "children": [
+                    {
+                      "type": "Box",
+                      "id": "navbar-logo",
+                      "actions": [
+                        {
+                          "action": "9e33ef0a-706f-4555-b2ee-60fd95ebf416"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "Image",
+                          "id": "navbar-logo-image",
+                          "props": {
+                            "src": "/vendure.svg",
+                            "alt": "Vendure",
+                            "width": 36,
+                            "height": 24,
+                            "className": "h-[20px] w-auto dark:invert"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Box",
+                      "id": "navbar-collections",
+                      "props": {
+                        "className": "hidden md:flex flex-row items-center gap-[4px]"
+                      },
+                      "children": [
+                        {
+                          "type": "Box",
+                          "map": "collections.a7b8c9d0-e1f2-3456-abcd-567890123456.data.collections.items",
+                          "key": "navCollection",
+                          "props": {
+                            "className": "contents"
+                          },
+                          "children": [
+                            {
+                              "type": "Box",
+                              "props": {
+                                "className": "px-[8px] py-[6px] rounded-[4px] text-[14px] hover:bg-[var(--theme-card-foreground)]/10 text-[var(--theme-foreground)]"
+                              },
+                              "actions": [
+                                {
+                                  "action": "7ae5e4b1-51c4-4266-b001-971a30296623"
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "props": {
+                                    "className": "text-[14px] font-medium text-[var(--theme-foreground)]"
+                                  },
+                                  "text": "{{context.item.data.name}}"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "id": "navbar-right",
+                  "props": {
+                    "className": "flex flex-row items-center gap-[8px]"
+                  },
+                  "children": [
+                    {
+                      "type": "Box",
+                      "id": "navbar-search",
+                      "props": {
+                        "className": "hidden"
+                      },
+                      "children": []
+                    },
+                    {
+                      "type": "Box",
+                      "id": "navbar-actions",
+                      "props": {
+                        "className": "flex flex-row items-center gap-[4px]"
+                      },
+                      "children": [
+                        {
+                          "type": "Box",
+                          "id": "navbar-theme",
+                          "props": {
+                            "className": "relative"
+                          },
+                          "popover": {
+                            "trigger": "click",
+                            "placement": "bottom-end",
+                            "openVariable": "e4f5a6b7-c8d9-0123-efab-234567890123"
+                          },
+                          "children": [
+                            {
+                              "type": "Box",
+                              "id": "navbar-theme-button",
+                              "props": {
+                                "className": "inline-flex items-center justify-center h-[32px] w-[32px] rounded-[4px] hover:bg-[var(--theme-card-foreground)]/10"
+                              },
+                              "children": [
+                                {
+                                  "type": "Icon",
+                                  "props": {
+                                    "icon": "lucide:sun",
+                                    "size": 18,
+                                    "className": "text-[var(--theme-foreground)]"
+                                  },
+                                  "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] === 'dark'"
+                                },
+                                {
+                                  "type": "Icon",
+                                  "props": {
+                                    "icon": "lucide:moon",
+                                    "size": 18,
+                                    "className": "text-[var(--theme-foreground)]"
+                                  },
+                                  "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] !== 'dark'"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "Box",
+                              "_popoverContent": true,
+                              "props": {
+                                "className": "w-[144px] rounded-[6px] border-[1px] border-[var(--border)] bg-[var(--theme-card)] shadow-md py-[4px]"
+                              },
+                              "children": [
+                                {
+                                  "type": "Box",
+                                  "props": {
+                                    "className": "w-full flex flex-row items-center gap-[8px] px-[12px] py-[8px] hover:bg-[var(--theme-card-foreground)]/10"
+                                  },
+                                  "actions": [
+                                    {
+                                      "action": "6e3af5bc-85bf-491e-984e-55faa5e975f9"
+                                    }
+                                  ],
+                                  "children": [
+                                    {
+                                      "type": "Icon",
+                                      "props": {
+                                        "icon": "lucide:sun",
+                                        "size": 16,
+                                        "className": "text-[var(--theme-foreground)]"
+                                      }
+                                    },
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "className": "flex-1 text-left text-[14px] text-[var(--theme-foreground)]"
+                                      },
+                                      "text": "Light"
+                                    },
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "className": "text-[12px] text-[var(--theme-muted-foreground)]"
+                                      },
+                                      "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] === 'light'",
+                                      "text": "✓"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "Box",
+                                  "props": {
+                                    "className": "w-full flex flex-row items-center gap-[8px] px-[12px] py-[8px] hover:bg-[var(--theme-card-foreground)]/10"
+                                  },
+                                  "actions": [
+                                    {
+                                      "action": "36658639-6572-46b6-b296-8a92ab9592b2"
+                                    }
+                                  ],
+                                  "children": [
+                                    {
+                                      "type": "Icon",
+                                      "props": {
+                                        "icon": "lucide:moon",
+                                        "size": 16,
+                                        "className": "text-[var(--theme-foreground)]"
+                                      }
+                                    },
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "className": "flex-1 text-left text-[14px] text-[var(--theme-foreground)]"
+                                      },
+                                      "text": "Dark"
+                                    },
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "className": "text-[12px] text-[var(--theme-muted-foreground)]"
+                                      },
+                                      "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] === 'dark'",
+                                      "text": "✓"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "Box",
+                                  "props": {
+                                    "className": "w-full flex flex-row items-center gap-[8px] px-[12px] py-[8px] hover:bg-[var(--theme-card-foreground)]/10"
+                                  },
+                                  "actions": [
+                                    {
+                                      "action": "05784685-1412-4e52-81d7-026aa7a40663"
+                                    }
+                                  ],
+                                  "children": [
+                                    {
+                                      "type": "Icon",
+                                      "props": {
+                                        "icon": "lucide:monitor",
+                                        "size": 16,
+                                        "className": "text-[var(--theme-foreground)]"
+                                      }
+                                    },
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "className": "flex-1 text-left text-[14px] text-[var(--theme-foreground)]"
+                                      },
+                                      "text": "System"
+                                    },
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "className": "text-[12px] text-[var(--theme-muted-foreground)]"
+                                      },
+                                      "condition": "variables['d3e4f5a6-b7c8-9012-defa-123456789012'] === 'system'",
+                                      "text": "✓"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Box",
+                          "id": "navbar-cart",
+                          "props": {},
+                          "children": [
+                            {
+                              "type": "Box",
+                              "id": "navbar-cart-button",
+                              "props": {
+                                "className": "relative inline-flex items-center justify-center h-[32px] w-[32px] rounded-[4px] hover:bg-[var(--theme-card-foreground)]/10"
+                              },
+                              "actions": [
+                                {
+                                  "action": "398b94ec-901a-49c6-b19d-198854cefd07"
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "Icon",
+                                  "props": {
+                                    "icon": "lucide:shopping-bag",
+                                    "size": 18,
+                                    "className": "text-[var(--theme-foreground)]"
+                                  }
+                                },
+                                {
+                                  "type": "Box",
+                                  "id": "navbar-cart-badge",
+                                  "props": {
+                                    "className": "absolute -top-[2px] -right-[2px] h-[14px] w-[14px] rounded-[9999px] bg-[var(--theme-primary)] flex items-center justify-center pointer-events-none"
+                                  },
+                                  "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity > 0",
+                                  "children": [
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "className": "text-[var(--theme-primary-foreground)] text-[9px] font-bold"
+                                      },
+                                      "text": "{{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.totalQuantity}}"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Box",
+                          "id": "navbar-auth",
+                          "props": {},
+                          "children": [
+                            {
+                              "type": "Box",
+                              "id": "navbar-sign-in",
+                              "props": {
+                                "className": "inline-flex flex-row items-center h-[32px] px-[8px] rounded-[4px] hover:bg-[var(--theme-card-foreground)]/10"
+                              },
+                              "condition": "!auth?.user",
+                              "actions": [
+                                {
+                                  "action": "3517ed88-9e35-42fd-8d44-650cb590d210"
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "props": {
+                                    "className": "text-[14px] font-medium text-[var(--theme-foreground)]"
+                                  },
+                                  "text": "Sign in"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "Box",
+                              "props": {
+                                "className": "flex flex-row items-center gap-[4px]"
+                              },
+                              "condition": "auth?.user",
+                              "children": [
+                                {
+                                  "type": "Box",
+                                  "props": {
+                                    "className": "inline-flex flex-row items-center gap-[6px] h-[32px] px-[8px] rounded-[4px] hover:bg-[var(--theme-muted)]"
+                                  },
+                                  "actions": [
+                                    {
+                                      "action": "d5d15a7d-ea78-467a-a181-2e801e93ce0f"
+                                    }
+                                  ],
+                                  "children": [
+                                    {
+                                      "type": "Icon",
+                                      "props": {
+                                        "icon": "lucide:user",
+                                        "size": 16,
+                                        "className": "text-[var(--theme-foreground)]"
+                                      }
+                                    },
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "className": "hidden sm:flex text-[14px] font-medium text-[var(--theme-foreground)]"
+                                      },
+                                      "text": "Hi, {{auth.user.firstName}}"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "Box",
+                                  "props": {
+                                    "className": "h-[32px] px-[8px] rounded-[4px] hover:bg-[var(--theme-muted)]"
+                                  },
+                                  "actions": [
+                                    {
+                                      "action": "f9a0b1c2-d3e4-5678-fabc-901234567890"
+                                    }
+                                  ],
+                                  "children": [
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "className": "text-[14px] text-[var(--theme-muted-foreground)]"
+                                      },
+                                      "text": "Sign out"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "sc-footer": {
+    "id": "sc-footer",
+    "name": "Footer",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "props": {
+        "className": "w-full border-t border-[var(--theme-border)] mt-auto bg-[var(--theme-background)]"
+      },
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "className": "w-full max-w-screen-xl mx-auto px-[16px] py-[48px]"
+          },
+          "children": [
+            {
+              "type": "Box",
+              "props": {
+                "className": "w-full grid grid-cols-1 md:grid-cols-4 gap-[32px]"
+              },
+              "children": [
+                {
+                  "type": "Box",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-[14px] font-semibold mb-[16px] uppercase tracking-wider text-[var(--theme-foreground)]"
+                      },
+                      "text": "Vendure Store"
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-[14px] font-semibold mb-[16px] text-[var(--theme-foreground)]"
+                      },
+                      "text": "Categories"
+                    },
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "flex flex-col gap-[8px]"
+                      },
+                      "children": [
+                        {
+                          "type": "Box",
+                          "map": "collections.a7b8c9d0-e1f2-3456-abcd-567890123456.data.collections.items",
+                          "key": "footerCol",
+                          "props": {
+                            "className": "contents"
+                          },
+                          "children": [
+                            {
+                              "type": "Box",
+                              "actions": [
+                                {
+                                  "action": "7ae5e4b1-51c4-4266-b001-971a30296623"
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "props": {
+                                    "className": "text-[14px] text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)]"
+                                  },
+                                  "text": "{{context.item.data.name}}"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-[14px] font-semibold mb-[16px] text-[var(--theme-foreground)]"
+                      },
+                      "text": "Vendure"
+                    },
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "flex flex-col gap-[8px]"
+                      },
+                      "children": [
+                        {
+                          "type": "Box",
+                          "children": [
+                            {
+                              "type": "Text",
+                              "props": {
+                                "className": "text-[14px] text-[var(--theme-muted-foreground)]"
+                              },
+                              "text": "GitHub"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Box",
+                          "children": [
+                            {
+                              "type": "Text",
+                              "props": {
+                                "className": "text-[14px] text-[var(--theme-muted-foreground)]"
+                              },
+                              "text": "Documentation"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Box",
+                          "children": [
+                            {
+                              "type": "Text",
+                              "props": {
+                                "className": "text-[14px] text-[var(--theme-muted-foreground)]"
+                              },
+                              "text": "Source code"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "w-full mt-[48px] pt-[32px] border-t border-[var(--theme-border)] flex flex-col md:flex-row justify-between items-center gap-[16px]"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "text-[14px] text-[var(--theme-muted-foreground)]"
+                  },
+                  "text": "© 2025 Vendure Store. All rights reserved."
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "flex flex-row items-center gap-[8px]"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-[14px] text-[var(--theme-muted-foreground)]"
+                      },
+                      "text": "Powered by"
+                    },
+                    {
+                      "type": "Image",
+                      "props": {
+                        "src": "/vendure.svg",
+                        "alt": "Vendure",
+                        "width": 40,
+                        "height": 27,
+                        "className": "h-[16px] w-auto dark:invert"
+                      }
+                    },
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-[14px] text-[var(--theme-muted-foreground)]"
+                      },
+                      "text": "&"
+                    },
+                    {
+                      "type": "Image",
+                      "props": {
+                        "src": "/next.svg",
+                        "alt": "Next.js",
+                        "width": 16,
+                        "height": 16,
+                        "className": "h-[20px] w-auto dark:invert"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "sc-cart-drawer": {
+    "id": "sc-cart-drawer",
+    "name": "Cart Drawer",
+    "properties": [],
+    "content": {
+      "type": "Drawer",
+      "props": {
+        "anchor": "right"
+      },
+      "condition": "variables['c2d3e4f5-a6b7-8901-cdef-012345678901']",
+      "children": [
+        {
+          "type": "DrawerBackdrop",
+          "actions": [
+            {
+              "action": "90ca7f64-f883-45db-95b6-b2bb3c46033e"
+            }
+          ]
+        },
+        {
+          "type": "DrawerContent",
+          "props": {
+            "className": "w-full max-w-[384px]"
+          },
+          "children": [
+            {
+              "type": "DrawerHeader",
+              "props": {
+                "className": "border-b border-[var(--theme-border)] pb-[16px]"
+              },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "flex items-center justify-between flex-row"
+                  },
+                  "children": [
+                    {
+                      "type": "Heading",
+                      "props": {
+                        "className": "text-[18px] font-bold"
+                      },
+                      "text": "Shopping Cart"
+                    },
+                    {
+                      "type": "DrawerCloseButton",
+                      "props": {
+                        "className": "h-[32px] w-[32px] rounded-[6px] border-[0px] bg-transparent hover:bg-[var(--theme-muted)] flex items-center justify-center"
+                      },
+                      "actions": [
+                        {
+                          "action": "90ca7f64-f883-45db-95b6-b2bb3c46033e"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "DrawerBody",
+              "props": {
+                "className": "overflow-y-auto flex-1 py-[16px]"
+              },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "flex flex-col items-center justify-center py-[48px] text-center"
+                  },
+                  "condition": "(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity || 0) === 0",
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "props": {
+                        "icon": "lucide:shopping-bag",
+                        "className": "h-[48px] w-[48px] text-[var(--theme-muted-foreground)] mb-[16px]"
+                      }
+                    },
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-[var(--theme-muted-foreground)]"
+                      },
+                      "text": "Your cart is empty"
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "space-y-[12px] flex flex-col"
+                  },
+                  "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity > 0",
+                  "map": "collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.lines",
+                  "key": "drawerLine",
+                  "children": [
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "flex gap-[12px] items-start flex-row"
+                      },
+                      "children": [
+                        {
+                          "type": "Image",
+                          "props": {
+                            "src": "{{context.item.data.productVariant.product.featuredAsset.preview}}",
+                            "alt": "{{context.item.data.productVariant.product.name}}",
+                            "width": 64,
+                            "height": 64,
+                            "className": "rounded-[6px] object-cover w-[64px] h-[64px] flex-shrink-0 border-[1px] border-[var(--theme-border)]"
+                          }
+                        },
+                        {
+                          "type": "Box",
+                          "props": {
+                            "className": "flex-1 min-w-0"
+                          },
+                          "children": [
+                            {
+                              "type": "Text",
+                              "props": {
+                                "className": "text-[14px] font-medium truncate"
+                              },
+                              "text": "{{context.item.data.productVariant.product.name}}"
+                            },
+                            {
+                              "type": "Text",
+                              "props": {
+                                "className": "text-[12px] text-[var(--theme-muted-foreground)] mt-[2px]"
+                              },
+                              "text": "{{context.item.data.productVariant.name}}"
+                            },
+                            {
+                              "type": "Box",
+                              "props": {
+                                "className": "flex items-center justify-between mt-[8px] flex-row"
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "props": {
+                                    "className": "text-[14px]"
+                                  },
+                                  "text": "Qty: {{context.item.data.quantity}}"
+                                },
+                                {
+                                  "type": "Text",
+                                  "props": {
+                                    "className": "text-[14px] font-medium"
+                                  },
+                                  "text": {
+                                    "formula": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Box",
+                          "props": {
+                            "className": "text-[var(--theme-muted-foreground)] hover:text-red-500 transition-colors p-[4px]"
+                          },
+                          "actions": [
+                            {
+                              "action": "aa100003-0000-0000-0000-000000000003"
+                            }
+                          ],
+                          "children": [
+                            {
+                              "type": "Text",
+                              "props": {
+                                "className": "text-[14px]"
+                              },
+                              "text": "✕"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "DrawerFooter",
+              "props": {
+                "className": "border-t border-[var(--theme-border)] pt-[16px] space-y-[12px]"
+              },
+              "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity > 0",
+              "children": [
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "flex justify-between items-center mb-[8px] flex-row"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-[14px] text-[var(--theme-muted-foreground)]"
+                      },
+                      "text": "Subtotal"
+                    },
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "font-semibold"
+                      },
+                      "text": {
+                        "formula": "formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.subTotalWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "w-full bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] h-[44px] font-medium flex flex-row items-center justify-center rounded-[6px]"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-white"
+                      },
+                      "text": "View Cart"
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "action": "398b94ec-901a-49c6-b19d-198854cefd07"
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "w-full border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] text-[var(--theme-foreground)] hover:bg-[var(--theme-muted)] h-[40px] flex flex-row items-center justify-center rounded-[6px]"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-[var(--theme-foreground)]"
+                      },
+                      "text": "Checkout"
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "action": "13a93f84-964f-4116-84da-d2af7cc3bc81"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "sc-account-sidebar": {
+    "id": "sc-account-sidebar",
+    "name": "Account Sidebar",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "props": {
+        "className": "w-[256px] flex-shrink-0"
+      },
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "className": "rounded-[8px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] p-[16px] sticky top-[80px]"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "className": "text-[12px] font-semibold uppercase tracking-wider text-[var(--theme-muted-foreground)] mb-[12px] px-[8px]"
+              },
+              "text": "Account"
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "space-y-[2px] flex flex-col"
+              },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "flex items-center gap-[12px] w-full px-[12px] py-[8px] rounded-[6px] text-[14px] font-medium hover:bg-[var(--theme-muted)] hover:text-[var(--theme-foreground)] transition-colors text-[var(--theme-foreground)]"
+                  },
+                  "actions": [
+                    {
+                      "action": "d5d15a7d-ea78-467a-a181-2e801e93ce0f"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "props": {
+                        "icon": "lucide:share",
+                        "className": "h-[16px] w-[16px]"
+                      }
+                    },
+                    {
+                      "type": "Text",
+                      "text": "Orders"
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "flex items-center gap-[12px] w-full px-[12px] py-[8px] rounded-[6px] text-[14px] font-medium hover:bg-[var(--theme-muted)] hover:text-[var(--theme-foreground)] transition-colors text-[var(--theme-foreground)]"
+                  },
+                  "actions": [
+                    {
+                      "action": "08b2f4a8-16d3-4e61-bcce-e17a2097b8da"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "props": {
+                        "icon": "lucide:globe",
+                        "className": "h-[16px] w-[16px]"
+                      }
+                    },
+                    {
+                      "type": "Text",
+                      "text": "Addresses"
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "flex items-center gap-[12px] w-full px-[12px] py-[8px] rounded-[6px] text-[14px] font-medium hover:bg-[var(--theme-muted)] hover:text-[var(--theme-foreground)] transition-colors text-[var(--theme-foreground)]"
+                  },
+                  "actions": [
+                    {
+                      "action": "72ba89df-9230-4ca9-85dc-9294fa2062fb"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "props": {
+                        "icon": "lucide:user",
+                        "className": "h-[16px] w-[16px]"
+                      }
+                    },
+                    {
+                      "type": "Text",
+                      "text": "Profile"
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "border-t border-[var(--theme-border)] my-[4px]"
+                  }
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "flex items-center gap-[12px] w-full px-[12px] py-[8px] rounded-[6px] text-[14px] font-medium text-red-500 hover:bg-red-50 transition-colors"
+                  },
+                  "actions": [
+                    {
+                      "action": "f9a0b1c2-d3e4-5678-fabc-901234567890"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "props": {
+                        "icon": "lucide:menu",
+                        "className": "h-[16px] w-[16px]"
+                      }
+                    },
+                    {
+                      "type": "Text",
+                      "text": "Sign Out"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "sc-product-card": {
+    "id": "sc-product-card",
+    "name": "Product Card",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "props": {
+        "className": "group block bg-[var(--theme-card)] rounded-[8px] overflow-hidden border-[1px] border-[var(--border)] hover:shadow-lg transition-shadow"
+      },
+      "actions": [
+        {
+          "action": "f6046c33-0164-45b5-86aa-0710fc408247"
+        }
+      ],
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "className": "w-full aspect-square relative overflow-hidden bg-[var(--theme-muted)]"
+          },
+          "children": [
+            {
+              "type": "Image",
+              "props": {
+                "src": "{{context.item.data.productAsset.preview}}",
+                "alt": "{{context.item.data.productName}}",
+                "fill": true,
+                "className": "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300",
+                "sizes": "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              }
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "w-full h-full flex items-center justify-center text-[var(--theme-muted-foreground)]"
+              },
+              "condition": "!context?.item?.data?.productAsset",
+              "children": [
+                {
+                  "type": "Text",
+                  "text": "No image"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "p-[16px] space-y-[8px]"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "className": "font-medium line-clamp-2 group-hover:opacity-80 transition-colors text-[var(--theme-card-foreground)]"
+              },
+              "text": "{{context.item.data.productName}}"
+            },
+            {
+              "type": "Text",
+              "props": {
+                "className": "text-[18px] font-bold text-[var(--theme-card-foreground)]"
+              },
+              "text": {
+                "formula": "context?.item?.data?.priceWithTax?.__typename === 'SinglePrice' ? formatCurrency(context?.item?.data?.priceWithTax?.value / 100, context?.item?.data?.currencyCode || 'USD') : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min / 100, context?.item?.data?.currencyCode || 'USD')"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "sc-product-image-carousel": {
+    "id": "sc-product-image-carousel",
+    "name": "Product Image Carousel",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "props": {
+        "className": "space-y-[16px]"
+      },
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "className": "relative aspect-square bg-[var(--theme-muted)] rounded-[8px] overflow-hidden group"
+          },
+          "children": [
+            {
+              "type": "Box",
+              "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets",
+              "props": {
+                "className": "w-full h-full relative"
+              },
+              "children": [
+                {
+                  "type": "Image",
+                  "condition": {
+                    "formula": "at(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets, variables['d5e6f7a8-b9c0-1234-defa-345678901234'] || 0)"
+                  },
+                  "props": {
+                    "src": {
+                      "formula": "getKeyValue(at(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets, variables['d5e6f7a8-b9c0-1234-defa-345678901234'] || 0), 'source')"
+                    },
+                    "alt": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.name}}",
+                    "fill": true,
+                    "className": "w-full h-full object-cover",
+                    "sizes": "(max-width: 1024px) 100vw, 50vw",
+                    "priority": true
+                  }
+                },
+                {
+                  "type": "Box",
+                  "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets?.length > 1",
+                  "props": {
+                    "className": "absolute left-[8px] top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  },
+                  "children": [
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "h-[40px] w-[40px] rounded-[9999px] bg-[var(--theme-card)]/80 hover:bg-[var(--theme-card)] border-[1px] border-[var(--theme-border)] flex flex-row items-center justify-center"
+                      },
+                      "actions": [
+                        {
+                          "action": "84c5de07-4f71-44a3-904a-020758146a5f"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "Icon",
+                          "props": {
+                            "icon": "lucide:chevron-left",
+                            "size": 24
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets?.length > 1",
+                  "props": {
+                    "className": "absolute right-[8px] top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  },
+                  "children": [
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "h-[40px] w-[40px] rounded-[9999px] bg-[var(--theme-card)]/80 hover:bg-[var(--theme-card)] border-[1px] border-[var(--theme-border)] flex flex-row items-center justify-center"
+                      },
+                      "actions": [
+                        {
+                          "action": "b5760629-bb22-4ace-a567-406e1afe14d1"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "Icon",
+                          "props": {
+                            "icon": "lucide:chevron-right",
+                            "size": 24
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets?.length > 1",
+                  "props": {
+                    "className": "absolute bottom-[16px] left-1/2 -translate-x-1/2 bg-[var(--theme-card)]/80 px-[12px] py-[4px] rounded-[9999px] text-[14px]"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "text": {
+                        "formula": "(variables['d5e6f7a8-b9c0-1234-defa-345678901234'] || 0) + 1 + ' / ' + (collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets?.length || 0)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Box",
+              "condition": "!collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets",
+              "props": {
+                "className": "w-full h-full flex items-center justify-center"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "text-[var(--theme-muted-foreground)]"
+                  },
+                  "text": "No images available"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets?.length > 1",
+          "props": {
+            "className": "grid grid-cols-4 gap-[8px]"
+          },
+          "children": [
+            {
+              "type": "Box",
+              "map": "collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.assets",
+              "key": "assetThumb",
+              "props": {
+                "className": "contents"
+              },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "w-full aspect-square relative rounded-[8px] overflow-hidden border-[2px] transition-colors"
+                  },
+                  "actions": [
+                    {
+                      "action": "59bc7c99-d110-4e01-8563-de6371d2147e"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "Image",
+                      "props": {
+                        "src": "{{context.item.data.preview}}",
+                        "alt": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.name}}",
+                        "fill": true,
+                        "className": "object-cover w-full h-full",
+                        "sizes": "25vw"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "sc-product-info": {
+    "id": "sc-product-info",
+    "name": "Product Info",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "props": {
+        "className": "space-y-[24px] flex flex-col"
+      },
+      "children": [
+        {
+          "type": "Box",
+          "children": [
+            {
+              "type": "Heading",
+              "props": {
+                "className": "text-[30px] font-bold"
+              },
+              "text": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.name}}"
+            },
+            {
+              "type": "Text",
+              "condition": {
+                "formula": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123']))"
+              },
+              "props": {
+                "className": "text-[24px] font-bold mt-[8px]"
+              },
+              "text": {
+                "formula": "formatCurrency(getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'priceWithTax') / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+              }
+            }
+          ]
+        },
+        {
+          "type": "HtmlContent",
+          "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.description",
+          "props": {
+            "html": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.description}}",
+            "className": "prose prose-sm max-w-none text-[var(--theme-muted-foreground)]"
+          }
+        },
+        {
+          "type": "Box",
+          "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups?.length > 0",
+          "props": {
+            "className": "space-y-[16px]"
+          },
+          "children": [
+            {
+              "type": "Box",
+              "map": "collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups",
+              "key": "optionGroup",
+              "props": {
+                "className": "space-y-[12px]"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "text-[16px] font-semibold"
+                  },
+                  "text": "{{context.item.data.name}}"
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "grid grid-cols-2 sm:grid-cols-3 gap-[12px]"
+                  },
+                  "children": [
+                    {
+                      "type": "Box",
+                      "map": "context.item.data.options",
+                      "key": "variantOption",
+                      "props": {
+                        "className": "contents"
+                      },
+                      "children": [
+                        {
+                          "type": "Box",
+                          "condition": "getFromMap(variables['c4d5e6f7-a8b9-0123-cdef-234567890123'], get('$parent.id')) === context?.item?.data?.id",
+                          "props": {
+                            "className": "flex items-center justify-center rounded-[6px] border-[2px] border-[var(--theme-primary)] bg-[var(--theme-primary)]/5 px-[16px] py-[12px] transition-colors"
+                          },
+                          "actions": [
+                            {
+                              "action": "a1b2ce90-4498-47d2-b42f-e50f0a6972a7"
+                            }
+                          ],
+                          "children": [
+                            {
+                              "type": "Text",
+                              "text": "{{context.item.data.name}}"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Box",
+                          "condition": "getFromMap(variables['c4d5e6f7-a8b9-0123-cdef-234567890123'], get('$parent.id')) !== context?.item?.data?.id",
+                          "props": {
+                            "className": "flex items-center justify-center rounded-[6px] border-[2px] border-[var(--theme-border)] bg-[var(--theme-muted)] px-[16px] py-[12px] hover:bg-[var(--theme-card)] transition-colors"
+                          },
+                          "actions": [
+                            {
+                              "action": "a1b2ce90-4498-47d2-b42f-e50f0a6972a7"
+                            }
+                          ],
+                          "children": [
+                            {
+                              "type": "Text",
+                              "text": "{{context.item.data.name}}"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "condition": {
+            "formula": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123']))"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "condition": {
+                "formula": "getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') !== 'OUT_OF_STOCK'"
+              },
+              "props": {
+                "className": "text-[14px] text-green-600 font-medium"
+              },
+              "text": "In Stock"
+            },
+            {
+              "type": "Text",
+              "condition": {
+                "formula": "getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') === 'OUT_OF_STOCK'"
+              },
+              "props": {
+                "className": "text-[14px] text-red-600 font-medium"
+              },
+              "text": "Out of Stock"
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "pt-[16px]"
+          },
+          "children": [
+            {
+              "type": "Box",
+              "condition": {
+                "formula": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) && getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') !== 'OUT_OF_STOCK'"
+              },
+              "props": {
+                "className": "w-full !bg-[var(--theme-primary)] hover:!bg-[var(--theme-primary)] !text-white flex flex-row items-center justify-center py-[12px] rounded-[6px]"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "text-white"
+                  },
+                  "text": "Add to Cart"
+                }
+              ],
+              "actions": [
+                {
+                  "action": "aa100001-0000-0000-0000-000000000001"
+                }
+              ]
+            },
+            {
+              "type": "Box",
+              "condition": {
+                "formula": "!findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) || getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') === 'OUT_OF_STOCK'"
+              },
+              "props": {
+                "className": "w-full !bg-[var(--theme-border)] !text-[var(--theme-muted-foreground)] cursor-not-allowed flex flex-row items-center justify-center py-[12px] rounded-[6px]",
+                "disabled": true
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "text-[var(--theme-muted-foreground)]"
+                  },
+                  "text": {
+                    "formula": "!findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) ? 'Select Options' : 'Out of Stock'"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "condition": {
+            "formula": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) && getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'sku')"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "className": "text-[12px] text-[var(--theme-muted-foreground)]"
+              },
+              "text": {
+                "formula": "'SKU: ' + getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'sku')"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "sc-collection-pagination": {
+    "id": "sc-collection-pagination",
+    "name": "Collection Pagination",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "props": {
+        "className": "w-full border-t border-[var(--theme-border)] pt-[32px] flex flex-row items-center justify-center gap-[8px] flex-wrap"
+      },
+      "condition": "collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.data?.search?.totalItems > 12",
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-muted)] cursor-not-allowed pointer-events-none flex-shrink-0"
+          },
+          "condition": "toNumber(globalContext?.browser?.query?.page || 1) <= 1",
+          "children": [
+            {
+              "type": "Icon",
+              "props": {
+                "icon": "lucide:chevron-left",
+                "size": 16,
+                "color": "#6b7280"
+              }
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] hover:bg-[var(--theme-muted)] transition-colors flex-shrink-0"
+          },
+          "condition": "toNumber(globalContext?.browser?.query?.page || 1) > 1",
+          "children": [
+            {
+              "type": "Icon",
+              "props": {
+                "icon": "lucide:chevron-left",
+                "size": 16,
+                "color": "#374151"
+              }
+            }
+          ],
+          "actions": [
+            {
+              "action": "5f0b09fc-9aed-4a27-a60d-d44a3b5a37c9"
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "contents"
+          },
+          "map": {
+            "formula": "paginationPages(collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.data?.search?.totalItems || 0, max(0, (toNumber(globalContext?.browser?.query?.page || 1) - 1) * 12), 12)"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "className": "px-[8px] text-[14px] text-[var(--theme-muted-foreground)] flex-shrink-0"
+              },
+              "condition": "context?.item?.data?.value === '...'",
+              "text": "..."
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-primary)] bg-[var(--theme-primary)] text-white pointer-events-none flex-shrink-0"
+              },
+              "condition": "context?.item?.data?.value !== '...' && context?.item?.data?.value === toNumber(globalContext?.browser?.query?.page || 1)",
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "text-[14px] font-medium text-white"
+                  },
+                  "text": "{{context.item.data.value}}"
+                }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] hover:bg-[var(--theme-muted)] transition-colors flex-shrink-0"
+              },
+              "condition": "context?.item?.data?.value !== '...' && context?.item?.data?.value !== toNumber(globalContext?.browser?.query?.page || 1)",
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "text-[14px] font-medium text-[var(--theme-foreground)]"
+                  },
+                  "text": "{{context.item.data.value}}"
+                }
+              ],
+              "actions": [
+                {
+                  "action": "184bea54-8bde-4fd0-a4fd-e3f6766d99b8"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-muted)] cursor-not-allowed pointer-events-none flex-shrink-0"
+          },
+          "condition": "toNumber(globalContext?.browser?.query?.page || 1) >= max(1, ceil((collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.data?.search?.totalItems || 0) / 12))",
+          "children": [
+            {
+              "type": "Icon",
+              "props": {
+                "icon": "lucide:chevron-right",
+                "size": 16,
+                "color": "#6b7280"
+              }
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] hover:bg-[var(--theme-muted)] transition-colors flex-shrink-0"
+          },
+          "condition": "toNumber(globalContext?.browser?.query?.page || 1) < max(1, ceil((collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.data?.search?.totalItems || 0) / 12))",
+          "children": [
+            {
+              "type": "Icon",
+              "props": {
+                "icon": "lucide:chevron-right",
+                "size": 16,
+                "color": "#374151"
+              }
+            }
+          ],
+          "actions": [
+            {
+              "action": "585677d0-57d6-4868-b6f9-f1adf2d3215e"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "sc-search-pagination": {
+    "id": "sc-search-pagination",
+    "name": "Search Pagination",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "props": {
+        "className": "w-full border-t border-[var(--theme-border)] pt-[32px] flex flex-row items-center justify-center gap-[8px] flex-wrap"
+      },
+      "condition": "collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems > get('collectionPageSize')",
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-muted)] cursor-not-allowed pointer-events-none flex-shrink-0"
+          },
+          "condition": "max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) <= 1",
+          "children": [
+            {
+              "type": "Icon",
+              "props": {
+                "icon": "lucide:chevron-left",
+                "size": 16,
+                "color": "#6b7280"
+              }
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] hover:bg-[var(--theme-muted)] transition-colors flex-shrink-0"
+          },
+          "condition": "max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) > 1",
+          "children": [
+            {
+              "type": "Icon",
+              "props": {
+                "icon": "lucide:chevron-left",
+                "size": 16,
+                "color": "#374151"
+              }
+            }
+          ],
+          "actions": [
+            {
+              "action": "e3a8111d-44c3-4461-b71c-698d1785bb52"
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "contents"
+          },
+          "map": {
+            "formula": "paginationPages(collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems || 0, variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0, get('collectionPageSize') || 12)"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "className": "px-[8px] text-[14px] text-[var(--theme-muted-foreground)] flex-shrink-0"
+              },
+              "condition": "context?.item === '...'",
+              "text": "..."
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-primary)] bg-[var(--theme-primary)] text-white pointer-events-none flex-shrink-0"
+              },
+              "condition": "context?.item !== '...' && context?.item === max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1))",
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "text-[14px] font-medium text-white"
+                  },
+                  "text": "{{$item}}"
+                }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] hover:bg-[var(--theme-muted)] transition-colors flex-shrink-0"
+              },
+              "condition": "context?.item !== '...' && context?.item !== max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1))",
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "text-[14px] font-medium text-[var(--theme-foreground)]"
+                  },
+                  "text": "{{$item}}"
+                }
+              ],
+              "actions": [
+                {
+                  "action": "182725e0-e189-4bf1-ac8f-572221061727"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-muted)] cursor-not-allowed pointer-events-none flex-shrink-0"
+          },
+          "condition": "max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) >= max(1, ceil((collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems || 0) / (get('collectionPageSize') || 12)))",
+          "children": [
+            {
+              "type": "Icon",
+              "props": {
+                "icon": "lucide:chevron-right",
+                "size": 16,
+                "color": "#6b7280"
+              }
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] hover:bg-[var(--theme-muted)] transition-colors flex-shrink-0"
+          },
+          "condition": "max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) < max(1, ceil((collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems || 0) / (get('collectionPageSize') || 12)))",
+          "children": [
+            {
+              "type": "Icon",
+              "props": {
+                "icon": "lucide:chevron-right",
+                "size": 16,
+                "color": "#374151"
+              }
+            }
+          ],
+          "actions": [
+            {
+              "action": "091be296-4048-45a1-a65d-8205c636215b"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "sc-collection-loading": {
+    "id": "sc-collection-loading",
+    "name": "Collection Loading Skeleton",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "_stateTag": "loading",
+      "props": {
+        "className": "grid grid-cols-1 lg:grid-cols-4 gap-[32px] animate-pulse"
+      },
+      "condition": "collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.loading",
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "className": "lg:col-span-1 h-[256px] bg-[var(--theme-muted)] rounded-[8px]"
+          }
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "lg:col-span-3 space-y-[24px]"
+          },
+          "children": [
+            {
+              "type": "Box",
+              "props": {
+                "className": "w-full flex flex-row justify-between items-center"
+              },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "h-[20px] bg-[var(--theme-muted)] rounded-[4px] w-[96px]"
+                  }
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "h-[36px] bg-[var(--theme-muted)] rounded-[4px] w-[176px] flex-shrink-0"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[24px]"
+              },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px]"
+                  }
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px]"
+                  }
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px]"
+                  }
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] hidden sm:block"
+                  }
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] hidden sm:block"
+                  }
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] hidden lg:block"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "sc-search-loading": {
+    "id": "sc-search-loading",
+    "name": "Search Loading Skeleton",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "_stateTag": "loading",
+      "props": {
+        "className": "grid grid-cols-1 lg:grid-cols-4 gap-[32px] animate-pulse"
+      },
+      "condition": "collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.loading",
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "className": "lg:col-span-1 h-[256px] bg-[var(--theme-muted)] rounded-[8px]"
+          }
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "lg:col-span-3 space-y-[24px]"
+          },
+          "children": [
+            {
+              "type": "Box",
+              "props": {
+                "className": "w-full flex flex-row justify-between items-center"
+              },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "h-[20px] bg-[var(--theme-muted)] rounded-[4px] w-[96px]"
+                  }
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "h-[36px] bg-[var(--theme-muted)] rounded-[4px] w-[176px] flex-shrink-0"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[24px]"
+              },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px]"
+                  }
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px]"
+                  }
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px]"
+                  }
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] hidden sm:block"
+                  }
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] hidden sm:block"
+                  }
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] hidden lg:block"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "sc-checkout-contact": {
+    "id": "sc-checkout-contact",
+    "name": "Checkout Contact Step",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "props": {
+        "className": "border-[1px] rounded-[8px] px-[24px] bg-[var(--theme-card)]"
+      },
+      "condition": "auth?.user === null",
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "className": "flex flex-row items-center justify-between w-full py-[16px]"
+          },
+          "actions": [
+            {
+              "action": "e89bedc2-a39c-4c83-861b-7fd20bcc63cd"
+            }
+          ],
+          "children": [
+            {
+              "type": "Box",
+              "props": {
+                "className": "flex flex-row items-center gap-[12px] flex-1"
+              },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": {
+                      "formula": "'flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0 ' + ((auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) ? 'bg-green-500 !text-white' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact' ? 'bg-[var(--theme-primary)] !text-white' : 'bg-[var(--theme-muted)] !text-[var(--theme-muted-foreground)]'))"
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "props": {
+                        "icon": "lucide:check",
+                        "size": 16,
+                        "className": "!text-white"
+                      },
+                      "condition": "auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress"
+                    },
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "font-semibold text-[14px] !text-white"
+                      },
+                      "text": "1",
+                      "condition": "!(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact'"
+                    },
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "font-semibold text-[14px] !text-[var(--theme-muted-foreground)]"
+                      },
+                      "text": "1",
+                      "condition": "!(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'contact'"
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "text-[18px] font-semibold"
+                  },
+                  "text": "Contact Information"
+                }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "ml-auto shrink-0"
+              },
+              "children": [
+                {
+                  "type": "Icon",
+                  "props": {
+                    "icon": "lucide:chevron-up",
+                    "size": 16,
+                    "className": "!text-[var(--theme-muted-foreground)]"
+                  },
+                  "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact'"
+                },
+                {
+                  "type": "Icon",
+                  "props": {
+                    "icon": "lucide:chevron-down",
+                    "size": 16,
+                    "className": "!text-[var(--theme-muted-foreground)]"
+                  },
+                  "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'contact'"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "pb-[24px]"
+          },
+          "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact'",
+          "children": [
+            {
+              "type": "Box",
+              "props": {
+                "className": "space-y-[16px] flex flex-col"
+              },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "flex flex-row items-center gap-[4px] text-[14px]"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-[var(--theme-muted-foreground)]"
+                      },
+                      "text": "Already have an account? "
+                    },
+                    {
+                      "type": "Box",
+                      "props": {
+                        "href": "/sign-in",
+                        "className": "text-blue-600 hover:underline font-medium"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "text": "Sign in"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "space-y-[8px]"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-[14px] font-medium"
+                      },
+                      "text": "Email Address *"
+                    },
+                    {
+                      "type": "Input",
+                      "id": "b95d1c1c-ee10-486d-87a6-7a0377f89c3c",
+                      "props": {
+                        "type": "email",
+                        "placeholder": "you@example.com",
+                        "value": "{{local.data.form.formData.emailAddress}}"
+                      },
+                      "actions": [
+                        {
+                          "action": "5c58aa71-3ce1-41d2-bb5a-843420fd1f64"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "min-h-[20px]"
+                      },
+                      "condition": "local?.data?.form?.fields?.emailAddress?.isValid",
+                      "children": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "className": "text-[14px] text-red-500 dark:text-red-400"
+                          },
+                          "text": "{{local.data.form.fields.emailAddress.isValid}}"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "grid grid-cols-2 gap-[16px]"
+                  },
+                  "children": [
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "space-y-[8px]"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "className": "text-[14px] font-medium"
+                          },
+                          "text": "First Name *"
+                        },
+                        {
+                          "type": "Input",
+                          "id": "f8b58a4e-cc33-4251-b011-03d9cbd2731f",
+                          "props": {
+                            "placeholder": "Jane",
+                            "value": "{{local.data.form.formData.firstName}}"
+                          },
+                          "actions": [
+                            {
+                              "action": "c0a77baf-974c-4d07-b006-4f4b4f5a6a15"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Box",
+                          "props": {
+                            "className": "min-h-[20px]"
+                          },
+                          "condition": "local?.data?.form?.fields?.firstName?.isValid",
+                          "children": [
+                            {
+                              "type": "Text",
+                              "props": {
+                                "className": "text-[14px] text-red-500 dark:text-red-400"
+                              },
+                              "text": "{{local.data.form.fields.firstName.isValid}}"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "space-y-[8px]"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "className": "text-[14px] font-medium"
+                          },
+                          "text": "Last Name *"
+                        },
+                        {
+                          "type": "Input",
+                          "id": "b98e947e-6d8b-4bf4-8c1b-50150981624b",
+                          "props": {
+                            "placeholder": "Doe",
+                            "value": "{{local.data.form.formData.lastName}}"
+                          },
+                          "actions": [
+                            {
+                              "action": "a6836452-b059-47c2-932c-c60504eef105"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Box",
+                          "props": {
+                            "className": "min-h-[20px]"
+                          },
+                          "condition": "local?.data?.form?.fields?.lastName?.isValid",
+                          "children": [
+                            {
+                              "type": "Text",
+                              "props": {
+                                "className": "text-[14px] text-red-500 dark:text-red-400"
+                              },
+                              "text": "{{local.data.form.fields.lastName.isValid}}"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] flex flex-row items-center justify-center py-[12px] px-[16px] rounded-[6px]"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-white"
+                      },
+                      "text": "Continue"
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "action": "b1c2d3e4-f5a6-7890-bcde-123456789012"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "sc-checkout-shipping": {
+    "id": "sc-checkout-shipping",
+    "name": "Checkout Shipping Step",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "props": {
+        "className": "border-[1px] rounded-[8px] px-[24px] bg-[var(--theme-card)]"
+      },
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "className": {
+              "formula": "'flex flex-row items-center justify-between w-full py-[16px] ' + ((auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')"
+            }
+          },
+          "actions": [
+            {
+              "action": "42e0738d-1f45-4424-8f96-7ecbb017ce42"
+            }
+          ],
+          "children": [
+            {
+              "type": "Box",
+              "props": {
+                "className": "flex flex-row items-center gap-[12px] flex-1 min-w-0"
+              },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": {
+                      "formula": "'flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0 ' + (collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1 ? 'bg-green-500 !text-white' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping' ? 'bg-[var(--theme-primary)] !text-white' : 'bg-[var(--theme-muted)] !text-[var(--theme-muted-foreground)]'))"
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "props": {
+                        "icon": "lucide:check",
+                        "size": 16,
+                        "className": "!text-white"
+                      },
+                      "condition": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1"
+                    },
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "font-semibold text-[14px] !text-white"
+                      },
+                      "text": "2",
+                      "condition": "!collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1 && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping'"
+                    },
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "font-semibold text-[14px] !text-[var(--theme-muted-foreground)]"
+                      },
+                      "text": "2",
+                      "condition": "!collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1 && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'shipping'"
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "text-[18px] font-semibold"
+                  },
+                  "text": "Shipping Address"
+                }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "ml-auto shrink-0"
+              },
+              "children": [
+                {
+                  "type": "Icon",
+                  "props": {
+                    "icon": "lucide:chevron-up",
+                    "size": 16,
+                    "className": "!text-[var(--theme-muted-foreground)]"
+                  },
+                  "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping'"
+                },
+                {
+                  "type": "Icon",
+                  "props": {
+                    "icon": "lucide:chevron-down",
+                    "size": 16,
+                    "className": "!text-[var(--theme-muted-foreground)]"
+                  },
+                  "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'shipping'"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "pb-[24px]"
+          },
+          "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping'",
+          "children": [
+            {
+              "type": "Box",
+              "props": {
+                "className": "space-y-[16px] flex flex-col"
+              },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "space-y-[8px]"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-[14px] font-medium"
+                      },
+                      "text": "Full name"
+                    },
+                    {
+                      "type": "Input",
+                      "id": "379f02f5-a9a2-42a5-a780-2fdca8210bc1",
+                      "props": {
+                        "placeholder": "Jane Doe",
+                        "value": "{{local.data.form.formData.fullName}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "space-y-[8px]"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-[14px] font-medium"
+                      },
+                      "text": "Company"
+                    },
+                    {
+                      "type": "Input",
+                      "id": "31551507-b134-461a-846c-079bace012b0",
+                      "props": {
+                        "placeholder": "Acme Inc",
+                        "value": "{{local.data.form.formData.company}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "space-y-[8px]"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-[14px] font-medium"
+                      },
+                      "text": "Street address *"
+                    },
+                    {
+                      "type": "Input",
+                      "id": "5f7d8425-4db0-4694-93e7-307c4bf93c2d",
+                      "props": {
+                        "placeholder": "123 Main St",
+                        "value": "{{local.data.form.formData.streetLine1}}"
+                      },
+                      "actions": [
+                        {
+                          "action": "26539321-c80d-450d-b20b-14b4692d412e"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "min-h-[20px]"
+                      },
+                      "condition": "local?.data?.form?.fields?.streetLine1?.isValid",
+                      "children": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "className": "text-[14px] text-red-500 dark:text-red-400"
+                          },
+                          "text": "{{local.data.form.fields.streetLine1.isValid}}"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "space-y-[8px]"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-[14px] font-medium"
+                      },
+                      "text": "Apartment, suite, etc."
+                    },
+                    {
+                      "type": "Input",
+                      "id": "8c526473-7985-459b-8ba3-b5ff1c99fed3",
+                      "props": {
+                        "placeholder": "Apt 4",
+                        "value": "{{local.data.form.formData.streetLine2}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "grid grid-cols-2 gap-[16px]"
+                  },
+                  "children": [
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "space-y-[8px]"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "className": "text-[14px] font-medium"
+                          },
+                          "text": "City"
+                        },
+                        {
+                          "type": "Input",
+                          "id": "932e9e98-56ad-4c53-bb33-0d715bdd159e",
+                          "props": {
+                            "placeholder": "New York",
+                            "value": "{{local.data.form.formData.city}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "space-y-[8px]"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "className": "text-[14px] font-medium"
+                          },
+                          "text": "State/Province"
+                        },
+                        {
+                          "type": "Input",
+                          "id": "15dcd140-b650-4076-9571-fab69accc117",
+                          "props": {
+                            "placeholder": "NY",
+                            "value": "{{local.data.form.formData.province}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "space-y-[8px]"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "className": "text-[14px] font-medium"
+                          },
+                          "text": "Postal code"
+                        },
+                        {
+                          "type": "Input",
+                          "id": "6cf558a1-49b0-4ab7-a798-957d50884588",
+                          "props": {
+                            "placeholder": "10001",
+                            "value": "{{local.data.form.formData.postalCode}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "space-y-[8px]"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "className": "text-[14px] font-medium"
+                          },
+                          "text": "Country *"
+                        },
+                        {
+                          "type": "Select",
+                          "props": {
+                            "selectedValue": "{{local.data.form.formData.countryCode}}",
+                            "className": "w-full"
+                          },
+                          "actions": [
+                            {
+                              "action": "20fabfae-065c-4391-8b6d-93e530a608e8"
+                            }
+                          ],
+                          "children": [
+                            {
+                              "type": "SelectTrigger",
+                              "props": {
+                                "className": "w-full !rounded-[6px] !border-[var(--theme-border)] !bg-[var(--theme-card)] min-h-[40px]"
+                              },
+                              "children": [
+                                {
+                                  "type": "SelectInput",
+                                  "props": {
+                                    "placeholder": "Select country...",
+                                    "className": "!text-[var(--theme-foreground)]"
+                                  }
+                                },
+                                {
+                                  "type": "Icon",
+                                  "children": [
+                                    {
+                                      "type": "Icon",
+                                      "props": {
+                                        "icon": "lucide:chevron-down",
+                                        "size": 16,
+                                        "color": "#6b7280"
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "SelectPortal",
+                              "children": [
+                                {
+                                  "type": "SelectBackdrop"
+                                },
+                                {
+                                  "type": "SelectContent",
+                                  "props": {
+                                    "className": "max-h-[300px]"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "SelectDragIndicatorWrapper",
+                                      "children": [
+                                        {
+                                          "type": "SelectDragIndicator"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "Box",
+                                      "map": "checkout.countries",
+                                      "key": "country",
+                                      "props": {
+                                        "className": "contents"
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "SelectItem",
+                                          "props": {
+                                            "label": "{{context.item.data.name}}",
+                                            "value": "{{context.item.data.code}}"
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Box",
+                          "props": {
+                            "className": "min-h-[20px]"
+                          },
+                          "condition": "local?.data?.form?.fields?.countryCode?.isValid",
+                          "children": [
+                            {
+                              "type": "Text",
+                              "props": {
+                                "className": "text-[14px] text-red-500 dark:text-red-400"
+                              },
+                              "text": "{{local.data.form.fields.countryCode.isValid}}"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "space-y-[8px]"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-[14px] font-medium"
+                      },
+                      "text": "Phone number"
+                    },
+                    {
+                      "type": "Input",
+                      "id": "4513c0cd-5d4a-43c3-b804-ef8278843021",
+                      "props": {
+                        "type": "tel",
+                        "placeholder": "+1 234 567 8900",
+                        "value": "{{local.data.form.formData.phoneNumber}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "flex flex-row items-center gap-[8px] py-[8px]"
+                  },
+                  "actions": [
+                    {
+                      "action": "1533ffdf-3a02-472f-b539-7c5bd9a6d1d3"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "w-[16px] h-[16px] rounded-[4px] border-[1px] flex items-center justify-center {{checkout.useSameForBilling ? 'bg-[var(--theme-primary)] border-[var(--theme-primary)]' : 'border-[var(--theme-border)]'}}"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "className": "text-white text-[12px] font-bold"
+                          },
+                          "condition": "variables['f1a2b3c4-d5e6-7890-fabc-901234567890']",
+                          "text": "✓"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-[14px]"
+                      },
+                      "text": "Use same address for billing"
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] flex flex-row items-center justify-center py-[12px] px-[16px] rounded-[6px]"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "text-white"
+                      },
+                      "text": "Continue"
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "action": "1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "sc-checkout-payment": {
+    "id": "sc-checkout-payment",
+    "name": "Checkout Payment Step",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "props": {
+        "className": "border-[1px] rounded-[8px] px-[24px] bg-[var(--theme-card)]"
+      },
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "className": {
+              "formula": "'flex flex-row items-center justify-between w-full py-[16px] ' + ((collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingLines?.length || 0) > 0 || variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')"
+            }
+          },
+          "children": [
+            {
+              "type": "Box",
+              "props": {
+                "className": "flex flex-row items-center gap-[12px] flex-1 min-w-0"
+              },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": {
+                      "formula": "'flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0 ' + (variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] ? 'bg-green-500 !text-white' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'payment' ? 'bg-[var(--theme-primary)] !text-white' : 'bg-[var(--theme-muted)] !text-[var(--theme-muted-foreground)]'))"
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "props": {
+                        "icon": "lucide:check",
+                        "size": 16,
+                        "className": "!text-white"
+                      },
+                      "condition": "variables['b3c4d5e6-f7a8-9012-bcde-123456789012']"
+                    },
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "font-semibold text-[14px] !text-white"
+                      },
+                      "condition": "!variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'payment'",
+                      "text": "4"
+                    },
+                    {
+                      "type": "Text",
+                      "props": {
+                        "className": "font-semibold text-[14px] !text-[var(--theme-muted-foreground)]"
+                      },
+                      "condition": "!variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'payment'",
+                      "text": "4"
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "text-[18px] font-semibold"
+                  },
+                  "text": "Payment Method"
+                }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "ml-auto shrink-0"
+              },
+              "children": [
+                {
+                  "type": "Icon",
+                  "props": {
+                    "icon": "lucide:chevron-up",
+                    "size": 16,
+                    "className": "!text-[var(--theme-muted-foreground)]"
+                  },
+                  "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'payment'"
+                },
+                {
+                  "type": "Icon",
+                  "props": {
+                    "icon": "lucide:chevron-down",
+                    "size": 16,
+                    "className": "!text-[var(--theme-muted-foreground)]"
+                  },
+                  "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'payment'"
+                }
+              ]
+            }
+          ],
+          "actions": [
+            {
+              "action": "dfd32ed5-dbac-41bd-b18b-ec7a17cd5549"
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "pb-[24px] space-y-[12px]"
+          },
+          "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'payment'",
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "className": "text-[14px] text-[var(--theme-muted-foreground)]"
+              },
+              "text": "Select payment method"
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "flex flex-row flex-wrap gap-[16px]"
+              },
+              "map": "checkout.paymentMethods",
+              "key": "paymentOpt",
+              "children": [
+                {
+                  "type": "Box",
+                  "props": {
+                    "className": "flex flex-row items-center gap-[12px] p-[16px] border-[2px] rounded-[8px] w-full cursor-pointer transition-colors {{checkout.selectedPaymentMethodCode === $item.code ? 'border-[var(--theme-primary)] bg-[var(--theme-muted)]' : 'border-[var(--theme-border)] hover:border-[var(--theme-primary)]'}}"
+                  },
+                  "children": [
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "w-[20px] h-[20px] min-w-[20px] min-h-[20px] rounded-[9999px] border-[2px] flex items-center justify-center shrink-0 {{checkout.selectedPaymentMethodCode === $item.code ? 'border-[var(--theme-primary)] bg-[var(--theme-primary)]' : 'border-[var(--theme-border)]'}}"
+                      },
+                      "children": [
+                        {
+                          "type": "Box",
+                          "props": {
+                            "className": "w-[8px] h-[8px] rounded-[9999px] bg-white pointer-events-none"
+                          },
+                          "condition": "variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] === context?.item?.data?.code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Icon",
+                      "props": {
+                        "icon": "lucide:circle-dollar-sign",
+                        "size": 20,
+                        "className": "!text-[var(--theme-muted-foreground)] shrink-0"
+                      }
+                    },
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "gap-[2px] text-left flex-1 min-w-0 flex flex-col"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "className": "font-medium text-[14px] text-[var(--theme-foreground)]"
+                          },
+                          "text": "{{context.item.data.name}}"
+                        },
+                        {
+                          "type": "Text",
+                          "props": {
+                            "className": "text-[12px] text-[var(--theme-muted-foreground)]"
+                          },
+                          "text": "{{context.item.data.description}}"
+                        }
+                      ]
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "action": "802712ca-2a5b-4042-abbe-7de79f91806f"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "w-full flex flex-row items-center justify-center py-[12px] rounded-[6px] bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] mt-[8px] {{checkout.selectedPaymentMethodCode ? '' : 'opacity-50 pointer-events-none cursor-not-allowed'}}"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "text-white"
+                  },
+                  "text": "Continue to review"
+                }
+              ],
+              "actions": [
+                {
+                  "action": "d5ca8a52-a828-47d6-b647-50f0ff204985"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "sc-product-carousel": {
+    "id": "sc-product-carousel",
+    "name": "Product Carousel",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "props": {
+        "className": "py-[48px] md:py-[64px]"
+      },
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "className": "container mx-auto px-[32px]"
+          },
+          "children": [
+            {
+              "type": "Heading",
+              "props": {
+                "className": "text-[30px] md:text-[36px] font-bold mb-[32px] text-[var(--theme-card-foreground)]"
+              },
+              "text": "Featured Products"
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "flex flex-col items-center gap-[16px] py-[80px]"
+              },
+              "condition": "!collections['c3d4e5f6-a7b8-9012-cdef-123456789012']?.data?.search?.items?.0",
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "text-[48px]"
+                  },
+                  "text": "🛍️"
+                },
+                {
+                  "type": "Heading",
+                  "props": {
+                    "size": "xl",
+                    "className": "font-semibold text-center text-[var(--theme-card-foreground)]"
+                  },
+                  "text": "No products yet"
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "text-center text-[var(--theme-muted-foreground)] max-w-[384px]"
+                  },
+                  "text": "Connect your store to start displaying featured products here."
+                }
+              ]
+            },
+            {
+              "type": "Carousel",
+              "condition": "!!collections['c3d4e5f6-a7b8-9012-cdef-123456789012']?.data?.search?.items?.0",
+              "props": {
+                "loop": true,
+                "align": "start",
+                "showArrows": true
+              },
+              "children": [
+                {
+                  "type": "CarouselSlide",
+                  "map": "collections.c3d4e5f6-a7b8-9012-cdef-123456789012.data.search.items",
+                  "props": {
+                    "className": "basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
+                  },
+                  "children": [
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "group w-full text-left bg-[var(--theme-card)] rounded-[8px] overflow-hidden border-[1px] border-[var(--border)] hover:shadow-lg transition-shadow duration-150"
+                      },
+                      "actions": [
+                        {
+                          "action": "f6046c33-0164-45b5-86aa-0710fc408247"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "Box",
+                          "props": {
+                            "className": "w-full aspect-square relative overflow-hidden bg-[var(--theme-muted)]"
+                          },
+                          "children": [
+                            {
+                              "type": "Image",
+                              "props": {
+                                "src": "{{context.item.data.productAsset.preview}}",
+                                "alt": "{{context.item.data.productName}}",
+                                "fill": true,
+                                "className": "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              },
+                              "condition": "!!context?.item?.data?.productAsset?.preview"
+                            },
+                            {
+                              "type": "Box",
+                              "props": {
+                                "className": "w-full h-full flex items-center justify-center"
+                              },
+                              "condition": "!context?.item?.data?.productAsset?.preview",
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "props": {
+                                    "className": "text-[var(--theme-muted-foreground)] text-[14px]"
+                                  },
+                                  "text": "No image"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Box",
+                          "props": {
+                            "className": "p-[16px] space-y-[8px]"
+                          },
+                          "children": [
+                            {
+                              "type": "Heading",
+                              "props": {
+                                "size": "sm",
+                                "className": "font-medium text-[var(--theme-card-foreground)] line-clamp-2 group-hover:opacity-80 transition-colors"
+                              },
+                              "text": "{{context.item.data.productName}}"
+                            },
+                            {
+                              "type": "Text",
+                              "props": {
+                                "className": "text-[18px] font-bold text-[var(--theme-card-foreground)]"
+                              },
+                              "text": {
+                                "formula": "context?.item?.data?.priceWithTax?.__typename === 'SinglePrice' ? formatCurrency(context?.item?.data?.priceWithTax?.value, context?.item?.data?.currencyCode) : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min, context?.item?.data?.currencyCode)"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "sc-hero": {
+    "id": "sc-hero",
+    "name": "Hero",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "props": {
+        "className": "w-full py-[80px] md:py-[112px] border-b border-[var(--border)]"
+      },
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "className": "w-full max-w-3xl mx-auto px-[16px] text-center"
+          },
+          "children": [
+            {
+              "type": "Heading",
+              "props": {
+                "className": "text-[30px] md:text-[36px] font-bold text-[var(--theme-card-foreground)] mb-[12px]"
+              },
+              "text": "Welcome"
+            },
+            {
+              "type": "Text",
+              "props": {
+                "className": "text-[var(--theme-muted-foreground)] mb-[24px]"
+              },
+              "text": "Your one-stop shop for quality products"
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "text-[14px] font-medium text-[var(--theme-card-foreground)] underline underline-offset-4"
+              },
+              "actions": [
+                {
+                  "action": "2283a150-1c0a-46a8-bee0-bf9ba12033c7"
+                }
+              ],
+              "children": [
+                {
+                  "type": "Text",
+                  "text": "Browse"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "sc-product-grid": {
+    "id": "sc-product-grid",
+    "name": "Product Grid",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "props": {
+        "className": "py-[48px] md:py-[64px] bg-[var(--theme-card)]"
+      },
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "className": "container mx-auto px-[32px]"
+          },
+          "children": [
+            {
+              "type": "Heading",
+              "props": {
+                "className": "text-[30px] md:text-[36px] font-bold mb-[32px] text-[var(--theme-card-foreground)]"
+              },
+              "text": "Featured Products"
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "grid grid-cols-2 gap-[16px] lg:grid-cols-4"
+              },
+              "condition": "!!collections['c3d4e5f6-a7b8-9012-cdef-123456789012']?.data?.search?.items?.0",
+              "children": [
+                {
+                  "type": "Box",
+                  "map": "collections.c3d4e5f6-a7b8-9012-cdef-123456789012.data.search.items",
+                  "key": "product",
+                  "props": {
+                    "className": "contents"
+                  },
+                  "children": [
+                    {
+                      "type": "Box",
+                      "props": {
+                        "className": "group block bg-[var(--theme-card)] rounded-[8px] overflow-hidden border-[1px] border-[var(--border)] hover:shadow-lg transition-shadow"
+                      },
+                      "actions": [
+                        {
+                          "action": "f6046c33-0164-45b5-86aa-0710fc408247"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "Box",
+                          "props": {
+                            "className": "w-full aspect-square relative overflow-hidden bg-[var(--theme-muted)]"
+                          },
+                          "children": [
+                            {
+                              "type": "Image",
+                              "props": {
+                                "src": "{{context.item.data.productAsset.preview}}",
+                                "alt": "{{context.item.data.productName}}",
+                                "fill": true,
+                                "className": "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300",
+                                "sizes": "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                              }
+                            },
+                            {
+                              "type": "Box",
+                              "props": {
+                                "className": "w-full h-full flex items-center justify-center text-[var(--theme-muted-foreground)]"
+                              },
+                              "condition": "!context?.item?.data?.productAsset",
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "text": "No image"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Box",
+                          "props": {
+                            "className": "p-[16px] space-y-[8px]"
+                          },
+                          "children": [
+                            {
+                              "type": "Text",
+                              "props": {
+                                "className": "font-medium line-clamp-2 group-hover:opacity-80 transition-colors text-[var(--theme-card-foreground)]"
+                              },
+                              "text": "{{context.item.data.productName}}"
+                            },
+                            {
+                              "type": "Text",
+                              "props": {
+                                "className": "text-[18px] font-bold text-[var(--theme-card-foreground)]"
+                              },
+                              "text": {
+                                "formula": "context?.item?.data?.priceWithTax?.__typename === 'SinglePrice' ? formatCurrency(context?.item?.data?.priceWithTax?.value / 100, context?.item?.data?.currencyCode || 'USD') : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min / 100, context?.item?.data?.currencyCode || 'USD')"
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      "_shared": {
+                        "id": "sc-product-card",
+                        "name": "Product Card"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "flex flex-col items-center gap-[16px] py-[80px]"
+              },
+              "condition": "!collections['c3d4e5f6-a7b8-9012-cdef-123456789012']?.data?.search?.items?.0",
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "text-[48px]"
+                  },
+                  "text": "🛍️"
+                },
+                {
+                  "type": "Heading",
+                  "props": {
+                    "size": "xl",
+                    "className": "font-semibold text-center text-[var(--theme-card-foreground)]"
+                  },
+                  "text": "No products yet"
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "className": "text-center text-[var(--theme-muted-foreground)] max-w-[384px]"
+                  },
+                  "text": "Connect your store to start displaying featured products here."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "sc-feature-grid": {
+    "id": "sc-feature-grid",
+    "name": "Feature Grid",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "props": {
+        "className": "w-full py-[48px] border-t border-[var(--border)]"
+      },
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "className": "w-full max-w-screen-xl mx-auto px-[16px] flex flex-wrap justify-center gap-x-[32px] gap-y-[8px] text-[14px] text-[var(--theme-muted-foreground)]"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "text": "Free shipping"
+            },
+            {
+              "type": "Text",
+              "text": "•"
+            },
+            {
+              "type": "Text",
+              "text": "Secure checkout"
+            },
+            {
+              "type": "Text",
+              "text": "•"
+            },
+            {
+              "type": "Text",
+              "text": "Easy returns"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "sc-counter-card": {
+    "id": "sc-counter-card",
+    "name": "Counter Card",
+    "folder": "Examples",
+    "description": "Demo component showcasing WeWeb-style scoped variables, properties, and workflows. Each instance has an independent counter.",
+    "properties": [
+      {
+        "id": "prop-cc-title",
+        "name": "title",
+        "type": "text",
+        "defaultValue": "Counter"
+      },
+      {
+        "id": "prop-cc-color",
+        "name": "accentColor",
+        "type": "text",
+        "defaultValue": "#6366f1"
+      }
+    ],
+    "variables": {
+      "cc-count-uuid": {
+        "label": "count",
+        "type": "number",
+        "initialValue": 0
+      }
+    },
+    "formulas": {
+      "cc-display-formula": {
+        "name": "displayCount",
+        "formula": "String(context?.component?.variables?.['cc-count-uuid'] ?? 0)",
+        "params": []
+      }
+    },
+    "workflows": {
+      "cc-wf-increment": {
+        "id": "cc-wf-increment",
+        "name": "Increment Counter",
+        "trigger": "execution",
+        "params": [],
+        "steps": [
+          {
+            "id": "cc-step-1",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "cc-count-uuid",
+              "value": {
+                "formula": "max(0, (context?.component?.variables?.['cc-count-uuid'] ?? 0) + 1)"
+              }
+            }
+          }
+        ]
+      },
+      "cc-wf-reset": {
+        "id": "cc-wf-reset",
+        "name": "Reset Counter",
+        "trigger": "execution",
+        "params": [],
+        "steps": [
+          {
+            "id": "cc-step-reset",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "cc-count-uuid",
+              "value": 0
+            }
+          }
+        ]
+      }
+    },
+    "content": {
+      "type": "Box",
+      "id": "sc-counter-card-root",
+      "props": {
+        "className": "flex flex-col items-center gap-4 p-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 w-full max-w-[240px]"
+      },
+      "children": [
+        {
+          "type": "Text",
+          "props": {
+            "className": "text-sm font-semibold text-gray-500 dark:text-gray-400 tracking-wide uppercase"
+          },
+          "text": "{{context.component.props.title}}"
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "flex items-center justify-center w-20 h-20 rounded-full",
+            "style": {
+              "background": "color-mix(in srgb, var(--accent, #6366f1) 15%, transparent)"
+            }
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "className": "text-4xl font-bold tabular-nums",
+                "style": {
+                  "color": "var(--accent, #6366f1)"
+                }
+              },
+              "text": "{{context.component.variables['cc-count-uuid']}}"
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "className": "flex flex-row gap-2"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "id": "sc-counter-increment-btn",
+              "props": {
+                "action": "primary",
+                "size": "sm",
+                "className": "!rounded-lg"
+              },
+              "actions": [
+                {
+                  "action": "cc-do-increment"
+                }
+              ],
+              "children": [
+                {
+                  "type": "ButtonText",
+                  "text": "+ Add"
+                }
+              ]
+            },
+            {
+              "type": "Button",
+              "id": "sc-counter-reset-btn",
+              "props": {
+                "action": "outline",
+                "size": "sm",
+                "className": "!rounded-lg"
+              },
+              "actions": [
+                {
+                  "action": "cc-do-reset"
+                }
+              ],
+              "children": [
+                {
+                  "type": "ButtonText",
+                  "text": "Reset"
+                }
+              ]
+            }
+          ]
         }
       ]
     }

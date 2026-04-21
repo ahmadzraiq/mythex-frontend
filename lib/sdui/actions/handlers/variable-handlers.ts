@@ -72,6 +72,29 @@ export const setVarHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef
     } else {
       value = rawValue;
     }
+    // If the path is a UUID and we're inside a component workflow with a known instance,
+    // redirect the write to the per-instance variable slot instead of the global store.
+    const componentCtx = ctx.scope?.context as Record<string, unknown> | undefined;
+    const instanceId = componentCtx?.component
+      ? (componentCtx.component as Record<string, unknown>).instanceId as string | undefined
+      : undefined;
+    const modelId = componentCtx?.component
+      ? (componentCtx.component as Record<string, unknown>).id as string | undefined
+      : undefined;
+    const scModel = modelId ? (() => {
+      try { return require('@/lib/builder/shared-component-data').getSharedComponents()[modelId]; } catch { /* noop */ }
+      try { return require('@/config/shared-components.json')[modelId]; } catch { /* noop */ }
+      return undefined;
+    })() : undefined;
+    const isComponentVar = instanceId && scModel?.variables && path in scModel.variables;
+    if (isComponentVar) {
+      // Write to per-instance slot instead of global
+      try {
+        const { setComponentInstanceVar } = require('@/lib/sdui/global-variable-store') as typeof import('@/lib/sdui/global-variable-store');
+        setComponentInstanceVar(instanceId, path, value);
+      } catch { /* fallback to global */ }
+      return;
+    }
     ctx.store.getState().setState((prev) => setNestedValue(prev, path, value));
     if (!path.startsWith('screens.')) {
       ctx.useSduiStore?.getState().setData(path, value);

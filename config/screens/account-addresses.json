@@ -105,10 +105,15 @@
                   {
                     "type": "Input",
                     "id": "ddc7570e-0709-4d9e-a8e0-ea73f60a49fe",
-                    "props": {
-                      "value": "{{local.data.form.formData.fullName}}",
-                      "placeholder": "Jane Doe"
-                    }
+                    "children": [
+                      {
+                        "type": "InputField",
+                        "props": {
+                          "placeholder": "Jane Doe",
+                          "name": "fullName"
+                        }
+                      }
+                    ]
                   }
                 ]
               },
@@ -128,10 +133,15 @@
                   {
                     "type": "Input",
                     "id": "06219502-9af1-40b6-b1b3-0089df2b1431",
-                    "props": {
-                      "value": "{{local.data.form.formData.streetLine1}}",
-                      "placeholder": "123 Main St"
-                    }
+                    "children": [
+                      {
+                        "type": "InputField",
+                        "props": {
+                          "placeholder": "123 Main St",
+                          "name": "streetLine1"
+                        }
+                      }
+                    ]
                   }
                 ]
               },
@@ -157,10 +167,15 @@
                       {
                         "type": "Input",
                         "id": "5be72730-114b-4fc3-b692-175b74c383d4",
-                        "props": {
-                          "value": "{{local.data.form.formData.city}}",
-                          "placeholder": "New York"
-                        }
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": {
+                              "placeholder": "New York",
+                              "name": "city"
+                            }
+                          }
+                        ]
                       }
                     ]
                   },
@@ -180,10 +195,15 @@
                       {
                         "type": "Input",
                         "id": "bc82cd04-3153-49b7-a1af-0cdea39f1d7d",
-                        "props": {
-                          "value": "{{local.data.form.formData.postalCode}}",
-                          "placeholder": "10001"
-                        }
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": {
+                              "placeholder": "10001",
+                              "name": "postalCode"
+                            }
+                          }
+                        ]
                       }
                     ]
                   }
@@ -205,10 +225,15 @@
                   {
                     "type": "Input",
                     "id": "079e999a-72c4-4389-b736-1a2c961ddb8e",
-                    "props": {
-                      "value": "{{local.data.form.formData.countryCode}}",
-                      "placeholder": "US"
-                    }
+                    "children": [
+                      {
+                        "type": "InputField",
+                        "props": {
+                          "placeholder": "US",
+                          "name": "countryCode"
+                        }
+                      }
+                    ]
                   }
                 ]
               },

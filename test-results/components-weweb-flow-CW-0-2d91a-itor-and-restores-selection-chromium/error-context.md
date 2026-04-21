@@ -1,0 +1,5437 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - button "↩" [ref=e7] [cursor=pointer]
+      - button "↪" [disabled] [ref=e8]
+      - button "📄 ✦ Component Showcase ▼" [ref=e11] [cursor=pointer]:
+        - generic [ref=e12]: 📄
+        - generic [ref=e13]: ✦ Component Showcase
+        - generic [ref=e14]: ▼
+      - button "(x) URL Parameters" [ref=e16] [cursor=pointer]:
+        - generic [ref=e17]: (x)
+        - generic [ref=e18]: URL Parameters
+      - generic [ref=e19]:
+        - button "📱 390" [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]: 📱
+          - generic [ref=e22]: "390"
+        - button "📟 768" [ref=e23] [cursor=pointer]:
+          - generic [ref=e24]: 📟
+          - generic [ref=e25]: "768"
+        - button "💻 1024" [ref=e26] [cursor=pointer]:
+          - generic [ref=e27]: 💻
+          - generic [ref=e28]: "1024"
+        - button "🖥 1280" [ref=e29] [cursor=pointer]:
+          - generic [ref=e30]: 🖥
+          - generic [ref=e31]: "1280"
+      - button "🌙" [ref=e32] [cursor=pointer]
+      - button "✦ AI" [ref=e33] [cursor=pointer]
+      - button "↗ Preview" [disabled] [ref=e34]
+      - generic [ref=e36]: 1 section
+      - generic [ref=e37]: · 1 selected
+    - generic [ref=e38]:
+      - generic [ref=e39]:
+        - generic [ref=e40]:
+          - generic [ref=e41]: 📄
+          - generic [ref=e42]: ✦ Component Showcase
+          - button "🔐" [ref=e43] [cursor=pointer]
+          - button "⚙" [ref=e44] [cursor=pointer]
+        - generic [ref=e45]:
+          - button "layers" [ref=e46] [cursor=pointer]
+          - button "components" [ref=e47] [cursor=pointer]
+          - button "data" [ref=e48] [cursor=pointer]
+          - button "logic" [ref=e49] [cursor=pointer]
+          - button "triggers" [ref=e50] [cursor=pointer]
+          - button "shared" [ref=e51] [cursor=pointer]
+          - button "assets" [ref=e52] [cursor=pointer]
+        - generic [ref=e53]:
+          - textbox "Search components…" [ref=e55]
+          - generic [ref=e57]: Primitives
+          - generic [ref=e58]:
+            - generic [ref=e59]: Layout
+            - generic [ref=e60]:
+              - generic [ref=e61]: □
+              - generic [ref=e62]: Box
+            - generic [ref=e63]:
+              - generic [ref=e64]: ⬌
+              - generic [ref=e65]: Row
+            - generic [ref=e66]:
+              - generic [ref=e67]: ⊞
+              - generic [ref=e68]: Grid
+            - generic [ref=e69]:
+              - generic [ref=e70]: ▣
+              - generic [ref=e71]: Card
+            - generic [ref=e72]:
+              - generic [ref=e73]: —
+              - generic [ref=e74]: Divider
+            - generic [ref=e75]:
+              - generic [ref=e76]: ↕
+              - generic [ref=e77]: ScrollView
+          - generic [ref=e78]:
+            - generic [ref=e79]: Typography
+            - generic [ref=e80]:
+              - generic [ref=e81]: T
+              - generic [ref=e82]: Text
+            - generic [ref=e83]:
+              - generic [ref=e84]: H
+              - generic [ref=e85]: Heading
+            - generic [ref=e86]:
+              - generic [ref=e87]: L
+              - generic [ref=e88]: Label
+            - generic [ref=e89]:
+              - generic [ref=e90]: C
+              - generic [ref=e91]: Caption
+            - generic [ref=e92]:
+              - generic [ref=e93]: 🔗
+              - generic [ref=e94]: Link
+          - generic [ref=e95]:
+            - generic [ref=e96]: Buttons
+            - generic [ref=e97]:
+              - generic [ref=e98]: ◼
+              - generic [ref=e99]: Btn Solid
+            - generic [ref=e100]:
+              - generic [ref=e101]: ⛔
+              - generic [ref=e102]: Btn Destructive
+            - generic [ref=e103]:
+              - generic [ref=e104]: ◻
+              - generic [ref=e105]: Btn Outline
+            - generic [ref=e106]:
+              - generic [ref=e107]: ○
+              - generic [ref=e108]: Btn Ghost
+            - generic [ref=e109]:
+              - generic [ref=e110]: ◀
+              - generic [ref=e111]: Btn + Icon L
+            - generic [ref=e112]:
+              - generic [ref=e113]: ▶
+              - generic [ref=e114]: Btn + Icon R
+            - generic [ref=e115]:
+              - generic [ref=e116]: ⬚
+              - generic [ref=e117]: Icon Btn
+            - generic [ref=e118]:
+              - generic [ref=e119]: ◉
+              - generic [ref=e120]: Icon Btn Round
+            - generic [ref=e121]:
+              - generic [ref=e122]: ⇒
+              - generic [ref=e123]: Link Btn
+            - generic [ref=e124]:
+              - generic [ref=e125]: ⊕
+              - generic [ref=e126]: FAB
+          - generic [ref=e127]:
+            - generic [ref=e128]: Form
+            - generic [ref=e129]:
+              - generic [ref=e130]: ⊞
+              - generic [ref=e131]: Form
+            - generic [ref=e132]:
+              - generic [ref=e133]: ▭
+              - generic [ref=e134]: Input
+            - generic [ref=e135]:
+              - generic [ref=e136]: 🔍
+              - generic [ref=e137]: Input Search
+            - generic [ref=e138]:
+              - generic [ref=e139]: ≡
+              - generic [ref=e140]: Textarea
+            - generic [ref=e141]:
+              - generic [ref=e142]: ▽
+              - generic [ref=e143]: Select
+            - generic [ref=e144]:
+              - generic [ref=e145]: ⊸
+              - generic [ref=e146]: Slider
+            - generic [ref=e147]:
+              - generic [ref=e148]: ◎
+              - generic [ref=e149]: Radio
+            - generic [ref=e150]:
+              - generic [ref=e151]: ⊙
+              - generic [ref=e152]: Radio Group
+            - generic [ref=e153]:
+              - generic [ref=e154]: ▬
+              - generic [ref=e155]: Progress
+            - generic [ref=e156]:
+              - generic [ref=e157]: ⏻
+              - generic [ref=e158]: Toggle
+            - generic [ref=e159]:
+              - generic [ref=e160]: ☑
+              - generic [ref=e161]: Checkbox
+            - generic [ref=e162]:
+              - generic [ref=e163]: ☑☑
+              - generic [ref=e164]: Checkbox Group
+            - generic [ref=e165]:
+              - generic [ref=e166]: ⏵
+              - generic [ref=e167]: Switch
+          - generic [ref=e168]:
+            - generic [ref=e169]: Composite
+            - generic [ref=e170]:
+              - generic [ref=e171]: ⬡
+              - generic [ref=e172]: Chip
+            - generic [ref=e173]:
+              - generic [ref=e174]: 🏷
+              - generic [ref=e175]: Tag
+            - generic [ref=e176]:
+              - generic [ref=e177]: ⬜
+              - generic [ref=e178]: Tabs
+            - generic [ref=e179]:
+              - generic [ref=e180]: ①
+              - generic [ref=e181]: Stepper
+            - generic [ref=e182]:
+              - generic [ref=e183]: ⟨⟩
+              - generic [ref=e184]: Pagination
+            - generic [ref=e185]:
+              - generic [ref=e186]: ★
+              - generic [ref=e187]: Star Rating
+            - generic [ref=e188]:
+              - generic [ref=e189]: ›
+              - generic [ref=e190]: Breadcrumbs
+            - generic [ref=e191]:
+              - generic [ref=e192]: ▾
+              - generic [ref=e193]: Accordion
+            - generic [ref=e194]:
+              - generic [ref=e195]: ⊞
+              - generic [ref=e196]: Table
+            - generic [ref=e197]:
+              - generic [ref=e198]: ⌕
+              - generic [ref=e199]: Autocomplete
+            - generic [ref=e200]:
+              - generic [ref=e201]: 🔔
+              - generic [ref=e202]: Snackbar
+          - generic [ref=e203]:
+            - generic [ref=e204]: Media
+            - generic [ref=e205]:
+              - generic [ref=e206]: 🖼
+              - generic [ref=e207]: Image
+            - generic [ref=e208]:
+              - generic [ref=e209]: ◈
+              - generic [ref=e210]: Icon
+            - generic [ref=e211]:
+              - generic [ref=e212]: ⊙
+              - generic [ref=e213]: Icon Tap
+            - generic [ref=e214]:
+              - generic [ref=e215]: ▶
+              - generic [ref=e216]: Video
+          - generic [ref=e217]:
+            - generic [ref=e218]: Data & Media
+            - generic [ref=e219]:
+              - generic [ref=e220]: 📅
+              - generic [ref=e221]: Date Picker
+            - generic [ref=e222]:
+              - generic [ref=e223]: ⏱
+              - generic [ref=e224]: Time Picker
+            - generic [ref=e225]:
+              - generic [ref=e226]: 📆
+              - generic [ref=e227]: Date & Time
+            - generic [ref=e228]:
+              - generic [ref=e229]: 🎨
+              - generic [ref=e230]: Color Picker
+            - generic [ref=e231]:
+              - generic [ref=e232]: 📎
+              - generic [ref=e233]: File Upload
+            - generic [ref=e234]:
+              - generic [ref=e235]: ⬜
+              - generic [ref=e236]: Iframe
+            - generic [ref=e237]:
+              - generic [ref=e238]: ⬡
+              - generic [ref=e239]: SVG Viewer
+            - generic [ref=e240]:
+              - generic [ref=e241]: "{}"
+              - generic [ref=e242]: JSON Viewer
+            - generic [ref=e243]:
+              - generic [ref=e244]: 📊
+              - generic [ref=e245]: Chart
+            - generic [ref=e246]:
+              - generic [ref=e247]: ▦
+              - generic [ref=e248]: QR Code
+            - generic [ref=e249]:
+              - generic [ref=e250]: M
+              - generic [ref=e251]: Markdown
+            - generic [ref=e252]:
+              - generic [ref=e253]: 🗺
+              - generic [ref=e254]: Google Map
+            - generic [ref=e255]:
+              - generic [ref=e256]: 📍
+              - generic [ref=e257]: Places Search
+          - generic [ref=e258]:
+            - generic [ref=e259]: Display
+            - generic [ref=e260]:
+              - generic [ref=e261]: 🏷
+              - generic [ref=e262]: Badge
+            - generic [ref=e263]:
+              - generic [ref=e264]: 👤
+              - generic [ref=e265]: Avatar
+            - generic [ref=e266]:
+              - generic [ref=e267]: ↺
+              - generic [ref=e268]: Spinner
+            - generic [ref=e269]:
+              - generic [ref=e270]: ░
+              - generic [ref=e271]: Skeleton
+            - generic [ref=e272]:
+              - generic [ref=e273]: ⚠
+              - generic [ref=e274]: Alert
+          - generic [ref=e275]:
+            - generic [ref=e276]: Overlays
+            - generic [ref=e277]:
+              - generic [ref=e278]: 💬
+              - generic [ref=e279]: Tooltip
+            - generic [ref=e280]:
+              - generic [ref=e281]: 🗔
+              - generic [ref=e282]: Modal
+            - generic [ref=e283]:
+              - generic [ref=e284]: ⬆
+              - generic [ref=e285]: Bottom Sheet
+            - generic [ref=e286]:
+              - generic [ref=e287]: ☰
+              - generic [ref=e288]: Drawer
+            - generic [ref=e289]:
+              - generic [ref=e290]: 🔔
+              - generic [ref=e291]: Toast
+      - generic [ref=e292]:
+        - img
+        - generic:
+          - generic [ref=e295]:
+            - generic [ref=e296]:
+              - heading "Typography" [level=4] [ref=e299]
+              - generic [ref=e301]:
+                - generic [ref=e302]:
+                  - heading "Heading 1" [level=4] [ref=e303]
+                  - generic [ref=e304]: Heading 1
+                - generic [ref=e305]:
+                  - heading "Heading 2" [level=4] [ref=e306]
+                  - generic [ref=e307]: Heading 2
+                - generic [ref=e308]:
+                  - heading "Heading 3" [level=4] [ref=e309]
+                  - generic [ref=e310]: Heading 3
+                - generic [ref=e311]:
+                  - heading "Heading 4" [level=4] [ref=e312]
+                  - generic [ref=e313]: Heading 4
+                - generic [ref=e314]:
+                  - generic [ref=e315]: Body text — readable paragraph copy.
+                  - generic [ref=e316]: Body Text
+                - generic [ref=e317]:
+                  - generic [ref=e318]: Small text helper copy.
+                  - generic [ref=e319]: Small Text
+                - generic [ref=e320]:
+                  - generic [ref=e321]: Caption / metadata
+                  - generic [ref=e322]: Caption
+                - generic [ref=e323]:
+                  - generic [ref=e324]: Bold text
+                  - generic [ref=e325]: Bold
+                - generic [ref=e326]:
+                  - generic [ref=e327]: Muted text
+                  - generic [ref=e328]: Muted
+                - generic [ref=e329]:
+                  - generic [ref=e331]: Clickable link
+                  - generic [ref=e332]: Link
+            - generic [ref=e333]:
+              - heading "Layout" [level=4] [ref=e336]
+              - generic [ref=e338]:
+                - generic [ref=e344]: Box (col)
+                - generic [ref=e350]: Box (row)
+                - generic [ref=e356]: VStack
+                - generic [ref=e362]: HStack
+                - generic [ref=e366]: Center
+                - generic [ref=e373]: Grid 2-col
+                - generic [ref=e382]: Grid 3-col
+                - generic [ref=e383]:
+                  - generic [ref=e384]:
+                    - heading "Card Title" [level=4] [ref=e385]
+                    - generic [ref=e386]: A card container with border and shadow.
+                  - generic [ref=e387]: Card
+                - generic [ref=e388]:
+                  - generic [ref=e389]:
+                    - generic [ref=e390]: Above
+                    - generic [ref=e392]: Below
+                  - generic [ref=e393]: Divider
+                - generic [ref=e394]:
+                  - generic [ref=e395]:
+                    - generic [ref=e396]: Item 1
+                    - generic [ref=e397]: Item 2
+                    - generic [ref=e398]: Item 3
+                    - generic [ref=e399]: Item 4
+                    - generic [ref=e400]: Item 5
+                    - generic [ref=e401]: Item 6
+                  - generic [ref=e402]: ScrollView
+            - generic [ref=e403]:
+              - heading "Buttons" [level=4] [ref=e406]
+              - generic [ref=e408]:
+                - generic [ref=e409]:
+                  - generic [ref=e411]: Button
+                  - generic [ref=e412]: Solid
+                - generic [ref=e413]:
+                  - generic [ref=e415]: Delete
+                  - generic [ref=e416]: Destructive
+                - generic [ref=e417]:
+                  - generic [ref=e419]: Button
+                  - generic [ref=e420]: Outline
+                - generic [ref=e421]:
+                  - generic [ref=e423]: Button
+                  - generic [ref=e424]: Ghost
+                - generic [ref=e425]:
+                  - generic [ref=e427]: Button
+                  - generic [ref=e428]: Secondary
+                - generic [ref=e429]:
+                  - generic [ref=e430]:
+                    - img "plus" [ref=e431]
+                    - generic [ref=e432]: Add Item
+                  - generic [ref=e433]: Icon + Text
+                - generic [ref=e434]:
+                  - generic [ref=e435]:
+                    - generic [ref=e436]: Next
+                    - img "arrow-right" [ref=e437]
+                  - generic [ref=e438]: Text + Icon
+                - generic [ref=e439]:
+                  - img "settings" [ref=e441]
+                  - generic [ref=e442]: Icon Only
+                - generic [ref=e443]:
+                  - img "heart" [ref=e445]
+                  - generic [ref=e446]: Icon Round
+                - generic [ref=e447]:
+                  - img "share" [ref=e449]
+                  - generic [ref=e450]: Icon Outline
+                - generic [ref=e451]:
+                  - generic [ref=e452]:
+                    - generic [ref=e453]: Learn more
+                    - img "arrow-right" [ref=e454]
+                  - generic [ref=e455]: Link Btn
+                - generic [ref=e456]:
+                  - generic [ref=e457]:
+                    - img "plus" [ref=e458]
+                    - generic [ref=e459]: Add
+                  - generic [ref=e460]: FAB
+            - generic [ref=e461]:
+              - heading "Form" [level=4] [ref=e464]
+              - generic [ref=e466]:
+                - generic [ref=e467]:
+                  - textbox "Input Field" [ref=e469]:
+                    - /placeholder: Enter text…
+                  - generic [ref=e470]: Input
+                - generic [ref=e471]:
+                  - generic [ref=e472]:
+                    - generic:
+                      - img "search"
+                    - textbox "Input Field" [ref=e473]:
+                      - /placeholder: Search…
+                  - generic [ref=e474]: Input Search
+                - generic [ref=e475]:
+                  - generic [ref=e477]:
+                    - textbox "Input Field" [ref=e478]:
+                      - /placeholder: Password
+                    - generic:
+                      - img "eye"
+                  - generic [ref=e479]: Input Password
+                - generic [ref=e480]:
+                  - textbox "Input Field" [ref=e482]:
+                    - /placeholder: Write something…
+                  - generic [ref=e483]: Textarea
+                - generic [ref=e484]:
+                  - generic [ref=e485]:
+                    - button [ref=e486] [cursor=pointer]:
+                      - textbox:
+                        - /placeholder: Choose option…
+                      - img [ref=e487]
+                    - combobox "Choose option…" [ref=e488] [cursor=pointer]:
+                      - option "Choose option…" [disabled] [selected]
+                      - option "Option 1"
+                      - option "Option 2"
+                      - option "Option 3"
+                  - generic [ref=e489]: Select
+                - generic [ref=e490]:
+                  - generic [ref=e491] [cursor=pointer]:
+                    - checkbox "Checkbox" [ref=e493]
+                    - generic [ref=e495]: Accept terms
+                  - generic [ref=e496]: Checkbox
+                - generic [ref=e497]:
+                  - generic [ref=e498] [cursor=pointer]:
+                    - checkbox "Checkbox" [ref=e500]
+                    - generic [ref=e502]: Enabled
+                  - generic [ref=e503]: Checked
+                - generic [ref=e504]:
+                  - group "checkbox group" [ref=e505]:
+                    - generic [ref=e506] [cursor=pointer]:
+                      - checkbox "a" [ref=e508]
+                      - generic [ref=e510]: Option A
+                    - generic [ref=e511] [cursor=pointer]:
+                      - checkbox "b" [ref=e513]
+                      - generic [ref=e515]: Option B
+                    - generic [ref=e516] [cursor=pointer]:
+                      - checkbox "c" [ref=e518]
+                      - generic [ref=e520]: Option C
+                  - generic [ref=e521]: Checkbox Group
+                - generic [ref=e522]:
+                  - radiogroup "RadioGroup" [ref=e523]:
+                    - generic [ref=e524] [cursor=pointer]:
+                      - radio "a" [ref=e526]
+                      - generic [ref=e528]: Option A
+                    - generic [ref=e529] [cursor=pointer]:
+                      - radio "b" [ref=e531]
+                      - generic [ref=e533]: Option B
+                  - generic [ref=e534]: Radio Group
+                - generic [ref=e538]: Switch Off
+                - generic [ref=e542]: Switch On
+                - generic [ref=e543]:
+                  - generic "Slider" [ref=e544]:
+                    - slider "Slider" [ref=e549]: "60"
+                  - generic [ref=e550]: Slider
+                - generic [ref=e551]:
+                  - progressbar [ref=e552]
+                  - generic [ref=e554]: Progress 60%
+                - generic [ref=e555]:
+                  - progressbar [ref=e556]
+                  - generic [ref=e558]: Progress 90%
+            - generic [ref=e559]:
+              - heading "Display & Feedback" [level=4] [ref=e562]
+              - generic [ref=e564]:
+                - generic [ref=e565]:
+                  - generic [ref=e567]: New
+                  - generic [ref=e568]: Badge Primary
+                - generic [ref=e569]:
+                  - generic [ref=e571]: Active
+                  - generic [ref=e572]: Badge Success
+                - generic [ref=e573]:
+                  - generic [ref=e575]: Error
+                  - generic [ref=e576]: Badge Error
+                - generic [ref=e577]:
+                  - generic [ref=e579]: Warning
+                  - generic [ref=e580]: Badge Warn
+                - generic [ref=e581]:
+                  - generic [ref=e583]: Design
+                  - generic [ref=e584]: Tag
+                - generic [ref=e585]:
+                  - generic [ref=e586]:
+                    - generic [ref=e587]: React
+                    - img "x" [ref=e588]
+                  - generic [ref=e589]: Chip
+                - generic [ref=e590]:
+                  - generic [ref=e592]: JD
+                  - generic [ref=e593]: Avatar
+                - generic [ref=e594]:
+                  - generic [ref=e596]: AB
+                  - generic [ref=e597]: Avatar XL
+                - generic [ref=e598]:
+                  - progressbar "loading" [ref=e599]:
+                    - img [ref=e601]
+                  - generic [ref=e604]: Spinner
+              - generic [ref=e605]:
+                - generic [ref=e606]:
+                  - generic [ref=e607]:
+                    - img "info" [ref=e608]
+                    - generic [ref=e609]:
+                      - generic [ref=e610]: Info
+                      - generic [ref=e611]: This is an info alert.
+                  - generic [ref=e612]: Alert Info
+                - generic [ref=e613]:
+                  - generic [ref=e614]:
+                    - img "check-circle" [ref=e615]
+                    - generic [ref=e616]:
+                      - generic [ref=e617]: Success
+                      - generic [ref=e618]: Your changes were saved.
+                  - generic [ref=e619]: Alert Success
+                - generic [ref=e620]:
+                  - generic [ref=e621]:
+                    - img "alert-circle" [ref=e622]
+                    - generic [ref=e623]:
+                      - generic [ref=e624]: Error
+                      - generic [ref=e625]: Something went wrong.
+                  - generic [ref=e626]: Alert Error
+                - generic [ref=e627]:
+                  - generic [ref=e628]:
+                    - img "alert-triangle" [ref=e629]
+                    - generic [ref=e630]:
+                      - generic [ref=e631]: Warning
+                      - generic [ref=e632]: Review before saving.
+                  - generic [ref=e633]: Alert Warning
+                - generic [ref=e639]: Skeleton Text
+                - generic [ref=e645]: Skeleton Card
+                - generic [ref=e646]:
+                  - generic [ref=e647]:
+                    - img "check-circle" [ref=e648]
+                    - generic [ref=e649]: Changes saved successfully!
+                  - generic [ref=e650]: Toast
+            - generic [ref=e651]:
+              - heading "Navigation" [level=4] [ref=e654]
+              - generic [ref=e656]:
+                - generic [ref=e657]:
+                  - generic [ref=e658]:
+                    - generic [ref=e659]: Home
+                    - img "chevron-right" [ref=e660]
+                    - generic [ref=e661]: Products
+                    - img "chevron-right" [ref=e662]
+                    - generic [ref=e663]: Detail
+                  - generic [ref=e664]: Breadcrumbs
+                - generic [ref=e665]:
+                  - generic [ref=e666]:
+                    - generic [ref=e667]:
+                      - generic [ref=e669]: Overview
+                      - generic [ref=e671]: Details
+                      - generic [ref=e673]: Reviews
+                    - generic [ref=e675]: Tab content area
+                  - generic [ref=e676]: Tabs
+                - generic [ref=e677]:
+                  - generic [ref=e678]:
+                    - generic [ref=e679]:
+                      - img "check" [ref=e681]
+                      - generic [ref=e682]: Cart
+                    - generic [ref=e684]:
+                      - generic [ref=e686]: "2"
+                      - generic [ref=e687]: Shipping
+                    - generic [ref=e689]:
+                      - generic [ref=e691]: "3"
+                      - generic [ref=e692]: Payment
+                  - generic [ref=e693]: Stepper
+                - generic [ref=e694]:
+                  - generic [ref=e695]:
+                    - img "chevron-left" [ref=e697]
+                    - generic [ref=e699]: "1"
+                    - generic [ref=e701]: "2"
+                    - generic [ref=e703]: "3"
+                    - generic [ref=e704]: …
+                    - generic [ref=e706]: "10"
+                    - img "chevron-right" [ref=e708]
+                  - generic [ref=e709]: Pagination
+                - generic [ref=e710]:
+                  - generic [ref=e711]:
+                    - img "star" [ref=e712]
+                    - img "star" [ref=e713]
+                    - img "star" [ref=e714]
+                    - img "star" [ref=e715]
+                    - img "star" [ref=e716]
+                    - generic [ref=e717]: 4.0 (128)
+                  - generic [ref=e718]: Star Rating
+                - generic [ref=e719]:
+                  - generic [ref=e720]:
+                    - generic [ref=e721]:
+                      - generic [ref=e722]: What is SDUI?
+                      - img "chevron-down" [ref=e723]
+                    - generic [ref=e725]: SDUI = Server-Driven UI. JSON configs define the interface.
+                  - generic [ref=e726]: Accordion
+                - generic [ref=e727]:
+                  - generic [ref=e728]:
+                    - generic [ref=e729]:
+                      - generic [ref=e731]: Name
+                      - generic [ref=e733]: Status
+                      - generic [ref=e735]: Amount
+                    - generic [ref=e736]:
+                      - generic [ref=e738]: Alice Smith
+                      - generic [ref=e741]: Active
+                      - generic [ref=e743]: $120.00
+                    - generic [ref=e744]:
+                      - generic [ref=e746]: Bob Jones
+                      - generic [ref=e749]: Pending
+                      - generic [ref=e751]: $45.00
+                  - generic [ref=e752]: Table
+            - generic [ref=e753]:
+              - heading "Icons · Media" [level=4] [ref=e756]
+              - generic [ref=e758]: Navigation & Layout
+              - generic [ref=e759]:
+                - generic [ref=e760]:
+                  - img "home" [ref=e761]
+                  - generic [ref=e762]: Home
+                - generic [ref=e763]:
+                  - img "menu" [ref=e764]
+                  - generic [ref=e765]: Menu
+                - generic [ref=e766]:
+                  - img "settings" [ref=e767]
+                  - generic [ref=e768]: Settings
+                - generic [ref=e769]:
+                  - img "layout-grid" [ref=e770]
+                  - generic [ref=e771]: LayoutGrid
+                - generic [ref=e772]:
+                  - img "list" [ref=e773]
+                  - generic [ref=e774]: List
+                - generic [ref=e775]:
+                  - img "layers" [ref=e776]
+                  - generic [ref=e777]: Layers
+                - generic [ref=e778]:
+                  - img "maximize" [ref=e779]
+                  - generic [ref=e780]: Maximize
+                - generic [ref=e781]:
+                  - img "minimize" [ref=e782]
+                  - generic [ref=e783]: Minimize
+                - generic [ref=e784]:
+                  - img "more-horizontal" [ref=e785]
+                  - generic [ref=e786]: MoreHorizontal
+                - generic [ref=e787]:
+                  - img "more-vertical" [ref=e788]
+                  - generic [ref=e789]: MoreVertical
+                - generic [ref=e790]:
+                  - img "filter" [ref=e791]
+                  - generic [ref=e792]: Filter
+              - generic [ref=e793]: User & Auth
+              - generic [ref=e794]:
+                - generic [ref=e795]:
+                  - img "user" [ref=e796]
+                  - generic [ref=e797]: User
+                - generic [ref=e798]:
+                  - img "users" [ref=e799]
+                  - generic [ref=e800]: Users
+                - generic [ref=e801]:
+                  - img "user-plus" [ref=e802]
+                  - generic [ref=e803]: UserPlus
+                - generic [ref=e804]:
+                  - img "user-check" [ref=e805]
+                  - generic [ref=e806]: UserCheck
+                - generic [ref=e807]:
+                  - img "log-in" [ref=e808]
+                  - generic [ref=e809]: LogIn
+                - generic [ref=e810]:
+                  - img "log-out" [ref=e811]
+                  - generic [ref=e812]: LogOut
+                - generic [ref=e813]:
+                  - img "lock" [ref=e814]
+                  - generic [ref=e815]: Lock
+                - generic [ref=e816]:
+                  - img "unlock" [ref=e817]
+                  - generic [ref=e818]: Unlock
+              - generic [ref=e819]: Communication
+              - generic [ref=e820]:
+                - generic [ref=e821]:
+                  - img "bell" [ref=e822]
+                  - generic [ref=e823]: Bell
+                - generic [ref=e824]:
+                  - img "mail" [ref=e825]
+                  - generic [ref=e826]: Mail
+                - generic [ref=e827]:
+                  - img "send" [ref=e828]
+                  - generic [ref=e829]: Send
+                - generic [ref=e830]:
+                  - img "message-circle" [ref=e831]
+                  - generic [ref=e832]: MessageCircle
+                - generic [ref=e833]:
+                  - img "message-square" [ref=e834]
+                  - generic [ref=e835]: MessageSquare
+                - generic [ref=e836]:
+                  - img "phone" [ref=e837]
+                  - generic [ref=e838]: Phone
+                - generic [ref=e839]:
+                  - img "inbox" [ref=e840]
+                  - generic [ref=e841]: Inbox
+              - generic [ref=e842]: Actions
+              - generic [ref=e843]:
+                - generic [ref=e844]:
+                  - img "search" [ref=e845]
+                  - generic [ref=e846]: Search
+                - generic [ref=e847]:
+                  - img "plus" [ref=e848]
+                  - generic [ref=e849]: Plus
+                - generic [ref=e850]:
+                  - img "minus" [ref=e851]
+                  - generic [ref=e852]: Minus
+                - generic [ref=e853]:
+                  - img "x" [ref=e854]
+                  - generic [ref=e855]: X
+                - generic [ref=e856]:
+                  - img "check" [ref=e857]
+                  - generic [ref=e858]: Check
+                - generic [ref=e859]:
+                  - img "check-circle2" [ref=e860]
+                  - generic [ref=e861]: CheckCircle2
+                - generic [ref=e862]:
+                  - img "square-check" [ref=e863]
+                  - generic [ref=e864]: SquareCheck
+                - generic [ref=e865]:
+                  - img "pencil" [ref=e866]
+                  - generic [ref=e867]: Pencil
+                - generic [ref=e868]:
+                  - img "pen-line" [ref=e869]
+                  - generic [ref=e870]: PenLine
+                - generic [ref=e871]:
+                  - img "trash" [ref=e872]
+                  - generic [ref=e873]: Trash
+                - generic [ref=e874]:
+                  - img "trash2" [ref=e875]
+                  - generic [ref=e876]: Trash2
+                - generic [ref=e877]:
+                  - img "copy" [ref=e878]
+                  - generic [ref=e879]: Copy
+                - generic [ref=e880]:
+                  - img "upload" [ref=e881]
+                  - generic [ref=e882]: Upload
+                - generic [ref=e883]:
+                  - img "download" [ref=e884]
+                  - generic [ref=e885]: Download
+                - generic [ref=e886]:
+                  - img "refresh-cw" [ref=e887]
+                  - generic [ref=e888]: RefreshCw
+                - generic [ref=e889]:
+                  - img "external-link" [ref=e890]
+                  - generic [ref=e891]: ExternalLink
+                - generic [ref=e892]:
+                  - img "link" [ref=e893]
+                  - generic [ref=e894]: Link
+                - generic [ref=e895]:
+                  - img "share" [ref=e896]
+                  - generic [ref=e897]: Share
+              - generic [ref=e898]: Arrows & Chevrons
+              - generic [ref=e899]:
+                - generic [ref=e900]:
+                  - img "arrow-right" [ref=e901]
+                  - generic [ref=e902]: ArrowRight
+                - generic [ref=e903]:
+                  - img "arrow-left" [ref=e904]
+                  - generic [ref=e905]: ArrowLeft
+                - generic [ref=e906]:
+                  - img "arrow-up" [ref=e907]
+                  - generic [ref=e908]: ArrowUp
+                - generic [ref=e909]:
+                  - img "arrow-down" [ref=e910]
+                  - generic [ref=e911]: ArrowDown
+                - generic [ref=e912]:
+                  - img "chevron-down" [ref=e913]
+                  - generic [ref=e914]: ChevronDown
+                - generic [ref=e915]:
+                  - img "chevron-up" [ref=e916]
+                  - generic [ref=e917]: ChevronUp
+                - generic [ref=e918]:
+                  - img "chevron-left" [ref=e919]
+                  - generic [ref=e920]: ChevronLeft
+                - generic [ref=e921]:
+                  - img "chevron-right" [ref=e922]
+                  - generic [ref=e923]: ChevronRight
+                - generic [ref=e924]:
+                  - img "chevrons-left" [ref=e925]
+                  - generic [ref=e926]: ChevronsLeft
+                - generic [ref=e927]:
+                  - img "chevrons-right" [ref=e928]
+                  - generic [ref=e929]: ChevronsRight
+              - generic [ref=e930]: Status & Indicators
+              - generic [ref=e931]:
+                - generic [ref=e932]:
+                  - img "star" [ref=e933]
+                  - generic [ref=e934]: Star
+                - generic [ref=e935]:
+                  - img "heart" [ref=e936]
+                  - generic [ref=e937]: Heart
+                - generic [ref=e938]:
+                  - img "bookmark" [ref=e939]
+                  - generic [ref=e940]: Bookmark
+                - generic [ref=e941]:
+                  - img "flag" [ref=e942]
+                  - generic [ref=e943]: Flag
+                - generic [ref=e944]:
+                  - img "award" [ref=e945]
+                  - generic [ref=e946]: Award
+                - generic [ref=e947]:
+                  - img "zap" [ref=e948]
+                  - generic [ref=e949]: Zap
+                - generic [ref=e950]:
+                  - img "shield-check" [ref=e951]
+                  - generic [ref=e952]: ShieldCheck
+                - generic [ref=e953]:
+                  - img "alert-circle" [ref=e954]
+                  - generic [ref=e955]: AlertCircle
+                - generic [ref=e956]:
+                  - img "alert-triangle" [ref=e957]
+                  - generic [ref=e958]: AlertTriangle
+                - generic [ref=e959]:
+                  - img "help-circle" [ref=e960]
+                  - generic [ref=e961]: HelpCircle
+                - generic [ref=e962]:
+                  - img "info" [ref=e963]
+                  - generic [ref=e964]: Info
+                - generic [ref=e965]:
+                  - img "loader" [ref=e966]
+                  - generic [ref=e967]: Loader
+                - generic [ref=e968]:
+                  - img "trending-up" [ref=e969]
+                  - generic [ref=e970]: TrendingUp
+                - generic [ref=e971]:
+                  - img "trending-down" [ref=e972]
+                  - generic [ref=e973]: TrendingDown
+                - generic [ref=e974]:
+                  - img "activity" [ref=e975]
+                  - generic [ref=e976]: Activity
+              - generic [ref=e977]: E-commerce
+              - generic [ref=e978]:
+                - generic [ref=e979]:
+                  - img "shopping-cart" [ref=e980]
+                  - generic [ref=e981]: ShoppingCart
+                - generic [ref=e982]:
+                  - img "shopping-bag" [ref=e983]
+                  - generic [ref=e984]: ShoppingBag
+                - generic [ref=e985]:
+                  - img "package" [ref=e986]
+                  - generic [ref=e987]: Package
+                - generic [ref=e988]:
+                  - img "tag" [ref=e989]
+                  - generic [ref=e990]: Tag
+                - generic [ref=e991]:
+                  - img "credit-card" [ref=e992]
+                  - generic [ref=e993]: CreditCard
+                - generic [ref=e994]:
+                  - img "dollar-sign" [ref=e995]
+                  - generic [ref=e996]: DollarSign
+                - generic [ref=e997]:
+                  - img "circle-dollar-sign" [ref=e998]
+                  - generic [ref=e999]: CircleDollarSign
+                - generic [ref=e1000]:
+                  - img "percent" [ref=e1001]
+                  - generic [ref=e1002]: Percent
+                - generic [ref=e1003]:
+                  - img "truck" [ref=e1004]
+                  - generic [ref=e1005]: Truck
+              - generic [ref=e1006]: Data, Files & Code
+              - generic [ref=e1007]:
+                - generic [ref=e1008]:
+                  - img "chart-bar" [ref=e1009]
+                  - generic [ref=e1010]: ChartBar
+                - generic [ref=e1011]:
+                  - img "chart-pie" [ref=e1012]
+                  - generic [ref=e1013]: ChartPie
+                - generic [ref=e1014]:
+                  - img "sliders-horizontal" [ref=e1015]
+                  - generic [ref=e1016]: SlidersHorizontal
+                - generic [ref=e1017]:
+                  - img "toggle-left" [ref=e1018]
+                  - generic [ref=e1019]: ToggleLeft
+                - generic [ref=e1020]:
+                  - img "toggle-right" [ref=e1021]
+                  - generic [ref=e1022]: ToggleRight
+                - generic [ref=e1023]:
+                  - img "file-text" [ref=e1024]
+                  - generic [ref=e1025]: FileText
+                - generic [ref=e1026]:
+                  - img "file" [ref=e1027]
+                  - generic [ref=e1028]: File
+                - generic [ref=e1029]:
+                  - img "folder" [ref=e1030]
+                  - generic [ref=e1031]: Folder
+                - generic [ref=e1032]:
+                  - img "code" [ref=e1033]
+                  - generic [ref=e1034]: Code
+                - generic [ref=e1035]:
+                  - img "calendar" [ref=e1036]
+                  - generic [ref=e1037]: Calendar
+                - generic [ref=e1038]:
+                  - img "clock" [ref=e1039]
+                  - generic [ref=e1040]: Clock
+              - generic [ref=e1041]: Location, Media & Misc
+              - generic [ref=e1042]:
+                - generic [ref=e1043]:
+                  - img "map-pin" [ref=e1044]
+                  - generic [ref=e1045]: MapPin
+                - generic [ref=e1046]:
+                  - img "map" [ref=e1047]
+                  - generic [ref=e1048]: Map
+                - generic [ref=e1049]:
+                  - img "globe" [ref=e1050]
+                  - generic [ref=e1051]: Globe
+                - generic [ref=e1052]:
+                  - img "image" [ref=e1053]
+                  - generic [ref=e1054]: Image
+                - generic [ref=e1055]:
+                  - img "camera" [ref=e1056]
+                  - generic [ref=e1057]: Camera
+                - generic [ref=e1058]:
+                  - img "video" [ref=e1059]
+                  - generic [ref=e1060]: Video
+                - generic [ref=e1061]:
+                  - img "music" [ref=e1062]
+                  - generic [ref=e1063]: Music
+                - generic [ref=e1064]:
+                  - img "eye" [ref=e1065]
+                  - generic [ref=e1066]: Eye
+                - generic [ref=e1067]:
+                  - img "eye-off" [ref=e1068]
+                  - generic [ref=e1069]: EyeOff
+                - generic [ref=e1070]:
+                  - img "sun" [ref=e1071]
+                  - generic [ref=e1072]: Sun
+                - generic [ref=e1073]:
+                  - img "moon" [ref=e1074]
+                  - generic [ref=e1075]: Moon
+                - generic [ref=e1076]:
+                  - img "monitor" [ref=e1077]
+                  - generic [ref=e1078]: Monitor
+                - generic [ref=e1079]:
+                  - img "wifi" [ref=e1080]
+                  - generic [ref=e1081]: Wifi
+                - generic [ref=e1082]:
+                  - img "bluetooth" [ref=e1083]
+                  - generic [ref=e1084]: Bluetooth
+                - generic [ref=e1085]:
+                  - img "battery" [ref=e1086]
+                  - generic [ref=e1087]: Battery
+                - generic [ref=e1088]:
+                  - img "power" [ref=e1089]
+                  - generic [ref=e1090]: Power
+                - generic [ref=e1091]:
+                  - img "coffee" [ref=e1092]
+                  - generic [ref=e1093]: Coffee
+                - generic [ref=e1094]:
+                  - img "gift" [ref=e1095]
+                  - generic [ref=e1096]: Gift
+                - generic [ref=e1097]:
+                  - img "smile" [ref=e1098]
+                  - generic [ref=e1099]: Smile
+                - generic [ref=e1100]:
+                  - img "briefcase" [ref=e1101]
+                  - generic [ref=e1102]: Briefcase
+                - generic [ref=e1103]:
+                  - img "building" [ref=e1104]
+                  - generic [ref=e1105]: Building
+                - generic [ref=e1106]:
+                  - img "circle" [ref=e1107]
+                  - generic [ref=e1108]: Circle
+                - generic [ref=e1109]:
+                  - img "square" [ref=e1110]
+                  - generic [ref=e1111]: Square
+              - generic [ref=e1113]: Image Component
+              - generic [ref=e1114]:
+                - generic [ref=e1115]:
+                  - generic [ref=e1116]:
+                    - img "image" [ref=e1117]
+                    - generic [ref=e1118]: 320 × 224
+                  - generic [ref=e1119]: Placeholder
+                - generic [ref=e1120]:
+                  - img "Mountain landscape" [ref=e1121]
+                  - generic [ref=e1122]: Image
+            - generic [ref=e1123]:
+              - heading "Data, Charts & Rich Content" [level=4] [ref=e1126]
+              - generic [ref=e1128]:
+                - generic [ref=e1129]:
+                  - application [ref=e1133]:
+                    - generic [ref=e1159]:
+                      - generic [ref=e1160]:
+                        - generic [ref=e1162]: Mon
+                        - generic [ref=e1164]: Tue
+                        - generic [ref=e1166]: Wed
+                        - generic [ref=e1168]: Thu
+                        - generic [ref=e1170]: Fri
+                      - generic [ref=e1171]:
+                        - generic [ref=e1173]: "0"
+                        - generic [ref=e1175]: "25"
+                        - generic [ref=e1177]: "50"
+                        - generic [ref=e1179]: "75"
+                        - generic [ref=e1181]: "100"
+                  - generic [ref=e1182]: Bar Chart
+                - generic [ref=e1183]:
+                  - application [ref=e1187]:
+                    - generic [ref=e1210]:
+                      - generic [ref=e1211]:
+                        - generic [ref=e1213]: Jan
+                        - generic [ref=e1215]: Feb
+                        - generic [ref=e1217]: Mar
+                        - generic [ref=e1219]: Apr
+                        - generic [ref=e1221]: May
+                        - generic [ref=e1223]: Jun
+                      - generic [ref=e1224]:
+                        - generic [ref=e1226]: "0"
+                        - generic [ref=e1228]: "20"
+                        - generic [ref=e1230]: "40"
+                        - generic [ref=e1232]: "60"
+                        - generic [ref=e1234]: "80"
+                  - generic [ref=e1235]: Line Chart
+                - generic [ref=e1236]:
+                  - application [ref=e1240]:
+                    - generic [ref=e1250]:
+                      - generic [ref=e1253]: "55"
+                      - generic [ref=e1256]: "35"
+                      - generic [ref=e1259]: "10"
+                  - generic [ref=e1260]: Pie Chart
+                - generic [ref=e1261]:
+                  - img [ref=e1263]
+                  - generic [ref=e1266]: QR Code
+                - generic [ref=e1267]:
+                  - generic [ref=e1268]:
+                    - heading "Hello World" [level=2] [ref=e1269]
+                    - paragraph [ref=e1270]:
+                      - text: This is
+                      - strong [ref=e1271]: bold
+                      - text: ","
+                      - emphasis [ref=e1272]: italic
+                      - text: and
+                      - code [ref=e1273]: inline code
+                      - text: .
+                    - list [ref=e1274]:
+                      - listitem [ref=e1275]: Item 1
+                      - listitem [ref=e1276]: Item 2
+                      - listitem [ref=e1277]: Item 3
+                  - generic [ref=e1278]: Markdown
+                - generic [ref=e1279]:
+                  - generic [ref=e1281]:
+                    - generic [ref=e1282]: "{"
+                    - generic [ref=e1283]: "\"user\": {"
+                    - generic [ref=e1284]: "\"name\": \"Alice\","
+                    - generic [ref=e1285]: "\"role\": \"admin\""
+                    - generic [ref=e1286]: "},"
+                    - generic [ref=e1287]: "\"active\": true,"
+                    - generic [ref=e1288]: "\"score\": 42"
+                    - generic [ref=e1289]: "}"
+                  - generic [ref=e1290]: JSON Viewer
+                - generic [ref=e1291]:
+                  - iframe [ref=e1293]:
+                    - generic [ref=f1e2]:
+                      - heading "Example Domain" [level=1] [ref=f1e3]
+                      - paragraph [ref=f1e4]: This domain is for use in documentation examples without needing permission. Avoid use in operations.
+                      - paragraph [ref=f1e5]:
+                        - link "Learn more" [ref=f1e6] [cursor=pointer]:
+                          - /url: https://iana.org/domains/example
+                  - generic [ref=e1294]: Iframe
+            - generic [ref=e1295]:
+              - heading "Common UI Patterns" [level=4] [ref=e1298]
+              - generic [ref=e1300]:
+                - generic [ref=e1301]:
+                  - generic [ref=e1302]:
+                    - generic [ref=e1304]: JD
+                    - generic [ref=e1305]:
+                      - generic [ref=e1306]: John Doe
+                      - generic [ref=e1307]: Product Designer
+                    - generic [ref=e1308]:
+                      - generic [ref=e1310]: Follow
+                      - generic [ref=e1312]: Message
+                  - generic [ref=e1313]: Profile Card
+                - generic [ref=e1314]:
+                  - generic [ref=e1315]:
+                    - img "package" [ref=e1317]
+                    - generic [ref=e1318]:
+                      - generic [ref=e1319]: Wireless Headphones
+                      - generic [ref=e1320]:
+                        - img "star" [ref=e1321]
+                        - img "star" [ref=e1322]
+                        - img "star" [ref=e1323]
+                        - img "star" [ref=e1324]
+                        - img "star" [ref=e1325]
+                      - generic [ref=e1326]:
+                        - generic [ref=e1327]: $79.99
+                        - img "plus" [ref=e1329]
+                  - generic [ref=e1330]: Product Card
+                - generic [ref=e1331]:
+                  - generic [ref=e1332]:
+                    - generic [ref=e1333]:
+                      - generic [ref=e1334]: Total Revenue
+                      - img "trending-up" [ref=e1336]
+                    - generic [ref=e1337]: $24,531
+                    - generic [ref=e1338]:
+                      - img "arrow-up" [ref=e1339]
+                      - generic [ref=e1340]: +12.5% vs last month
+                  - generic [ref=e1341]: Stat Card
+                - generic [ref=e1342]:
+                  - generic [ref=e1343]:
+                    - heading "Welcome back" [level=4] [ref=e1344]
+                    - generic [ref=e1345]: Sign in to your account
+                    - generic [ref=e1346]:
+                      - generic [ref=e1347]: Email
+                      - textbox "Input Field" [ref=e1349]:
+                        - /placeholder: you@example.com
+                    - generic [ref=e1350]:
+                      - generic [ref=e1351]: Password
+                      - textbox "Input Field" [ref=e1353]:
+                        - /placeholder: ••••••••
+                    - generic [ref=e1355]: Sign in
+                  - generic [ref=e1356]: Login Form
+                - generic [ref=e1357]:
+                  - generic [ref=e1358]:
+                    - img "bell" [ref=e1360]
+                    - generic [ref=e1361]:
+                      - generic [ref=e1362]: New message
+                      - generic [ref=e1363]: "Alice sent you a message: \"Hey, are you free tomorrow?\""
+                      - generic [ref=e1364]: 2 min ago
+                  - generic [ref=e1366]: Notification
+                - generic [ref=e1367]:
+                  - generic [ref=e1368]:
+                    - img "inbox" [ref=e1370]
+                    - generic [ref=e1371]: Nothing here yet
+                    - generic [ref=e1372]: Create your first item to get started.
+                    - generic [ref=e1373]:
+                      - img "plus" [ref=e1374]
+                      - generic [ref=e1375]: Create Item
+                  - generic [ref=e1376]: Empty State
+          - generic [ref=e1377]:
+            - generic [ref=e1378]: home
+            - generic [ref=e1379]: /
+            - generic [ref=e1380]: 1280px
+          - generic [ref=e1383]:
+            - generic [ref=e1386]:
+              - img "Vendure" [ref=e1389]
+              - generic [ref=e1391]:
+                - img "moon" [ref=e1395]
+                - img "shopping-bag" [ref=e1398]
+                - generic [ref=e1401]: Sign in
+            - generic [ref=e1403]:
+              - generic [ref=e1406]:
+                - heading "E-Commerce Starter Template" [level=4] [ref=e1407]
+                - generic [ref=e1408]: Powered by Vendure and Next.js
+                - generic [ref=e1409]:
+                  - generic [ref=e1411]: Shop Now
+                  - generic [ref=e1413]: View on GitHub
+              - generic [ref=e1415]:
+                - heading "Featured Products" [level=4] [ref=e1416]
+                - generic:
+                  - button "Previous slide" [ref=e1417] [cursor=pointer]:
+                    - img [ref=e1418]
+                  - button "Next slide" [ref=e1420] [cursor=pointer]:
+                    - img [ref=e1421]
+              - generic [ref=e1425]:
+                - generic [ref=e1426]:
+                  - img "check" [ref=e1428]
+                  - heading "High Quality" [level=4] [ref=e1429]
+                  - generic [ref=e1430]: Premium products carefully selected for you
+                - generic [ref=e1431]:
+                  - img "circle-dollar-sign" [ref=e1433]
+                  - heading "Best Prices" [level=4] [ref=e1434]
+                  - generic [ref=e1435]: Competitive pricing on all our products
+                - generic [ref=e1436]:
+                  - img "zap" [ref=e1438]
+                  - heading "Fast Delivery" [level=4] [ref=e1439]
+                  - generic [ref=e1440]: Quick and reliable shipping worldwide
+            - generic [ref=e1442]:
+              - generic [ref=e1443]:
+                - generic [ref=e1445]: Vendure Store
+                - generic [ref=e1447]: Categories
+                - generic [ref=e1448]:
+                  - generic [ref=e1449]: Vendure
+                  - generic [ref=e1450]:
+                    - generic [ref=e1452]: GitHub
+                    - generic [ref=e1454]: Documentation
+                    - generic [ref=e1456]: Source code
+              - generic [ref=e1457]:
+                - generic [ref=e1458]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e1459]:
+                  - generic [ref=e1460]: Powered by
+                  - img "Vendure" [ref=e1461]
+                  - generic [ref=e1462]: "&"
+                  - img "Next.js" [ref=e1463]
+          - generic [ref=e1465]:
+            - generic [ref=e1466]: cart
+            - generic [ref=e1467]: /cart
+            - generic [ref=e1468]: 1280px
+          - generic [ref=e1471]:
+            - generic [ref=e1474]:
+              - img "Vendure" [ref=e1477]
+              - generic [ref=e1479]:
+                - img "moon" [ref=e1483]
+                - img "shopping-bag" [ref=e1486]
+                - generic [ref=e1489]: Sign in
+            - generic [ref=e1491]:
+              - heading "Shopping Cart" [level=4] [ref=e1492]
+              - generic [ref=e1493]:
+                - heading "Your Cart is Empty" [level=4] [ref=e1494]
+                - generic [ref=e1495]: Add some items to your cart to get started
+                - generic [ref=e1497]: Continue Shopping
+            - generic [ref=e1499]:
+              - generic [ref=e1500]:
+                - generic [ref=e1502]: Vendure Store
+                - generic [ref=e1504]: Categories
+                - generic [ref=e1505]:
+                  - generic [ref=e1506]: Vendure
+                  - generic [ref=e1507]:
+                    - generic [ref=e1509]: GitHub
+                    - generic [ref=e1511]: Documentation
+                    - generic [ref=e1513]: Source code
+              - generic [ref=e1514]:
+                - generic [ref=e1515]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e1516]:
+                  - generic [ref=e1517]: Powered by
+                  - img "Vendure" [ref=e1518]
+                  - generic [ref=e1519]: "&"
+                  - img "Next.js" [ref=e1520]
+          - generic [ref=e1522]:
+            - generic [ref=e1523]: checkout
+            - generic [ref=e1524]: /checkout
+            - generic [ref=e1525]: 1280px
+          - generic [ref=e1528]:
+            - generic [ref=e1531]:
+              - img "Vendure" [ref=e1534]
+              - generic [ref=e1536]:
+                - img "moon" [ref=e1540]
+                - img "shopping-bag" [ref=e1543]
+                - generic [ref=e1546]: Sign in
+            - generic [ref=e1548]:
+              - heading "Checkout" [level=4] [ref=e1549]
+              - generic [ref=e1550]:
+                - generic [ref=e1551]:
+                  - generic [ref=e1552]:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: "2"
+                        - generic: Shipping Address
+                      - generic:
+                        - img "chevron-down"
+                  - generic [ref=e1553]:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: "3"
+                        - generic: Delivery Method
+                      - generic:
+                        - img "chevron-down"
+                  - generic [ref=e1554]:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: "4"
+                        - generic: Payment Method
+                      - generic:
+                        - img "chevron-down"
+                  - generic [ref=e1555]:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: "5"
+                        - generic: Review & Place Order
+                      - generic:
+                        - img "chevron-down"
+                - generic [ref=e1557]:
+                  - heading "Order Summary" [level=4] [ref=e1558]
+                  - generic [ref=e1560]:
+                    - generic [ref=e1561]:
+                      - generic [ref=e1562]: Subtotal
+                      - generic [ref=e1563]: $0.00
+                    - generic [ref=e1564]:
+                      - generic [ref=e1565]: Shipping
+                      - generic [ref=e1566]: To be calculated
+                    - generic [ref=e1568]:
+                      - generic [ref=e1569]: Total
+                      - generic [ref=e1570]: $0.00
+            - generic [ref=e1572]:
+              - generic [ref=e1573]:
+                - generic [ref=e1575]: Vendure Store
+                - generic [ref=e1577]: Categories
+                - generic [ref=e1578]:
+                  - generic [ref=e1579]: Vendure
+                  - generic [ref=e1580]:
+                    - generic [ref=e1582]: GitHub
+                    - generic [ref=e1584]: Documentation
+                    - generic [ref=e1586]: Source code
+              - generic [ref=e1587]:
+                - generic [ref=e1588]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e1589]:
+                  - generic [ref=e1590]: Powered by
+                  - img "Vendure" [ref=e1591]
+                  - generic [ref=e1592]: "&"
+                  - img "Next.js" [ref=e1593]
+          - generic [ref=e1595]:
+            - generic [ref=e1596]: product
+            - generic [ref=e1597]: /product
+            - generic [ref=e1598]: 1280px
+          - generic [ref=e1601]:
+            - generic [ref=e1604]:
+              - img "Vendure" [ref=e1607]
+              - generic [ref=e1609]:
+                - img "moon" [ref=e1613]
+                - img "shopping-bag" [ref=e1616]
+                - generic [ref=e1619]: Sign in
+            - generic [ref=e1621]:
+              - heading "Product Not Found" [level=4] [ref=e1622]
+              - generic [ref=e1623]: The product you're looking for doesn't exist or has been removed.
+              - generic [ref=e1625]: Continue Shopping
+            - generic [ref=e1627]:
+              - generic [ref=e1628]:
+                - generic [ref=e1630]: Vendure Store
+                - generic [ref=e1632]: Categories
+                - generic [ref=e1633]:
+                  - generic [ref=e1634]: Vendure
+                  - generic [ref=e1635]:
+                    - generic [ref=e1637]: GitHub
+                    - generic [ref=e1639]: Documentation
+                    - generic [ref=e1641]: Source code
+              - generic [ref=e1642]:
+                - generic [ref=e1643]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e1644]:
+                  - generic [ref=e1645]: Powered by
+                  - img "Vendure" [ref=e1646]
+                  - generic [ref=e1647]: "&"
+                  - img "Next.js" [ref=e1648]
+          - generic [ref=e1650]:
+            - generic [ref=e1651]: collection
+            - generic [ref=e1652]: /collection
+            - generic [ref=e1653]: 1280px
+          - generic [ref=e1656]:
+            - generic [ref=e1659]:
+              - img "Vendure" [ref=e1662]
+              - generic [ref=e1664]:
+                - img "moon" [ref=e1668]
+                - img "shopping-bag" [ref=e1671]
+                - generic [ref=e1674]: Sign in
+            - generic [ref=e1677]:
+              - heading "Filters" [level=4] [ref=e1681]
+              - generic [ref=e1682]:
+                - generic [ref=e1683]:
+                  - generic [ref=e1684]: 0 products
+                  - generic [ref=e1686] [cursor=pointer]:
+                    - generic [ref=e1687]: "Name: A to Z"
+                    - img "chevron-down" [ref=e1688]
+                - generic [ref=e1690]: No products found
+            - generic [ref=e1692]:
+              - generic [ref=e1693]:
+                - generic [ref=e1695]: Vendure Store
+                - generic [ref=e1697]: Categories
+                - generic [ref=e1698]:
+                  - generic [ref=e1699]: Vendure
+                  - generic [ref=e1700]:
+                    - generic [ref=e1702]: GitHub
+                    - generic [ref=e1704]: Documentation
+                    - generic [ref=e1706]: Source code
+              - generic [ref=e1707]:
+                - generic [ref=e1708]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e1709]:
+                  - generic [ref=e1710]: Powered by
+                  - img "Vendure" [ref=e1711]
+                  - generic [ref=e1712]: "&"
+                  - img "Next.js" [ref=e1713]
+          - generic [ref=e1715]:
+            - generic [ref=e1716]: search
+            - generic [ref=e1717]: /search
+            - generic [ref=e1718]: 1280px
+          - generic [ref=e1721]:
+            - generic [ref=e1724]:
+              - img "Vendure" [ref=e1727]
+              - generic [ref=e1729]:
+                - img "moon" [ref=e1733]
+                - img "shopping-bag" [ref=e1736]
+                - generic [ref=e1739]: Sign in
+            - generic [ref=e1742]:
+              - heading "Search" [level=4] [ref=e1744]
+              - heading "Filters" [level=4] [ref=e1748]
+              - generic [ref=e1749]:
+                - generic [ref=e1750]:
+                  - generic [ref=e1751]: 0 products
+                  - generic [ref=e1753]:
+                    - generic [ref=e1754]: "Name: A to Z"
+                    - img "chevron-down" [ref=e1755]
+                - generic [ref=e1757]: No products found
+            - generic [ref=e1759]:
+              - generic [ref=e1760]:
+                - generic [ref=e1762]: Vendure Store
+                - generic [ref=e1764]: Categories
+                - generic [ref=e1765]:
+                  - generic [ref=e1766]: Vendure
+                  - generic [ref=e1767]:
+                    - generic [ref=e1769]: GitHub
+                    - generic [ref=e1771]: Documentation
+                    - generic [ref=e1773]: Source code
+              - generic [ref=e1774]:
+                - generic [ref=e1775]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e1776]:
+                  - generic [ref=e1777]: Powered by
+                  - img "Vendure" [ref=e1778]
+                  - generic [ref=e1779]: "&"
+                  - img "Next.js" [ref=e1780]
+          - generic [ref=e1782]:
+            - generic [ref=e1783]: signIn
+            - generic [ref=e1784]: /sign-in
+            - generic [ref=e1785]: 1280px
+          - generic [ref=e1788]:
+            - generic [ref=e1791]:
+              - img "Vendure" [ref=e1794]
+              - generic [ref=e1796]:
+                - img "moon" [ref=e1800]
+                - img "shopping-bag" [ref=e1803]
+                - generic [ref=e1806]: Sign in
+            - generic [ref=e1809]:
+              - generic [ref=e1810]:
+                - heading "Sign In" [level=4] [ref=e1811]
+                - generic [ref=e1812]: Enter your credentials to access your account
+              - generic [ref=e1814]:
+                - generic [ref=e1815]:
+                  - generic [ref=e1816]: Email
+                  - textbox "Input Field" [ref=e1818]:
+                    - /placeholder: you@example.com
+                - generic [ref=e1819]:
+                  - generic [ref=e1820]:
+                    - generic [ref=e1821]: Password
+                    - generic [ref=e1823]: Forgot password?
+                  - textbox "Input Field" [ref=e1825]:
+                    - /placeholder: ••••••••
+                - generic [ref=e1827] [cursor=pointer]: Sign In
+              - generic [ref=e1828]:
+                - generic [ref=e1829]: Don't have an account?
+                - generic [ref=e1831]: Register
+            - generic [ref=e1833]:
+              - generic [ref=e1834]:
+                - generic [ref=e1836]: Vendure Store
+                - generic [ref=e1838]: Categories
+                - generic [ref=e1839]:
+                  - generic [ref=e1840]: Vendure
+                  - generic [ref=e1841]:
+                    - generic [ref=e1843]: GitHub
+                    - generic [ref=e1845]: Documentation
+                    - generic [ref=e1847]: Source code
+              - generic [ref=e1848]:
+                - generic [ref=e1849]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e1850]:
+                  - generic [ref=e1851]: Powered by
+                  - img "Vendure" [ref=e1852]
+                  - generic [ref=e1853]: "&"
+                  - img "Next.js" [ref=e1854]
+          - generic [ref=e1856]:
+            - generic [ref=e1857]: register
+            - generic [ref=e1858]: /register
+            - generic [ref=e1859]: 1280px
+          - generic [ref=e1862]:
+            - generic [ref=e1865]:
+              - img "Vendure" [ref=e1868]
+              - generic [ref=e1870]:
+                - img "moon" [ref=e1874]
+                - img "shopping-bag" [ref=e1877]
+                - generic [ref=e1880]: Sign in
+            - generic [ref=e1883]:
+              - generic [ref=e1884]:
+                - heading "Create Account" [level=4] [ref=e1885]
+                - generic [ref=e1886]: Sign up to start shopping with us
+              - generic [ref=e1888]:
+                - generic [ref=e1889]:
+                  - generic [ref=e1890]: Email Address
+                  - textbox "Input Field" [ref=e1892]:
+                    - /placeholder: you@example.com
+                - generic [ref=e1893]:
+                  - generic [ref=e1894]:
+                    - generic [ref=e1895]: First name
+                    - textbox "Input Field" [ref=e1897]:
+                      - /placeholder: John
+                  - generic [ref=e1898]:
+                    - generic [ref=e1899]: Last name
+                    - textbox "Input Field" [ref=e1901]:
+                      - /placeholder: Doe
+                - generic [ref=e1902]:
+                  - generic [ref=e1903]: Phone Number
+                  - textbox "Input Field" [ref=e1905]:
+                    - /placeholder: +1 234 567 8900
+                - generic [ref=e1906]:
+                  - generic [ref=e1907]: Password
+                  - textbox "Input Field" [ref=e1909]:
+                    - /placeholder: ••••••••
+                - generic [ref=e1910]:
+                  - generic [ref=e1911]: Confirm Password
+                  - textbox "Input Field" [ref=e1913]:
+                    - /placeholder: ••••••••
+                - generic [ref=e1915] [cursor=pointer]: Create Account
+              - generic [ref=e1916]:
+                - generic [ref=e1917]: Already have an account?
+                - generic [ref=e1919]: Sign in
+            - generic [ref=e1921]:
+              - generic [ref=e1922]:
+                - generic [ref=e1924]: Vendure Store
+                - generic [ref=e1926]: Categories
+                - generic [ref=e1927]:
+                  - generic [ref=e1928]: Vendure
+                  - generic [ref=e1929]:
+                    - generic [ref=e1931]: GitHub
+                    - generic [ref=e1933]: Documentation
+                    - generic [ref=e1935]: Source code
+              - generic [ref=e1936]:
+                - generic [ref=e1937]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e1938]:
+                  - generic [ref=e1939]: Powered by
+                  - img "Vendure" [ref=e1940]
+                  - generic [ref=e1941]: "&"
+                  - img "Next.js" [ref=e1942]
+          - generic [ref=e1944]:
+            - generic [ref=e1945]: forgotPassword
+            - generic [ref=e1946]: /forgot-password
+            - generic [ref=e1947]: 1280px
+          - generic [ref=e1950]:
+            - generic [ref=e1953]:
+              - img "Vendure" [ref=e1956]
+              - generic [ref=e1958]:
+                - img "moon" [ref=e1962]
+                - img "shopping-bag" [ref=e1965]
+                - generic [ref=e1968]: Sign in
+            - generic [ref=e1971]:
+              - generic [ref=e1972]:
+                - heading "Reset Password" [level=4] [ref=e1973]
+                - generic [ref=e1974]: Enter your email and we'll send a reset link.
+              - generic [ref=e1975]:
+                - generic [ref=e1976]:
+                  - generic [ref=e1977]:
+                    - generic [ref=e1978]: Email
+                    - textbox "Input Field" [ref=e1980]:
+                      - /placeholder: you@example.com
+                  - generic [ref=e1982]: Send Reset Link
+                - generic [ref=e1985]: ← Back to Sign In
+            - generic [ref=e1987]:
+              - generic [ref=e1988]:
+                - generic [ref=e1990]: Vendure Store
+                - generic [ref=e1992]: Categories
+                - generic [ref=e1993]:
+                  - generic [ref=e1994]: Vendure
+                  - generic [ref=e1995]:
+                    - generic [ref=e1997]: GitHub
+                    - generic [ref=e1999]: Documentation
+                    - generic [ref=e2001]: Source code
+              - generic [ref=e2002]:
+                - generic [ref=e2003]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e2004]:
+                  - generic [ref=e2005]: Powered by
+                  - img "Vendure" [ref=e2006]
+                  - generic [ref=e2007]: "&"
+                  - img "Next.js" [ref=e2008]
+          - generic [ref=e2010]:
+            - generic [ref=e2011]: resetPassword
+            - generic [ref=e2012]: /reset-password
+            - generic [ref=e2013]: 1280px
+          - generic [ref=e2016]:
+            - generic [ref=e2019]:
+              - img "Vendure" [ref=e2022]
+              - generic [ref=e2024]:
+                - img "moon" [ref=e2028]
+                - img "shopping-bag" [ref=e2031]
+                - generic [ref=e2034]: Sign in
+            - generic [ref=e2037]:
+              - generic [ref=e2038]:
+                - heading "Set New Password" [level=4] [ref=e2039]
+                - generic [ref=e2040]: Choose a strong new password for your account.
+              - generic [ref=e2042]:
+                - generic [ref=e2043]:
+                  - generic [ref=e2044]: New Password
+                  - textbox "Input Field" [ref=e2046]:
+                    - /placeholder: ••••••••
+                - generic [ref=e2047]:
+                  - generic [ref=e2048]: Confirm Password
+                  - textbox "Input Field" [ref=e2050]:
+                    - /placeholder: ••••••••
+                - generic [ref=e2052]: Reset Password
+            - generic [ref=e2054]:
+              - generic [ref=e2055]:
+                - generic [ref=e2057]: Vendure Store
+                - generic [ref=e2059]: Categories
+                - generic [ref=e2060]:
+                  - generic [ref=e2061]: Vendure
+                  - generic [ref=e2062]:
+                    - generic [ref=e2064]: GitHub
+                    - generic [ref=e2066]: Documentation
+                    - generic [ref=e2068]: Source code
+              - generic [ref=e2069]:
+                - generic [ref=e2070]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e2071]:
+                  - generic [ref=e2072]: Powered by
+                  - img "Vendure" [ref=e2073]
+                  - generic [ref=e2074]: "&"
+                  - img "Next.js" [ref=e2075]
+          - generic [ref=e2077]:
+            - generic [ref=e2078]: verify
+            - generic [ref=e2079]: /verify
+            - generic [ref=e2080]: 1280px
+          - generic [ref=e2084]:
+            - heading "Verifying Email..." [level=4] [ref=e2085]
+            - generic [ref=e2086]: Please wait while we verify your email address.
+            - progressbar "loading" [ref=e2088]:
+              - img [ref=e2090]
+          - generic [ref=e2094]:
+            - generic [ref=e2095]: verifyPending
+            - generic [ref=e2096]: /verify-pending
+            - generic [ref=e2097]: 1280px
+          - generic [ref=e2101]:
+            - img "globe" [ref=e2103]
+            - heading "Check Your Email" [level=4] [ref=e2104]
+            - generic [ref=e2105]: We've sent a verification link to your email address. Please click the link to verify your account.
+            - generic [ref=e2107]: Back to Sign In
+          - generic [ref=e2109]:
+            - generic [ref=e2110]: accountOrders
+            - generic [ref=e2111]: /account/orders
+            - generic [ref=e2112]: 1280px
+          - generic [ref=e2115]:
+            - generic [ref=e2118]:
+              - img "Vendure" [ref=e2121]
+              - generic [ref=e2123]:
+                - img "moon" [ref=e2127]
+                - img "shopping-bag" [ref=e2130]
+                - generic [ref=e2133]: Sign in
+            - generic [ref=e2136]:
+              - generic [ref=e2138]:
+                - generic [ref=e2139]: Account
+                - generic [ref=e2140]:
+                  - generic [ref=e2141]:
+                    - img "share" [ref=e2142]
+                    - generic [ref=e2143]: Orders
+                  - generic [ref=e2144]:
+                    - img "globe" [ref=e2145]
+                    - generic [ref=e2146]: Addresses
+                  - generic [ref=e2147]:
+                    - img "user" [ref=e2148]
+                    - generic [ref=e2149]: Profile
+                  - generic [ref=e2151]:
+                    - img "menu" [ref=e2152]
+                    - generic [ref=e2153]: Sign Out
+              - generic [ref=e2155]:
+                - heading "My Orders" [level=4] [ref=e2156]
+                - generic [ref=e2158]: You haven't placed any orders yet.
+            - generic [ref=e2160]:
+              - generic [ref=e2161]:
+                - generic [ref=e2163]: Vendure Store
+                - generic [ref=e2165]: Categories
+                - generic [ref=e2166]:
+                  - generic [ref=e2167]: Vendure
+                  - generic [ref=e2168]:
+                    - generic [ref=e2170]: GitHub
+                    - generic [ref=e2172]: Documentation
+                    - generic [ref=e2174]: Source code
+              - generic [ref=e2175]:
+                - generic [ref=e2176]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e2177]:
+                  - generic [ref=e2178]: Powered by
+                  - img "Vendure" [ref=e2179]
+                  - generic [ref=e2180]: "&"
+                  - img "Next.js" [ref=e2181]
+          - generic [ref=e2183]:
+            - generic [ref=e2184]: accountOrderDetail
+            - generic [ref=e2185]: /account/order
+            - generic [ref=e2186]: 1280px
+          - generic [ref=e2189]:
+            - generic [ref=e2192]:
+              - img "Vendure" [ref=e2195]
+              - generic [ref=e2197]:
+                - img "moon" [ref=e2201]
+                - img "shopping-bag" [ref=e2204]
+                - generic [ref=e2207]: Sign in
+            - generic [ref=e2210]:
+              - generic [ref=e2212]:
+                - generic [ref=e2213]: Account
+                - generic [ref=e2214]:
+                  - generic [ref=e2215]:
+                    - img "share" [ref=e2216]
+                    - generic [ref=e2217]: Orders
+                  - generic [ref=e2218]:
+                    - img "globe" [ref=e2219]
+                    - generic [ref=e2220]: Addresses
+                  - generic [ref=e2221]:
+                    - img "user" [ref=e2222]
+                    - generic [ref=e2223]: Profile
+                  - generic [ref=e2225]:
+                    - img "menu" [ref=e2226]
+                    - generic [ref=e2227]: Sign Out
+              - generic [ref=e2229]:
+                - generic [ref=e2230]:
+                  - generic [ref=e2232]: ← Orders
+                  - 'heading "Order #" [level=4] [ref=e2233]'
+                - heading "Items" [level=4] [ref=e2236]
+                - generic [ref=e2237]:
+                  - generic [ref=e2239]:
+                    - heading "Shipping Address" [level=4] [ref=e2240]
+                    - generic [ref=e2241]: ","
+                  - generic [ref=e2243]:
+                    - heading "Order Summary" [level=4] [ref=e2244]
+                    - generic [ref=e2245]:
+                      - generic [ref=e2246]: Subtotal
+                      - generic [ref=e2247]: $0.00
+                    - generic [ref=e2248]:
+                      - generic [ref=e2249]: Shipping
+                      - generic [ref=e2250]: $0.00
+                    - generic [ref=e2252]:
+                      - generic [ref=e2253]: Total
+                      - generic [ref=e2254]: $0.00
+            - generic [ref=e2256]:
+              - generic [ref=e2257]:
+                - generic [ref=e2259]: Vendure Store
+                - generic [ref=e2261]: Categories
+                - generic [ref=e2262]:
+                  - generic [ref=e2263]: Vendure
+                  - generic [ref=e2264]:
+                    - generic [ref=e2266]: GitHub
+                    - generic [ref=e2268]: Documentation
+                    - generic [ref=e2270]: Source code
+              - generic [ref=e2271]:
+                - generic [ref=e2272]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e2273]:
+                  - generic [ref=e2274]: Powered by
+                  - img "Vendure" [ref=e2275]
+                  - generic [ref=e2276]: "&"
+                  - img "Next.js" [ref=e2277]
+          - generic [ref=e2279]:
+            - generic [ref=e2280]: accountAddresses
+            - generic [ref=e2281]: /account/addresses
+            - generic [ref=e2282]: 1280px
+          - generic [ref=e2285]:
+            - generic [ref=e2288]:
+              - img "Vendure" [ref=e2291]
+              - generic [ref=e2293]:
+                - img "moon" [ref=e2297]
+                - img "shopping-bag" [ref=e2300]
+                - generic [ref=e2303]: Sign in
+            - generic [ref=e2306]:
+              - generic [ref=e2308]:
+                - generic [ref=e2309]: Account
+                - generic [ref=e2310]:
+                  - generic [ref=e2311]:
+                    - img "share" [ref=e2312]
+                    - generic [ref=e2313]: Orders
+                  - generic [ref=e2314]:
+                    - img "globe" [ref=e2315]
+                    - generic [ref=e2316]: Addresses
+                  - generic [ref=e2317]:
+                    - img "user" [ref=e2318]
+                    - generic [ref=e2319]: Profile
+                  - generic [ref=e2321]:
+                    - img "menu" [ref=e2322]
+                    - generic [ref=e2323]: Sign Out
+              - generic [ref=e2325]:
+                - generic [ref=e2326]:
+                  - generic [ref=e2327]:
+                    - heading "Addresses" [level=4] [ref=e2328]
+                    - generic [ref=e2329]: Manage your saved shipping and billing addresses
+                  - generic [ref=e2331]: + Add Address
+                - generic [ref=e2333]: No saved addresses yet.
+            - generic [ref=e2335]:
+              - generic [ref=e2336]:
+                - generic [ref=e2338]: Vendure Store
+                - generic [ref=e2340]: Categories
+                - generic [ref=e2341]:
+                  - generic [ref=e2342]: Vendure
+                  - generic [ref=e2343]:
+                    - generic [ref=e2345]: GitHub
+                    - generic [ref=e2347]: Documentation
+                    - generic [ref=e2349]: Source code
+              - generic [ref=e2350]:
+                - generic [ref=e2351]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e2352]:
+                  - generic [ref=e2353]: Powered by
+                  - img "Vendure" [ref=e2354]
+                  - generic [ref=e2355]: "&"
+                  - img "Next.js" [ref=e2356]
+          - generic [ref=e2358]:
+            - generic [ref=e2359]: accountProfile
+            - generic [ref=e2360]: /account/profile
+            - generic [ref=e2361]: 1280px
+          - generic [ref=e2364]:
+            - generic [ref=e2367]:
+              - img "Vendure" [ref=e2370]
+              - generic [ref=e2372]:
+                - img "moon" [ref=e2376]
+                - img "shopping-bag" [ref=e2379]
+                - generic [ref=e2382]: Sign in
+            - generic [ref=e2385]:
+              - generic [ref=e2387]:
+                - generic [ref=e2388]: Account
+                - generic [ref=e2389]:
+                  - generic [ref=e2390]:
+                    - img "share" [ref=e2391]
+                    - generic [ref=e2392]: Orders
+                  - generic [ref=e2393]:
+                    - img "globe" [ref=e2394]
+                    - generic [ref=e2395]: Addresses
+                  - generic [ref=e2396]:
+                    - img "user" [ref=e2397]
+                    - generic [ref=e2398]: Profile
+                  - generic [ref=e2400]:
+                    - img "menu" [ref=e2401]
+                    - generic [ref=e2402]: Sign Out
+              - generic [ref=e2404]:
+                - generic [ref=e2405]:
+                  - heading "Profile" [level=4] [ref=e2406]
+                  - generic [ref=e2407]: Manage your account information
+                - generic [ref=e2409]:
+                  - heading "Personal Information" [level=4] [ref=e2410]
+                  - generic [ref=e2411]:
+                    - generic [ref=e2412]:
+                      - generic [ref=e2413]:
+                        - generic [ref=e2414]: First name
+                        - textbox "Input Field" [ref=e2416]:
+                          - /placeholder: Jane
+                      - generic [ref=e2417]:
+                        - generic [ref=e2418]: Last name
+                        - textbox "Input Field" [ref=e2420]:
+                          - /placeholder: Doe
+                    - generic [ref=e2421]:
+                      - generic [ref=e2422]: Phone number
+                      - textbox "Input Field" [ref=e2424]:
+                        - /placeholder: +1 (555) 000-0000
+                    - generic [ref=e2426]: Save Changes
+                - generic [ref=e2428]:
+                  - heading "Email Address" [level=4] [ref=e2429]
+                  - generic [ref=e2430]:
+                    - generic [ref=e2431]:
+                      - generic [ref=e2432]: Email
+                      - textbox "Input Field" [ref=e2434]:
+                        - /placeholder: you@example.com
+                    - generic [ref=e2436]: Update Email
+                - generic [ref=e2438]:
+                  - heading "Change Password" [level=4] [ref=e2439]
+                  - generic [ref=e2440]:
+                    - generic [ref=e2441]:
+                      - generic [ref=e2442]: Current password
+                      - textbox "Input Field" [ref=e2444]:
+                        - /placeholder: ••••••••
+                    - generic [ref=e2445]:
+                      - generic [ref=e2446]: New password
+                      - textbox "Input Field" [ref=e2448]:
+                        - /placeholder: ••••••••
+                    - generic [ref=e2450]: Change Password
+            - generic [ref=e2452]:
+              - generic [ref=e2453]:
+                - generic [ref=e2455]: Vendure Store
+                - generic [ref=e2457]: Categories
+                - generic [ref=e2458]:
+                  - generic [ref=e2459]: Vendure
+                  - generic [ref=e2460]:
+                    - generic [ref=e2462]: GitHub
+                    - generic [ref=e2464]: Documentation
+                    - generic [ref=e2466]: Source code
+              - generic [ref=e2467]:
+                - generic [ref=e2468]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e2469]:
+                  - generic [ref=e2470]: Powered by
+                  - img "Vendure" [ref=e2471]
+                  - generic [ref=e2472]: "&"
+                  - img "Next.js" [ref=e2473]
+          - generic [ref=e2475]:
+            - generic [ref=e2476]: orderConfirmation
+            - generic [ref=e2477]: /order-confirmation
+            - generic [ref=e2478]: 1280px
+          - generic [ref=e2481]:
+            - generic [ref=e2484]:
+              - img "Vendure" [ref=e2487]
+              - generic [ref=e2489]:
+                - img "moon" [ref=e2493]
+                - img "shopping-bag" [ref=e2496]
+                - generic [ref=e2499]: Sign in
+            - generic [ref=e2504]: Loading order...
+            - generic [ref=e2506]:
+              - generic [ref=e2507]:
+                - generic [ref=e2509]: Vendure Store
+                - generic [ref=e2511]: Categories
+                - generic [ref=e2512]:
+                  - generic [ref=e2513]: Vendure
+                  - generic [ref=e2514]:
+                    - generic [ref=e2516]: GitHub
+                    - generic [ref=e2518]: Documentation
+                    - generic [ref=e2520]: Source code
+              - generic [ref=e2521]:
+                - generic [ref=e2522]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e2523]:
+                  - generic [ref=e2524]: Powered by
+                  - img "Vendure" [ref=e2525]
+                  - generic [ref=e2526]: "&"
+                  - img "Next.js" [ref=e2527]
+          - generic [ref=e2529]:
+            - generic [ref=e2530]: notFound
+            - generic [ref=e2531]: /not-found
+            - generic [ref=e2532]: 1280px
+          - generic [ref=e2537]:
+            - heading "404" [level=4] [ref=e2538]
+            - heading "Page Not Found" [level=4] [ref=e2539]
+            - generic [ref=e2540]: Sorry, we couldn't find the page you're looking for.
+            - generic [ref=e2542]: Back to Home
+          - generic [ref=e2544]:
+            - generic [ref=e2545]: workflowTest
+            - generic [ref=e2546]: /workflow-test
+            - generic [ref=e2547]: 1280px
+          - generic [ref=e2550]:
+            - generic [ref=e2553]:
+              - img "Vendure" [ref=e2556]
+              - generic [ref=e2558]:
+                - img "moon" [ref=e2562]
+                - img "shopping-bag" [ref=e2565]
+                - generic [ref=e2568]: Sign in
+            - generic [ref=e2570]:
+              - generic [ref=e2571]:
+                - heading "Workflow Engine Showcase" [level=2] [ref=e2572]
+                - generic [ref=e2573]: Each card tests a different workflow engine feature. Open DevTools to observe state changes.
+              - generic [ref=e2574]:
+                - generic [ref=e2575]:
+                  - heading "Card 1 — setVar + Variable Binding" [level=4] [ref=e2576]
+                  - generic [ref=e2577]: Click a button to write a value to demo.message via setVar. The output text is bound to that variable.
+                - generic [ref=e2578]:
+                  - generic [ref=e2580] [cursor=pointer]: Hello
+                  - generic [ref=e2582] [cursor=pointer]: Goodbye
+                  - generic [ref=e2584] [cursor=pointer]: Testing
+                - generic [ref=e2585]:
+                  - generic [ref=e2586]: demo.message →
+                  - generic [ref=e2587]: (click a button)
+              - generic [ref=e2588]:
+                - generic [ref=e2589]:
+                  - heading "Card 2 — Branch (if/else)" [level=4] [ref=e2590]
+                  - generic [ref=e2591]: Set demo.number to 3 (< 10) or 15 (>= 10), then click Evaluate Branch to see which path executes.
+                - generic [ref=e2592]:
+                  - generic [ref=e2594] [cursor=pointer]: Set number = 3
+                  - generic [ref=e2596] [cursor=pointer]: Set number = 15
+                  - generic [ref=e2598] [cursor=pointer]: Evaluate Branch
+                - generic [ref=e2599]:
+                  - generic [ref=e2600]:
+                    - generic [ref=e2601]: demo.number →
+                    - generic [ref=e2602]: "5"
+                  - generic [ref=e2603]:
+                    - generic [ref=e2604]: result →
+                    - generic [ref=e2605]: (set a number, then evaluate)
+              - generic [ref=e2606]:
+                - generic [ref=e2607]:
+                  - heading "Card 3 — runMultiple" [level=4] [ref=e2608]
+                  - generic [ref=e2609]: One button triggers three sequential setVar actions via runMultiple. All three outputs should update at once.
+                - generic [ref=e2612] [cursor=pointer]: Run All 3 Steps
+                - generic [ref=e2613]:
+                  - generic [ref=e2614]:
+                    - generic [ref=e2615]: step 1 →
+                    - generic [ref=e2616]: (not run yet)
+                  - generic [ref=e2617]:
+                    - generic [ref=e2618]: step 2 →
+                    - generic [ref=e2619]: (not run yet)
+                  - generic [ref=e2620]:
+                    - generic [ref=e2621]: step 3 →
+                    - generic [ref=e2622]: (not run yet)
+              - generic [ref=e2623]:
+                - generic [ref=e2624]:
+                  - heading "Card 5 — The Complete Pipeline" [level=4] [ref=e2625]
+                  - generic [ref=e2626]: "All structural types in one workflow: nested branch → forEach → whileLoop + timeDelay. Set a score, then click Run."
+                - generic [ref=e2627]:
+                  - generic [ref=e2628]: ① Set score (demo.number)
+                  - generic [ref=e2629]:
+                    - generic [ref=e2631] [cursor=pointer]: Score = 20
+                    - generic [ref=e2633] [cursor=pointer]: Score = 45
+                    - generic [ref=e2635] [cursor=pointer]: Score = 75
+                    - generic [ref=e2637] [cursor=pointer]: Score = 95
+                - generic [ref=e2638]:
+                  - generic [ref=e2639]: ② Run the workflow
+                  - generic [ref=e2641] [cursor=pointer]: Run Full Pipeline
+                - generic [ref=e2642]:
+                  - generic [ref=e2643]: Output
+                  - generic [ref=e2644]:
+                    - generic [ref=e2645]: score (number) →
+                    - generic [ref=e2646]: "5"
+                  - generic [ref=e2647]:
+                    - generic [ref=e2648]: branch → grade →
+                    - generic [ref=e2649]: (not graded)
+                  - generic [ref=e2650]:
+                    - generic [ref=e2651]: forEach iters →
+                    - generic [ref=e2652]: "0"
+                    - generic [ref=e2653]: "(expect 3 — items: A, B, C)"
+                  - generic [ref=e2654]:
+                    - generic [ref=e2655]: whileLoop iters →
+                    - generic [ref=e2656]: "0"
+                    - generic [ref=e2657]: (expect 3 — stops at ≥ 3)
+                  - generic [ref=e2658]:
+                    - generic [ref=e2659]: status →
+                    - generic [ref=e2660]: (not run yet)
+                - generic [ref=e2661]:
+                  - generic [ref=e2662]: What this workflow exercises
+                  - generic [ref=e2663]: "① Reset (6× changeVariableValue) → ② timeDelay 300ms → ③ branch: score ≥ 60? → ④ nested branch: ≥ 90 / ≥ 30 → ⑤ forEach over 3 items (loopBody: increment) → ⑥ whileLoop (stop when retryCount ≥ 3) → ⑦ final changeVariableValue"
+              - generic [ref=e2664]:
+                - generic [ref=e2665]:
+                  - heading "Card 6 — Trigger Sampler" [level=4] [ref=e2666]
+                  - generic [ref=e2667]: Tests created, mounted, click, doubleClick, mouseEnter/Leave, change, enterKey, focus, blur triggers.
+                - generic [ref=e2668]:
+                  - generic [ref=e2669]:
+                    - generic [ref=e2670]: created →
+                    - generic [ref=e2671]: (not loaded)
+                  - generic [ref=e2672]:
+                    - generic [ref=e2673]: mounted →
+                    - generic [ref=e2674]: (not mounted)
+                  - generic [ref=e2675]:
+                    - generic [ref=e2676]: click →
+                    - generic [ref=e2677]: (not clicked)
+                  - generic [ref=e2678]:
+                    - generic [ref=e2679]: dblclick count →
+                    - generic [ref=e2680]: "0"
+                  - generic [ref=e2681]:
+                    - generic [ref=e2682]: hover →
+                    - generic [ref=e2683]: (not hovered)
+                  - generic [ref=e2684]:
+                    - generic [ref=e2685]: focus →
+                    - generic [ref=e2686]: (not focused)
+                  - generic [ref=e2688]: change →
+                  - generic [ref=e2689]:
+                    - generic [ref=e2690]: enterKey →
+                    - generic [ref=e2691]: (no enter)
+                - generic [ref=e2692]:
+                  - generic [ref=e2694] [cursor=pointer]: Click me
+                  - generic [ref=e2696] [cursor=pointer]: Double-click me
+                  - generic [ref=e2698]: Hover zone
+                - generic [ref=e2699]:
+                  - generic [ref=e2700]: "Type in the input (triggers onChange, onFocus, onBlur, onEnterKey):"
+                  - textbox "Input Field" [ref=e2702]:
+                    - /placeholder: Type here…
+              - generic [ref=e2703]:
+                - generic [ref=e2704]:
+                  - heading "Card 7 — Form Triggers + setFormState + resetForm" [level=4] [ref=e2705]
+                  - generic [ref=e2706]: Tests submit, submitValidationError triggers, plus setFormState and resetForm actions.
+                - generic [ref=e2707]:
+                  - generic [ref=e2708]:
+                    - generic [ref=e2709]: submit result →
+                    - generic [ref=e2710]: (not submitted)
+                  - generic [ref=e2712]: validation error →
+                  - generic [ref=e2713]:
+                    - generic [ref=e2714]: isSubmitted →
+                    - generic [ref=e2715]: "false"
+                  - generic [ref=e2716]:
+                    - generic [ref=e2717]: isSubmitting →
+                    - generic [ref=e2718]: "false"
+                - generic [ref=e2720]:
+                  - textbox "Input Field" [ref=e2723]:
+                    - /placeholder: Email (required)
+                  - textbox "Input Field" [ref=e2725]:
+                    - /placeholder: Name
+                  - generic [ref=e2726]:
+                    - generic [ref=e2728] [cursor=pointer]: Submit
+                    - generic [ref=e2730] [cursor=pointer]: Pre-fill
+                    - generic [ref=e2732] [cursor=pointer]: Reset
+              - generic [ref=e2733]:
+                - generic [ref=e2734]:
+                  - heading "Card 8 — navigateTo + navigatePrev" [level=4] [ref=e2735]
+                  - generic [ref=e2736]: "Tests navigateTo (go to /) and navigatePrev (go back with default redirect). Note: clicking these will leave the page."
+                - generic [ref=e2737]:
+                  - generic [ref=e2739] [cursor=pointer]: Go to Home (/)
+                  - generic [ref=e2741] [cursor=pointer]: Navigate Prev (back or /)
+              - generic [ref=e2742]:
+                - generic [ref=e2743]:
+                  - heading "Card 9 — REST API + GraphQL" [level=4] [ref=e2744]
+                  - generic [ref=e2745]: Tests fetchData (GET and POST) and graphql action types using public endpoints.
+                - generic [ref=e2746]:
+                  - generic [ref=e2747]:
+                    - generic [ref=e2748]: REST result →
+                    - generic [ref=e2749]: (not fetched)
+                  - generic [ref=e2751]: REST status →
+                  - generic [ref=e2752]:
+                    - generic [ref=e2753]: GraphQL result →
+                    - generic [ref=e2754]: (not fetched)
+                - generic [ref=e2755]:
+                  - generic [ref=e2757] [cursor=pointer]: REST GET
+                  - generic [ref=e2759] [cursor=pointer]: REST POST
+                  - generic [ref=e2761] [cursor=pointer]: GraphQL Query
+              - generic [ref=e2762]:
+                - generic [ref=e2763]:
+                  - heading "Card 10 — fetchCollection + parallel + updateCollection + resetVariableValue" [level=4] [ref=e2764]
+                  - generic [ref=e2765]: Tests collection fetch actions and variable reset.
+                - generic [ref=e2766]:
+                  - generic [ref=e2767]:
+                    - generic [ref=e2768]: fetch-1 →
+                    - generic [ref=e2769]: (not fetched)
+                  - generic [ref=e2770]:
+                    - generic [ref=e2771]: parallel-1 →
+                    - generic [ref=e2772]: (not fetched)
+                  - generic [ref=e2773]:
+                    - generic [ref=e2774]: parallel-2 →
+                    - generic [ref=e2775]: (not fetched)
+                  - generic [ref=e2776]:
+                    - generic [ref=e2777]: reset-check →
+                    - generic [ref=e2778]: (active)
+                - generic [ref=e2779]:
+                  - generic [ref=e2781] [cursor=pointer]: Fetch Collection
+                  - generic [ref=e2783] [cursor=pointer]: Fetch Parallel
+                  - generic [ref=e2785] [cursor=pointer]: Update Collection
+                  - generic [ref=e2787] [cursor=pointer]: Modify var
+                  - generic [ref=e2789] [cursor=pointer]: Reset Var
+              - generic [ref=e2790]:
+                - generic [ref=e2791]:
+                  - heading "Card — Update Collection (all 4 types)" [level=4] [ref=e2792]
+                  - generic [ref=e2793]: Replace all (refetch), Insert at position 0, Update by id (merge), Delete by id.
+                - generic [ref=e2794]:
+                  - generic [ref=e2796] [cursor=pointer]: Seed (Replace All)
+                  - generic [ref=e2798] [cursor=pointer]: Insert
+                  - generic [ref=e2800] [cursor=pointer]: Update (by id)
+                  - generic [ref=e2802] [cursor=pointer]: Delete (by id)
+                - generic [ref=e2803]:
+                  - generic [ref=e2804]:
+                    - generic [ref=e2805]: seed →
+                    - generic [ref=e2806]: (not run)
+                  - generic [ref=e2807]:
+                    - generic [ref=e2808]: insert →
+                    - generic [ref=e2809]: (not run)
+                  - generic [ref=e2810]:
+                    - generic [ref=e2811]: update →
+                    - generic [ref=e2812]: (not run)
+                  - generic [ref=e2813]:
+                    - generic [ref=e2814]: delete →
+                    - generic [ref=e2815]: (not run)
+                - generic [ref=e2816]:
+                  - generic [ref=e2818]: "items in collection:"
+                  - generic [ref=e2819]: No items — click Seed first
+              - generic [ref=e2820]:
+                - generic [ref=e2821]:
+                  - heading "Card 11 — returnValue (via branch)" [level=4] [ref=e2822]
+                  - generic [ref=e2823]: Score ≥ 60 → PASS via returnValue in trueBranch. Score < 60 → FAIL.
+                - generic [ref=e2824]:
+                  - generic [ref=e2825]: return result →
+                  - generic [ref=e2826]: (not run)
+                - generic [ref=e2827]:
+                  - generic [ref=e2829] [cursor=pointer]: Score 80 → PASS
+                  - generic [ref=e2831] [cursor=pointer]: Score 30 → FAIL
+              - generic [ref=e2832]:
+                - generic [ref=e2833]:
+                  - heading "Card 12 — executeComponentAction + runProjectWorkflow" [level=4] [ref=e2834]
+                  - generic [ref=e2835]: executeComponentAction calls a named action directly; runProjectWorkflow calls a sub-workflow.
+                - generic [ref=e2836]:
+                  - generic [ref=e2837]:
+                    - generic [ref=e2838]: exec result →
+                    - generic [ref=e2839]: (not run)
+                  - generic [ref=e2840]:
+                    - generic [ref=e2841]: sub-workflow result →
+                    - generic [ref=e2842]: (not run)
+                - generic [ref=e2843]:
+                  - generic [ref=e2845] [cursor=pointer]: Execute Component Action
+                  - generic [ref=e2847] [cursor=pointer]: Run Sub-Workflow
+              - generic [ref=e2848]:
+                - generic [ref=e2849]:
+                  - heading "Card 13 — breakLoop + continueLoop + passThroughCondition" [level=4] [ref=e2850]
+                  - generic [ref=e2851]: "forEach [1..5]: continueLoop on even, breakLoop when sum ≥ 4. Result: 1+3 = 4. passThroughCondition blocks workflow unless flag is true."
+                - generic [ref=e2852]:
+                  - generic [ref=e2853]:
+                    - generic [ref=e2854]: loop sum →
+                    - generic [ref=e2855]: "0"
+                  - generic [ref=e2856]:
+                    - generic [ref=e2857]: flag →
+                    - generic [ref=e2858]: "false"
+                  - generic [ref=e2859]:
+                    - generic [ref=e2860]: pass result →
+                    - generic [ref=e2861]: (blocked)
+                - generic [ref=e2862]:
+                  - generic [ref=e2864] [cursor=pointer]: Run Loop (continue+break)
+                  - generic [ref=e2866] [cursor=pointer]: Flag ON
+                  - generic [ref=e2868] [cursor=pointer]: Flag OFF
+                  - generic [ref=e2870] [cursor=pointer]: Run passThroughCondition
+              - generic [ref=e2871]:
+                - generic [ref=e2872]:
+                  - heading "Card 14 — multiOptionBranch" [level=4] [ref=e2873]
+                  - generic [ref=e2874]: Set mode to A, B, or C — Evaluate routes to matching branch and sets a distinct output string.
+                - generic [ref=e2875]:
+                  - generic [ref=e2876]: multi result →
+                  - generic [ref=e2877]: (not evaluated)
+                - generic [ref=e2878]:
+                  - generic [ref=e2880] [cursor=pointer]: Set Mode A
+                  - generic [ref=e2882] [cursor=pointer]: Set Mode B
+                  - generic [ref=e2884] [cursor=pointer]: Set Mode C
+                  - generic [ref=e2886] [cursor=pointer]: Evaluate
+              - generic [ref=e2887]:
+                - generic [ref=e2888]:
+                  - heading "Card 15 — Advanced Actions" [level=4] [ref=e2889]
+                  - generic [ref=e2890]: copyToClipboard, stopPropagation, printPdf, downloadFileFromUrl, createUrlFromBase64, encodeFileAsBase64.
+                - generic [ref=e2891]:
+                  - generic [ref=e2892]:
+                    - generic [ref=e2893]: clipboard →
+                    - generic [ref=e2894]: (not copied)
+                  - generic [ref=e2895]:
+                    - generic [ref=e2896]: outer click →
+                    - generic [ref=e2897]: (not clicked)
+                  - generic [ref=e2898]:
+                    - generic [ref=e2899]: inner click →
+                    - generic [ref=e2900]: (not clicked)
+                  - generic [ref=e2901]:
+                    - generic [ref=e2902]: pdf fired →
+                    - generic [ref=e2903]: (not fired)
+                  - generic [ref=e2904]:
+                    - generic [ref=e2905]: download fired →
+                    - generic [ref=e2906]: (not fired)
+                  - generic [ref=e2908]: b64 url →
+                  - generic [ref=e2910]: encode b64 →
+                - generic [ref=e2911]:
+                  - generic [ref=e2913] [cursor=pointer]: Copy to Clipboard
+                  - generic [ref=e2914]:
+                    - generic [ref=e2915]: Outer (click me)
+                    - generic [ref=e2917] [cursor=pointer]: Inner (stops propagation)
+                  - generic [ref=e2919] [cursor=pointer]: Print PDF
+                  - generic [ref=e2921] [cursor=pointer]: Download File
+                  - generic [ref=e2923] [cursor=pointer]: Create URL from B64
+                  - generic [ref=e2925] [cursor=pointer]: Encode Base64
+              - generic [ref=e2926]:
+                - generic [ref=e2927]:
+                  - heading "Card 16 — Branch inside Loop inside Branch" [level=4] [ref=e2928]
+                  - generic [ref=e2929]: "score ≥ 50 → forEach [A,B,C]: branch(item=B) → breakLoop else increment. Status = done-true. score < 50 → done-false."
+                - generic [ref=e2930]:
+                  - generic [ref=e2931]:
+                    - generic [ref=e2932]: loop count →
+                    - generic [ref=e2933]: "0"
+                  - generic [ref=e2934]:
+                    - generic [ref=e2935]: status →
+                    - generic [ref=e2936]: (not run)
+                - generic [ref=e2937]:
+                  - generic [ref=e2939] [cursor=pointer]: Score 75 (true branch)
+                  - generic [ref=e2941] [cursor=pointer]: Score 30 (false branch)
+              - generic [ref=e2942]:
+                - generic [ref=e2943]:
+                  - heading "Card 17 — multiOptionBranch + whileLoop + forEach + continueLoop + passThroughCondition" [level=4] [ref=e2944]
+                  - generic [ref=e2945]: "fast: whileLoop until count ≥ 3. slow: forEach [1..5] skip evens → odd sum = 9. skip: passThroughCondition if flag=true → skipped."
+                - generic [ref=e2946]:
+                  - generic [ref=e2947]:
+                    - generic [ref=e2948]: fast count →
+                    - generic [ref=e2949]: "0"
+                  - generic [ref=e2950]:
+                    - generic [ref=e2951]: slow sum →
+                    - generic [ref=e2952]: "0"
+                  - generic [ref=e2953]:
+                    - generic [ref=e2954]: complex result →
+                    - generic [ref=e2955]: (not run)
+                - generic [ref=e2956]:
+                  - generic [ref=e2958] [cursor=pointer]: "Mode: fast (whileLoop → 3)"
+                  - generic [ref=e2960] [cursor=pointer]: "Mode: slow (odd sum = 9)"
+                  - generic [ref=e2962] [cursor=pointer]: "Mode: skip (passThroughCondition)"
+              - generic [ref=e2963]:
+                - generic [ref=e2964]:
+                  - heading "Card 4 — increment / decrement" [level=4] [ref=e2965]
+                  - generic [ref=e2966]: "Counter starts at 0. Decrement is clamped at 0 (min: 0). Reset sets it back to 0 via setVar."
+                - generic [ref=e2967]:
+                  - generic [ref=e2969] [cursor=pointer]: "- 1"
+                  - generic [ref=e2971]: "0"
+                  - generic [ref=e2973] [cursor=pointer]: + 1
+                  - generic [ref=e2975] [cursor=pointer]: Reset
+              - generic [ref=e2976]:
+                - generic [ref=e2977]:
+                  - heading "Card — Input Sync + FormContainer" [level=4] [ref=e2978]
+                  - generic [ref=e2979]: Typing in Input 2 mirrors its value into Input 1 via onChange. The bound text below updates live.
+                - generic [ref=e2981]:
+                  - textbox "Input Field" [ref=e2984]:
+                    - /placeholder: Input 1 — enter a valid email
+                  - textbox "Input Field" [ref=e2987]:
+                    - /placeholder: Input 2 — type here to update Input 1
+                  - generic [ref=e2989] [cursor=pointer]: Submit
+                  - generic [ref=e2990]:
+                    - generic [ref=e2991]: local.data.form (inside FormContainer)
+                    - generic [ref=e2993]: formData.input1
+                    - generic [ref=e2995]: fields.input1.value
+                    - generic [ref=e2997]: fields.input1.isValid
+                    - generic [ref=e2998]:
+                      - generic [ref=e2999]: isSubmitting
+                      - generic [ref=e3000]: "false"
+                    - generic [ref=e3001]:
+                      - generic [ref=e3002]: isSubmitted
+                      - generic [ref=e3003]: "false"
+                    - generic [ref=e3004]:
+                      - generic [ref=e3005]: isValid
+                      - generic [ref=e3006]: "false"
+                - generic [ref=e3007]:
+                  - generic [ref=e3008]: "Bound value (Input 1):"
+                  - generic [ref=e3009]: "Submit result:"
+                  - generic [ref=e3010]: (not submitted)
+                  - generic [ref=e3011]:
+                    - generic [ref=e3012]: variables['...form'] (outside)
+                    - generic [ref=e3014]: formData.input1
+                    - generic [ref=e3016]: fields.input1.value
+                    - generic [ref=e3018]: fields.input1.isValid
+                    - generic [ref=e3019]:
+                      - generic [ref=e3020]: isSubmitting
+                      - generic [ref=e3021]: "false"
+                    - generic [ref=e3022]:
+                      - generic [ref=e3023]: isSubmitted
+                      - generic [ref=e3024]: "false"
+                    - generic [ref=e3025]:
+                      - generic [ref=e3026]: isValid
+                      - generic [ref=e3027]: "false"
+                - generic [ref=e3028]:
+                  - generic [ref=e3029]: global variable store (direct)
+                  - generic [ref=e3031]: variables['wa-sync-...001']
+              - generic [ref=e3032]:
+                - generic [ref=e3033]: Card — Nested FormContainers
+                - generic [ref=e3034]: local.data.form is scoped to the nearest enclosing FormContainer — typing or submitting the inner form does NOT affect the outer form's display, and vice versa.
+                - generic [ref=e3035]:
+                  - generic [ref=e3036]: Outer FormContainer
+                  - textbox "Input Field" [ref=e3038]:
+                    - /placeholder: Type in outer field...
+                  - generic [ref=e3039]:
+                    - generic [ref=e3040]: local.data.form (outer scope)
+                    - generic [ref=e3042]: formData.outerField
+                    - generic [ref=e3043]:
+                      - generic [ref=e3044]: isSubmitting
+                      - generic [ref=e3045]: "false"
+                    - generic [ref=e3046]:
+                      - generic [ref=e3047]: isSubmitted
+                      - generic [ref=e3048]: "false"
+                  - generic [ref=e3050] [cursor=pointer]: Submit Outer
+                  - generic [ref=e3051]:
+                    - generic [ref=e3052]: Inner FormContainer (nested inside outer)
+                    - textbox "Input Field" [ref=e3054]:
+                      - /placeholder: Type in inner field...
+                    - generic [ref=e3055]:
+                      - generic [ref=e3056]: local.data.form (inner scope)
+                      - generic [ref=e3058]: formData.innerField
+                      - generic [ref=e3059]:
+                        - generic [ref=e3060]: isSubmitting
+                        - generic [ref=e3061]: "false"
+                      - generic [ref=e3062]:
+                        - generic [ref=e3063]: isSubmitted
+                        - generic [ref=e3064]: "false"
+                    - generic [ref=e3066] [cursor=pointer]: Submit Inner
+              - generic [ref=e3067]:
+                - generic [ref=e3068]:
+                  - 'heading "Card A — Full Pipeline: API Chain + Response Reading" [level=4] [ref=e3069]'
+                  - generic [ref=e3070]: Runs graphql → branch → REST GET → REST POST (body from GQL result) → updateCollection → executeComponentAction → whileLoop → forEach → multiOptionBranch → passThroughCondition. Every branch and loop type is covered.
+                - generic [ref=e3073] [cursor=pointer]: Run Pipeline
+                - generic [ref=e3074]:
+                  - generic [ref=e3075]:
+                    - generic [ref=e3076]: status
+                    - generic [ref=e3077]: idle
+                  - generic [ref=e3079]: GQL country
+                  - generic [ref=e3081]: REST echo
+                  - generic [ref=e3083]: branch path
+                  - generic [ref=e3085]: collection
+                  - generic [ref=e3087]: pipeline result
+                  - generic [ref=e3088]:
+                    - generic [ref=e3089]: while count
+                    - generic [ref=e3090]: "0"
+                  - generic [ref=e3092]: forEach items
+                  - generic [ref=e3094]: multi-branch
+              - generic [ref=e3095]:
+                - generic [ref=e3096]:
+                  - heading "Card B — Complex Form Validation" [level=4] [ref=e3097]
+                  - generic [ref=e3098]: "Six fields covering every _validation rule type: required, minLength, pattern, equalsField, and a custom formula rule. Per-field inline error messages. Pre-fill and Reset buttons."
+                - generic [ref=e3100]:
+                  - generic [ref=e3101]:
+                    - generic [ref=e3102]: Username *
+                    - textbox "Input Field" [ref=e3104]:
+                      - /placeholder: Min 3 characters
+                  - generic [ref=e3105]:
+                    - generic [ref=e3106]: Email *
+                    - textbox "Input Field" [ref=e3108]:
+                      - /placeholder: valid@email.com
+                  - generic [ref=e3109]:
+                    - generic [ref=e3110]: Phone (optional — must match +digits if filled)
+                    - textbox "Input Field" [ref=e3112]:
+                      - /placeholder: "+12345678"
+                  - generic [ref=e3113]:
+                    - generic [ref=e3114]: Age * (must be 18 or older)
+                    - textbox "Input Field" [ref=e3116]:
+                      - /placeholder: "18"
+                  - generic [ref=e3117]:
+                    - generic [ref=e3118]: Password * (8+ chars, upper, lower, digit, special)
+                    - textbox "Input Field" [ref=e3120]:
+                      - /placeholder: e.g. SecureP@ss1
+                  - generic [ref=e3121]:
+                    - generic [ref=e3122]: Confirm Password *
+                    - textbox "Input Field" [ref=e3124]:
+                      - /placeholder: Repeat password
+                  - generic [ref=e3125]:
+                    - generic [ref=e3126]: Submit result
+                    - generic [ref=e3127]: (not submitted)
+                    - generic [ref=e3128]: "isSubmitting: false | isSubmitted: false"
+                  - generic [ref=e3129]:
+                    - generic [ref=e3131] [cursor=pointer]: Pre-fill
+                    - generic [ref=e3133] [cursor=pointer]: Reset
+                    - generic [ref=e3135] [cursor=pointer]: Submit
+              - generic [ref=e3136]:
+                - generic [ref=e3137]:
+                  - 'heading "Card C — executeComponentAction: All Patterns" [level=4] [ref=e3138]'
+                  - generic [ref=e3139]: "Tests 4 ECA patterns: (1) direct call, (2) chain — two ECAs sequentially where step-2 reads step-1 output, (3) ECA inside forEach loop, (4) nested ECA — sub-workflow internally calls another ECA."
+                - generic [ref=e3140]:
+                  - generic [ref=e3142]: direct result
+                  - generic [ref=e3143]:
+                    - generic [ref=e3144]: chain step1 / final
+                    - generic [ref=e3145]: /
+                  - generic [ref=e3146]:
+                    - generic [ref=e3147]: loop count (expect 3)
+                    - generic [ref=e3148]: "0"
+                  - generic [ref=e3150]: nested result
+                - generic [ref=e3151]:
+                  - generic [ref=e3153] [cursor=pointer]: 1. Direct
+                  - generic [ref=e3155] [cursor=pointer]: 2. Chain
+                  - generic [ref=e3157] [cursor=pointer]: 3. forEach Loop
+                  - generic [ref=e3159] [cursor=pointer]: 4. Nested
+              - generic [ref=e3160]:
+                - generic [ref=e3161]:
+                  - heading "Card D — Event Object by Trigger Type" [level=4] [ref=e3162]
+                  - generic [ref=e3163]: "Each trigger produces a different event shape. Interact with each element to see what event fields are captured: change→{value}, click→{x,y,button}, enterKey→{key,value}, focus/blur→{value}, scroll→{scrollTop,scrollLeft}, valueChange→{value}, checkbox change→{value:boolean}."
+                - generic [ref=e3164]:
+                  - generic [ref=e3165]:
+                    - generic [ref=e3166]: onChange (Input)
+                    - textbox "Input Field" [ref=e3168]:
+                      - /placeholder: Type anything…
+                  - generic [ref=e3169]:
+                    - generic [ref=e3170]: onClick (Button / Pressable)
+                    - generic [ref=e3172] [cursor=pointer]: Click me (captures x / y / button)
+                  - generic [ref=e3173]:
+                    - generic [ref=e3174]: onEnterKey (Input — press Enter)
+                    - textbox "Input Field" [ref=e3176]:
+                      - /placeholder: Type something then press Enter…
+                  - generic [ref=e3177]:
+                    - generic [ref=e3178]:
+                      - generic [ref=e3179]: onFocus
+                      - textbox "Input Field" [ref=e3181]:
+                        - /placeholder: Click to focus…
+                    - generic [ref=e3182]:
+                      - generic [ref=e3183]: onBlur
+                      - textbox "Input Field" [ref=e3185]:
+                        - /placeholder: Focus then click away…
+                  - generic [ref=e3186]:
+                    - generic [ref=e3187]: onScroll (scrollable Box — scroll inside it)
+                    - generic [ref=e3188]:
+                      - generic [ref=e3189]: Scroll me ↓
+                      - generic [ref=e3190]: Line 2
+                      - generic [ref=e3191]: Line 3
+                      - generic [ref=e3192]: Line 4
+                      - generic [ref=e3193]: Line 5
+                      - generic [ref=e3194]: Line 6
+                      - generic [ref=e3195]: Line 7 (end)
+                  - generic [ref=e3196]:
+                    - generic [ref=e3197]: onValueChange (Select)
+                    - generic [ref=e3198]:
+                      - button [ref=e3199] [cursor=pointer]:
+                        - textbox:
+                          - /placeholder: Pick an option…
+                      - combobox "Pick an option…" [ref=e3200] [cursor=pointer]:
+                        - option "Pick an option…" [disabled] [selected]
+                        - option "Alpha"
+                        - option "Beta"
+                        - option "Gamma"
+                  - generic [ref=e3201]:
+                    - generic [ref=e3202]: onChange (Checkbox — event.value is boolean)
+                    - generic [ref=e3203] [cursor=pointer]:
+                      - checkbox "toggle" [ref=e3205]
+                      - generic [ref=e3207]: Toggle me
+              - generic [ref=e3208]:
+                - generic [ref=e3209]:
+                  - heading "Global Workflow Parameters" [level=4] [ref=e3210]
+                  - generic [ref=e3211]: Each button calls the global 'greetUser' workflow with a different set of parameters (Text, Number, Boolean, Text[], Object, Array). The formula uses all 7 params to build the result.
+                - generic [ref=e3212]:
+                  - generic [ref=e3214] [cursor=pointer]: Formal Greeting
+                  - generic [ref=e3216] [cursor=pointer]: Casual Greeting
+                - generic [ref=e3217]:
+                  - generic [ref=e3218]:
+                    - generic [ref=e3219]: Formal params
+                    - generic [ref=e3220]: "greeting: \"Good morning\""
+                    - generic [ref=e3221]: "formal: true | max: 3"
+                    - generic [ref=e3222]: "tags: [\"vip\", \"premium\"]"
+                    - generic [ref=e3223]: "userProfile: {role:\"manager\",level:5}"
+                    - generic [ref=e3224]: "allowedRoles: [\"admin\",\"manager\"]"
+                  - generic [ref=e3225]:
+                    - generic [ref=e3226]: Casual params
+                    - generic [ref=e3227]: "greeting: \"Hey\""
+                    - generic [ref=e3228]: "formal: false | max: 10"
+                    - generic [ref=e3229]: "tags: [\"friend\"]"
+                    - generic [ref=e3230]: "userProfile: {role:\"guest\",level:1}"
+                    - generic [ref=e3231]: "allowedRoles: [\"viewer\"]"
+                - generic [ref=e3232]:
+                  - generic [ref=e3233]: Result (all 7 params used)
+                  - generic [ref=e3234]: (not run yet)
+                - generic [ref=e3235]:
+                  - generic [ref=e3236]:
+                    - generic [ref=e3237]: ↩
+                    - generic [ref=e3238]: Return Value (step s2 → returnValue)
+                  - generic [ref=e3239]: (no return yet)
+              - generic [ref=e3240]:
+                - generic [ref=e3241]:
+                  - generic [ref=e3242]: 🌐
+                  - generic [ref=e3243]: API Global Workflow — fetchTodo
+                - generic [ref=e3244]: Calls https://jsonplaceholder.typicode.com/todos/1, returns the JSON, and stores it below.
+                - generic [ref=e3247] [cursor=pointer]: "Fetch Todo #1"
+                - generic [ref=e3248]:
+                  - generic [ref=e3249]:
+                    - generic [ref=e3250]: ↩
+                    - generic [ref=e3251]: Return Value (context.workflow['s1'].result)
+                  - generic [ref=e3252]: (not fetched yet)
+            - generic [ref=e3254]:
+              - generic [ref=e3255]:
+                - generic [ref=e3257]: Vendure Store
+                - generic [ref=e3259]: Categories
+                - generic [ref=e3260]:
+                  - generic [ref=e3261]: Vendure
+                  - generic [ref=e3262]:
+                    - generic [ref=e3264]: GitHub
+                    - generic [ref=e3266]: Documentation
+                    - generic [ref=e3268]: Source code
+              - generic [ref=e3269]:
+                - generic [ref=e3270]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e3271]:
+                  - generic [ref=e3272]: Powered by
+                  - img "Vendure" [ref=e3273]
+                  - generic [ref=e3274]: "&"
+                  - img "Next.js" [ref=e3275]
+          - generic [ref=e3277]:
+            - generic [ref=e3278]: animationTest
+            - generic [ref=e3279]: /animation-test
+            - generic [ref=e3280]: 1280px
+          - generic [ref=e3283]:
+            - generic [ref=e3286]:
+              - img "Vendure" [ref=e3289]
+              - generic [ref=e3291]:
+                - img "moon" [ref=e3295]
+                - img "shopping-bag" [ref=e3298]
+                - generic [ref=e3301]: Sign in
+            - generic [ref=e3303]:
+              - generic [ref=e3304]:
+                - heading "Animation Showcase" [level=2] [ref=e3305]
+                - generic [ref=e3306]: Each card demonstrates a different animation capability powered by react-native-reanimated.
+                - generic [ref=e3307]: ready
+              - generic [ref=e3308]:
+                - generic [ref=e3309]:
+                  - heading "Phase 9 — Flip Cards" [level=4] [ref=e3310]
+                  - generic [ref=e3311]: 3D CSS flip cards driven by animation.flip config on a Box.
+                - generic [ref=e3312]:
+                  - generic [ref=e3315]:
+                    - generic [ref=e3316]:
+                      - generic [ref=e3317]: Hover to flip!
+                      - generic [ref=e3318]: Front face
+                    - generic [ref=e3319]:
+                      - generic [ref=e3320]: Back face!
+                      - generic [ref=e3321]: Revealed
+                  - generic [ref=e3324]:
+                    - generic [ref=e3325]:
+                      - generic [ref=e3326]: Click to flip!
+                      - generic [ref=e3327]: Front face
+                    - generic [ref=e3328]:
+                      - generic [ref=e3329]: You found it!
+                      - generic [ref=e3330]: Click again to flip back
+              - generic [ref=e3331]:
+                - generic [ref=e3332]:
+                  - heading "Card 3 — Stagger" [level=4] [ref=e3333]
+                  - generic [ref=e3334]: Items fan in sequentially — each delayed 100ms after the previous.
+                - generic [ref=e3338]:
+                  - generic [ref=e3340]: "0"
+                  - generic [ref=e3341]: First staggered item
+                - generic [ref=e3345]:
+                  - generic [ref=e3347]: "1"
+                  - generic [ref=e3348]: Second staggered item
+                - generic [ref=e3352]:
+                  - generic [ref=e3354]: "2"
+                  - generic [ref=e3355]: Third staggered item
+                - generic [ref=e3359]:
+                  - generic [ref=e3361]: "3"
+                  - generic [ref=e3362]: Fourth staggered item
+                - generic [ref=e3366]:
+                  - generic [ref=e3368]: "4"
+                  - generic [ref=e3369]: Fifth staggered item
+              - generic [ref=e3370]:
+                - generic [ref=e3371]:
+                  - heading "Phase 5 — SVG Stroke Draw + LottiePlayer" [level=4] [ref=e3372]
+                  - generic [ref=e3373]: SVG path-draw animation via stroke-dashoffset, and Lottie animation via dotlottie-react.
+                - generic [ref=e3374]:
+                  - generic [ref=e3377]:
+                    - img [ref=e3378]
+                    - generic [ref=e3380]: SVG stroke draw (2s)
+                  - generic [ref=e3385]: Lottie (loop)
+                  - generic [ref=e3390]: Lottie (no loop)
+              - generic [ref=e3391]:
+                - generic [ref=e3392]:
+                  - heading "Phase 4 — Split-Text (char / word / line)" [level=4] [ref=e3393]
+                  - generic [ref=e3394]: Text split into units and staggered via animation.splitText config on a Box.
+                - generic [ref=e3395]:
+                  - generic [ref=e3398]:
+                    - generic [ref=e3399]: H
+                    - generic [ref=e3400]: e
+                    - generic [ref=e3401]: l
+                    - generic [ref=e3402]: l
+                    - generic [ref=e3403]: o
+                    - generic [ref=e3405]: W
+                    - generic [ref=e3406]: o
+                    - generic [ref=e3407]: r
+                    - generic [ref=e3408]: l
+                    - generic [ref=e3409]: d
+                    - generic [ref=e3410]: "!"
+                  - generic [ref=e3413]:
+                    - generic [ref=e3414]: Words
+                    - generic [ref=e3416]: fan
+                    - generic [ref=e3418]: in
+                    - generic [ref=e3420]: one
+                    - generic [ref=e3422]: by
+                    - generic [ref=e3424]: one
+                  - generic [ref=e3427]: Type writer effect
+              - generic [ref=e3428]:
+                - generic [ref=e3429]:
+                  - heading "Card 12 — Spring Physics" [level=4] [ref=e3430]
+                  - generic [ref=e3431]: Three boxes with different spring configurations — snappy, wobbly, and heavy.
+                - generic [ref=e3432]:
+                  - generic [ref=e3436]: Stiff 400/12
+                  - generic [ref=e3440]: Loose 80/8
+                  - generic [ref=e3444]: Heavy m=3
+              - generic [ref=e3445]:
+                - generic [ref=e3446]:
+                  - heading "Phase 1 — New Enter Keyframes" [level=4] [ref=e3447]
+                  - generic [ref=e3448]: "New enter types: skewIn, blurIn, glowIn, flipIn3D, tiltIn, riseFade, dropIn, expandIn."
+                - generic [ref=e3449]:
+                  - generic [ref=e3453]: skew
+                  - generic [ref=e3457]: blur
+                  - generic [ref=e3461]: glow
+                  - generic [ref=e3465]: flip3D
+                  - generic [ref=e3469]: tilt
+                  - generic [ref=e3473]: rise
+                  - generic [ref=e3477]: drop
+                  - generic [ref=e3481]: expand
+              - generic [ref=e3482]:
+                - generic [ref=e3483]:
+                  - heading "Phase 1 — New Loop Keyframes" [level=4] [ref=e3484]
+                  - generic [ref=e3485]: "New loop types: breathe, float, wiggle, glowPulse, ripple, gradientDrift."
+                - generic [ref=e3486]:
+                  - generic [ref=e3490]: breathe
+                  - generic [ref=e3494]: float
+                  - generic [ref=e3498]: wiggle
+                  - generic [ref=e3502]: glow
+                  - generic [ref=e3506]: ripple
+                  - generic [ref=e3510]: gradient
+              - generic [ref=e3511]:
+                - generic [ref=e3512]:
+                  - heading "Phase 2 — Filter, Tilt, Mouse Parallax, Morph Shape" [level=4] [ref=e3513]
+                  - generic [ref=e3514]: "New animation categories: CSS filter blur, 3D tilt on mouse, cursor parallax, blob border-radius."
+                - generic [ref=e3515]:
+                  - generic [ref=e3519]: filter glow
+                  - generic [ref=e3523] [cursor=pointer]: hover to tilt
+                  - generic [ref=e3527]: mouse parallax
+                  - generic [ref=e3531]: morph blob
+              - generic [ref=e3532]:
+                - generic [ref=e3533]:
+                  - heading "Phase 3 — Scroll Progress" [level=4] [ref=e3534]
+                  - generic [ref=e3535]: Scroll down — the box below fades in (opacity 0→1) linked to scroll progress through the viewport.
+                - generic [ref=e3539]: Opacity linked to scroll position!
+                - generic [ref=e3543]: translateY 60px → 0 on scroll
+              - generic [ref=e3544]:
+                - generic [ref=e3545]:
+                  - heading "Card 1 — Enter Animations" [level=4] [ref=e3546]
+                  - generic [ref=e3547]: All enter types run on page load. Each box shows a different animation.
+                - generic [ref=e3548]:
+                  - generic [ref=e3552]: fade
+                  - generic [ref=e3556]: slideUp
+                  - generic [ref=e3560]: slideDown
+                  - generic [ref=e3564]: slideLeft
+                  - generic [ref=e3568]: slideRight
+                  - generic [ref=e3572]: zoom
+                  - generic [ref=e3576]: bounce
+                  - generic [ref=e3580]: flipX
+                  - generic [ref=e3584]: flipY
+                  - generic [ref=e3588]: roll
+              - generic [ref=e3589]:
+                - generic [ref=e3590]:
+                  - heading "Card 2 — Exit Animations" [level=4] [ref=e3591]
+                  - generic [ref=e3592]: Toggle visibility to trigger enter/exit animations.
+                - generic [ref=e3593]:
+                  - generic [ref=e3595] [cursor=pointer]: Hide
+                  - generic [ref=e3597] [cursor=pointer]: Show
+                - generic [ref=e3601]: I animate in and out!
+              - generic [ref=e3602]:
+                - generic [ref=e3603]:
+                  - heading "Card 3 — Loop Animations" [level=4] [ref=e3604]
+                  - generic [ref=e3605]: Continuous animations — all running simultaneously.
+                - generic [ref=e3606]:
+                  - generic [ref=e3610]: pulse
+                  - generic [ref=e3614]: shake
+                  - generic [ref=e3618]: spin
+                  - generic [ref=e3622]: bounce
+                  - generic [ref=e3626]: heart
+                  - generic [ref=e3630]: flash
+                  - generic [ref=e3634]: swing
+                  - generic [ref=e3638]: wobble
+              - generic [ref=e3639]:
+                - generic [ref=e3640]:
+                  - heading "Card 4 — Press Animation" [level=4] [ref=e3641]
+                  - generic [ref=e3642]: Press and hold the box — it scales down and becomes semi-transparent.
+                - generic [ref=e3646]: Press me! (scale 0.88, opacity 0.7)
+              - generic [ref=e3647]:
+                - generic [ref=e3648]:
+                  - heading "Card 5 — Hover Animation" [level=4] [ref=e3649]
+                  - generic [ref=e3650]: Move your mouse over the box — it lifts and scales up.
+                - generic [ref=e3654] [cursor=pointer]: Hover me! (scale 1.04, lift 8px)
+              - generic [ref=e3655]:
+                - generic [ref=e3656]:
+                  - heading "Card 6 — Scroll Trigger" [level=4] [ref=e3657]
+                  - generic [ref=e3658]: The box below fades in when it enters the viewport.
+                - generic [ref=e3662]: I fade in on scroll!
+              - generic [ref=e3663]:
+                - generic [ref=e3664]:
+                  - heading "Card 7 — Parallax" [level=4] [ref=e3665]
+                  - generic [ref=e3666]: Scroll the page — the gradient box moves at 40% of scroll speed.
+                - generic [ref=e3670]: Parallax — speed 0.4
+              - generic [ref=e3671]:
+                - generic [ref=e3672]:
+                  - heading "Card 8 — Drag" [level=4] [ref=e3673]
+                  - generic [ref=e3674]: Drag the box anywhere on both axes — it springs back when released.
+                - generic [ref=e3678]: Drag me!
+              - generic [ref=e3679]:
+                - generic [ref=e3680]:
+                  - heading "Card 9 — Color Transition" [level=4] [ref=e3681]
+                  - generic [ref=e3682]: Background color cycles blue → red → blue continuously.
+                - generic [ref=e3686]: Blue → Red color loop
+              - generic [ref=e3687]:
+                - generic [ref=e3688]:
+                  - heading "Card 10 — Layout Animation" [level=4] [ref=e3689]
+                  - generic [ref=e3690]: Add/remove items — the list reflows with a spring animation.
+                - generic [ref=e3691]:
+                  - generic [ref=e3693] [cursor=pointer]: + Add item
+                  - generic [ref=e3695] [cursor=pointer]: − Remove last
+                - generic [ref=e3698]:
+                  - generic [ref=e3703]: Item 1
+                  - generic [ref=e3708]: Item 2
+                  - generic [ref=e3713]: Item 3
+              - generic [ref=e3714]:
+                - generic [ref=e3715]:
+                  - heading "Card 13 — Imperative Trigger" [level=4] [ref=e3716]
+                  - generic [ref=e3717]: Click the button to imperatively trigger a shake animation on the target.
+                - generic [ref=e3719] [cursor=pointer]: Shake it!
+                - generic [ref=e3723]: Click the button to shake me!
+              - generic [ref=e3724]:
+                - generic [ref=e3725]:
+                  - heading "Phase 6 — Canvas Particles + Noise Background" [level=4] [ref=e3726]
+                  - generic [ref=e3727]: HTML5 Canvas particle network via animation.particles and SVG feTurbulence grain via animation.noise on a Box.
+                - generic [ref=e3733]:
+                  - generic [ref=e3735]: Noise Texture (animated seed)
+                  - img
+              - generic [ref=e3736]:
+                - generic [ref=e3737]:
+                  - heading "Phase 7 — Video" [level=4] [ref=e3738]
+                  - generic [ref=e3739]: HTML5 Video element as background. Use a Box with position:relative + Video + absolute overlay Boxes for hero sections — all composable from JSON in the builder.
+                - generic [ref=e3743]:
+                  - heading "Video Hero" [level=3] [ref=e3744]
+                  - generic [ref=e3745]: Video + overlay Box + gradient Box + content Box — all JSON config
+              - generic [ref=e3746]:
+                - generic [ref=e3747]:
+                  - heading "Phase 10 — Frosted Glass + Skeleton + Timeline" [level=4] [ref=e3748]
+                  - generic [ref=e3749]: Frosted-glass panel using Box + style.backdropFilter, shimmer skeleton loaders, and a declarative timeline animation.
+                - generic [ref=e3751]:
+                  - generic [ref=e3752]: Frosted Glass
+                  - generic [ref=e3753]: "backdrop-filter: blur(18px)"
+                - generic [ref=e3801]: "Timeline: opacity + scale loop"
+              - generic [ref=e3802]:
+                - generic [ref=e3803]:
+                  - heading "Phase 11 — State-Machine Animations" [level=4] [ref=e3804]
+                  - generic [ref=e3805]: "Declarative `states` config drives CSS transitions as a state machine: idle → loading → success → error."
+                - generic [ref=e3806]:
+                  - generic [ref=e3810]:
+                    - generic [ref=e3811]: State Machine Box
+                    - generic [ref=e3812]: "Current: idle"
+                  - generic [ref=e3818]: Cycle State →
+              - generic [ref=e3819]:
+                - generic [ref=e3820]:
+                  - heading "Phase 12 — Gradient Animation" [level=4] [ref=e3821]
+                  - generic [ref=e3822]: Linear color cycle, radial pulse, and conic angle rotation via GradientAnimationConfig.
+                - generic [ref=e3823]:
+                  - generic [ref=e3827]: Linear cycle
+                  - generic [ref=e3831]: Radial pulse
+                  - generic [ref=e3835]: Conic rotate
+              - generic [ref=e3836]:
+                - generic [ref=e3837]:
+                  - heading "Phase 13 — Clip-Path & Mask Animation" [level=4] [ref=e3838]
+                  - generic [ref=e3839]: Clip-path reveal on hover + mask wipe on enter.
+                - generic [ref=e3840]:
+                  - generic [ref=e3844] [cursor=pointer]: Hover to reveal →
+                  - generic [ref=e3848]: Mask wipe
+              - generic [ref=e3849]:
+                - generic [ref=e3850]:
+                  - heading "Phase 14 — SVG Morphing" [level=4] [ref=e3851]
+                  - generic [ref=e3852]: SVG path morphing via SMIL animate — compose any SVG from json svg/path/animate nodes in the builder.
+                - generic [ref=e3853]:
+                  - img [ref=e3854]
+                  - img [ref=e3856]
+              - generic [ref=e3858]:
+                - generic [ref=e3859]:
+                  - heading "Phase 15 — Pseudo-Element Effects" [level=4] [ref=e3860]
+                  - generic [ref=e3861]: ::before/::after driven by injected scoped <style> tags — animated underline, highlight overlay.
+                - generic [ref=e3862]:
+                  - generic [ref=e3866] [cursor=pointer]: Hover underline
+                  - generic [ref=e3870] [cursor=pointer]: Highlight sweep
+              - generic [ref=e3871]:
+                - generic [ref=e3872]:
+                  - heading "Phase 17 — Swipe Carousel" [level=4] [ref=e3873]
+                  - generic [ref=e3874]: Drag / swipe left or right to change slides. Track follows your finger live (dragFeedback) and springs back if you release without completing a swipe.
+                - generic [ref=e3875]:
+                  - generic [ref=e3879]:
+                    - generic [ref=e3880]:
+                      - img "rocket" [ref=e3882]
+                      - generic [ref=e3883]: Getting Started
+                      - generic [ref=e3884]: Swipe left to explore →
+                    - generic [ref=e3885]:
+                      - img "zap" [ref=e3887]
+                      - generic [ref=e3888]: Fast & Smooth
+                      - generic [ref=e3889]: 60fps CSS animations, no libraries
+                    - generic [ref=e3890]:
+                      - img "layers" [ref=e3892]
+                      - generic [ref=e3893]: JSON-Driven
+                      - generic [ref=e3894]: Configure everything in JSON
+                    - generic [ref=e3895]:
+                      - img "star" [ref=e3897]
+                      - generic [ref=e3898]: Gesture-Powered
+                      - generic [ref=e3899]: Swipe right to go back ←
+                  - generic [ref=e3900]:
+                    - img "chevron-left" [ref=e3902]
+                    - img "chevron-right" [ref=e3917]
+              - generic [ref=e3918]:
+                - generic [ref=e3919]:
+                  - heading "Phase 18 — Flex-Row Width Fill with Animation" [level=4] [ref=e3920]
+                  - generic [ref=e3921]: Both columns are w-full inside flex-row. Left has an enter animation (AnimatedNode wrapper). Both columns must be roughly equal width — the animated column must not collapse its sibling.
+                - generic [ref=e3922]:
+                  - generic [ref=e3925]:
+                    - generic [ref=e3926]: Left (animated)
+                    - generic [ref=e3927]: Has enter animation + w-full
+                  - generic [ref=e3928]:
+                    - generic [ref=e3929]: Right (no animation)
+                    - generic [ref=e3930]: No animation + w-full
+              - generic [ref=e3931]:
+                - generic [ref=e3932]:
+                  - heading "Phase 19 — Real-World Hero Layout (AI-Generated)" [level=4] [ref=e3933]
+                  - generic [ref=e3934]: Exact replica of the AI builder hero. Left column has no animation but animated children; right column has enter animation on the container itself. Both must be roughly equal width.
+                - generic [ref=e3935]:
+                  - generic [ref=e3936]:
+                    - generic [ref=e3940]: Productivity Reimagined
+                    - heading "Work flows like water." [level=4] [ref=e3943]
+                    - generic [ref=e3946]: Manage projects, collaborate with teams, and ship faster.
+                    - generic [ref=e3949]:
+                      - generic [ref=e3951]: Start Free Trial
+                      - generic [ref=e3953]: Watch Demo
+                  - generic [ref=e3958]: Hero Image Placeholder
+              - generic [ref=e3959]:
+                - heading "Absolute Positioned Animated Images — Builder Selection Test" [level=3] [ref=e3960]
+                - generic [ref=e3961]: Three absolutely-positioned images with enter+hover and loop animations. Verify each image is selectable in the builder canvas.
+              - generic [ref=e3962]:
+                - img "Primary absolute image" [ref=e3965]
+                - img "Secondary absolute image" [ref=e3968]
+                - img "Overlay absolute image" [ref=e3971]
+              - generic [ref=e3972]:
+                - heading "Theme Formula Text Color Test" [level=4] [ref=e3973]
+                - generic [ref=e3974]: These headings test formula-driven text color. Each should show in its theme color.
+              - generic [ref=e3975]:
+                - generic [ref=e3976]:
+                  - heading "Destructive" [level=5] [ref=e3977]
+                  - generic [ref=e3978]: "#ef4444"
+                - generic [ref=e3979]:
+                  - heading "Primary" [level=5] [ref=e3980]
+                  - generic [ref=e3981]: "#7c3aed"
+                - generic [ref=e3982]:
+                  - heading "Muted" [level=5] [ref=e3983]
+                  - generic [ref=e3984]: "#6d28d9"
+              - generic [ref=e3985]:
+                - heading "Theme Formula Background Test" [level=4] [ref=e3986]
+                - generic [ref=e3987]: The three cards below test dynamic bg color using theme formula in style.backgroundColor. They should all show the same color.
+              - generic [ref=e3988]:
+                - generic [ref=e3989]:
+                  - generic [ref=e3990]: Formula bg (destructive)
+                  - generic [ref=e3991]: theme?.['colors']?.['destructive']
+                  - generic [ref=e3992]: "resolved: #ef4444"
+                - generic [ref=e3993]:
+                  - generic [ref=e3994]: Primary formula bg
+                  - generic [ref=e3995]: theme?.['colors']?.['primary']
+                  - generic [ref=e3996]: "#7c3aed"
+                - generic [ref=e3997]:
+                  - generic [ref=e3998]: Static ref (control)
+                  - generic [ref=e3999]: No bg formula — shows theme values as text only
+                  - generic [ref=e4000]:
+                    - generic [ref=e4001]: "secondaryForeground: #3b0764"
+                    - generic [ref=e4002]: "primary: #7c3aed"
+                    - generic [ref=e4003]: "secondary: #ede9fe"
+              - generic [ref=e4004]:
+                - generic [ref=e4005]:
+                  - heading "Phase Effects — Gradient, Blur, Backdrop, Shadow" [level=4] [ref=e4006]
+                  - generic [ref=e4007]: Four sub-cards testing engine support for the new effect capabilities.
+                - generic [ref=e4008]:
+                  - generic [ref=e4011]:
+                    - generic [ref=e4012]: gradientDrift
+                    - generic [ref=e4013]: Animated flowing gradient
+                  - generic [ref=e4016]:
+                    - generic [ref=e4017]: filterBlur
+                    - generic [ref=e4018]: Element blur 4px
+                  - generic [ref=e4023]:
+                    - generic [ref=e4024]: backdropBlur
+                    - generic [ref=e4025]: Glassmorphism 12px
+                  - generic [ref=e4026]:
+                    - generic [ref=e4027]: Custom Shadow
+                    - generic [ref=e4028]: "Purple glow #a855f7"
+                  - generic [ref=e4029]:
+                    - generic [ref=e4030]: Formula Shadow
+                    - generic [ref=e4031]: "boxShadow: formula binding"
+                  - generic [ref=e4034]:
+                    - generic [ref=e4035]: Formula filterBlur
+                    - generic [ref=e4036]: "blur: formula 2+2=4px"
+                  - generic [ref=e4039]:
+                    - generic [ref=e4040]: Formula Gradient
+                    - generic [ref=e4041]: "backgroundImage: formula binding"
+              - generic [ref=e4042]:
+                - generic [ref=e4043]:
+                  - heading "Phase 20 — Static Translate" [level=4] [ref=e4044]
+                  - generic [ref=e4045]: translateX / translateY stored as separate style keys; renderer combines with transform (rotation).
+                - generic [ref=e4046]:
+                  - generic [ref=e4047]:
+                    - generic [ref=e4048]: Translate X
+                    - generic [ref=e4049]: translateX(40px)
+                  - generic [ref=e4050]:
+                    - generic [ref=e4051]: Translate Y
+                    - generic [ref=e4052]: translateY(30px)
+                  - generic [ref=e4053]:
+                    - generic [ref=e4054]: Translate X+Y
+                    - generic [ref=e4055]: X(20px) Y(20px)
+                  - generic [ref=e4056]:
+                    - generic [ref=e4057]: Translate+Rotate
+                    - generic [ref=e4058]: X(10px) R(15deg)
+                  - generic [ref=e4059]:
+                    - generic [ref=e4060]: Formula Translate
+                    - generic [ref=e4061]: formula→translateX(50px)
+              - generic [ref=e4062]:
+                - heading "Generic Animation Properties" [level=3] [ref=e4063]
+                - generic [ref=e4064]: Demonstrating the new generic/extensible animation capabilities.
+              - generic [ref=e4065]:
+                - generic [ref=e4068]:
+                  - generic [ref=e4069]: "ScrollProgress: backgroundColor"
+                  - generic [ref=e4070]: Blue → Red on scroll
+                - generic [ref=e4071]:
+                  - generic [ref=e4074]: "ScrollProgress: color"
+                  - generic [ref=e4075]: Text blue → orange on scroll
+                - generic [ref=e4078]:
+                  - generic [ref=e4079]: "ScrollProgress: borderRadius"
+                  - generic [ref=e4080]: 0px → 32px on scroll
+                - generic [ref=e4083] [cursor=pointer]:
+                  - generic [ref=e4084]: "Hover: styles map"
+                  - generic [ref=e4085]: bg + borderRadius + boxShadow
+                - generic [ref=e4088] [cursor=pointer]:
+                  - generic [ref=e4089]: "Press: styles map"
+                  - generic [ref=e4090]: Press → darker bg + inset shadow
+                - generic [ref=e4091]:
+                  - generic [ref=e4094]: "Color Transition: text"
+                  - generic [ref=e4095]: Indigo ↔ Pink looping text color
+                - generic [ref=e4098]:
+                  - generic [ref=e4099]: "Enter: blur + rotate"
+                  - generic [ref=e4100]: Deblur + unrotate on appear
+                - generic [ref=e4103]:
+                  - generic [ref=e4104]: "Enter: skewX + skewY"
+                  - generic [ref=e4105]: Skew + slide on appear
+            - generic [ref=e4107]:
+              - generic [ref=e4108]:
+                - generic [ref=e4110]: Vendure Store
+                - generic [ref=e4112]: Categories
+                - generic [ref=e4113]:
+                  - generic [ref=e4114]: Vendure
+                  - generic [ref=e4115]:
+                    - generic [ref=e4117]: GitHub
+                    - generic [ref=e4119]: Documentation
+                    - generic [ref=e4121]: Source code
+              - generic [ref=e4122]:
+                - generic [ref=e4123]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e4124]:
+                  - generic [ref=e4125]: Powered by
+                  - img "Vendure" [ref=e4126]
+                  - generic [ref=e4127]: "&"
+                  - img "Next.js" [ref=e4128]
+          - generic [ref=e4130]:
+            - generic [ref=e4131]: heroShowcase
+            - generic [ref=e4132]: /hero-showcase
+            - generic [ref=e4133]: 1280px
+          - generic [ref=e4138]:
+            - generic [ref=e4139]:
+              - heading "Next Generation Experience" [level=4] [ref=e4142]
+              - generic [ref=e4145]: Redefining innovation with cutting-edge technology and immersive design
+              - generic [ref=e4148]: Experience the future with our revolutionary product featuring advanced AI integration, quantum processing, and adaptive learning systems.
+              - generic [ref=e4151]:
+                - generic [ref=e4155]: Explore Now
+                - generic [ref=e4159]: Learn More
+              - generic [ref=e4162]:
+                - generic [ref=e4163]:
+                  - img "cpu" [ref=e4164]
+                  - generic [ref=e4165]: Advanced AI Processing
+                - generic [ref=e4166]:
+                  - img "activity" [ref=e4167]
+                  - generic [ref=e4168]: Real-time Analytics
+                - generic [ref=e4169]:
+                  - img "diamond" [ref=e4170]
+                  - generic [ref=e4171]: Premium Materials
+            - generic [ref=e4173]:
+              - img "A purple and blue abstract background with circles, balls, and shapes" [ref=e4177]
+              - img "a pink background with a green plant and a blue vase" [ref=e4182]
+          - generic [ref=e4184]:
+            - generic [ref=e4185]: pricingCardTest
+            - generic [ref=e4186]: /pricing-card-test
+            - generic [ref=e4187]: 1280px
+          - generic [ref=e4193]:
+            - generic [ref=e4196]: Most Popular
+            - generic [ref=e4197]:
+              - heading "Professional" [level=4] [ref=e4198]
+              - generic [ref=e4199]: For growing teams
+              - generic [ref=e4200]:
+                - heading "$79" [level=4] [ref=e4201]
+                - generic [ref=e4202]: /month
+              - generic [ref=e4203]:
+                - generic [ref=e4204]:
+                  - img "check" [ref=e4205]
+                  - generic [ref=e4206]: Unlimited projects
+                - generic [ref=e4207]:
+                  - img "check" [ref=e4208]
+                  - generic [ref=e4209]: Advanced analytics
+                - generic [ref=e4210]:
+                  - img "check" [ref=e4211]
+                  - generic [ref=e4212]: Priority support
+                - generic [ref=e4213]:
+                  - img "check" [ref=e4214]
+                  - generic [ref=e4215]: Team collaboration
+                - generic [ref=e4216]:
+                  - img "check" [ref=e4217]
+                  - generic [ref=e4218]: Custom integrations
+              - generic [ref=e4222]: Start Free Trial
+          - generic [ref=e4224]:
+            - generic [ref=e4225]: stylingTest
+            - generic [ref=e4226]: /styling-test
+            - generic [ref=e4227]: 1280px
+          - generic [ref=e4230]:
+            - generic [ref=e4233]:
+              - img "Vendure" [ref=e4236]
+              - generic [ref=e4238]:
+                - img "moon" [ref=e4242]
+                - img "shopping-bag" [ref=e4245]
+                - generic [ref=e4248]: Sign in
+            - generic [ref=e4250]:
+              - heading "Styling Capability Test" [level=2] [ref=e4251]
+              - generic [ref=e4252]: Tests all new styling features added in the builder. Each section shows a static case and a formula-bound case.
+              - heading "A1 — RGBA Color (Color Picker)" [level=4] [ref=e4253]
+              - generic [ref=e4254]:
+                - generic [ref=e4256]: rgba indigo 30%
+                - generic [ref=e4258]: rgba red 50%
+              - heading "A2 — Width/Height with % and vh/vw Units" [level=4] [ref=e4259]
+              - generic [ref=e4260]:
+                - generic [ref=e4262]: "w: 75% (static)"
+                - generic [ref=e4264]: "w: 50vw (static)"
+                - generic [ref=e4266]: "w: bound to ST Width % variable (60%)"
+              - heading "A4 — New CSS Properties" [level=4] [ref=e4267]
+              - generic [ref=e4268]:
+                - generic [ref=e4269]:
+                  - generic [ref=e4271]: "aspect-ratio: 16/9"
+                  - generic [ref=e4272]:
+                    - generic [ref=e4274]: "flex-grow: 1"
+                    - generic [ref=e4276]: fixed
+                - generic [ref=e4277]: "line-clamp: 2 — This is a long text that should be clamped to exactly 2 lines. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. It should truncate here."
+                - generic [ref=e4278]:
+                  - generic [ref=e4280]: "word-break: break-all — Superlongwordthatbreaks"
+                  - generic [ref=e4282]: "whitespace-nowrap + text-overflow: ellipsis on a long text that should truncate"
+                - generic [ref=e4284]: "text-decoration-color: pink underline"
+                - generic:
+                  - generic: "pointer-events: none — clicking this box does nothing"
+              - heading "A5 — Per-side Border" [level=4] [ref=e4285]
+              - generic [ref=e4286]:
+                - generic [ref=e4288]: "border-top: 4px indigo"
+                - generic [ref=e4290]: "border-left: 4px pink"
+                - generic [ref=e4292]: all 4 sides different
+              - heading "A6 — Gradient Direction" [level=4] [ref=e4293]
+              - generic [ref=e4294]:
+                - generic [ref=e4296]: to right
+                - generic [ref=e4298]: to bottom
+                - generic [ref=e4300]: radial
+                - generic [ref=e4302]: 135deg 3-stop
+              - heading "A7 — Formula Bindings (Opacity, Radius, Padding, Z-Index)" [level=4] [ref=e4303]
+              - generic [ref=e4304]:
+                - generic [ref=e4306]: opacity + radius bound
+                - generic [ref=e4308]: padding bound (16px var)
+                - generic [ref=e4310]: z-index bound
+              - heading "A9 — Background Image (props.style)" [level=4] [ref=e4311]
+              - generic [ref=e4312]:
+                - generic [ref=e4315]: bg-image cover
+                - generic [ref=e4318]: bg-image contain
+              - 'heading "B/C — Animation: New Enter Types" [level=4] [ref=e4319]'
+              - generic [ref=e4320]:
+                - generic [ref=e4324]: revealUp
+                - generic [ref=e4328]: charFall
+                - generic [ref=e4332]: charBounce
+              - 'heading "B3 — Timeline: translateX / translateY / rotate" [level=4] [ref=e4333]'
+              - generic [ref=e4344]: ← translateX | translateY | rotate (looping)
+              - heading "B5 — Filter FX with Duration" [level=4] [ref=e4345]
+              - generic [ref=e4346]:
+                - generic [ref=e4350]: blur loop
+                - generic [ref=e4354]: brightness transition
+              - heading "C2 — New Panel Sections Preview" [level=4] [ref=e4355]
+              - generic [ref=e4356]:
+                - generic [ref=e4360]: shimmer skeleton
+                - generic [ref=e4364]: particles
+            - generic [ref=e4367]:
+              - generic [ref=e4368]:
+                - generic [ref=e4370]: Vendure Store
+                - generic [ref=e4372]: Categories
+                - generic [ref=e4373]:
+                  - generic [ref=e4374]: Vendure
+                  - generic [ref=e4375]:
+                    - generic [ref=e4377]: GitHub
+                    - generic [ref=e4379]: Documentation
+                    - generic [ref=e4381]: Source code
+              - generic [ref=e4382]:
+                - generic [ref=e4383]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e4384]:
+                  - generic [ref=e4385]: Powered by
+                  - img "Vendure" [ref=e4386]
+                  - generic [ref=e4387]: "&"
+                  - img "Next.js" [ref=e4388]
+          - generic [ref=e4390]:
+            - generic [ref=e4391]: controlsShowcase
+            - generic [ref=e4392]: /controls-showcase
+            - generic [ref=e4393]: 1280px
+          - generic [ref=e4396]:
+            - generic [ref=e4399]:
+              - img "Vendure" [ref=e4402]
+              - generic [ref=e4404]:
+                - img "moon" [ref=e4408]
+                - img "shopping-bag" [ref=e4411]
+                - generic [ref=e4414]: Sign in
+            - generic [ref=e4416]:
+              - generic [ref=e4417]:
+                - generic [ref=e4418]: Controls Showcase
+                - generic [ref=e4419]: Box-based interactive components — Checkbox, Switch, Toggle, Radio Group, Progress, Slider. All state is live-reactive.
+              - generic [ref=e4420]:
+                - generic [ref=e4421]: Checkbox
+                - generic [ref=e4424] [cursor=pointer]: I accept the terms and conditions
+                - generic [ref=e4425]:
+                  - generic [ref=e4426]: "State:"
+                  - generic [ref=e4427]: unchecked
+              - generic [ref=e4428]:
+                - generic [ref=e4429]: Switch
+                - generic [ref=e4434]: Enable notifications
+                - generic [ref=e4435]:
+                  - generic [ref=e4436]: "State:"
+                  - generic [ref=e4437]: "OFF"
+              - generic [ref=e4438]:
+                - generic [ref=e4439]: Toggle
+                - generic [ref=e4442] [cursor=pointer]: Bold text
+                - generic [ref=e4443]:
+                  - generic [ref=e4444]: "State:"
+                  - generic [ref=e4445]: inactive
+              - generic [ref=e4446]:
+                - generic [ref=e4447]: Radio Group
+                - generic [ref=e4448]:
+                  - generic [ref=e4451] [cursor=pointer]: Option A — Free plan
+                  - generic [ref=e4454] [cursor=pointer]: Option B — Pro plan $9/mo
+                  - generic [ref=e4457] [cursor=pointer]: Option C — Enterprise custom
+                - generic [ref=e4458]:
+                  - generic [ref=e4459]: "Selected:"
+                  - generic [ref=e4460]: none
+              - generic [ref=e4461]:
+                - generic [ref=e4462]: Progress Bar
+                - generic [ref=e4465]:
+                  - generic [ref=e4466]: 30% complete
+                  - generic [ref=e4467]:
+                    - generic [ref=e4469] [cursor=pointer]: −10
+                    - generic [ref=e4471] [cursor=pointer]: "+10"
+              - generic [ref=e4472]:
+                - generic [ref=e4473]: Slider
+                - generic "Slider" [ref=e4474]:
+                  - slider "Slider" [ref=e4479]: "50"
+                - generic [ref=e4480]:
+                  - generic [ref=e4481]: "Disabled slider:"
+                  - generic "Slider":
+                    - generic:
+                      - generic:
+                        - generic:
+                          - slider "Slider" [disabled]: "30"
+                - generic [ref=e4483]:
+                  - generic [ref=e4484]: "Vertical:"
+                  - generic "Slider" [ref=e4486]:
+                    - slider "Slider" [ref=e4491]: "60"
+                - generic [ref=e4492]:
+                  - generic [ref=e4493]: "Step 10:"
+                  - generic "Slider" [ref=e4494]:
+                    - slider "Slider" [ref=e4499]: "40"
+              - generic [ref=e4500]:
+                - generic [ref=e4501]: Switch & Toggle (visual states)
+                - generic [ref=e4502]:
+                  - generic [ref=e4504]: "Off"
+                  - generic [ref=e4508]: "On"
+                - generic [ref=e4512]: "Toggle:"
+              - generic [ref=e4516]: Placeholder (removed)
+              - generic [ref=e4517]:
+                - generic [ref=e4518]: Spinner
+                - generic [ref=e4519]:
+                  - img "loader-2" [ref=e4523]
+                  - img "loader-2" [ref=e4527]
+                  - img "loader-2" [ref=e4531]
+                - generic [ref=e4532]: Spinners at 1000ms, 800ms, 600ms. Pure Box + Icon + animation.loop.spin — no Gluestack Spinner dependency.
+              - generic [ref=e4533]:
+                - generic [ref=e4534]: Live State Summary
+                - generic [ref=e4535]:
+                  - generic [ref=e4536]:
+                    - generic [ref=e4537]: Checkbox
+                    - generic [ref=e4538]: "false"
+                  - generic [ref=e4539]:
+                    - generic [ref=e4540]: Switch
+                    - generic [ref=e4541]: "false"
+                  - generic [ref=e4542]:
+                    - generic [ref=e4543]: Toggle
+                    - generic [ref=e4544]: "false"
+                  - generic [ref=e4546]: Radio
+                  - generic [ref=e4547]:
+                    - generic [ref=e4548]: Progress
+                    - generic [ref=e4549]: 30%
+                  - generic [ref=e4550]:
+                    - generic [ref=e4551]: Slider
+                    - generic [ref=e4552]: internal state
+            - generic [ref=e4554]:
+              - generic [ref=e4555]:
+                - generic [ref=e4557]: Vendure Store
+                - generic [ref=e4559]: Categories
+                - generic [ref=e4560]:
+                  - generic [ref=e4561]: Vendure
+                  - generic [ref=e4562]:
+                    - generic [ref=e4564]: GitHub
+                    - generic [ref=e4566]: Documentation
+                    - generic [ref=e4568]: Source code
+              - generic [ref=e4569]:
+                - generic [ref=e4570]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e4571]:
+                  - generic [ref=e4572]: Powered by
+                  - img "Vendure" [ref=e4573]
+                  - generic [ref=e4574]: "&"
+                  - img "Next.js" [ref=e4575]
+          - generic [ref=e4577]:
+            - generic [ref=e4578]: exprCssTest
+            - generic [ref=e4579]: /expr-css-test
+            - generic [ref=e4580]: 1280px
+          - generic [ref=e4583]:
+            - generic [ref=e4586]:
+              - img "Vendure" [ref=e4589]
+              - generic [ref=e4591]:
+                - img "moon" [ref=e4595]
+                - img "shopping-bag" [ref=e4598]
+                - generic [ref=e4601]: Sign in
+            - generic [ref=e4603]:
+              - generic [ref=e4604]:
+                - generic [ref=e4605]: Expr CSS Test
+                - generic [ref=e4606]: "Tests for formula-based style bindings: calc() CSS fallback and dynamic variable formulas."
+              - generic [ref=e4607]:
+                - generic [ref=e4608]: 1. calc() CSS box
+                - generic [ref=e4609]: Width = calc(100% - 80px). Should fill container minus 80px padding.
+                - generic [ref=e4611]: calc(100% - 80px)
+              - generic [ref=e4612]:
+                - generic [ref=e4613]: 2. Formula box (drag slider to resize)
+                - generic [ref=e4614]: Width = variable (default 200). Drag the slider below to change it live.
+                - generic [ref=e4616]: 200px
+                - generic [ref=e4617]:
+                  - generic [ref=e4618]: "Width: 200px (50–600)"
+                  - generic [ref=e4619]: Use the variable store (via E2E helpers or workflows) to change the width and observe formula reactivity.
+              - generic [ref=e4620]:
+                - generic [ref=e4621]: 3. Mixed formula + calc()
+                - generic [ref=e4622]: Width = calc(variable + 'px' - 20px via JS string concat). Tests combining variable access with CSS calc.
+                - generic [ref=e4624]: calc(200px - 20px)
+            - generic [ref=e4626]:
+              - generic [ref=e4627]:
+                - generic [ref=e4629]: Vendure Store
+                - generic [ref=e4631]: Categories
+                - generic [ref=e4632]:
+                  - generic [ref=e4633]: Vendure
+                  - generic [ref=e4634]:
+                    - generic [ref=e4636]: GitHub
+                    - generic [ref=e4638]: Documentation
+                    - generic [ref=e4640]: Source code
+              - generic [ref=e4641]:
+                - generic [ref=e4642]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e4643]:
+                  - generic [ref=e4644]: Powered by
+                  - img "Vendure" [ref=e4645]
+                  - generic [ref=e4646]: "&"
+                  - img "Next.js" [ref=e4647]
+          - generic [ref=e4649]:
+            - generic [ref=e4650]: jsonTest
+            - generic [ref=e4651]: /json-test
+            - generic [ref=e4652]: 1280px
+          - generic [ref=e4655]:
+            - generic [ref=e4659]:
+              - generic [ref=e4663]: New Release
+              - generic [ref=e4666]: The Future Is Now
+              - generic [ref=e4669]: Experience next-generation technology that transforms your vision into reality. Discover innovation at every step.
+              - generic [ref=e4672]:
+                - generic [ref=e4676] [cursor=pointer]: Get Started
+                - generic [ref=e4680] [cursor=pointer]: Learn More
+            - generic [ref=e4696]:
+              - generic [ref=e4697]:
+                - img "A repeating pattern of white iphones on a black background." [ref=e4701]
+                - img "Fingers hold a black smart ring with circuits visible." [ref=e4708]
+              - generic [ref=e4709]:
+                - generic [ref=e4712]:
+                  - generic [ref=e4713]: Next Generation
+                  - generic [ref=e4714]: Cutting-edge technology meets elegant design
+                - generic [ref=e4717]:
+                  - generic [ref=e4718]: Ultra Performance
+                  - generic [ref=e4719]: Lightning-fast processing with zero compromises
+                - generic [ref=e4722]:
+                  - generic [ref=e4723]: Immersive Experience
+                  - generic [ref=e4724]: Stunning visuals with immersive haptic feedback
+            - generic [ref=e4725]:
+              - heading "Original JSON — Issues Found & Fixed" [level=4] [ref=e4726]
+              - generic [ref=e4727]: 6 issues were found in the original JSON. The hero above shows the corrected version.
+              - generic [ref=e4728]:
+                - generic [ref=e4729]:
+                  - generic [ref=e4730]: FIXED
+                  - generic [ref=e4731]:
+                    - generic [ref=e4732]: min-h-screen on parent breaks all h-[100%] children
+                    - generic [ref=e4733]: "Background Layer (absolute h-[100%]), Main Content Container (h-[100%]), and their children all resolve height:100% against the parent's auto height since only min-height was set. Background gradient and layout container collapsed to 0px height. Fix: changed root to h-screen."
+                - generic [ref=e4734]:
+                  - generic [ref=e4735]: FIXED
+                  - generic [ref=e4736]:
+                    - generic [ref=e4737]: Right Column had empty props — no layout, no width, no padding
+                    - generic [ref=e4738]: "\"Right Column - Glassmorphism Panel\" had props:{} with nothing set. No flex-col, no width, no gap between cards. The column shrank to content width and cards had no spacing. Fix: added flex flex-col flex-1 min-w-[280px] gap-[16px]."
+                - generic [ref=e4739]:
+                  - generic [ref=e4740]: FIXED
+                  - generic [ref=e4741]:
+                    - generic [ref=e4742]: Glassmorphism cards had no padding and no border-solid
+                    - generic [ref=e4743]: "Cards had border-[1px] and border-color but no border-solid — on web, border-style defaults to none so borders were invisible. Also no padding so text rendered flush against the card edge. Fix: added border-solid + padding + flex flex-col gap to all three cards."
+                - generic [ref=e4744]:
+                  - generic [ref=e4745]: FIXED
+                  - generic [ref=e4746]:
+                    - generic [ref=e4747]: Floating Elements Layer had no position and particles had no size
+                    - generic [ref=e4748]: "The layer had props:{} — not positioned absolutely, so it rendered in document flow pushing layout down. The three particles had only a background color class but no w/h — they collapsed to 0x0px and were invisible. Fix: added absolute inset, w/h, and rounded corners to the layer and particles."
+                - generic [ref=e4749]:
+                  - generic [ref=e4750]: FIXED
+                  - generic [ref=e4751]:
+                    - generic [ref=e4752]: Floating Secondary Image Container had no absolute positioning
+                    - generic [ref=e4753]: "props:{} with no position classes. The secondary image rendered in document flow below the main 450px container, adding unexpected height to the left column. Also the image used style width/height as strings (\"300px\") — should be numbers. Fix: added absolute z-[4] bottom-[-40px] right-[-60px] to the container, and converted string dimensions to numbers."
+                - generic [ref=e4754]:
+                  - generic [ref=e4755]: FIXED
+                  - generic [ref=e4756]:
+                    - generic [ref=e4757]: Gradient shapes missing backgroundSize in outerStyle
+                    - generic [ref=e4758]: "All three gradient shapes had backgroundImage in animation.outerStyle but no backgroundSize. Without it, some browsers render the gradient at auto dimensions which may not fill the element. Fix: added backgroundSize:\"100% 100%\" to all three gradient shape outerStyles."
+            - generic [ref=e4760]: "Depth Shadow Layer: invalid class bg-linear-gradient(...) is not Tailwind and breaks on whitespace split. Fixed — gradient on animation.outerStyle.backgroundImage + backgroundSize (same pattern as builder Background → Gradient)."
+          - generic [ref=e4766]:
+            - generic [ref=e4767]: heroSaaSWorkflow
+            - generic [ref=e4768]: /hero-saas-workflow
+            - generic [ref=e4769]: 1280px
+          - generic [ref=e4775]:
+            - generic [ref=e4776]:
+              - generic [ref=e4777]: Discover Your Creative Vision
+              - generic [ref=e4778]: Explore stunning imagery that brings your stories to life. Our curated collection of layered visual moments captures the essence of creativity and innovation.
+              - generic [ref=e4782] [cursor=pointer]: Explore Gallery
+            - generic [ref=e4785]:
+              - img "Pink and purple sky over rolling hills at dusk" [ref=e4786]
+              - img "a tall building with a clock on the side of it" [ref=e4787]
+              - img "A lush waterfall cascades through a dense tropical forest" [ref=e4788]
+          - generic [ref=e4790]:
+            - generic [ref=e4791]: heightFillTest
+            - generic [ref=e4792]: /height-fill-test
+            - generic [ref=e4793]: 1280px
+          - generic [ref=e4796]:
+            - generic [ref=e4797]:
+              - heading "Height Fill Test" [level=4] [ref=e4798]
+              - generic [ref=e4799]: Select the button below in the builder and click Fill for Height. It should stretch vertically (self-stretch) and keep its pixel width.
+            - generic [ref=e4801]: SCENARIO — flex-row parent with pixel-width child
+            - generic [ref=e4804]: Button
+            - generic [ref=e4806]: "Expected after Fill height: className contains self-stretch (NOT flex-1), w-[254px] is preserved."
+          - generic [ref=e4808]:
+            - generic [ref=e4809]: layeredDepthHero
+            - generic [ref=e4810]: /layered-depth-hero
+            - generic [ref=e4811]: 1280px
+          - generic [ref=e4815]:
+            - generic [ref=e4816]:
+              - generic [ref=e4819]: Transform Your Digital Experience
+              - generic [ref=e4822]: Build stunning products with depth, precision, and modern design principles that captivate your audience.
+              - generic [ref=e4825]:
+                - generic [ref=e4829] [cursor=pointer]: Get Started
+                - generic [ref=e4833] [cursor=pointer]: Learn More
+            - generic [ref=e4834]:
+              - img "graphs of performance analytics on a laptop screen" [ref=e4838]
+              - img "a computer screen with a bunch of data on it" [ref=e4842]
+          - generic [ref=e4844]:
+            - generic [ref=e4845]: ctaButtonWfit
+            - generic [ref=e4846]: /cta-button-wfit
+            - generic [ref=e4847]: 1280px
+          - generic [ref=e4850]:
+            - generic [ref=e4851]: CTA Button — w-fit + enter/hover animation
+            - generic [ref=e4852]: Button must hug its content width (not stretch to fill parent)
+            - generic [ref=e4855] [cursor=pointer]:
+              - generic [ref=e4856]: Explore Design
+              - img "arrow-right" [ref=e4857]
+          - generic [ref=e4859]:
+            - generic [ref=e4860]: heroLayeredCollage
+            - generic [ref=e4861]: /hero-layered-collage
+            - generic [ref=e4862]: 1280px
+          - generic [ref=e4865]:
+            - generic [ref=e4866]:
+              - generic [ref=e4869]: Discover Depth in Design
+              - generic [ref=e4872]: Layered visuals create compelling visual hierarchy and modern aesthetic
+              - generic [ref=e4876] [cursor=pointer]: Explore Now
+            - img "a black and white photo of a building" [ref=e4881]
+            - img "an airplane flying over a building with a blue sky in the background" [ref=e4886]
+          - generic [ref=e4892]:
+            - generic [ref=e4893]: heroLayeredDepth
+            - generic [ref=e4894]: /hero-layered-depth
+            - generic [ref=e4895]: 1280px
+          - generic [ref=e4898]:
+            - generic [ref=e4899]:
+              - generic [ref=e4902]: Layered Visual Depth
+              - generic [ref=e4905]: Modern asymmetrical design with overlapping imagery and clear visual hierarchy
+              - generic [ref=e4908]:
+                - generic [ref=e4912] [cursor=pointer]: Explore Design
+                - generic [ref=e4916] [cursor=pointer]: Learn More
+            - generic [ref=e4919]:
+              - img "a person sitting on the floor using a laptop" [ref=e4923]
+              - img "a computer screen with the words the easy way to build marketplaces" [ref=e4927]
+          - generic [ref=e4929]:
+            - generic [ref=e4930]: heroOverlayDepth
+            - generic [ref=e4931]: /hero-overlay-depth
+            - generic [ref=e4932]: 1280px
+          - generic [ref=e4937]:
+            - img "Diverse team collaborating around a laptop in office." [ref=e4941]
+            - img "Diverse team celebrating success at office desk." [ref=e4945]
+            - generic [ref=e4949]:
+              - generic [ref=e4952]: Transform Your Vision Into Reality
+              - generic [ref=e4955]: Layered experiences with depth and impact that elevate your brand
+              - generic [ref=e4958]:
+                - generic [ref=e4962] [cursor=pointer]: Get Started
+                - generic [ref=e4966] [cursor=pointer]: Learn More
+          - generic [ref=e4971]:
+            - generic [ref=e4972]: heroImageFill
+            - generic [ref=e4973]: /hero-image-fill
+            - generic [ref=e4974]: 1280px
+          - generic [ref=e4977]:
+            - generic [ref=e4978]:
+              - generic [ref=e4981]: Image Fill Diagnosis
+              - generic [ref=e4984]: The image container uses w-[45%] with a hover animation. The image inside should fill 100% of the container — this page tests whether it does.
+              - generic [ref=e4991] [cursor=pointer]: Explore
+            - img "silhouette of mountain during sunset" [ref=e4995]
+          - generic [ref=e4997]:
+            - generic [ref=e4998]: heroAsymmetricDepth
+            - generic [ref=e4999]: /hero-asymmetric-depth
+            - generic [ref=e5000]: 1280px
+          - generic [ref=e5003]:
+            - generic [ref=e5006]:
+              - generic [ref=e5007]: Layered Depth
+              - generic [ref=e5008]: Discover modern visual hierarchy with asymmetric image layering and depth shadows
+            - img "Computer screen displaying editing software interface with histogram" [ref=e5012]
+            - img "Group of red geometric objects on white floor with 3D depth and shadows" [ref=e5016]
+          - generic [ref=e5021]:
+            - generic [ref=e5022]: landingShowcase
+            - generic [ref=e5023]: /landing-showcase
+            - generic [ref=e5024]: 1280px
+          - generic [ref=e5027]:
+            - generic [ref=e5034]:
+              - generic [ref=e5038]: New Release
+              - generic [ref=e5041]: The Future Is Now
+              - generic [ref=e5044]: Experience the next generation of innovation and transformation. Discover what's possible with cutting-edge technology.
+              - generic [ref=e5047]:
+                - generic [ref=e5051] [cursor=pointer]: Get Started
+                - generic [ref=e5055] [cursor=pointer]: Learn More
+            - generic [ref=e5056]:
+              - generic [ref=e5059]: Everything You Need
+              - generic [ref=e5062]: Built for teams who move fast. Powerful features that scale with your ambitions.
+              - generic [ref=e5063]:
+                - generic [ref=e5066] [cursor=pointer]:
+                  - img "zap" [ref=e5067]
+                  - generic [ref=e5068]: Lightning Fast
+                  - generic [ref=e5069]: Experience blazing-fast performance with optimized infrastructure and cutting-edge technology.
+                - generic [ref=e5072] [cursor=pointer]:
+                  - img "shield" [ref=e5073]
+                  - generic [ref=e5074]: Secure & Safe
+                  - generic [ref=e5075]: Industry-leading security measures protect your data with enterprise-grade encryption.
+                - generic [ref=e5078] [cursor=pointer]:
+                  - img "users" [ref=e5079]
+                  - generic [ref=e5080]: Team Collaboration
+                  - generic [ref=e5081]: Work seamlessly with your team in real-time with powerful collaboration tools.
+                - generic [ref=e5084] [cursor=pointer]:
+                  - img "bar-chart-2" [ref=e5085]
+                  - generic [ref=e5086]: Advanced Analytics
+                  - generic [ref=e5087]: Gain deep insights with comprehensive analytics and customizable reporting dashboards.
+                - generic [ref=e5090] [cursor=pointer]:
+                  - img "settings" [ref=e5091]
+                  - generic [ref=e5092]: Easy Integration
+                  - generic [ref=e5093]: Integrate with your favorite tools and platforms with simple API and webhooks.
+                - generic [ref=e5096] [cursor=pointer]:
+                  - img "headphones" [ref=e5097]
+                  - generic [ref=e5098]: 24/7 Support
+                  - generic [ref=e5099]: Get help when you need it with our dedicated support team available around the clock.
+            - generic [ref=e5103]:
+              - generic [ref=e5104]: Discover Amazing Visuals
+              - generic [ref=e5105]: Experience a curated collection of stunning imagery layered with depth and dimension. Each photo tells a story through carefully arranged composition and dynamic angles.
+              - generic [ref=e5109] [cursor=pointer]: Explore Gallery
+            - generic [ref=e5116]:
+              - generic [ref=e5119]: Ready to start?
+              - generic [ref=e5122]: Join thousands of teams already building the future.
+              - generic [ref=e5126] [cursor=pointer]: Get Started Free
+          - generic [ref=e5128]:
+            - generic [ref=e5129]: pricing
+            - generic [ref=e5130]: /pricing
+            - generic [ref=e5131]: 1280px
+          - generic [ref=e5139]:
+            - generic [ref=e5142]: Simple, Transparent Pricing
+            - generic [ref=e5145]: Choose the perfect plan for your needs
+            - generic [ref=e5148]:
+              - generic [ref=e5149]: Monthly
+              - switch [ref=e5153] [cursor=pointer]
+              - generic [ref=e5154]: Yearly
+              - generic [ref=e5158]: Save 20%
+          - generic [ref=e5160]:
+            - generic [ref=e5161]: videoHero
+            - generic [ref=e5162]: /video-hero
+            - generic [ref=e5163]: 1280px
+          - generic [ref=e5166]:
+            - generic [ref=e5173]:
+              - generic [ref=e5177]: New Release
+              - generic [ref=e5180]: The Future Is Now
+              - generic [ref=e5183]: Experience the next generation of innovation. Transform your vision into reality.
+              - generic [ref=e5186]:
+                - generic [ref=e5190] [cursor=pointer]: Get Started
+                - generic [ref=e5194] [cursor=pointer]: Learn More
+            - generic [ref=e5195]:
+              - generic [ref=e5196]:
+                - generic [ref=e5199]: Our Work
+                - generic [ref=e5202]: Crafted with precision and purpose
+                - generic [ref=e5205]: Every project starts with a vision. We turn that vision into stunning reality through thoughtful design and meticulous execution.
+                - generic [ref=e5208] [cursor=pointer]:
+                  - generic [ref=e5209]: View all projects
+                  - img "arrow-right" [ref=e5210]
+              - generic [ref=e5213]:
+                - img "Modern building architecture with geometric patterns" [ref=e5217]
+                - img "Palm frond in lush, green garden." [ref=e5221]
+                - img "Vibrant orange clouds over the ocean at dusk" [ref=e5225]
+            - generic [ref=e5226]:
+              - generic [ref=e5229]: Why Choose Us
+              - generic [ref=e5232]: Everything you need to succeed
+              - generic [ref=e5235]:
+                - generic [ref=e5238] [cursor=pointer]:
+                  - img "zap" [ref=e5239]
+                  - generic [ref=e5240]: Fast Performance
+                  - generic [ref=e5241]: Lightning-quick load times and optimized performance across all devices and connections.
+                - generic [ref=e5244] [cursor=pointer]:
+                  - img "zap" [ref=e5245]
+                  - generic [ref=e5246]: Enterprise Security
+                  - generic [ref=e5247]: Bank-grade encryption and compliance built in from day one, so your data stays safe.
+                - generic [ref=e5250] [cursor=pointer]:
+                  - img "zap" [ref=e5251]
+                  - generic [ref=e5252]: Scalable by Design
+                  - generic [ref=e5253]: Grow from zero to millions of users without changing your architecture or pricing plan.
+                - generic [ref=e5256] [cursor=pointer]:
+                  - img "zap" [ref=e5257]
+                  - generic [ref=e5258]: Developer First
+                  - generic [ref=e5259]: Clean APIs, SDKs in every language, and docs that actually make sense.
+                - generic [ref=e5262] [cursor=pointer]:
+                  - img "zap" [ref=e5263]
+                  - generic [ref=e5264]: Real-Time Analytics
+                  - generic [ref=e5265]: Understand your users with live dashboards, funnels, and cohort analysis out of the box.
+                - generic [ref=e5268] [cursor=pointer]:
+                  - img "zap" [ref=e5269]
+                  - generic [ref=e5270]: Global Edge Network
+                  - generic [ref=e5271]: Content delivered from 200+ edge locations for sub-50ms response times worldwide.
+            - generic [ref=e5278]:
+              - generic [ref=e5279]: Ready to start?
+              - generic [ref=e5280]: Join thousands of teams building faster with our platform.
+              - generic [ref=e5284] [cursor=pointer]: Get Started
+          - generic [ref=e5286]:
+            - generic [ref=e5287]: techHero
+            - generic [ref=e5288]: /tech-hero
+            - generic [ref=e5289]: 1280px
+          - generic [ref=e5295]:
+            - img "sleek smartphone with premium reflection on dark background" [ref=e5305]
+            - img "neon cross geometric element on dark minimalist background" [ref=e5309]
+            - generic [ref=e5312]:
+              - generic [ref=e5316] [cursor=pointer]: Innovative
+              - generic [ref=e5320] [cursor=pointer]: Futuristic
+            - generic [ref=e5328]:
+              - generic [ref=e5329]: Experience the Future
+              - generic [ref=e5330]: Where innovation meets elegance
+              - generic [ref=e5334] [cursor=pointer]: Discover Now
+          - generic [ref=e5336]:
+            - generic [ref=e5337]: calculator
+            - generic [ref=e5338]: /calculator
+            - generic [ref=e5339]: 1280px
+          - generic [ref=e5342]:
+            - generic [ref=e5345]:
+              - img "Vendure" [ref=e5348]
+              - generic [ref=e5350]:
+                - img "moon" [ref=e5354]
+                - img "shopping-bag" [ref=e5357]
+                - generic [ref=e5360]: Sign in
+            - generic [ref=e5363]:
+              - generic [ref=e5365]: "0"
+              - generic [ref=e5366]:
+                - generic [ref=e5369] [cursor=pointer]: AC
+                - generic [ref=e5372] [cursor=pointer]: +/-
+                - generic [ref=e5375] [cursor=pointer]: "%"
+                - generic [ref=e5378] [cursor=pointer]: ÷
+                - generic [ref=e5381] [cursor=pointer]: "7"
+                - generic [ref=e5384] [cursor=pointer]: "8"
+                - generic [ref=e5387] [cursor=pointer]: "9"
+                - generic [ref=e5390] [cursor=pointer]: ×
+                - generic [ref=e5393] [cursor=pointer]: "4"
+                - generic [ref=e5396] [cursor=pointer]: "5"
+                - generic [ref=e5399] [cursor=pointer]: "6"
+                - generic [ref=e5402] [cursor=pointer]: −
+                - generic [ref=e5405] [cursor=pointer]: "1"
+                - generic [ref=e5408] [cursor=pointer]: "2"
+                - generic [ref=e5411] [cursor=pointer]: "3"
+                - generic [ref=e5414] [cursor=pointer]: +
+                - generic [ref=e5417] [cursor=pointer]: "0"
+                - generic [ref=e5420] [cursor=pointer]: .
+                - generic [ref=e5423] [cursor=pointer]: ⌫
+                - generic [ref=e5426] [cursor=pointer]: =
+            - generic [ref=e5428]:
+              - generic [ref=e5429]:
+                - generic [ref=e5431]: Vendure Store
+                - generic [ref=e5433]: Categories
+                - generic [ref=e5434]:
+                  - generic [ref=e5435]: Vendure
+                  - generic [ref=e5436]:
+                    - generic [ref=e5438]: GitHub
+                    - generic [ref=e5440]: Documentation
+                    - generic [ref=e5442]: Source code
+              - generic [ref=e5443]:
+                - generic [ref=e5444]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e5445]:
+                  - generic [ref=e5446]: Powered by
+                  - img "Vendure" [ref=e5447]
+                  - generic [ref=e5448]: "&"
+                  - img "Next.js" [ref=e5449]
+          - generic [ref=e5451]:
+            - generic [ref=e5452]: counterExample
+            - generic [ref=e5453]: /counter-example
+            - generic [ref=e5454]: 1280px
+          - generic [ref=e5457]:
+            - generic [ref=e5460]:
+              - img "Vendure" [ref=e5463]
+              - generic [ref=e5465]:
+                - img "moon" [ref=e5469]
+                - img "shopping-bag" [ref=e5472]
+                - generic [ref=e5475]: Sign in
+            - generic [ref=e5477]:
+              - heading "Counter" [level=4] [ref=e5478]
+              - generic [ref=e5479]: Increment, decrement, or reset. Value is saved to localStorage.
+              - generic [ref=e5480]:
+                - generic [ref=e5481]: "0"
+                - generic [ref=e5482]:
+                  - generic [ref=e5484] [cursor=pointer]: "-"
+                  - generic [ref=e5486] [cursor=pointer]: +
+                - generic [ref=e5488] [cursor=pointer]: Reset to 0
+              - generic [ref=e5489]:
+                - generic [ref=e5490]: localStorage active
+                - generic [ref=e5491]: "This counter uses saveInLocalStorage: true. Change the value, refresh the page — it restores automatically. Reverts to 0 (default) only clears the stored key."
+              - generic [ref=e5492]:
+                - heading "WeWeb-Style Component Demo" [level=4] [ref=e5493]
+                - generic [ref=e5494]: Each CounterCard below is an instance of the same shared component. They share the same UI definition but each has an independent counter — demonstrating per-instance variable isolation.
+                - generic [ref=e5495]:
+                  - generic "Counter A" [ref=e5496]:
+                    - generic [ref=e5497]:
+                      - generic [ref=e5498]: Counter A
+                      - generic [ref=e5500]: "0"
+                      - generic [ref=e5501]:
+                        - button "+ Add" [ref=e5502] [cursor=pointer]:
+                          - generic [ref=e5503]: + Add
+                        - button "Reset" [ref=e5504] [cursor=pointer]:
+                          - generic [ref=e5505]: Reset
+                  - generic "Counter B" [ref=e5506]:
+                    - generic [ref=e5507]:
+                      - generic [ref=e5508]: Counter B
+                      - generic [ref=e5510]: "0"
+                      - generic [ref=e5511]:
+                        - button "+ Add" [ref=e5512] [cursor=pointer]:
+                          - generic [ref=e5513]: + Add
+                        - button "Reset" [ref=e5514] [cursor=pointer]:
+                          - generic [ref=e5515]: Reset
+                - generic [ref=e5516]:
+                  - generic [ref=e5517]: Instance isolation
+                  - generic [ref=e5518]: Counter A and Counter B share the same component definition (sc-counter-card) but each maintains its own count via per-instance variable slots. Clicking Add on one card does not affect the other.
+            - generic [ref=e5520]:
+              - generic [ref=e5521]:
+                - generic [ref=e5523]: Vendure Store
+                - generic [ref=e5525]: Categories
+                - generic [ref=e5526]:
+                  - generic [ref=e5527]: Vendure
+                  - generic [ref=e5528]:
+                    - generic [ref=e5530]: GitHub
+                    - generic [ref=e5532]: Documentation
+                    - generic [ref=e5534]: Source code
+              - generic [ref=e5535]:
+                - generic [ref=e5536]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e5537]:
+                  - generic [ref=e5538]: Powered by
+                  - img "Vendure" [ref=e5539]
+                  - generic [ref=e5540]: "&"
+                  - img "Next.js" [ref=e5541]
+          - generic [ref=e5543]:
+            - generic [ref=e5544]: pricingNested
+            - generic [ref=e5545]: /pricing-nested
+            - generic [ref=e5546]: 1280px
+          - generic [ref=e5549]:
+            - generic [ref=e5552]:
+              - img "Vendure" [ref=e5555]
+              - generic [ref=e5557]:
+                - img "moon" [ref=e5561]
+                - img "shopping-bag" [ref=e5564]
+                - generic [ref=e5567]: Sign in
+            - generic [ref=e5569]:
+              - generic [ref=e5570]: Choose Your Plan
+              - generic [ref=e5571]: Nested repeat demo — inner map filters a separate flat variable by planId
+              - generic [ref=e5572]:
+                - generic [ref=e5573]: Monthly
+                - generic [ref=e5576]: Yearly
+              - generic [ref=e5577]:
+                - generic [ref=e5579]:
+                  - generic [ref=e5580]: Starter
+                  - generic [ref=e5581]:
+                    - generic [ref=e5582]: $29
+                    - generic [ref=e5583]: /month
+                  - generic [ref=e5584]: Perfect for individuals and small projects
+                  - generic [ref=e5585]:
+                    - generic [ref=e5587]:
+                      - img "check-circle" [ref=e5588]
+                      - generic [ref=e5589]: 5 Projects
+                    - generic [ref=e5591]:
+                      - img "check-circle" [ref=e5592]
+                      - generic [ref=e5593]: Basic Analytics
+                    - generic [ref=e5595]:
+                      - img "check-circle" [ref=e5596]
+                      - generic [ref=e5597]: Email Support
+                    - generic [ref=e5599]:
+                      - img "check-circle" [ref=e5600]
+                      - generic [ref=e5601]: 1 GB Storage
+                  - generic [ref=e5603] [cursor=pointer]: Get Started
+                  - generic [ref=e5604]:
+                    - img "check" [ref=e5605]
+                    - generic [ref=e5606]: No credit card required
+                - generic [ref=e5608]:
+                  - generic [ref=e5610]: MOST POPULAR
+                  - generic [ref=e5611]: Professional
+                  - generic [ref=e5612]:
+                    - generic [ref=e5613]: $79
+                    - generic [ref=e5614]: /month
+                  - generic [ref=e5615]: Ideal for growing teams and businesses
+                  - generic [ref=e5616]:
+                    - generic [ref=e5618]:
+                      - img "check-circle" [ref=e5619]
+                      - generic [ref=e5620]: Unlimited Projects
+                    - generic [ref=e5622]:
+                      - img "check-circle" [ref=e5623]
+                      - generic [ref=e5624]: Advanced Analytics
+                    - generic [ref=e5626]:
+                      - img "check-circle" [ref=e5627]
+                      - generic [ref=e5628]: Priority Support
+                    - generic [ref=e5630]:
+                      - img "check-circle" [ref=e5631]
+                      - generic [ref=e5632]: 100 GB Storage
+                    - generic [ref=e5634]:
+                      - img "check-circle" [ref=e5635]
+                      - generic [ref=e5636]: Team Collaboration
+                  - generic [ref=e5638] [cursor=pointer]: Start Free Trial
+                  - generic [ref=e5639]:
+                    - img "check" [ref=e5640]
+                    - generic [ref=e5641]: 14-day free trial included
+                - generic [ref=e5643]:
+                  - generic [ref=e5644]: Enterprise
+                  - generic [ref=e5645]:
+                    - generic [ref=e5646]: $199
+                    - generic [ref=e5647]: /month
+                  - generic [ref=e5648]: For large-scale operations and organizations
+                  - generic [ref=e5649]:
+                    - generic [ref=e5651]:
+                      - img "check-circle" [ref=e5652]
+                      - generic [ref=e5653]: Everything in Professional
+                    - generic [ref=e5655]:
+                      - img "check-circle" [ref=e5656]
+                      - generic [ref=e5657]: Custom Integrations
+                    - generic [ref=e5659]:
+                      - img "check-circle" [ref=e5660]
+                      - generic [ref=e5661]: Dedicated Support
+                    - generic [ref=e5663]:
+                      - img "check-circle" [ref=e5664]
+                      - generic [ref=e5665]: Unlimited Storage
+                    - generic [ref=e5667]:
+                      - img "check-circle" [ref=e5668]
+                      - generic [ref=e5669]: Advanced Security
+                    - generic [ref=e5671]:
+                      - img "check-circle" [ref=e5672]
+                      - generic [ref=e5673]: SLA Guarantee
+                  - generic [ref=e5675] [cursor=pointer]: Contact Sales
+                  - generic [ref=e5676]:
+                    - img "check" [ref=e5677]
+                    - generic [ref=e5678]: 99.9% uptime guarantee
+            - generic [ref=e5680]:
+              - generic [ref=e5681]:
+                - generic [ref=e5683]: Vendure Store
+                - generic [ref=e5685]: Categories
+                - generic [ref=e5686]:
+                  - generic [ref=e5687]: Vendure
+                  - generic [ref=e5688]:
+                    - generic [ref=e5690]: GitHub
+                    - generic [ref=e5692]: Documentation
+                    - generic [ref=e5694]: Source code
+              - generic [ref=e5695]:
+                - generic [ref=e5696]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e5697]:
+                  - generic [ref=e5698]: Powered by
+                  - img "Vendure" [ref=e5699]
+                  - generic [ref=e5700]: "&"
+                  - img "Next.js" [ref=e5701]
+          - generic [ref=e5703]:
+            - generic [ref=e5704]: videoHeroTest
+            - generic [ref=e5705]: /video-hero-test
+            - generic [ref=e5706]: 1280px
+          - generic [ref=e5709]:
+            - generic [ref=e5716]:
+              - generic [ref=e5720]: New Release
+              - generic [ref=e5723]: The Future Is Now
+              - generic [ref=e5726]:
+                - generic [ref=e5727]: Discover the next generation of innovation
+                - generic [ref=e5728]: Experience technology that transforms your world
+              - generic [ref=e5731]:
+                - generic [ref=e5735] [cursor=pointer]: Watch Now
+                - generic [ref=e5739] [cursor=pointer]: Learn More
+            - generic [ref=e5742]:
+              - generic [ref=e5745]:
+                - generic [ref=e5746]: Discover Layered Visual Storytelling
+                - generic [ref=e5747]: Experience the depth and dimension of professionally composed imagery. Each element is carefully positioned and styled to create visual impact and guide your journey through the content.
+                - generic [ref=e5751] [cursor=pointer]: Explore Now
+              - generic [ref=e5755]:
+                - img "Colorful, 3D shapes arranged in a fun design." [ref=e5756]
+                - img "Concentric circles of pink, blue, and teal abstract pattern" [ref=e5757]
+                - img "a group of white pillars" [ref=e5758]
+            - generic [ref=e5764]:
+              - generic [ref=e5767] [cursor=pointer]:
+                - img "zap" [ref=e5768]
+                - generic [ref=e5769]: Fast Performance
+                - generic [ref=e5770]: Lightning-quick load times and seamless interactions
+              - generic [ref=e5773] [cursor=pointer]:
+                - img "shield" [ref=e5774]
+                - generic [ref=e5775]: Secure & Safe
+                - generic [ref=e5776]: Enterprise-grade security with end-to-end encryption
+              - generic [ref=e5779] [cursor=pointer]:
+                - img "users" [ref=e5780]
+                - generic [ref=e5781]: Team Collaboration
+                - generic [ref=e5782]: Seamlessly work together with real-time updates
+              - generic [ref=e5785] [cursor=pointer]:
+                - img "trending-up" [ref=e5786]
+                - generic [ref=e5787]: Analytics Powered
+                - generic [ref=e5788]: Detailed insights to drive smarter decisions
+              - generic [ref=e5791] [cursor=pointer]:
+                - img "code" [ref=e5792]
+                - generic [ref=e5793]: Developer Friendly
+                - generic [ref=e5794]: Clean APIs and comprehensive documentation
+              - generic [ref=e5797] [cursor=pointer]:
+                - img "heart" [ref=e5798]
+                - generic [ref=e5799]: Customer First
+                - generic [ref=e5800]: 24/7 support and dedicated success team
+            - generic [ref=e5803]:
+              - generic [ref=e5806]: Ready to start?
+              - generic [ref=e5810] [cursor=pointer]: Get Started
+            - generic [ref=e5813]:
+              - generic [ref=e5816]:
+                - img "Sarah Johnson" [ref=e5817]
+                - generic [ref=e5818]: This product completely transformed how we manage our workflow. Highly recommended!
+                - generic [ref=e5819]: Sarah Johnson
+                - generic [ref=e5820]: Product Manager
+              - generic [ref=e5823]:
+                - img "Michael Chen" [ref=e5824]
+                - generic [ref=e5825]: The best investment we made for our team this year. Results speak for themselves.
+                - generic [ref=e5826]: Michael Chen
+                - generic [ref=e5827]: CEO
+              - generic [ref=e5830]:
+                - img "Emma Rodriguez" [ref=e5831]
+                - generic [ref=e5832]: Outstanding support and seamless integration with our existing systems.
+                - generic [ref=e5833]: Emma Rodriguez
+                - generic [ref=e5834]: Technical Lead
+          - generic [ref=e5836]:
+            - generic [ref=e5837]: responsiveTest
+            - generic [ref=e5838]: /responsive-test
+            - generic [ref=e5839]: 1280px
+          - generic [ref=e5842]:
+            - generic [ref=e5845]:
+              - img "Vendure" [ref=e5848]
+              - generic [ref=e5850]:
+                - img "moon" [ref=e5854]
+                - img "shopping-bag" [ref=e5857]
+                - generic [ref=e5860]: Sign in
+            - generic [ref=e5862]:
+              - heading "Responsive System Test" [level=2] [ref=e5863]
+              - generic [ref=e5864]: Tests responsive breakpoint overrides. Each section demonstrates a different responsive feature.
+              - heading "S1 — Flex Direction (row on desktop, column on tablet)" [level=4] [ref=e5865]
+              - generic [ref=e5866]:
+                - generic [ref=e5868]: Card A
+                - generic [ref=e5870]: Card B
+                - generic [ref=e5872]: Card C
+              - heading "S2 — Width Override (full width on desktop, 50% on laptop, 100% on mobile)" [level=4] [ref=e5873]
+              - generic [ref=e5875]: Width changes per breakpoint
+              - heading "S3 — Visibility (hidden on mobile)" [level=4] [ref=e5876]
+              - generic [ref=e5878]: This box is hidden on mobile
+              - heading "S4 — Text Override (different text on tablet)" [level=4] [ref=e5879]
+              - generic [ref=e5881]: "Desktop: Full detailed description of the product"
+              - heading "S5 — Font Size & Padding (smaller on mobile)" [level=4] [ref=e5882]
+              - generic [ref=e5883]:
+                - generic [ref=e5884]: Responsive Typography
+                - generic [ref=e5885]: Padding and font size shrink on smaller screens
+              - heading "S6 — Desktop-First Cascade (laptop sets gap, tablet inherits it)" [level=4] [ref=e5886]
+              - generic [ref=e5887]:
+                - generic [ref=e5889]: A
+                - generic [ref=e5891]: B
+                - generic [ref=e5893]: C
+              - heading "S7 — Background Color Override (blue desktop, green tablet, orange mobile)" [level=4] [ref=e5894]
+              - generic [ref=e5896]: Background changes per breakpoint
+              - heading "S8 — Position Override (static on desktop, absolute on tablet)" [level=4] [ref=e5897]
+              - generic [ref=e5900]: Moves to corner
+              - heading "S9 — Display Override (visible on desktop, hidden on tablet)" [level=4] [ref=e5901]
+              - generic [ref=e5902]:
+                - generic [ref=e5904]: Always visible
+                - generic [ref=e5906]: Hidden on tablet+
+              - heading "S10 — Multi-Breakpoint Cascade (laptop gap, tablet direction, mobile all)" [level=4] [ref=e5907]
+              - generic [ref=e5908]:
+                - generic [ref=e5910]: "1"
+                - generic [ref=e5912]: "2"
+                - generic [ref=e5914]: "3"
+              - heading "S11 — Border Radius (24px desktop, 8px tablet, 0 mobile)" [level=4] [ref=e5915]
+              - generic [ref=e5917]: "Border radius changes: 24px -> 8px -> 0px"
+              - 'heading "S12 — Per-Corner Border Radius (desktop: pill TL/TR, tablet: uniform 12px, mobile: square)" [level=4] [ref=e5918]'
+              - generic [ref=e5920]: Per-corner radius overrides
+              - 'heading "S13 — Border Width, Color, Style (desktop: 2px solid blue, tablet: 4px dashed green, mobile: 1px dotted red)" [level=4] [ref=e5921]'
+              - generic [ref=e5923]: Border width, color, and style change per breakpoint
+              - heading "S14 — Opacity (100% desktop, 60% tablet, 30% mobile)" [level=4] [ref=e5924]
+              - generic [ref=e5926]: Opacity fades on smaller screens
+              - 'heading "S15 — Typography: Weight, Align, Decoration, Transform" [level=4] [ref=e5927]'
+              - generic [ref=e5929]: Bold, left-aligned, no decoration
+              - heading "S16 — Self Alignment (start on desktop, center on tablet, end on mobile)" [level=4] [ref=e5930]
+              - generic [ref=e5933]: Self alignment shifts
+              - 'heading "S17 — Transform: Rotate (0° desktop, 5° tablet, -5° mobile)" [level=4] [ref=e5934]'
+              - generic [ref=e5937]: Rotates!
+              - heading "S18 — Overflow (visible desktop, hidden tablet, scroll mobile)" [level=4] [ref=e5938]
+              - generic [ref=e5940]: This box has a fixed height of 80px. On desktop the content overflows visibly. On tablet it is clipped. On mobile it scrolls. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Donec id elit non mi porta gravida at eget metus.
+              - heading "S19 — Grid Layout (4 cols desktop, 2 cols tablet, 1 col mobile)" [level=4] [ref=e5941]
+              - generic [ref=e5942]:
+                - generic [ref=e5944]: Grid 1
+                - generic [ref=e5946]: Grid 2
+                - generic [ref=e5948]: Grid 3
+                - generic [ref=e5950]: Grid 4
+              - 'heading "S20 — Min/Max Width & Height (desktop: max-w 600px, tablet: max-w 400px, mobile: max-w 100%)" [level=4] [ref=e5951]'
+              - generic [ref=e5953]: "Max-width changes: 600px -> 400px -> 100%"
+              - 'heading "S21 — Per-Side Margin (desktop: 0, tablet: 20px left, mobile: 40px left + 20px top)" [level=4] [ref=e5954]'
+              - generic [ref=e5956]: Margin shifts per breakpoint
+              - 'heading "S22 — Z-Index & Cursor (desktop: z-10 pointer, tablet: z-50 default, mobile: z-1 not-allowed)" [level=4] [ref=e5957]'
+              - generic [ref=e5959] [cursor=pointer]: Z-index and cursor change per breakpoint
+              - heading "S23 — Text Color (blue desktop, green tablet, red mobile)" [level=4] [ref=e5960]
+              - generic [ref=e5962]: Text color changes per breakpoint
+              - 'heading "S24 — Workflow: Breakpoint-Dependent +/- Counter" [level=4] [ref=e5963]'
+              - generic [ref=e5964]:
+                - generic [ref=e5965]: "Breakpoint: desktop — Step size: ±10"
+                - generic [ref=e5966]: "0"
+                - generic [ref=e5967]:
+                  - generic [ref=e5969] [cursor=pointer]: "- 10"
+                  - generic [ref=e5971] [cursor=pointer]: Reset
+                  - generic [ref=e5973] [cursor=pointer]: + 10
+                - generic [ref=e5974]: Switch breakpoints to change the step size — the same workflow formula adapts per device
+              - 'heading "S24b — Single Button: +1 on Desktop/Laptop, -1 on Tablet/Mobile" [level=4] [ref=e5975]'
+              - generic [ref=e5976]:
+                - generic [ref=e5977]: "0"
+                - generic [ref=e5979] [cursor=pointer]: Click to Add (+1)
+                - generic [ref=e5980]: "Mode: INCREMENT ▲ (desktop)"
+                - generic [ref=e5981]: Same button, same workflow — behavior flips based on breakpoint
+              - heading "S25 — Background Color & Gradient" [level=4] [ref=e5982]
+              - generic [ref=e5983]:
+                - generic [ref=e5984]: Gradient shifts per breakpoint
+                - generic [ref=e5985]: "Desktop: purple-blue | Tablet: pink-red | Mobile: blue-cyan"
+              - heading "S26 — Solid BG Color Override (teal desktop, amber tablet, rose mobile)" [level=4] [ref=e5986]
+              - generic [ref=e5988]: Solid background color swap
+              - 'heading "S27 — Formula Condition: Show/Hide by Breakpoint (globalContext.browser.breakpoint)" [level=4] [ref=e5989]'
+              - generic [ref=e5990]:
+                - generic [ref=e5992]: Desktop ONLY (formula condition)
+                - generic [ref=e5994]: NOT mobile (hidden on mobile via formula)
+                - generic [ref=e5995]: "Current breakpoint: desktop"
+              - 'heading "S28 — Formula Text: Dynamic Content by Breakpoint" [level=4] [ref=e5996]'
+              - generic [ref=e5997]:
+                - generic [ref=e5998]: Desktop View
+                - generic [ref=e5999]: Full experience on wide screens
+              - heading "S29 — Repeated Items Grid (map) with Responsive Layout" [level=4] [ref=e6000]
+              - generic [ref=e6001]:
+                - generic [ref=e6003]:
+                  - generic [ref=e6004]: Alpha
+                  - generic [ref=e6005]: First item
+                - generic [ref=e6007]:
+                  - generic [ref=e6008]: Beta
+                  - generic [ref=e6009]: Second item
+                - generic [ref=e6011]:
+                  - generic [ref=e6012]: Gamma
+                  - generic [ref=e6013]: Third item
+                - generic [ref=e6015]:
+                  - generic [ref=e6016]: Delta
+                  - generic [ref=e6017]: Fourth item
+                - generic [ref=e6019]:
+                  - generic [ref=e6020]: Epsilon
+                  - generic [ref=e6021]: Fifth item
+                - generic [ref=e6023]:
+                  - generic [ref=e6024]: Zeta
+                  - generic [ref=e6025]: Sixth item
+              - heading "S30 — Conditional Map Count by Breakpoint (formula slicing)" [level=4] [ref=e6026]
+              - generic [ref=e6027]:
+                - generic [ref=e6028]: Showing 6 items on desktop
+                - generic [ref=e6029]:
+                  - generic [ref=e6032]: Alpha
+                  - generic [ref=e6035]: Beta
+                  - generic [ref=e6038]: Gamma
+                  - generic [ref=e6041]: Delta
+                  - generic [ref=e6044]: Epsilon
+                  - generic [ref=e6047]: Zeta
+              - 'heading "S31 — Sidebar Layout (formula: shown on desktop, hidden on mobile)" [level=4] [ref=e6048]'
+              - generic [ref=e6049]:
+                - generic [ref=e6050]:
+                  - generic [ref=e6051]: Sidebar
+                  - generic [ref=e6052]: Hidden on mobile via formula
+                  - generic [ref=e6053]: Navigation Link 1
+                  - generic [ref=e6054]: Navigation Link 2
+                  - generic [ref=e6055]: Navigation Link 3
+                - generic [ref=e6056]:
+                  - generic [ref=e6057]: Main Content
+                  - generic [ref=e6058]: This area fills the remaining space. On mobile the sidebar hides and this becomes full width.
+              - heading "S32 — Breakpoint-Aware Text + Condition Combined" [level=4] [ref=e6059]
+              - generic [ref=e6060]:
+                - generic [ref=e6061]: Welcome to the Platform
+                - generic [ref=e6062]: Explore our features and discover what makes us different from the competition.
+                - generic [ref=e6064]: This detail box is only visible on desktop and tablet (hidden on mobile via responsive condition).
+              - heading "S33 — Box Shadow + Gradient BG Override" [level=4] [ref=e6065]
+              - generic [ref=e6066]:
+                - generic [ref=e6067]: Shadow + Gradient
+                - generic [ref=e6068]: "Desktop: horizontal gradient with deep shadow | Tablet: vertical gradient | Mobile: flat solid"
+              - heading "S34 — Formula-Driven Repeated Items with Breakpoint-Dependent Columns" [level=4] [ref=e6069]
+              - generic [ref=e6070]:
+                - generic [ref=e6071]:
+                  - generic [ref=e6073]: "Breakpoint: desktop"
+                  - generic [ref=e6075]: "Screen: 1280x720"
+                - generic [ref=e6076]:
+                  - generic [ref=e6078]:
+                    - generic [ref=e6081]: Alpha
+                    - generic [ref=e6082]: First item
+                    - generic [ref=e6083]: "ID: item-1"
+                  - generic [ref=e6085]:
+                    - generic [ref=e6088]: Beta
+                    - generic [ref=e6089]: Second item
+                    - generic [ref=e6090]: "ID: item-2"
+                  - generic [ref=e6092]:
+                    - generic [ref=e6095]: Gamma
+                    - generic [ref=e6096]: Third item
+                    - generic [ref=e6097]: "ID: item-3"
+                  - generic [ref=e6099]:
+                    - generic [ref=e6102]: Delta
+                    - generic [ref=e6103]: Fourth item
+                    - generic [ref=e6104]: "ID: item-4"
+                  - generic [ref=e6106]:
+                    - generic [ref=e6109]: Epsilon
+                    - generic [ref=e6110]: Fifth item
+                    - generic [ref=e6111]: "ID: item-5"
+                  - generic [ref=e6113]:
+                    - generic [ref=e6116]: Zeta
+                    - generic [ref=e6117]: Sixth item
+                    - generic [ref=e6118]: "ID: item-6"
+            - generic [ref=e6120]:
+              - generic [ref=e6121]:
+                - generic [ref=e6123]: Vendure Store
+                - generic [ref=e6125]: Categories
+                - generic [ref=e6126]:
+                  - generic [ref=e6127]: Vendure
+                  - generic [ref=e6128]:
+                    - generic [ref=e6130]: GitHub
+                    - generic [ref=e6132]: Documentation
+                    - generic [ref=e6134]: Source code
+              - generic [ref=e6135]:
+                - generic [ref=e6136]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e6137]:
+                  - generic [ref=e6138]: Powered by
+                  - img "Vendure" [ref=e6139]
+                  - generic [ref=e6140]: "&"
+                  - img "Next.js" [ref=e6141]
+          - generic [ref=e6143]:
+            - generic [ref=e6144]: sharedComponentTest
+            - generic [ref=e6145]: /shared-component-test
+            - generic [ref=e6146]: 1280px
+          - generic [ref=e6150]:
+            - heading "Shared Component Test Page" [level=2] [ref=e6151]
+            - generic [ref=e6152]:
+              - heading "Section A — Visibility-Based Overlays" [level=4] [ref=e6153]
+              - generic [ref=e6154]: These overlays are placed on the page and controlled by a boolean variable. The backdrop and close button both set the variable to false.
+              - generic [ref=e6155]:
+                - generic [ref=e6157] [cursor=pointer]: Show Modal
+                - generic [ref=e6159] [cursor=pointer]: Show Bottom Sheet
+                - generic [ref=e6161] [cursor=pointer]: Show Drawer
+                - generic [ref=e6163] [cursor=pointer]: Show Toast
+            - generic [ref=e6164]:
+              - heading "Section B — Dynamic Shared Component Overlays" [level=4] [ref=e6165]
+              - generic [ref=e6166]: These add a shared component instance dynamically at runtime. The shared component's close button uses the closeDynamicOverlay action (deleteSharedComponent).
+              - generic [ref=e6167]:
+                - generic [ref=e6169] [cursor=pointer]: Add Dynamic Modal
+                - generic [ref=e6171] [cursor=pointer]: Add Dynamic Bottom Sheet
+                - generic [ref=e6173] [cursor=pointer]: Add Dynamic Drawer
+                - generic [ref=e6175] [cursor=pointer]: Add Dynamic Toast (auto-dismiss)
+            - generic [ref=e6176]:
+              - heading "Section C — Existing Shared Component Examples" [level=4] [ref=e6177]
+              - generic [ref=e6178]: These demonstrate property overrides on static shared component instances.
+              - generic [ref=e6179]:
+                - generic [ref=e6182]: Active
+                - generic [ref=e6185]: Paused
+                - generic [ref=e6186] [cursor=pointer]:
+                  - generic [ref=e6187]: Learn More
+                  - img "arrow-right" [ref=e6188]
+              - generic [ref=e6189]:
+                - generic [ref=e6192]:
+                  - generic [ref=e6193]: Default Accent Card
+                  - generic [ref=e6194]: Uses a purple accent bar. This could be a shared component with the accent as a property.
+                - generic [ref=e6197]:
+                  - generic [ref=e6198]: Green Accent Card
+                  - generic [ref=e6199]: Same structure with a green accent, demonstrating property overrides on shared instances.
+          - generic [ref=e6201]:
+            - generic [ref=e6202]: navbarTypes
+            - generic [ref=e6203]: /navbar-types
+            - generic [ref=e6204]: 1280px
+          - generic [ref=e6208]:
+            - generic [ref=e6209]:
+              - heading "Navbar Types Showcase" [level=1] [ref=e6210]
+              - generic [ref=e6211]: Explore 9 different navigation patterns. Each page has enough scrollable content to demonstrate the navbar behavior.
+            - generic [ref=e6212]:
+              - generic [ref=e6213] [cursor=pointer]:
+                - img "pin" [ref=e6215]
+                - generic [ref=e6216]: Fixed Navbar
+                - generic [ref=e6217]: Always visible, anchored to the viewport top. Classic pattern for most websites.
+              - generic [ref=e6218] [cursor=pointer]:
+                - img "sticky-note" [ref=e6220]
+                - generic [ref=e6221]: Sticky Navbar
+                - generic [ref=e6222]: Flows with the page until it hits the top, then sticks. Pure CSS, no JavaScript.
+              - generic [ref=e6223] [cursor=pointer]:
+                - img "eye" [ref=e6225]
+                - generic [ref=e6226]: Transparent → Solid
+                - generic [ref=e6227]: Starts fully transparent over a hero image, background fades in as you scroll.
+              - generic [ref=e6228] [cursor=pointer]:
+                - img "sparkles" [ref=e6230]
+                - generic [ref=e6231]: Frosted Glass
+                - generic [ref=e6232]: Semi-transparent with backdrop blur. Classic macOS/iOS style.
+              - generic [ref=e6233] [cursor=pointer]:
+                - img "circle" [ref=e6235]
+                - generic [ref=e6236]: Floating Pill
+                - generic [ref=e6237]: Detached, pill-shaped bar hovering above the page content.
+              - generic [ref=e6238] [cursor=pointer]:
+                - img "align-center" [ref=e6240]
+                - generic [ref=e6241]: Centered Logo
+                - generic [ref=e6242]: Logo in the exact center, nav links split left and right. Fashion/editorial style.
+              - generic [ref=e6243] [cursor=pointer]:
+                - img "panel-left" [ref=e6245]
+                - generic [ref=e6246]: Vertical Sidebar
+                - generic [ref=e6247]: Full-height left sidebar replaces the top bar. Common in dashboards.
+              - generic [ref=e6248] [cursor=pointer]:
+                - img "smartphone" [ref=e6250]
+                - generic [ref=e6251]: Bottom Tab Bar
+                - generic [ref=e6252]: Mobile-native bottom navigation. No top bar at all.
+              - generic [ref=e6253] [cursor=pointer]:
+                - img "arrow-up-down" [ref=e6255]
+                - generic [ref=e6256]: Scroll-Aware (Auto-hide)
+                - generic [ref=e6257]: Hides on scroll down, reappears on scroll up. Uses live scroll tracking engine.
+          - generic [ref=e6259]:
+            - generic [ref=e6260]: navbarFixed
+            - generic [ref=e6261]: /navbar-fixed
+            - generic [ref=e6262]: 1280px
+          - generic [ref=e6265]:
+            - generic [ref=e6266]:
+              - generic [ref=e6267] [cursor=pointer]:
+                - img "arrow-left" [ref=e6268]
+                - generic [ref=e6269]: NavbarDemo
+              - generic [ref=e6270]:
+                - generic [ref=e6271] [cursor=pointer]: Home
+                - generic [ref=e6272] [cursor=pointer]: Features
+                - generic [ref=e6273] [cursor=pointer]: About
+                - generic [ref=e6274] [cursor=pointer]: Contact
+              - generic [ref=e6276] [cursor=pointer]: Get Started
+            - generic [ref=e6277]:
+              - generic [ref=e6278]:
+                - generic [ref=e6280]: Fixed Navbar Demo
+                - heading "Always Visible Navigation" [level=1] [ref=e6281]
+                - generic [ref=e6282]: The classic fixed navbar stays anchored to the viewport top as you scroll. It provides constant access to navigation links regardless of scroll position.
+                - generic [ref=e6283]: Scroll down to see the navbar stay fixed
+              - generic [ref=e6284]:
+                - heading "Features" [level=2] [ref=e6285]
+                - generic [ref=e6286]:
+                  - generic [ref=e6287]:
+                    - img "zap" [ref=e6289]
+                    - generic [ref=e6290]: Lightning Fast
+                    - generic [ref=e6291]: Optimized for speed with zero layout shift. The navbar is always ready.
+                  - generic [ref=e6292]:
+                    - img "shield" [ref=e6294]
+                    - generic [ref=e6295]: Reliable Access
+                    - generic [ref=e6296]: Navigation is always one click away, no matter how far you scroll.
+                  - generic [ref=e6297]:
+                    - img "layout" [ref=e6299]
+                    - generic [ref=e6300]: Consistent Layout
+                    - generic [ref=e6301]: Content always starts below the navbar. No jumping or overlapping.
+              - generic [ref=e6302]:
+                - heading "What People Say" [level=2] [ref=e6303]
+                - generic [ref=e6304]:
+                  - generic [ref=e6305]:
+                    - generic [ref=e6306]: "\"The fixed navbar is the most reliable pattern. Users always know where to find navigation.\""
+                    - generic [ref=e6307]: Sarah Chen
+                    - generic [ref=e6308]: UX Designer
+                  - generic [ref=e6309]:
+                    - generic [ref=e6310]: "\"Simple, predictable, and works everywhere. The fixed navbar pattern is a timeless classic.\""
+                    - generic [ref=e6311]: Mark Johnson
+                    - generic [ref=e6312]: Frontend Developer
+                  - generic [ref=e6313]:
+                    - generic [ref=e6314]: "\"I always recommend fixed navbars for content-heavy sites. Users need that anchor point.\""
+                    - generic [ref=e6315]: Lena Park
+                    - generic [ref=e6316]: Product Manager
+              - generic [ref=e6318]:
+                - generic [ref=e6319]:
+                  - generic [ref=e6320]: 99%
+                  - generic [ref=e6321]: Browser Support
+                - generic [ref=e6322]:
+                  - generic [ref=e6323]: 0ms
+                  - generic [ref=e6324]: JS Required
+                - generic [ref=e6325]:
+                  - generic [ref=e6326]: 64px
+                  - generic [ref=e6327]: Standard Height
+                - generic [ref=e6328]:
+                  - generic [ref=e6329]: "#1"
+                  - generic [ref=e6330]: Most Used Pattern
+              - generic [ref=e6332]:
+                - generic [ref=e6333]: NavbarDemo © 2026
+                - generic [ref=e6334] [cursor=pointer]: ← Back to all types
+          - generic [ref=e6336]:
+            - generic [ref=e6337]: navbarSticky
+            - generic [ref=e6338]: /navbar-sticky
+            - generic [ref=e6339]: 1280px
+          - generic [ref=e6342]:
+            - generic [ref=e6343]:
+              - heading "Sticky Navbar" [level=1] [ref=e6344]
+              - generic [ref=e6345]: Scroll down past this hero to see the navbar appear and stick to the top of the viewport.
+              - generic [ref=e6346]:
+                - img "chevron-down" [ref=e6347]
+                - generic [ref=e6348]: Scroll down
+            - generic [ref=e6349]:
+              - generic [ref=e6350] [cursor=pointer]:
+                - img "arrow-left" [ref=e6351]
+                - generic [ref=e6352]: NavbarDemo
+              - generic [ref=e6353]:
+                - generic [ref=e6354]: Home
+                - generic [ref=e6355]: Features
+                - generic [ref=e6356]: About
+                - generic [ref=e6357]: Contact
+              - generic [ref=e6359] [cursor=pointer]: Get Started
+            - generic [ref=e6360]:
+              - heading "Features" [level=2] [ref=e6361]
+              - generic [ref=e6362]:
+                - generic [ref=e6363]:
+                  - img "code" [ref=e6365]
+                  - generic [ref=e6366]: Pure CSS
+                  - generic [ref=e6367]: "No JavaScript needed. Uses native CSS position: sticky for smooth behavior."
+                - generic [ref=e6368]:
+                  - img "layers" [ref=e6370]
+                  - generic [ref=e6371]: Natural Flow
+                  - generic [ref=e6372]: The navbar starts in the document flow, allowing the hero to take full attention.
+                - generic [ref=e6373]:
+                  - img "monitor" [ref=e6375]
+                  - generic [ref=e6376]: No Layout Shift
+                  - generic [ref=e6377]: Content doesn't need top padding since the navbar is part of the document flow.
+            - generic [ref=e6378]:
+              - heading "Testimonials" [level=2] [ref=e6379]
+              - generic [ref=e6380]:
+                - generic [ref=e6381]:
+                  - generic [ref=e6382]: "\"Sticky navbars are perfect when you want a hero section to have maximum impact.\""
+                  - generic [ref=e6383]: Alex Rivera
+                  - generic [ref=e6384]: Designer
+                - generic [ref=e6385]:
+                  - generic [ref=e6386]: "\"The transition from scrolling past the hero to seeing the navbar stick is so satisfying.\""
+                  - generic [ref=e6387]: Jamie Lee
+                  - generic [ref=e6388]: Developer
+                - generic [ref=e6389]:
+                  - generic [ref=e6390]: "\"Pure CSS, no JS dependencies, and it just works. What more could you ask for?\""
+                  - generic [ref=e6391]: Pat Morgan
+                  - generic [ref=e6392]: Architect
+            - generic [ref=e6394]:
+              - generic [ref=e6395]:
+                - generic [ref=e6396]: "0"
+                - generic [ref=e6397]: Lines of JS
+              - generic [ref=e6398]:
+                - generic [ref=e6399]: 97%
+                - generic [ref=e6400]: Browser Support
+              - generic [ref=e6401]:
+                - generic [ref=e6402]: 100vh
+                - generic [ref=e6403]: Hero Height
+              - generic [ref=e6404]:
+                - generic [ref=e6405]: 1px
+                - generic [ref=e6406]: CSS Property
+            - generic [ref=e6408]:
+              - generic [ref=e6409]: NavbarDemo © 2026
+              - generic [ref=e6410] [cursor=pointer]: ← Back to all types
+          - generic [ref=e6412]:
+            - generic [ref=e6413]: navbarTransparent
+            - generic [ref=e6414]: /navbar-transparent
+            - generic [ref=e6415]: 1280px
+          - generic [ref=e6418]:
+            - generic [ref=e6421]:
+              - generic [ref=e6425] [cursor=pointer]:
+                - img "arrow-left" [ref=e6426]
+                - generic [ref=e6429]: NavbarDemo
+              - generic [ref=e6430]:
+                - generic [ref=e6433]: Home
+                - generic [ref=e6436]: Features
+                - generic [ref=e6439]: About
+                - generic [ref=e6442]: Contact
+              - generic [ref=e6444] [cursor=pointer]: Get Started
+            - generic [ref=e6445]:
+              - generic [ref=e6447]: Transparent → Solid
+              - heading "Seamless Transition" [level=1] [ref=e6448]
+              - generic [ref=e6449]: The navbar starts transparent to let the hero breathe, then gains a solid background as you scroll down for readability.
+              - generic [ref=e6450]:
+                - img "chevron-down" [ref=e6451]
+                - generic [ref=e6452]: Scroll to see the transition
+            - generic [ref=e6453]:
+              - heading "Features" [level=2] [ref=e6454]
+              - generic [ref=e6455]:
+                - generic [ref=e6456]:
+                  - img "eye" [ref=e6458]
+                  - generic [ref=e6459]: Visual Hierarchy
+                  - generic [ref=e6460]: The hero gets full visual attention without navbar interference.
+                - generic [ref=e6461]:
+                  - img "palette" [ref=e6463]
+                  - generic [ref=e6464]: Elegant Transition
+                  - generic [ref=e6465]: Smooth opacity fade powered by scroll position tracking.
+                - generic [ref=e6466]:
+                  - img "image" [ref=e6468]
+                  - generic [ref=e6469]: Hero-First Design
+                  - generic [ref=e6470]: Perfect for landing pages and portfolios with full-bleed imagery.
+            - generic [ref=e6471]:
+              - heading "Testimonials" [level=2] [ref=e6472]
+              - generic [ref=e6473]:
+                - generic [ref=e6474]:
+                  - generic [ref=e6475]: "\"The transparent navbar adds so much elegance to our landing page.\""
+                  - generic [ref=e6476]: Emily Swift
+                  - generic [ref=e6477]: Creative Director
+                - generic [ref=e6478]:
+                  - generic [ref=e6479]: "\"Our hero images finally get the attention they deserve without a solid bar on top.\""
+                  - generic [ref=e6480]: David Kim
+                  - generic [ref=e6481]: Photographer
+                - generic [ref=e6482]:
+                  - generic [ref=e6483]: "\"The scroll-driven fade is buttery smooth. Users love the experience.\""
+                  - generic [ref=e6484]: Nina Torres
+                  - generic [ref=e6485]: UX Researcher
+            - generic [ref=e6487]:
+              - generic [ref=e6488]:
+                - generic [ref=e6489]: 0ₒ1
+                - generic [ref=e6490]: Opacity Range
+              - generic [ref=e6491]:
+                - generic [ref=e6492]: 200px
+                - generic [ref=e6493]: Scroll Range
+              - generic [ref=e6494]:
+                - generic [ref=e6495]: 60fps
+                - generic [ref=e6496]: Animation Speed
+              - generic [ref=e6497]:
+                - generic [ref=e6498]: ∞
+                - generic [ref=e6499]: Customizability
+            - generic [ref=e6501]:
+              - generic [ref=e6502]: NavbarDemo © 2026
+              - generic [ref=e6503] [cursor=pointer]: ← Back to all types
+          - generic [ref=e6505]:
+            - generic [ref=e6506]: navbarBlur
+            - generic [ref=e6507]: /navbar-blur
+            - generic [ref=e6508]: 1280px
+          - generic [ref=e6511]:
+            - generic [ref=e6512]:
+              - generic [ref=e6513] [cursor=pointer]:
+                - img "arrow-left" [ref=e6514]
+                - generic [ref=e6515]: NavbarDemo
+              - generic [ref=e6516]:
+                - generic [ref=e6517]: Home
+                - generic [ref=e6518]: Features
+                - generic [ref=e6519]: About
+                - generic [ref=e6520]: Contact
+              - generic [ref=e6522] [cursor=pointer]: Get Started
+            - generic [ref=e6523]:
+              - generic [ref=e6524]:
+                - generic [ref=e6526]: Frosted Glass
+                - heading "Blurred Beauty" [level=1] [ref=e6527]
+                - generic [ref=e6528]: A semi-transparent navbar with backdrop blur creates a beautiful frosted glass effect. Content scrolls behind and shows through the blur.
+                - generic [ref=e6529]: Scroll to see content blur behind the navbar
+              - generic [ref=e6530]:
+                - heading "Features" [level=2] [ref=e6531]
+                - generic [ref=e6532]:
+                  - generic [ref=e6533]:
+                    - img "sparkles" [ref=e6535]
+                    - generic [ref=e6536]: Modern Aesthetic
+                    - generic [ref=e6537]: The frosted glass look adds depth and sophistication to any design.
+                  - generic [ref=e6538]:
+                    - img "layers" [ref=e6540]
+                    - generic [ref=e6541]: Depth Perception
+                    - generic [ref=e6542]: Content visible behind the blur creates a sense of layered depth.
+                  - generic [ref=e6543]:
+                    - img "monitor" [ref=e6545]
+                    - generic [ref=e6546]: Platform Native
+                    - generic [ref=e6547]: Matches macOS and iOS design language for a native feel.
+              - generic [ref=e6548]:
+                - heading "Testimonials" [level=2] [ref=e6549]
+                - generic [ref=e6550]:
+                  - generic [ref=e6551]:
+                    - generic [ref=e6552]: "\"The frosted glass navbar makes our app feel premium and modern.\""
+                    - generic [ref=e6553]: Jess Yang
+                    - generic [ref=e6554]: iOS Developer
+                  - generic [ref=e6555]:
+                    - generic [ref=e6556]: "\"Backdrop blur is the perfect balance between transparency and readability.\""
+                    - generic [ref=e6557]: Tom Harris
+                    - generic [ref=e6558]: UI Engineer
+                  - generic [ref=e6559]:
+                    - generic [ref=e6560]: "\"Users consistently rate our glass-style UI as more premium than solid navbars.\""
+                    - generic [ref=e6561]: Aisha Patel
+                    - generic [ref=e6562]: Product Lead
+              - generic [ref=e6564]:
+                - generic [ref=e6565]:
+                  - generic [ref=e6566]: 14px
+                  - generic [ref=e6567]: Blur Radius
+                - generic [ref=e6568]:
+                  - generic [ref=e6569]: 60%
+                  - generic [ref=e6570]: Opacity
+                - generic [ref=e6571]:
+                  - generic [ref=e6572]: 95%
+                  - generic [ref=e6573]: Browser Support
+                - generic [ref=e6574]:
+                  - generic [ref=e6575]: GPU
+                  - generic [ref=e6576]: Accelerated
+              - generic [ref=e6578]:
+                - generic [ref=e6579]: NavbarDemo © 2026
+                - generic [ref=e6580] [cursor=pointer]: ← Back to all types
+          - generic [ref=e6582]:
+            - generic [ref=e6583]: navbarFloating
+            - generic [ref=e6584]: /navbar-floating
+            - generic [ref=e6585]: 1280px
+          - generic [ref=e6588]:
+            - generic [ref=e6589]:
+              - generic [ref=e6590] [cursor=pointer]:
+                - img "arrow-left" [ref=e6591]
+                - generic [ref=e6592]: Demo
+              - generic [ref=e6594] [cursor=pointer]: Home
+              - generic [ref=e6595] [cursor=pointer]: Features
+              - generic [ref=e6596] [cursor=pointer]: About
+              - generic [ref=e6599] [cursor=pointer]: Start
+            - generic [ref=e6600]:
+              - generic [ref=e6602]: Floating Pill
+              - heading "Detached Navigation" [level=1] [ref=e6603]
+              - generic [ref=e6604]: A pill-shaped navbar hovering above the page, detached from all edges. Modern, playful, and eye-catching.
+              - generic [ref=e6605]: The pill floats over the content as you scroll
+            - generic [ref=e6606]:
+              - heading "Features" [level=2] [ref=e6607]
+              - generic [ref=e6608]:
+                - generic [ref=e6609]:
+                  - img "move" [ref=e6611]
+                  - generic [ref=e6612]: Free Floating
+                  - generic [ref=e6613]: Not attached to any edge. Hovers freely above the content.
+                - generic [ref=e6614]:
+                  - img "circle" [ref=e6616]
+                  - generic [ref=e6617]: Pill Shape
+                  - generic [ref=e6618]: Rounded-full corners give it a distinctive, friendly appearance.
+                - generic [ref=e6619]:
+                  - img "sun" [ref=e6621]
+                  - generic [ref=e6622]: Shadow Depth
+                  - generic [ref=e6623]: A large shadow creates the floating illusion and adds visual depth.
+            - generic [ref=e6624]:
+              - heading "Testimonials" [level=2] [ref=e6625]
+              - generic [ref=e6626]:
+                - generic [ref=e6627]:
+                  - generic [ref=e6628]: "\"The floating pill navbar is the most unique pattern. Users notice it immediately.\""
+                  - generic [ref=e6629]: Kai Nakamura
+                  - generic [ref=e6630]: UI Designer
+                - generic [ref=e6631]:
+                  - generic [ref=e6632]: "\"Perfect for portfolio and creative sites where you want to stand out.\""
+                  - generic [ref=e6633]: Sofia Andersson
+                  - generic [ref=e6634]: Creative Dev
+                - generic [ref=e6635]:
+                  - generic [ref=e6636]: "\"The pointer-events trick is clever — the pill captures clicks but the space around it doesn't.\""
+                  - generic [ref=e6637]: Raj Gupta
+                  - generic [ref=e6638]: Frontend Eng
+            - generic [ref=e6640]:
+              - generic [ref=e6641]:
+                - generic [ref=e6642]: 680px
+                - generic [ref=e6643]: Max Width
+              - generic [ref=e6644]:
+                - generic [ref=e6645]: 20px
+                - generic [ref=e6646]: Top Offset
+              - generic [ref=e6647]:
+                - generic [ref=e6648]: "9999"
+                - generic [ref=e6649]: Border Radius
+              - generic [ref=e6650]:
+                - generic [ref=e6651]: 32px
+                - generic [ref=e6652]: Shadow Spread
+            - generic [ref=e6654]:
+              - generic [ref=e6655]: NavbarDemo © 2026
+              - generic [ref=e6656] [cursor=pointer]: ← Back to all types
+          - generic [ref=e6658]:
+            - generic [ref=e6659]: navbarCentered
+            - generic [ref=e6660]: /navbar-centered
+            - generic [ref=e6661]: 1280px
+          - generic [ref=e6664]:
+            - generic [ref=e6665]:
+              - generic [ref=e6666]:
+                - img "arrow-left" [ref=e6668] [cursor=pointer]
+                - generic [ref=e6669]: Shop
+                - generic [ref=e6670]: Collections
+                - generic [ref=e6671]: Journal
+              - generic [ref=e6673]: MAISON
+              - generic [ref=e6674]:
+                - generic [ref=e6675]: About
+                - generic [ref=e6676]: Contact
+                - img "search" [ref=e6677]
+                - img "shopping-bag" [ref=e6678]
+            - generic [ref=e6679]:
+              - generic [ref=e6680]:
+                - generic [ref=e6682]: Centered Logo
+                - heading "Symmetrical Elegance" [level=1] [ref=e6683]
+                - generic [ref=e6684]: The logo sits at the exact horizontal center with navigation links split evenly on both sides. A fashion and editorial classic.
+                - generic [ref=e6685]: Common in fashion, editorial, and luxury brands
+              - generic [ref=e6686]:
+                - heading "Features" [level=2] [ref=e6687]
+                - generic [ref=e6688]:
+                  - generic [ref=e6689]:
+                    - img "align-center" [ref=e6691]
+                    - generic [ref=e6692]: Perfect Symmetry
+                    - generic [ref=e6693]: Three-column layout ensures the logo is always perfectly centered.
+                  - generic [ref=e6694]:
+                    - img "crown" [ref=e6696]
+                    - generic [ref=e6697]: Brand Focus
+                    - generic [ref=e6698]: The centered logo draws the eye first, reinforcing brand identity.
+                  - generic [ref=e6699]:
+                    - img "gem" [ref=e6701]
+                    - generic [ref=e6702]: Luxury Feel
+                    - generic [ref=e6703]: A pattern associated with premium fashion and luxury brands.
+              - generic [ref=e6704]:
+                - heading "Testimonials" [level=2] [ref=e6705]
+                - generic [ref=e6706]:
+                  - generic [ref=e6707]:
+                    - generic [ref=e6708]: "\"The centered logo navbar elevates our brand perception significantly.\""
+                    - generic [ref=e6709]: Claire Dupont
+                    - generic [ref=e6710]: Brand Director
+                  - generic [ref=e6711]:
+                    - generic [ref=e6712]: "\"Customers associate this layout with premium quality. It works.\""
+                    - generic [ref=e6713]: Marco Rossi
+                    - generic [ref=e6714]: E-commerce Lead
+                  - generic [ref=e6715]:
+                    - generic [ref=e6716]: "\"The three-column grid makes implementing this pattern straightforward.\""
+                    - generic [ref=e6717]: Yuki Tanaka
+                    - generic [ref=e6718]: Developer
+              - generic [ref=e6720]:
+                - generic [ref=e6721]:
+                  - generic [ref=e6722]: "3"
+                  - generic [ref=e6723]: Column Grid
+                - generic [ref=e6724]:
+                  - generic [ref=e6725]: 50%
+                  - generic [ref=e6726]: Logo Position
+                - generic [ref=e6727]:
+                  - generic [ref=e6728]: 1:1
+                  - generic [ref=e6729]: Link Balance
+                - generic [ref=e6730]:
+                  - generic [ref=e6731]: 100%
+                  - generic [ref=e6732]: Brand Focus
+              - generic [ref=e6734]:
+                - generic [ref=e6735]: NavbarDemo © 2026
+                - generic [ref=e6736] [cursor=pointer]: ← Back to all types
+          - generic [ref=e6738]:
+            - generic [ref=e6739]: navbarSidebar
+            - generic [ref=e6740]: /navbar-sidebar
+            - generic [ref=e6741]: 1280px
+          - generic [ref=e6744]:
+            - generic [ref=e6745]:
+              - generic [ref=e6746] [cursor=pointer]:
+                - img "arrow-left" [ref=e6747]
+                - generic [ref=e6748]: NavbarDemo
+              - generic [ref=e6749]:
+                - generic [ref=e6750]:
+                  - img "home" [ref=e6751]
+                  - generic [ref=e6752]: Dashboard
+                - generic [ref=e6753]:
+                  - img "bar-chart-3" [ref=e6754]
+                  - generic [ref=e6755]: Analytics
+                - generic [ref=e6756]:
+                  - img "users" [ref=e6757]
+                  - generic [ref=e6758]: Team
+                - generic [ref=e6759]:
+                  - img "folder" [ref=e6760]
+                  - generic [ref=e6761]: Projects
+                - generic [ref=e6762]:
+                  - img "calendar" [ref=e6763]
+                  - generic [ref=e6764]: Calendar
+                - generic [ref=e6765]:
+                  - img "settings" [ref=e6766]
+                  - generic [ref=e6767]: Settings
+              - generic [ref=e6768]:
+                - generic [ref=e6770]: JD
+                - generic [ref=e6771]: John Doe
+            - generic [ref=e6772]:
+              - generic [ref=e6773]:
+                - generic [ref=e6775]: Sidebar Navigation
+                - heading "Full-Height Sidebar" [level=1] [ref=e6776]
+                - generic [ref=e6777]: A vertical left sidebar replaces the top bar entirely. Common in dashboards, admin panels, and SaaS applications.
+                - generic [ref=e6778]: The sidebar stays fixed while content scrolls
+              - generic [ref=e6779]:
+                - heading "Features" [level=2] [ref=e6780]
+                - generic [ref=e6781]:
+                  - generic [ref=e6782]:
+                    - img "panel-left" [ref=e6784]
+                    - generic [ref=e6785]: More Space
+                    - generic [ref=e6786]: Vertical layout accommodates more nav items than a horizontal bar.
+                  - generic [ref=e6787]:
+                    - img "layout-dashboard" [ref=e6789]
+                    - generic [ref=e6790]: Dashboard Native
+                    - generic [ref=e6791]: The expected pattern for admin panels and data-heavy applications.
+                  - generic [ref=e6792]:
+                    - img "list" [ref=e6794]
+                    - generic [ref=e6795]: Hierarchical
+                    - generic [ref=e6796]: Easy to nest sub-menus and collapsible sections in a vertical layout.
+              - generic [ref=e6797]:
+                - heading "Testimonials" [level=2] [ref=e6798]
+                - generic [ref=e6799]:
+                  - generic [ref=e6800]:
+                    - generic [ref=e6801]: "\"Sidebar navigation is essential for our dashboard. Users love the clear hierarchy.\""
+                    - generic [ref=e6802]: Lisa Zhang
+                    - generic [ref=e6803]: Product Manager
+                  - generic [ref=e6804]:
+                    - generic [ref=e6805]: "\"We can fit 20+ nav items without it feeling cluttered. Try that with a top bar!\""
+                    - generic [ref=e6806]: Omar Farid
+                    - generic [ref=e6807]: SaaS Founder
+                  - generic [ref=e6808]:
+                    - generic [ref=e6809]: "\"The active state indicator makes it instantly clear where you are in the app.\""
+                    - generic [ref=e6810]: Eva Novak
+                    - generic [ref=e6811]: UX Lead
+              - generic [ref=e6813]:
+                - generic [ref=e6814]:
+                  - generic [ref=e6815]: 240px
+                  - generic [ref=e6816]: Sidebar Width
+                - generic [ref=e6817]:
+                  - generic [ref=e6818]: 100%
+                  - generic [ref=e6819]: Viewport Height
+                - generic [ref=e6820]:
+                  - generic [ref=e6821]: 20+
+                  - generic [ref=e6822]: Nav Items
+                - generic [ref=e6823]:
+                  - generic [ref=e6824]: "#1"
+                  - generic [ref=e6825]: Dashboard Choice
+              - generic [ref=e6827]:
+                - generic [ref=e6828]: NavbarDemo © 2026
+                - generic [ref=e6829] [cursor=pointer]: ← Back to all types
+          - generic [ref=e6831]:
+            - generic [ref=e6832]: navbarBottom
+            - generic [ref=e6833]: /navbar-bottom
+            - generic [ref=e6834]: 1280px
+          - generic [ref=e6837]:
+            - generic [ref=e6838]:
+              - generic [ref=e6839]:
+                - generic [ref=e6840] [cursor=pointer]:
+                  - img "arrow-left" [ref=e6841]
+                  - generic [ref=e6842]: Back to all types
+                - generic [ref=e6844]: Bottom Tab Bar
+                - heading "Mobile-First Navigation" [level=1] [ref=e6845]
+                - generic [ref=e6846]: A bottom tab bar replaces the top navbar entirely. The most natural navigation pattern for mobile and touch-first interfaces.
+                - generic [ref=e6847]: Look down — the navigation bar is at the bottom
+              - generic [ref=e6848]:
+                - heading "Features" [level=2] [ref=e6849]
+                - generic [ref=e6850]:
+                  - generic [ref=e6851]:
+                    - img "smartphone" [ref=e6853]
+                    - generic [ref=e6854]: Thumb Friendly
+                    - generic [ref=e6855]: Bottom placement is within easy thumb reach on mobile devices.
+                  - generic [ref=e6856]:
+                    - img "scan" [ref=e6858]
+                    - generic [ref=e6859]: Icon + Label
+                    - generic [ref=e6860]: Each tab combines an icon and label for maximum clarity.
+                  - generic [ref=e6861]:
+                    - img "maximize-2" [ref=e6863]
+                    - generic [ref=e6864]: Max Content
+                    - generic [ref=e6865]: No top bar means full viewport height for content display.
+              - generic [ref=e6866]:
+                - heading "Testimonials" [level=2] [ref=e6867]
+                - generic [ref=e6868]:
+                  - generic [ref=e6869]:
+                    - generic [ref=e6870]: "\"Bottom tabs feel natural on mobile. Our app engagement increased 40%.\""
+                    - generic [ref=e6871]: Chris Park
+                    - generic [ref=e6872]: Mobile Lead
+                  - generic [ref=e6873]:
+                    - generic [ref=e6874]: "\"Every major social media app uses bottom tabs. Users expect it.\""
+                    - generic [ref=e6875]: Maria Silva
+                    - generic [ref=e6876]: UX Researcher
+                  - generic [ref=e6877]:
+                    - generic [ref=e6878]: "\"The active tab indicator provides instant orientation. Users never feel lost.\""
+                    - generic [ref=e6879]: Andy Chen
+                    - generic [ref=e6880]: App Developer
+              - generic [ref=e6882]:
+                - generic [ref=e6883]:
+                  - generic [ref=e6884]: "5"
+                  - generic [ref=e6885]: Tab Limit
+                - generic [ref=e6886]:
+                  - generic [ref=e6887]: 64px
+                  - generic [ref=e6888]: Bar Height
+                - generic [ref=e6889]:
+                  - generic [ref=e6890]: 90%
+                  - generic [ref=e6891]: Mobile Apps
+                - generic [ref=e6892]:
+                  - generic [ref=e6893]: 40%
+                  - generic [ref=e6894]: More Engagement
+              - generic [ref=e6896]:
+                - generic [ref=e6897]: NavbarDemo © 2026
+                - generic [ref=e6898] [cursor=pointer]: ← Back to all types
+            - generic [ref=e6899]:
+              - generic [ref=e6900] [cursor=pointer]:
+                - img "home" [ref=e6901]
+                - generic [ref=e6902]: Home
+              - generic [ref=e6903] [cursor=pointer]:
+                - img "search" [ref=e6904]
+                - generic [ref=e6905]: Search
+              - generic [ref=e6906] [cursor=pointer]:
+                - img "plus-circle" [ref=e6907]
+                - generic [ref=e6908]: Create
+              - generic [ref=e6909] [cursor=pointer]:
+                - img "bell" [ref=e6910]
+                - generic [ref=e6911]: Alerts
+              - generic [ref=e6912] [cursor=pointer]:
+                - img "user" [ref=e6913]
+                - generic [ref=e6914]: Profile
+          - generic [ref=e6916]:
+            - generic [ref=e6917]: navbarScrollAware
+            - generic [ref=e6918]: /navbar-scroll-aware
+            - generic [ref=e6919]: 1280px
+          - generic [ref=e6922]:
+            - generic [ref=e6925]:
+              - generic [ref=e6926] [cursor=pointer]:
+                - img "arrow-left" [ref=e6927]
+                - generic [ref=e6928]: NavbarDemo
+              - generic [ref=e6929]:
+                - generic [ref=e6930]: Home
+                - generic [ref=e6931]: Features
+                - generic [ref=e6932]: About
+                - generic [ref=e6933]: Contact
+              - generic [ref=e6935] [cursor=pointer]: Get Started
+            - generic [ref=e6936]:
+              - generic [ref=e6937]:
+                - generic [ref=e6939]: Scroll-Aware
+                - heading "Smart Auto-hide Navbar" [level=1] [ref=e6940]
+                - generic [ref=e6941]: This navbar hides when you scroll down to maximize content space, then reappears instantly when you scroll back up. Powered by live scroll tracking in the SDUI engine.
+                - generic [ref=e6942]: Scroll down to hide the navbar, scroll up to bring it back
+              - generic [ref=e6943]:
+                - heading "How It Works" [level=2] [ref=e6944]
+                - generic [ref=e6945]:
+                  - generic [ref=e6946]:
+                    - img "mouse" [ref=e6948]
+                    - generic [ref=e6949]: 1. Scroll Tracking
+                    - generic [ref=e6950]: "The engine tracks window.scrollY in real-time with rAF throttling and writes { y, direction, yPercent } to variables['scroll']."
+                  - generic [ref=e6951]:
+                    - img "git-branch" [ref=e6953]
+                    - generic [ref=e6954]: 2. State Machine
+                    - generic [ref=e6955]: animation.states watches the direction variable. When it changes to 'down', it transitions to translateY(-100%). On 'up', back to 0%.
+                  - generic [ref=e6956]:
+                    - img "shield-check" [ref=e6958]
+                    - generic [ref=e6959]: 3. Dead-zone
+                    - generic [ref=e6960]: A ±4px dead-zone prevents flickering when the user pauses mid-scroll. Direction only changes with definitive movement.
+              - generic [ref=e6961]:
+                - heading "Testimonials" [level=2] [ref=e6962]
+                - generic [ref=e6963]:
+                  - generic [ref=e6964]:
+                    - generic [ref=e6965]: "\"The auto-hide navbar is the best of both worlds — it's there when you need it, gone when you don't.\""
+                    - generic [ref=e6966]: Sam Wilson
+                    - generic [ref=e6967]: Mobile Developer
+                  - generic [ref=e6968]:
+                    - generic [ref=e6969]: "\"No jank, no flicker. The dead-zone makes the scroll detection feel professional.\""
+                    - generic [ref=e6970]: Priya Sharma
+                    - generic [ref=e6971]: Performance Eng
+                  - generic [ref=e6972]:
+                    - generic [ref=e6973]: "\"Pure JSON config, reactive engine, no custom JavaScript. This is how SDUI should work.\""
+                    - generic [ref=e6974]: Alex Martinez
+                    - generic [ref=e6975]: Tech Lead
+              - generic [ref=e6976]:
+                - heading "Live Scroll Data" [level=2] [ref=e6977]
+                - generic [ref=e6978]:
+                  - generic [ref=e6979]:
+                    - generic [ref=e6980]: "0"
+                    - generic [ref=e6981]: Scroll Y (px)
+                  - generic [ref=e6982]:
+                    - generic [ref=e6983]: none
+                    - generic [ref=e6984]: Direction
+                  - generic [ref=e6985]:
+                    - generic [ref=e6986]: 0%
+                    - generic [ref=e6987]: Scroll %
+                  - generic [ref=e6988]:
+                    - generic [ref=e6989]: 300ms
+                    - generic [ref=e6990]: Transition
+              - generic [ref=e6992]:
+                - generic [ref=e6993]: NavbarDemo © 2026
+                - generic [ref=e6994] [cursor=pointer]: ← Back to all types
+          - generic [ref=e6996]:
+            - generic [ref=e6997]: popoverTest
+            - generic [ref=e6998]: /popover-test
+            - generic [ref=e6999]: 1280px
+          - generic [ref=e7002]:
+            - generic [ref=e7003]:
+              - generic [ref=e7004]:
+                - heading "Popover & Tooltip Showcase" [level=2] [ref=e7005]
+                - generic [ref=e7006]: Demonstrates inline popover and tooltip content attached to any SDUI node. All content is rendered by the same SDUI renderer — variables, actions, maps, and conditions all work inside popovers.
+              - generic [ref=e7007]:
+                - heading "1. Click Popover — Dropdown Menu" [level=4] [ref=e7008]
+                - generic [ref=e7009]: Click the button to open a dropdown menu. The popover content is a styled list built from a variable array. Clicking an item selects it and the name appears below.
+                - generic [ref=e7010]:
+                  - generic [ref=e7012] [cursor=pointer]:
+                    - img "menu" [ref=e7013]
+                    - generic [ref=e7014]: Menu
+                  - generic [ref=e7015]: "Selected: (none selected)"
+              - generic [ref=e7016]:
+                - heading "2. Hover Popovers (Tooltip-style)" [level=4] [ref=e7017]
+                - generic [ref=e7018]: Hover over the items below to see hover-triggered popovers at different placements.
+                - generic [ref=e7019]:
+                  - generic [ref=e7021]:
+                    - img "arrow-up" [ref=e7022]
+                    - generic [ref=e7023]: Top
+                  - generic [ref=e7025]:
+                    - img "arrow-right" [ref=e7026]
+                    - generic [ref=e7027]: Right
+                  - generic [ref=e7029]:
+                    - img "arrow-down" [ref=e7030]
+                    - generic [ref=e7031]: Bottom
+                  - generic [ref=e7033]:
+                    - img "arrow-left" [ref=e7034]
+                    - generic [ref=e7035]: Left
+                  - generic [ref=e7037]:
+                    - img "sparkles" [ref=e7038]
+                    - generic [ref=e7039]: Rich content
+              - generic [ref=e7040]:
+                - heading "3. Match Trigger Width — Full-Width Dropdown" [level=4] [ref=e7041]
+                - generic [ref=e7042]: "The popover uses matchTriggerWidth: true so the dropdown is at least as wide as the trigger. Click the input-like trigger to open."
+                - generic [ref=e7045] [cursor=pointer]:
+                  - generic [ref=e7046]: (none selected)
+                  - img "chevron-down" [ref=e7047]
+              - generic [ref=e7048]:
+                - heading "4. Programmatic Control" [level=4] [ref=e7049]
+                - generic [ref=e7050]: This popover is bound to a variable (openVariable). External buttons control it via changeVariableValue workflows — no click/hover trigger on the popover itself.
+                - generic [ref=e7051]:
+                  - generic [ref=e7052]:
+                    - generic [ref=e7053] [cursor=pointer]:
+                      - img "eye" [ref=e7054]
+                      - generic [ref=e7055]: Open
+                    - generic [ref=e7056] [cursor=pointer]:
+                      - img "eye-off" [ref=e7057]
+                      - generic [ref=e7058]: Close
+                    - generic [ref=e7059] [cursor=pointer]:
+                      - img "toggle-left" [ref=e7060]
+                      - generic [ref=e7061]: Toggle
+                  - generic [ref=e7063]:
+                    - img "target" [ref=e7064]
+                    - generic [ref=e7065]: Popover Target
+              - generic [ref=e7066]:
+                - heading "5. Interactive Popover Content" [level=4] [ref=e7067]
+                - generic [ref=e7068]: Popover content is fully interactive — buttons, variables, and workflows work inside. This popover has a counter with increment and reset buttons.
+                - generic [ref=e7069]:
+                  - generic [ref=e7071] [cursor=pointer]:
+                    - img "mouse-pointer-click" [ref=e7072]
+                    - generic [ref=e7073]: Interactive Popover
+                  - generic [ref=e7074]: "Counter: 0"
+              - generic [ref=e7075]:
+                - heading "6. Context Menu Style" [level=4] [ref=e7076]
+                - generic [ref=e7077]: A card with a more-options button that opens a context-menu-style popover with dividers and icons.
+                - generic [ref=e7078]:
+                  - generic [ref=e7079]:
+                    - img "file-text" [ref=e7081]
+                    - generic [ref=e7082]:
+                      - generic [ref=e7083]: Project Report.pdf
+                      - generic [ref=e7084]: 2.4 MB — Updated 2 hours ago
+                  - img "more-vertical" [ref=e7087] [cursor=pointer]
+              - generic [ref=e7088]:
+                - heading "Autocomplete Showcase" [level=2] [ref=e7089]
+                - generic [ref=e7090]: MUI-style autocomplete variants built with Popovers + Input + variable-driven filtering.
+              - generic [ref=e7091]:
+                - heading "7. Basic Autocomplete" [level=4] [ref=e7092]
+                - generic [ref=e7093]: Type to filter a list. Selecting an item sets the value. Similar to MUI Combo Box.
+                - generic [ref=e7094]:
+                  - generic [ref=e7095]: Favorite Film
+                  - textbox "Input Field" [ref=e7099]:
+                    - /placeholder: Search films...
+              - generic [ref=e7100]:
+                - heading "8. Multi-Select Autocomplete" [level=4] [ref=e7101]
+                - generic [ref=e7102]: Select multiple items. Chips appear for each selection. Click again to deselect.
+                - generic [ref=e7103]:
+                  - generic [ref=e7104]: Select Films
+                  - textbox "Input Field" [ref=e7108]:
+                    - /placeholder: Search to add...
+                  - generic [ref=e7109]: selected
+              - generic [ref=e7110]:
+                - heading "9. Grouped Autocomplete" [level=4] [ref=e7111]
+                - generic [ref=e7112]: Options organized by category with group headers. Filter works across all groups.
+                - generic [ref=e7113]:
+                  - generic [ref=e7114]: Film by Genre
+                  - textbox "Input Field" [ref=e7118]:
+                    - /placeholder: Search by genre or title...
+                  - generic [ref=e7119]: "Selected:"
+              - generic [ref=e7120]:
+                - heading "10. Free Solo (Creatable)" [level=4] [ref=e7121]
+                - generic [ref=e7122]: Type any value and press Enter to add as a tag. Also pick from suggestions. Like MUI freeSolo.
+                - generic [ref=e7123]:
+                  - generic [ref=e7124]: Tags
+                  - textbox "Input Field" [ref=e7128]:
+                    - /placeholder: Type and press Enter, or pick...
+                  - generic [ref=e7129]: tags added
+              - generic [ref=e7130]:
+                - heading "11. Async Autocomplete" [level=4] [ref=e7131]
+                - generic [ref=e7132]: Simulates an API call with 800ms delay. Shows a loading spinner while fetching results.
+                - generic [ref=e7133]:
+                  - generic [ref=e7134]: Search Films (Async)
+                  - textbox "Input Field" [ref=e7138]:
+                    - /placeholder: Type to search (async)...
+                  - generic [ref=e7139]: "Selected:"
+              - generic [ref=e7140]:
+                - heading "12. Disabled Options" [level=4] [ref=e7141]
+                - generic [ref=e7142]: Some options are greyed out and not selectable. Angular and Ember are disabled.
+                - generic [ref=e7143]:
+                  - generic [ref=e7144]: Framework
+                  - textbox "Input Field" [ref=e7148]:
+                    - /placeholder: Pick a framework...
+                  - generic [ref=e7149]: "Selected:"
+              - generic [ref=e7150]:
+                - heading "13. Custom Rendered Options" [level=4] [ref=e7151]
+                - generic [ref=e7152]: Options with icons, descriptions, and status badges. Like MUI renderOption.
+                - generic [ref=e7153]:
+                  - generic [ref=e7154]: Avenger
+                  - textbox "Input Field" [ref=e7158]:
+                    - /placeholder: Search heroes...
+                  - generic [ref=e7159]: "Selected:"
+            - generic [ref=e7160]:
+              - generic [ref=e7161]: Menu with Submenus
+              - generic [ref=e7162]: Desktop-style menu bar — click to open a menu, hover items to reveal nested submenus.
+              - generic [ref=e7163]:
+                - generic [ref=e7166] [cursor=pointer]: File
+                - generic [ref=e7169] [cursor=pointer]: Edit
+                - generic [ref=e7172] [cursor=pointer]: View
+              - generic [ref=e7173]: Click a top-level menu to open it. Hover items with a chevron to reveal submenus.
+            - generic [ref=e7174]:
+              - generic [ref=e7175]: Date & Time Picker Showcase
+              - generic [ref=e7176]: MUI-style date and time pickers built entirely with JSON popovers, workflow-computed grids, and formula-based date math.
+              - generic [ref=e7177]:
+                - generic [ref=e7178]: 1. Basic DatePicker
+                - generic [ref=e7179]: Click to open a calendar popover. Navigate months and select a day.
+                - generic [ref=e7181] [cursor=pointer]:
+                  - img "calendar" [ref=e7182]
+                  - textbox "Input Field" [ref=e7184]:
+                    - /placeholder: YYYY-MM-DD
+                - generic [ref=e7185]: "Selected: (none)"
+              - generic [ref=e7186]:
+                - generic [ref=e7187]: 2. DatePicker with Presets
+                - generic [ref=e7188]: Quick presets on the left, full calendar on the right.
+                - generic [ref=e7190] [cursor=pointer]:
+                  - img "calendar" [ref=e7191]
+                  - textbox "Input Field" [ref=e7193]:
+                    - /placeholder: YYYY-MM-DD
+                - generic [ref=e7194]: "Selected: (none)"
+              - generic [ref=e7195]:
+                - generic [ref=e7196]: 3. TimePicker
+                - generic [ref=e7197]: Select hours and minutes from scrollable columns.
+                - generic [ref=e7199] [cursor=pointer]:
+                  - img "clock" [ref=e7200]
+                  - textbox "Input Field" [ref=e7202]:
+                    - /placeholder: HH:MM
+                    - text: 10:00
+                - generic [ref=e7203]: "Selected: 10:30"
+              - generic [ref=e7204]:
+                - generic [ref=e7205]: 4. DateTimePicker
+                - generic [ref=e7206]: Calendar and time selection combined in one popover.
+                - generic [ref=e7208] [cursor=pointer]:
+                  - img "calendar-clock" [ref=e7209]
+                  - textbox "Input Field" [ref=e7211]:
+                    - /placeholder: YYYY-MM-DD HH:MM
+                    - text: 10:00
+                - generic [ref=e7212]: "Selected: (none) 12:00"
+              - generic [ref=e7213]:
+                - generic [ref=e7214]: 5. DateRangePicker
+                - generic [ref=e7215]: Select a start and end date. Two months shown side by side.
+                - generic [ref=e7217] [cursor=pointer]:
+                  - img "calendar-range" [ref=e7218]
+                  - textbox "Input Field" [ref=e7220]:
+                    - /placeholder: Start date
+                  - generic [ref=e7221]: —
+                  - textbox "Input Field" [ref=e7223]:
+                    - /placeholder: End date
+                - generic [ref=e7224]: "Range: ? → ?"
+              - generic [ref=e7225]:
+                - generic [ref=e7226]: 6. Static (Inline) DatePicker
+                - generic [ref=e7227]: Always visible calendar, no popover needed.
+                - generic [ref=e7229]:
+                  - generic [ref=e7230]:
+                    - img "chevron-left" [ref=e7232] [cursor=pointer]
+                    - generic [ref=e7233]: April 2026
+                    - img "chevron-right" [ref=e7235] [cursor=pointer]
+                  - generic [ref=e7236]:
+                    - generic [ref=e7237]: Su
+                    - generic [ref=e7238]: Mo
+                    - generic [ref=e7239]: Tu
+                    - generic [ref=e7240]: We
+                    - generic [ref=e7241]: Th
+                    - generic [ref=e7242]: Fr
+                    - generic [ref=e7243]: Sa
+                - generic [ref=e7244]: "Selected: (none)"
+          - generic [ref=e7246]:
+            - generic [ref=e7247]: animationShowcase
+            - generic [ref=e7248]: /animation-showcase
+            - generic [ref=e7249]: 1280px
+          - generic [ref=e7252]:
+            - generic [ref=e7263]:
+              - generic [ref=e7266]: Animation Showcase
+              - heading "Scroll Down. Watch Everything Come Alive." [level=1] [ref=e7269]
+              - generic [ref=e7272]: This page demonstrates parallax layers, scroll-driven animations, hover/press interactions, staggered reveals, morphing shapes, gradient drifts, and more.
+              - generic [ref=e7273]:
+                - generic [ref=e7277] [cursor=pointer]: Explore Features
+                - generic [ref=e7281] [cursor=pointer]: See Parallax
+                - generic [ref=e7285] [cursor=pointer]: Gallery
+              - img "chevrons-down" [ref=e7289] [cursor=pointer]
+            - generic [ref=e7294]:
+              - generic [ref=e7295]:
+                - generic [ref=e7298]: Features
+                - heading "Staggered Scroll Reveals" [level=2] [ref=e7301]
+                - generic [ref=e7304]: Each card below enters the viewport with a different animation type and stagger delay.
+              - generic [ref=e7305]:
+                - generic [ref=e7308]:
+                  - img "zap" [ref=e7310]
+                  - heading "Scroll Triggers" [level=4] [ref=e7311]
+                  - generic [ref=e7312]: Elements animate in when they enter the viewport. Fade, slide, zoom, flip — pick your style.
+                - generic [ref=e7315]:
+                  - img "rotate-3d" [ref=e7317]
+                  - heading "3D Tilt Effect" [level=4] [ref=e7318]
+                  - generic [ref=e7319]: Move your mouse over this card — it responds with a 3D perspective tilt.
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - img "shapes"
+                      - heading "Morph Shape" [level=4]
+                      - generic: Watch the card border-radius morph between shapes in a continuous loop.
+                - generic [ref=e7322]:
+                  - img "palette" [ref=e7324]
+                  - heading "Gradient Animation" [level=4] [ref=e7325]
+                  - generic [ref=e7326]: Animated gradient background that rotates its angle over time.
+                - generic [ref=e7329]:
+                  - img "mouse-pointer-click" [ref=e7333]
+                  - heading "Hover & Press" [level=4] [ref=e7334]
+                  - generic [ref=e7335]: Rich hover lift with shadow glow, and satisfying press scale feedback.
+                - generic [ref=e7338]:
+                  - img "sparkles" [ref=e7340]
+                  - heading "Rise Fade In" [level=4] [ref=e7341]
+                  - generic [ref=e7342]: Elements rise from below with a subtle scale and fade for a premium feel.
+            - generic [ref=e7363]:
+              - generic [ref=e7366]: Parallax Layers
+              - heading "Floating Geometric Shapes" [level=2] [ref=e7369]
+              - generic [ref=e7372]: Scroll and notice the circles, squares, and diamonds moving at different speeds. Each shape has a unique parallax speed creating depth.
+              - generic [ref=e7373]:
+                - img "layers" [ref=e7377]
+                - img "orbit" [ref=e7381]
+            - generic [ref=e7383]:
+              - generic [ref=e7384]:
+                - generic [ref=e7387]: Scroll Progress
+                - heading "Scroll-Driven Transformations" [level=2] [ref=e7390]
+              - generic [ref=e7391]:
+                - generic [ref=e7395]:
+                  - img "maximize-2" [ref=e7396]
+                  - generic [ref=e7397]: Scale on Scroll
+                  - generic [ref=e7398]: This card scales from 70% to 100% as you scroll through it
+                - generic [ref=e7402]:
+                  - img "rotate-cw" [ref=e7403]
+                  - generic [ref=e7404]: Rotate on Scroll
+                  - generic [ref=e7405]: This card straightens from -10deg to 0deg as you scroll
+                - generic [ref=e7409]:
+                  - img "paintbrush" [ref=e7410]
+                  - generic [ref=e7411]: Color Morph on Scroll
+                  - generic [ref=e7412]: Background transitions from deep indigo to hot pink as you scroll
+                - generic [ref=e7416]:
+                  - img "eye" [ref=e7417]
+                  - generic [ref=e7418]: Blur Reveal on Scroll
+                  - generic [ref=e7419]: Content starts blurry and sharpens as you scroll into view
+            - generic [ref=e7422]:
+              - generic [ref=e7423]:
+                - generic [ref=e7426]: Interactive
+                - heading "Flip Cards & Split Text" [level=2] [ref=e7429]
+              - generic [ref=e7430]:
+                - generic [ref=e7431]:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - heading "30+" [level=1]
+                          - generic: Animation Types
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - heading "60fps" [level=1]
+                          - generic: Buttery Smooth
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - heading "0kb" [level=1]
+                          - generic: JS Config Only
+                - generic [ref=e7432]:
+                  - generic [ref=e7436]:
+                    - generic [ref=e7437]: E
+                    - generic [ref=e7438]: v
+                    - generic [ref=e7439]: e
+                    - generic [ref=e7440]: r
+                    - generic [ref=e7441]: "y"
+                    - generic [ref=e7443]: p
+                    - generic [ref=e7444]: i
+                    - generic [ref=e7445]: x
+                    - generic [ref=e7446]: e
+                    - generic [ref=e7447]: l
+                    - generic [ref=e7449]: i
+                    - generic [ref=e7450]: s
+                    - generic [ref=e7452]: a
+                    - generic [ref=e7453]: "n"
+                    - generic [ref=e7454]: i
+                    - generic [ref=e7455]: m
+                    - generic [ref=e7456]: a
+                    - generic [ref=e7457]: t
+                    - generic [ref=e7458]: e
+                    - generic [ref=e7459]: d
+                  - generic [ref=e7463]:
+                    - generic [ref=e7464]: C
+                    - generic [ref=e7465]: h
+                    - generic [ref=e7466]: a
+                    - generic [ref=e7467]: r
+                    - generic [ref=e7468]: a
+                    - generic [ref=e7469]: c
+                    - generic [ref=e7470]: t
+                    - generic [ref=e7471]: e
+                    - generic [ref=e7472]: r
+                    - generic [ref=e7474]: b
+                    - generic [ref=e7475]: "y"
+                    - generic [ref=e7477]: c
+                    - generic [ref=e7478]: h
+                    - generic [ref=e7479]: a
+                    - generic [ref=e7480]: r
+                    - generic [ref=e7481]: a
+                    - generic [ref=e7482]: c
+                    - generic [ref=e7483]: t
+                    - generic [ref=e7484]: e
+                    - generic [ref=e7485]: r
+                    - generic [ref=e7487]: r
+                    - generic [ref=e7488]: e
+                    - generic [ref=e7489]: v
+                    - generic [ref=e7490]: e
+                    - generic [ref=e7491]: a
+                    - generic [ref=e7492]: l
+            - generic [ref=e7501]:
+              - img "rocket" [ref=e7505]
+              - heading "Everything is JSON." [level=2] [ref=e7508]
+              - generic [ref=e7511]: No custom React code. No animation libraries to wire up. Just JSON configs that the engine interprets into 60fps animations — parallax, scroll-driven, hover, tilt, morph, gradient, split text, flip, particles, and more.
+              - generic [ref=e7516] [cursor=pointer]: Back to Top
+            - generic [ref=e7520]: Built entirely with JSON configuration. Zero custom React components.
+          - generic [ref=e7522]:
+            - generic [ref=e7523]: triggersTest
+            - generic [ref=e7524]: /triggers-test
+            - generic [ref=e7525]: 1280px
+          - generic [ref=e7528]:
+            - generic [ref=e7531]:
+              - img "Vendure" [ref=e7534]
+              - generic [ref=e7536]:
+                - img "moon" [ref=e7540]
+                - img "shopping-bag" [ref=e7543]
+                - generic [ref=e7546]: Sign in
+            - generic [ref=e7549]:
+              - generic [ref=e7550]:
+                - heading "Triggers Showcase" [level=4] [ref=e7551]
+                - generic [ref=e7552]: All 10 trigger types shown as App Triggers (global) and Page Triggers (scoped to this page). Open builder → Triggers tab to manage workflows.
+              - generic [ref=e7553]:
+                - generic [ref=e7554]:
+                  - generic [ref=e7555]:
+                    - generic [ref=e7557]: App Triggers
+                    - generic [ref=e7558]: Global — not scoped to any page
+                    - generic [ref=e7560]: 10 workflows
+                  - generic [ref=e7561]:
+                    - generic [ref=e7562]:
+                      - generic [ref=e7563]:
+                        - img "globe" [ref=e7565]
+                        - generic [ref=e7567]: appLoadBefore
+                      - generic [ref=e7568]: On app load (before collections)
+                      - generic [ref=e7569]:
+                        - generic [ref=e7570]: Fired
+                        - generic [ref=e7571]: 0×
+                    - generic [ref=e7572]:
+                      - generic [ref=e7573]:
+                        - img "globe" [ref=e7575]
+                        - generic [ref=e7577]: appLoad
+                      - generic [ref=e7578]: On app load
+                      - generic [ref=e7579]:
+                        - generic [ref=e7580]: Fired
+                        - generic [ref=e7581]: 0×
+                    - generic [ref=e7582]:
+                      - generic [ref=e7583]:
+                        - img "file-text" [ref=e7585]
+                        - generic [ref=e7587]: pageLoadBefore
+                      - generic [ref=e7588]: On page load (before collections)
+                      - generic [ref=e7589]:
+                        - generic [ref=e7590]: Fired
+                        - generic [ref=e7591]: 0×
+                    - generic [ref=e7592]:
+                      - generic [ref=e7593]:
+                        - img "file-text" [ref=e7595]
+                        - generic [ref=e7597]: pageLoad
+                      - generic [ref=e7598]: On page load
+                      - generic [ref=e7599]:
+                        - generic [ref=e7600]: Fired
+                        - generic [ref=e7601]: 0×
+                    - generic [ref=e7602]:
+                      - generic [ref=e7603]:
+                        - img "log-out" [ref=e7605]
+                        - generic [ref=e7607]: pageUnload
+                      - generic [ref=e7608]: On page unload
+                      - generic [ref=e7609]:
+                        - generic [ref=e7610]: Fired
+                        - generic [ref=e7611]: 0×
+                    - generic [ref=e7612]:
+                      - generic [ref=e7613]:
+                        - img "mouse-pointer-2" [ref=e7615]
+                        - generic [ref=e7617]: scroll
+                      - generic [ref=e7618]: On page scroll
+                      - generic [ref=e7619]:
+                        - generic [ref=e7620]: Scroll Y
+                        - generic [ref=e7621]: "0"
+                    - generic [ref=e7622]:
+                      - generic [ref=e7623]:
+                        - img "maximize-2" [ref=e7625]
+                        - generic [ref=e7627]: resize
+                      - generic [ref=e7628]: On page resize
+                      - generic [ref=e7629]:
+                        - generic [ref=e7630]: Width
+                        - generic [ref=e7631]: —
+                    - generic [ref=e7632]:
+                      - generic [ref=e7633]:
+                        - img "keyboard" [ref=e7635]
+                        - generic [ref=e7637]: keydown
+                      - generic [ref=e7638]: On keydown
+                      - generic [ref=e7639]:
+                        - generic [ref=e7640]: Last key
+                        - generic [ref=e7641]: —
+                    - generic [ref=e7642]:
+                      - generic [ref=e7643]:
+                        - img "keyboard" [ref=e7645]
+                        - generic [ref=e7647]: keyup
+                      - generic [ref=e7648]: On keyup
+                      - generic [ref=e7649]:
+                        - generic [ref=e7650]: Last key
+                        - generic [ref=e7651]: —
+                    - generic [ref=e7652]:
+                      - generic [ref=e7653]:
+                        - img "alert-circle" [ref=e7655]
+                        - generic [ref=e7657]: collectionFetchError
+                      - generic [ref=e7658]: On collection fetch error
+                      - generic [ref=e7659]:
+                        - generic [ref=e7660]: Last error
+                        - generic [ref=e7661]: None
+                - generic [ref=e7662]:
+                  - generic [ref=e7663]:
+                    - generic [ref=e7665]: Page Triggers
+                    - generic [ref=e7666]: Scoped to this page — /triggers-test
+                    - generic [ref=e7668]: 10 workflows
+                  - generic [ref=e7669]:
+                    - generic [ref=e7670]:
+                      - generic [ref=e7671]:
+                        - img "globe" [ref=e7673]
+                        - generic [ref=e7675]: appLoadBefore
+                      - generic [ref=e7676]: On app load (before collections)
+                      - generic [ref=e7677]:
+                        - generic [ref=e7678]: Fired
+                        - generic [ref=e7679]: 0×
+                    - generic [ref=e7680]:
+                      - generic [ref=e7681]:
+                        - img "globe" [ref=e7683]
+                        - generic [ref=e7685]: appLoad
+                      - generic [ref=e7686]: On app load
+                      - generic [ref=e7687]:
+                        - generic [ref=e7688]: Fired
+                        - generic [ref=e7689]: 0×
+                    - generic [ref=e7690]:
+                      - generic [ref=e7691]:
+                        - img "file-text" [ref=e7693]
+                        - generic [ref=e7695]: pageLoadBefore
+                      - generic [ref=e7696]: On page load (before collections)
+                      - generic [ref=e7697]:
+                        - generic [ref=e7698]: Fired
+                        - generic [ref=e7699]: 0×
+                    - generic [ref=e7700]:
+                      - generic [ref=e7701]:
+                        - img "file-text" [ref=e7703]
+                        - generic [ref=e7705]: pageLoad
+                      - generic [ref=e7706]: On page load
+                      - generic [ref=e7707]:
+                        - generic [ref=e7708]: Fired
+                        - generic [ref=e7709]: 0×
+                    - generic [ref=e7710]:
+                      - generic [ref=e7711]:
+                        - img "log-out" [ref=e7713]
+                        - generic [ref=e7715]: pageUnload
+                      - generic [ref=e7716]: On page unload
+                      - generic [ref=e7717]:
+                        - generic [ref=e7718]: Fired
+                        - generic [ref=e7719]: 0×
+                    - generic [ref=e7720]:
+                      - generic [ref=e7721]:
+                        - img "mouse-pointer-2" [ref=e7723]
+                        - generic [ref=e7725]: scroll
+                      - generic [ref=e7726]: On page scroll
+                      - generic [ref=e7727]:
+                        - generic [ref=e7728]: Scroll Y
+                        - generic [ref=e7729]: "0"
+                    - generic [ref=e7730]:
+                      - generic [ref=e7731]:
+                        - img "maximize-2" [ref=e7733]
+                        - generic [ref=e7735]: resize
+                      - generic [ref=e7736]: On page resize
+                      - generic [ref=e7737]:
+                        - generic [ref=e7738]: Width
+                        - generic [ref=e7739]: —
+                    - generic [ref=e7740]:
+                      - generic [ref=e7741]:
+                        - img "keyboard" [ref=e7743]
+                        - generic [ref=e7745]: keydown
+                      - generic [ref=e7746]: On keydown
+                      - generic [ref=e7747]:
+                        - generic [ref=e7748]: Last key
+                        - generic [ref=e7749]: —
+                    - generic [ref=e7750]:
+                      - generic [ref=e7751]:
+                        - img "keyboard" [ref=e7753]
+                        - generic [ref=e7755]: keyup
+                      - generic [ref=e7756]: On keyup
+                      - generic [ref=e7757]:
+                        - generic [ref=e7758]: Last key
+                        - generic [ref=e7759]: —
+                    - generic [ref=e7760]:
+                      - generic [ref=e7761]:
+                        - img "alert-circle" [ref=e7763]
+                        - generic [ref=e7765]: collectionFetchError
+                      - generic [ref=e7766]: On collection fetch error
+                      - generic [ref=e7767]:
+                        - generic [ref=e7768]: Last error
+                        - generic [ref=e7769]: None
+              - generic [ref=e7770]:
+                - generic [ref=e7773]: Collection Fetch Error — Live Demo
+                - generic [ref=e7775]:
+                  - generic [ref=e7776]:
+                    - generic [ref=e7777]:
+                      - generic [ref=e7780]: Before — Idle
+                      - generic [ref=e7781]:
+                        - generic [ref=e7782]:
+                          - img "shield-check" [ref=e7783]
+                          - generic [ref=e7784]:
+                            - generic [ref=e7785]: Collection Fetch Error trigger
+                            - generic [ref=e7786]: Waiting — no error yet
+                        - generic [ref=e7787]:
+                          - generic [ref=e7788]: variables['tr000000-...000010']
+                          - generic [ref=e7789]: —
+                      - generic [ref=e7790]: Variable 10 holds its initial value (—) because no datasource has failed yet.
+                    - generic [ref=e7791]:
+                      - generic [ref=e7794]: After — Error Received
+                      - generic [ref=e7795]:
+                        - generic [ref=e7796]:
+                          - img "alert-triangle" [ref=e7797]
+                          - generic [ref=e7798]:
+                            - generic [ref=e7799]: "collectionFetchError fired — event.error:"
+                            - generic [ref=e7800]: None
+                        - generic [ref=e7801]:
+                          - generic [ref=e7802]: variables['tr000000-...000010']
+                          - generic [ref=e7803]: None
+                      - generic [ref=e7804]: After a fetch fails, the workflow fires with event.error = the error message string.
+                  - generic [ref=e7805]:
+                    - generic [ref=e7806]:
+                      - generic [ref=e7807]: Trigger a real fetch error
+                      - generic [ref=e7808]: Fetches an intentionally bad URL → named datasource fails → collectionFetchError trigger fires
+                    - generic [ref=e7809] [cursor=pointer]:
+                      - img "zap" [ref=e7810]
+                      - generic [ref=e7811]: Trigger Fetch Error
+            - generic [ref=e7813]:
+              - generic [ref=e7814]:
+                - generic [ref=e7816]: Vendure Store
+                - generic [ref=e7818]: Categories
+                - generic [ref=e7819]:
+                  - generic [ref=e7820]: Vendure
+                  - generic [ref=e7821]:
+                    - generic [ref=e7823]: GitHub
+                    - generic [ref=e7825]: Documentation
+                    - generic [ref=e7827]: Source code
+              - generic [ref=e7828]:
+                - generic [ref=e7829]: © 2025 Vendure Store. All rights reserved.
+                - generic [ref=e7830]:
+                  - generic [ref=e7831]: Powered by
+                  - img "Vendure" [ref=e7832]
+                  - generic [ref=e7833]: "&"
+                  - img "Next.js" [ref=e7834]
+          - generic [ref=e7836]:
+            - generic [ref=e7837]: ✦ Component Showcase
+            - generic [ref=e7838]: 1280px
+          - generic [ref=e7839]:
+            - generic:
+              - generic: 900px — viewport
+        - generic [ref=e7841]:
+          - button "−" [ref=e7842] [cursor=pointer]
+          - button "52%" [ref=e7843] [cursor=pointer]
+          - button "+" [ref=e7844] [cursor=pointer]
+        - button "⚡ Show interactions (V)" [ref=e7846] [cursor=pointer]
+        - generic [ref=e7848]:
+          - generic [ref=e7849]: "Previewing:"
+          - button "● Normal" [ref=e7850] [cursor=pointer]
+          - button "Loading" [ref=e7851] [cursor=pointer]
+          - button "Validation" [ref=e7852] [cursor=pointer]
+          - button "Empty" [ref=e7853] [cursor=pointer]
+          - button "Disabled" [ref=e7854] [cursor=pointer]
+          - button "+ Custom" [ref=e7855] [cursor=pointer]
+          - generic "Press S to cycle states" [ref=e7856] [cursor=pointer]: S to cycle
+      - generic [ref=e7857]:
+        - generic [ref=e7858]:
+          - button "Design" [ref=e7859] [cursor=pointer]:
+            - img [ref=e7860]
+          - button "Theme" [ref=e7862] [cursor=pointer]:
+            - img [ref=e7863]
+          - button "Workflows" [ref=e7866] [cursor=pointer]:
+            - img [ref=e7867]
+          - button "JSON" [ref=e7869] [cursor=pointer]:
+            - img [ref=e7870]
+        - generic [ref=e7874]: Select a node to edit its properties
+  - region "Notifications alt+T"
+  - alert [ref=e7875]
+  - generic [ref=e7880] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e7881]:
+      - img [ref=e7882]
+    - generic [ref=e7885]:
+      - button "Open issues overlay" [ref=e7886]:
+        - generic [ref=e7887]:
+          - generic [ref=e7888]: "2"
+          - generic [ref=e7889]: "3"
+        - generic [ref=e7890]:
+          - text: Issue
+          - generic [ref=e7891]: s
+      - button "Collapse issues badge" [ref=e7892]:
+        - img [ref=e7893]
+  - generic [ref=e7895]: "20"
+```

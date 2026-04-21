@@ -13,10 +13,10 @@
  *  - XYOffsetControl     — side-by-side x/y inputs for animation offsets
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { isBoundValue, type FormulaValue, BindingIcon } from './_formula-panel';
 import { FormulaEditor } from './_formula-editor';
-import { ResponsiveDot } from './_panel-primitives';
+import { ResponsiveDot, ChangedFieldContext } from './_panel-primitives';
 
 // Suppress browser number spinner arrows via a globally-injected style block.
 if (typeof document !== 'undefined' && !document.getElementById('spatial-no-spin')) {
@@ -80,16 +80,32 @@ function ChainIcon({ bound }: { bound: boolean }) {
 
 export function PanelInput({
   value, onChange, testId, min = -9999, max = 9999, step = 1, width = 44, bound = false, noBorder = false,
+  changed = false, onReset,
 }: {
   value: number | null; onChange: (v: number) => void;
   testId?: string; min?: number; max?: number; step?: number; width?: number | undefined;
   bound?: boolean; noBorder?: boolean;
+  changed?: boolean; onReset?: () => void;
 }) {
   const [local, setLocal] = useState(value === null ? '' : String(value));
   const liveRef = useRef(value ?? 0);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
   const delayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const itvRef  = useRef<ReturnType<typeof setInterval>  | null>(null);
+  const [popupPos, setPopupPos] = useState<{ top: number; left: number } | null>(null);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showPopup = () => {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    if (wrapperRef.current) {
+      const r = wrapperRef.current.getBoundingClientRect();
+      const popW = 140;
+      const left = Math.min(r.left, window.innerWidth - popW - 8);
+      setPopupPos({ top: r.bottom + 4, left: Math.max(8, left) });
+    }
+  };
+  const scheduleHide = () => { hideTimerRef.current = setTimeout(() => setPopupPos(null), 120); };
 
   useEffect(() => { liveRef.current = value ?? 0; setLocal(value === null ? '' : String(value)); }, [value]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -116,7 +132,10 @@ export function PanelInput({
     delayRef.current = setTimeout(() => { itvRef.current = setInterval(fire, 50); }, 250);
   };
 
-  return (
+  const borderColor = changed ? '#f97316' : bound ? '#6366f1' : '#374151';
+  const textColor   = changed ? '#f97316' : bound ? '#a5b4fc' : '#f3f4f6';
+
+  const inputEl = (
     <input
       ref={inputRef}
       className="spatial-input"
@@ -140,11 +159,11 @@ export function PanelInput({
         setLocal(String(live));
       }}
       style={{
-        width: width ?? '100%',
+        width: '100%',
         background: noBorder ? 'transparent' : '#1f2937',
-        border: noBorder ? 'none' : `1px solid ${bound ? '#6366f1' : '#374151'}`,
+        border: noBorder ? 'none' : `1px solid ${borderColor}`,
         borderRadius: noBorder ? 0 : 4,
-        color: bound ? '#a5b4fc' : '#f3f4f6',
+        color: textColor,
         fontSize: 11,
         padding: '3px 4px',
         textAlign: 'center',
@@ -152,6 +171,45 @@ export function PanelInput({
         outline: 'none',
       } as React.CSSProperties}
     />
+  );
+
+  if (!changed || !onReset) {
+    return <div style={{ width: width ?? '100%', flexShrink: 0 }}>{inputEl}</div>;
+  }
+
+  return (
+    <div
+      ref={wrapperRef}
+      style={{ width: width ?? '100%', flexShrink: 0 }}
+      onMouseEnter={showPopup}
+      onMouseLeave={scheduleHide}
+    >
+      {inputEl}
+      {popupPos && (
+        <div
+          onMouseEnter={() => { if (hideTimerRef.current) clearTimeout(hideTimerRef.current); }}
+          onMouseLeave={scheduleHide}
+          style={{
+            position: 'fixed', top: popupPos.top, left: popupPos.left,
+            zIndex: 99999, pointerEvents: 'auto',
+            background: '#1f2937', border: '1px solid #374151', borderRadius: 6,
+            padding: '4px 8px', whiteSpace: 'nowrap',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+          }}
+        >
+          <button
+            onMouseDown={e => { e.preventDefault(); onReset(); setPopupPos(null); }}
+            style={{
+              background: 'none', border: 'none', color: '#e5e7eb',
+              fontSize: 10, cursor: 'pointer', padding: 0,
+              display: 'flex', alignItems: 'center', gap: 3,
+            }}
+          >
+            <span>↺</span><span>Reset to default</span>
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -163,7 +221,7 @@ type SpacingSide = 'top' | 'right' | 'bottom' | 'left';
 function SpacingCell({
   side, value, icon, isHoriz, onChange,
   formulaValue, onFormulaChange, fieldLabel, testId,
-  dotEl,
+  dotEl, cssProp,
 }: {
   side: SpacingSide;
   value: number;
@@ -175,7 +233,11 @@ function SpacingCell({
   fieldLabel: string;
   testId?: string;
   dotEl?: React.ReactNode;
+  cssProp?: string;
 }) {
+  const changedCtx = useContext(ChangedFieldContext);
+  const isCellChanged = !!(cssProp && changedCtx && changedCtx.isChanged(cssProp));
+  const resetCell = cssProp && changedCtx ? () => changedCtx.resetField(cssProp) : undefined;
   const [editorOpen, setEditorOpen] = useState(false);
   const showBind = !!onFormulaChange;
   const bound = showBind && formulaValue !== undefined && isBoundValue(formulaValue);
@@ -197,6 +259,8 @@ function SpacingCell({
           testId={testId}
           width={40}
           bound={bound}
+          changed={isCellChanged}
+          onReset={resetCell}
         />
         {showBind && (
           <button
@@ -307,6 +371,7 @@ export function SpacingDiagram({
         fieldLabel={label}
         testId={testIdPrefix ? `input-${testIdPrefix}-${side}` : undefined}
         dotEl={sideDot}
+        cssProp={cssProp}
       />
     );
   };
@@ -527,12 +592,25 @@ export function InsetDiagram({
   onChange: (side: SpacingSide, v: number) => void;
   testIdPrefix?: string;
 }) {
-  const cell = (side: SpacingSide, icon: React.ReactNode, isHoriz: boolean) => (
-    <div style={{ display: 'flex', flexDirection: isHoriz ? 'row' : 'column', alignItems: 'center', gap: 2 }}>
-      {icon}
-      <PanelInput value={values[side]} onChange={v => onChange(side, v)} testId={`${testIdPrefix}-${side}`} width={40} />
-    </div>
-  );
+  const changedCtx = useContext(ChangedFieldContext);
+
+  const cell = (side: SpacingSide, icon: React.ReactNode, isHoriz: boolean) => {
+    const isCellChanged = !!(changedCtx && changedCtx.isChanged(side));
+    const resetCell = changedCtx ? () => changedCtx.resetField(side) : undefined;
+    return (
+      <div style={{ display: 'flex', flexDirection: isHoriz ? 'row' : 'column', alignItems: 'center', gap: 2 }}>
+        {icon}
+        <PanelInput
+          value={values[side]}
+          onChange={v => onChange(side, v)}
+          testId={`${testIdPrefix}-${side}`}
+          width={40}
+          changed={isCellChanged}
+          onReset={resetCell}
+        />
+      </div>
+    );
+  };
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'auto auto auto', gap: 4, alignItems: 'center', justifyItems: 'center' }}>

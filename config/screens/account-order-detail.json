@@ -2,6 +2,9 @@
   "meta": {
     "title": "Order Details"
   },
+  "queryParams": [
+    { "name": "id", "value": "" }
+  ],
   "state": {},
   "layout": "account",
   "content": {
@@ -129,7 +132,7 @@
                           "className": "font-semibold text-right flex-shrink-0"
                         },
                         "text": {
-                          "expr": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.currencyCode || 'USD')"
+                          "formula": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.currencyCode || 'USD')"
                         }
                       }
                     ]
@@ -232,7 +235,7 @@
                       {
                         "type": "Text",
                         "text": {
-                          "expr": "formatCurrency((collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.subTotalWithTax || 0) / 100, collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.currencyCode || 'USD')"
+                          "formula": "formatCurrency((collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.subTotalWithTax || 0) / 100, collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.currencyCode || 'USD')"
                         }
                       }
                     ]
@@ -253,7 +256,7 @@
                       {
                         "type": "Text",
                         "text": {
-                          "expr": "formatCurrency((collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.shippingWithTax || 0) / 100, collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.currencyCode || 'USD')"
+                          "formula": "formatCurrency((collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.shippingWithTax || 0) / 100, collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.currencyCode || 'USD')"
                         }
                       }
                     ]
@@ -277,7 +280,7 @@
                       {
                         "type": "Text",
                         "text": {
-                          "expr": "formatCurrency((collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.totalWithTax || 0) / 100, collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.currencyCode || 'USD')"
+                          "formula": "formatCurrency((collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.totalWithTax || 0) / 100, collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.currencyCode || 'USD')"
                         }
                       }
                     ]

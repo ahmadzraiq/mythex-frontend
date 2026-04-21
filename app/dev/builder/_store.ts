@@ -22,7 +22,8 @@ import root from '@/config/root';
 import { resolveScreenConfig, type ConfigRegistry } from '@/lib/sdui/config-resolver';
 import { updateSharedComponent, getSharedComponents, loadSharedComponents } from '@/lib/builder/shared-component-data';
 import { getBuilderConfig } from '@/lib/builder/config-data';
-import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
+import { getGlobalVariableStore, registerStorageVar, unregisterStorageVar } from '@/lib/sdui/global-variable-store';
+import { registerGlobalFormulas } from '@/lib/sdui/formula-evaluator';
 
 // ─── Node-tree helpers (extracted to _store-node-helpers.ts) ────────────────
 // Single import for internal use; explicit re-exports for external consumers.
@@ -162,7 +163,7 @@ export type {
   DataSourceHeader, DataSourceParam, DataSourceAuth,
   Folder, CustomVar, DataSourceConfig,
   PageMeta, BuilderPage, HistorySnapshot, CanvasNode,
-  WorkflowMeta, WorkflowCanvasTarget,
+  WorkflowMeta, WorkflowParam, WorkflowCanvasTarget,
   BuilderStore,
   AiChatMessage, AiChatRole, AiToolCall,
 } from './_store-types';
@@ -262,9 +263,8 @@ const SHOWCASE_PAGE: BuilderPage = {
   wy: 0,
 };
 
-// Fragment-only registry: resolves $ref nodes from fragments without injecting
-// the full layout shell (navbar/footer). Pages in the builder show only the
-// page content area — shared layout chrome is not part of the editable tree.
+// Registry for resolveScreenConfig — layouts used for $slot injection.
+// fragments is empty: all reusable content is now in shared-components.json.
 const _fragmentRegistry: ConfigRegistry = {
   layouts: root.layouts as ConfigRegistry['layouts'],
   fragments: root.fragments as ConfigRegistry['fragments'],
@@ -456,6 +456,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   historyIdx: 0,
   pendingFitToPage: false,
   _savedPageNodes: null,
+  _editEntrySelection: null,
   editingSharedComponentIds: [],
   editingSharedComponentId: null,
   editingSharedComponentContentsMap: {},
@@ -479,6 +480,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   pageDataSources: [],
   dsActionsMap: {} as Record<string, string>,
   engineConventions: {},
+  authConfig: undefined,
   appPreviewData: (() => {
     const defaults: Record<string, unknown> = {
     // ── Auth ──────────────────────────────────────────────────────────────────
@@ -1816,11 +1818,30 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
 
   // ── Shared Component edit mode ───────────────────────────────────────────────
 
-  enterSharedComponentEdit: (modelId, content, model) => {
+  enterSharedComponentEdit: (modelId, content, model, entryNodeId?, simple?) => {
     set(s => {
       const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
       if (s.editingSharedComponentIds.includes(modelId)) return s;
 
+      // Store entry selection (first edit only — nested edits don't overwrite it)
+      const entrySelection = s._editEntrySelection ?? (entryNodeId
+        ? { nodeId: entryNodeId, pageId: s.focusedPageId }
+        : null);
+
+      // Simple mode: just open the panel without modifying the canvas
+      if (simple) {
+        return {
+          _editEntrySelection: entrySelection,
+          editingSharedComponentIds: [...s.editingSharedComponentIds, modelId],
+          editingSharedComponentId: modelId,
+          editingSharedComponentContentsMap: { ...s.editingSharedComponentContentsMap, [modelId]: content },
+          editingSharedComponentModelsMap: { ...s.editingSharedComponentModelsMap, [modelId]: model as Record<string, unknown> },
+          editingSharedComponentContent: content,
+          editingSharedComponentModel: model as Record<string, unknown>,
+        };
+      }
+
+      // Full mode: insert backdrop + repositioned content into the canvas
       const contentNode = clone(content) as SDUINode;
       const baseZ = 50 + s.editingSharedComponentIds.length;
 
@@ -1859,6 +1880,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       return {
         _savedPageNodes: savedPageNodes,
         pageNodes: nextNodes,
+        _editEntrySelection: entrySelection,
         editingSharedComponentIds: [...s.editingSharedComponentIds, modelId],
         editingSharedComponentId: modelId,
         editingSharedComponentContentsMap: { ...s.editingSharedComponentContentsMap, [modelId]: content },
@@ -1948,6 +1970,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         set({
           pageNodes: newPageNodes,
           _savedPageNodes: allClosed ? null : _savedPageNodes,
+          _editEntrySelection: allClosed ? null : get()._editEntrySelection,
           editingSharedComponentIds: newEditingIds,
           editingSharedComponentId: newLastId,
           editingSharedComponentContentsMap: newContentsMap,
@@ -1970,6 +1993,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     set({
       pageNodes: pageNodes as SDUINode[],
       _savedPageNodes: newEditingIds.length === 0 ? null : _savedPageNodes,
+      _editEntrySelection: newEditingIds.length === 0 ? null : get()._editEntrySelection,
       editingSharedComponentIds: newEditingIds,
       editingSharedComponentId: newLastId,
       editingSharedComponentContentsMap: newContentsMap,
@@ -2099,6 +2123,17 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       pages: s.pages.map((p) => p.id === s.focusedPageId ? { ...p, queryParams: params } : p),
     })),
 
+  setCurrentPageAccess: (access, guestOnly, accessCondition) =>
+    set((s) => ({
+      pages: s.pages.map((p) =>
+        p.id === s.focusedPageId
+          ? { ...p, access, guestOnly, accessCondition: accessCondition ?? p.accessCondition }
+          : p
+      ),
+    })),
+
+  setAuthConfig: (config) => set({ authConfig: config }),
+
   setAppPreviewData: (data) => set({ appPreviewData: data }),
 
   setPageWorkflow: (name, actions) =>
@@ -2126,10 +2161,49 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   closeWorkflowCanvas: () => set({ workflowCanvasTarget: null, liveCanvasSteps: null }),
   liveCanvasSteps: null,
   setLiveCanvasSteps: (steps) => set({ liveCanvasSteps: steps }),
-  setGlobalFormula: (name, expr) =>
-    set(s => ({ globalFormulas: { ...s.globalFormulas, [name]: expr } })),
-  removeGlobalFormula: (name) =>
-    set(s => { const { [name]: _, ...rest } = s.globalFormulas; return { globalFormulas: rest }; }),
+  setGlobalFormula: (id, def) => {
+    set(s => {
+      if (def == null) {
+        const { [id]: _, ...rest } = s.globalFormulas;
+        return { globalFormulas: rest };
+      }
+      return { globalFormulas: { ...s.globalFormulas, [id]: def as import('./_store-types').GlobalFormulaDef } };
+    });
+    // Sync evaluator registry + editor tokenizer after state settles
+    setTimeout(() => {
+      const formulas = useBuilderStore.getState().globalFormulas;
+      registerGlobalFormulas(formulas as Record<string, unknown>);
+      import('./_formula-editor-dom').then(({ setUserFormulaNames }) => {
+        setUserFormulaNames(Object.values(formulas).map((d: unknown) => (d as { name?: string })?.name ?? '').filter(Boolean));
+      });
+    }, 0);
+  },
+  setGlobalFormulaFull: (id, def) => {
+    set(s => {
+      if (def == null) {
+        const { [id]: _, ...rest } = s.globalFormulas;
+        return { globalFormulas: rest };
+      }
+      return { globalFormulas: { ...s.globalFormulas, [id]: def } };
+    });
+    setTimeout(() => {
+      const formulas = useBuilderStore.getState().globalFormulas;
+      registerGlobalFormulas(formulas as Record<string, unknown>);
+      import('./_formula-editor-dom').then(({ setUserFormulaNames }) => {
+        setUserFormulaNames(Object.values(formulas).map((d: unknown) => (d as { name?: string })?.name ?? '').filter(Boolean));
+      });
+    }, 0);
+  },
+  removeGlobalFormula: (name) => {
+    set(s => { const { [name]: _, ...rest } = s.globalFormulas; return { globalFormulas: rest }; });
+    setTimeout(() => {
+      const formulas = useBuilderStore.getState().globalFormulas;
+      registerGlobalFormulas(formulas as Record<string, unknown>);
+      import('./_formula-editor-dom').then(({ setUserFormulaNames }) => {
+        setUserFormulaNames(Object.values(formulas).map((d: unknown) => (d as { name?: string })?.name ?? '').filter(Boolean));
+      });
+    }, 0);
+  },
 
   addVarFolder: (f) => set(s => ({ varFolders: [...s.varFolders.filter(x => x.id !== f.id), f] })),
   updateVarFolder: (id, name) => set(s => ({ varFolders: s.varFolders.map(f => f.id === id ? { ...f, name } : f) })),
@@ -2174,6 +2248,11 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     // leave the old array in the store and all bound formulas would return undefined.
     const vs = getGlobalVariableStore().getState();
     vs.setState((prev: Record<string, unknown>) => ({ ...prev, [id]: varWithId.initialValue ?? null }));
+    // Register for localStorage persistence — registerStorageVar will also read any
+    // previously stored value from localStorage and override the initialValue above.
+    if (varWithId.saveInLocalStorage) {
+      registerStorageVar(id, varWithId.initialValue);
+    }
     set(s => ({
       customVars: [
         ...s.customVars.filter(x => x.name !== v.name),
@@ -2189,12 +2268,31 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         getGlobalVariableStore().getState().setState((prev: Record<string, unknown>) => ({
           ...prev, [current.id!]: patch.initialValue ?? null,
         }));
+        // Re-register to update the comparison default so the subscription can
+        // correctly decide whether to write or remove the localStorage entry.
+        if (current.saveInLocalStorage) {
+          registerStorageVar(current.id, patch.initialValue);
+        }
+      }
+    }
+    // Handle saveInLocalStorage toggle
+    if ('saveInLocalStorage' in patch) {
+      const current = useBuilderStore.getState().customVars.find(v => v.name === name);
+      if (current?.id) {
+        if (patch.saveInLocalStorage) {
+          registerStorageVar(current.id, current.initialValue);
+        } else {
+          unregisterStorageVar(current.id, true);
+        }
       }
     }
     set(s => ({ customVars: s.customVars.map(v => v.name === name ? { ...v, ...patch } : v) }));
   },
-  removeCustomVar: (name) =>
-    set(s => ({ customVars: s.customVars.filter(v => v.name !== name) })),
+  removeCustomVar: (name) => {
+    const toRemove = useBuilderStore.getState().customVars.find(v => v.name === name);
+    if (toRemove?.id) unregisterStorageVar(toRemove.id, true);
+    set(s => ({ customVars: s.customVars.filter(v => v.name !== name) }));
+  },
 
   addPageDataSource: (cfg) =>
     set(s => ({ pageDataSources: [...s.pageDataSources, cfg] })),
@@ -2285,6 +2383,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
             if (Array.isArray(saved?.dsFolders)) next.dsFolders = saved!.dsFolders as typeof s.dsFolders;
             if (saved?.themeOverrides) next.themeOverrides = saved.themeOverrides as typeof s.themeOverrides;
             if (saved?.themeDarkOverrides) next.themeDarkOverrides = saved.themeDarkOverrides as typeof s.themeDarkOverrides;
+            if (saved?.authConfig && typeof saved.authConfig === 'object') next.authConfig = saved.authConfig as typeof s.authConfig;
             if (saved?.projectMeta && typeof saved.projectMeta === 'object') {
               const pm = saved.projectMeta as { mood?: string; animationLevel?: number; layoutStructure?: number; description?: string; appName?: string; category?: string };
               if (pm.mood)                           next.projectMood            = pm.mood;
@@ -2323,6 +2422,14 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
             }
             if (Object.keys(patches).length > 0) {
               vs.setState((prev: Record<string, unknown>) => ({ ...prev, ...patches }));
+            }
+            // Register vars with saveInLocalStorage — registerStorageVar will immediately
+            // read any stored value from localStorage and patch the store, restoring the
+            // last persisted value after a page refresh.
+            for (const cv of saved!.customVars as CustomVar[]) {
+              if (cv.id && cv.saveInLocalStorage) {
+                registerStorageVar(cv.id, cv.initialValue);
+              }
             }
           }
         } else {
@@ -2404,6 +2511,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         workflows?: Array<{ id: string; name: string; trigger: string; steps: object[]; onErrorSteps?: object[] }>;
         directActions?: Record<string, Record<string, unknown>>;
         dsActionsMap?: Record<string, string>;
+        formulas?: Record<string, import('./_store-types').GlobalFormulaDef>;
       };
 
       set(s => {
@@ -2483,17 +2591,47 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
             n.replace(/([A-Z])/g, ' $1').replace(/[-_]/g, ' ').replace(/\s+/g, ' ')
              .replace(/^./, s => s.toUpperCase()).trim();
 
-          const configWorkflows = Object.fromEntries(json.workflows.map(w => [w.id, w.steps]));
           // Detect UUID-shaped strings (fall-through when no name is set)
-          const isUuidStr = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
-          const configMeta = Object.fromEntries(json.workflows.map(w => [w.id, {
+          const isUuidStr = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+          // Workflows with `params` are global workflows (Logic tab); others are page workflows
+          type RawWorkflow = { id: string; name?: string; trigger?: string; steps: unknown[]; onErrorSteps?: unknown[]; isTrigger?: boolean; pageScope?: string; params?: import('./_store-types').WorkflowParam[] };
+          const globalConfigWorkflows = (json.workflows as RawWorkflow[]).filter(w => Array.isArray(w.params) && w.params.length > 0);
+          const pageConfigWorkflows = (json.workflows as RawWorkflow[]).filter(w => !Array.isArray(w.params) || w.params.length === 0);
+
+          // Page workflows
+          const configPageWorkflows = Object.fromEntries(pageConfigWorkflows.map(w => [w.id, w.steps]));
+          const configPageMeta = Object.fromEntries(pageConfigWorkflows.map(w => [w.id, {
             id: w.id,
             name: w.name && !isUuidStr(w.name) ? toHumanName(w.name) : 'Unnamed Workflow',
             trigger: w.trigger,
             isSystem: isSystemWorkflow(w),
+            ...(w.isTrigger ? { isTrigger: true } : {}),
+            ...(w.pageScope ? { pageScope: w.pageScope } : {}),
           } as WorkflowMeta]));
-          next.pageWorkflows = { ...configWorkflows, ...userWorkflows };
-          next.pageWorkflowMeta = { ...configMeta, ...userMeta };
+          next.pageWorkflows = { ...configPageWorkflows, ...userWorkflows } as typeof s.pageWorkflows;
+          next.pageWorkflowMeta = { ...configPageMeta, ...userMeta };
+
+          // Global workflows — seeded from config (params-bearing workflows)
+          if (globalConfigWorkflows.length > 0) {
+            const globalConfigIds = new Set(globalConfigWorkflows.map(w => w.id));
+            // Keep user-created global workflows that aren't from config
+            const userGlobalWorkflows = Object.fromEntries(
+              Object.entries(s.globalWorkflows).filter(([id]) => !globalConfigIds.has(id))
+            );
+            const userGlobalMeta = Object.fromEntries(
+              Object.entries(s.globalWorkflowMeta).filter(([id]) => !globalConfigIds.has(id))
+            );
+            const configGlobalWorkflows = Object.fromEntries(globalConfigWorkflows.map(w => [w.id, w.steps]));
+            const configGlobalMeta = Object.fromEntries(globalConfigWorkflows.map(w => [w.id, {
+              id: w.id,
+              name: w.name && !isUuidStr(w.name) ? toHumanName(w.name) : 'Unnamed Workflow',
+              trigger: w.trigger ?? 'execution',
+              params: w.params,
+            } as WorkflowMeta]));
+            next.globalWorkflows = { ...configGlobalWorkflows, ...userGlobalWorkflows } as typeof s.globalWorkflows;
+            next.globalWorkflowMeta = { ...configGlobalMeta, ...userGlobalMeta };
+          }
         }
 
         // ── Direct actions from config/actions/*.json ─────────────────────────
@@ -2501,8 +2639,32 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
           next.directActionsMap = json.directActions as Record<string, Record<string, unknown>>;
         }
 
+        // ── Global formulas from config/formulas.json ─────────────────────────
+        if (json.formulas && typeof json.formulas === 'object') {
+          const configIds = new Set(Object.keys(json.formulas));
+          const userFormulas = Object.fromEntries(
+            Object.entries(s.globalFormulas).filter(([id]) => !configIds.has(id))
+          );
+          next.globalFormulas = { ...json.formulas, ...userFormulas };
+        }
+
+        // ── Shared components persisted with the project ──────────────────────
+        if (json.sharedComponents && typeof json.sharedComponents === 'object') {
+          loadSharedComponents(json.sharedComponents as Record<string, unknown>);
+        }
+
         return next;
       });
+
+      // Seed the formula evaluator registry + editor tokenizer with config formulas
+      try {
+        const formulas = useBuilderStore.getState().globalFormulas;
+        registerGlobalFormulas(formulas as Record<string, unknown>);
+        // Sync user formula names to chip tokenizer (best-effort, editor DOM only)
+        import('./_formula-editor-dom').then(({ setUserFormulaNames }) => {
+          setUserFormulaNames(Object.values(formulas).map((d: unknown) => (d as { name?: string })?.name ?? '').filter(Boolean));
+        }).catch(() => { /* non-fatal */ });
+      } catch { /* non-fatal */ }
     } catch {
       // Silently ignore — builder still works without pre-populated sources.
     }

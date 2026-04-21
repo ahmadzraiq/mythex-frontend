@@ -75,7 +75,9 @@ Two compounding mistakes:
 **Fix:** Grid Box wraps a child with `map` and `className: "contents"`:
 ```json
 {"type":"Box","props":{"className":"grid grid-cols-2 gap-4 lg:grid-cols-4"},"children":[
-  {"type":"Box","map":"store.products","key":"product","props":{"className":"contents"},"children":[{"$ref":"fragments/product-card"}]}
+  {"type":"Box","map":"store.products","key":"product","props":{"className":"contents"},"children":[
+    { "type": "Box", "_shared": { "id": "sc-product-card", "name": "Product Card" }, "children": [...] }
+  ]}
 ]}
 ```
 `contents` (display: contents) makes the wrapper invisible so product cards become direct grid children.
@@ -229,11 +231,11 @@ const key = childKey && !isScopeVar ? childKey : `child-${i}`;
 
 ---
 
-## Product Not Found / route.slug Race
+## Product Not Found / Query Param Race
 
-**Problem:** Workflow `trigger: "created"` runs before `route.slug` is set; fetch URL gets empty slug.
+**Problem:** Workflow `trigger: "created"` runs before `globalContext.browser.query` is populated; fetch URL gets empty slug.
 
-**Fix:** (1) Use `useLayoutEffect` in page to set route data before child effects. (2) In engine `get`, fallback to `computeMergedState(useSduiStore.getState())` when mergedState lacks the value.
+**Fix:** (1) `globalContext` is computed via `useMemo` from `searchParams`, so it's always current on render. (2) In engine `get`, fallback to `computeMergedState(useSduiStore.getState())` when mergedState lacks the value.
 
 ---
 
@@ -995,13 +997,13 @@ Inside the loop body, access the current item via:
 
 **How `setFormState` works:** The `setFormState` workflow step writes `isSubmitting`/`isSubmitted` directly to `local.data.form` in both the global variable store and the Zustand SDUI store.
 
-**Display rule:** To display these flags in the UI, use `{{local.data.form.isSubmitted}}` / `{{local.data.form.isSubmitting}}` template syntax — NOT `{ "expr": "String(local?.data?.form?.isSubmitted ?? false)" }`.
+**Display rule:** To display these flags in the UI, use `{{local.data.form.isSubmitted}}` / `{{local.data.form.isSubmitting}}` template syntax — NOT `{ "formula": "String(local?.data?.form?.isSubmitted ?? false)" }`.
 
-**Why:** `{ "expr": "..." }` text nodes use `extractPathsFromObject` for dependency tracking, which only extracts `{{...}}` patterns from expression strings. A raw JS expression like `String(local?.data?.form?.isSubmitted ?? false)` generates **zero subscriptions** — the node never re-renders when the value changes. Template strings `{{path}}` do generate subscriptions via `extractPathsFromTemplate`.
+**Why:** `{ "formula": "..." }` text nodes use `extractPathsFromObject` for dependency tracking, which only extracts `{{...}}` patterns from expression strings. A raw JS expression like `String(local?.data?.form?.isSubmitted ?? false)` generates **zero subscriptions** — the node never re-renders when the value changes. Template strings `{{path}}` do generate subscriptions via `extractPathsFromTemplate`.
 
 ```json
 // ❌ BAD — no subscription generated; node never re-renders when isSubmitted changes
-{ "type": "Text", "text": { "expr": "String(local?.data?.form?.isSubmitted ?? false)" } }
+{ "type": "Text", "text": { "formula": "String(local?.data?.form?.isSubmitted ?? false)" } }
 
 // ✅ GOOD — generates subscription to local.data.form.isSubmitted; re-renders on change
 { "type": "Text", "text": "{{local.data.form.isSubmitted}}" }
@@ -1025,7 +1027,7 @@ Inside the loop body, access the current item via:
 
 **FormContainer sync `useEffect` — preserve workflow writes:** The `useEffect` that syncs `formState` back to the global store is patched to preserve `isSubmitting`/`isSubmitted` from the store when not resetting. This prevents the React state snapshot (which is stale at `useEffect` fire time) from overwriting values set by `setFormState` workflow steps running concurrently as microtasks.
 
-**Rule:** Always use `{{local.data.form.isSubmitted}}` and `{{local.data.form.isSubmitting}}` in display nodes. Never use `expr` for these — you'll get a node that shows the initial render value forever.
+**Rule:** Always use `{{local.data.form.isSubmitted}}` and `{{local.data.form.isSubmitting}}` in display nodes. Never use `{ "formula": "..." }` for these — you'll get a node that shows the initial render value forever.
 
 ---
 
@@ -1074,9 +1076,9 @@ Inside the loop body, access the current item via:
 
 ---
 
-## Reactive Subscriptions — `text: { expr }` and `condition` Strings Are NOT Subscribed
+## Reactive Subscriptions — `text: { formula }` and `condition` Strings Are NOT Subscribed
 
-**Problem:** Each renderer node subscribes only to the paths returned by `extractNodeDependencies`. This extractor finds paths inside `{{...}}` template strings only. Plain formula strings in `text: { "expr": "..." }` or `"condition": "formula string"` have **no `{{...}}`**, so **zero deps are extracted** and the node **never re-renders** when store data changes.
+**Problem:** Each renderer node subscribes only to the paths returned by `extractNodeDependencies`. This extractor finds paths inside `{{...}}` template strings only. Plain formula strings in `text: { "formula": "..." }` or `"condition": "formula string"` have **no `{{...}}`**, so **zero deps are extracted** and the node **never re-renders** when store data changes.
 
 The `map` field with a string path IS correctly subscribed.
 
@@ -1084,13 +1086,13 @@ The `map` field with a string path IS correctly subscribed.
 
 | Field | Wrong (not subscribed) | Correct (subscribed) |
 |---|---|---|
-| `text` count/length | `"text": { "expr": "arr.length" }` | `"text": "{{path.to.array.length}}"` |
-| `text` formula result | `"text": { "expr": "x + y" }` | Use `{{path}}` template or move to computed |
+| `text` count/length | `"text": { "formula": "arr.length" }` | `"text": "{{path.to.array.length}}"` |
+| `text` formula result | `"text": { "formula": "x + y" }` | Use `{{path}}` template or move to computed |
 | `condition` (needs own subscription) | `"condition": "path.length === 0"` | pair with a `text: "{{path.length}}"` on the same node, OR use a parent `map` that already subscribes |
 
 ```json
 // ❌ BAD — shows 0 forever; never re-renders when collection.data changes
-{ "text": { "expr": "(collections['UUID']?.data || []).length", "suffix": "" } }
+{ "text": { "formula": "(collections['UUID']?.data || []).length", "suffix": "" } }
 
 // ✅ GOOD — subscribed; updates immediately when data changes
 { "text": "{{collections.UUID.data.length}}" }
@@ -1113,7 +1115,7 @@ The `text` template subscribes to `local.data.form.fields.fieldName.isValid`. Wh
 
 **⚠️ JSON Logic conditions (`{ "not": { "var": "..." } }`, `{ "==": [...] }`) are NOT supported and have been removed.** The `{ "var" }` branch was removed from `extractPathsFromObject` in `dependency-extractor.ts`. Never use JSON Logic syntax in `condition` — it never evaluated correctly and is now unsupported for subscriptions too.
 
-**`condition` subscription self-subscribes via formula string:** The renderer directly extracts paths from formula strings in `condition` values — any `variables['UUID']`, `collections['UUID']`, `route.*`, or other paths in the formula string generate subscriptions automatically.
+**`condition` subscription self-subscribes via formula string:** The renderer directly extracts paths from formula strings in `condition` values — any `variables['UUID']`, `collections['UUID']`, `globalContext.*`, or other paths in the formula string generate subscriptions automatically.
 
 ```json
 // ❌ WRONG — JSON Logic; removed from codebase
@@ -1128,7 +1130,7 @@ The `text` template subscribes to `local.data.form.fields.fieldName.isValid`. Wh
 **Rule:** For any node that displays or gates on dynamically-changing store data:
 - Use `{{path}}` template strings for `text` (subscribed)
 - Use **plain JS formula strings** for `condition` (self-subscribing via `extractPathsFromObject` scanning for identifiers)
-- Only use `text: { "expr": "..." }` for static/config-time values or inside a `map` scope where the parent already re-renders
+- Only use `text: { "formula": "..." }` for static/config-time values or inside a `map` scope where the parent already re-renders
 
 ---
 
@@ -1311,7 +1313,7 @@ The builder's Settings panel uses a `FormulaValue` object (`{ formula: "..." }`)
 ```json
 // ❌ WRONG — flat screen state key; silently resolves to undefined/empty
 "map": "myItems"
-"map": { "expr": "myItems" }
+"map": { "formula": "myItems" }
 "condition": "get('myFlag')"
 
 // ✅ CORRECT — declared in variables.json, accessed by UUID

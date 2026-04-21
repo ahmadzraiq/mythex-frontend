@@ -1,5 +1,5 @@
 ---
-description: Build guide - read SCHEMA.md when building screens, layouts, fragments
+description: Build guide - read SCHEMA.md when building screens, layouts, shared components
 alwaysApply: true
 ---
 
@@ -11,9 +11,9 @@ When migrating an existing app (React, Next.js, etc.) to this JSON-driven SDUI s
 
 1. **`config/store.json` first** — Define `initialData` (all global state: auth, cart, route, etc.), `engineConventions` (loadingSuffix, errorSuffix, defaultFormPath, screenScopedAliases, graphqlEndpoint, graphqlHeaders, etc.), and `paths` aliases.
 2. **`config/theme.json`** — Map brand colors and section themes. All colors become `var(--theme-*)` CSS variables.
-3. **`config/routes.json`** — Add every route. Dynamic routes (product, category, etc.) use `dynamic: true`. Set `auth: true` for protected routes.
-4. **Layouts** (`config/layouts/`) — Create shared layout shells (header + content slot + drawer/footer). Reuse across screens via `layout: "layoutName"`.
-5. **Fragments** (`config/fragments/`) — Extract shared UI: header, footer, drawer, nav, product cards, modals. Register in `fragments/index.ts`.
+3. **`config/routes.json`** — Add every route. Set `auth: true` for protected routes. Dynamic data (product slug, order id) is passed via query params and accessed via `globalContext.browser.query.*`.
+4. **Layouts** (`config/layouts/`) — Create shared layout shells (navbar + content slot + footer). Reuse across screens via `layout: "layoutName"`.
+5. **Shared components** (`config/shared-components.json`) — Add reusable UI models (navbar, footer, product cards, etc.) here. Inline at usage sites with `"_shared": { "id": "sc-id", "name": "Name" }` metadata.
 6. **Actions** (`config/actions/`) — Map every data-fetch and mutation. Use `type: "graphql"` for GraphQL APIs or `type: "fetch"` for REST. Auth flows use `type: "validate"` then fetch/graphql.
 7. **Screens** (`config/screens/`) — One JSON per screen. Each maps to a route config name. On-mount data fetching is handled by workflows with `trigger: "created"`.
 8. **`config/app.ts`** — Import all screens and merge into the app config.
@@ -23,8 +23,8 @@ When migrating an existing app (React, Next.js, etc.) to this JSON-driven SDUI s
 - `useEffect` data fetching → a named workflow with `trigger: "created"` bound to the page or component
 - `onClick` / form submit → `"actions": [{ "action": "namedWorkflow" }]` — trigger comes from the workflow definition
 - React Router / Next.js `<Link>` → a named navigate workflow (e.g. `navigateToHome`, `navigateToProduct`)
-- Dynamic routes (e.g. `/product/:slug`) → a named navigate workflow with `context?.item?.data?.slug` in its step config (or `{ "var": "context.item.data.slug" }` in payload)
-- Shared UI (header, cards) → fragments with `$ref`
+- Dynamic routes (e.g. `/product?slug=laptop`) → a named navigate workflow with `queryParams: { slug: { formula: "context?.item?.data?.slug" } }` in its step config
+- Shared UI (header, cards) → add model to `config/shared-components.json`, inline with `_shared` marker at usage sites
 - Conditional rendering → `condition` (plain JS formula string using named scopes, e.g. `"variables['UUID'] > 0"`) on nodes
 - Lists / `.map()` → `map` on the node with `{{context.item.data.field}}` in text templates, `context?.item?.data?.field` in formula expressions
 
@@ -32,32 +32,19 @@ When migrating an existing app (React, Next.js, etc.) to this JSON-driven SDUI s
 
 ## Bootstrap Files (Required When Starting Fresh)
 
-When `config/` is empty, create these 3 wiring files before anything else. Without them `$ref`, layouts, and `resolveScreenConfig` all fail.
+When `config/` is empty, create these 2 wiring files before anything else. Without them layouts and `resolveScreenConfig` all fail.
 
 **Do NOT modify `app/[[...slug]]/page.tsx` or `lib/sdui/`** — they are generic and work as-is for any app.
 
-### `config/fragments/index.ts`
-Keys MUST use the full `'fragments/name'` prefix — `$ref` resolves by this exact string.
-```ts
-import header from './header.json';
-import drawer from './drawer.json';
-// import every fragment you create
-
-export const fragments = {
-  'fragments/header': header,
-  'fragments/drawer': drawer,
-  'fragments/modals/myModal': myModal,
-} as const;
-```
-
 ### `config/layouts/index.ts`
 ```ts
-import authenticated from './authenticated.json';
+import store from './store.json';
+import account from './account.json';
 // import every layout you create
 
 export const layouts = {
-  authenticated: authenticated as { structure: object },
-  minimal: minimal as { structure: object },
+  store: store as { structure: object },
+  account: account as { structure: object },
 } as const;
 ```
 
@@ -65,7 +52,6 @@ export const layouts = {
 ```ts
 import routes from './routes.json';
 import { layouts } from './layouts';
-import { fragments } from './fragments';
 import { resolveScreenConfig } from '@/lib/sdui/config-resolver';
 // import every screen JSON
 import home from './screens/home.json';
@@ -74,7 +60,8 @@ import login from './screens/login.json';
 import authActions from './actions/auth.json';
 import layoutActions from './actions/layout.json';
 
-const registry = { layouts, fragments };
+// Fragments registry is empty — all shared UI is inlined via shared-components.json
+const registry = { layouts, fragments: {} };
 
 const rawScreens = { home, login /*, ...*/ };
 const screens = Object.fromEntries(
@@ -92,7 +79,7 @@ export default { ...routes, screens, actions } as const;
 
 ## No Inline Actions — All Actions Must Be Named Workflows
 
-**Rule:** UI nodes in screens and fragments MUST NOT contain inline action definitions. Every action must be a named workflow in `config/actions/*.json`.
+**Rule:** UI nodes in screens and shared components MUST NOT contain inline action definitions. Every action must be a named workflow in `config/actions/*.json`.
 
 **Why:** Inline actions are invisible to the builder's workflow canvas, cannot be reused, and break the trigger-based binding model.
 
@@ -133,10 +120,10 @@ Never use `{ "action": "navigate", "payload": { "path": "/..." } }` inline on a 
 ```json
 // config/actions/layout.json
 "navigateToHome": { "trigger": "click", "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/" } }] },
-"navigateToProduct": { "trigger": "click", "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "routeConfig": "product", "slug": { "var": "context.item.data.slug" } } }] }
+"navigateToProduct": { "trigger": "click", "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/product", "queryParams": { "slug": { "formula": "context?.item?.data?.slug" } } } }] }
 ```
 
-Dynamic route slugs from map scope use `{ "var": "context.item.data.slug" }` — the `var` resolver uses `get()` with the full state including repeat scope.
+Dynamic route slugs from map scope use `{ "formula": "context?.item?.data?.slug" }` inside `queryParams`.
 
 **Existing named navigate workflows in `config/actions/layout.json`:** `navigateToHome`, `navigateToCart`, `navigateToCheckout`, `navigateToSignIn`, `navigateToForgotPassword`, `navigateToRegister`, `navigateToOrders`, `navigateToAccountAddresses`, `navigateToAccountProfile`, `navigateToSearchPage`, `navigateToSearch`, `navigateToProduct`, `navigateToProductFromCart`, `navigateToOrderDetail`, `navigateToCollection`, `navigateToVerifyPending`, `navigateToCheckoutConfirmation`, `navigateToOrderConfirmation`.
 
@@ -219,11 +206,11 @@ Inside the loop body, `context.item.data.value` is the current element and `cont
 | `variables['UUID']` | `variables['d9e0f1a2-...'] === 'shipping'` | `config/variables.json` |
 | `collections['UUID']?.data.*` | `collections['a1b2...']?.data?.activeOrder?.totalQuantity > 0` | `config/datasources.json` |
 | `context?.item?.data.*` | `context?.item?.data?.productAsset?.preview` | repeat-item scope |
-| `route?.sort`, `route?.facets`, `route?.slug` | `route?.sort === 'name-asc'` | URL/route state |
+| `globalContext?.browser?.query.*` | `globalContext?.browser?.query?.sort === 'name-asc'` | URL query params |
 | `auth?.user`, `auth?.token` | `auth?.user === null` | auth state |
 | `_workflow?.lastAction`, `_workflow?.lastError` | `_workflow?.lastError` | workflow state |
 | `local?.data?.form?.fields?.field?.isValid` | `local?.data?.form?.fields?.email?.isValid` | form validation state |
-| `_conventions?.sortInputMap` | `lookupMap(_conventions?.sortInputMap, route?.sort, ...)` | engine computed |
+| `_conventions?.sortInputMap` | `lookupMap(_conventions?.sortInputMap, globalContext?.browser?.query?.sort, ...)` | engine computed |
 | `get('flatKey')` | `get('collectionPageSize')` | arbitrary state path escape hatch |
 
 ### In formula/condition expressions
@@ -234,7 +221,7 @@ Inside the loop body, `context.item.data.value` is the current element and `cont
 "value": { "formula": "variables['UUID'] + 1" }
 "condition": "collections['UUID']?.data?.activeOrder?.totalQuantity > 0"
 "condition": "context?.item?.data?.productAsset?.preview"
-"condition": "route?.sort === 'name-asc'"
+"condition": "globalContext?.browser?.query?.sort === 'name-asc'"
 "condition": "auth?.user === null"
 ```
 
@@ -266,15 +253,15 @@ Declare all variables in `config/variables.json` with a UUID. Never use screen `
 
 When asked to build or add screens, layouts, modals, or features to this website:
 
-1. **Read `docs/SCHEMA.md`** – It defines the full JSON schema for screens, layouts, fragments, actions, and routes. For new apps, also use `docs/NEW-APP-CHECKLIST.md`.
+1. **Read `docs/SCHEMA.md`** – It defines the full JSON schema for screens, layouts, shared components, actions, and routes. For new apps, also use `docs/NEW-APP-CHECKLIST.md`.
 
 2. **Follow the schema exactly:**
-   - Screens with header/drawer: use `layout: "authenticated"` + `content`
+   - Screens with navbar/footer: use `layout: "store"` + `content`
    - Screens without: use `ui` directly
-   - Reusable UI: create fragments in `config/fragments/`, register in `fragments/index.ts`, use `$ref`
+   - Reusable UI: add a model to `config/shared-components.json`, inline at usage sites with `_shared` marker
    - Modals: Form must wrap ModalBody + ModalFooter; FormSubmitButton must be inside Form
    - **Button custom colors:** Use `className="!bg-blue-500 !text-white"` (or theme vars). Gluestack v3: Button auto-uses `action="default"` when className has bg-*/text-* so custom colors apply. See sdui-layout-pitfalls.mdc "Button — Custom Colors (Gluestack v3)".
-   - Derived values: use `text: { expr: <formula string>, suffix?, prefix? }` for cart count, subtotal, totals; use `formatCurrency` for money
+   - Derived values: use `text: { formula: <formula string>, suffix?, prefix? }` for cart count, subtotal, totals; use `formatCurrency` for money
 
 3. **Add routes** in `config/routes.json` and **import** new screens in `config/app.ts`.
 
@@ -286,18 +273,18 @@ When asked to build or add screens, layouts, modals, or features to this website
 5. **Never hardcode** layout or shared UI in React—define everything in JSON config.
 
 6. **Config-driven, no hardcoded values:**
- - Routes: `config/routes.json` (dynamic routes use `dynamic: true`)
+   - Routes: `config/routes.json`
  - Initial state: `config/store.json` (`initialData`, optional `paths`, optional `computed`)
  - Theme: `config/theme.json` (colors, sections); use `var(--theme-*)` in classNames
  - GraphQL endpoint & headers: `engineConventions.graphqlEndpoint` + `engineConventions.graphqlHeaders` in `store.json`
- - Dynamic navigation: `{ "action": "navigate", "payload": { "routeConfig": "product", "slug": { "var": "$item.slug" } } }`—not hardcoded action names like `navigateToProduct`
+   - Dynamic navigation: use `navigateTo` with `path + queryParams` — e.g. `{ "path": "/product", "queryParams": { "slug": { "formula": "context?.item?.data?.slug" } } }`
  - **searchParamSync**: Use `variableStorePath` and `triggersParamChange` in `store.json`; never hardcode paths in `page.tsx`. **paramChangeAction**: Must exactly match action name in `config/actions/`. See `sdui-computed-and-sync.mdc`.
  - **Computed ops**: Use generic ops (`findItemById`, `findItemByOptionsMatch`, `getFromMap`, etc.); never domain-specific ops. See `sdui-computed-and-sync.mdc`.
  - **No Next.js API routes**: Data comes from external APIs (REST or GraphQL). Do not create `app/api/` routes.
 
 7. **UI/UX rules** (see `ui-ux-contrast.mdc`): No duplicate content, no dark-on-dark contrast, theme in JSON only, strong gradient + drop-shadow for text on images, light borders for outline buttons on dark backgrounds.
 
-8. **Never hardcode action logic in engine**: Use config-driven actions. For append-to-nested-array (e.g. reviews), use `type: "appendToPath"` with `targetPath`, `value` (supports `{ "var" }`, `{ "expr" }`), `resetFormPath`, `resetFormValue`. Special vars: `_timestamp`, `_date`.
+8. **Never hardcode action logic in engine**: Use config-driven actions. For append-to-nested-array (e.g. reviews), use `type: "appendToPath"` with `targetPath`, `value` (supports `{ "var" }`, `{ "formula" }`), `resetFormPath`, `resetFormValue`. Special vars: `_timestamp`, `_date`.
 
 9. **No hardcoded conventions in code**: All engine behavior comes from `engineConventions` in `store.json`—`screenScopedAliases`, `defaultFormPath`, `loadingSuffix`, `errorSuffix`, etc. Zero fallbacks; config is the single source of truth.
 

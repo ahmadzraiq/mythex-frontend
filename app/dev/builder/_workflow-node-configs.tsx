@@ -36,7 +36,7 @@ import {
   ACTION_CATEGORIES, FORM_ACTION_CATEGORY,
   getActionLabel, getActionIcon, isStructural, isConfigured, canTest,
 } from './_workflow-types';
-import type { WorkflowMeta } from './_store';
+import type { WorkflowMeta, WorkflowParam } from './_store';
 
 /** Convert camelCase / snake_case / kebab-case names to human-readable text. */
 export function toHumanName(name: string): string {
@@ -61,21 +61,32 @@ interface WorkflowBindButtonProps {
   /** Currently bound workflow UUID, or empty string if unbound */
   value: string;
   onChange: (uuid: string) => void;
+  /** When true, only shows global workflows and hides the chain-link bind icon */
+  globalOnly?: boolean;
 }
 
-export function WorkflowBindButton({ value, onChange }: WorkflowBindButtonProps) {
-  const { pageWorkflowMeta } = useBuilderStore();
+export function WorkflowBindButton({ value, onChange, globalOnly = false }: WorkflowBindButtonProps) {
+  const { pageWorkflowMeta, globalWorkflowMeta } = useBuilderStore();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const ref = useRef<HTMLDivElement>(null);
 
-  const rawDisplayName = value && pageWorkflowMeta[value]?.name ? pageWorkflowMeta[value].name : value || '';
-  const displayName = rawDisplayName ? toHumanName(rawDisplayName) : 'Bind workflow';
+  // Look up name in both page and global workflows
+  const resolvedMeta = pageWorkflowMeta[value] ?? globalWorkflowMeta[value];
+  const rawDisplayName = value && resolvedMeta?.name ? resolvedMeta.name : value || '';
+  const displayName = rawDisplayName ? toHumanName(rawDisplayName) : (globalOnly ? 'Select global workflow' : 'Bind workflow');
   const isBound = Boolean(value);
+  const isGlobal = Boolean(value && globalWorkflowMeta[value]);
 
-  const allWorkflows = Object.values(pageWorkflowMeta)
+  const pageWorkflows = Object.values(pageWorkflowMeta)
     .filter(w => !w.isSystem)
+    .map(w => ({ ...w, _scope: 'page' as const }))
     .sort((a, b) => (a.name ?? a.id).localeCompare(b.name ?? b.id));
+  const globalWorkflows = Object.values(globalWorkflowMeta)
+    .filter(w => !w.isSystem)
+    .map(w => ({ ...w, _scope: 'global' as const }))
+    .sort((a, b) => (a.name ?? a.id).localeCompare(b.name ?? b.id));
+  const allWorkflows = globalOnly ? globalWorkflows : [...globalWorkflows, ...pageWorkflows];
   const filtered = search
     ? allWorkflows.filter(w => (w.name ?? w.id).toLowerCase().includes(search.toLowerCase()))
     : allWorkflows;
@@ -92,28 +103,30 @@ export function WorkflowBindButton({ value, onChange }: WorkflowBindButtonProps)
 
   return (
     <div ref={ref} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-      {/* Chain-link bind icon */}
-      <button
-        type="button"
-        title={isBound ? 'Change workflow binding' : 'Bind to a workflow'}
-        onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
-        style={{
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          width: 22, height: 22, flexShrink: 0, cursor: 'pointer',
-          border: 'none', borderRadius: 6,
-          background: isBound ? '#3730a3' : '#1f2937',
-          color: isBound ? '#a5b4fc' : '#6b7280',
-          transition: 'background 0.15s, color 0.15s',
-          padding: 0,
-        }}
-      >
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M6.5 9.5a3.5 3.5 0 0 0 4.95 0l2-2a3.5 3.5 0 0 0-4.95-4.95l-1.1 1.1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M9.5 6.5a3.5 3.5 0 0 0-4.95 0l-2 2a3.5 3.5 0 0 0 4.95 4.95l1.1-1.1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </button>
+      {/* Chain-link bind icon — hidden when globalOnly (not needed for global workflow picker) */}
+      {!globalOnly && (
+        <button
+          type="button"
+          title={isBound ? 'Change workflow binding' : 'Bind to a workflow'}
+          onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 22, height: 22, flexShrink: 0, cursor: 'pointer',
+            border: 'none', borderRadius: 6,
+            background: isBound ? '#3730a3' : '#1f2937',
+            color: isBound ? '#a5b4fc' : '#6b7280',
+            transition: 'background 0.15s, color 0.15s',
+            padding: 0,
+          }}
+        >
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6.5 9.5a3.5 3.5 0 0 0 4.95 0l2-2a3.5 3.5 0 0 0-4.95-4.95l-1.1 1.1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M9.5 6.5a3.5 3.5 0 0 0-4.95 0l-2 2a3.5 3.5 0 0 0 4.95 4.95l1.1-1.1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+      )}
 
-      {/* Bound workflow name pill */}
+      {/* Bound workflow name pill / selector */}
       <button
         type="button"
         onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
@@ -123,9 +136,16 @@ export function WorkflowBindButton({ value, onChange }: WorkflowBindButtonProps)
           borderRadius: 6, padding: '4px 8px', fontSize: 11,
           color: isBound ? '#a5b4fc' : '#6b7280', cursor: 'pointer',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          display: 'flex', alignItems: 'center', gap: 4,
         }}
       >
-        {displayName}
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
+        {isBound && isGlobal && !globalOnly && (
+          <span style={{ fontSize: 9, background: '#065f46', color: '#6ee7b7', borderRadius: 3, padding: '1px 4px', flexShrink: 0, fontWeight: 600 }}>
+            Global
+          </span>
+        )}
+        <span style={{ color: '#6b7280', fontSize: 10, flexShrink: 0 }}>▾</span>
       </button>
 
       {/* Clear button when bound */}
@@ -165,7 +185,41 @@ export function WorkflowBindButton({ value, onChange }: WorkflowBindButtonProps)
             {filtered.length === 0 && (
               <div style={{ padding: '8px 12px', fontSize: 11, color: '#6b7280' }}>No workflows found</div>
             )}
-            {filtered.map(w => (
+            {/* Global workflows group */}
+            {!globalOnly && filtered.some(w => w._scope === 'global') && (
+              <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 700, color: '#6b7280', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                Global
+              </div>
+            )}
+            {filtered.filter(w => w._scope === 'global').map(w => (
+              <button
+                key={w.id}
+                type="button"
+                onClick={e => { e.stopPropagation(); onChange(w.id); setOpen(false); setSearch(''); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6, width: '100%', textAlign: 'left',
+                  padding: '7px 12px', background: w.id === value ? '#312e81' : 'transparent',
+                  border: 'none', color: w.id === value ? '#c7d2fe' : '#e5e7eb',
+                  fontSize: 11, cursor: 'pointer',
+                }}
+                onMouseEnter={e => { if (w.id !== value) (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+                onMouseLeave={e => { if (w.id !== value) (e.currentTarget as HTMLElement).style.background = '#1f2937'; }}
+              >
+                <span style={{ flex: 1, fontWeight: 600 }}>{toHumanName(w.name ?? w.id)}</span>
+                {(w.params?.length ?? 0) > 0 && (
+                  <span style={{ fontSize: 9, background: '#064e3b', color: '#6ee7b7', borderRadius: 3, padding: '1px 5px', fontWeight: 600 }}>
+                    {w.params!.length} param{w.params!.length !== 1 ? 's' : ''}
+                  </span>
+                )}
+              </button>
+            ))}
+            {/* Page workflows group — hidden when globalOnly */}
+            {!globalOnly && filtered.some(w => w._scope === 'page') && (
+              <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 700, color: '#6b7280', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                Page
+              </div>
+            )}
+            {!globalOnly && filtered.filter(w => w._scope === 'page').map(w => (
               <button
                 key={w.id}
                 type="button"
@@ -348,6 +402,380 @@ export function WorkflowMetaPanel({
     </div>
   );
 }
+
+// ─── ParamsConfigPanel ────────────────────────────────────────────────────────
+// Right-panel editor for global workflow parameters (shown when the Parameters
+// node is selected on the canvas).
+
+const PARAM_TYPE_ICONS: Record<string, string> = {
+  Text: 'T',
+  Number: '#',
+  Boolean: '◎',
+  Object: '{ }',
+  Array: '[ ]',
+};
+
+export function ParamsConfigPanel({
+  params,
+  onChange,
+}: {
+  params: WorkflowParam[];
+  onChange: (params: WorkflowParam[]) => void;
+}) {
+  function updateParam(index: number, patch: Partial<WorkflowParam>) {
+    const next = params.map((p, i) => (i === index ? { ...p, ...patch } : p));
+    onChange(next);
+  }
+
+  function addParam() {
+    const newParam: WorkflowParam = {
+      id: `p-${Date.now()}`,
+      name: '',
+      type: 'Text',
+    };
+    onChange([...params, newParam]);
+  }
+
+  function removeParam(index: number) {
+    onChange(params.filter((_, i) => i !== index));
+  }
+
+  return (
+    <div>
+      <div style={{ fontSize: 12, fontWeight: 600, color: '#f3f4f6', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid #1f2937' }}>
+        <span style={{ fontSize: 14 }}>Φ</span>
+        <span>Parameters</span>
+      </div>
+
+      {params.length === 0 && (
+        <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 12, fontStyle: 'italic' }}>
+          No parameters yet. Add one below.
+        </div>
+      )}
+
+      {params.map((param, i) => (
+        <ParamEditor
+          key={param.id}
+          param={param}
+          onUpdate={patch => updateParam(i, patch)}
+          onRemove={() => removeParam(i)}
+        />
+      ))}
+
+      <button
+        type="button"
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6, marginTop: 8,
+          width: '100%', padding: '7px 10px', background: '#1f2937',
+          border: '1px dashed #374151', borderRadius: 6, color: '#60a5fa',
+          fontSize: 11, cursor: 'pointer', fontWeight: 600,
+        }}
+        onClick={addParam}
+      >
+        + Add Parameter
+      </button>
+    </div>
+  );
+}
+
+function ParamEditor({
+  param,
+  onUpdate,
+  onRemove,
+}: {
+  param: WorkflowParam;
+  onUpdate: (patch: Partial<WorkflowParam>) => void;
+  onRemove: () => void;
+}) {
+  const [expanded, setExpanded] = useState(true);
+  const [typeOpen, setTypeOpen] = useState(false);
+  // Use a ref for the tag input — avoids stale closure issues entirely.
+  // The DOM input is uncontrolled; we only read its value on submit.
+  const tagInputRef = useRef<HTMLInputElement>(null);
+  const [tagTick, setTagTick] = useState(0); // force re-render after adding a tag
+  const typeBtnRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const PARAM_TYPES: WorkflowParam['type'][] = ['Text', 'Number', 'Boolean', 'Object', 'Array'];
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!typeOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (
+        typeBtnRef.current && typeBtnRef.current.contains(e.target as Node)
+      ) return;
+      if (
+        dropdownRef.current && dropdownRef.current.contains(e.target as Node)
+      ) return;
+      setTypeOpen(false);
+    };
+    document.addEventListener('mousedown', handler, true);
+    return () => document.removeEventListener('mousedown', handler, true);
+  }, [typeOpen]);
+
+  // Tag list — only used when type=Text and allowMultiple=true
+  const testTags: string[] = (param.type === 'Text' && param.allowMultiple)
+    ? Array.isArray(param.testValue) ? (param.testValue as string[]) : (param.testValue ? [String(param.testValue)] : [])
+    : [];
+
+  function commitTagInput() {
+    const raw = tagInputRef.current?.value ?? '';
+    const trimmed = raw.trim();
+    if (!trimmed) return;
+    // Read testTags fresh from param.testValue to avoid stale closure
+    const currentTags: string[] = Array.isArray(param.testValue) ? (param.testValue as string[]) : (param.testValue ? [String(param.testValue)] : []);
+    onUpdate({ testValue: [...currentTags, trimmed] });
+    if (tagInputRef.current) tagInputRef.current.value = '';
+    setTagTick(t => t + 1); // force re-render so the input stays clear
+  }
+
+  function removeTag(idx: number) {
+    onUpdate({ testValue: testTags.filter((_, i) => i !== idx) });
+  }
+
+  // When type changes, reset testValue and allowMultiple to sensible defaults
+  function handleTypeChange(t: WorkflowParam['type']) {
+    const patch: Partial<WorkflowParam> = { type: t };
+    if (t === 'Boolean') patch.testValue = false;
+    else if (t === 'Object') patch.testValue = '{}';
+    else if (t === 'Array') patch.testValue = '[]';
+    else patch.testValue = '';
+    if (t !== 'Text') patch.allowMultiple = false;
+    onUpdate(patch);
+    setTypeOpen(false);
+  }
+
+  // Render the correct test-value input for each type
+  function renderTestValueInput() {
+    if (param.type === 'Text' && param.allowMultiple) {
+      // tagTick is read here only to force this function to re-run after a tag is added
+      void tagTick;
+      return (
+        <div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '4px 6px', background: '#1f2937', border: '1px solid #374151', borderRadius: 5, minHeight: 32, alignItems: 'center' }}>
+            {testTags.map((tag, ti) => (
+              <span key={ti} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: '#1e3a5f', color: '#93c5fd', borderRadius: 4, padding: '1px 6px', fontSize: 11 }}>
+                {tag}
+                <button type="button" onClick={e => { e.stopPropagation(); removeTag(ti); }} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 12, padding: 0, lineHeight: 1 }}>×</button>
+              </span>
+            ))}
+            <input
+              ref={tagInputRef}
+              style={{ flex: 1, minWidth: 60, background: 'transparent', border: 'none', outline: 'none', color: '#e5e7eb', fontSize: 11 }}
+              placeholder="Type and press Enter…"
+              onKeyDown={e => {
+                e.stopPropagation();
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  commitTagInput();
+                } else if (e.key === 'Backspace' && !(e.currentTarget as HTMLInputElement).value && testTags.length > 0) {
+                  removeTag(testTags.length - 1);
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); commitTagInput(); tagInputRef.current?.focus(); }}
+              style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 14, padding: '0 2px', lineHeight: 1 }}
+              title="Add tag"
+            >+</button>
+          </div>
+          <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>Press Enter or click + to add a chip</div>
+        </div>
+      );
+    }
+
+    if (param.type === 'Text') {
+      return (
+        <input
+          style={S.fieldInput}
+          value={String(param.testValue ?? '')}
+          placeholder="Test text value…"
+          onChange={e => onUpdate({ testValue: e.target.value })}
+        />
+      );
+    }
+
+    if (param.type === 'Number') {
+      return (
+        <input
+          type="number"
+          style={S.fieldInput}
+          value={param.testValue === undefined || param.testValue === '' ? '' : String(param.testValue)}
+          placeholder="0"
+          onChange={e => onUpdate({ testValue: e.target.value === '' ? '' : Number(e.target.value) })}
+        />
+      );
+    }
+
+    if (param.type === 'Boolean') {
+      const boolVal = param.testValue === true || param.testValue === 'true';
+      return (
+        <div style={{ display: 'flex', background: '#1f2937', borderRadius: 5, padding: 2, gap: 2, marginTop: 2 }}>
+          {[true, false].map(v => (
+            <button
+              key={String(v)}
+              type="button"
+              onClick={() => onUpdate({ testValue: v })}
+              style={{
+                flex: 1, padding: '5px 0', fontSize: 11, border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 600,
+                background: boolVal === v ? (v ? '#166534' : '#7f1d1d') : 'transparent',
+                color: boolVal === v ? (v ? '#86efac' : '#fca5a5') : '#6b7280',
+                transition: 'background 0.1s, color 0.1s',
+              }}
+            >
+              {v ? 'true' : 'false'}
+            </button>
+          ))}
+        </div>
+      );
+    }
+
+    if (param.type === 'Object' || param.type === 'Array') {
+      const strVal = typeof param.testValue === 'string'
+        ? param.testValue
+        : param.testValue !== undefined ? JSON.stringify(param.testValue, null, 2) : (param.type === 'Array' ? '[]' : '{}');
+      return (
+        <div style={{ borderRadius: 6, overflow: 'hidden', border: '1px solid #374151', marginTop: 2 }}>
+          <CodeMirror
+            value={strVal}
+            height="auto"
+            minHeight="70px"
+            maxHeight="160px"
+            extensions={[json()]}
+            theme={oneDark}
+            basicSetup={{ lineNumbers: false, foldGutter: false, highlightActiveLine: false }}
+            style={{ fontSize: 11 }}
+            onChange={val => onUpdate({ testValue: val })}
+          />
+        </div>
+      );
+    }
+
+    return null;
+  }
+
+  return (
+    <div style={{ marginBottom: 8, background: '#111827', border: '1px solid #1f2937', borderRadius: 6, overflow: 'visible', position: 'relative' }}>
+      {/* Header row */}
+      <div
+        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', cursor: 'pointer', userSelect: 'none', borderRadius: expanded ? '6px 6px 0 0' : 6 }}
+        onClick={() => setExpanded(v => !v)}
+      >
+        <span style={{ fontSize: 10, color: '#6b7280', transform: expanded ? 'rotate(90deg)' : 'none', display: 'inline-block', transition: 'transform 0.15s' }}>▶</span>
+        <span style={{ fontSize: 10, fontWeight: 700, background: '#1e3a5f', color: '#60a5fa', borderRadius: 3, padding: '1px 5px', fontFamily: 'monospace' }}>
+          {PARAM_TYPE_ICONS[param.type] ?? 'T'}
+        </span>
+        <span style={{ flex: 1, fontSize: 11, color: param.name ? '#e5e7eb' : '#6b7280', fontStyle: param.name ? 'normal' : 'italic' }}>
+          {param.name || 'Unnamed'}
+        </span>
+        <button
+          type="button"
+          title="Remove parameter"
+          onClick={e => { e.stopPropagation(); onRemove(); }}
+          style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 14, padding: '0 2px', lineHeight: 1 }}
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Expanded body */}
+      {expanded && (
+        <div style={{ padding: '0 8px 10px', borderTop: '1px solid #1f2937' }}>
+
+          {/* Name */}
+          <label style={{ ...S.fieldLabel, marginTop: 8 }}>Name *</label>
+          <input
+            style={S.fieldInput}
+            value={param.name}
+            placeholder="e.g. username"
+            onChange={e => onUpdate({ name: e.target.value })}
+          />
+
+          {/* Type */}
+          <label style={{ ...S.fieldLabel, marginTop: 8 }}>Type *</label>
+          <div style={{ position: 'relative' }}>
+            <button
+              ref={typeBtnRef}
+              type="button"
+              onClick={e => { e.stopPropagation(); setTypeOpen(v => !v); }}
+              style={{ ...S.fieldInput, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', width: '100%', textAlign: 'left' }}
+            >
+              <span style={{ fontSize: 10, fontWeight: 700, background: '#1e3a5f', color: '#60a5fa', borderRadius: 3, padding: '1px 5px', fontFamily: 'monospace' }}>
+                {PARAM_TYPE_ICONS[param.type]}
+              </span>
+              <span style={{ flex: 1, color: '#e5e7eb', fontSize: 11 }}>{param.type}</span>
+              <span style={{ fontSize: 10, color: '#9ca3af' }}>▾</span>
+            </button>
+            {/* Dropdown — absolute inside a no-overflow wrapper so it escapes the card */}
+            {typeOpen && (
+              <div
+                ref={dropdownRef}
+                onClick={e => e.stopPropagation()}
+                style={{
+                  position: 'absolute', top: '100%', left: 0, right: 0,
+                  zIndex: 99999, marginTop: 2,
+                  background: '#1f2937', border: '1px solid #374151',
+                  borderRadius: 6, overflow: 'hidden',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+                }}
+              >
+                {PARAM_TYPES.map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => handleTypeChange(t)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '7px 10px', background: param.type === t ? '#312e81' : 'transparent', border: 'none', color: param.type === t ? '#c7d2fe' : '#e5e7eb', fontSize: 11, cursor: 'pointer', textAlign: 'left' }}
+                    onMouseEnter={e => { if (param.type !== t) (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+                    onMouseLeave={e => { if (param.type !== t) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                  >
+                    <span style={{ fontFamily: 'monospace', fontSize: 10, width: 28, textAlign: 'center', color: '#60a5fa', background: '#1e3a5f', borderRadius: 3, padding: '1px 4px' }}>{PARAM_TYPE_ICONS[t]}</span>
+                    <span style={{ flex: 1 }}>{t}</span>
+                    {t === 'Text' && <span style={{ fontSize: 9, color: '#6b7280' }}>abc</span>}
+                    {t === 'Number' && <span style={{ fontSize: 9, color: '#6b7280' }}>123</span>}
+                    {t === 'Boolean' && <span style={{ fontSize: 9, color: '#6b7280' }}>true/false</span>}
+                    {(t === 'Object' || t === 'Array') && <span style={{ fontSize: 9, color: '#6b7280' }}>JSON</span>}
+                    {param.type === t && <span style={{ marginLeft: 4, color: '#3b82f6', fontSize: 10 }}>✓</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Allow multiple values — Text only (weWeb-style) */}
+          {param.type === 'Text' && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, padding: '6px 8px', background: '#0f172a', borderRadius: 5 }}>
+              <div>
+                <div style={{ fontSize: 11, color: '#e5e7eb', fontWeight: 500 }}>Allow multiple values</div>
+                <div style={{ fontSize: 10, color: '#6b7280', marginTop: 1 }}>Accepts a list of text values</div>
+              </div>
+              <div
+                onClick={() => onUpdate({ allowMultiple: !param.allowMultiple, testValue: param.allowMultiple ? '' : [] })}
+                style={{
+                  width: 32, height: 18, borderRadius: 9, cursor: 'pointer', flexShrink: 0,
+                  background: param.allowMultiple ? '#2563eb' : '#374151',
+                  position: 'relative', transition: 'background 0.15s',
+                }}
+              >
+                <div style={{
+                  position: 'absolute', top: 2, left: param.allowMultiple ? 16 : 2, width: 14, height: 14,
+                  borderRadius: '50%', background: '#fff', transition: 'left 0.15s',
+                }} />
+              </div>
+            </div>
+          )}
+
+          {/* Test value — type-specific input */}
+          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Test value</label>
+          {renderTestValueInput()}
+
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 // ─── Shared canvas helpers ────────────────────────────────────────────────────
 
@@ -1672,6 +2100,21 @@ function GraphQLStepConfig({
           </button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 11, color: '#d1d5db' }}>Proxy request server side</span>
+          <button
+            style={{
+              width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', position: 'relative',
+              background: cfg.useProxy ? '#3b82f6' : '#374151', transition: 'background 0.2s',
+            }}
+            onClick={() => setCfg('useProxy', !cfg.useProxy)}
+          >
+            <span style={{
+              position: 'absolute', top: 2, left: cfg.useProxy ? 18 : 2, width: 16, height: 16,
+              borderRadius: '50%', background: '#fff', transition: 'left 0.2s',
+            }} />
+          </button>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 11, color: '#d1d5db' }}>Return data only</span>
           <button
             style={{
@@ -2717,6 +3160,396 @@ function BranchConditionField({
   );
 }
 
+// ─── ParamBoundField ──────────────────────────────────────────────────────────
+// A typed field for a single global-workflow parameter in the caller's config.
+// Shows a type-appropriate input (toggle for Boolean, number for Number,
+// CodeMirror for Object/Array, text for Text) plus a bind button that opens
+// the formula editor — identical UX to BoundField but with type awareness.
+
+function ParamBoundField({
+  param,
+  value,
+  onChange,
+  workflowTrigger,
+}: {
+  param: WorkflowParam;
+  value: FormulaValue | undefined;
+  onChange: (v: FormulaValue | undefined) => void;
+  workflowTrigger?: string;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const isBound = isBoundValue(value);
+  const strVal = !isBound ? (value as string) ?? '' : '';
+  const preEditRef = useRef<FormulaValue | undefined>(value);
+
+  // Tag-chip input for Text + allowMultiple (uncontrolled ref, same as ParamEditor)
+  const tagInputRef = useRef<HTMLInputElement>(null);
+  const [tagTick, setTagTick] = React.useState(0);
+  void tagTick; // consumed to trigger re-render after tag commit
+  const currentTagsFromValue = (): string[] => {
+    if (!isBound && param.type === 'Text' && param.allowMultiple) {
+      try {
+        const parsed = JSON.parse(strVal);
+        if (Array.isArray(parsed)) return parsed.map(String);
+      } catch { /* not JSON */ }
+      return strVal ? strVal.split(',').map(s => s.trim()).filter(Boolean) : [];
+    }
+    return [];
+  };
+  const tags = currentTagsFromValue();
+
+  function commitTag() {
+    const raw = tagInputRef.current?.value ?? '';
+    const trimmed = raw.trim();
+    if (!trimmed) return;
+    const next = [...tags, trimmed];
+    onChange(JSON.stringify(next));
+    if (tagInputRef.current) tagInputRef.current.value = '';
+    setTagTick(t => t + 1);
+  }
+  function removeTag(idx: number) {
+    const next = tags.filter((_, i) => i !== idx);
+    onChange(next.length ? JSON.stringify(next) : undefined);
+  }
+
+  const handleOpenEditor = useCallback(() => {
+    preEditRef.current = value;
+    setOpen(v => !v);
+  }, [value]);
+
+  const handleFormulaChange = useCallback((v: FormulaValue | null) => {
+    if ((v === '' || v == null) && typeof preEditRef.current === 'string' && !isBoundValue(preEditRef.current)) {
+      onChange(preEditRef.current || undefined);
+    } else {
+      onChange(v ?? undefined);
+    }
+    setOpen(false);
+  }, [onChange]);
+
+  const expectedType =
+    param.type === 'Number' ? 'number'
+      : param.type === 'Boolean' ? 'boolean'
+      : param.type === 'Object' ? 'object'
+      : param.type === 'Array' ? 'array'
+      : 'string';
+
+  const isBlock = !isBound && (param.type === 'Object' || param.type === 'Array' || param.allowMultiple);
+
+  return (
+    <>
+      {/* Label row with type badge */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 10, marginBottom: 3 }}>
+        <span style={{
+          fontSize: 10, fontWeight: 700, background: '#1e3a5f', color: '#60a5fa',
+          borderRadius: 3, padding: '1px 5px', fontFamily: 'monospace', flexShrink: 0,
+        }}>
+          {PARAM_TYPE_ICONS[param.type] ?? 'T'}
+        </span>
+        <label style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', flex: 1, margin: 0 }}>
+          {param.name || 'Unnamed'}
+          {param.allowMultiple && (
+            <span style={{ marginLeft: 4, fontSize: 10, color: '#6b7280' }}>(multi)</span>
+          )}
+        </label>
+      </div>
+
+      {/* Input row */}
+      <div style={{ display: 'flex', alignItems: isBlock ? 'flex-start' : 'center', gap: 6 }}>
+        <BindingIcon isBound={isBound} onClick={handleOpenEditor} />
+
+        {isBound ? (
+          /* Formula chip — click to re-open editor */
+          <button
+            onClick={handleOpenEditor}
+            style={{
+              flex: 1, padding: '5px 8px', background: '#2e1065', border: '1px solid #7c3aed',
+              borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer',
+              fontWeight: 500, textAlign: 'left',
+            }}
+          >
+            ƒ Edit formula
+          </button>
+
+        ) : param.type === 'Boolean' ? (
+          /* Boolean toggle */
+          <div style={{
+            flex: 1, display: 'flex', background: '#1f2937',
+            borderRadius: 5, padding: 2, gap: 2,
+          }}>
+            {(['true', 'false'] as const).map(opt => {
+              const boolStr = strVal === '' ? 'false' : String(strVal);
+              const active = boolStr === opt;
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => onChange(opt)}
+                  style={{
+                    flex: 1, padding: '5px 0', fontSize: 11, border: 'none',
+                    borderRadius: 4, cursor: 'pointer', fontWeight: 600,
+                    background: active
+                      ? (opt === 'true' ? '#166534' : '#7f1d1d')
+                      : 'transparent',
+                    color: active
+                      ? (opt === 'true' ? '#86efac' : '#fca5a5')
+                      : '#6b7280',
+                    transition: 'background 0.1s, color 0.1s',
+                  }}
+                >
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+
+        ) : param.type === 'Number' ? (
+          /* Number input */
+          <input
+            type="number"
+            style={{ ...S.fieldInput, flex: 1 }}
+            value={strVal}
+            placeholder="0"
+            onChange={e => onChange(e.target.value || undefined)}
+          />
+
+        ) : param.type === 'Object' || param.type === 'Array' ? (
+          /* CodeMirror JSON editor */
+          <div style={{ flex: 1, borderRadius: 6, overflow: 'hidden', border: '1px solid #374151', minHeight: 70 }}>
+            <CodeMirror
+              value={strVal || (param.type === 'Array' ? '[]' : '{}')}
+              height="auto"
+              minHeight="70px"
+              maxHeight="160px"
+              extensions={[json()]}
+              theme={oneDark}
+              basicSetup={{ lineNumbers: false, foldGutter: false, highlightActiveLine: false }}
+              style={{ fontSize: 11 }}
+              onChange={val => onChange(val || undefined)}
+            />
+          </div>
+
+        ) : param.allowMultiple ? (
+          /* Tag-chip input for Text + allowMultiple — Enter adds a chip */
+          <div style={{ flex: 1 }}>
+            {tags.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 5 }} onClick={e => e.stopPropagation()}>
+                {tags.map((tag, i) => (
+                  <span
+                    key={`${tag}-${i}`}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 3,
+                      background: '#1e3a5f', border: '1px solid #2563eb',
+                      borderRadius: 4, padding: '2px 6px', fontSize: 11, color: '#93c5fd',
+                    }}
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={e => { e.stopPropagation(); removeTag(i); }}
+                      style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: 0, lineHeight: 1, fontSize: 12 }}
+                    >×</button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
+              <input
+                ref={tagInputRef}
+                style={{ ...S.fieldInput, flex: 1 }}
+                placeholder="Type and press Enter…"
+                onKeyDown={e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); commitTag(); } }}
+              />
+              <button
+                type="button"
+                onClick={e => { e.stopPropagation(); commitTag(); tagInputRef.current?.focus(); }}
+                style={{
+                  background: '#1e3a5f', border: '1px solid #2563eb', borderRadius: 5,
+                  color: '#93c5fd', fontSize: 12, cursor: 'pointer', padding: '4px 8px', flexShrink: 0,
+                }}
+              >+</button>
+            </div>
+          </div>
+
+        ) : (
+          /* Plain text input */
+          <input
+            style={{ ...S.fieldInput, flex: 1 }}
+            value={strVal}
+            placeholder="Enter text…"
+            onChange={e => onChange(e.target.value || undefined)}
+          />
+        )}
+      </div>
+
+      {open && (
+        <FormulaEditor
+          label={param.name}
+          value={value ?? null}
+          onChange={handleFormulaChange}
+          onClose={() => setOpen(false)}
+          anchorRight={292}
+          expectedType={expectedType}
+          workflowTrigger={workflowTrigger}
+        />
+      )}
+    </>
+  );
+}
+
+// ─── GlobalWorkflowPicker ─────────────────────────────────────────────────────
+// Dropdown for selecting a global workflow — styled identically to TypeSearchDropdown.
+
+function GlobalWorkflowPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  const { globalWorkflowMeta } = useBuilderStore();
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    searchRef.current?.focus();
+    const handler = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('[data-popover="global-wf-picker"]')) {
+        setOpen(false);
+        setSearch('');
+      }
+    };
+    window.addEventListener('mousedown', handler, true);
+    return () => window.removeEventListener('mousedown', handler, true);
+  }, [open]);
+
+  const all = Object.values(globalWorkflowMeta)
+    .filter(w => !w.isSystem)
+    .sort((a, b) => (a.name ?? a.id).localeCompare(b.name ?? b.id));
+  const filtered = search
+    ? all.filter(w => (w.name ?? w.id).toLowerCase().includes(search.toLowerCase()))
+    : all;
+
+  const selected = value ? globalWorkflowMeta[value] : undefined;
+  const label = selected ? toHumanName(selected.name ?? value) : 'Choose a global workflow';
+
+  return (
+    <div ref={wrapperRef} data-popover="global-wf-picker" style={{ position: 'relative', width: '100%' }}>
+      <button
+        style={{
+          ...S.fieldSelect,
+          display: 'flex', alignItems: 'center', gap: 6,
+          cursor: 'pointer', textAlign: 'left', paddingRight: 28,
+        }}
+        onClick={() => { setOpen(v => !v); setSearch(''); }}
+      >
+        {selected && <span style={{ fontSize: 12, flexShrink: 0 }}>Φ</span>}
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: selected ? '#f3f4f6' : '#6b7280' }}>
+          {label}
+        </span>
+        {selected && (selected.params?.length ?? 0) > 0 && (
+          <span style={{ fontSize: 9, background: '#064e3b', color: '#6ee7b7', borderRadius: 3, padding: '1px 5px', fontWeight: 600, flexShrink: 0 }}>
+            {selected.params!.length} param{selected.params!.length !== 1 ? 's' : ''}
+          </span>
+        )}
+        <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: '#6b7280', pointerEvents: 'none' }}>
+          {open ? '▴' : '▾'}
+        </span>
+      </button>
+
+      {open && (
+        <div style={{
+          ...S.dropdown,
+          position: 'absolute', top: '100%', left: 0, right: 0,
+          zIndex: 300, minWidth: 'unset', width: '100%', maxHeight: 280,
+        }}>
+          <input
+            ref={searchRef}
+            style={S.dropdownSearch}
+            placeholder="Search global workflows…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {filtered.length === 0 && (
+            <div style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>No global workflows found</div>
+          )}
+          {filtered.map(w => (
+            <button
+              key={w.id}
+              style={S.dropdownItem(w.id === value)}
+              onMouseEnter={e => { if (w.id !== value) (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
+              onMouseLeave={e => { if (w.id !== value) (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
+              onClick={() => { onChange(w.id); setOpen(false); setSearch(''); }}
+            >
+              <span style={{ fontSize: 12 }}>Φ</span>
+              <span style={{ flex: 1 }}>{toHumanName(w.name ?? w.id)}</span>
+              {(w.params?.length ?? 0) > 0 && (
+                <span style={{ fontSize: 9, background: '#064e3b', color: '#6ee7b7', borderRadius: 3, padding: '1px 5px', fontWeight: 600 }}>
+                  {w.params!.length} param{w.params!.length !== 1 ? 's' : ''}
+                </span>
+              )}
+              {w.id === value && <span style={{ color: '#3b82f6', fontSize: 10 }}>✓</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── RunProjectWorkflowConfig ─────────────────────────────────────────────────
+// Config section for runProjectWorkflow steps — shows the workflow picker
+// and dynamic param input fields when the selected global workflow has params.
+
+function RunProjectWorkflowConfig({
+  step,
+  onUpdate,
+  workflowTrigger,
+}: {
+  step: ActionStep;
+  onUpdate: (patch: Partial<ActionStep>) => void;
+  workflowTrigger?: string;
+}) {
+  const { globalWorkflowMeta } = useBuilderStore();
+  const workflowId = (step.config?.workflowId as string) ?? step.action ?? '';
+  const selectedGlobalMeta = workflowId ? globalWorkflowMeta[workflowId] : undefined;
+  const params: WorkflowParam[] = selectedGlobalMeta?.params ?? [];
+  const savedParams = (step.config?.params as Record<string, unknown>) ?? {};
+
+  return (
+    <>
+      <label style={{ ...S.fieldLabel, marginTop: 10 }}>Workflow *</label>
+      <GlobalWorkflowPicker
+        value={workflowId}
+        onChange={uuid => onUpdate({ action: uuid, config: { ...(step.config ?? {}), workflowId: uuid }, name: uuid })}
+      />
+
+      {/* Param input fields — only shown when the selected workflow has declared params */}
+      {params.length > 0 && (
+        <div style={{ marginTop: 14, borderTop: '1px solid #1f2937', paddingTop: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ fontSize: 12 }}>Φ</span> Parameters
+          </div>
+          {params.map(p => (
+            <ParamBoundField
+              key={p.id}
+              param={p}
+              value={savedParams[p.name] as FormulaValue | undefined}
+              onChange={v => {
+                const next = { ...savedParams, [p.name]: v };
+                onUpdate({ config: { ...(step.config ?? {}), params: next } });
+              }}
+              workflowTrigger={workflowTrigger}
+            />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
 // ─── NodePropsPanel ────────────────────────────────────────────────────────────
 
 export function NodePropsPanel({
@@ -2760,15 +3593,13 @@ export function NodePropsPanel({
         </>
       )}
 
-      {/* runProjectWorkflow: workflow picker using WorkflowBindButton */}
+      {/* runProjectWorkflow: workflow picker using WorkflowBindButton + param inputs */}
       {step.type === 'runProjectWorkflow' && (
-        <>
-          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Workflow *</label>
-          <WorkflowBindButton
-            value={(step.config?.workflowId as string) ?? step.action ?? ''}
-            onChange={uuid => onUpdate({ action: uuid, config: { ...(step.config ?? {}), workflowId: uuid }, name: uuid })}
-          />
-        </>
+        <RunProjectWorkflowConfig
+          step={step}
+          onUpdate={onUpdate}
+          workflowTrigger={workflowTrigger}
+        />
       )}
 
       {/* Type-specific fields */}
@@ -2910,6 +3741,59 @@ export function NodePropsPanel({
             <option value="false">False</option>
           </select>
         </>
+      )}
+
+      {/* ── Auth: Authenticate ─────────────────────────────────────────────── */}
+      {step.type === 'authenticate' && (
+        <>
+          <BoundField
+            label="Access Token"
+            value={cfg.accessToken as FormulaValue | undefined}
+            onChange={v => setCfg('accessToken', v)}
+            placeholder="Access Token"
+            workflowTrigger={workflowTrigger}
+          />
+          <BoundField
+            label="Metadata"
+            value={cfg.user as FormulaValue | undefined}
+            onChange={v => setCfg('user', v)}
+            placeholder="{}"
+            expectedType="object"
+            code
+            workflowTrigger={workflowTrigger}
+          />
+          <BoundToggleField
+            label="Persist Session"
+            value={cfg.persist as FormulaValue | undefined}
+            onChange={v => setCfg('persist', v)}
+            workflowTrigger={workflowTrigger}
+          />
+        </>
+      )}
+
+      {/* ── Auth: Set User ─────────────────────────────────────────────────── */}
+      {step.type === 'setUser' && (
+        <>
+          <BoundField
+            label="User"
+            required
+            value={cfg.user as FormulaValue | undefined}
+            onChange={v => setCfg('user', v)}
+            placeholder="{object}"
+            expectedType="object"
+            workflowTrigger={workflowTrigger}
+          />
+          {!cfg.user && (
+            <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>This field is required</div>
+          )}
+        </>
+      )}
+
+      {/* ── Auth: Clear Session ────────────────────────────────────────────── */}
+      {step.type === 'clearSession' && (
+        <div style={{ marginTop: 10, padding: '8px 10px', background: '#1f2937', borderRadius: 6, border: '1px solid #374151' }}>
+          <span style={{ fontSize: 11, color: '#6b7280' }}>Removes the stored token from localStorage and clears the authenticated user.</span>
+        </div>
       )}
 
       {step.type === 'navigateTo' && (

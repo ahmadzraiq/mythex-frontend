@@ -10,11 +10,11 @@ Read this before modifying lib/sdui/, actions, or the engine. For JSON config ch
 lib/sdui/
 ├── sdui-engine.tsx      # Entry: state merge, subscriptions, action dispatch
 ├── renderer.tsx         # JSON → React; conditions, map, actions
-├── config-resolver.ts   # $ref, $slot, layout composition
+├── config-resolver.ts   # $slot, layout composition
 ├── merge-state.ts       # computeMergedState, path merging
 ├── variable-store.ts    # Path-based store
 ├── dependency-extractor.ts  # extractNodeDependencies, extractPathsFromObject, expandComputedDeps
-├── computed-runner.ts   # store.json computed (output/expr)
+├── computed-runner.ts   # store.json computed (output/formula)
 ├── fetch-cache.ts       # Config-driven fetch cache (tag + vars, TTL)
 ├── conventions.ts       # engineConventions from store.json
 ├── path-utils.ts        # isScreenScopedPath, isScopeVariable
@@ -46,7 +46,7 @@ lib/sdui/
 config/store.json, screens/*.json, actions/*.json
          │
          ▼
-   config-resolver.ts  ($ref → fragment, $slot → content)
+   config-resolver.ts  ($slot → screen content injection)
          │
          ▼
    config/app.ts  (resolveScreenConfig, merge actions)
@@ -78,7 +78,7 @@ config/store.json, screens/*.json, actions/*.json
 | System | File | Shape | Purpose |
 |--------|------|-------|---------|
 | **Variable store computed** | variable-store.ts | `{ type, source, path }` | Reduce-style (e.g. cart.totalQuantity from lines) |
-| **store.json computed** | computed-runner.ts | `{ output, expr }` | JSON Logic derived values (collectionCurrentPage, sortLabel) |
+| **store.json computed** | computed-runner.ts | `{ output, formula }` | Formula-based derived values (collectionCurrentPage, sortLabel) |
 
 ### Resolution Order (createGet)
 
@@ -114,8 +114,8 @@ config/store.json, screens/*.json, actions/*.json
 | config/routes.json | Paths, auth, layout, paramChangeAction |
 | config/actions/*.json | Action definitions (fetch, graphql, validate, set, etc.) |
 | config/screens/*.json | Screen meta, state, layout, content |
-| config/layouts/*.json | Layout structures with $ref, $slot |
-| config/fragments/**/*.json | Reusable UI fragments |
+| config/layouts/*.json | Layout structures with `$slot` and inlined shared components |
+| config/shared-components.json | Reusable UI models (navbar, footer, product cards, etc.) |
 | config/store-config.ts | Merges store.json with env vars (NEXT_PUBLIC_GRAPHQL_*, NEXT_PUBLIC_VENDURE_TOKEN) |
 
 ---

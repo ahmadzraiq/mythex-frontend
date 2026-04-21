@@ -13,7 +13,7 @@
  *  - TYPE_BADGE_COLORS    — badge color mapping by type
  */
 
-import React, { useState, useRef, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useRef, useCallback, lazy, Suspense, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { json } from '@codemirror/lang-json';
 import { oneDark } from '@codemirror/theme-one-dark';
@@ -36,6 +36,8 @@ interface VarSlidePanelProps {
   initial: Partial<CustomVar> & { isNew?: boolean };
   onSave: (v: CustomVar) => void;
   onClose: () => void;
+  /** When provided, replaces the global FolderPicker with a custom folder UI (e.g. component-scoped text input) */
+  folderNode?: React.ReactNode;
 }
 
 export function YesNoToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
@@ -61,7 +63,7 @@ export function YesNoToggle({ value, onChange }: { value: boolean; onChange: (v:
   );
 }
 
-export function VariableSlideContent({ initial, onSave, onClose }: VarSlidePanelProps) {
+export function VariableSlideContent({ initial, onSave, onClose, folderNode }: VarSlidePanelProps) {
   const [varName, setVarName] = useState(initial.name ?? '');
   const [varLabel, setVarLabel] = useState(initial.label ?? '');
   const [varType, setVarType] = useState<CustomVar['type']>(initial.type ?? 'string');
@@ -86,18 +88,27 @@ export function VariableSlideContent({ initial, onSave, onClose }: VarSlidePanel
   const isJsonType = varType === 'object' || varType === 'array';
   const canSave = varName.trim().length > 0 && !(isJsonType && jsonErr);
 
-  // Read current live value from variable store.
-  // Variables are keyed by UUID (initial.id), not by their human name.
-  const currentValue = (() => {
+  // Reactive live value — subscribes to the global variable store so the
+  // "Current value" display updates whenever the store changes (e.g. after
+  // a workflow step runs).
+  const lookupKey = initial.id ?? (varName.trim() || null);
+  const [liveValue, setLiveValue] = useState<string>(() => {
     try {
-      const lookupKey = initial.id ?? varName.trim();
-      if (!lookupKey) return null;
-      const vs = getGlobalVariableStore().getState().getFullState() as Record<string, unknown>;
-      const v = vs[lookupKey];
-      if (v === undefined) return null;
+      if (!lookupKey) return '';
+      const v = getGlobalVariableStore().getState().data[lookupKey];
+      if (v === undefined || v === null) return '';
       return typeof v === 'object' ? JSON.stringify(v, null, 2) : String(v);
-    } catch { return null; }
-  })();
+    } catch { return ''; }
+  });
+  useEffect(() => {
+    if (!lookupKey) return;
+    const unsub = getGlobalVariableStore().subscribe((state: { data: Record<string, unknown> }) => {
+      const v = state.data[lookupKey];
+      const next = (v === undefined || v === null) ? '' : (typeof v === 'object' ? JSON.stringify(v, null, 2) : String(v));
+      setLiveValue(next);
+    });
+    return unsub;
+  }, [lookupKey]);
 
   const save = () => {
     if (!canSave) return;
@@ -163,7 +174,7 @@ export function VariableSlideContent({ initial, onSave, onClose }: VarSlidePanel
       {/* Folder */}
       <div>
         <label style={SP_LABEL}>Folder</label>
-        <FolderPicker value={folderId} onChange={setFolderId} scope="var" />
+        {folderNode !== undefined ? folderNode : <FolderPicker value={folderId} onChange={setFolderId} scope="var" />}
       </div>
 
       {/* Description */}
@@ -264,14 +275,16 @@ export function VariableSlideContent({ initial, onSave, onClose }: VarSlidePanel
         )}
       </div>
 
-      {/* Current value (read-only) */}
+      {/* Current value (reactive) */}
       <div>
         <label style={SP_LABEL}>Current value</label>
         <div style={{
-          ...SP_INPUT, minHeight: 32, fontFamily: 'monospace', fontSize: 12, color: '#9ca3af',
-          display: 'flex', alignItems: 'center', background: '#111827',
+          ...SP_INPUT, minHeight: 32, fontFamily: 'monospace', fontSize: 12,
+          color: liveValue ? '#e5e7eb' : '#4b5563',
+          display: 'flex', alignItems: 'flex-start', background: '#111827',
+          whiteSpace: 'pre-wrap', wordBreak: 'break-all',
         }}>
-          {currentValue !== null ? currentValue : varValue || getDefaultForType(varType)}
+          {liveValue || <span style={{ fontStyle: 'italic', color: '#4b5563' }}>{varValue || getDefaultForType(varType)}</span>}
         </div>
       </div>
 
@@ -279,6 +292,11 @@ export function VariableSlideContent({ initial, onSave, onClose }: VarSlidePanel
       <div>
         <label style={SP_LABEL}>Save in local storage</label>
         <YesNoToggle value={saveStorage} onChange={setSaveStorage} />
+        {saveStorage && (
+          <div style={{ marginTop: 6, fontSize: 10, color: '#6b7280', lineHeight: 1.5 }}>
+            Value is only saved when it differs from the default. Reverting to the default clears the stored key.
+          </div>
+        )}
       </div>
 
       {/* Actions */}

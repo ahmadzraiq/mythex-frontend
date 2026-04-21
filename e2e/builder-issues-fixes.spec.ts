@@ -346,16 +346,16 @@ test.describe('IF — Builder Issue Fixes', () => {
     expect(classFormulas).toMatchObject({ textAlign: { formula: '"text-center"' } });
   });
 
-  // IF-10: { expr: "..." } shows just the expression in formula editor (not raw JSON)
-  test('IF-10 storedValueToFormula extracts expr string from { expr: "..." } objects', async () => {
-    // Programmatically set a text node's text to an { expr: "..." } SDUI inline expression
+  // IF-10: { formula: "..." } shows just the expression in formula editor (not raw JSON)
+  test('IF-10 storedValueToFormula extracts formula string from { formula: "..." } objects', async () => {
+    // Programmatically set a text node's text to a { formula: "..." } SDUI inline expression
     await page.evaluate(() => {
       const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
       if (!store) return;
       (store.addNode as (n: unknown, p: null) => void)(
         {
           type: 'Text', id: 'if-10-text',
-          text: { expr: 'formatCurrency(100, "USD")' },
+          text: { formula: 'formatCurrency(100, "USD")' },
           props: { className: '', style: {} }
         },
         null
@@ -377,9 +377,9 @@ test.describe('IF — Builder Issue Fixes', () => {
     const formulaInput = page.locator('[data-testid="formula-input"]');
     const formulaVal = await formulaInput.inputValue();
 
-    // Should show the inner expression, NOT raw JSON like '{\n  "expr": "formatCurrency(...)"\n}'
+    // Should show the inner expression, NOT raw JSON like '{\n  "formula": "formatCurrency(...)"\n}'
     expect(formulaVal.trim()).toBe('formatCurrency(100, "USD")');
-    expect(formulaVal).not.toContain('"expr"');
+    expect(formulaVal).not.toContain('"formula"');
 
     await page.keyboard.press('Escape');
     await page.waitForTimeout(300);

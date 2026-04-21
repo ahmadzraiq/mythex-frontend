@@ -1,0 +1,552 @@
+{
+  "meta": { "title": "Triggers Showcase" },
+  "state": {},
+  "layout": "store",
+  "content": {
+    "type": "Box",
+    "props": { "className": "w-full flex flex-col min-h-screen" },
+    "children": [
+      {
+        "type": "Box",
+        "props": { "className": "w-full max-w-[1100px] mx-auto px-[24px] py-[48px] flex flex-col gap-[48px]" },
+        "children": [
+
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[6px]" },
+            "children": [
+              { "type": "Heading", "props": { "className": "text-[30px] font-bold text-[var(--theme-foreground)]" }, "text": "Triggers Showcase" },
+              { "type": "Text", "props": { "className": "text-[14px]", "style": { "color": "#6b7280" } }, "text": "All 10 trigger types shown as App Triggers (global) and Page Triggers (scoped to this page). Open builder → Triggers tab to manage workflows." }
+            ]
+          },
+
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[48px]" },
+            "children": [
+
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-[20px]" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center gap-[12px]" },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": { "className": "px-[12px] py-[5px] rounded-[6px]", "style": { "background": "rgba(167,139,250,0.12)", "border": "1px solid rgba(167,139,250,0.35)" } },
+                        "children": [{ "type": "Text", "props": { "className": "text-[11px] font-bold uppercase tracking-widest", "style": { "color": "#a78bfa" } }, "text": "App Triggers" }]
+                      },
+                      { "type": "Text", "props": { "className": "text-[12px]", "style": { "color": "#4b5563" } }, "text": "Global — not scoped to any page" },
+                      { "type": "Box", "props": { "className": "flex-1 h-[1px]", "style": { "background": "#1f2937" } } },
+                      { "type": "Text", "props": { "className": "text-[10px] font-mono", "style": { "color": "#374151" } }, "text": "10 workflows" }
+                    ]
+                  },
+
+                  {
+                    "type": "Box",
+                    "props": { "className": "grid gap-[10px]", "style": { "gridTemplateColumns": "repeat(5, 1fr)" } },
+                    "children": [
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[10px] rounded-[10px] p-[14px]", "style": { "background": "#111827", "border": "1px solid rgba(167,139,250,0.2)" } },
+                        "children": [
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between gap-[4px]" }, "children": [
+                            { "type": "Box", "props": { "className": "w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0", "style": { "background": "rgba(167,139,250,0.15)" } }, "children": [{ "type": "Icon", "props": { "icon": "lucide:globe", "size": 14, "color": "#a78bfa" } }] },
+                            { "type": "Box", "props": { "className": "px-[5px] py-[1px] rounded-[3px]", "style": { "background": "#0f172a" } }, "children": [{ "type": "Text", "props": { "className": "text-[8px] font-mono", "style": { "color": "#4b5563" } }, "text": "appLoadBefore" }] }
+                          ]},
+                          { "type": "Text", "props": { "className": "text-[11px] font-medium leading-snug", "style": { "color": "#e2e8f0" } }, "text": "On app load (before collections)" },
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between rounded-[4px] px-[8px] py-[5px]", "style": { "background": "#0f172a" } }, "children": [
+                            { "type": "Text", "props": { "className": "text-[9px]", "style": { "color": "#374151" } }, "text": "Fired" },
+                            { "type": "Text", "props": { "className": "text-[12px] font-bold font-mono", "style": { "color": "#a78bfa" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000001']}}×" }
+                          ]}
+                        ]
+                      },
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[10px] rounded-[10px] p-[14px]", "style": { "background": "#111827", "border": "1px solid rgba(167,139,250,0.2)" } },
+                        "children": [
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between gap-[4px]" }, "children": [
+                            { "type": "Box", "props": { "className": "w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0", "style": { "background": "rgba(167,139,250,0.15)" } }, "children": [{ "type": "Icon", "props": { "icon": "lucide:globe", "size": 14, "color": "#a78bfa" } }] },
+                            { "type": "Box", "props": { "className": "px-[5px] py-[1px] rounded-[3px]", "style": { "background": "#0f172a" } }, "children": [{ "type": "Text", "props": { "className": "text-[8px] font-mono", "style": { "color": "#4b5563" } }, "text": "appLoad" }] }
+                          ]},
+                          { "type": "Text", "props": { "className": "text-[11px] font-medium leading-snug", "style": { "color": "#e2e8f0" } }, "text": "On app load" },
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between rounded-[4px] px-[8px] py-[5px]", "style": { "background": "#0f172a" } }, "children": [
+                            { "type": "Text", "props": { "className": "text-[9px]", "style": { "color": "#374151" } }, "text": "Fired" },
+                            { "type": "Text", "props": { "className": "text-[12px] font-bold font-mono", "style": { "color": "#a78bfa" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000002']}}×" }
+                          ]}
+                        ]
+                      },
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[10px] rounded-[10px] p-[14px]", "style": { "background": "#111827", "border": "1px solid rgba(167,139,250,0.2)" } },
+                        "children": [
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between gap-[4px]" }, "children": [
+                            { "type": "Box", "props": { "className": "w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0", "style": { "background": "rgba(167,139,250,0.15)" } }, "children": [{ "type": "Icon", "props": { "icon": "lucide:file-text", "size": 14, "color": "#a78bfa" } }] },
+                            { "type": "Box", "props": { "className": "px-[5px] py-[1px] rounded-[3px]", "style": { "background": "#0f172a" } }, "children": [{ "type": "Text", "props": { "className": "text-[8px] font-mono", "style": { "color": "#4b5563" } }, "text": "pageLoadBefore" }] }
+                          ]},
+                          { "type": "Text", "props": { "className": "text-[11px] font-medium leading-snug", "style": { "color": "#e2e8f0" } }, "text": "On page load (before collections)" },
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between rounded-[4px] px-[8px] py-[5px]", "style": { "background": "#0f172a" } }, "children": [
+                            { "type": "Text", "props": { "className": "text-[9px]", "style": { "color": "#374151" } }, "text": "Fired" },
+                            { "type": "Text", "props": { "className": "text-[12px] font-bold font-mono", "style": { "color": "#a78bfa" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000003']}}×" }
+                          ]}
+                        ]
+                      },
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[10px] rounded-[10px] p-[14px]", "style": { "background": "#111827", "border": "1px solid rgba(167,139,250,0.2)" } },
+                        "children": [
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between gap-[4px]" }, "children": [
+                            { "type": "Box", "props": { "className": "w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0", "style": { "background": "rgba(167,139,250,0.15)" } }, "children": [{ "type": "Icon", "props": { "icon": "lucide:file-text", "size": 14, "color": "#a78bfa" } }] },
+                            { "type": "Box", "props": { "className": "px-[5px] py-[1px] rounded-[3px]", "style": { "background": "#0f172a" } }, "children": [{ "type": "Text", "props": { "className": "text-[8px] font-mono", "style": { "color": "#4b5563" } }, "text": "pageLoad" }] }
+                          ]},
+                          { "type": "Text", "props": { "className": "text-[11px] font-medium leading-snug", "style": { "color": "#e2e8f0" } }, "text": "On page load" },
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between rounded-[4px] px-[8px] py-[5px]", "style": { "background": "#0f172a" } }, "children": [
+                            { "type": "Text", "props": { "className": "text-[9px]", "style": { "color": "#374151" } }, "text": "Fired" },
+                            { "type": "Text", "props": { "className": "text-[12px] font-bold font-mono", "style": { "color": "#a78bfa" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000004']}}×" }
+                          ]}
+                        ]
+                      },
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[10px] rounded-[10px] p-[14px]", "style": { "background": "#111827", "border": "1px solid rgba(167,139,250,0.2)" } },
+                        "children": [
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between gap-[4px]" }, "children": [
+                            { "type": "Box", "props": { "className": "w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0", "style": { "background": "rgba(167,139,250,0.15)" } }, "children": [{ "type": "Icon", "props": { "icon": "lucide:log-out", "size": 14, "color": "#a78bfa" } }] },
+                            { "type": "Box", "props": { "className": "px-[5px] py-[1px] rounded-[3px]", "style": { "background": "#0f172a" } }, "children": [{ "type": "Text", "props": { "className": "text-[8px] font-mono", "style": { "color": "#4b5563" } }, "text": "pageUnload" }] }
+                          ]},
+                          { "type": "Text", "props": { "className": "text-[11px] font-medium leading-snug", "style": { "color": "#e2e8f0" } }, "text": "On page unload" },
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between rounded-[4px] px-[8px] py-[5px]", "style": { "background": "#0f172a" } }, "children": [
+                            { "type": "Text", "props": { "className": "text-[9px]", "style": { "color": "#374151" } }, "text": "Fired" },
+                            { "type": "Text", "props": { "className": "text-[12px] font-bold font-mono", "style": { "color": "#a78bfa" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000005']}}×" }
+                          ]}
+                        ]
+                      },
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[10px] rounded-[10px] p-[14px]", "style": { "background": "#111827", "border": "1px solid rgba(167,139,250,0.2)" } },
+                        "children": [
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between gap-[4px]" }, "children": [
+                            { "type": "Box", "props": { "className": "w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0", "style": { "background": "rgba(167,139,250,0.15)" } }, "children": [{ "type": "Icon", "props": { "icon": "lucide:mouse-pointer-2", "size": 14, "color": "#a78bfa" } }] },
+                            { "type": "Box", "props": { "className": "px-[5px] py-[1px] rounded-[3px]", "style": { "background": "#0f172a" } }, "children": [{ "type": "Text", "props": { "className": "text-[8px] font-mono", "style": { "color": "#4b5563" } }, "text": "scroll" }] }
+                          ]},
+                          { "type": "Text", "props": { "className": "text-[11px] font-medium leading-snug", "style": { "color": "#e2e8f0" } }, "text": "On page scroll" },
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between rounded-[4px] px-[8px] py-[5px]", "style": { "background": "#0f172a" } }, "children": [
+                            { "type": "Text", "props": { "className": "text-[9px]", "style": { "color": "#374151" } }, "text": "Scroll Y" },
+                            { "type": "Text", "props": { "className": "text-[12px] font-bold font-mono", "style": { "color": "#a78bfa" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000006']}}" }
+                          ]}
+                        ]
+                      },
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[10px] rounded-[10px] p-[14px]", "style": { "background": "#111827", "border": "1px solid rgba(167,139,250,0.2)" } },
+                        "children": [
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between gap-[4px]" }, "children": [
+                            { "type": "Box", "props": { "className": "w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0", "style": { "background": "rgba(167,139,250,0.15)" } }, "children": [{ "type": "Icon", "props": { "icon": "lucide:maximize-2", "size": 14, "color": "#a78bfa" } }] },
+                            { "type": "Box", "props": { "className": "px-[5px] py-[1px] rounded-[3px]", "style": { "background": "#0f172a" } }, "children": [{ "type": "Text", "props": { "className": "text-[8px] font-mono", "style": { "color": "#4b5563" } }, "text": "resize" }] }
+                          ]},
+                          { "type": "Text", "props": { "className": "text-[11px] font-medium leading-snug", "style": { "color": "#e2e8f0" } }, "text": "On page resize" },
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between rounded-[4px] px-[8px] py-[5px]", "style": { "background": "#0f172a" } }, "children": [
+                            { "type": "Text", "props": { "className": "text-[9px]", "style": { "color": "#374151" } }, "text": "Width" },
+                            { "type": "Text", "props": { "className": "text-[12px] font-bold font-mono", "style": { "color": "#a78bfa" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000007']}}" }
+                          ]}
+                        ]
+                      },
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[10px] rounded-[10px] p-[14px]", "style": { "background": "#111827", "border": "1px solid rgba(167,139,250,0.2)" } },
+                        "children": [
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between gap-[4px]" }, "children": [
+                            { "type": "Box", "props": { "className": "w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0", "style": { "background": "rgba(167,139,250,0.15)" } }, "children": [{ "type": "Icon", "props": { "icon": "lucide:keyboard", "size": 14, "color": "#a78bfa" } }] },
+                            { "type": "Box", "props": { "className": "px-[5px] py-[1px] rounded-[3px]", "style": { "background": "#0f172a" } }, "children": [{ "type": "Text", "props": { "className": "text-[8px] font-mono", "style": { "color": "#4b5563" } }, "text": "keydown" }] }
+                          ]},
+                          { "type": "Text", "props": { "className": "text-[11px] font-medium leading-snug", "style": { "color": "#e2e8f0" } }, "text": "On keydown" },
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between rounded-[4px] px-[8px] py-[5px]", "style": { "background": "#0f172a" } }, "children": [
+                            { "type": "Text", "props": { "className": "text-[9px]", "style": { "color": "#374151" } }, "text": "Last key" },
+                            { "type": "Text", "props": { "className": "text-[12px] font-bold font-mono", "style": { "color": "#a78bfa" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000008']}}" }
+                          ]}
+                        ]
+                      },
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[10px] rounded-[10px] p-[14px]", "style": { "background": "#111827", "border": "1px solid rgba(167,139,250,0.2)" } },
+                        "children": [
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between gap-[4px]" }, "children": [
+                            { "type": "Box", "props": { "className": "w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0", "style": { "background": "rgba(167,139,250,0.15)" } }, "children": [{ "type": "Icon", "props": { "icon": "lucide:keyboard", "size": 14, "color": "#a78bfa" } }] },
+                            { "type": "Box", "props": { "className": "px-[5px] py-[1px] rounded-[3px]", "style": { "background": "#0f172a" } }, "children": [{ "type": "Text", "props": { "className": "text-[8px] font-mono", "style": { "color": "#4b5563" } }, "text": "keyup" }] }
+                          ]},
+                          { "type": "Text", "props": { "className": "text-[11px] font-medium leading-snug", "style": { "color": "#e2e8f0" } }, "text": "On keyup" },
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between rounded-[4px] px-[8px] py-[5px]", "style": { "background": "#0f172a" } }, "children": [
+                            { "type": "Text", "props": { "className": "text-[9px]", "style": { "color": "#374151" } }, "text": "Last key" },
+                            { "type": "Text", "props": { "className": "text-[12px] font-bold font-mono", "style": { "color": "#a78bfa" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000009']}}" }
+                          ]}
+                        ]
+                      },
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[10px] rounded-[10px] p-[14px]", "style": { "background": "#111827", "border": "1px solid rgba(167,139,250,0.2)" } },
+                        "children": [
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between gap-[4px]" }, "children": [
+                            { "type": "Box", "props": { "className": "w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0", "style": { "background": "rgba(167,139,250,0.15)" } }, "children": [{ "type": "Icon", "props": { "icon": "lucide:alert-circle", "size": 14, "color": "#a78bfa" } }] },
+                            { "type": "Box", "props": { "className": "px-[5px] py-[1px] rounded-[3px]", "style": { "background": "#0f172a" } }, "children": [{ "type": "Text", "props": { "className": "text-[8px] font-mono", "style": { "color": "#4b5563" } }, "text": "collectionFetchError" }] }
+                          ]},
+                          { "type": "Text", "props": { "className": "text-[11px] font-medium leading-snug", "style": { "color": "#e2e8f0" } }, "text": "On collection fetch error" },
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between rounded-[4px] px-[8px] py-[5px]", "style": { "background": "#0f172a" } }, "children": [
+                            { "type": "Text", "props": { "className": "text-[9px]", "style": { "color": "#374151" } }, "text": "Last error" },
+                            { "type": "Text", "props": { "className": "text-[12px] font-bold font-mono", "style": { "color": "#a78bfa" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000010']}}" }
+                          ]}
+                        ]
+                      }
+
+                    ]
+                  }
+                ]
+              },
+
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-[20px]" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-row items-center gap-[12px]" },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": { "className": "px-[12px] py-[5px] rounded-[6px]", "style": { "background": "rgba(96,165,250,0.1)", "border": "1px solid rgba(96,165,250,0.3)" } },
+                        "children": [{ "type": "Text", "props": { "className": "text-[11px] font-bold uppercase tracking-widest", "style": { "color": "#60a5fa" } }, "text": "Page Triggers" }]
+                      },
+                      { "type": "Text", "props": { "className": "text-[12px]", "style": { "color": "#4b5563" } }, "text": "Scoped to this page — /triggers-test" },
+                      { "type": "Box", "props": { "className": "flex-1 h-[1px]", "style": { "background": "#1f2937" } } },
+                      { "type": "Text", "props": { "className": "text-[10px] font-mono", "style": { "color": "#374151" } }, "text": "10 workflows" }
+                    ]
+                  },
+
+                  {
+                    "type": "Box",
+                    "props": { "className": "grid gap-[10px]", "style": { "gridTemplateColumns": "repeat(5, 1fr)" } },
+                    "children": [
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[10px] rounded-[10px] p-[14px]", "style": { "background": "#111827", "border": "1px solid rgba(96,165,250,0.2)" } },
+                        "children": [
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between gap-[4px]" }, "children": [
+                            { "type": "Box", "props": { "className": "w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0", "style": { "background": "rgba(96,165,250,0.12)" } }, "children": [{ "type": "Icon", "props": { "icon": "lucide:globe", "size": 14, "color": "#60a5fa" } }] },
+                            { "type": "Box", "props": { "className": "px-[5px] py-[1px] rounded-[3px]", "style": { "background": "#0f172a" } }, "children": [{ "type": "Text", "props": { "className": "text-[8px] font-mono", "style": { "color": "#4b5563" } }, "text": "appLoadBefore" }] }
+                          ]},
+                          { "type": "Text", "props": { "className": "text-[11px] font-medium leading-snug", "style": { "color": "#e2e8f0" } }, "text": "On app load (before collections)" },
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between rounded-[4px] px-[8px] py-[5px]", "style": { "background": "#0f172a" } }, "children": [
+                            { "type": "Text", "props": { "className": "text-[9px]", "style": { "color": "#374151" } }, "text": "Fired" },
+                            { "type": "Text", "props": { "className": "text-[12px] font-bold font-mono", "style": { "color": "#60a5fa" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000001']}}×" }
+                          ]}
+                        ]
+                      },
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[10px] rounded-[10px] p-[14px]", "style": { "background": "#111827", "border": "1px solid rgba(96,165,250,0.2)" } },
+                        "children": [
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between gap-[4px]" }, "children": [
+                            { "type": "Box", "props": { "className": "w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0", "style": { "background": "rgba(96,165,250,0.12)" } }, "children": [{ "type": "Icon", "props": { "icon": "lucide:globe", "size": 14, "color": "#60a5fa" } }] },
+                            { "type": "Box", "props": { "className": "px-[5px] py-[1px] rounded-[3px]", "style": { "background": "#0f172a" } }, "children": [{ "type": "Text", "props": { "className": "text-[8px] font-mono", "style": { "color": "#4b5563" } }, "text": "appLoad" }] }
+                          ]},
+                          { "type": "Text", "props": { "className": "text-[11px] font-medium leading-snug", "style": { "color": "#e2e8f0" } }, "text": "On app load" },
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between rounded-[4px] px-[8px] py-[5px]", "style": { "background": "#0f172a" } }, "children": [
+                            { "type": "Text", "props": { "className": "text-[9px]", "style": { "color": "#374151" } }, "text": "Fired" },
+                            { "type": "Text", "props": { "className": "text-[12px] font-bold font-mono", "style": { "color": "#60a5fa" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000002']}}×" }
+                          ]}
+                        ]
+                      },
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[10px] rounded-[10px] p-[14px]", "style": { "background": "#111827", "border": "1px solid rgba(96,165,250,0.2)" } },
+                        "children": [
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between gap-[4px]" }, "children": [
+                            { "type": "Box", "props": { "className": "w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0", "style": { "background": "rgba(96,165,250,0.12)" } }, "children": [{ "type": "Icon", "props": { "icon": "lucide:file-text", "size": 14, "color": "#60a5fa" } }] },
+                            { "type": "Box", "props": { "className": "px-[5px] py-[1px] rounded-[3px]", "style": { "background": "#0f172a" } }, "children": [{ "type": "Text", "props": { "className": "text-[8px] font-mono", "style": { "color": "#4b5563" } }, "text": "pageLoadBefore" }] }
+                          ]},
+                          { "type": "Text", "props": { "className": "text-[11px] font-medium leading-snug", "style": { "color": "#e2e8f0" } }, "text": "On page load (before collections)" },
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between rounded-[4px] px-[8px] py-[5px]", "style": { "background": "#0f172a" } }, "children": [
+                            { "type": "Text", "props": { "className": "text-[9px]", "style": { "color": "#374151" } }, "text": "Fired" },
+                            { "type": "Text", "props": { "className": "text-[12px] font-bold font-mono", "style": { "color": "#60a5fa" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000003']}}×" }
+                          ]}
+                        ]
+                      },
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[10px] rounded-[10px] p-[14px]", "style": { "background": "#111827", "border": "1px solid rgba(96,165,250,0.2)" } },
+                        "children": [
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between gap-[4px]" }, "children": [
+                            { "type": "Box", "props": { "className": "w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0", "style": { "background": "rgba(96,165,250,0.12)" } }, "children": [{ "type": "Icon", "props": { "icon": "lucide:file-text", "size": 14, "color": "#60a5fa" } }] },
+                            { "type": "Box", "props": { "className": "px-[5px] py-[1px] rounded-[3px]", "style": { "background": "#0f172a" } }, "children": [{ "type": "Text", "props": { "className": "text-[8px] font-mono", "style": { "color": "#4b5563" } }, "text": "pageLoad" }] }
+                          ]},
+                          { "type": "Text", "props": { "className": "text-[11px] font-medium leading-snug", "style": { "color": "#e2e8f0" } }, "text": "On page load" },
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between rounded-[4px] px-[8px] py-[5px]", "style": { "background": "#0f172a" } }, "children": [
+                            { "type": "Text", "props": { "className": "text-[9px]", "style": { "color": "#374151" } }, "text": "Fired" },
+                            { "type": "Text", "props": { "className": "text-[12px] font-bold font-mono", "style": { "color": "#60a5fa" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000004']}}×" }
+                          ]}
+                        ]
+                      },
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[10px] rounded-[10px] p-[14px]", "style": { "background": "#111827", "border": "1px solid rgba(96,165,250,0.2)" } },
+                        "children": [
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between gap-[4px]" }, "children": [
+                            { "type": "Box", "props": { "className": "w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0", "style": { "background": "rgba(96,165,250,0.12)" } }, "children": [{ "type": "Icon", "props": { "icon": "lucide:log-out", "size": 14, "color": "#60a5fa" } }] },
+                            { "type": "Box", "props": { "className": "px-[5px] py-[1px] rounded-[3px]", "style": { "background": "#0f172a" } }, "children": [{ "type": "Text", "props": { "className": "text-[8px] font-mono", "style": { "color": "#4b5563" } }, "text": "pageUnload" }] }
+                          ]},
+                          { "type": "Text", "props": { "className": "text-[11px] font-medium leading-snug", "style": { "color": "#e2e8f0" } }, "text": "On page unload" },
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between rounded-[4px] px-[8px] py-[5px]", "style": { "background": "#0f172a" } }, "children": [
+                            { "type": "Text", "props": { "className": "text-[9px]", "style": { "color": "#374151" } }, "text": "Fired" },
+                            { "type": "Text", "props": { "className": "text-[12px] font-bold font-mono", "style": { "color": "#60a5fa" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000005']}}×" }
+                          ]}
+                        ]
+                      },
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[10px] rounded-[10px] p-[14px]", "style": { "background": "#111827", "border": "1px solid rgba(96,165,250,0.2)" } },
+                        "children": [
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between gap-[4px]" }, "children": [
+                            { "type": "Box", "props": { "className": "w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0", "style": { "background": "rgba(96,165,250,0.12)" } }, "children": [{ "type": "Icon", "props": { "icon": "lucide:mouse-pointer-2", "size": 14, "color": "#60a5fa" } }] },
+                            { "type": "Box", "props": { "className": "px-[5px] py-[1px] rounded-[3px]", "style": { "background": "#0f172a" } }, "children": [{ "type": "Text", "props": { "className": "text-[8px] font-mono", "style": { "color": "#4b5563" } }, "text": "scroll" }] }
+                          ]},
+                          { "type": "Text", "props": { "className": "text-[11px] font-medium leading-snug", "style": { "color": "#e2e8f0" } }, "text": "On page scroll" },
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between rounded-[4px] px-[8px] py-[5px]", "style": { "background": "#0f172a" } }, "children": [
+                            { "type": "Text", "props": { "className": "text-[9px]", "style": { "color": "#374151" } }, "text": "Scroll Y" },
+                            { "type": "Text", "props": { "className": "text-[12px] font-bold font-mono", "style": { "color": "#60a5fa" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000006']}}" }
+                          ]}
+                        ]
+                      },
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[10px] rounded-[10px] p-[14px]", "style": { "background": "#111827", "border": "1px solid rgba(96,165,250,0.2)" } },
+                        "children": [
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between gap-[4px]" }, "children": [
+                            { "type": "Box", "props": { "className": "w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0", "style": { "background": "rgba(96,165,250,0.12)" } }, "children": [{ "type": "Icon", "props": { "icon": "lucide:maximize-2", "size": 14, "color": "#60a5fa" } }] },
+                            { "type": "Box", "props": { "className": "px-[5px] py-[1px] rounded-[3px]", "style": { "background": "#0f172a" } }, "children": [{ "type": "Text", "props": { "className": "text-[8px] font-mono", "style": { "color": "#4b5563" } }, "text": "resize" }] }
+                          ]},
+                          { "type": "Text", "props": { "className": "text-[11px] font-medium leading-snug", "style": { "color": "#e2e8f0" } }, "text": "On page resize" },
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between rounded-[4px] px-[8px] py-[5px]", "style": { "background": "#0f172a" } }, "children": [
+                            { "type": "Text", "props": { "className": "text-[9px]", "style": { "color": "#374151" } }, "text": "Width" },
+                            { "type": "Text", "props": { "className": "text-[12px] font-bold font-mono", "style": { "color": "#60a5fa" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000007']}}" }
+                          ]}
+                        ]
+                      },
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[10px] rounded-[10px] p-[14px]", "style": { "background": "#111827", "border": "1px solid rgba(96,165,250,0.2)" } },
+                        "children": [
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between gap-[4px]" }, "children": [
+                            { "type": "Box", "props": { "className": "w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0", "style": { "background": "rgba(96,165,250,0.12)" } }, "children": [{ "type": "Icon", "props": { "icon": "lucide:keyboard", "size": 14, "color": "#60a5fa" } }] },
+                            { "type": "Box", "props": { "className": "px-[5px] py-[1px] rounded-[3px]", "style": { "background": "#0f172a" } }, "children": [{ "type": "Text", "props": { "className": "text-[8px] font-mono", "style": { "color": "#4b5563" } }, "text": "keydown" }] }
+                          ]},
+                          { "type": "Text", "props": { "className": "text-[11px] font-medium leading-snug", "style": { "color": "#e2e8f0" } }, "text": "On keydown" },
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between rounded-[4px] px-[8px] py-[5px]", "style": { "background": "#0f172a" } }, "children": [
+                            { "type": "Text", "props": { "className": "text-[9px]", "style": { "color": "#374151" } }, "text": "Last key" },
+                            { "type": "Text", "props": { "className": "text-[12px] font-bold font-mono", "style": { "color": "#60a5fa" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000008']}}" }
+                          ]}
+                        ]
+                      },
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[10px] rounded-[10px] p-[14px]", "style": { "background": "#111827", "border": "1px solid rgba(96,165,250,0.2)" } },
+                        "children": [
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between gap-[4px]" }, "children": [
+                            { "type": "Box", "props": { "className": "w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0", "style": { "background": "rgba(96,165,250,0.12)" } }, "children": [{ "type": "Icon", "props": { "icon": "lucide:keyboard", "size": 14, "color": "#60a5fa" } }] },
+                            { "type": "Box", "props": { "className": "px-[5px] py-[1px] rounded-[3px]", "style": { "background": "#0f172a" } }, "children": [{ "type": "Text", "props": { "className": "text-[8px] font-mono", "style": { "color": "#4b5563" } }, "text": "keyup" }] }
+                          ]},
+                          { "type": "Text", "props": { "className": "text-[11px] font-medium leading-snug", "style": { "color": "#e2e8f0" } }, "text": "On keyup" },
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between rounded-[4px] px-[8px] py-[5px]", "style": { "background": "#0f172a" } }, "children": [
+                            { "type": "Text", "props": { "className": "text-[9px]", "style": { "color": "#374151" } }, "text": "Last key" },
+                            { "type": "Text", "props": { "className": "text-[12px] font-bold font-mono", "style": { "color": "#60a5fa" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000009']}}" }
+                          ]}
+                        ]
+                      },
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[10px] rounded-[10px] p-[14px]", "style": { "background": "#111827", "border": "1px solid rgba(96,165,250,0.2)" } },
+                        "children": [
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between gap-[4px]" }, "children": [
+                            { "type": "Box", "props": { "className": "w-[28px] h-[28px] rounded-[6px] flex items-center justify-center flex-shrink-0", "style": { "background": "rgba(96,165,250,0.12)" } }, "children": [{ "type": "Icon", "props": { "icon": "lucide:alert-circle", "size": 14, "color": "#60a5fa" } }] },
+                            { "type": "Box", "props": { "className": "px-[5px] py-[1px] rounded-[3px]", "style": { "background": "#0f172a" } }, "children": [{ "type": "Text", "props": { "className": "text-[8px] font-mono", "style": { "color": "#4b5563" } }, "text": "collectionFetchError" }] }
+                          ]},
+                          { "type": "Text", "props": { "className": "text-[11px] font-medium leading-snug", "style": { "color": "#e2e8f0" } }, "text": "On collection fetch error" },
+                          { "type": "Box", "props": { "className": "flex flex-row items-center justify-between rounded-[4px] px-[8px] py-[5px]", "style": { "background": "#0f172a" } }, "children": [
+                            { "type": "Text", "props": { "className": "text-[9px]", "style": { "color": "#374151" } }, "text": "Last error" },
+                            { "type": "Text", "props": { "className": "text-[12px] font-bold font-mono", "style": { "color": "#60a5fa" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000010']}}" }
+                          ]}
+                        ]
+                      }
+
+                    ]
+                  }
+                ]
+              }
+
+            ]
+          },
+
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[20px]" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row items-center gap-[12px]" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": { "className": "px-[12px] py-[5px] rounded-[6px]", "style": { "background": "rgba(239,68,68,0.12)", "border": "1px solid rgba(239,68,68,0.35)" } },
+                    "children": [{ "type": "Text", "props": { "className": "text-[11px] font-bold uppercase tracking-widest", "style": { "color": "#f87171" } }, "text": "Collection Fetch Error — Live Demo" }]
+                  },
+                  { "type": "Box", "props": { "className": "flex-1 h-[1px]", "style": { "background": "#1f2937" } } }
+                ]
+              },
+
+              {
+                "type": "Box",
+                "props": { "className": "rounded-[12px] overflow-hidden", "style": { "border": "1px solid #1f2937" } },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-row", "style": { "background": "#0d1117" } },
+                    "children": [
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[16px] p-[24px] flex-1", "style": { "borderRight": "1px solid #1f2937" } },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": { "className": "flex flex-row items-center gap-[8px]" },
+                            "children": [
+                              { "type": "Box", "props": { "className": "w-[8px] h-[8px] rounded-full flex-shrink-0", "style": { "background": "#374151" } } },
+                              { "type": "Text", "props": { "className": "text-[11px] font-semibold uppercase tracking-widest", "style": { "color": "#4b5563" } }, "text": "Before — Idle" }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": { "className": "flex flex-col gap-[8px]" },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "props": { "className": "rounded-[8px] px-[14px] py-[12px] flex flex-row items-center gap-[10px]", "style": { "background": "#111827", "border": "1px solid #1f2937" } },
+                                "children": [
+                                  { "type": "Icon", "props": { "icon": "lucide:shield-check", "size": 16, "color": "#4b5563" } },
+                                  { "type": "Box", "props": { "className": "flex flex-col gap-[2px]" }, "children": [
+                                    { "type": "Text", "props": { "className": "text-[10px]", "style": { "color": "#6b7280" } }, "text": "Collection Fetch Error trigger" },
+                                    { "type": "Text", "props": { "className": "text-[12px] font-mono font-medium", "style": { "color": "#9ca3af" } }, "text": "Waiting — no error yet" }
+                                  ]}
+                                ]
+                              },
+                              {
+                                "type": "Box",
+                                "props": { "className": "rounded-[8px] px-[14px] py-[12px]", "style": { "background": "#111827", "border": "1px solid #1f2937" } },
+                                "children": [
+                                  { "type": "Text", "props": { "className": "text-[10px] font-mono", "style": { "color": "#374151" } }, "text": "variables['tr000000-...000010']" },
+                                  { "type": "Text", "props": { "className": "text-[13px] font-mono font-bold", "style": { "color": "#4b5563" } }, "text": "—" }
+                                ]
+                              }
+                            ]
+                          },
+                          { "type": "Text", "props": { "className": "text-[11px]", "style": { "color": "#4b5563" } }, "text": "Variable 10 holds its initial value (—) because no datasource has failed yet." }
+                        ]
+                      },
+
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[16px] p-[24px] flex-1" },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": { "className": "flex flex-row items-center gap-[8px]" },
+                            "children": [
+                              { "type": "Box", "props": { "className": "w-[8px] h-[8px] rounded-full flex-shrink-0", "style": { "background": "#ef4444" } } },
+                              { "type": "Text", "props": { "className": "text-[11px] font-semibold uppercase tracking-widest", "style": { "color": "#ef4444" } }, "text": "After — Error Received" }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": { "className": "flex flex-col gap-[8px]" },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "props": { "className": "rounded-[8px] px-[14px] py-[12px] flex flex-row items-center gap-[10px]", "style": { "background": "#111827", "border": "1px solid rgba(239,68,68,0.3)" } },
+                                "children": [
+                                  { "type": "Icon", "props": { "icon": "lucide:alert-triangle", "size": 16, "color": "#ef4444" } },
+                                  { "type": "Box", "props": { "className": "flex flex-col gap-[2px]" }, "children": [
+                                    { "type": "Text", "props": { "className": "text-[10px]", "style": { "color": "#6b7280" } }, "text": "collectionFetchError fired — event.error:" },
+                                    { "type": "Text", "props": { "className": "text-[12px] font-mono font-medium", "style": { "color": "#f87171" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000010']}}" }
+                                  ]}
+                                ]
+                              },
+                              {
+                                "type": "Box",
+                                "props": { "className": "rounded-[8px] px-[14px] py-[12px]", "style": { "background": "#111827", "border": "1px solid #1f2937" } },
+                                "children": [
+                                  { "type": "Text", "props": { "className": "text-[10px] font-mono", "style": { "color": "#374151" } }, "text": "variables['tr000000-...000010']" },
+                                  { "type": "Text", "props": { "className": "text-[13px] font-mono font-bold", "style": { "color": "#f87171" } }, "text": "{{variables['tr000000-0000-0000-0000-000000000010']}}" }
+                                ]
+                              }
+                            ]
+                          },
+                          { "type": "Text", "props": { "className": "text-[11px]", "style": { "color": "#4b5563" } }, "text": "After a fetch fails, the workflow fires with event.error = the error message string." }
+                        ]
+                      }
+
+                    ]
+                  },
+
+                  {
+                    "type": "Box",
+                    "props": { "className": "px-[24px] py-[16px] flex flex-row items-center justify-between gap-[16px]", "style": { "background": "#090e17", "borderTop": "1px solid #1f2937" } },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-col gap-[2px]" },
+                        "children": [
+                          { "type": "Text", "props": { "className": "text-[12px] font-medium", "style": { "color": "#d1d5db" } }, "text": "Trigger a real fetch error" },
+                          { "type": "Text", "props": { "className": "text-[11px]", "style": { "color": "#4b5563" } }, "text": "Fetches an intentionally bad URL → named datasource fails → collectionFetchError trigger fires" }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-row items-center gap-[6px] rounded-[8px] px-[16px] py-[9px] cursor-pointer", "style": { "background": "#dc2626" } },
+                        "actions": [{ "action": "trTriggerBadFetch" }],
+                        "children": [
+                          { "type": "Icon", "props": { "icon": "lucide:zap", "size": 14, "color": "#fff" } },
+                          { "type": "Text", "props": { "className": "text-[13px] font-semibold", "style": { "color": "#fff" } }, "text": "Trigger Fetch Error" }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+
+        ]
+      }
+    ]
+  }
+}

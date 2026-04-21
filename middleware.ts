@@ -12,11 +12,19 @@
  *   No auth, no project ID needed — serves the static config/app.ts SDUI config.
  *   Used by E2E tests and development previewing without a backend project.
  *
- * preview.localhost:3001/*
+ * {projectId}-dev.localhost:3001/*  [DEV ONLY — blocked in production]
+ *   → passes through to app/[[...slug]]/page.tsx with preview_project_id cookie set.
+ *   Each project gets its own subdomain origin → localStorage is isolated per project
+ *   with no code-level namespacing required.
+ *
+ * {projectId}.localhost:3001/*
  *   → rewritten internally to /app-preview/*
  *   The SDUI app renders in complete isolation so project routes like /login,
  *   /collection/electronics etc. never conflict with platform routes.
- *   Requires projectId cookie + preview JWT token for authenticated access.
+ *   projectId is read from the subdomain itself — no query param or cookie needed.
+ *
+ * preview.localhost:3001/*  (legacy — kept for backward compat)
+ *   → same as {projectId}.localhost but projectId comes from cookie/query param.
  *
  * ── Main domain (localhost:3001) ─────────────────────────────────────────────
  *
@@ -30,13 +38,16 @@
  *
  * ── Internal rewrite targets (never directly accessible) ─────────────────────
  * /dev/builder         → served only via builder-dev rewrite or /builder/[id] rewrite
- * /app-preview/**      → served only via preview.localhost rewrite
+ * /app-preview/**      → served only via project preview rewrite
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 
 const PREVIEW_COOKIE       = 'preview_project_id';
 const PREVIEW_TOKEN_COOKIE = 'preview_token';
+
+/** Well-known subdomain prefixes that are NOT project IDs. */
+const RESERVED_SUBDOMAINS = ['builder-dev', 'preview-dev', 'preview', 'www'];
 
 /** Paths allowed on the main domain without further auth checking. */
 const PLATFORM_PREFIXES = [
@@ -60,9 +71,23 @@ export function middleware(req: NextRequest): NextResponse {
 
   const isBuilderDev = host.startsWith('builder-dev.');
   const isPreviewDev = host.startsWith('preview-dev.');
-  const isPreview    = !isPreviewDev && host.startsWith('preview.');
+  const isLegacyPreview = !isPreviewDev && host.startsWith('preview.');
 
   const isDev = process.env.NODE_ENV === 'development';
+
+  // Extract the first subdomain label (everything before the first dot)
+  const firstLabel = host.split('.')[0] ?? '';
+  const isReserved = RESERVED_SUBDOMAINS.includes(firstLabel);
+
+  // {projectId}-dev.* — project-specific dev preview
+  const isProjectDev = !isReserved && !isBuilderDev && !isPreviewDev && firstLabel.endsWith('-dev');
+  const projectDevId = isProjectDev ? firstLabel.slice(0, -'-dev'.length) : '';
+
+  // {projectId}.* — project-specific production preview (any non-reserved, non -dev subdomain)
+  const isProjectProd = !isReserved && !isBuilderDev && !isPreviewDev && !isLegacyPreview && !isProjectDev
+    && firstLabel.length > 0 && !host.startsWith('localhost');
+
+  const projectProdId = isProjectProd ? firstLabel : '';
 
   // builder-dev / preview-dev — only available in development.
   // In production these subdomains are blocked and redirected to the main domain.
@@ -100,8 +125,61 @@ export function middleware(req: NextRequest): NextResponse {
     return NextResponse.next();
   }
 
-  // preview — authenticated project preview via /app-preview/*
-  if (isPreview) {
+  // ── {projectId}-dev.* (dev only) — project-specific dev preview ────────────
+  if (isProjectDev) {
+    if (!isDev) {
+      const url = req.nextUrl.clone();
+      url.host     = host.replace(`${firstLabel}.`, '');
+      url.pathname = '/';
+      url.search   = '';
+      return NextResponse.redirect(url);
+    }
+
+    if (pathname.startsWith('/_next/') || pathname.startsWith('/api/')) {
+      return NextResponse.next();
+    }
+
+    // Set the project cookie so app-preview can load the right config,
+    // then pass through to the SDUI app (app/app-preview or [[...slug]]).
+    const url = req.nextUrl.clone();
+    url.pathname = `/app-preview${pathname === '/' ? '' : pathname}`;
+    const res = NextResponse.rewrite(url);
+    res.cookies.set(PREVIEW_COOKIE, projectDevId, {
+      path: '/', httpOnly: false, sameSite: 'lax', maxAge: 60 * 60 * 24,
+    });
+    return res;
+  }
+
+  // ── {projectId}.* — project-specific production preview ────────────────────
+  if (isProjectProd) {
+    if (pathname.startsWith('/_next/') || pathname.startsWith('/api/')) {
+      return NextResponse.next();
+    }
+
+    const url = req.nextUrl.clone();
+
+    // Strip legacy query params if somehow present
+    const tokenFromQuery = url.searchParams.get('token');
+    if (tokenFromQuery) {
+      const clean = req.nextUrl.clone();
+      clean.searchParams.delete('token');
+      const res = NextResponse.redirect(clean);
+      res.cookies.set(PREVIEW_TOKEN_COOKIE, tokenFromQuery, {
+        path: '/', httpOnly: false, sameSite: 'lax', maxAge: 60 * 60,
+      });
+      return res;
+    }
+
+    url.pathname = `/app-preview${pathname === '/' ? '' : pathname}`;
+    const res = NextResponse.rewrite(url);
+    res.cookies.set(PREVIEW_COOKIE, projectProdId, {
+      path: '/', httpOnly: false, sameSite: 'lax', maxAge: 60 * 60 * 24,
+    });
+    return res;
+  }
+
+  // ── Legacy preview.* — kept for backward compat ────────────────────────────
+  if (isLegacyPreview) {
     if (pathname.startsWith('/_next/') || pathname.startsWith('/api/')) {
       return NextResponse.next();
     }

@@ -110,7 +110,7 @@ export interface ResponsiveOverride {
   /** Condition override. false = hide at this breakpoint. null = remove condition (always show). */
   condition?: ConditionValue | false | null;
   /** Text override for this breakpoint */
-  text?: string | { expr: object; suffix?: string; prefix?: string; template?: string };
+  text?: string | { formula: string | object; suffix?: string; prefix?: string; template?: string };
   /** Shallow-merged into base props at this breakpoint */
   props?: Record<string, unknown>;
   /** Merged into props.style at this breakpoint */
@@ -155,7 +155,7 @@ export interface SDUINode {
   props?: Record<string, unknown>;
   className?: string;
   children?: SDUINode[];
-  text?: string | { expr: object; suffix?: string; prefix?: string; template?: string };
+  text?: string | { formula: string | object; suffix?: string; prefix?: string; template?: string };
   src?: string;
   alt?: string;
   /**

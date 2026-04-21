@@ -145,7 +145,7 @@ function DataBindingSection({ node }: { node: SDUINode }) {
     if (node.props) {
       for (const [k, v] of Object.entries(node.props)) {
         if (typeof v === 'string' && v.includes('{{')) result.push({ prop: k, value: v });
-        else if (typeof v === 'object' && v !== null && 'expr' in v) result.push({ prop: k, value: JSON.stringify(v) });
+        else if (typeof v === 'object' && v !== null && 'formula' in v) result.push({ prop: k, value: JSON.stringify(v) });
       }
     }
     return result;
@@ -156,7 +156,7 @@ function DataBindingSection({ node }: { node: SDUINode }) {
     let value: string | object = '';
     if (mode === 'path') value = `{{${bindPath}}}`;
     else if (mode === 'template') value = bindPath;
-    else value = { expr: { var: bindPath } };
+    else value = { formula: { var: bindPath } };
 
     if (prop === 'text') {
       store.patchNodeField(node.id!, 'text', value);
@@ -563,8 +563,8 @@ function InteractionsSection({ node }: { node: SDUINode }) {
 function DisabledSection({ node }: { node: SDUINode }) {
   const store = useBuilderStore();
   const disabled = (node.props as Record<string, unknown> | undefined)?.disabled;
-  const condition = typeof disabled === 'object' && disabled !== null && 'expr' in disabled
-    ? (disabled as { expr: object }).expr
+  const condition = typeof disabled === 'object' && disabled !== null && 'formula' in disabled
+    ? (disabled as { formula: object }).formula
     : null;
 
   return (
@@ -574,7 +574,7 @@ function DisabledSection({ node }: { node: SDUINode }) {
         value={condition}
         onChange={v => {
           if (!v) store.patchProp(node.id!, 'props.disabled', undefined);
-          else store.patchProp(node.id!, 'props.disabled', { expr: v });
+          else store.patchProp(node.id!, 'props.disabled', { formula: v });
         }}
         context="condition"
         label="Disable when"
@@ -892,9 +892,9 @@ function WorkflowsSection() {
   const [newName, setNewName] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  // Filter out system workflows
+  // Filter out system workflows and trigger workflows (those belong to the Triggers tab)
   const entries = Object.entries(pageWorkflows)
-    .filter(([id]) => !pageWorkflowMeta[id]?.isSystem);
+    .filter(([id]) => !pageWorkflowMeta[id]?.isSystem && !pageWorkflowMeta[id]?.isTrigger);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -982,7 +982,7 @@ function GlobalFormulasSection() {
             <div style={{ borderTop: '1px solid #374151', padding: '8px 10px' }}>
               <ExprBuilder
                 value={expr as object | null}
-                onChange={v => setGlobalFormula(name, v as object)}
+                onChange={v => setGlobalFormula(name, v as import('./_store-types').GlobalFormulaDef)}
               />
             </div>
           )}
@@ -994,11 +994,11 @@ function GlobalFormulasSection() {
           value={newName}
           onChange={e => setNewName(e.target.value)}
           placeholder="formula name…"
-          onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) { setGlobalFormula(newName.trim(), {}); setNewName(''); } }}
+          onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) { setGlobalFormula(newName.trim(), { name: newName.trim(), params: [], formula: '' }); setNewName(''); } }}
           style={{ flex: 1, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '4px 7px', outline: 'none' }}
         />
         <button
-          onClick={() => { if (newName.trim()) { setGlobalFormula(newName.trim(), {}); setNewName(''); } }}
+          onClick={() => { if (newName.trim()) { setGlobalFormula(newName.trim(), { name: newName.trim(), params: [], formula: '' }); setNewName(''); } }}
           style={{ padding: '4px 12px', background: '#1d4ed8', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, cursor: 'pointer' }}
         >
           + Add

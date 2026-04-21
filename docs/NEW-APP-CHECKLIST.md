@@ -6,26 +6,16 @@ Use this checklist when creating a new app from this template to avoid common mi
 
 ## 0. Bootstrap Infrastructure (Do This First)
 
-These three files are the wiring layer. Nothing renders without them. Create them before any screens, layouts, or fragments.
-
-- [ ] **`config/fragments/index.ts`** – Register every fragment. Keys MUST use the full `'fragments/name'` prefix (this is what `$ref` looks up):
-  ```ts
-  import header from './header.json';
-  import drawer from './drawer.json';
-
-  export const fragments = {
-    'fragments/header': header,
-    'fragments/drawer': drawer,
-    'fragments/modals/myModal': myModal,
-  } as const;
-  ```
+These two files are the wiring layer. Nothing renders without them. Create them before any screens or layouts.
 
 - [ ] **`config/layouts/index.ts`** – Register every layout with the required TypeScript cast:
   ```ts
-  import authenticated from './authenticated.json';
+  import store from './store.json';
+  import account from './account.json';
 
   export const layouts = {
-    authenticated: authenticated as { structure: object },
+    store: store as { structure: object },
+    account: account as { structure: object },
   } as const;
   ```
 
@@ -33,12 +23,12 @@ These three files are the wiring layer. Nothing renders without them. Create the
   ```ts
   import routes from './routes.json';
   import { layouts } from './layouts';
-  import { fragments } from './fragments';
   import { resolveScreenConfig } from '@/lib/sdui/config-resolver';
   import home from './screens/home.json';
   import authActions from './actions/auth.json';
 
-  const registry = { layouts, fragments };
+  // Fragments registry is empty — all shared UI is in shared-components.json
+  const registry = { layouts, fragments: {} };
   const rawScreens = { home };
   const screens = Object.fromEntries(
     Object.entries(rawScreens).map(([name, screen]) =>
@@ -92,7 +82,7 @@ These three files are the wiring layer. Nothing renders without them. Create the
 - [ ] **Variables** – Declare all mutable state in `config/variables.json` with UUIDs. Access as `variables['UUID']` in formulas, `{{variables['UUID']}}` in text templates.
 - [ ] **Form state** – `local.data.form.formData.*` (auto-tracked via `name` prop). Validation: `local.data.form.fields.*.isValid`. Scoped per `FormContainer`.
 - [ ] **Datasource data** – `collections['UUID'].data.*` for fetched data. Always use full UUID paths.
-- [ ] **Global state** – `layout.*`, `auth.*`, `cart.*`, `route.*` from store.json
+- [ ] **Global state** – `layout.*`, `auth.*`, `cart.*` from store.json; `globalContext.browser.query.*` for URL query params
 - [ ] **Workflow** – `_workflow.lastAction`, `_workflow.lastError` for last action (null if success)
 - [ ] **No `screens.*` paths** – These are dead. Never use `screens.{name}.form.*` or `screens.{name}.errors.*`.
 
@@ -101,9 +91,9 @@ These three files are the wiring layer. Nothing renders without them. Create the
 ## 4. Actions (No Hardcoded Logic)
 
 - [ ] **Fetch** – Use `type: "fetch"` with `url`, `method`, `body`, `storeFullResponseIn`; access results via `context.workflow[stepId]` in a workflow's steps
-- [ ] **GraphQL** – Use `type: "graphql"` with `query`, `variables` (supports `{ "var" }`, `{ "expr" }`), `endpoint`, `headers`. Set defaults in `engineConventions.graphqlEndpoint` + `graphqlHeaders`
-- [ ] **Append to nested array** – Use `type: "appendToPath"` with `targetPath`, `value` (supports `{ "var" }`, `{ "expr" }`), `resetFormPath`, `resetFormValue`
-- [ ] **Special vars** – `_timestamp`, `_date` available in `{ "var": "_timestamp" }` and JSON Logic `expr`
+- [ ] **GraphQL** – Use `type: "graphql"` with `query`, `variables` (supports `{ "var" }`, `{ "formula" }`), `endpoint`, `headers`. Set defaults in `engineConventions.graphqlEndpoint` + `graphqlHeaders`
+- [ ] **Append to nested array** – Use `type: "appendToPath"` with `targetPath`, `value` (supports `{ "var" }`, `{ "formula" }`), `resetFormPath`, `resetFormValue`
+- [ ] **Special vars** – `_timestamp`, `_date` available in `{ "var": "_timestamp" }` and formula expressions
 - [ ] **Never add app-specific action logic in engine** – Define in `config/actions/*.json`
 
 ---

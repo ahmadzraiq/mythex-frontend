@@ -18,8 +18,9 @@ import { evaluateFormula } from './formula-evaluator';
 import { dsCacheGet, dsCacheSet } from './ds-cache';
 import { extractReferencedDataSources } from './nested-utils';
 import { computeMergedState as computeMergedStateFn, finalizeMergedWithVariableStore } from './merge-state';
+import { buildAuthHeaders } from './auth-token-storage';
 import type { SDUIConfig } from './types';
-import type { NamedDataSourceDef } from './engine-types';
+import type { NamedDataSourceDef, AuthConfig } from './engine-types';
 
 const computedDefs: { output: string; expr: object }[] = [];
 
@@ -30,6 +31,9 @@ export function useNamedDataSourceFetcher(
   dsRefetchKeys: Record<string, number>,
   config: SDUIConfig,
   store: SduiStore,
+  globalContext?: Record<string, unknown>,
+  authConfig?: AuthConfig,
+  onDatasourceError?: (datasourceId: string, error: string) => void,
 ) {
   const prevDsRefetchKeysRef = useRef<Record<string, number>>({});
 
@@ -44,7 +48,10 @@ export function useNamedDataSourceFetcher(
       computedDefs as { output: string; expr: object }[]
     );
     const vs = getGlobalVariableStore().getState().getFullState();
-    const currentState = finalizeMergedWithVariableStore(mergedBase, vs);
+    const currentState = {
+      ...finalizeMergedWithVariableStore(mergedBase, vs),
+      ...(globalContext ? { globalContext } : {}),
+    };
 
     const interpolate = (str: string): string =>
       str.replace(/\{\{([^}]+)\}\}/g, (_, path: string) => {
@@ -64,10 +71,10 @@ export function useNamedDataSourceFetcher(
     const resolveVariables = (vars: Record<string, unknown>): Record<string, unknown> => {
       const result: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(vars)) {
-        if (typeof v === 'object' && v !== null && 'expr' in (v as object)) {
-          const expr = (v as { expr: unknown }).expr;
+        if (typeof v === 'object' && v !== null && 'formula' in (v as object)) {
+          const f = (v as { formula: unknown }).formula;
           try {
-            result[k] = evaluateFormula(expr as string | object, currentState).value;
+            result[k] = evaluateFormula(f as string | object, currentState).value;
           } catch {
             result[k] = null;
           }
@@ -106,8 +113,11 @@ export function useNamedDataSourceFetcher(
     const allNames = Object.keys(dataSources);
     const referencedNames = new Set(extractReferencedDataSources(config, allNames));
 
+    // When explicitly triggered by a workflow action, fetch those datasources regardless
+    // of whether they appear in the screen config — the user/workflow requested it explicitly.
+    // Auto-fetches (no explicit trigger) are still filtered to only referenced datasources.
     const neededNames = triggeredNames.size > 0
-      ? new Set([...triggeredNames].filter(n => referencedNames.has(n)))
+      ? triggeredNames
       : referencedNames;
 
     Object.entries(dataSources)
@@ -135,26 +145,50 @@ export function useNamedDataSourceFetcher(
           }
 
           const endpoint = interpolate(ds.endpoint);
-          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+          const extraHeaders: Record<string, string> = {};
           if (ds.headers) {
             for (const [k, v] of Object.entries(ds.headers)) {
-              const resolved = interpolate(String(v));
-              if (resolved) headers[k] = resolved;
+              if (typeof v === 'object' && v !== null && 'formula' in (v as object)) {
+                try {
+                  const result = evaluateFormula((v as { formula: unknown }).formula as string | object, currentState).value;
+                  if (result != null) extraHeaders[k] = String(result);
+                } catch { /* skip header if formula fails */ }
+              } else {
+                const resolved = interpolate(String(v));
+                if (resolved) extraHeaders[k] = resolved;
+              }
             }
           }
           const resolvedVariables = resolveVariables((ds.variables ?? {}) as Record<string, unknown>);
-          fetch(endpoint, {
+
+          // Route through /api/proxy when ds.proxy is true (per-datasource opt-in).
+          const useProxy = !!ds.proxy;
+          const fetchUrl = useProxy ? '/api/proxy' : endpoint;
+          const authHeaders = buildAuthHeaders(authConfig);
+          const headers: Record<string, string> = { 'Content-Type': 'application/json', ...authHeaders, ...extraHeaders };
+          const body = useProxy
+            ? JSON.stringify({
+                endpoint,
+                method: 'POST',
+                headers: Object.keys(extraHeaders).length ? extraHeaders : undefined,
+                body: JSON.stringify({ query: ds.query, variables: resolvedVariables }),
+              })
+            : JSON.stringify({ query: ds.query, variables: resolvedVariables });
+
+          fetch(fetchUrl, {
             method: 'POST',
-            headers,
-            body: JSON.stringify({ query: ds.query, variables: resolvedVariables }),
+            headers: useProxy ? { 'Content-Type': 'application/json' } : headers,
+            body,
             credentials: 'include',
           })
             .then(res => res.json())
             .then((json: unknown) => {
               const data = json as { data?: unknown; errors?: Array<{ message: string }> };
               if (data.errors?.length) {
-                sduiStore.setData(`${storeKey}.${errorSuffix}`, data.errors[0]?.message ?? 'GraphQL error');
+                const errMsg = data.errors[0]?.message ?? 'GraphQL error';
+                sduiStore.setData(`${storeKey}.${errorSuffix}`, errMsg);
                 sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
+                onDatasourceError?.(name, errMsg);
                 return;
               }
               const result = extractPath(json, ds.responsePath);
@@ -164,8 +198,10 @@ export function useNamedDataSourceFetcher(
               sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
             })
             .catch((err: unknown) => {
+              const errMsg = String(err);
               sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
-              sduiStore.setData(`${storeKey}.${errorSuffix}`, String(err));
+              sduiStore.setData(`${storeKey}.${errorSuffix}`, errMsg);
+              onDatasourceError?.(name, errMsg);
             });
         } else {
           const rawHeaders = ds.headers;
@@ -175,8 +211,15 @@ export function useNamedDataSourceFetcher(
               headers[h.key] = h.value;
             });
           } else if (rawHeaders && typeof rawHeaders === 'object') {
-            for (const [k, v] of Object.entries(rawHeaders as Record<string, string>)) {
-              headers[k] = interpolate(v);
+            for (const [k, v] of Object.entries(rawHeaders as Record<string, unknown>)) {
+              if (typeof v === 'object' && v !== null && 'formula' in (v as object)) {
+                try {
+                  const result = evaluateFormula((v as { formula: unknown }).formula as string | object, currentState).value;
+                  if (result != null) headers[k] = String(result);
+                } catch { /* skip header if formula fails */ }
+              } else {
+                headers[k] = interpolate(String(v));
+              }
             }
           }
           const enabled = (ds.queryParams ?? []).filter(p => p.enabled !== false && p.key.trim());
@@ -185,22 +228,52 @@ export function useNamedDataSourceFetcher(
             const qs = enabled.map(p => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`).join('&');
             url = `${url}${url.includes('?') ? '&' : '?'}${qs}`;
           }
-          const fetchOpts: RequestInit = { method: ds.method ?? 'GET', headers };
-          if (ds.sendCredentials) fetchOpts.credentials = 'include';
 
-          fetch(url, fetchOpts)
-            .then(res => res.json())
-            .then((json: unknown) => {
-              const result = extractPath(json, ds.responsePath);
-              sduiStore.setData(storeKey, result);
-              sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
+          if (ds.proxy) {
+            // Route through /api/proxy — generic HTTP forwarder
+            fetch('/api/proxy', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                endpoint: url,
+                method: ds.method ?? 'GET',
+                headers: Object.keys(headers).length ? headers : undefined,
+                body: ds.body ?? undefined,
+              }),
             })
-            .catch((err: unknown) => {
-              sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
-              sduiStore.setData(`${storeKey}.${errorSuffix}`, String(err));
-            });
+              .then(res => res.json())
+              .then((json: unknown) => {
+                const result = extractPath(json, ds.responsePath);
+                sduiStore.setData(storeKey, result);
+                sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
+              })
+              .catch((err: unknown) => {
+                const errMsg = String(err);
+                sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
+                sduiStore.setData(`${storeKey}.${errorSuffix}`, errMsg);
+                onDatasourceError?.(name, errMsg);
+              });
+          } else {
+            const fetchOpts: RequestInit = { method: ds.method ?? 'GET', headers };
+            if (ds.sendCredentials) fetchOpts.credentials = 'include';
+
+            fetch(url, fetchOpts)
+              .then(res => res.json())
+              .then((json: unknown) => {
+                const result = extractPath(json, ds.responsePath);
+                sduiStore.setData(storeKey, result);
+                sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
+              })
+              .catch((err: unknown) => {
+                const errMsg = String(err);
+                sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
+                sduiStore.setData(`${storeKey}.${errorSuffix}`, errMsg);
+                onDatasourceError?.(name, errMsg);
+              });
+          }
         }
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dataSources, dsRefetchKeys]);
+  }, [dataSources, dsRefetchKeys, globalContext]);
 }

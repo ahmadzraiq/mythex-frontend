@@ -46,6 +46,6 @@ export interface GraphQLDataSourceDef {
   cacheTag?: string;
   /** Cache TTL in seconds. */
   cacheTTL?: number;
-  /** State paths whose values form the cache key (e.g. ["route.slug"]). */
+  /** State paths whose values form the cache key (e.g. ["globalContext.browser.query.slug"]). */
   cacheKeyVars?: string[];
 }

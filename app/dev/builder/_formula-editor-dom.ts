@@ -13,7 +13,7 @@
  *  - FUNCTION_LIBRARY, FnDef (type), OPERATORS
  *  - OP_CHIP, OP_STYLE, buildOperatorChip, OP_TOKEN_RE, OP_INSERT_MAP
  *  - AUTO_CHIP_RE, AUTO_CHIP_TYPED_MAP, rechipCurrentTextNode
- *  - KNOWN_FN_NAMES, FN_NAME_RE, FN_NAME_SUFFIX_RE
+ *  - KNOWN_FN_NAMES, FN_NAME_RE, FN_NAME_SUFFIX_RE, setUserFormulaNames
  *  - buildFunctionChip, countSignatureCommas, insertFunctionChipsAtCaret
  *  - insertOperatorChipAtCaret
  *  - appendTextSegment, appendTextWithOperatorChips
@@ -148,17 +148,19 @@ export function serializeRangeFromEditor(editorEl: HTMLElement, sel: Selection):
 
 /**
  * CHIP_RE matches:
- *   collections['UUID'](?.['key'] | ?.[N])*
- *   variables['UUID'](?.['key'] | ?.[N])*
- *   context.workflow['stepId'](?.field | .field)*  — workflow step results
+ *   collections?.['UUID'](?.['key'] | ?.[N])*
+ *   variables?.['UUID'](?.['key'] | ?.[N])*
+ *   context?.workflow?.['stepId'](?.field | .field)*  — workflow step results
  *   context.item(?.['key'] | dot.notation)*  |  context.index  |  context.parent
- *   globalContext.browser(?.['key'])*  |  globalContext.screen(?.['key'])*
+ *   globalContext?.browser(?.['key'] | ?.dotKey)*  |  globalContext?.screen(?.['key'] | ?.dotKey)*
  *   pages['UUID'](?.['key'])*
  *   theme.(colors|sections|fonts)(?.['key'])*
  *   local.data(?.['key'])*   — weWeb-style FormContainer local state
- *   event(?.['key'])*        — workflow trigger event context
+ *   event(?.key | ?.['key'])* — workflow trigger event context (dot and bracket notation)
+ *   auth?.['key']*           — authentication state (user, accessToken, refreshToken)
+ *   parameters?.['name'] | parameters?.name | parameters.name  — global workflow params
  */
-export const CHIP_RE = /collections\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|variables\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|local\??\.data(?:\??\.(?:\['[^']*'\]|[\w$]+)|\?\.\[\d+\])*|context\.workflow\['[^']+'\](?:(?:\?)?\.[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|context\.(?:item|index|parent)(?:(?:\?\.\['[^']*'\]|\?\.\[\d+\])|(?:\.\w+))*|context\.component\?\.props\?\.\['[^']*'\]|context\.local(?:\?\.data(?:\?\.\['[^']*'\])*)*|globalContext\.(?:browser|screen)(?:\?\.\['[^']*'\])*|pages\['[^']+'\](?:\?\.\['[^']*'\])*|theme(?:\.(?:colors|sections|fonts|radius)|\?\.\['(?:colors|sections|fonts|radius)'\])(?:\?\.\['[^']*'\]|\.\w+)*|components\?\.\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|event(?:\?\.\['[^']*'\]|\?\.\[\d+\])*/g;
+export const CHIP_RE = /collections(?:\?\.)?\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|variables(?:\?\.)?\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|local\??\.data(?:\??\.(?:\['[^']*'\]|[\w$]+)|\?\.\[\d+\])*|context(?:\?\.|\.)workflow(?:\?\.)?\['[^']+'\](?:(?:\?\.|\.)[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|context\.(?:item|index|parent)(?:(?:\?\.\['[^']*'\]|\?\.\[\d+\])|(?:\.\w+))*|context\.component\?\.props\?\.\['[^']*'\]|context\.local(?:\?\.data(?:\?\.\['[^']*'\])*)*|globalContext\??\.(?:browser|screen)(?:\??\.(?:\['[^']*'\]|[\w$]+))*|pages\['[^']+'\](?:\?\.\['[^']*'\])*|theme(?:\.(?:colors|sections|fonts|radius)|\?\.\['(?:colors|sections|fonts|radius)'\])(?:\?\.\['[^']*'\]|\.\w+)*|components\?\.\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|event(?:(?:\?\.|\.)[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|auth(?:(?:\?\.|\.)[\w$]+|(?:\?\.|\.)?\['[^']+'\])(?:\?\.[\w$]+|\?\.\['[^']*'\])*|parameters(?:\?\.)?\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|parameters(?:\?\.|\.)[\w$]+/g;
 
 export const CHIP_INNER_CSS = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;display:block';
 
@@ -170,8 +172,10 @@ export const CHIP_STYLE: Record<string, string> = {
   theme:      'background:#b45309;color:#fef3c7;border:1px solid #d97706',
   form:       'background:#c2410c;color:#ffedd5;border:1px solid #ea580c',
   error:      'background:#991b1b;color:#fecaca;border:1px solid #b91c1c',
+  auth:       'background:#92400e;color:#fde68a;border:1px solid #d97706',
   event:      'background:#92400e;color:#fed7aa;border:1px solid #fb923c',
   'shared-component': 'background:#78350f;color:#fde68a;border:1px solid #d97706',
+  parameter:  'background:#4c1d95;color:#ddd6fe;border:1px solid #7c3aed',
 };
 
 // ─── Chip builders ────────────────────────────────────────────────────────────
@@ -179,7 +183,7 @@ export const CHIP_STYLE: Record<string, string> = {
 export function buildChipSpan(
   formulaPath: string,
   displayLabel: string,
-  type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'shared-component',
+  type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'shared-component' | 'parameter' | 'auth',
 ): HTMLSpanElement {
   const span = document.createElement('span');
   span.contentEditable = 'false';
@@ -213,7 +217,7 @@ export function insertChipAtCaret(
   editorEl: HTMLElement,
   formulaPath: string,
   displayLabel: string,
-  type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'shared-component',
+  type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'shared-component' | 'parameter' | 'auth',
 ): void {
   editorEl.focus();
   const sel = window.getSelection();
@@ -276,6 +280,8 @@ export const FUNCTION_LIBRARY: Record<string, FnDef[]> = {
     { name: 'ifEmpty', signature: 'ifEmpty(value, fallback)', description: 'Returns value if it is not empty, otherwise returns fallback.', returnType: 'any', insert: 'ifEmpty(' },
     { name: 'not', signature: 'not(value)', description: 'Inverts a boolean — true becomes false, false becomes true.', returnType: 'boolean', insert: 'not(' },
     { name: 'switch', signature: 'switch(expression, case1, result1, ...default)', description: 'Tests expression against each case value and returns the matching result. Last argument is the default.', returnType: 'any', insert: 'switch(' },
+    { name: 'equal', signature: 'equal(a, b)', description: 'Returns true if a and b are strictly equal.', returnType: 'boolean', insert: 'equal(' },
+    { name: 'notEqual', signature: 'notEqual(a, b)', description: 'Returns true if a and b are not strictly equal.', returnType: 'boolean', insert: 'notEqual(' },
   ],
   Math: [
     { name: 'abs',      signature: 'abs(number)',              description: 'Returns the absolute value of a number.',                      returnType: 'number', insert: 'abs('      },
@@ -292,6 +298,11 @@ export const FUNCTION_LIBRARY: Record<string, FnDef[]> = {
     { name: 'sqrt',     signature: 'sqrt(number)',             description: 'Returns the square root of a number.',                        returnType: 'number', insert: 'sqrt('     },
     { name: 'sum',      signature: 'sum(...values)',           description: 'Sums all provided numbers or an array of numbers.',            returnType: 'number', insert: 'sum('      },
     { name: 'toNumber', signature: 'toNumber(value)',          description: 'Converts a string to a number.',                              returnType: 'number', insert: 'toNumber('  },
+    { name: 'toFixed',  signature: 'toFixed(number, decimals)', description: 'Formats a number with fixed decimal places. Returns a string.', returnType: 'string', insert: 'toFixed('  },
+    { name: 'isNaN',    signature: 'isNaN(value)',             description: 'Returns true if value is NaN.',                                returnType: 'boolean', insert: 'isNaN('    },
+    { name: 'isFinite', signature: 'isFinite(value)',          description: 'Returns true if value is a finite number.',                    returnType: 'boolean', insert: 'isFinite(' },
+    { name: 'parseInt', signature: 'parseInt(value, radix?)',  description: 'Parses a string to an integer. Radix defaults to 10.',         returnType: 'number', insert: 'parseInt(' },
+    { name: 'parseFloat',signature: 'parseFloat(value)',       description: 'Parses a string to a floating-point number.',                  returnType: 'number', insert: 'parseFloat(' },
   ],
   Array: [
     { name: 'add', signature: 'add(array, ...values)', description: 'Adds one or more values to the end of an array (like push). Returns new array.', returnType: 'array', insert: 'add(' },
@@ -319,6 +330,17 @@ export const FUNCTION_LIBRARY: Record<string, FnDef[]> = {
     { name: 'slice', signature: 'slice(array, startIndex, endIndex?)', description: 'Returns a portion of an array from startIndex up to (but not including) endIndex.', returnType: 'array', insert: 'slice(' },
     { name: 'sort', signature: 'sort(array, order?, key?)', description: 'Sorts an array in "asc" or "desc" order. Provide key for arrays of objects.', returnType: 'array', insert: 'sort(' },
     { name: 'flat', signature: 'flat(array, depth?)', description: 'Flattens nested arrays into a single array up to the given depth (default 1).', returnType: 'array', insert: 'flat(' },
+    { name: 'at', signature: 'at(array, index)', description: 'Returns the element at the given index. Supports negative indices (e.g. -1 for last).', returnType: 'any', insert: 'at(' },
+    { name: 'toggleInArray', signature: 'toggleInArray(array, value)', description: 'Adds value if not present, removes it if present. Returns new array.', returnType: 'array', insert: 'toggleInArray(' },
+    { name: 'includes', signature: 'includes(array, value)', description: 'Returns true if value exists in the array. Alias of contains.', returnType: 'boolean', insert: 'includes(' },
+    { name: 'arrayIncludes', signature: 'arrayIncludes(array, value)', description: 'Returns true if value exists in the array.', returnType: 'boolean', insert: 'arrayIncludes(' },
+    { name: 'arrayLength', signature: 'arrayLength(array)', description: 'Returns the number of items in an array. Returns 0 if not an array.', returnType: 'number', insert: 'arrayLength(' },
+    { name: 'filterExcludeByFieldAndSlice', signature: 'filterExcludeByFieldAndSlice(array, field, excludeValue, limit)', description: 'Filters out items where field equals excludeValue, then slices to limit.', returnType: 'array', insert: 'filterExcludeByFieldAndSlice(' },
+    { name: 'findItemById', signature: 'findItemById(array, id, idField?)', description: 'Finds the first item where idField (default "id") equals id.', returnType: 'object', insert: 'findItemById(' },
+    { name: 'findItemByOptionsMatch', signature: 'findItemByOptionsMatch(items, groups, selected, optionsKey?, optionIdKey?, groupIdKey?, returnField?)', description: 'Finds a variant whose options match all selected option values.', returnType: 'any', insert: 'findItemByOptionsMatch(' },
+    { name: 'findFirstByPreference', signature: 'findFirstByPreference(items, preferPath?, valuePath?)', description: 'Returns the first item where preferPath exists, otherwise the first item. Optionally returns valuePath from that item.', returnType: 'any', insert: 'findFirstByPreference(' },
+    { name: 'lookupInArray', signature: 'lookupInArray(array, keyField, keyValue, returnField)', description: 'Finds the first item where keyField equals keyValue and returns its returnField value.', returnType: 'any', insert: 'lookupInArray(' },
+    { name: 'paginationPages', signature: 'paginationPages(totalItems, skip, pageSize, delta?)', description: 'Generates an array of page numbers with ellipsis markers for pagination UI.', returnType: 'array', insert: 'paginationPages(' },
   ],
   Text: [
     { name: 'capitalize', signature: 'capitalize(text)', description: 'Capitalizes the first letter of each word in the string.', returnType: 'string', insert: 'capitalize(' },
@@ -331,6 +353,16 @@ export const FUNCTION_LIBRARY: Record<string, FnDef[]> = {
     { name: 'textLength', signature: 'textLength(text)', description: 'Returns the number of characters in a string.', returnType: 'number', insert: 'textLength(' },
     { name: 'toText', signature: 'toText(value)', description: 'Converts a number, boolean, or array to a string.', returnType: 'string', insert: 'toText(' },
     { name: 'uppercase', signature: 'uppercase(text)', description: 'Converts a string to uppercase.', returnType: 'string', insert: 'uppercase(' },
+    { name: 'trim', signature: 'trim(text)', description: 'Removes whitespace from both ends of a string.', returnType: 'string', insert: 'trim(' },
+    { name: 'trimStart', signature: 'trimStart(text)', description: 'Removes leading whitespace from a string.', returnType: 'string', insert: 'trimStart(' },
+    { name: 'trimEnd', signature: 'trimEnd(text)', description: 'Removes trailing whitespace from a string.', returnType: 'string', insert: 'trimEnd(' },
+    { name: 'replace', signature: 'replace(text, search, replacement)', description: 'Replaces the first occurrence of search with replacement.', returnType: 'string', insert: 'replace(' },
+    { name: 'replaceAll', signature: 'replaceAll(text, search, replacement)', description: 'Replaces all occurrences of search with replacement.', returnType: 'string', insert: 'replaceAll(' },
+    { name: 'repeat', signature: 'repeat(text, count)', description: 'Repeats the string count times.', returnType: 'string', insert: 'repeat(' },
+    { name: 'padStart', signature: 'padStart(text, length, padChar?)', description: 'Pads the start of a string to reach the target length.', returnType: 'string', insert: 'padStart(' },
+    { name: 'padEnd', signature: 'padEnd(text, length, padChar?)', description: 'Pads the end of a string to reach the target length.', returnType: 'string', insert: 'padEnd(' },
+    { name: 'startsWith', signature: 'startsWith(text, prefix)', description: 'Returns true if text starts with prefix.', returnType: 'boolean', insert: 'startsWith(' },
+    { name: 'endsWith', signature: 'endsWith(text, suffix)', description: 'Returns true if text ends with suffix.', returnType: 'boolean', insert: 'endsWith(' },
   ],
   Object: [
     { name: 'createObject', signature: 'createObject(key1, value1, ...)', description: 'Creates an object from key-value pairs.', returnType: 'object', insert: 'createObject(' },
@@ -341,6 +373,8 @@ export const FUNCTION_LIBRARY: Record<string, FnDef[]> = {
     { name: 'pick', signature: 'pick(object, ...keys)', description: 'Returns a new object containing only the specified keys.', returnType: 'object', insert: 'pick(' },
     { name: 'setKeyValue', signature: 'setKeyValue(object, key, value)', description: 'Returns a new object with the given key set to value.', returnType: 'object', insert: 'setKeyValue(' },
     { name: 'values', signature: 'values(object)', description: 'Returns all values of an object as an array.', returnType: 'array', insert: 'values(' },
+    { name: 'lookupMap', signature: 'lookupMap(map, key, defaultValue?)', description: 'Looks up key in a map/object. Returns defaultValue if not found.', returnType: 'any', insert: 'lookupMap(' },
+    { name: 'getFromMap', signature: 'getFromMap(map, key)', description: 'Looks up key in a map/object. Returns null if not found.', returnType: 'any', insert: 'getFromMap(' },
   ],
   Utils: [
     { name: 'toBool', signature: 'toBool(value)', description: 'Converts a value to boolean based on truthiness or falsiness.', returnType: 'boolean', insert: 'toBool(' },
@@ -359,6 +393,25 @@ export const FUNCTION_LIBRARY: Record<string, FnDef[]> = {
     { name: 'isPhone', signature: 'isPhone(value)', description: 'Returns true if value looks like a valid phone number.', returnType: 'boolean', insert: 'isPhone(' },
     { name: 'isUrl', signature: 'isUrl(value)', description: 'Returns true if value is a valid URL.', returnType: 'boolean', insert: 'isUrl(' },
     { name: 'matchesPattern', signature: 'matchesPattern(value, pattern)', description: 'Returns true if value matches the given regular expression pattern.', returnType: 'boolean', insert: 'matchesPattern(' },
+  ],
+  Type: [
+    { name: 'typeOf', signature: 'typeOf(value)', description: 'Returns the type as a string: "string", "number", "boolean", "object", "array", "null", or "undefined".', returnType: 'string', insert: 'typeOf(' },
+    { name: 'isArray', signature: 'isArray(value)', description: 'Returns true if value is an array.', returnType: 'boolean', insert: 'isArray(' },
+    { name: 'isObject', signature: 'isObject(value)', description: 'Returns true if value is a plain object (not array or null).', returnType: 'boolean', insert: 'isObject(' },
+    { name: 'isString', signature: 'isString(value)', description: 'Returns true if value is a string.', returnType: 'boolean', insert: 'isString(' },
+    { name: 'isNumber', signature: 'isNumber(value)', description: 'Returns true if value is a number (not NaN).', returnType: 'boolean', insert: 'isNumber(' },
+    { name: 'isBoolean', signature: 'isBoolean(value)', description: 'Returns true if value is a boolean.', returnType: 'boolean', insert: 'isBoolean(' },
+    { name: 'isNull', signature: 'isNull(value)', description: 'Returns true if value is null or undefined.', returnType: 'boolean', insert: 'isNull(' },
+  ],
+  Date: [
+    { name: 'now', signature: 'now()', description: 'Returns the current timestamp in milliseconds.', returnType: 'number', insert: 'now(' },
+    { name: 'dateYear', signature: 'dateYear(date?)', description: 'Returns the year from a date string/timestamp, or the current year.', returnType: 'number', insert: 'dateYear(' },
+    { name: 'dateMonth', signature: 'dateMonth(date?)', description: 'Returns the month (1-12) from a date string/timestamp, or the current month.', returnType: 'number', insert: 'dateMonth(' },
+    { name: 'dateDay', signature: 'dateDay(date?)', description: 'Returns the day of the month from a date string/timestamp, or the current day.', returnType: 'number', insert: 'dateDay(' },
+  ],
+  JSON: [
+    { name: 'jsonStringify', signature: 'jsonStringify(value)', description: 'Serializes a value to a JSON string.', returnType: 'string', insert: 'jsonStringify(' },
+    { name: 'jsonParse', signature: 'jsonParse(text)', description: 'Parses a JSON string into a value.', returnType: 'any', insert: 'jsonParse(' },
   ],
   CSS: [
     { name: 'calc', signature: 'calc(expression)', description: 'CSS calc() — mix units freely, e.g. calc(100% - 24px) or calc(50% + 8px - 2rem). Combine with variables: "calc(" + variables[\'UUID\'] + "px - 24px)". Web only — not supported in React Native.', returnType: 'string', insert: 'calc(' },
@@ -521,18 +574,48 @@ export function insertOperatorChipAtCaret(editorEl: HTMLElement, label: string, 
 
 // ─── Function name matching ───────────────────────────────────────────────────
 
-export const KNOWN_FN_NAMES = new Set(
+// Base set from FUNCTION_LIBRARY (built-in formula functions)
+const _builtInFnNames = new Set(
   Object.values(FUNCTION_LIBRARY).flatMap(fns => fns.map(f => f.name))
 );
+// User-defined formula names (populated by setUserFormulaNames from the builder store)
+let _userFormulaNames: Set<string> = new Set();
 
-export const FN_NAME_RE = new RegExp(
-  '(?<![a-zA-Z_$])(' + [...KNOWN_FN_NAMES].sort((a, b) => b.length - a.length).join('|') + ')(?![a-zA-Z_$0-9])',
+// Mutable combined set (union of built-in + user)
+export const KNOWN_FN_NAMES = new Set<string>(_builtInFnNames);
+
+function _buildFnRegex() {
+  const allNames = [..._builtInFnNames, ..._userFormulaNames].sort((a, b) => b.length - a.length);
+  if (!allNames.length) return;
+  FN_NAME_RE = new RegExp(
+    '(?<![a-zA-Z_$.])(' + allNames.join('|') + ')(?![a-zA-Z_$0-9])',
+    'g',
+  );
+  FN_NAME_SUFFIX_RE = new RegExp(
+    '(?<![a-zA-Z_$.])(' + allNames.join('|') + ')$',
+  );
+}
+
+export let FN_NAME_RE: RegExp = new RegExp(
+  '(?<![a-zA-Z_$.])(' + [..._builtInFnNames].sort((a, b) => b.length - a.length).join('|') + ')(?![a-zA-Z_$0-9])',
   'g',
 );
 
-export const FN_NAME_SUFFIX_RE = new RegExp(
-  '(?<![a-zA-Z_$])(' + [...KNOWN_FN_NAMES].sort((a, b) => b.length - a.length).join('|') + ')$',
+export let FN_NAME_SUFFIX_RE: RegExp = new RegExp(
+  '(?<![a-zA-Z_$.])(' + [..._builtInFnNames].sort((a, b) => b.length - a.length).join('|') + ')$',
 );
+
+/**
+ * Update the set of user-defined global formula names so they get tokenized
+ * as function chips (same as built-in functions) in the formula editor.
+ * Called from the builder store whenever globalFormulas changes.
+ */
+export function setUserFormulaNames(names: string[]): void {
+  _userFormulaNames = new Set(names.filter(Boolean));
+  // Sync into the exported KNOWN_FN_NAMES set
+  for (const n of _userFormulaNames) KNOWN_FN_NAMES.add(n);
+  _buildFnRegex();
+}
 
 // ─── Text segment helpers ─────────────────────────────────────────────────────
 
@@ -734,7 +817,8 @@ export function populateEditor(
       el.appendChild(buildChipSpan(newFormula, displayLabel, 'variable'));
     } else if (collectionUUID) {
       const base = dsMap.get(collectionUUID)?.label ?? collectionUUID;
-      const afterRoot = formulaPath.slice(`collections['${collectionUUID}']`.length);
+      const rootEnd = formulaPath.indexOf(`['${collectionUUID}']`) + `['${collectionUUID}']`.length;
+      const afterRoot = formulaPath.slice(rootEnd);
       const segs: Array<string | number> = [];
       let rem = afterRoot;
       while (rem.length > 0) {
@@ -750,7 +834,8 @@ export function populateEditor(
       el.appendChild(buildChipSpan(formulaPath, buildDisplayLabel(base, segs), 'collection'));
     } else if (variableUUID) {
       const base = varMap?.get(variableUUID)?.label ?? variableUUID;
-      const afterRoot = formulaPath.slice(`variables['${variableUUID}']`.length);
+      const rootEnd = formulaPath.indexOf(`['${variableUUID}']`) + `['${variableUUID}']`.length;
+      const afterRoot = formulaPath.slice(rootEnd);
       const segs: Array<string | number> = [];
       let rem = afterRoot;
       while (rem.length > 0) {
@@ -782,9 +867,9 @@ export function populateEditor(
       const normalized = 'local.data' + segs.map(s => (typeof s === 'number' ? `?.[${s}]` : `?.['${s}']`)).join('');
       const friendly = 'local.data' + segs.map(s => (typeof s === 'number' ? `[${s}]` : `.${s}`)).join('');
       el.appendChild(buildChipSpan(normalized, friendly, 'form'));
-    } else if (formulaPath.startsWith('context.workflow[')) {
+    } else if (/^context(?:\?\.|\.)workflow/.test(formulaPath)) {
       // Workflow step result/error path — "stepId.result.field" (blue) or "stepId.error.field" (red)
-      const stepIdMatch = formulaPath.match(/^context\.workflow\['([^']*)'\]/);
+      const stepIdMatch = formulaPath.match(/^context(?:\?\.|\.)workflow(?:\?\.)?\['([^']*)'\]/);
       const stepId = stepIdMatch?.[1] ?? 'Action';
       const afterStepId = formulaPath.slice((stepIdMatch?.[0] ?? '').length);
       // Use human-readable action name when available (passed via stepNameMap from test results)
@@ -811,11 +896,12 @@ export function populateEditor(
         .replace(/\?\.\['([^']+)'\]/g, '.$1')
         .replace(/\?\.\[(\d+)\]/g, '[$1]');
       el.appendChild(buildChipSpan(formulaPath, friendly, 'context'));
-    } else if (formulaPath.startsWith('globalContext.')) {
+    } else if (formulaPath.startsWith('globalContext.') || formulaPath.startsWith('globalContext?.')) {
       const friendly = formulaPath
-        .replace(/^globalContext\./, '')
+        .replace(/^globalContext\??\./, '')
         .replace(/\?\.\['([^']+)'\]/g, '.$1')
-        .replace(/\?\.\[(\d+)\]/g, '[$1]');
+        .replace(/\?\.\[(\d+)\]/g, '[$1]')
+        .replace(/\?\./g, '.');
       el.appendChild(buildChipSpan(formulaPath, friendly, 'context'));
     } else if (formulaPath.startsWith('pages[')) {
       const friendly = formulaPath.replace(/\?\.\['([^']+)'\]/g, '.$1').replace(/\?\.\[(\d+)\]/g, '[$1]');
@@ -829,11 +915,26 @@ export function populateEditor(
       const friendly = prefix ? `${prefix} - ${leaf}` : leaf;
       el.appendChild(buildChipSpan(formulaPath, friendly, 'theme'));
     } else if (formulaPath.startsWith('event')) {
-      // Workflow trigger event: event, event?.['value'], event?.['x'], etc.
+      // Workflow trigger event: event, event?.key, event?.['key'], etc.
       const friendly = formulaPath
-        .replace(/\?\.\['([^']+)'\]/g, '.$1')
-        .replace(/\?\.\[(\d+)\]/g, '[$1]');
+        .replace(/\?\.\['([^']+)'\]/g, '.$1')   // ?.['key'] → .key
+        .replace(/\?\.\[(\d+)\]/g, '[$1]')       // ?.[\d] → [\d]
+        .replace(/\?\./g, '.');                   // remaining ?. → .
       el.appendChild(buildChipSpan(formulaPath, friendly, 'event'));
+    } else if (formulaPath.startsWith('parameters')) {
+      // Global workflow parameter: parameters?.['name'] | parameters.name | parameters?.name
+      const friendly = formulaPath
+        .replace(/^parameters\??\./, 'param: ')
+        .replace(/\['([^']+)'\]/, '$1')
+        .replace(/\?\./g, '.');
+      el.appendChild(buildChipSpan(formulaPath, friendly, 'parameter'));
+    } else if (formulaPath.startsWith('auth')) {
+      // auth?.user | auth?.['accessToken'] | auth?.token etc.
+      const friendly = formulaPath
+        .replace(/^auth\??\./, 'auth.')
+        .replace(/\?\.\['([^']+)'\]/g, '.$1')
+        .replace(/\['([^']+)'\]/, '.$1');
+      el.appendChild(buildChipSpan(formulaPath, friendly, 'auth'));
     }
     lastEnd = match.index + formulaPath.length;
   }

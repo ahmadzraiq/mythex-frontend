@@ -175,7 +175,7 @@ export interface KvEntry {
 /**
  * Detect if a string is a stored formula value. Handles three formats:
  *  1. "{{route.slug}}"           — simple interpolation
- *  2. '{"expr":"formatCurrency(...)"}' — complex expr formula (JSON-stringified object)
+ *  2. '{"formula":"formatCurrency(...)"}' — complex formula (JSON-stringified object)
  *  3. '{"formula":"route.slug"}' — legacy formula object
  */
 // ─── Context & entry resolution helpers ──────────────────────────────────────
@@ -211,7 +211,7 @@ function isFormulaString(v: string): boolean {
   try {
     const p = JSON.parse(v);
     return typeof p === 'object' && p !== null && !Array.isArray(p)
-      && ('expr' in p || 'formula' in p);
+      && 'formula' in p;
   } catch { return false; }
 }
 
@@ -934,20 +934,35 @@ export function GraphQLForm({ initial, onSave, onBack, onWidthChange }: {
     if (!initial.variables) return [];
     try {
       const parsed = typeof initial.variables === 'string' ? JSON.parse(initial.variables) : initial.variables;
-      return Object.entries(parsed as Record<string, unknown>).map(([key, value]) => {
-        // __bound__ marker: saved by our form to preserve bound state across save/reopen
-        if (typeof value === 'object' && value !== null && '__bound__' in value) {
-          return { key, value: String((value as { __bound__: unknown }).__bound__), keyBound: false, valueBound: true };
+      // Recursively flatten nested objects into dot-notation keys so each leaf
+      // formula gets its own KvRow with proper token-chip display.
+      const entries: KvEntry[] = [];
+      const walk = (obj: Record<string, unknown>, prefix: string) => {
+        for (const [k, value] of Object.entries(obj)) {
+          const dotKey = prefix ? `${prefix}.${k}` : k;
+          if (typeof value === 'object' && value !== null && '__bound__' in value) {
+            entries.push({ key: dotKey, value: String((value as { __bound__: unknown }).__bound__), keyBound: false, valueBound: true });
+          } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+            const o = value as Record<string, unknown>;
+            if (typeof o.formula === 'string') {
+              entries.push({ key: dotKey, value: o.formula, keyBound: false, valueBound: true });
+            } else {
+              walk(o, dotKey);
+            }
+          } else {
+            const strVal = typeof value === 'string' ? value : JSON.stringify(value ?? '');
+            const valueBound = typeof value !== 'string' || isFormulaString(strVal);
+            entries.push({ key: dotKey, value: strVal, keyBound: false, valueBound });
+          }
         }
-        const strVal = typeof value === 'string' ? value : JSON.stringify(value);
-        // Mark as bound if: it's a non-string (object/array from datasources.json), {{...}}, or {expr/formula} JSON
-        const valueBound = typeof value !== 'string' || isFormulaString(strVal);
-        return { key, value: strVal, keyBound: false, valueBound };
-      });
+      };
+      walk(parsed as Record<string, unknown>, '');
+      return entries;
     } catch { return []; }
   });
   const [headers, setHeaders] = useState<KvEntry[]>(() => toKvEntries(initial.headers ?? []));
   const [sendCredentials, setSendCredentials] = useState(initial.sendCredentials ?? false);
+  const [useProxy, setUseProxy] = useState(!!(initial as { proxy?: boolean }).proxy);
   const [gqlFolderId, setGqlFolderId] = useState<string | undefined>(initial.folderId);
   const [returnDataOnly, setReturnDataOnly] = useState(!!initial.responsePath?.trim());
   const [formulaState, setFormulaState] = useState<FormulaFieldState>(null);
@@ -975,10 +990,21 @@ export function GraphQLForm({ initial, onSave, onBack, onWidthChange }: {
     setFetchState({ status: 'loading' });
     onWidthChange?.(SLIDE_WITH_RESULT);
     try {
-      // Resolve all variable values — including bound formulas — against current store state
+      // Resolve all variable values — including bound formulas — against current store state.
+      // Unflatten dot-notation keys into nested objects for the GraphQL query.
       const varsObj: Record<string, unknown> = {};
       variables.filter(v => v.key.trim()).forEach(v => {
-        varsObj[v.key.trim()] = resolveEntryValue(v);
+        const key = v.key.trim();
+        const resolved = resolveEntryValue(v);
+        const parts = key.split('.');
+        let cur = varsObj;
+        for (let i = 0; i < parts.length - 1; i++) {
+          if (!(parts[i] in cur) || typeof cur[parts[i]] !== 'object' || cur[parts[i]] === null) {
+            cur[parts[i]] = {};
+          }
+          cur = cur[parts[i]] as Record<string, unknown>;
+        }
+        cur[parts[parts.length - 1]] = resolved;
       });
       const hdrs: Record<string, string> = { 'Content-Type': 'application/json' };
       headers.filter(h => h.key.trim()).forEach(h => { hdrs[h.key] = String(resolveEntryValue(h)); });
@@ -1023,15 +1049,29 @@ export function GraphQLForm({ initial, onSave, onBack, onWidthChange }: {
     const id = initial.id ?? `ds-${Date.now()}`;
     const trimmedName = name.trim() || initial.id || id;
     const urlStr = typeof url === 'string' ? url.trim() : storedValueToFormula(url as FormulaValue);
-    // Preserve bound state: wrap bound values in { __bound__: rawValue } so
-    // isFormulaString detects them correctly on next form open (avoids double-stringify loss).
+    // Unflatten dot-notation keys back into a nested object.
+    // Bound formula values are wrapped in { formula: "..." } so the runtime
+    // engine evaluates them; plain values are stored as-is (string or parsed number/bool).
     let serializedVariables: string | undefined;
     if (varsBound && variablesFormula) {
       serializedVariables = storedValueToFormula(variablesFormula);
     } else {
       const varsObj: Record<string, unknown> = {};
       variables.filter(v => v.key.trim()).forEach(v => {
-        varsObj[v.key.trim()] = v.valueBound ? { __bound__: v.value } : v.value;
+        const key = v.key.trim();
+        const leaf = v.valueBound
+          ? { formula: v.value }
+          : (() => { const n = Number(v.value); if (v.value === 'true') return true; if (v.value === 'false') return false; if (!isNaN(n) && v.value.trim() !== '') return n; return v.value; })();
+        // Set nested path using dot-notation (e.g. "input.take" → { input: { take: 12 } })
+        const parts = key.split('.');
+        let cur = varsObj;
+        for (let i = 0; i < parts.length - 1; i++) {
+          if (!(parts[i] in cur) || typeof cur[parts[i]] !== 'object' || cur[parts[i]] === null) {
+            cur[parts[i]] = {};
+          }
+          cur = cur[parts[i]] as Record<string, unknown>;
+        }
+        cur[parts[parts.length - 1]] = leaf;
       });
       serializedVariables = Object.keys(varsObj).length ? JSON.stringify(varsObj) : undefined;
     }
@@ -1050,6 +1090,7 @@ export function GraphQLForm({ initial, onSave, onBack, onWidthChange }: {
       headers: serializedHeaders,
       storeIn: initial.storeIn ?? id,
       sendCredentials,
+      proxy: useProxy || undefined,
       responsePath: initial.responsePath ?? (returnDataOnly ? 'data' : undefined),
       folderId: gqlFolderId,
     });
@@ -1178,6 +1219,9 @@ export function GraphQLForm({ initial, onSave, onBack, onWidthChange }: {
 
         {/* Send credentials */}
         <SimpleToggleRow label="Send credentials" value={sendCredentials} onChange={setSendCredentials} />
+
+        {/* Proxy request server side */}
+        <SimpleToggleRow label="Proxy request server side" value={useProxy} onChange={setUseProxy} />
 
         {/* Return data only */}
         <SimpleToggleRow label="Return data only" value={returnDataOnly} onChange={setReturnDataOnly} />

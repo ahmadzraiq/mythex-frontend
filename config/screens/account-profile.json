@@ -83,10 +83,15 @@
                           {
                             "type": "Input",
                             "id": "f1cc6656-57da-4814-a981-e1530a57942b",
-                            "props": {
-                              "value": "{{local.data.form.formData.firstName}}",
-                              "placeholder": "Jane"
-                            }
+                            "children": [
+                              {
+                                "type": "InputField",
+                                "props": {
+                                  "placeholder": "Jane",
+                                  "name": "firstName"
+                                }
+                              }
+                            ]
                           }
                         ]
                       },
@@ -106,10 +111,15 @@
                           {
                             "type": "Input",
                             "id": "7a425bc1-4ee5-4292-9e43-e3e1664728bd",
-                            "props": {
-                              "value": "{{local.data.form.formData.lastName}}",
-                              "placeholder": "Doe"
-                            }
+                            "children": [
+                              {
+                                "type": "InputField",
+                                "props": {
+                                  "placeholder": "Doe",
+                                  "name": "lastName"
+                                }
+                              }
+                            ]
                           }
                         ]
                       }
@@ -131,11 +141,16 @@
                       {
                         "type": "Input",
                         "id": "2e8ed8ad-ffaa-4c28-9d74-78aa4302bb6f",
-                        "props": {
-                          "type": "tel",
-                          "value": "{{local.data.form.formData.phoneNumber}}",
-                          "placeholder": "+1 (555) 000-0000"
-                        }
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": {
+                              "type": "tel",
+                              "placeholder": "+1 (555) 000-0000",
+                              "name": "phoneNumber"
+                            }
+                          }
+                        ]
                       }
                     ]
                   },
@@ -206,11 +221,16 @@
                       {
                         "type": "Input",
                         "id": "1a9ca77f-87ba-4416-afdf-9da9892caec3",
-                        "props": {
-                          "type": "email",
-                          "value": "{{local.data.form.formData.emailAddress}}",
-                          "placeholder": "you@example.com"
-                        }
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": {
+                              "type": "email",
+                              "placeholder": "you@example.com",
+                              "name": "emailAddress"
+                            }
+                          }
+                        ]
                       }
                     ]
                   },
@@ -281,11 +301,16 @@
                       {
                         "type": "Input",
                         "id": "ff0a280b-c141-4099-bbe0-2d88dea510c2",
-                        "props": {
-                          "type": "password",
-                          "value": "{{local.data.form.formData.currentPassword}}",
-                          "placeholder": "••••••••"
-                        }
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": {
+                              "placeholder": "••••••••",
+                              "name": "currentPassword",
+                              "secureTextEntry": true
+                            }
+                          }
+                        ]
                       }
                     ]
                   },
@@ -305,11 +330,16 @@
                       {
                         "type": "Input",
                         "id": "95bf8303-fb42-4966-8f63-3dfd8da4e79c",
-                        "props": {
-                          "type": "password",
-                          "value": "{{local.data.form.formData.newPassword}}",
-                          "placeholder": "••••••••"
-                        }
+                        "children": [
+                          {
+                            "type": "InputField",
+                            "props": {
+                              "placeholder": "••••••••",
+                              "name": "newPassword",
+                              "secureTextEntry": true
+                            }
+                          }
+                        ]
                       }
                     ]
                   },

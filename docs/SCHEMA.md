@@ -8,7 +8,7 @@
 
 ```
 config/
-├── app.ts              # Merges all config, resolves $ref/$slot
+├── app.ts              # Merges all config, resolves $slot
 ├── routes.json         # Paths, redirects, auth, layout
 ├── screens/            # One .json per screen
 ├── layouts/            # Layout structures (authenticated.json)
@@ -77,8 +77,8 @@ Every UI node has:
 | condition | JSON Logic | Render only when truthy |
 | map | string | State path to array; renders node per item |
 | actions | object | Event handlers: click, change, etc. |
-| $ref | string | Reference fragment: "fragments/modals/createProduct" |
 | $slot | string | Layout placeholder: "content" |
+| _shared | object | Shared component marker: `{ "id": "sc-product-card", "name": "Product Card" }` |
 | id | string | **Anchor ID** — stable identifier for element-level edits (Tier 1–2). Required on key nodes in section library variants. See Section Library below. |
 
 ### Anchor ID Convention (Section Library)
@@ -105,7 +105,7 @@ Key nodes in reusable sections should carry a stable `id` attribute so the build
 - Use kebab-case with section-type prefix: `hero-cta-primary`, `newsletter-input`
 - Do NOT add `id` to every node — only key anchor points (headings, CTAs, images, section roots, form inputs)
 
-### Interpolation & inline expr
+### Interpolation & inline formula
 
 **String:** Use `{{path}}` to inject state:
 
@@ -128,21 +128,21 @@ Key nodes in reusable sections should carry a stable `id` attribute so the build
 - `layout.*`, `auth.*`, `cart.*` – Global state from store.json
 - Access any value from anywhere; only components using a path re-render when it changes
 
-**Inline expr:** For derived values, use `{ "expr": <JSON Logic>, "suffix"?, "prefix"?, "template"? }`:
+**Inline formula:** For derived values, use `{ "formula": <formula string>, "suffix"?, "prefix"?, "template"? }`:
 
 ```json
-{ "type": "Text", "text": { "expr": { "reduce": [{"var": "cart.items"}, {"+": [{"var": "accumulator"}, {"var": ["current.quantity", 1]}]}, 0] }, "suffix": " items" } }
+{ "type": "Text", "text": { "formula": "collections['a1b2c3d4']?.data?.activeOrder?.lines?.reduce((acc, l) => acc + (l.quantity || 1), 0)", "suffix": " items" } }
 ```
 
-- `expr` – JSON Logic expression (data = merged state)
+- `formula` – JavaScript formula string (evaluated against merged state)
 - `suffix` – appended after result
 - `prefix` – prepended before result
 - `template` – e.g. `"{0} items"` replaces `{0}` with result
 
 **Examples:**
-- Cart count: `{ "expr": { "reduce": [{"var": "cart.items"}, {"+": [{"var": "accumulator"}, {"var": ["current.quantity", 1]}]}, 0] }, "suffix": " items" }`
-- Subtotal: `{ "expr": { "formatCurrency": [{ "reduce": [{"var": "cart.items"}, {"+": [{"var": "accumulator"}, {"*": [{"var": ["current.product.price", 0]}, {"var": ["current.quantity", 1]}]}]}, 0] }, "AED"] } }`
-- Conditional: `{ "expr": { "if": [{ "==": [{ "reduce": [{"var": "cart.items"}, {"+": [{"var": "accumulator"}, 1]}, 0] }, 0] }, "—", { "var": ["cart.shippingEstimate.label", "Free"] }] } }`
+- Cart count: `{ "formula": "collections['a1b2c3d4']?.data?.activeOrder?.lines?.reduce((acc, l) => acc + (l.quantity || 1), 0)", "suffix": " items" }`
+- Subtotal: `{ "formula": "formatCurrency(collections['a1b2c3d4']?.data?.activeOrder?.subTotalWithTax / 100, 'AED')" }`
+- Conditional: `{ "formula": "(collections['a1b2c3d4']?.data?.activeOrder?.lines?.length || 0) === 0 ? '—' : (collections['a1b2c3d4']?.data?.activeOrder?.shippingEstimate?.label || 'Free')" }`
 
 ### Condition (JSON Logic)
 
@@ -177,31 +177,48 @@ Key nodes in reusable sections should carry a stable `id` attribute so the build
 
 ## 4. Layout Schema
 
-Layouts define structure with `$ref` and `$slot`:
+Layouts define structure with `$slot` and inlined shared components:
 
 ```json
 {
   "structure": {
     "type": "Box",
     "children": [
-      { "$ref": "fragments/header" },
+      { "type": "Box", "_shared": { "id": "sc-navbar", "name": "Navbar" }, "children": [...] },
       { "type": "Box", "children": [{ "$slot": "content" }] },
-      { "$ref": "fragments/drawer" }
+      { "type": "Box", "_shared": { "id": "sc-footer", "name": "Footer" }, "children": [...] }
     ]
   }
 }
 ```
 
-- `$ref` – resolved to fragment content
-- `$slot` – replaced with screen's content
+- `_shared` – marks a node as an instance of a shared component model (builder tracking)
+- `$slot` – replaced with the screen's `content` when resolving the layout
 
 ---
 
-## 5. Fragment Schema
+## 5. Shared Component Schema
 
-Fragments are reusable UI pieces. Reference with `$ref`.
+Shared components are reusable UI models defined in `config/shared-components.json`.
 
-**Path format:** `fragments/header`, `fragments/drawer`, `fragments/modals/createProduct`
+**Model format:**
+```json
+{
+  "id": "sc-product-card",
+  "name": "Product Card",
+  "properties": [],
+  "content": { "type": "Box", "children": [...] }
+}
+```
+
+**Usage (inline at the usage site):**
+```json
+{ "type": "Box", "_shared": { "id": "sc-product-card", "name": "Product Card" }, "children": [...] }
+```
+
+The `_shared` marker is for the builder only — the runtime renders the inline content tree directly.
+
+**Path format for `_shared.id`:** `sc-navbar`, `sc-footer`, `sc-product-card`, etc.
 
 **Register:** Add to `config/fragments/index.ts`: `'fragments/name': import`
 
@@ -239,7 +256,7 @@ Sends a GraphQL query or mutation. Always uses HTTP POST. Handles both HTTP erro
   "query": "query GetProducts($first: Int) { products(first: $first) { edges { node { id title handle } } } }",
   "variables": {
     "first": 20,
-    "handle": { "var": "route.slug" }
+    "handle": { "formula": "globalContext?.browser?.query?.slug" }
   },
   "endpoint": "{{config.graphqlEndpoint}}",
   "headers": {
@@ -251,7 +268,7 @@ Sends a GraphQL query or mutation. Always uses HTTP POST. Handles both HTTP erro
 | Field | Description |
 |-------|-------------|
 | `query` | GraphQL query or mutation string |
-| `variables` | Variables object; values support `{ "var": "path" }` and `{ "expr": <JSON Logic> }` |
+| `variables` | Variables object; values support `{ "var": "path" }` and `{ "formula": "<JS expression>" }` |
 | `endpoint` | GraphQL URL; supports `{{var}}` interpolation; falls back to `engineConventions.graphqlEndpoint` |
 | `headers` | Per-action headers merged on top of `engineConventions.graphqlHeaders`; values support `{ "var": "path" }` |
 
@@ -367,14 +384,14 @@ Merge two arrays by a key path (e.g. cart lines by `productVariant.id`). Config-
 
 ### appendToPath
 
-Append to a nested array (e.g. `product.reviews`). Supports `{ "var": "path" }` and `{ "expr": <JSON Logic> }` in value. Special vars: `_timestamp`, `_date`.
+Append to a nested array (e.g. `product.reviews`). Supports `{ "var": "path" }` and `{ "formula": "<JS expression>" }` in value. Special vars: `_timestamp`, `_date`.
 
 ```json
 {
   "type": "appendToPath",
   "targetPath": "product.reviews",
   "value": {
-    "id": { "expr": { "cat": ["rev-", { "var": "_timestamp" }] } },
+    "id": { "formula": "'rev-' + _timestamp" },
     "author": "You",
     "rating": { "var": "reviewForm.rating" },
     "date": { "var": "_date" },
@@ -396,16 +413,16 @@ Append to a nested array (e.g. `product.reviews`). Supports `{ "var": "path" }` 
 |-----|-------------|
 | initialData | Initial Zustand state (layout, cart, route, etc.) |
 | paths | Optional key→path mapping (e.g. `authUser` → `auth.user`, `routePath` → `route.path`) |
-| computed | Optional array of `{ output, expr }` for shared derived state (JSON Logic) |
+| computed | Optional array of `{ output, formula }` for shared derived state |
 | engineConventions | **Required** for apps using forms/fetch/workflow/graphql. No fallbacks in code—all values come from JSON: `loadingSuffix`, `errorSuffix`, `defaultStoreErrorsIn`, `workflowPath`, `screenScopedAliases`, `defaultFormPath`, `graphqlEndpoint` (default GraphQL URL), `graphqlHeaders` (default headers applied to all graphql actions) |
 
-**Derived values – prefer inline expr:** For one-off computed values (cart count, subtotal, totals), use inline `text: { expr, suffix?, prefix?, template? }` in UI nodes. See §3 Interpolation & inline expr.
+**Derived values – prefer inline formula:** For one-off computed values (cart count, subtotal, totals), use inline `text: { formula, suffix?, prefix?, template? }` in UI nodes. See §3 Interpolation & inline formula.
 
 **Store-based computed (optional):** For values reused across many screens, add to `store.json`:
 
 ```json
 "computed": [
-  { "output": "cartCount", "expr": { "reduce": [{"var": "cart.items"}, {"+": [{"var": "accumulator"}, {"var": ["current.quantity", 1]}]}, 0] } }
+  { "output": "cartCount", "formula": "collections['a1b2c3d4']?.data?.activeOrder?.lines?.reduce((acc, l) => acc + (l.quantity || 1), 0)" }
 ]
 ```
 
@@ -849,4 +866,4 @@ Applied to the `Animated.View` wrapper (not the inner component). Required for `
 { "meta": { "title": "My Screen" }, "layout": "authenticated", "ui": {...} }
 ```
 
-**With modals:** Use `content: [ mainContent, { "$ref": "fragments/modals/myModal" } ]` and register modal in `fragments/index.ts`.
+**With modals:** Use `content: [ mainContent, { "type": "Box", "_shared": { "id": "sc-my-modal", "name": "My Modal" }, "children": [...] } ]` — inline the modal content with `_shared` marker.

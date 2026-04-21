@@ -24,7 +24,7 @@ const isAuthenticated = !!useSduiStore((s) => s.data['auth.user']);
 
 // Update state
 const setData = useSduiStore((s) => s.setData);
-setData('route.path', '/dashboard');
+setData('auth.token', 'my-token');
 
 // All actions are triggered via JSON config (login, signup, logout, fetchProducts, addToCart)
 ```

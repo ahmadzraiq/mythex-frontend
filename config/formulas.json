@@ -1,0 +1,23 @@
+{
+  "formatFullName": {
+    "name": "formatFullName",
+    "folder": "Text",
+    "description": "Combines first and last name into a formatted full name",
+    "params": [
+      { "id": "p1", "name": "firstName", "type": "Text", "testValue": "John" },
+      { "id": "p2", "name": "lastName", "type": "Text", "testValue": "Doe" }
+    ],
+    "formula": "(parameters?.['firstName'] || '') + ' ' + (parameters?.['lastName'] || '')"
+  },
+  "clampNumber": {
+    "name": "clampNumber",
+    "folder": "Math",
+    "description": "Clamps a number between a minimum and maximum value",
+    "params": [
+      { "id": "p1", "name": "value", "type": "Number", "testValue": 15 },
+      { "id": "p2", "name": "minVal", "type": "Number", "testValue": 0 },
+      { "id": "p3", "name": "maxVal", "type": "Number", "testValue": 10 }
+    ],
+    "formula": "Math.min(Math.max(Number(parameters?.['value'] ?? 0), Number(parameters?.['minVal'] ?? 0)), Number(parameters?.['maxVal'] ?? 100))"
+  }
+}

@@ -13,7 +13,6 @@ export const UI_NODE_FIELDS: Record<string, string> = {
   map: 'State path to array; renders node per item. Use with key.',
   key: 'Key for map items (e.g. "product", "$item").',
   actions: 'Event handlers: click, change, keyDown, valueChange, etc.',
-  $ref: 'Reference fragment: "fragments/cards/product-card".',
   $slot: 'Layout placeholder: "content".',
 };
 
@@ -28,6 +27,5 @@ export const UI_NODE_KEY_ORDER = [
   'children',
   'actions',
   'text',
-  '$ref',
   '$slot',
 ] as const;

@@ -3,10 +3,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useSduiStore } from '@/store/sdui-store';
-import { SDUIEngine, paramChangeRunActionRef, type ActionsConfig, type NamedDataSourceDef } from '@/lib/sdui/sdui-engine';
+import { SDUIEngine, paramChangeRunActionRef, startupRunActionRef, type ActionsConfig, type NamedDataSourceDef } from '@/lib/sdui/sdui-engine';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 import { syncSearchParams } from '@/lib/sdui/search-param-sync';
 import { sortRoutes, matchRoute } from '@/lib/sdui/route-utils';
+import { evaluateFormula } from '@/lib/sdui/formula-evaluator';
 import type { SDUIConfig } from '@/lib/sdui/types';
 import type { AppConfig, PageUI } from '@/config/types';
 import type { SDUINode } from '@/lib/sdui/types/node';
@@ -18,7 +19,6 @@ import { buildSyncDefsFromVariables } from '@/lib/sdui/search-param-sync';
 
 const AUTH_USER_PATH = 'auth.user';
 const ROUTE_PATH = 'route.path';
-const ROUTE_SLUG = 'route.slug';
 const syncDefs = buildSyncDefsFromVariables(
   (variablesJson as { variables?: Record<string, unknown> }).variables ?? {}
 );
@@ -146,6 +146,9 @@ export default function DynamicRoutePage() {
   const searchParams = useSearchParams();
   const setData = useSduiStore((s) => s.setData);
   const isAuthenticated = !!useSduiStore((s) => s.data[AUTH_USER_PATH]);
+  const sessionRestored = useSduiStore((s) => s.sessionRestored);
+  // Track whether the startup action has been fired once per mount
+  const startupFiredRef = useRef(false);
 
   // Receives live config from the builder via postMessage (preview-dev only)
   const [builderLive, setBuilderLive] = useState<BuilderLiveConfig | null>(null);
@@ -186,7 +189,8 @@ export default function DynamicRoutePage() {
   }, []);
 
   const routes = app.routes;
-  const defaultRedirect = app.defaultRedirect || '/';
+  const authConfig = (app as AppConfig).authConfig;
+  const defaultRedirect = authConfig?.unauthenticatedRedirect ?? app.defaultRedirect ?? '/sign-in';
   const sortedRoutes = useMemo(() => sortRoutes(routes), [routes]);
 
   const path = pathname || '/';
@@ -199,31 +203,6 @@ export default function DynamicRoutePage() {
     const currentPath = useSduiStore.getState().data[ROUTE_PATH];
     if (currentPath !== newPath) {
       setData(ROUTE_PATH, newPath);
-    }
-    const dynamicRoute = sortedRoutes.find(
-      (r) => (r as { dynamic?: boolean }).dynamic && path.startsWith(r.path + '/')
-    );
-    if (dynamicRoute) {
-      const segments = path.slice(dynamicRoute.path.length + 1).split('/');
-      const namedParams = (dynamicRoute as { params?: string[] }).params;
-      if (namedParams && namedParams.length > 0) {
-        // Extract named params (e.g. params: ["slug"] or params: ["id", "name"])
-        for (const [i, paramName] of namedParams.entries()) {
-          const paramValue = segments[i] ?? '';
-          const paramStorePath = `route.${paramName}`;
-          const currentVal = useSduiStore.getState().data[paramStorePath];
-          if (currentVal !== paramValue) {
-            setData(paramStorePath, paramValue);
-          }
-        }
-      } else {
-        // Legacy fallback: first segment becomes route.slug
-        const slug = segments[0] || '';
-        const currentSlug = useSduiStore.getState().data[ROUTE_SLUG];
-        if (currentSlug !== slug) {
-          setData(ROUTE_SLUG, slug);
-        }
-      }
     }
     syncSearchParams({
       searchParams,
@@ -238,15 +217,65 @@ export default function DynamicRoutePage() {
     });
   }, [pathname, path, searchParams, setData, sortedRoutes, route]);
 
+  // Fire the startup action (restoreSession) exactly once per page mount.
+  // Must run BEFORE the auth guard effect so sessionRestored is set first.
   useEffect(() => {
+    if (startupFiredRef.current) return;
+    startupFiredRef.current = true;
+    const startupAction = (app as AppConfig).startupAction;
+    if (startupAction) {
+      setTimeout(() => {
+        if (startupRunActionRef.current) {
+          startupRunActionRef.current(startupAction);
+        } else {
+          useSduiStore.getState().setSessionRestored(true);
+        }
+      }, 0);
+    } else {
+      useSduiStore.getState().setSessionRestored(true);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auth route guard — runs after session restore completes.
+  useEffect(() => {
+    if (!sessionRestored) return;
+
     if (route?.redirect) {
       router.replace(route.redirect);
       return;
     }
-    if (route?.auth && !isAuthenticated) {
-      router.replace(defaultRedirect);
+
+    const routeTyped = route as (typeof routes)[0] | null;
+
+    // guestOnly: redirect authenticated users away (e.g. /sign-in when already logged in)
+    if (routeTyped?.guestOnly && isAuthenticated) {
+      router.replace(authConfig?.authenticatedRedirect ?? '/');
+      return;
     }
-  }, [route, isAuthenticated, router, defaultRedirect]);
+
+    // auth: redirect unauthenticated users to login, storing the intended path
+    if (routeTyped?.auth && !isAuthenticated) {
+      const REDIRECT_AFTER_LOGIN_UUID = 'c1d2e3f4-a5b6-7890-cdef-123456789012';
+      getGlobalVariableStore().getState().setState((prev: Record<string, unknown>) => ({
+        ...prev,
+        [REDIRECT_AFTER_LOGIN_UUID]: pathname,
+      }));
+      router.replace(defaultRedirect);
+      return;
+    }
+
+    // accessCondition: redirect authenticated users who fail the formula condition
+    if (routeTyped?.auth && isAuthenticated && routeTyped?.accessCondition) {
+      const mergedState = {
+        ...useSduiStore.getState().data,
+        ...getGlobalVariableStore().getState().getFullState(),
+      };
+      const allowed = evaluateFormula(routeTyped.accessCondition, mergedState).value;
+      if (!allowed) {
+        router.replace(authConfig?.unauthorizedRedirect ?? '/');
+      }
+    }
+  }, [route, isAuthenticated, sessionRestored, router, defaultRedirect, pathname, authConfig]);
 
   const ui = (app.ui ?? {}) as PageUI;
   const redirecting = ui.redirecting ?? { text: 'Redirecting...', wrapperClassName: 'flex items-center justify-center min-h-screen', textClassName: 'text-[var(--theme-muted-foreground)]' };
@@ -261,13 +290,7 @@ export default function DynamicRoutePage() {
     );
   }
 
-  if (route?.auth && !isAuthenticated) {
-    return (
-      <div className={redirecting.wrapperClassName}>
-        <p className={redirecting.textClassName}>{redirecting.text}</p>
-      </div>
-    );
-  }
+  const routeTyped = route as (typeof routes)[0] | null;
 
   const configName = route?.config ?? 'notFound';
   const config = (app.screens[configName] ?? app.screens.notFound) as Record<string, unknown> | undefined;
@@ -313,8 +336,16 @@ export default function DynamicRoutePage() {
     ? { ...(app.actions as ActionsConfig), ...buildLiveActionsConfig(builderLive) }
     : app.actions as ActionsConfig;
 
+  // Determine whether we should cover the page while session is being restored
+  // or while a redirect is pending (auth/guestOnly). We render the engine always
+  // so it can mount, register paramChangeRunActionRef, and run startupAction —
+  // otherwise restoreSession never fires and the spinner loops forever.
+  const needsCover = !sessionRestored
+    || (routeTyped?.auth && !isAuthenticated)
+    || (routeTyped?.guestOnly && isAuthenticated);
+
   return (
-    <main className={layoutClass}>
+    <main className={layoutClass} style={{ position: 'relative' }}>
       <SDUIEngine
         key={engineKey}
         config={effectiveConfig}
@@ -322,8 +353,20 @@ export default function DynamicRoutePage() {
         actionsConfig={effectiveActions}
         routes={app.routes}
         paramChangeAction={(route as { paramChangeAction?: string })?.paramChangeAction}
+        authConfig={authConfig}
         dataSources={(app as { dataSources?: Record<string, NamedDataSourceDef> }).dataSources}
       />
+      {needsCover && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'var(--theme-background, #fff)',
+          }}
+        >
+          <p className={redirecting.textClassName}>{redirecting.text}</p>
+        </div>
+      )}
     </main>
   );
 }

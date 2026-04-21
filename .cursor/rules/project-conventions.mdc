@@ -10,16 +10,16 @@ alwaysApply: true
 **Starting a new app:** Use `docs/NEW-APP-CHECKLIST.md` to avoid common mistakes.
 
 ## Architecture
-- **JSON-driven UI**: Screens, layouts, fragments are defined in `config/` as JSON
+- **JSON-driven UI**: Screens, layouts, and shared components are defined in `config/` as JSON
 - **Global variable store** (`lib/sdui/global-variable-store.ts`): Single source of truth; path-based access. Form state lives at `local.data.form.formData.*`. Global UI state uses named variables from `config/variables.json`.
-- **Config resolver** (`lib/sdui/config-resolver.ts`): Resolves `$ref`, `$slot`, layout composition at build time
+- **Config resolver** (`lib/sdui/config-resolver.ts`): Resolves `$slot` layout injection at build time. No `$ref` fragments — all reuse is via shared components inlined with `_shared` metadata.
 - **Zustand SDUI Engine**: Renders resolved config, merges state (config + Zustand), runs actions
-- **Computed runner** (`lib/sdui/computed-runner.ts`): Formula-based derived values; inline expr in `text` or optional `store.json` computed. **Generic ops only** — see `sdui-computed-and-sync.mdc`.
+- **Computed runner** (`lib/sdui/computed-runner.ts`): Formula-based derived values; inline `{ formula }` in `text` or optional `store.json` computed. **Generic ops only** — see `sdui-computed-and-sync.mdc`.
 
 ## Key Paths
 - `config/screens/` - Screen definitions (meta, state, layout, content)
-- `config/layouts/` - Layout structures (header + content slot + drawer)
-- `config/fragments/` - Reusable UI (header, drawer, modals)
+- `config/layouts/` - Layout structures (navbar + content slot + footer)
+- `config/shared-components.json` - Reusable UI models (navbar, footer, product cards, etc.)
 - `config/actions/` - Action definitions (fetch, set, navigate, etc.)
 - `config/routes.json` - Routes, dynamic routes (`dynamic: true`), defaultRedirect
 - `config/store.json` - Initial state (`initialData`), path mappings (`paths`), optional `computed`, `engineConventions`, `searchParamSync` (with `variableStorePath`, `triggersParamChange`). See `sdui-computed-and-sync.mdc`.
@@ -28,12 +28,12 @@ alwaysApply: true
 
 ## When adding features
 1. Prefer JSON config over new React components
-2. Extract shared UI to fragments; use `$ref` to compose
-3. Use `layout` for screens that share header/drawer
+2. Extract shared UI as a model in `config/shared-components.json`; inline with `_shared` marker at usage sites
+3. Use `layout` for screens that share navbar/footer
 4. Actions (openDrawer, closeDrawer, etc.) live in `config/actions/layout.json` and use `type: "set"` for Zustand-persisted state
 5. **No hardcoded values in code**: paths, routes, initial state, colors—all come from JSON config
 6. Use theme variables: `var(--theme-announcement-bg)`, `var(--theme-foreground)`, etc.
-7. **Derived values**: Use inline `text: { expr: <formula string>, suffix?, prefix? }` for one-off computed (cart count, totals, etc.); use `formatCurrency` for money display.
+7. **Derived values**: Use inline `text: { formula: <formula string>, suffix?, prefix? }` for one-off computed (cart count, totals, etc.); use `formatCurrency` for money display.
 8. **Cross-screen state**: Declare variables in `config/variables.json` with a UUID. Reference them by UUID via `changeVariableValue` in workflows. Form field values are tracked automatically by `FormContainer` via the `name` prop. Use `setVar` for programmatic pre-population (e.g. `path: "local.data.form.formData.fieldName"`). Never use `screens.*` paths.
 9. **Workflow context**: `{{_workflow.lastAction}}`, `{{_workflow.lastError}}` for last action name and error (null if success). Configurable via `engineConventions.workflowPath`.
 10. **Data fetching**: Use `type: "fetch"` for REST or `type: "graphql"` for GraphQL. **Never create Next.js API routes** (`app/api/`)—data comes directly from external APIs/services.

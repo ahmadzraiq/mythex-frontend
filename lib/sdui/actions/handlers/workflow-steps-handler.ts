@@ -17,6 +17,7 @@ import type { ActionHandlerContext, ActionDef } from './types';
 import { evaluateFormula } from '../../formula-evaluator';
 import { getGlobalVariableStore } from '../../global-variable-store';
 import { setNestedValue } from '../../nested-utils';
+import { buildAuthHeaders, clearStoredToken, setStoredToken, setStoredAuthSnapshot, clearStoredAuthSnapshot, getStoredAuthSnapshot } from '../../auth-token-storage';
 import { SUPPORTED_WORKFLOW_STEP_TYPES } from '@/app/dev/builder/_workflow-types';
 
 interface WorkflowStep {
@@ -42,6 +43,15 @@ class ContinueLoopSignal extends Error {
   constructor() { super('__continue__'); }
 }
 
+/**
+ * Thrown by a `returnValue` step to propagate a value back to the caller.
+ * Caught by workflowStepsHandler, which forwards it via ctx.setStepResult so
+ * the caller's runProjectWorkflow step receives it as context.workflow[stepId].result.
+ */
+class ReturnValueSignal {
+  constructor(public readonly value: unknown) {}
+}
+
 export type WorkflowCtx = Record<string, { result: unknown; error: unknown }>;
 
 /** Convert a canvas ActionStep into an inline SDUI action definition.
@@ -62,7 +72,7 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
       }
       // Use type:'navigate' so the inline fallback in runOne resolves the navigate handler directly.
       // Using { action:'navigate' } would look up actionsConfig['navigate'] (undefined) and throw.
-      return { type: 'navigate', path: cfg.path, routeConfig: cfg.routeConfig, linkType: cfg.linkType, externalUrl: cfg.externalUrl, newTab: cfg.newTab };
+      return { type: 'navigate', path: cfg.path, linkType: cfg.linkType, externalUrl: cfg.externalUrl, newTab: cfg.newTab };
     case 'navigatePrev':
     case 'navigatePreviousPage':
       // Go back in browser history; fall back to defaultPath if no history
@@ -91,7 +101,8 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
       return actions.length > 0 ? { type: 'runMultiple', actions } : null;
     }
     case 'executeComponentAction':
-      return typeof cfg.action === 'string' ? { action: cfg.action as string } : null;
+      // Handled inline in runSteps — return null so stepToSdui does not dispatch it.
+      return null;
     case 'updateCollection': {
       // New format (builder): cfg.collectionId = datasource UUID → trigger refetch directly
       if (cfg.collectionId) {
@@ -113,8 +124,25 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
       return { type: 'setVar', path: (cfg.variableName ?? cfg.path) as string, value: cfg.defaultValue ?? null };
 
     // ── Project workflow reference (legacy builder format) ───────────────────
-    case 'runProjectWorkflow':
-      return { action: (cfg.workflowId ?? cfg.workflowName ?? (step as unknown as Record<string, unknown>).action ?? '') as string };
+    case 'runProjectWorkflow': {
+      const wfId = (cfg.workflowId ?? cfg.workflowName ?? (step as unknown as Record<string, unknown>).action ?? '') as string;
+      // Resolve param values — each may be a plain value or a FormulaValue object
+      const rawParams = cfg.params as Record<string, unknown> | undefined;
+      const resolvedParams: Record<string, unknown> | undefined = rawParams
+        ? Object.fromEntries(
+            Object.entries(rawParams).map(([k, v]) => [
+              k,
+              v && typeof v === 'object' && 'formula' in (v as Record<string, unknown>)
+                ? (v as Record<string, unknown>).formula  // formula string — engine will evaluate in called workflow
+                : v,
+            ])
+          )
+        : undefined;
+      return {
+        action: wfId,
+        ...(resolvedParams && Object.keys(resolvedParams).length > 0 ? { payload: { parameters: resolvedParams } } : {}),
+      };
+    }
 
     // ── Forms (when in FormContainer) ────────────────────────────────────────
     case 'setFormState':
@@ -131,8 +159,11 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
     case 'executeWorkflow':
       return { action: (cfg.workflowId ?? cfg.workflowName ?? '') as string, payload: cfg.params as Record<string, unknown> };
     case 'returnValue':
-      // Store return value at a configurable path
-      return cfg.path ? { type: 'set', path: cfg.path, value: cfg.value } : null;
+      // Evaluate the formula via the normal setVar path; parameters are already in
+      // the variable store. After runOne the signal is thrown in runSteps.
+      // NOTE: path must be dot-free — setNestedValue splits by '.' so '__wf.return__'
+      // would write state.__wf.return__ (nested) but we read back as a flat key.
+      return { type: 'setVar', path: '__wfReturn', value: cfg.value };
 
     // ── Shared Component ─────────────────────────────────────────────────────
     case 'addSharedComponent':
@@ -242,15 +273,20 @@ function flushWorkflowCtx(workflowCtx: WorkflowCtx) {
  * with the action handler scope (which carries context.item.data.* from
  * repeat-template clicks). Without scope, context?.item?.data?.type in
  * branch/multiOptionBranch conditions always resolves to undefined.
+ *
+ * When `parameters` is provided (global workflow called with params), it is
+ * injected into the context so `parameters['name']` resolves correctly.
  */
 function buildFormulaCtx(
   vsState: Record<string, unknown>,
   ctx: ActionHandlerContext,
+  parameters?: Record<string, unknown>,
 ): Record<string, unknown> {
   return {
     ...vsState,
     variables: vsState,
     ...(ctx.scope ?? {}),
+    ...(parameters ? { parameters } : {}),
     context: (ctx.scope?.context as Record<string, unknown> | undefined)
       ?? (vsState['context'] as Record<string, unknown> | undefined)
       ?? {},
@@ -258,12 +294,17 @@ function buildFormulaCtx(
 }
 
 /** Recursively execute a list of workflow steps.
- *  workflowCtx is passed by reference so branch/loop sub-steps share the same map. */
+ *  workflowCtx is passed by reference so branch/loop sub-steps share the same map.
+ *  parameters — resolved global-workflow param values, injected into formula context.
+ *  Returns the last non-null step result so workflowStepsHandler can auto-forward it
+ *  to the caller (no explicit returnValue step needed). */
 async function runSteps(
   steps: WorkflowStep[],
   ctx: ActionHandlerContext,
   workflowCtx: WorkflowCtx,
-): Promise<void> {
+  parameters?: Record<string, unknown>,
+): Promise<unknown> {
+  let lastResult: unknown = undefined;
   for (const step of steps) {
     if (step.disabled) continue;
 
@@ -277,13 +318,13 @@ async function runSteps(
       let condResult: unknown;
       if (condFormula) {
         const vsState = getGlobalVariableStore().getState().getFullState();
-        const formulaCtx = buildFormulaCtx(vsState, ctx);
+        const formulaCtx = buildFormulaCtx(vsState, ctx, parameters);
         condResult = evaluateFormula(condFormula, formulaCtx).value;
       } else {
         condResult = condPath ? ctx.get(condPath) : false;
       }
       const branch = condResult ? (step.trueBranch ?? []) : (step.falseBranch ?? step.defaultBranch ?? []);
-      await runSteps(branch, ctx, workflowCtx);
+      await runSteps(branch, ctx, workflowCtx, parameters);
       continue;
     }
 
@@ -301,7 +342,7 @@ async function runSteps(
       if (rawItems !== undefined && rawItems !== null && rawItems !== '') {
         if (Array.isArray(rawItems)) {
           items = rawItems;
-        } else if (typeof rawItems === 'object' && ('formula' in (rawItems as object) || 'expr' in (rawItems as object))) {
+        } else if (typeof rawItems === 'object' && 'formula' in (rawItems as object)) {
           const fullState = getGlobalVariableStore().getState().getFullState();
           const resolved = evaluateFormula(rawItems as Record<string, unknown>, fullState);
           items = Array.isArray(resolved) ? resolved : [];
@@ -327,7 +368,7 @@ async function runSteps(
             setNestedValue(prev, 'context.item', { data: { value: items[i], index: i }, index: i, repeatIndex: i })
           );
           try {
-            await runSteps(step.loopBody ?? [], ctx, workflowCtx);
+            await runSteps(step.loopBody ?? [], ctx, workflowCtx, parameters);
           } catch (e) {
             if (e instanceof ContinueLoopSignal) continue;
             if (e instanceof BreakLoopSignal) break;
@@ -350,14 +391,14 @@ async function runSteps(
       const checkCond = () => {
         if (condFormula) {
           const vsState = getGlobalVariableStore().getState().getFullState();
-          const formulaCtx = buildFormulaCtx(vsState, ctx);
+          const formulaCtx = buildFormulaCtx(vsState, ctx, parameters);
           return Boolean(evaluateFormula(condFormula, formulaCtx).value);
         }
         return condPath ? Boolean(ctx.get(condPath)) : false;
       };
       while (checkCond() && guard < 100) {
         try {
-          await runSteps(step.loopBody ?? [], ctx, workflowCtx);
+          await runSteps(step.loopBody ?? [], ctx, workflowCtx, parameters);
         } catch (e) {
           if (e instanceof ContinueLoopSignal) { guard++; continue; }
           if (e instanceof BreakLoopSignal) break;
@@ -386,7 +427,7 @@ async function runSteps(
       let condResult: unknown;
       if (condFormula) {
         const vsState = getGlobalVariableStore().getState().getFullState();
-        const formulaCtx = buildFormulaCtx(vsState, ctx);
+        const formulaCtx = buildFormulaCtx(vsState, ctx, parameters);
         condResult = evaluateFormula(condFormula, formulaCtx).value;
       } else {
         condResult = condPath ? ctx.get(condPath) : false;
@@ -404,14 +445,14 @@ async function runSteps(
       let value: unknown;
       if (conditionFormula) {
         const vsState = getGlobalVariableStore().getState().getFullState();
-        const formulaCtx = buildFormulaCtx(vsState, ctx);
+        const formulaCtx = buildFormulaCtx(vsState, ctx, parameters);
         value = evaluateFormula(conditionFormula, formulaCtx).value;
       } else if (conditionPath) {
         value = ctx.get(conditionPath);
       }
       const branches = step.branches ?? [];
       const matched = branches.find(b => String(b.match ?? b.label ?? b.value ?? '') === String(value ?? ''));
-      await runSteps(matched ? (matched.steps ?? []) : (step.defaultBranch ?? []), ctx, workflowCtx);
+      await runSteps(matched ? (matched.steps ?? []) : (step.defaultBranch ?? []), ctx, workflowCtx, parameters);
       continue;
     }
 
@@ -538,6 +579,225 @@ async function runSteps(
       continue;
     }
 
+    // ── Auth: authenticate ────────────────────────────────────────────────────
+    if (step.type === 'authenticate') {
+      const cfg = step.config ?? {};
+      const vsState = getGlobalVariableStore().getState().getFullState();
+      const formulaCtx = buildFormulaCtx(vsState, ctx, parameters);
+      const persist = cfg.persist !== false;
+
+      const accessTokenFormula = resolveFormulaToString(cfg.accessToken);
+      const refreshTokenFormula = resolveFormulaToString(cfg.refreshToken);
+      const userFormula = resolveFormulaToString(cfg.user);
+
+      const accessToken = accessTokenFormula ? evaluateFormula(accessTokenFormula, formulaCtx).value : (cfg.accessToken as unknown ?? null);
+      const refreshToken = refreshTokenFormula ? evaluateFormula(refreshTokenFormula, formulaCtx).value : (cfg.refreshToken as unknown ?? null);
+      const user = userFormula ? evaluateFormula(userFormula, formulaCtx).value : (cfg.user as unknown ?? null);
+
+      if (persist && accessToken && typeof window !== 'undefined') {
+        setStoredToken(String(accessToken));
+      }
+      ctx.setData('auth.user', user);
+      ctx.setData('auth.accessToken', accessToken);
+      ctx.setData('auth.token', accessToken);
+      ctx.setData('auth.refreshToken', refreshToken ?? null);
+      ctx.setData('sessionRestored', true);
+      if (persist && (user || accessToken)) {
+        setStoredAuthSnapshot({ user, accessToken, refreshToken: refreshToken ?? null });
+      }
+      if (step.id) {
+        workflowCtx[step.id] = { result: { user, accessToken }, error: null };
+        flushWorkflowCtx(workflowCtx);
+      }
+      continue;
+    }
+
+    // ── Auth: setUser ─────────────────────────────────────────────────────────
+    if (step.type === 'setUser') {
+      const cfg = step.config ?? {};
+      const vsState = getGlobalVariableStore().getState().getFullState();
+      const formulaCtx = buildFormulaCtx(vsState, ctx, parameters);
+      const userFormula = resolveFormulaToString(cfg.user);
+      const user = userFormula ? evaluateFormula(userFormula, formulaCtx).value : (cfg.user as unknown ?? null);
+      ctx.setData('auth.user', user);
+      ctx.setData('sessionRestored', true);
+      // Update the snapshot with the user (preserving existing token),
+      // but ONLY if a snapshot already exists — meaning authenticate ran with
+      // persist: true. If authenticate had persist: false, no snapshot was
+      // created and setUser must not create one either.
+      if (user) {
+        const existingSnapshot = getStoredAuthSnapshot();
+        if (existingSnapshot) {
+          setStoredAuthSnapshot({
+            user,
+            accessToken: existingSnapshot.accessToken ?? null,
+            refreshToken: existingSnapshot.refreshToken ?? null,
+          });
+        }
+      }
+      if (step.id) {
+        workflowCtx[step.id] = { result: user, error: null };
+        flushWorkflowCtx(workflowCtx);
+      }
+      continue;
+    }
+
+    // ── Auth: clearSession ────────────────────────────────────────────────────
+    if (step.type === 'clearSession') {
+      // Clear Zustand auth state
+      ctx.setData('auth.user', null);
+      ctx.setData('auth.accessToken', null);
+      ctx.setData('auth.token', null);               // alias for backward-compat ({{auth.token}})
+      ctx.setData('auth.refreshToken', null);
+      ctx.setData('sessionRestored', true);
+      // Clear bearer token and auth snapshot from localStorage
+      clearStoredToken();
+      clearStoredAuthSnapshot();
+      if (step.id) {
+        workflowCtx[step.id] = { result: null, error: null };
+        flushWorkflowCtx(workflowCtx);
+      }
+      continue;
+    }
+
+    // ── Auth: restoreSession ──────────────────────────────────────────────────
+    if (step.type === 'restoreSession') {
+      const authCfg = (ctx as ActionHandlerContext & { getAuthConfig?: () => import('../../engine-types').AuthConfig }).getAuthConfig?.();
+
+      // If no user endpoint is configured, nothing to restore — mark done and continue.
+      const hasUserEndpoint = !!(authCfg?.userQuery ?? authCfg?.userEndpoint);
+      if (!hasUserEndpoint) {
+        ctx.setData('sessionRestored', true);
+        if (step.id) {
+          workflowCtx[step.id] = { result: null, error: null };
+          flushWorkflowCtx(workflowCtx);
+        }
+        continue;
+      }
+
+      // Try to validate the session by fetching the current user.
+      // When bearer tokens are used, inject the stored token. For persist: false
+      // logins the token is in-memory only (not in localStorage), so fall back to
+      // ctx.get('auth.accessToken') — which reads the live Zustand store — before
+      // giving up. This lets restoreSession work across client-side navigations
+      // even when persist is off. On a hard page refresh with persist: false the
+      // store is empty too, so no token is found and the user must log in again
+      // (correct behaviour — "no persist" means session-only).
+      try {
+        let userData: unknown = null;
+
+        // Build effective auth headers: localStorage → in-memory Zustand → nothing.
+        const baseHeaders = buildAuthHeaders(authCfg);
+        let effectiveAuthHeaders = baseHeaders;
+        if (!Object.keys(effectiveAuthHeaders).length) {
+          const memToken = ctx.get('auth.accessToken') as string | null;
+          if (memToken && typeof memToken === 'string' && authCfg?.tokenSend) {
+            const header = authCfg.tokenSend.header ?? 'Authorization';
+            const prefix = authCfg.tokenSend.prefix ?? 'Bearer ';
+            effectiveAuthHeaders = { [header]: `${prefix}${memToken}` };
+          } else if (memToken && typeof memToken === 'string') {
+            effectiveAuthHeaders = { Authorization: `Bearer ${memToken}` };
+          }
+        }
+
+        if (authCfg?.userQuery) {
+          const endpoint = authCfg.userQueryEndpoint ?? (ctx as ActionHandlerContext & { getGraphqlEndpoint?: () => string }).getGraphqlEndpoint?.() ?? '/graphql';
+          const extraHeaders = authCfg.userQueryHeaders ?? (ctx as ActionHandlerContext & { getGraphqlHeaders?: () => Record<string, string> }).getGraphqlHeaders?.() ?? {};
+          const headers: Record<string, string> = { 'Content-Type': 'application/json', ...effectiveAuthHeaders, ...extraHeaders };
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            credentials: 'include',
+            headers,
+            body: JSON.stringify({ query: authCfg.userQuery }),
+          });
+          const json = await response.json() as { data?: Record<string, unknown>; errors?: unknown[] };
+          if (!json.errors?.length && json.data) {
+            const dataKeys = Object.keys(json.data);
+            userData = dataKeys.length > 0 ? json.data[dataKeys[0]] : null;
+          }
+        } else if (authCfg?.userEndpoint) {
+          const response = await fetch(authCfg.userEndpoint, {
+            credentials: 'include',
+            headers: Object.keys(effectiveAuthHeaders).length ? effectiveAuthHeaders : undefined,
+          });
+          if (response.ok) {
+            userData = await response.json();
+          }
+        }
+
+        if (userData) {
+          ctx.setData('auth.user', userData);
+        } else {
+          ctx.setData('auth.user', null);
+          ctx.setData('auth.accessToken', null);
+          ctx.setData('auth.token', null);
+        }
+      } catch {
+        ctx.setData('auth.user', null);
+        ctx.setData('auth.accessToken', null);
+        ctx.setData('auth.token', null);
+      }
+      ctx.setData('sessionRestored', true);
+      if (step.id) {
+        workflowCtx[step.id] = { result: null, error: null };
+        flushWorkflowCtx(workflowCtx);
+      }
+      continue;
+    }
+
+    // ── Execute component workflow (executeComponentAction) ───────────────────
+    // ── executeComponentAction: invoke a scoped workflow by workflowId ───────────
+    if (step.type === 'executeComponentAction') {
+      const cfg = (step.config ?? {}) as Record<string, unknown>;
+      const workflowId = (cfg.workflowId ?? cfg.action) as string | undefined;
+      const componentCtx = (ctx.scope?.context as Record<string, unknown> | undefined) ?? {};
+      const compInfo = (componentCtx.component ?? {}) as Record<string, unknown>;
+      const instanceId = compInfo.instanceId as string | undefined;
+      const modelId = (cfg.modelId ?? compInfo.id) as string | undefined;
+
+      if (workflowId && modelId) {
+        let scModel: { workflows?: Record<string, { steps: WorkflowStep[]; params?: Array<{ name: string }> }> } | undefined;
+        try { scModel = require('@/lib/builder/shared-component-data').getSharedComponents()[modelId]; } catch { /* noop */ }
+        if (!scModel) { try { scModel = require('@/config/shared-components.json')[modelId]; } catch { /* noop */ } }
+
+        const wf = scModel?.workflows?.[workflowId];
+        if (wf?.steps) {
+          const vsState = getGlobalVariableStore().getState().getFullState();
+          const formulaCtx = buildFormulaCtx(vsState, ctx, parameters);
+          const resolvedArgs: Record<string, unknown> = {};
+          if (cfg.args && typeof cfg.args === 'object') {
+            for (const [k, v] of Object.entries(cfg.args as Record<string, unknown>)) {
+              resolvedArgs[k] = typeof v === 'object' && v !== null && 'formula' in (v as object)
+                ? evaluateFormula((v as { formula: string }).formula, formulaCtx).value
+                : v;
+            }
+          }
+          const componentScope = {
+            ...(ctx.scope ?? {}),
+            context: {
+              ...componentCtx,
+              params: resolvedArgs,
+              component: { ...compInfo, instanceId },
+            },
+          };
+          const subCtx = { ...ctx, scope: componentScope };
+          const subWorkflowCtx: WorkflowCtx = {};
+          let stepResult: unknown = undefined;
+          let stepError: unknown = null;
+          try {
+            stepResult = await runSteps(wf.steps, subCtx as ActionHandlerContext, subWorkflowCtx, resolvedArgs);
+          } catch (err) {
+            stepError = err instanceof Error ? err.message : String(err);
+          }
+          if (step.id) {
+            workflowCtx[step.id] = { result: stepResult ?? null, error: stepError };
+            flushWorkflowCtx(workflowCtx);
+          }
+        }
+      }
+      continue;
+    }
+
     // ── Raw ActionRef (serialized runNamedAction: { action: "name" }) ─────────
     if (!step.type && (step as unknown as Record<string, unknown>).action) {
       const result = await ctx.runOne(step as unknown as unknown as import('../../types').SDUIAction);
@@ -545,6 +805,7 @@ async function runSteps(
         workflowCtx[step.id] = { result: result ?? null, error: null };
         flushWorkflowCtx(workflowCtx);
       }
+      if (result != null) lastResult = result;
       continue;
     }
 
@@ -558,12 +819,22 @@ async function runSteps(
       } catch (err) {
         stepError = err instanceof Error ? err.message : String(err);
       }
-      // Store in workflowCtx and flush to variable store so subsequent steps
-      // and branch conditions can read context.workflow['stepId'].result.
       workflowCtx[step.id] = { result: stepResult ?? null, error: stepError };
       flushWorkflowCtx(workflowCtx);
+      // Track the last meaningful result so the caller can access it without
+      // an explicit returnValue step (auto-return of last step result).
+      if (stepResult != null && !stepError) lastResult = stepResult;
+    }
+
+    // returnValue: explicit early-return with a specific value — takes priority
+    // over the auto-return mechanism above.
+    if (step.type === 'returnValue') {
+      throw new ReturnValueSignal(
+        getGlobalVariableStore().getState().getFullState()['__wfReturn'] ?? null
+      );
     }
   }
+  return lastResult;
 }
 
 export const workflowStepsHandler =
@@ -577,5 +848,86 @@ export const workflowStepsHandler =
     const workflowCtx: WorkflowCtx = typeof existing === 'object' && existing !== null
       ? { ...(existing as WorkflowCtx) }
       : {};
-    await runSteps(steps, ctx, workflowCtx);
+
+    // Resolve global workflow parameters from the caller's payload.
+    // Each value may be a plain value or a formula string — evaluate formulas
+    // in the calling context so parameters['name'] resolves to the real value.
+    let parameters: Record<string, unknown> | undefined;
+    const rawParamsFromPayload = ctx.payload?.parameters as Record<string, unknown> | undefined;
+    if (rawParamsFromPayload && Object.keys(rawParamsFromPayload).length > 0) {
+      const vsState = getGlobalVariableStore().getState().getFullState();
+      const callingCtx = buildFormulaCtx(vsState, ctx, undefined);
+      parameters = Object.fromEntries(
+        Object.entries(rawParamsFromPayload).map(([k, v]) => {
+          if (typeof v === 'string' && v.trim().length > 0) {
+            // Try to evaluate as a formula expression (may just be a plain string value)
+            try {
+              const result = evaluateFormula(v, callingCtx);
+              // Only use evaluated result if it's not undefined — keeps plain string values intact
+              const resolved = result.value;
+              return [k, resolved !== undefined ? resolved : v];
+            } catch {
+              return [k, v];
+            }
+          }
+          return [k, v];
+        })
+      );
+    }
+    // Also check the params defined on the actionDef itself (for JSON config usage)
+    const rawParamsFromDef = (actionDef as Record<string, unknown>).params as Record<string, unknown> | undefined;
+    if (rawParamsFromDef && !parameters) {
+      const vsState = getGlobalVariableStore().getState().getFullState();
+      const callingCtx = buildFormulaCtx(vsState, ctx, undefined);
+      parameters = Object.fromEntries(
+        Object.entries(rawParamsFromDef).map(([k, v]) => {
+          if (typeof v === 'string' && v.trim().length > 0) {
+            try {
+              const result = evaluateFormula(v, callingCtx);
+              const resolved = result.value;
+              return [k, resolved !== undefined ? resolved : v];
+            } catch {
+              return [k, v];
+            }
+          }
+          return [k, v];
+        })
+      );
+    }
+
+    const ctxWithParams = parameters
+      ? { ...ctx, scope: { ...(ctx.scope ?? {}), parameters } }
+      : ctx;
+
+    // Write parameters into the variable store so every formula evaluator
+    // (setVarHandler, graphql variables, etc.) sees them naturally via vsData.
+    const prevParameters = parameters
+      ? getGlobalVariableStore().getState().getFullState()['parameters']
+      : undefined;
+    if (parameters) {
+      getGlobalVariableStore().getState().setState(prev =>
+        setNestedValue(prev, 'parameters', parameters)
+      );
+    }
+
+    try {
+      const autoReturn = await runSteps(steps, ctxWithParams, workflowCtx, parameters);
+      // Auto-forward the last step result to the caller — no explicit returnValue needed.
+      // context.workflow['<runProjectWorkflow-step-id>'].result will carry it.
+      if (autoReturn != null) ctx.setStepResult?.(autoReturn);
+    } catch (e) {
+      if (e instanceof ReturnValueSignal) {
+        // Explicit returnValue step — takes priority; forward its specific value.
+        ctx.setStepResult?.(e.value);
+        return;
+      }
+      throw e;
+    } finally {
+      // Restore previous parameters so nested global workflow calls don't bleed.
+      if (parameters) {
+        getGlobalVariableStore().getState().setState(prev =>
+          setNestedValue(prev, 'parameters', prevParameters ?? null)
+        );
+      }
+    }
   };

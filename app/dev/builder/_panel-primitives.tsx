@@ -17,8 +17,94 @@
  *  - AnimPreview     — pure-CSS animated preview box for animation sub-sections
  */
 
-import React, { useState, useEffect, useRef, useId, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useId, useCallback, useContext } from 'react';
 import { FigmaColorPicker } from './_color-picker';
+
+// ─── Changed-field context ────────────────────────────────────────────────────
+
+/**
+ * Provided by DesignTab around all its sections.
+ * Primitives consume it via `cssProp` to highlight labels and offer reset.
+ */
+export const ChangedFieldContext = React.createContext<{
+  isChanged: (cssProp: string) => boolean;
+  resetField: (cssProp: string) => void;
+} | null>(null);
+
+/**
+ * Renders a field label that turns orange and shows a "Reset to default" popup
+ * when the field's value differs from its default.
+ * Falls back to a plain gray span when there is no context or no cssProp.
+ */
+export function ChangedLabel({
+  text, cssProp, style: extraStyle,
+}: { text: string; cssProp?: string; style?: React.CSSProperties }) {
+  const ctx = useContext(ChangedFieldContext);
+  const changed = !!(cssProp && ctx && ctx.isChanged(cssProp));
+  const [popupPos, setPopupPos] = useState<{ top: number; left: number } | null>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const spanRef = useRef<HTMLSpanElement | null>(null);
+
+  const showPopup = () => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    if (spanRef.current) {
+      const r = spanRef.current.getBoundingClientRect();
+      const popW = 140;
+      const left = Math.min(r.left, window.innerWidth - popW - 8);
+      setPopupPos({ top: r.bottom + 4, left: Math.max(8, left) });
+    }
+  };
+  const scheduleHide = () => {
+    hideTimer.current = setTimeout(() => setPopupPos(null), 120);
+  };
+
+  const baseStyle: React.CSSProperties = {
+    fontSize: 9, color: changed ? '#f97316' : '#6b7280',
+    cursor: changed && ctx ? 'pointer' : undefined,
+    ...extraStyle,
+  };
+
+  if (!changed || !ctx) {
+    return <span style={baseStyle}>{text}</span>;
+  }
+
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+      <span
+        ref={spanRef}
+        style={baseStyle}
+        onMouseEnter={showPopup}
+        onMouseLeave={scheduleHide}
+      >{text}</span>
+      {popupPos && (
+        <div
+          onMouseEnter={() => { if (hideTimer.current) clearTimeout(hideTimer.current); }}
+          onMouseLeave={scheduleHide}
+          style={{
+            position: 'fixed', top: popupPos.top, left: popupPos.left,
+            zIndex: 99999, pointerEvents: 'auto',
+            background: '#1f2937', border: '1px solid #374151', borderRadius: 6,
+            padding: '5px 9px', whiteSpace: 'nowrap',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+            textTransform: 'none', letterSpacing: 'normal',
+            fontWeight: 'normal', fontFamily: 'system-ui, sans-serif',
+          }}
+        >
+          <button
+            onMouseDown={(e) => { e.preventDefault(); ctx.resetField(cssProp!); setPopupPos(null); }}
+            style={{
+              background: 'none', border: 'none', color: '#e5e7eb',
+              fontSize: 11, cursor: 'pointer', padding: 0,
+              display: 'flex', alignItems: 'center', gap: 4,
+            }}
+          >
+            <span>↺</span><span>Reset to default</span>
+          </button>
+        </div>
+      )}
+    </span>
+  );
+}
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
@@ -57,11 +143,14 @@ export interface SectionHeaderProps {
   onResetAll?: () => void;
 }
 
-export function SectionHeader({ title, children, overriddenBreakpoints, onRemoveBreakpoint, onResetAll }: SectionHeaderProps) {
+export const SectionHeader = React.memo(function SectionHeader({ title, children, overriddenBreakpoints, onRemoveBreakpoint, onResetAll }: SectionHeaderProps) {
   const sectionKey = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-      <span style={{ ...LABEL_STYLE, display: 'flex', alignItems: 'center', gap: 3 }}>
+      <span
+        style={{ ...LABEL_STYLE, display: 'flex', alignItems: 'center', gap: 3 }}
+      >
         {title}
         {overriddenBreakpoints && overriddenBreakpoints.length > 0 && onRemoveBreakpoint && (
           <ResponsiveDot
@@ -76,7 +165,7 @@ export function SectionHeader({ title, children, overriddenBreakpoints, onRemove
       {children}
     </div>
   );
-}
+});
 
 // ─── Responsive Dot & Popover ─────────────────────────────────────────────────
 
@@ -192,11 +281,56 @@ export function ResponsiveDot({ cssProp, overriddenBreakpoints, onRemove, onRese
   );
 }
 
+// ─── DirectChangedLabel ───────────────────────────────────────────────────────
+/** Like ChangedLabel but takes `changed` + `onReset` directly — no context needed. */
+function DirectChangedLabel({ text, changed, onReset }: { text: string; changed: boolean; onReset: () => void }) {
+  const [popupPos, setPopupPos] = React.useState<{ top: number; left: number } | null>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const spanRef   = useRef<HTMLSpanElement | null>(null);
+
+  const showPopup = () => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    if (spanRef.current) {
+      const r = spanRef.current.getBoundingClientRect();
+      const popW = 140;
+      const left = Math.min(r.left, window.innerWidth - popW - 8);
+      setPopupPos({ top: r.bottom + 4, left: Math.max(8, left) });
+    }
+  };
+  const scheduleHide = () => { hideTimer.current = setTimeout(() => setPopupPos(null), 120); };
+
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+      <span
+        ref={spanRef}
+        style={{ fontSize: 9, color: changed ? '#f97316' : '#6b7280', cursor: changed ? 'pointer' : undefined }}
+        onMouseEnter={changed ? showPopup : undefined}
+        onMouseLeave={changed ? scheduleHide : undefined}
+      >{text}</span>
+      {popupPos && (
+        <div
+          onMouseEnter={() => { if (hideTimer.current) clearTimeout(hideTimer.current); }}
+          onMouseLeave={scheduleHide}
+          style={{ position: 'fixed', top: popupPos.top, left: popupPos.left, zIndex: 99999, pointerEvents: 'auto', background: '#1f2937', border: '1px solid #374151', borderRadius: 6, padding: '5px 9px', whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', textTransform: 'none', letterSpacing: 'normal', fontWeight: 'normal', fontFamily: 'system-ui, sans-serif' }}
+        >
+          <button
+            onMouseDown={e => { e.preventDefault(); onReset(); setPopupPos(null); }}
+            style={{ background: 'none', border: 'none', color: '#e5e7eb', fontSize: 11, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
+          >
+            <span>↺</span><span>Reset to default</span>
+          </button>
+        </div>
+      )}
+    </span>
+  );
+}
+
 // ─── NumberInput ──────────────────────────────────────────────────────────────
 
 export function NumberInput({
-  label, value, onChange, min = 0, max = 9999, step = 1, testId, onFocus, afterLabel,
-}: { label: string; value: number | string; onChange: (v: number) => void; min?: number; max?: number; step?: number; testId?: string; onFocus?: () => void; afterLabel?: React.ReactNode }) {
+  label, value, onChange, min = 0, max = 9999, step = 1, testId, onFocus, afterLabel, cssProp,
+  changedOverride, onResetOverride,
+}: { label: string; value: number | string; onChange: (v: number) => void; min?: number; max?: number; step?: number; testId?: string; onFocus?: () => void; afterLabel?: React.ReactNode; cssProp?: string; changedOverride?: boolean; onResetOverride?: () => void }) {
   const [local, setLocal] = useState(String(value));
   const liveRef    = useRef(Number(value));
   const inputRef   = useRef<HTMLInputElement | null>(null);
@@ -251,7 +385,14 @@ export function NumberInput({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-      {label && <span style={{ fontSize: 9, color: '#6b7280', display: 'flex', alignItems: 'center' }}>{label}{afterLabel}</span>}
+      {label && (
+        <span style={{ display: 'flex', alignItems: 'center' }}>
+          {changedOverride !== undefined
+            ? <DirectChangedLabel text={label} changed={changedOverride} onReset={onResetOverride ?? (() => {})} />
+            : <ChangedLabel text={label} cssProp={cssProp} />}
+          {afterLabel}
+        </span>
+      )}
       <input
         ref={inputRef}
         data-testid={testId}
@@ -277,11 +418,16 @@ export function NumberInput({
 // ─── SelectInput ──────────────────────────────────────────────────────────────
 
 export function SelectInput({
-  label, value, options, onChange, testId, afterLabel,
-}: { label: string; value: string; options: readonly string[] | string[]; onChange: (v: string) => void; testId?: string; afterLabel?: React.ReactNode }) {
+  label, value, options, onChange, testId, afterLabel, cssProp,
+}: { label: string; value: string; options: readonly string[] | string[]; onChange: (v: string) => void; testId?: string; afterLabel?: React.ReactNode; cssProp?: string }) {
   return (
     <div style={{ flex: 1 }}>
-      {label && <span style={{ fontSize: 9, color: '#6b7280', display: 'flex', alignItems: 'center', marginBottom: 2 }}>{label}{afterLabel}</span>}
+      {label && (
+        <span style={{ display: 'flex', alignItems: 'center', marginBottom: 2 }}>
+          <ChangedLabel text={label} cssProp={cssProp} />
+          {afterLabel}
+        </span>
+      )}
       <select
         data-testid={testId}
         value={value} onChange={e => onChange(e.target.value)}
@@ -452,7 +598,7 @@ function getAnimCSS(type: string, category: AnimCategory): { keyframes: string; 
 // Use standalone or wrap in FieldWithBinding for formula binding support.
 
 export function SliderField({
-  label, value, min, max, step = 1, unit = '', onChange, testId,
+  label, value, min, max, step = 1, unit = '', onChange, testId, cssProp,
 }: {
   label: string;
   value: number;
@@ -462,12 +608,13 @@ export function SliderField({
   unit?: string;
   onChange: (v: number) => void;
   testId?: string;
+  cssProp?: string;
 }) {
   const displayVal = step < 0.1 ? value.toFixed(2) : step < 1 ? value.toFixed(1) : String(value);
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: 10, color: '#6b7280' }}>{label}</span>
+        <ChangedLabel text={label} cssProp={cssProp} style={{ fontSize: 10 }} />
         <span style={{ fontSize: 10, color: '#cbd5e1', fontFamily: 'monospace', minWidth: 32, textAlign: 'right' }}>
           {displayVal}{unit}
         </span>

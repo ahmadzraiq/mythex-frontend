@@ -8,50 +8,62 @@ Read this first, then drill down into linked docs as needed.
 
 ```
 config/
-├── app.ts              # Merges routes, screens, actions; resolves $ref/$slot
-├── routes.json         # Paths, auth, layout, paramChangeAction
-├── store.json          # initialData, engineConventions, computed, searchParamSync
-├── theme.json          # Brand colors: cssVariables (root/dark), colors + colorsDark → generic var(--theme-*), fonts
-├── screens/            # One .json per screen (meta, state, layout, content/ui)
-├── layouts/            # Layout structures (navbar + $slot + footer)
-├── fragments/          # Reusable UI (navbar, product-card, modals/*)
-└── actions/            # Action definitions (auth, cart, checkout, products, layout)
+├── app.ts                   # Merges routes, screens, actions; resolves $slot
+├── routes.json              # Paths, auth, layout, paramChangeAction
+├── store.json               # initialData, engineConventions, computed, searchParamSync
+├── theme.json               # Brand colors: cssVariables (root/dark), colors + colorsDark → generic var(--theme-*), fonts
+├── screens/                 # One .json per screen (meta, state, layout, content/ui)
+├── layouts/                 # Layout structures (navbar + $slot + footer)
+├── shared-components.json   # Reusable UI models (navbar, footer, product-card, etc.)
+└── actions/                 # Action definitions (auth, cart, checkout, products, layout)
 ```
 
 **Key paths:**
 - `config/screens/` — Screen definitions
-- `config/fragments/` — Reusable UI; register in `fragments/index.ts`
+- `config/shared-components.json` — Reusable UI models (navbar, footer, product cards, etc.)
 - `config/layouts/` — Layout shells; register in `layouts/index.ts`
 - `config/actions/` — Fetch, GraphQL, validate, set, navigate, etc.
 - `config/store.json` — Initial state, conventions, computed, URL sync
 
 ---
 
-## 2. Fragment Structure
+## 2. Shared Component Structure
 
-Fragments are organized by semantic role:
+All reusable UI is defined as named models in `config/shared-components.json`:
 
-| Folder | Purpose | Examples |
-|--------|---------|----------|
-| `fragments/layout/` | Shell: navbar, footer, cart-drawer | `fragments/layout/navbar` |
-| `fragments/sections/` | Page-level building blocks | `fragments/sections/collection-loading-skeleton` |
-| `fragments/cards/` | Item-level UI | `fragments/cards/product-card` |
-| `fragments/product/` | Product-detail specific | `fragments/product/product-info` |
-| `fragments/pagination/` | Pagination controls | `fragments/pagination/collection-pagination` |
-| `fragments/checkout/` | Checkout steps | `fragments/checkout/contact-step` |
+| Component ID | Purpose |
+|---|---|
+| `sc-navbar` | Site navigation bar |
+| `sc-footer` | Site footer |
+| `sc-cart-drawer` | Cart slide-out drawer |
+| `sc-product-card` | Single product card tile |
+| `sc-product-info` | Product detail info panel |
+| `sc-product-image-carousel` | Product image gallery |
+| `sc-collection-pagination` | Collection page pagination |
+| `sc-search-pagination` | Search page pagination |
+| `sc-collection-loading` | Collection skeleton loader |
+| `sc-search-loading` | Search skeleton loader |
+| `sc-checkout-contact` | Checkout contact step |
+| `sc-checkout-shipping` | Checkout shipping step |
+| `sc-checkout-payment` | Checkout payment step |
+| `sc-hero` | Hero section |
+| `sc-product-carousel` | Product carousel section |
+| `sc-product-grid` | Product grid section |
+| `sc-feature-grid` | Feature grid section |
+| `sc-account-sidebar` | Account page sidebar |
 
 **Note:** Collection and search use pure JSON for facet filters: `groupBy` computed op produces `collection.facetGroups` / `search.facetGroups`; `navigateWithQuery` action toggles facets in URL; `arrayIncludes` / `arrayLength` for conditions.
 
 ---
 
-## 3. Composition: $ref and $slot
+## 3. Composition: Shared Components and $slot
 
 | Pattern | Usage |
 |---------|-------|
-| `$ref` | Reference a fragment: `{ "$ref": "fragments/cards/product-card" }` |
+| `_shared` | Inline a shared component model: the full content tree is included with `"_shared": { "id": "sc-product-card", "name": "Product Card" }` on the root |
 | `$slot` | Layout placeholder: `{ "$slot": "content" }` — replaced with screen content |
 
-**Fragment keys** in `fragments/index.ts` must use full path: `'fragments/layout/navbar'`, `'fragments/cards/product-card'`.
+**Shared component usage:** Add the model's full content tree inline at the usage site, annotated with `_shared` on the root node. The builder uses `_shared` to track which model the node came from and sync changes back.
 
 **Layouts** wrap screen content. Screen uses `layout: "store"` and `content: { ... }`; content is injected into the layout's `$slot`.
 
@@ -67,7 +79,7 @@ Use this order on every UI node for predictable AI scanning:
 4. `map` / `key`
 5. `children`
 6. `actions`
-7. `text` / `$ref` / `$slot`
+7. `text` / `$slot`
 
 ---
 
@@ -77,7 +89,7 @@ Use this order on every UI node for predictable AI scanning:
 
 ```json
 "children": [
-  { "$ref": "fragments/sections/collection-loading-skeleton" },
+  { "type": "Box", "_shared": { "id": "sc-collection-loading", "name": "Collection Loading" }, "condition": "collections?.['UUID']?.loading", "children": [...] },
   {
     "type": "Box",
     "condition": "!collections?.['UUID']?.loading",
@@ -87,14 +99,14 @@ Use this order on every UI node for predictable AI scanning:
 ]
 ```
 
-**Product grid:** `map` on Box with `className: "contents"`, `$ref` to product-card:
+**Product grid:** `map` on Box with `className: "contents"`, inline shared product card:
 
 ```json
 {
   "type": "Box",
   "map": "collections.UUID.data.search.items",
   "props": { "className": "contents" },
-  "children": [{ "$ref": "fragments/cards/product-card" }]
+  "children": [{ "type": "Box", "_shared": { "id": "sc-product-card", "name": "Product Card" }, "children": [...] }]
 }
 ```
 
@@ -109,7 +121,8 @@ Use this order on every UI node for predictable AI scanning:
 | `local.data.form.formData.*` | Form field values (auto-tracked by `FormContainer` via `name` prop) |
 | `local.data.form.fields.*.isValid` | Per-field validation errors |
 | `local.data.form.isSubmitting` / `isSubmitted` | Form lifecycle flags |
-| `auth.*`, `cart.*`, `route.*`, `layout.*` | Global state from store.json |
+| `auth.*`, `cart.*`, `layout.*` | Global state from store.json |
+| `globalContext.browser.query.*` | URL query parameters (e.g. `globalContext?.browser?.query?.slug`) |
 | `context.item.data.*` | Current item fields inside a `map` / repeat loop |
 | `context.item.parent.data.*` | Outer item fields inside a nested repeat |
 | `_workflow.lastAction`, `_workflow.lastError` | Last action name and error (null if success) |
@@ -118,7 +131,7 @@ Use this order on every UI node for predictable AI scanning:
 
 **Text templates** use `{{path}}`: `"text": "{{variables['UUID']}}"`, `"text": "{{collections['UUID'].data.product.name}}"`.
 
-**Formula expressions** (conditions, `{ "expr" }`, `{ "formula" }`) use direct JS: `"condition": "variables['UUID'] > 0"`, `"condition": "collections['UUID']?.data?.items?.length > 0"`.
+**Formula expressions** (conditions, `{ "formula" }`) use direct JS: `"condition": "variables['UUID'] > 0"`, `"condition": "collections['UUID']?.data?.items?.length > 0"`.
 
 ---
 
@@ -185,7 +198,7 @@ The `trigger` (click, submit, change, etc.) is defined in the workflow, not on t
 - **No trailing commas** — JSON disallows them; one breaks the build
 - **Escape quotes** in strings: `"message": "Please enter a valid \"email\""`
 - **2-space indent** — Use `npm run validate:json` before commit
-- **Complex logic** — Prefer `store.json` computed over inline `{ "expr": {...} }` in nodes
+- **Complex logic** — Prefer `store.json` computed over inline `{ "formula": "..." }` in nodes
 
 ---
 
@@ -211,8 +224,7 @@ The `trigger` (click, submit, change, etc.) is defined in the workflow, not on t
 
 ---
 
-## 9. Adding a New Fragment
+## 9. Adding a New Shared Component
 
-1. Create `config/fragments/my-fragment.json` (single UI node)
-2. Add to `config/fragments/index.ts`: `'fragments/my-fragment': import`
-3. Use `{ "$ref": "fragments/my-fragment" }` in layouts or screens
+1. Add a new model entry to `config/shared-components.json` with a unique `id` (e.g. `sc-my-component`), `name`, `properties: []`, and a `content` tree
+2. Inline the `content` tree at every usage site with `"_shared": { "id": "sc-my-component", "name": "My Component" }` on the root node

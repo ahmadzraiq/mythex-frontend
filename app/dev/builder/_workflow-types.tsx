@@ -66,6 +66,11 @@ export type ActionStepType =
   // Data / API
   | 'graphql'
   | 'fetchData'
+  // Auth
+  | 'authenticate'
+  | 'setUser'
+  | 'clearSession'
+  | 'restoreSession'
   // Project workflows
   | 'runProjectWorkflow'
   // Placeholder — new step not yet configured
@@ -112,6 +117,8 @@ interface TriggerCategory {
   category: string;
   options: TriggerOption[];
 }
+
+export type { TriggerCategory };
 
 const ELEMENT_TRIGGERS: Record<string, TriggerOption[]> = {
   InputField: [
@@ -174,14 +181,75 @@ const UNIVERSAL_TRIGGER_CATEGORIES: TriggerCategory[] = [
     options: [
       { value: 'scroll',     label: 'On scroll' },
       { value: 'escapeKey',  label: 'On Escape key' },
+      { value: 'resize',     label: 'On page resize' },
+      { value: 'keydown',    label: 'On keydown' },
+      { value: 'keyup',      label: 'On keyup' },
     ],
   },
   {
     category: 'Lifecycle',
     options: [
-      { value: 'created', label: 'On created' },
-      { value: 'mounted', label: 'On mounted' },
-      { value: 'beforeUnmount', label: 'Before unmount' },
+      { value: 'created',         label: 'On created' },
+      { value: 'mounted',         label: 'On mounted' },
+      { value: 'beforeUnmount',   label: 'Before unmount' },
+      { value: 'appLoadBefore',   label: 'On app load (before fetching collections)' },
+      { value: 'appLoad',         label: 'On app load' },
+      { value: 'pageLoadBefore',  label: 'On page load (before fetching collections)' },
+      { value: 'pageLoad',        label: 'On page load' },
+      { value: 'pageUnload',      label: 'On page unload' },
+    ],
+  },
+  {
+    category: 'Error handling',
+    options: [
+      { value: 'collectionFetchError', label: 'On collection fetch error' },
+    ],
+  },
+];
+
+/**
+ * Restricted trigger categories shown in the canvas trigger dropdown when
+ * the workflow was created from the Triggers tab (isTrigger: true).
+ * Matches exactly the options shown in the weWeb-style trigger picker.
+ */
+/** Trigger categories available only when editing a component-scoped workflow. */
+export const COMPONENT_TRIGGER_CATEGORIES: TriggerCategory[] = [
+  {
+    category: 'Component lifecycle',
+    options: [
+      { value: 'execution',      label: 'On execution' },
+      { value: 'created',        label: 'On created' },
+      { value: 'mounted',        label: 'On mounted' },
+      { value: 'beforeUnmount',  label: 'Before unmount' },
+      { value: 'propertyChange', label: 'On property change' },
+    ],
+  },
+];
+
+export const TRIGGER_WORKFLOW_CATEGORIES: TriggerCategory[] = [
+  {
+    category: 'Lifecycle',
+    options: [
+      { value: 'appLoadBefore',  label: 'On app load (before fetching collections)' },
+      { value: 'pageLoadBefore', label: 'On page load (before fetching collections)' },
+      { value: 'appLoad',        label: 'On app load' },
+      { value: 'pageLoad',       label: 'On page load' },
+      { value: 'pageUnload',     label: 'On page unload' },
+    ],
+  },
+  {
+    category: 'Listeners',
+    options: [
+      { value: 'scroll',  label: 'On page scroll' },
+      { value: 'resize',  label: 'On page resize' },
+      { value: 'keydown', label: 'On keydown' },
+      { value: 'keyup',   label: 'On keyup' },
+    ],
+  },
+  {
+    category: 'Error handling',
+    options: [
+      { value: 'collectionFetchError', label: 'On collection fetch error' },
     ],
   },
 ];
@@ -283,11 +351,21 @@ export function getTriggerIcon(value: string): React.ReactNode {
     case 'scroll':
     case 'created':
     case 'escapeKey':
+    case 'appLoadBefore':
+    case 'appLoad':
+    case 'pageLoadBefore':
+    case 'pageLoad':
+    case 'pageUnload':
+    case 'keydown':
+    case 'keyup':
       return <TI.Zap />;
     case 'mounted':
       return <TI.Rotate />;
     case 'beforeUnmount':
+    case 'collectionFetchError':
       return <TI.Server />;
+    case 'resize':
+      return <TI.Circle />;
     case 'change':
     case 'initValueChange':
     case 'valueChange':
@@ -391,6 +469,16 @@ export const ACTION_CATEGORIES: { category: string; items: ActionTypeDef[] }[] =
       { type: 'openPopover', label: 'Open popover', icon: '◱' },
       { type: 'closePopover', label: 'Close popover', icon: '◱' },
       { type: 'togglePopover', label: 'Toggle popover', icon: '◱' },
+    ],
+  },
+  {
+    category: 'Auth',
+    items: [
+      { type: 'authenticate',    label: 'Authenticate',     icon: '🔐' },
+      { type: 'setUser',         label: 'Set User',         icon: '👤' },
+      { type: 'clearSession',    label: 'Clear Session',    icon: '🚪' },
+      // restoreSession intentionally omitted from palette — engine handler still works for
+      // backward-compat with existing config/actions/auth.json workflows
     ],
   },
 ];
@@ -629,6 +717,19 @@ export function isStepComplete(step: ActionStep): boolean {
  * in the canvas card subtext. Returns null if nothing meaningful to show.
  * Pass `varLabels` (id→label map) to resolve variable names for changeVariableValue.
  */
+/** Safely converts a config value that may be a plain string or a formula/var object to a displayable string. */
+function cfgStr(val: unknown): string | null {
+  if (val == null) return null;
+  if (typeof val === 'string') return val || null;
+  if (typeof val === 'object') {
+    const o = val as Record<string, unknown>;
+    if (typeof o.formula === 'string') return o.formula.slice(0, 40) || null;
+    if (typeof o.var === 'string') return o.var.slice(0, 40) || null;
+    if (typeof o.expr === 'string') return o.expr.slice(0, 40) || null;
+  }
+  return String(val).slice(0, 40) || null;
+}
+
 export function getStepSummary(
   step: ActionStep,
   varLabels?: Record<string, string>,
@@ -655,11 +756,11 @@ export function getStepSummary(
       return varLabels?.[wfId] ?? null;
     }
     case 'navigateTo':
-      return (cfg.externalUrl as string) || (cfg.path as string) || (cfg.routeConfig as string) || null;
+      return cfgStr(cfg.externalUrl) || cfgStr(cfg.path) || cfgStr(cfg.routeConfig) || null;
     case 'graphql':
-      return (cfg.operationName as string) || 'GraphQL request';
+      return cfgStr(cfg.operationName) || 'GraphQL request';
     case 'fetchData':
-      return (cfg.url as string) || null;
+      return cfgStr(cfg.url) || null;
     case 'fetchCollection':
     case 'updateCollection': {
       const cId = (cfg.collectionId ?? cfg.collectionName ?? cfg.name) as string | undefined;
@@ -686,15 +787,15 @@ export function getStepSummary(
       return String(fi).slice(0, 40);
     }
     case 'branch':
-      return cfg.condition ? String(cfg.condition).slice(0, 40) : null;
+      return cfg.condition ? cfgStr(cfg.condition) : null;
     case 'whileLoop':
-      return cfg.condition ? String(cfg.condition).slice(0, 40) : null;
+      return cfg.condition ? cfgStr(cfg.condition) : null;
     case 'copyToClipboard':
-      return cfg.value ? String(cfg.value).slice(0, 30) : null;
+      return cfgStr(cfg.value);
     case 'scrollToElement':
-      return cfg.elementId ? String(cfg.elementId).slice(0, 30) : cfg.targetId ? String(cfg.targetId).slice(0, 30) : null;
+      return cfgStr(cfg.elementId) || cfgStr(cfg.targetId) || null;
     case 'returnValue':
-      return cfg.value !== undefined ? String(cfg.value).slice(0, 30) : null;
+      return cfg.value !== undefined ? cfgStr(cfg.value) : null;
     default:
       return null;
   }

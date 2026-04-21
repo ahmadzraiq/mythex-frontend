@@ -15,15 +15,18 @@
 
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useBuilderStore, findNode, hasFormContainerAncestor } from './_store';
-import type { WorkflowCanvasTarget, WorkflowMeta } from './_store';
+import type { WorkflowCanvasTarget, WorkflowMeta, WorkflowParam } from './_store';
+import { getSharedComponents, updateSharedComponent } from '@/lib/builder/shared-component-data';
+import { useSduiStore } from '@/store/sdui-store';
 
 /** Derives a stable ID that uniquely identifies the open workflow, used to scope test results. */
 function workflowIdFromTarget(t: WorkflowCanvasTarget): string {
   switch (t.kind) {
-    case 'element':       return `element:${t.nodeId}:${t.event}`;
-    case 'pageTrigger':   return `pageTrigger:${t.trigger}`;
-    case 'pageWorkflow':  return `pageWorkflow:${t.name}`;
-    case 'globalWorkflow': return `globalWorkflow:${t.id}`;
+    case 'element':            return `element:${t.nodeId}:${t.event}`;
+    case 'pageTrigger':        return `pageTrigger:${t.trigger}`;
+    case 'pageWorkflow':       return `pageWorkflow:${t.name}`;
+    case 'globalWorkflow':     return `globalWorkflow:${t.id}`;
+    case 'componentWorkflow':  return `componentWorkflow:${t.modelId}:${t.workflowId}`;
   }
 }
 import { BindingIcon, isBoundValue, type FormulaValue } from './_formula-panel';
@@ -32,6 +35,7 @@ import {
   type ActionStepType, type BranchDef, type ActionStep, type ActionTypeDef,
   ACTION_CATEGORIES, FORM_ACTION_CATEGORY,
   getTriggerCategories, getTriggerLabel, getTriggerIcon, TI,
+  TRIGGER_WORKFLOW_CATEGORIES, COMPONENT_TRIGGER_CATEGORIES,
   getActionDef, getActionLabel, getActionIcon, isStructural, isConfigured, canTest,
   generateId, createPlaceholderStep, deserializeStep, deserializeStepArray, serializeStep,
 } from './_workflow-types';
@@ -42,7 +46,7 @@ import {
   toHumanName, WorkflowBindButton,
   TypeSearchDropdown, WorkflowMetaPanel, CanvasOnOffToggle,
   NavigateToConfig, SetFormStateConfig, ResetFormConfig,
-  NodePropsPanel,
+  NodePropsPanel, ParamsConfigPanel,
 } from './_workflow-node-configs';
 import {
   getStepAtPath, updateStepAtPath, insertStepAtPath, removeStepAtPath,
@@ -125,6 +129,54 @@ function ContextMenuPopup({
           </button>
         )
       )}
+    </div>
+  );
+}
+
+// ─── Parameters Canvas Node ───────────────────────────────────────────────────
+// Shown between the trigger pill and the first workflow step for global workflows.
+// Clicking it selects it and shows ParamsConfigPanel in the right panel.
+
+const PARAM_TYPE_PILL_ICONS: Record<string, string> = {
+  Text: 'T',
+  Number: '#',
+  Boolean: '◎',
+  Object: '{}',
+  Array: '[]',
+};
+
+function ParametersCanvasNode({
+  params,
+  isSelected,
+  onClick,
+}: {
+  params: WorkflowParam[];
+  isSelected: boolean;
+  onClick: (e: React.MouseEvent) => void;
+}) {
+  const subtext = params.length === 0
+    ? 'Click to add parameters'
+    : params.map(p => `${PARAM_TYPE_PILL_ICONS[p.type] ?? 'T'} ${p.name}`).join('  ·  ');
+
+  return (
+    <div
+      data-testid="workflow-params-node"
+      onClick={onClick}
+      style={S.card(isSelected, false)}
+    >
+      <div style={S.cardTopRow}>
+        <span style={{ ...S.cardIcon, color: '#60a5fa' }}>Φ</span>
+        <span style={S.cardName}>Parameters</span>
+        {params.length > 0 && (
+          <span style={{
+            fontSize: 10, background: '#1e3a5f', color: '#60a5fa',
+            borderRadius: 10, padding: '1px 7px', fontWeight: 600, flexShrink: 0,
+          }}>
+            {params.length}
+          </span>
+        )}
+      </div>
+      <div style={S.cardSubtext(false)}>{subtext}</div>
     </div>
   );
 }
@@ -254,16 +306,19 @@ function AddActionPopover({
 function TriggerDropdown({
   value,
   nodeType,
+  categories: categoriesOverride,
   onChange,
   onClose,
 }: {
   value: string;
   nodeType?: string;
+  /** When provided, use these categories instead of the default getTriggerCategories list. */
+  categories?: import('./_workflow-types').TriggerCategory[];
   onChange: (v: string) => void;
   onClose: () => void;
 }) {
   const [search, setSearch] = useState('');
-  const cats = getTriggerCategories(nodeType);
+  const cats = categoriesOverride ?? getTriggerCategories(nodeType);
   const q = search.toLowerCase();
   const filtered = cats.map(cat => ({
     ...cat,
@@ -324,7 +379,7 @@ function WorkflowOptionsMenu({
   onClose: () => void;
   onDelete: () => void;
 }) {
-  const canDelete = target.kind === 'pageWorkflow' || target.kind === 'globalWorkflow';
+  const canDelete = target.kind === 'pageWorkflow' || target.kind === 'globalWorkflow' || target.kind === 'componentWorkflow';
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -399,6 +454,8 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
   const [triggerDropdownOpen, setTriggerDropdownOpen] = useState(false);
   const [addPopoverState, setAddPopoverState] = useState<{ insertIdx: number; pathPrefix: (string | number)[]; x: number; y: number } | null>(null);
   const [copiedStep, setCopiedStep] = useState<ActionStep | null>(null);
+  // Sentinel: true when the Parameters node (global workflow only) is selected
+  const [paramsNodeSelected, setParamsNodeSelected] = useState(false);
   const [copiedJson, setCopiedJson] = useState(false);
   const [contextMenuState, setContextMenuState] = useState<ContextMenuState | null>(null);
   const [workflowMeta, setWorkflowMeta] = useState<WorkflowMeta>({ id: '', name: 'Workflow' });
@@ -462,6 +519,18 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
       const rawPage = (store.pageWorkflows[target.name] ?? []) as unknown[];
       initialSteps = deserializeStepArray(rawPage, store.directActionsMap);
       setSteps(initialSteps);
+    } else if (target.kind === 'componentWorkflow') {
+      const scModel = getSharedComponents()[target.modelId];
+      const wf = scModel?.workflows?.[target.workflowId];
+      const trigger = wf?.trigger ?? 'execution';
+      setTriggerValue(trigger);
+      setWorkflowMeta({
+        id: target.workflowId,
+        name: wf?.name ?? 'Workflow',
+        params: (wf?.params as WorkflowParam[] | undefined) ?? [],
+      });
+      initialSteps = wf?.steps ? deserializeStepArray(wf.steps as unknown[], store.directActionsMap) : [];
+      setSteps(initialSteps);
     }
     // Seed history with the initial state so undo never goes past it
     historyRef.current = [initialSteps];
@@ -496,6 +565,25 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
     } else if (target.kind === 'pageWorkflow') {
       store.setPageWorkflow(target.name, steps as object[]);
       store.setPageWorkflowMeta(target.name, { ...workflowMeta, trigger: triggerValue });
+    } else if (target.kind === 'componentWorkflow') {
+      const scModel = getSharedComponents()[target.modelId];
+      if (scModel) {
+        const existing = scModel.workflows?.[target.workflowId] ?? {};
+        updateSharedComponent({
+          id: target.modelId,
+          workflows: {
+            ...(scModel.workflows ?? {}),
+            [target.workflowId]: {
+              ...existing,
+              id: target.workflowId,
+              name: workflowMeta.name ?? 'Workflow',
+              trigger: (triggerValue as 'execution' | 'created' | 'mounted' | 'beforeUnmount' | 'propertyChange'),
+              params: (workflowMeta.params ?? []) as Array<{ id: string; name: string; type: 'Text' | 'Number' | 'Boolean' | 'Object' | 'Array'; testValue?: unknown }>,
+              steps: steps.map(serializeStep) as import('@/config/shared-component-types').ScopedWorkflowStep[],
+            },
+          },
+        });
+      }
     }
     onClose();
   }
@@ -507,8 +595,18 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
     return undefined;
   })();
   // pageWorkflow and element both have an editable trigger; globalWorkflow/pageTrigger are fixed
-  const isFixedTrigger = target.kind !== 'element' && target.kind !== 'pageWorkflow';
-  const triggerLabel = isFixedTrigger ? 'On execution' : getTriggerLabel(triggerValue, targetNodeType);
+  const isComponentWorkflow = target.kind === 'componentWorkflow';
+  const isFixedTrigger = target.kind !== 'element' && target.kind !== 'pageWorkflow' && !isComponentWorkflow;
+  const triggerLabel = isFixedTrigger
+    ? 'On execution'
+    : isComponentWorkflow
+      ? (COMPONENT_TRIGGER_CATEGORIES[0].options.find(o => o.value === triggerValue)?.label ?? 'On execution')
+      : getTriggerLabel(triggerValue, targetNodeType);
+  // Trigger workflows (from the Triggers tab) use a restricted set of trigger options
+  const isTriggerWorkflow = target.kind === 'pageWorkflow' && !!store.pageWorkflowMeta?.[target.name]?.isTrigger;
+  const triggerCategories = isComponentWorkflow
+    ? COMPONENT_TRIGGER_CATEGORIES
+    : isTriggerWorkflow ? TRIGGER_WORKFLOW_CATEGORIES : undefined;
   // Form context: show form-specific action types when the source element is inside (or is) a FormContainer
   const isFormContext = (() => {
     if (target.kind === 'element') {
@@ -665,9 +763,29 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
     // Empty string signals the display layer to show "Action N" (index-based fallback).
     const actionName = (step as { name?: string }).name || '';
 
-    // Minimal runOne that only handles inline action types (no named action lookup)
+    // runOne that handles both inline type-based actions and named action references
+    // (e.g. { action: 'fetchTodo', payload: ... } from runProjectWorkflow step conversion)
     const runOne = async (a: import('@/lib/sdui/types').SDUIAction): Promise<unknown> => {
       const def = a as unknown as Record<string, unknown>;
+      // Named action reference — look up the definition and dispatch as a workflow
+      if (!def.type && typeof def.action === 'string') {
+        const { getBuilderConfig } = await import('@/lib/builder/config-data');
+        const cfg = getBuilderConfig();
+        const named = (cfg.workflows as Array<{ id: string; steps: unknown[] }> | undefined)
+          ?.find(w => w.id === def.action);
+        if (named) {
+          const resultRef: { current: unknown } = { current: undefined };
+          const innerCtx = {
+            ...buildHandlerCtx(),
+            payload: (def.payload as Record<string, unknown> | undefined) ?? {},
+            setStepResult: (r: unknown) => { resultRef.current = r; },
+          };
+          const { workflowStepsHandler: wsh } = await import('@/lib/sdui/actions/handlers/workflow-steps-handler');
+          await wsh(innerCtx)(named as import('@/lib/sdui/actions/handlers/types').ActionDef);
+          return resultRef.current;
+        }
+        return undefined;
+      }
       if (!def.type) return undefined;
       const handlerCtx = buildHandlerCtx();
       const result = await dispatchToHandler(def as import('@/lib/sdui/actions/handlers/types').ActionDef, handlerCtx);
@@ -688,7 +806,12 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
           return cur;
         },
         getFullMergedState: () => merged as Record<string, unknown>,
-        setData: (path: string, value: unknown) => { testData[path] = value; },
+        setData: (path: string, value: unknown) => {
+          testData[path] = value;
+          // Also write to the real Zustand store so the formula editor's
+          // auth tab (and other live subscriptions) reflect test run results.
+          useSduiStore.getState().setData(path, value);
+        },
         setLoading: () => {},
         setError: (_storeIn: string, error: unknown) => {
           if (error) stepError = error;
@@ -831,7 +954,7 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
         {/* Left: workflow name */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {target.kind === 'globalWorkflow' || target.kind === 'pageWorkflow' ? toHumanName(workflowMeta.name) : 'Workflow'}
+            {target.kind === 'globalWorkflow' || target.kind === 'pageWorkflow' || target.kind === 'componentWorkflow' ? toHumanName(workflowMeta.name) : 'Workflow'}
           </span>
         </div>
         {/* Copy JSON */}
@@ -853,7 +976,7 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
       {/* Content area */}
       <div style={S.contentArea}>
         {/* Canvas */}
-        <div ref={canvasAreaRef} style={S.canvasArea} onClick={() => setSelectedPath(null)}>
+        <div ref={canvasAreaRef} style={S.canvasArea} onClick={() => { setSelectedPath(null); setParamsNodeSelected(false); }}>
           {/* Figma-style dot grid */}
           <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.18 }}>
             <defs>
@@ -886,11 +1009,28 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
                   <TriggerDropdown
                     value={triggerValue}
                     nodeType={targetNodeType}
+                    categories={triggerCategories}
                     onChange={v => setTriggerValue(v)}
                     onClose={() => setTriggerDropdownOpen(false)}
                   />
                 )}
               </div>
+
+              {/* Parameters node — shown for global and component workflows */}
+              {(target.kind === 'globalWorkflow' || target.kind === 'componentWorkflow') && (
+                <>
+                  <Connector />
+                  <ParametersCanvasNode
+                    params={workflowMeta.params ?? []}
+                    isSelected={paramsNodeSelected}
+                    onClick={e => {
+                      e.stopPropagation();
+                      setParamsNodeSelected(true);
+                      setSelectedPath(null);
+                    }}
+                  />
+                </>
+              )}
 
               {/* Main flow */}
               <Connector />
@@ -900,7 +1040,7 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
                 pathPrefix={[]}
                 selectedPath={selectedPath}
                 copiedStep={copiedStep}
-                onSelect={p => setSelectedPath(p)}
+                onSelect={p => { setSelectedPath(p); setParamsNodeSelected(false); }}
                 onInsert={(insertIdx, pathPrefix, x, y) => setAddPopoverState({ insertIdx, pathPrefix, x, y })}
                 onContextMenu={(e, step, path) => {
                   e.stopPropagation();
@@ -972,6 +1112,12 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
                     store.removePageWorkflow(target.name);
                   } else if (target.kind === 'globalWorkflow') {
                     store.removeGlobalWorkflow(target.id);
+                  } else if (target.kind === 'componentWorkflow') {
+                    const scModel = getSharedComponents()[target.modelId];
+                    if (scModel?.workflows) {
+                      const { [target.workflowId]: _removed, ...rest } = scModel.workflows;
+                      updateSharedComponent({ id: target.modelId, workflows: rest });
+                    }
                   }
                   onClose();
                 }}
@@ -981,7 +1127,12 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
 
           {/* Panel body */}
           <div data-testid="workflow-props-panel" style={S.rightPanelBody}>
-            {selectedStep ? (
+            {paramsNodeSelected && (target.kind === 'globalWorkflow' || target.kind === 'componentWorkflow') ? (
+              <ParamsConfigPanel
+                params={workflowMeta.params ?? []}
+                onChange={params => setWorkflowMeta(prev => ({ ...prev, params }))}
+              />
+            ) : selectedStep ? (
               <>
                 <div style={{ fontSize: 12, fontWeight: 600, color: '#f3f4f6', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid #1f2937' }}>
                   <span style={{ fontSize: 14 }}>{getActionIcon(selectedStep.type)}</span>
@@ -994,7 +1145,7 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
                   workflowTrigger={triggerValue}
                 />
               </>
-            ) : (target.kind === 'globalWorkflow' || target.kind === 'pageWorkflow') ? (
+            ) : (target.kind === 'globalWorkflow' || target.kind === 'pageWorkflow' || target.kind === 'componentWorkflow') ? (
               <WorkflowMetaPanel
                 meta={workflowMeta}
                 onChange={patch => setWorkflowMeta(prev => ({ ...prev, ...patch }))}

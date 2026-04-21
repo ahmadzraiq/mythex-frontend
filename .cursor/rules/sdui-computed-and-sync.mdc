@@ -27,7 +27,7 @@ alwaysApply: true
 
 **When adding new computed logic:** Add a generic op with configurable params (field paths, keys, limits) in `computed-runner.ts`, then use it in `store.json`. Never hardcode app-specific field names in the runner.
 
-**One-off action values:** For derived values used only in a single action (e.g. checkout step sync), use inline `{ "expr": "..." }` or `{ "var": "path" }` in the action config—do not add to `store.json` computed. Use `store.json` computed only for values reused across multiple places (text, conditions, several actions).
+**One-off action values:** For derived values used only in a single action (e.g. checkout step sync), use inline `{ "formula": "..." }` or `{ "var": "path" }` in the action config—do not add to `store.json` computed. Use `store.json` computed only for values reused across multiple places (text, conditions, several actions).
 
 ---
 
@@ -64,7 +64,7 @@ alwaysApply: true
 
 **Key distinction:**
 - **Text templates** (`"text"`, `"map"`, `"key"` fields) use `{{collections.UUID.data.path}}` dot-notation (resolved by the template engine)
-- **Formula expressions** (`"condition"`, `{ "expr": "..." }`, `{ "formula": "..." }`) use `collections['UUID']?.data?.path` bracket + optional-chaining notation (evaluated as plain JavaScript)
+- **Formula expressions** (`"condition"`, `{ "formula": "..." }`) use `collections['UUID']?.data?.path` bracket + optional-chaining notation (evaluated as plain JavaScript)
 
 **UI state paths** (written by `setVar`/`increment`/`toggle` to the variable store) are NOT datasource data — these correctly use short paths:
 - `product.imageIndex`, `product.selectedOptions` — UI state for product page interactions
@@ -77,26 +77,26 @@ alwaysApply: true
 
 ## searchParamSync — Config-Driven, No Hardcoding in Page
 
-**Rule:** `app/[[...slug]]/page.tsx` must not hardcode paths like `route.q`, `collectionSkip`, etc. All sync behavior comes from `config/store.json` `searchParamSync`.
+**Rule:** `app/[[...slug]]/page.tsx` must not hardcode paths. All sync behavior comes from `config/variables.json` `urlParam` entries. Query params are accessed directly via `globalContext.browser.query.*` in formulas and datasource variables.
 
-**Optional fields per sync def:**
+**Optional fields per `urlParam` def (in `config/variables.json`):**
 
 | Field | Type | Purpose |
 |-------|------|---------|
-| `variableStorePath` | string | When set, also sync value to variable store at this path (e.g. `nav.searchQuery` when `route.q` changes, or `collectionSkip` for page) |
+| `param` | string | URL query parameter name (e.g. `q`, `sort`, `page`) |
+| `default` | string | Default value when param is absent from URL |
 | `triggersParamChange` | boolean | When true, URL change triggers `paramChangeAction` for the route |
-| `routePrefix` | string | When set, only apply this sync when pathname.startsWith(routePrefix). Use for route-specific page sync (e.g. collectionSkip for /collection, searchSkip for /search) |
+| `routePrefix` | string | When set, only apply this sync when pathname.startsWith(routePrefix) |
+| `transform` | string | e.g. `"pageToSkip"` converts page number to skip offset |
 
-**Example (independent pagination for collection vs search):**
+**Reading query params in formulas/datasources:** Use `globalContext.browser.query.*` directly — no `route.*` paths needed:
 ```json
-"searchParamSync": [
-  { "param": "q", "path": "route.q", "default": "", "variableStorePath": "nav.searchQuery", "triggersParamChange": true },
-  { "param": "page", "path": "collectionSkip", "default": "1", "transform": "pageToSkip", "pageSize": 12, "variableStorePath": "collectionSkip", "routePrefix": "/collection" },
-  { "param": "page", "path": "searchSkip", "default": "1", "transform": "pageToSkip", "pageSize": 12, "variableStorePath": "searchSkip", "routePrefix": "/search" }
-]
+"term": { "formula": "globalContext?.browser?.query?.q" },
+"sort": { "formula": "globalContext?.browser?.query?.sort || 'name-asc'" },
+"cacheKeyVars": ["globalContext.browser.query.q", "globalContext.browser.query.sort"]
 ```
 
-**Never hardcode in page.tsx:** `if (def.path === 'route.q')`, `if (def.path === 'collectionSkip')`, or `['route.sort', 'route.facets'].includes(def.path)` — use `variableStorePath` and `triggersParamChange` in config instead.
+**Never hardcode in page.tsx** — use `urlParam` entries in `variables.json` and `triggersParamChange` in config instead.
 
 ---
 

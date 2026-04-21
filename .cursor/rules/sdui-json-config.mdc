@@ -1,5 +1,5 @@
 ---
-description: SDUI JSON config - layouts, fragments, $ref, $slot composition
+description: SDUI JSON config - layouts, shared components, $slot composition
 alwaysApply: true
 ---
 
@@ -8,19 +8,40 @@ alwaysApply: true
 This project uses JSON-driven UI with composition. **Never hardcode layout or shared UI in React**—define everything in JSON.
 
 ## Layouts
-- Use `layout: "authenticated"` in screen config to wrap content with shared header + drawer
-- Layouts live in `config/layouts/` and define structure with `$ref` and `$slot`
-- Add new layouts in `config/layouts/` and register in `layouts/index.ts`
+- Use `layout: "store"` or `layout: "account"` in screen config to wrap content with shared navbar + footer
+- Layouts live in `config/layouts/` and define structure with `$slot`
+- Navbar and footer are inlined in each layout with `"_shared": { "id": "sc-navbar", "name": "Navbar" }` metadata
 
-## Fragments ($ref)
-- Reusable UI pieces: `"$ref": "fragments/layout/navbar"`, `"$ref": "fragments/cards/product-card"`
-- Structure: `layout/`, `sections/`, `cards/`, `product/`, `pagination/`, `checkout/`
-- Add fragments in `config/fragments/` and register in `fragments/index.ts`
-- Fragments can contain `{{variable}}` interpolation (e.g. `{{meta.title}}`, `{{layout.drawerOpen}}`)
-- Use `groupBy` computed + `navigateWithQuery` action for collection/search facet filters (pure JSON)
+## Shared Components
+- All reusable UI is defined in `config/shared-components.json` as named models
+- Each model has `id`, `name`, `properties: []`, and a full `content` tree
+- When placing a shared component in a layout or screen, inline the full `content` tree with `"_shared": { "id": "sc-id", "name": "Name" }` on the root node
+- The `_shared` marker lets the builder track which model an instance came from
+
+**Existing shared components:**
+| ID | Name |
+|---|---|
+| `sc-navbar` | Navbar |
+| `sc-footer` | Footer |
+| `sc-cart-drawer` | Cart Drawer |
+| `sc-account-sidebar` | Account Sidebar |
+| `sc-product-card` | Product Card |
+| `sc-product-image-carousel` | Product Image Carousel |
+| `sc-product-info` | Product Info |
+| `sc-collection-pagination` | Collection Pagination |
+| `sc-search-pagination` | Search Pagination |
+| `sc-collection-loading` | Collection Loading Skeleton |
+| `sc-search-loading` | Search Loading Skeleton |
+| `sc-checkout-contact` | Checkout Contact Step |
+| `sc-checkout-shipping` | Checkout Shipping Step |
+| `sc-checkout-payment` | Checkout Payment Step |
+| `sc-product-carousel` | Product Carousel |
+| `sc-hero` | Hero |
+| `sc-product-grid` | Product Grid |
+| `sc-feature-grid` | Feature Grid |
 
 ## Key Order (UI nodes)
-Use this order for predictable AI scanning: 1. `type` 2. `props` 3. `condition` 4. `map`/`key` 5. `children` 6. `actions` 7. `text`/`$ref`/`$slot`
+Use this order for predictable AI scanning: 1. `type` 2. `props` 3. `condition` 4. `map`/`key` 5. `children` 6. `actions` 7. `text`/`$slot`
 
 ## Navigation (no hardcoded paths)
 - Static: `{ "action": "navigate", "payload": { "path": "/shop" } }`
@@ -34,17 +55,13 @@ Use this order for predictable AI scanning: 1. `type` 2. `props` 3. `condition` 
 - Layouts use `"$slot": "content"` as placeholder; screen `content` is injected there
 - `content` can be a single node or array (e.g. main content + modals)
 
-## Reusing Modals
-- Extract modals to `config/fragments/modals/` and reference with `$ref`
-- Same modal fragment can be used across screens that share state paths (e.g. `modal.create`)
-
 ## Screen Structure
 ```json
 {
   "meta": { "title": "..." },
-  "state": { ... },
-  "layout": "authenticated",
-  "content": { ... } or [ ... ]
+  "state": {},
+  "layout": "store",
+  "content": { ... }
 }
 ```
 Screens without `layout` use `ui` directly (e.g. login, signup).

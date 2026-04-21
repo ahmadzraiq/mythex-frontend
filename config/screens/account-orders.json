@@ -217,7 +217,7 @@
                               "className": "font-medium"
                             },
                             "text": {
-                              "expr": "formatCurrency(context?.item?.data?.totalWithTax / 100, context?.item?.data?.currencyCode)"
+                              "formula": "formatCurrency(context?.item?.data?.totalWithTax / 100, context?.item?.data?.currencyCode)"
                             }
                           }
                         ]

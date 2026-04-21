@@ -10,6 +10,7 @@
 
 import { getNestedValue } from '../../nested-utils';
 import { resolveValue, interpolateUrl } from '../resolve-value';
+import { buildAuthHeaders } from '../../auth-token-storage';
 import type { ActionDef, ActionHandlerContext } from './types';
 
 export const fetchHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<unknown> =
@@ -18,7 +19,9 @@ export const fetchHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef)
     const fullState = ctx.getFullMergedState();
 
     // ── URL ───────────────────────────────────────────────────────────────────
-    const rawUrl = (actionDef.url ?? '') as string;
+    // url may be a plain string or a FormulaValue { formula: "..." } object —
+    // resolve it before interpolation so { formula } evaluates correctly.
+    const rawUrl = String(resolveValue(actionDef.url ?? '', ctx.get, ctx.scope, fullState) ?? '');
     if (!rawUrl) {
       console.warn('[fetch] no url defined in action');
       return;
@@ -36,12 +39,29 @@ export const fetchHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef)
     }
 
     // ── Headers ───────────────────────────────────────────────────────────────
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const authCfgTyped = (ctx as ActionHandlerContext & { getAuthConfig?: () => import('../../engine-types').AuthConfig }).getAuthConfig?.();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      // Inject stored bearer token when configured
+      ...buildAuthHeaders(authCfgTyped),
+    };
     const rawHeaders = actionDef.headers as Record<string, unknown> | undefined;
     if (rawHeaders) {
       for (const [k, v] of Object.entries(rawHeaders)) {
         const resolved = resolveValue(v, ctx.get, ctx.scope, fullState);
         if (resolved != null && resolved !== '') headers[k] = String(resolved);
+      }
+    }
+
+    // Fallback: if no Authorization header from localStorage (e.g. persist: false),
+    // check the in-memory Zustand store. step-authenticate sets auth.accessToken
+    // synchronously before subsequent steps run, so ctx.get() finds it immediately.
+    const authHeaderKey = authCfgTyped?.tokenSend?.header ?? 'Authorization';
+    if (!headers[authHeaderKey]) {
+      const memToken = ctx.get('auth.accessToken') as string | null;
+      if (memToken && typeof memToken === 'string') {
+        const prefix = authCfgTyped?.tokenSend?.prefix ?? 'Bearer ';
+        headers[authHeaderKey] = `${prefix}${memToken}`;
       }
     }
 
@@ -61,7 +81,24 @@ export const fetchHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef)
     if (storeIn) ctx.setLoading(storeIn, true);
 
     try {
-      const res = await fetch(url, { method, headers, body });
+      const useProxy = !!(actionDef.useProxy as boolean | undefined) || !!(actionDef.proxy as boolean | undefined);
+      let res: Response;
+
+      if (useProxy) {
+        res = await fetch('/api/proxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            endpoint: url,
+            method,
+            headers: Object.keys(headers).length ? headers : undefined,
+            body: body ?? undefined,
+          }),
+        });
+      } else {
+        res = await fetch(url, { method, headers, body });
+      }
 
       if (!res.ok) {
         let errMsg = `HTTP ${res.status}`;
@@ -78,6 +115,11 @@ export const fetchHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef)
 
       const json = await res.json() as unknown;
 
+      // ── Build _response envelope ─────────────────────────────────────────────
+      const responseHeaders: Record<string, string> = {};
+      res.headers.forEach((value, key) => { responseHeaders[key] = value; });
+      const _response = { status: res.status, statusText: res.statusText, headers: responseHeaders };
+
       if (actionDef.storeFullResponseIn) {
         ctx.setData(actionDef.storeFullResponseIn as string, json);
       }
@@ -92,7 +134,14 @@ export const fetchHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef)
         ctx.setError(storeIn, null);
       }
 
-      ctx.setStepResult?.(json, null);
+      // Include _response alongside the body so workflow formulas can access
+      // status, headers, etc.:
+      //   context?.workflow?.['step-id']?._response?.headers?.['x-token']
+      const stepResult = typeof json === 'object' && json !== null
+        ? { ...(json as object), _response }
+        : { data: json, _response };
+
+      ctx.setStepResult?.(stepResult, null);
 
       const onSuccess = actionDef.onSuccess;
       if (onSuccess) {
@@ -102,7 +151,7 @@ export const fetchHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef)
         }
       }
 
-      return json;
+      return stepResult;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       if (storeIn) ctx.setError(storeIn, msg);

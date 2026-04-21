@@ -47,7 +47,7 @@ export const refetchDataSourceHandler =
     /** Resolve the `data` config field: formula object → evaluate; string → try JSON.parse; else use as-is */
     const resolveData = (raw: unknown): unknown => {
       if (raw == null) return raw;
-      if (typeof raw === 'object' && ('formula' in (raw as object) || 'expr' in (raw as object))) {
+      if (typeof raw === 'object' && 'formula' in (raw as object)) {
         const fullState = ctx.getFullMergedState();
         return evaluateFormula(raw as Record<string, unknown>, fullState);
       }

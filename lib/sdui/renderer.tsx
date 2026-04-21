@@ -396,11 +396,22 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
 
   const { store, mergedStore, mergedState, runAction, fetchData, actionsConfig, screenName, screenScopedAliases = [], previewState } = context;
 
-  // ── _shared scope injection: make context.component.props available to children ──
+  // ── _shared scope injection: make context.component.* available to children ──
   let effectiveScope = scope;
   const _sharedMeta = (node as unknown as Record<string, unknown>)._shared as { id: string; name: string } | undefined;
+  // Stable instanceId — uses the node's id so it survives re-renders.
+  const _instanceId = _sharedMeta
+    ? ((node as unknown as Record<string, unknown>).id as string | undefined ?? _sharedMeta.id)
+    : null;
+  const _prevResolvedPropsRef = useRef<Record<string, unknown>>({});
+
   if (_sharedMeta) {
-    let scModel: { properties?: Array<{ name: string; defaultValue?: unknown }> } | undefined;
+    let scModel: {
+      properties?: Array<{ name: string; defaultValue?: unknown }>;
+      variables?: Record<string, { initialValue: unknown }>;
+      formulas?: Record<string, { name: string; formula: string; params: unknown[] }>;
+      workflows?: Record<string, { trigger: string; steps: unknown[]; params: unknown[] }>;
+    } | undefined;
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const scData = require('@/lib/builder/shared-component-data');
@@ -423,14 +434,140 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
       }
       resolvedProps[prop.name] = val;
     }
+
+    // Ensure per-instance variable slot exists, then read current instance variable values.
+    const _instanceVars = scModel?.variables ?? {};
+    let _currentInstanceVarValues: Record<string, unknown> = {};
+    if (_instanceId && Object.keys(_instanceVars).length > 0) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const vs = require('@/lib/sdui/global-variable-store');
+        vs.ensureComponentInstanceSlot(_instanceId, _instanceVars);
+        _currentInstanceVarValues = vs.getComponentInstanceVars(_instanceId) ?? {};
+      } catch { /* non-fatal */ }
+    }
+
     effectiveScope = {
       ...scope,
       context: {
         ...((scope?.context as Record<string, unknown>) ?? {}),
-        component: { props: resolvedProps, id: _sharedMeta.id, name: _sharedMeta.name },
+        component: {
+          props: resolvedProps,
+          id: _sharedMeta.id,
+          name: _sharedMeta.name,
+          instanceId: _instanceId,
+          model: scModel ?? null,
+          // Expose live instance variable values so templates like
+          // {{context.component.variables['uuid']}} resolve correctly.
+          variables: _currentInstanceVarValues,
+        },
       },
     };
+    _prevResolvedPropsRef.current = resolvedProps;
   }
+
+  // ── Component lifecycle triggers ──────────────────────────────────────────────
+  const _runActionRef = useRef(runAction);
+  _runActionRef.current = runAction;
+  const _effectiveScopeRef = useRef(effectiveScope);
+  _effectiveScopeRef.current = effectiveScope;
+  const _sharedMetaRef = useRef(_sharedMeta);
+  _sharedMetaRef.current = _sharedMeta;
+  const _instanceIdRef = useRef(_instanceId);
+  _instanceIdRef.current = _instanceId;
+
+  // Fire 'created' and 'mounted' lifecycle workflows on first mount.
+  const _lifecycleFiredRef = useRef(false);
+  useEffect(() => {
+    if (_lifecycleFiredRef.current) return;
+    const meta = _sharedMetaRef.current;
+    if (!meta) return;
+    _lifecycleFiredRef.current = true;
+
+    // Helper: dispatch a component workflow by workflowId via the executeComponentAction step type.
+    // Uses the second fallback in runOne: { type: 'executeComponentAction', ... } with no named action
+    // gets wrapped as a single-step workflow and dispatched to workflow-steps-handler's inline handler.
+    const fireLifecycle = (wfId: string) => {
+      try {
+        _runActionRef.current(
+          {
+            action: '__sc_lifecycle__',
+            type: 'executeComponentAction',
+            config: { workflowId: wfId, modelId: meta.id },
+          } as unknown as Parameters<typeof runAction>[0],
+          undefined,
+          _effectiveScopeRef.current,
+        );
+      } catch { /* non-fatal */ }
+    };
+
+    let scModel: { workflows?: Record<string, { trigger: string }> } | undefined;
+    try { scModel = require('@/lib/builder/shared-component-data').getSharedComponents()[meta.id]; } catch { /* noop */ }
+    if (!scModel) { try { scModel = require('@/config/shared-components.json')[meta.id]; } catch { /* noop */ } }
+    if (!scModel?.workflows) return;
+
+    for (const [wfId, wf] of Object.entries(scModel.workflows)) {
+      if (wf.trigger === 'created') fireLifecycle(wfId);
+    }
+
+    // 'mounted' fires after children render (microtask)
+    queueMicrotask(() => {
+      if (!scModel?.workflows) return;
+      for (const [wfId, wf] of Object.entries(scModel.workflows)) {
+        if (wf.trigger === 'mounted') fireLifecycle(wfId);
+      }
+    });
+
+    return () => {
+      // 'beforeUnmount' fires on cleanup
+      if (!scModel?.workflows) return;
+      for (const [wfId, wf] of Object.entries(scModel.workflows)) {
+        if (wf.trigger === 'beforeUnmount') fireLifecycle(wfId);
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 'propertyChange' fires whenever any resolved prop changes value (skips first mount).
+  const _prevPropsRef = useRef<Record<string, unknown> | null>(null);
+  useEffect(() => {
+    const meta = _sharedMetaRef.current;
+    if (!meta) return;
+    const current = _effectiveScopeRef.current?.context
+      ? (((_effectiveScopeRef.current.context as Record<string, unknown>).component as Record<string, unknown> | undefined)?.props as Record<string, unknown> | undefined) ?? {}
+      : {};
+    const prev = _prevPropsRef.current;
+    // Skip first render (prev is null) — propertyChange shouldn't fire on mount.
+    if (prev === null) {
+      _prevPropsRef.current = current;
+      return;
+    }
+    const changed = Object.keys(current).some(k => current[k] !== prev[k]) ||
+      Object.keys(prev).some(k => !(k in current));
+    _prevPropsRef.current = current;
+    if (!changed) return;
+
+    let scModel: { workflows?: Record<string, { trigger: string }> } | undefined;
+    try { scModel = require('@/lib/builder/shared-component-data').getSharedComponents()[meta.id]; } catch { /* noop */ }
+    if (!scModel) { try { scModel = require('@/config/shared-components.json')[meta.id]; } catch { /* noop */ } }
+    if (!scModel?.workflows) return;
+
+    for (const [wfId, wf] of Object.entries(scModel.workflows)) {
+      if (wf.trigger === 'propertyChange') {
+        try {
+          _runActionRef.current(
+            {
+              action: '__sc_lifecycle__',
+              type: 'executeComponentAction',
+              config: { workflowId: wfId, modelId: meta.id },
+            } as unknown as Parameters<typeof runAction>[0],
+            undefined,
+            _effectiveScopeRef.current,
+          );
+        } catch { /* non-fatal */ }
+      }
+    }
+  });
 
   // Both builder and production read merged at render time (not via blanket subscription).
   // useVariablePaths (below) is the sole re-render scheduler — it subscribes to mergedStore
@@ -578,10 +715,9 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
     if (typeof node.map === 'string') {
       const mapStr = node.map;
       arr = (get(mapStr) as unknown[]) ?? [];
-    } else if (node.map && typeof node.map === 'object' && ('expr' in node.map || 'formula' in node.map)) {
-      const m = node.map as { expr?: string | object; formula?: string };
-      const expr = 'expr' in m ? m.expr! : m.formula!;
-      arr = (evaluateFormula(expr, stateWithScope).value as unknown[]) ?? [];
+    } else if (node.map && typeof node.map === 'object' && 'formula' in node.map) {
+      const m = node.map as { formula: string | object };
+      arr = (evaluateFormula(m.formula, stateWithScope).value as unknown[]) ?? [];
     } else {
       arr = [];
     }

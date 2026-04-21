@@ -2,6 +2,9 @@
   "meta": {
     "title": "Verify Email"
   },
+  "queryParams": [
+    { "name": "token", "value": "" }
+  ],
   "state": {},
   "ui": {
     "type": "Box",

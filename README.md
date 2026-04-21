@@ -14,7 +14,7 @@ A Server-Driven UI (SDUI) framework built on Next.js. All screens, layouts, frag
 
 ```
 config/
-├── app.ts          # Merges all config ($ref/$slot resolved here)
+├── app.ts          # Merges all config ($slot resolved here)
 ├── routes.json     # All routes (static + dynamic)
 ├── store.json      # Initial state, engineConventions, computed
 ├── theme.json      # Brand colors and section themes
@@ -27,7 +27,7 @@ lib/sdui/
 ├── sdui-engine.tsx     # Engine: actions, state, workflow
 ├── renderer.tsx        # Fine-grained reactive renderer
 ├── computed-runner.ts  # Formula-driven computed values
-├── config-resolver.ts  # $ref/$slot resolution
+├── config-resolver.ts  # $slot resolution + layout injection
 ├── variable-store.ts   # Reactive path-based state
 └── component-registry.tsx  # JSON type → React component
 ```

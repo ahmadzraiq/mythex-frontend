@@ -27,13 +27,13 @@ import { getSharedComponents } from '@/lib/builder/shared-component-data';
 // ─── Tab content components (extracted to _formula-editor-tabs.tsx) ───────────
 export { Tooltip, VariableTree, CollectionEntry, DataTreeNode, FunctionLibrary, FnRow,
   ContextDataSection, PagesDataSection, ColorsDataSection, TypographyDataSection,
-  BorderRadiusDataSection, CollectionsDataTab, PageComponentsSection,
+  BorderRadiusDataSection, CollectionsDataTab, PageComponentsSection, AuthDataSection,
   type VarRowItem } from './_formula-editor-tabs';
 import {
   Tooltip, VariableTree, CollectionEntry, FunctionLibrary,
   CollectionsDataTab, PageComponentsSection, FormLocalSection, ItemContextGroup,
   DataTreeNode, FEChevron, collectPageComponents, EVENT_SHAPES, EventContextSection,
-  SharedComponentContextSection,
+  SharedComponentContextSection, AuthDataSection, ParametersSection,
   type VarRowItem,
 } from './_formula-editor-tabs';
 import { useSduiStore } from '@/store/sdui-store';
@@ -67,7 +67,7 @@ export {
   FUNCTION_LIBRARY, OPERATORS,
   OP_CHIP, OP_STYLE, buildOperatorChip, OP_TOKEN_RE, OP_INSERT_MAP,
   AUTO_CHIP_RE, AUTO_CHIP_TYPED_MAP, rechipCurrentTextNode,
-  KNOWN_FN_NAMES, FN_NAME_RE, FN_NAME_SUFFIX_RE,
+  KNOWN_FN_NAMES, FN_NAME_RE, FN_NAME_SUFFIX_RE, setUserFormulaNames,
   buildFunctionChip, countSignatureCommas, insertFunctionChipsAtCaret,
   insertOperatorChipAtCaret,
   appendTextSegment, appendTextWithOperatorChips,
@@ -93,7 +93,7 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Tab = 'variables' | 'data' | 'formulas' | 'quick' | 'workflow';
+type Tab = 'variables' | 'data' | 'formulas' | 'quick' | 'workflow' | 'auth';
 
 export interface FormulaEditorProps {
   label: string;
@@ -127,6 +127,18 @@ export interface FormulaEditorProps {
    * and `event` is injected into the formula preview evaluation context.
    */
   workflowTrigger?: string;
+  /**
+   * Formula parameters for the formula body editor (passed when editing a global formula body).
+   * When provided, a PARAMETERS section is shown in the Workflow tab so users can reference
+   * parameters?.['paramName'] in the formula expression.
+   */
+  formulaParams?: import('./_store-types').GlobalFormulaParam[];
+  /**
+   * When true, formula params are shown in the Quick tab instead of the Workflow tab.
+   * Use this when the formula editor is opened from a component-scoped formula (where
+   * the Quick tab already shows component context).
+   */
+  paramsInQuick?: boolean;
 }
 
 // ─── WorkflowResultsTab ───────────────────────────────────────────────────────
@@ -268,7 +280,7 @@ function WorkflowResultGroup({
 
 // ─── FormulaEditor ────────────────────────────────────────────────────────────
 
-export function FormulaEditor({ label, value, onChange, onClose, expectedType = 'any', hint, anchor = 'left', anchorLeft, anchorRight, hideUnbind, workflowTrigger }: FormulaEditorProps) {
+export function FormulaEditor({ label, value, onChange, onClose, expectedType = 'any', hint, anchor = 'left', anchorLeft, anchorRight, hideUnbind, workflowTrigger, formulaParams, paramsInQuick }: FormulaEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const savedRangeRef = useRef<Range | null>(null);
@@ -277,13 +289,14 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   const historyIdxRef = useRef(-1);
   const isUndoRedoRef = useRef(false);
   const historyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { globalFormulas, pageDataSources, customVars, varFolders, workflowTestResults, workflowCanvasTarget, pageWorkflows, globalWorkflows, liveCanvasSteps } = useBuilderStore(
+  const { globalFormulas, pageDataSources, customVars, varFolders, workflowTestResults, workflowCanvasTarget, pageWorkflows, globalWorkflows, liveCanvasSteps, globalWorkflowMeta } = useBuilderStore(
     useShallow(s => ({
       globalFormulas: s.globalFormulas, pageDataSources: s.pageDataSources,
       customVars: s.customVars, varFolders: s.varFolders,
       workflowTestResults: s.workflowTestResults, workflowCanvasTarget: s.workflowCanvasTarget,
       pageWorkflows: s.pageWorkflows, globalWorkflows: s.globalWorkflows,
       liveCanvasSteps: s.liveCanvasSteps,
+      globalWorkflowMeta: s.globalWorkflowMeta,
     }))
   );
   const selectedIds = useBuilderStore(s => s.selectedIds);
@@ -405,18 +418,33 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   }, [sharedAncestorModelId]);
   // Show Workflow tab when there are test results OR when a trigger with event data is active
   const hasEventContext = !!(workflowTrigger && Object.keys(EVENT_SHAPES[workflowTrigger] ?? {}).length > 0);
-  const showWorkflowTab = hasEventContext || Object.keys(currentWorkflowTestResults ?? {}).length > 0;
+  // Show Workflow tab for global workflows with params too (PARAMETERS section)
+  const isGlobalWorkflowWithParams = workflowCanvasTarget?.kind === 'globalWorkflow' &&
+    (globalWorkflowMeta[workflowCanvasTarget.id]?.params?.length ?? 0) > 0;
+  const globalWorkflowParams = isGlobalWorkflowWithParams && workflowCanvasTarget?.kind === 'globalWorkflow'
+    ? (globalWorkflowMeta[workflowCanvasTarget.id]?.params ?? [])
+    : [];
+  // formulaParams passed from FormulaSlideContent when editing a global formula body
+  const hasFormulaParams = (formulaParams?.length ?? 0) > 0;
+  // When paramsInQuick is true, params appear in the Quick tab and don't force Workflow tab
+  const paramsForceWorkflow = hasFormulaParams && !paramsInQuick;
+  const showWorkflowTab = hasEventContext || Object.keys(currentWorkflowTestResults ?? {}).length > 0 || isGlobalWorkflowWithParams || paramsForceWorkflow;
 
-  const [tab, setTab] = useState<Tab>(hasEventContext ? 'workflow' : 'variables');
+  const [tab, setTab] = useState<Tab>(() => {
+    if (hasEventContext || paramsForceWorkflow) return 'workflow';
+    if (paramsInQuick && hasFormulaParams) return 'quick';
+    return 'variables';
+  });
   const [search, setSearch] = useState('');
 
   // Switch to Quick when entering a repeat/form; fall back to Variables when leaving
-  // When a workflow trigger with event data is active, open the Workflow tab
+  // When a workflow trigger with event data is active (or global workflow with params), open the Workflow tab
   useEffect(() => {
-    if (hasEventContext) setTab('workflow');
+    if (hasEventContext || isGlobalWorkflowWithParams || paramsForceWorkflow) setTab('workflow');
+    else if (paramsInQuick && hasFormulaParams) setTab('quick');
     else if (isInsideRepeat || isInsideForm || isInsideSharedComponent) setTab('quick');
     else if (tab === 'quick') setTab('variables');
-  }, [isInsideRepeat, isInsideForm, isInsideSharedComponent, hasEventContext]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isInsideRepeat, isInsideForm, isInsideSharedComponent, hasEventContext, isGlobalWorkflowWithParams, paramsForceWorkflow, paramsInQuick, hasFormulaParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Map UUID → label for collection chip display
   const dsMap = useMemo(
@@ -658,8 +686,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
           const mapStr = typeof raw === 'string'
             ? raw
             : (typeof raw === 'object' && raw !== null)
-              ? ((raw as { formula?: string; expr?: string }).formula
-                ?? (raw as { formula?: string; expr?: string }).expr ?? null)
+              ? ((raw as { formula?: string }).formula ?? null)
               : null;
           if (mapStr) mapAncestors.push(mapStr);
         }
@@ -806,11 +833,36 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       data: { sharedComponent: { instancesCount: 1, index: 0, totalCount: 1 } },
     } : undefined;
 
+    // Build parameters map from global workflow test values when editing a global workflow
+    const parametersCtx: Record<string, unknown> = {};
+    if (workflowCanvasTarget?.kind === 'globalWorkflow') {
+      const wfParams = globalWorkflowMeta[workflowCanvasTarget.id]?.params ?? [];
+      for (const p of wfParams) {
+        parametersCtx[p.name] = p.testValue ?? undefined;
+      }
+    }
+    // When editing a global formula body, inject formulaParams test values
+    if (formulaParams && formulaParams.length > 0) {
+      for (const p of formulaParams) {
+        parametersCtx[p.name] = p.testValue ?? undefined;
+      }
+    }
+
+    const hasParamsCtx = workflowCanvasTarget?.kind === 'globalWorkflow' || (formulaParams && formulaParams.length > 0);
+
     return {
       ...zustandData,
       ...vs,
       collections: collectionsMap,
       variables: vs,
+      ...(hasParamsCtx ? { parameters: parametersCtx } : {}),
+      // Build nested auth object from flat Zustand keys — mirrors how mergeDataPaths works in the engine.
+      // Without this, auth?.['user'] always evaluates to undefined in the formula preview.
+      auth: {
+        user:         zustandData['auth.user'] ?? null,
+        accessToken:  zustandData['auth.accessToken'] ?? zustandData['auth.token'] ?? null,
+        refreshToken: zustandData['auth.refreshToken'] ?? null,
+      },
       context: {
         ...(contextItem ? (() => {
           const parentCtx = contextParentItem
@@ -844,7 +896,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       pages,
       theme,
     };
-  }, [vsData, zustandData, selectedIds, pageNodes, currentWorkflowTestResults, editingSharedComponentId]);
+  }, [vsData, zustandData, selectedIds, pageNodes, currentWorkflowTestResults, editingSharedComponentId, workflowCanvasTarget, globalWorkflowMeta]);
 
   // When a workflowTrigger is set, inject the trigger's event shape as preview context
   const contextWithEvent = useMemo(() => {
@@ -919,7 +971,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   }, []);
 
   // Insert a chip at the current caret position
-  const insertChip = useCallback((formulaPath: string, displayLabel: string, type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'shared-component') => {
+  const insertChip = useCallback((formulaPath: string, displayLabel: string, type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'shared-component' | 'parameter') => {
     const el = editorRef.current;
     if (!el) return;
     restoreCaret();
@@ -1318,6 +1370,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
           { id: 'variables' as Tab, icon: '{x}', label: 'Variables' },
           { id: 'data' as Tab, icon: '≡', label: 'Data' },
           { id: 'formulas' as Tab, icon: 'ƒ', label: 'Formulas' },
+          { id: 'auth' as Tab, icon: '🔐', label: 'Auth' },
           ...(showWorkflowTab ? [{ id: 'workflow' as Tab, icon: '▶', label: 'Workflow' }] : []),
         ]).map(t => (
           <button key={t.id} data-testid={`formula-tab-${t.id}`} onClick={() => setTab(t.id)}
@@ -1383,6 +1436,13 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
         )}
         {tab === 'quick' && (
           <div style={{ overflowY: 'auto', flex: 1 }}>
+            {/* Formula params in Quick tab when paramsInQuick is set */}
+            {paramsInQuick && hasFormulaParams && formulaParams && formulaParams.length > 0 && (
+              <ParametersSection
+                params={formulaParams}
+                onInsert={insertChip}
+              />
+            )}
             {isInsideSharedComponent && (
               <SharedComponentContextSection onInsert={insertChip} overrideModelId={sharedAncestorModelId} />
             )}
@@ -1399,8 +1459,27 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
             )}
           </div>
         )}
+        {tab === 'auth' && (
+          <div style={{ overflowY: 'auto', flex: 1 }}>
+            <AuthDataSection onInsert={insertChip} />
+          </div>
+        )}
         {tab === 'workflow' && (
           <div style={{ overflowY: 'auto', flex: 1 }}>
+            {/* Parameters section — shown when editing a global formula body (formulaParams prop) */}
+            {hasFormulaParams && !paramsInQuick && formulaParams && formulaParams.length > 0 && (
+              <ParametersSection
+                params={formulaParams}
+                onInsert={insertChip}
+              />
+            )}
+            {/* Parameters section — shown when editing a global workflow that has declared params */}
+            {!hasFormulaParams && globalWorkflowParams.length > 0 && (
+              <ParametersSection
+                params={globalWorkflowParams}
+                onInsert={insertChip}
+              />
+            )}
             {/* Event context section — shown when trigger has an event shape */}
             {hasEventContext && workflowTrigger && (
               <EventContextSection

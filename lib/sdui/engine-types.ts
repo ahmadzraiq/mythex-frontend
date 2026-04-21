@@ -30,6 +30,10 @@ export interface GraphQLNamedDataSourceDef {
   cacheTag?: string;
   cacheTTL?: number;
   cacheKeyVars?: string[];
+  /** Route this datasource through /api/proxy (server-side) to bypass CORS. */
+  proxy?: boolean;
+  /** Send credentials (cookies) with the request. */
+  sendCredentials?: boolean;
 }
 
 export interface ValidationRule {
@@ -78,10 +82,48 @@ export interface EngineConfig {
   sync?: readonly string[];
 }
 
+/** Global authentication configuration — used by authenticate/clearSession/restoreSession steps. */
+export interface AuthConfig {
+  /** Token type prefix for Authorization header (default: 'bearer'). */
+  tokenType?: 'bearer' | 'basic' | 'custom';
+  /**
+   * How to send the stored token in outgoing requests.
+   * Defaults to { header: 'Authorization', prefix: 'Bearer ' }.
+   */
+  tokenSend?: {
+    /** Request header name (default: 'Authorization'). */
+    header?: string;
+    /** Prefix before the token value (default: 'Bearer '). */
+    prefix?: string;
+  };
+  /** GraphQL query to fetch the current user (used by restoreSession step). */
+  userQuery?: string;
+  /** Endpoint for the userQuery (falls back to global GraphQL endpoint). */
+  userQueryEndpoint?: string;
+  /** Extra headers for the userQuery request. */
+  userQueryHeaders?: Record<string, string>;
+  /** REST endpoint to fetch the current user. Used when userQuery is not set. */
+  userEndpoint?: string;
+  /** Refresh token endpoint (optional). */
+  refreshEndpoint?: string;
+  /** Redirect path for unauthenticated users hitting a protected route (default: '/sign-in'). */
+  unauthenticatedRedirect?: string;
+  /** Redirect path when accessCondition fails for an authenticated user (default: '/'). */
+  unauthorizedRedirect?: string;
+  /** Redirect path when an authenticated user hits a guestOnly page (default: '/'). */
+  authenticatedRedirect?: string;
+}
+
 export interface RouteConfig {
   path: string;
   config?: string;
   dynamic?: boolean;
+  /** If true, only authenticated users can access this route. */
+  auth?: boolean;
+  /** Formula evaluated after auth check; falsy → redirect to authConfig.unauthorizedRedirect. */
+  accessCondition?: string;
+  /** If true, authenticated users are redirected away (e.g. /sign-in, /register). */
+  guestOnly?: boolean;
 }
 
 export interface SDUIEngineProps {
@@ -91,6 +133,8 @@ export interface SDUIEngineProps {
   engineConfig?: EngineConfig;
   routes?: RouteConfig[];
   paramChangeAction?: string;
+  /** Global authentication configuration (token storage, user endpoint, redirect paths). */
+  authConfig?: AuthConfig;
   /** Named data sources from config/datasources.json — fetched on mount, stored at their name path. */
   dataSources?: Record<string, NamedDataSourceDef>;
   /** When true, annotates every rendered node with data-builder-* attributes.

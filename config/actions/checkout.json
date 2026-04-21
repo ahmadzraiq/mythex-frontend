@@ -259,7 +259,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "a2b3c4d5-e6f7-8901-abcd-012345678901",
-          "value": "{{context.item.data.id}}"
+          "value": {
+            "formula": "context?.item?.data?.id"
+          }
         }
       },
       {
@@ -281,7 +283,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "b3c4d5e6-f7a8-9012-bcde-123456789012",
-          "value": "{{context.item.data.code}}"
+          "value": {
+            "formula": "context?.item?.data?.code"
+          }
         }
       },
       {
@@ -370,9 +374,12 @@
     "steps": [
       {
         "id": "step-1",
-        "type": "toggle",
+        "type": "changeVariableValue",
         "config": {
-          "path": "f1a2b3c4-d5e6-7890-fabc-901234567890"
+          "variableName": "f1a2b3c4-d5e6-7890-fabc-901234567890",
+          "value": {
+            "formula": "!variables['f1a2b3c4-d5e6-7890-fabc-901234567890']"
+          }
         }
       }
     ]

@@ -53,6 +53,11 @@ export const FORMULA_FNS: Record<string, (...args: unknown[]) => unknown> = {
   mod: (a, b) => (Number(a) || 0) % (Number(b) || 1),
   pow: (base, exp) => Math.pow(Number(base) || 0, Number(exp) || 1),
   sqrt: (n) => Math.sqrt(Number(n) || 0),
+  toFixed: (n, decimals) => Number(n ?? 0).toFixed(Math.max(0, Math.floor(Number(decimals) || 0))),
+  isNaN: (v) => Number.isNaN(Number(v)),
+  isFinite: (v) => Number.isFinite(Number(v)),
+  parseInt: (v, radix) => globalThis.parseInt(String(v ?? ''), Number(radix) || 10),
+  parseFloat: (v) => globalThis.parseFloat(String(v ?? '')),
 
   // ── ARRAY ─────────────────────────────────────────────────────────────────────
   add: (arr, ...vals) => [...(arr as unknown[]), ...vals],
@@ -216,6 +221,16 @@ export const FORMULA_FNS: Record<string, (...args: unknown[]) => unknown> = {
   string: (v) => String(v ?? ''),
   number: (v) => Number(v),
   uppercase: (s) => String(s).toUpperCase(),
+  trim: (s) => String(s ?? '').trim(),
+  trimStart: (s) => String(s ?? '').trimStart(),
+  trimEnd: (s) => String(s ?? '').trimEnd(),
+  replace: (s, search, replacement) => String(s ?? '').replace(String(search ?? ''), String(replacement ?? '')),
+  replaceAll: (s, search, replacement) => String(s ?? '').split(String(search ?? '')).join(String(replacement ?? '')),
+  repeat: (s, count) => String(s ?? '').repeat(Math.max(0, Math.floor(Number(count) || 0))),
+  padStart: (s, len, pad) => String(s ?? '').padStart(Number(len) || 0, String(pad ?? ' ')),
+  padEnd: (s, len, pad) => String(s ?? '').padEnd(Number(len) || 0, String(pad ?? ' ')),
+  startsWith: (s, prefix) => String(s ?? '').startsWith(String(prefix ?? '')),
+  endsWith: (s, suffix) => String(s ?? '').endsWith(String(suffix ?? '')),
 
   // ── OBJECT ────────────────────────────────────────────────────────────────────
   createObject: (...args) => {
@@ -276,4 +291,47 @@ export const FORMULA_FNS: Record<string, (...args: unknown[]) => unknown> = {
   isPhone: (v) => /^\+?[\d\s\-().]{7,20}$/.test(String(v ?? '')),
   isUrl: (v) => { try { new URL(String(v)); return true; } catch { return false; } },
   matchesPattern: (v, pattern) => new RegExp(String(pattern)).test(String(v ?? '')),
+
+  // ── TYPE CHECKING ──────────────────────────────────────────────────────────────
+  typeOf: (v) => {
+    if (v === null) return 'null';
+    if (v === undefined) return 'undefined';
+    if (Array.isArray(v)) return 'array';
+    return typeof v;
+  },
+  isArray: (v) => Array.isArray(v),
+  isObject: (v) => v !== null && typeof v === 'object' && !Array.isArray(v),
+  isString: (v) => typeof v === 'string',
+  isNumber: (v) => typeof v === 'number' && !Number.isNaN(v),
+  isBoolean: (v) => typeof v === 'boolean',
+  isNull: (v) => v === null || v === undefined,
+
+  // ── DATE ────────────────────────────────────────────────────────────────────────
+  now: () => Date.now(),
+  dateYear: (d?) => d ? new Date(d as string | number).getFullYear() : new Date().getFullYear(),
+  dateMonth: (d?) => d ? new Date(d as string | number).getMonth() + 1 : new Date().getMonth() + 1,
+  dateDay: (d?) => d ? new Date(d as string | number).getDate() : new Date().getDate(),
+
+  // ── JSON ────────────────────────────────────────────────────────────────────────
+  jsonStringify: (v) => { try { return JSON.stringify(v); } catch { return ''; } },
+  jsonParse: (v) => { try { return JSON.parse(String(v)); } catch { return null; } },
+
+  // ── FORMATTING (extended) ──────────────────────────────────────────────────────
+  formatDate: (date, format?) => {
+    try {
+      const d = date ? new Date(date as string | number) : new Date();
+      const fmt = String(format ?? 'short');
+      if (fmt === 'iso') return d.toISOString();
+      if (fmt === 'long') return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch { return String(date ?? ''); }
+  },
+  formatNumber: (num, decimals?, locale?) => {
+    try {
+      const n = Number(num) || 0;
+      const dec = decimals != null ? Number(decimals) : undefined;
+      const loc = String(locale ?? 'en-US');
+      return new Intl.NumberFormat(loc, dec != null ? { minimumFractionDigits: dec, maximumFractionDigits: dec } : {}).format(n);
+    } catch { return String(num ?? ''); }
+  },
 };

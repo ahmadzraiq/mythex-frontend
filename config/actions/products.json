@@ -25,9 +25,9 @@
         "id": "step-1",
         "type": "navigateTo",
         "config": {
-          "path": "{{route.path}}",
+          "path": "/collection",
           "queryParams": {
-            "facets": [],
+            "facets": "",
             "page": "1"
           }
         }
@@ -42,10 +42,10 @@
         "id": "step-1",
         "type": "navigateTo",
         "config": {
-          "path": "{{route.path}}",
+          "path": "/collection",
           "queryParams": {
             "facets": {
-              "expr": "toggleInArray(route?.facets || [], context?.item?.data?.facetValue?.id)"
+              "formula": "join(toggleInArray(remove(split(globalContext?.browser?.query?.facets || '', ','), ''), toText(context?.item?.data?.facetValue?.id)), ',')"
             },
             "page": "1"
           }
@@ -73,9 +73,10 @@
     "steps": [
       {
         "id": "step-1",
-        "type": "toggle",
+        "type": "changeVariableValue",
         "config": {
-          "path": "c8d9e0f1-a2b3-4567-cdef-678901234567"
+          "variableName": "c8d9e0f1-a2b3-4567-cdef-678901234567",
+          "value": { "formula": "!variables['c8d9e0f1-a2b3-4567-cdef-678901234567']" }
         }
       }
     ]
@@ -94,29 +95,13 @@
       },
       {
         "id": "step-2",
-        "type": "set",
-        "config": {
-          "path": "route.sort",
-          "value": "name-asc"
-        }
-      },
-      {
-        "id": "step-3",
-        "type": "changeVariableValue",
-        "config": {
-          "variableName": "a6b7c8d9-e0f1-2345-abcd-456789012345",
-          "value": 0
-        }
-      },
-      {
-        "id": "step-4",
-        "action": "e36a0249-ae5c-4482-b7f0-8b481f23605d"
-      },
-      {
-        "id": "step-5",
         "type": "navigateTo",
         "config": {
-          "path": "{{route.path}}?sort=name-asc&page=1"
+          "path": "/collection",
+          "queryParams": {
+            "sort": "name-asc",
+            "page": "1"
+          }
         }
       }
     ]
@@ -135,29 +120,13 @@
       },
       {
         "id": "step-2",
-        "type": "set",
-        "config": {
-          "path": "route.sort",
-          "value": "name-desc"
-        }
-      },
-      {
-        "id": "step-3",
-        "type": "changeVariableValue",
-        "config": {
-          "variableName": "a6b7c8d9-e0f1-2345-abcd-456789012345",
-          "value": 0
-        }
-      },
-      {
-        "id": "step-4",
-        "action": "e36a0249-ae5c-4482-b7f0-8b481f23605d"
-      },
-      {
-        "id": "step-5",
         "type": "navigateTo",
         "config": {
-          "path": "{{route.path}}?sort=name-desc&page=1"
+          "path": "/collection",
+          "queryParams": {
+            "sort": "name-desc",
+            "page": "1"
+          }
         }
       }
     ]
@@ -176,29 +145,13 @@
       },
       {
         "id": "step-2",
-        "type": "set",
-        "config": {
-          "path": "route.sort",
-          "value": "price-asc"
-        }
-      },
-      {
-        "id": "step-3",
-        "type": "changeVariableValue",
-        "config": {
-          "variableName": "a6b7c8d9-e0f1-2345-abcd-456789012345",
-          "value": 0
-        }
-      },
-      {
-        "id": "step-4",
-        "action": "e36a0249-ae5c-4482-b7f0-8b481f23605d"
-      },
-      {
-        "id": "step-5",
         "type": "navigateTo",
         "config": {
-          "path": "{{route.path}}?sort=price-asc&page=1"
+          "path": "/collection",
+          "queryParams": {
+            "sort": "price-asc",
+            "page": "1"
+          }
         }
       }
     ]
@@ -217,29 +170,13 @@
       },
       {
         "id": "step-2",
-        "type": "set",
-        "config": {
-          "path": "route.sort",
-          "value": "price-desc"
-        }
-      },
-      {
-        "id": "step-3",
-        "type": "changeVariableValue",
-        "config": {
-          "variableName": "a6b7c8d9-e0f1-2345-abcd-456789012345",
-          "value": 0
-        }
-      },
-      {
-        "id": "step-4",
-        "action": "e36a0249-ae5c-4482-b7f0-8b481f23605d"
-      },
-      {
-        "id": "step-5",
         "type": "navigateTo",
         "config": {
-          "path": "{{route.path}}?sort=price-desc&page=1"
+          "path": "/collection",
+          "queryParams": {
+            "sort": "price-desc",
+            "page": "1"
+          }
         }
       }
     ]
@@ -258,29 +195,13 @@
       },
       {
         "id": "step-2",
-        "type": "set",
-        "config": {
-          "path": "route.sort",
-          "value": "name-asc"
-        }
-      },
-      {
-        "id": "step-3",
-        "type": "changeVariableValue",
-        "config": {
-          "variableName": "b7c8d9e0-f1a2-3456-bcde-567890123456",
-          "value": 0
-        }
-      },
-      {
-        "id": "step-4",
-        "action": "b5768eaf-390c-476c-ab67-803e00d27f23"
-      },
-      {
-        "id": "step-5",
         "type": "navigateTo",
         "config": {
-          "path": "{{route.path}}?q={{route.q}}&sort=name-asc&page=1"
+          "path": "/search",
+          "queryParams": {
+            "sort": "name-asc",
+            "page": "1"
+          }
         }
       }
     ]
@@ -299,29 +220,13 @@
       },
       {
         "id": "step-2",
-        "type": "set",
-        "config": {
-          "path": "route.sort",
-          "value": "name-desc"
-        }
-      },
-      {
-        "id": "step-3",
-        "type": "changeVariableValue",
-        "config": {
-          "variableName": "b7c8d9e0-f1a2-3456-bcde-567890123456",
-          "value": 0
-        }
-      },
-      {
-        "id": "step-4",
-        "action": "b5768eaf-390c-476c-ab67-803e00d27f23"
-      },
-      {
-        "id": "step-5",
         "type": "navigateTo",
         "config": {
-          "path": "{{route.path}}?q={{route.q}}&sort=name-desc&page=1"
+          "path": "/search",
+          "queryParams": {
+            "sort": "name-desc",
+            "page": "1"
+          }
         }
       }
     ]
@@ -340,29 +245,13 @@
       },
       {
         "id": "step-2",
-        "type": "set",
-        "config": {
-          "path": "route.sort",
-          "value": "price-asc"
-        }
-      },
-      {
-        "id": "step-3",
-        "type": "changeVariableValue",
-        "config": {
-          "variableName": "b7c8d9e0-f1a2-3456-bcde-567890123456",
-          "value": 0
-        }
-      },
-      {
-        "id": "step-4",
-        "action": "b5768eaf-390c-476c-ab67-803e00d27f23"
-      },
-      {
-        "id": "step-5",
         "type": "navigateTo",
         "config": {
-          "path": "{{route.path}}?q={{route.q}}&sort=price-asc&page=1"
+          "path": "/search",
+          "queryParams": {
+            "sort": "price-asc",
+            "page": "1"
+          }
         }
       }
     ]
@@ -381,29 +270,13 @@
       },
       {
         "id": "step-2",
-        "type": "set",
-        "config": {
-          "path": "route.sort",
-          "value": "price-desc"
-        }
-      },
-      {
-        "id": "step-3",
-        "type": "changeVariableValue",
-        "config": {
-          "variableName": "b7c8d9e0-f1a2-3456-bcde-567890123456",
-          "value": 0
-        }
-      },
-      {
-        "id": "step-4",
-        "action": "b5768eaf-390c-476c-ab67-803e00d27f23"
-      },
-      {
-        "id": "step-5",
         "type": "navigateTo",
         "config": {
-          "path": "{{route.path}}?q={{route.q}}&sort=price-desc&page=1"
+          "path": "/search",
+          "queryParams": {
+            "sort": "price-desc",
+            "page": "1"
+          }
         }
       }
     ]
@@ -414,22 +287,11 @@
     "steps": [
       {
         "id": "step-1",
-        "type": "decrement",
-        "config": {
-          "path": "a6b7c8d9-e0f1-2345-abcd-456789012345",
-          "amount": "{{variables['fa000001-0000-0000-0000-000000000001']}}"
-        }
-      },
-      {
-        "id": "step-2",
-        "action": "e36a0249-ae5c-4482-b7f0-8b481f23605d"
-      },
-      {
-        "id": "step-3",
         "type": "navigateTo",
         "config": {
-          "path": {
-            "expr": "cat(route?.path, '?page=', max(1, max(1, floor((variables['a6b7c8d9-e0f1-2345-abcd-456789012345'] || 0) / (variables?.['fa000001-0000-0000-0000-000000000001'] || 12) + 1)) - 1))"
+          "path": "/collection",
+          "queryParams": {
+            "page": { "formula": "toText(max(1, toNumber(globalContext?.browser?.query?.page || 1) - 1))" }
           }
         }
       }
@@ -441,19 +303,12 @@
     "steps": [
       {
         "id": "step-1",
-        "type": "goToPage",
-        "config": {
-          "path": "a6b7c8d9-e0f1-2345-abcd-456789012345",
-          "page": "{{$item}}",
-          "pageSize": "{{variables['fa000001-0000-0000-0000-000000000001']}}",
-          "fetchAction": "fetchCollection"
-        }
-      },
-      {
-        "id": "step-2",
         "type": "navigateTo",
         "config": {
-          "path": "{{route.path}}?page={{$item}}"
+          "path": "/collection",
+          "queryParams": {
+            "page": { "formula": "toText(context?.item?.data?.value)" }
+          }
         }
       }
     ]
@@ -464,22 +319,11 @@
     "steps": [
       {
         "id": "step-1",
-        "type": "increment",
-        "config": {
-          "path": "a6b7c8d9-e0f1-2345-abcd-456789012345",
-          "amount": "{{variables['fa000001-0000-0000-0000-000000000001']}}"
-        }
-      },
-      {
-        "id": "step-2",
-        "action": "e36a0249-ae5c-4482-b7f0-8b481f23605d"
-      },
-      {
-        "id": "step-3",
         "type": "navigateTo",
         "config": {
-          "path": {
-            "expr": "cat(route?.path, '?page=', min(max(1, ceil((collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.data?.search?.totalItems || 0) / (variables?.['fa000001-0000-0000-0000-000000000001'] || 12))), max(1, floor((variables['a6b7c8d9-e0f1-2345-abcd-456789012345'] || 0) / (variables?.['fa000001-0000-0000-0000-000000000001'] || 12) + 1)) + 1))"
+          "path": "/collection",
+          "queryParams": {
+            "page": { "formula": "toText(min(max(1, ceil((collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.data?.search?.totalItems || 0) / 12)), toNumber(globalContext?.browser?.query?.page || 1) + 1))" }
           }
         }
       }
@@ -491,22 +335,11 @@
     "steps": [
       {
         "id": "step-1",
-        "type": "decrement",
-        "config": {
-          "path": "b7c8d9e0-f1a2-3456-bcde-567890123456",
-          "amount": "{{variables['fa000001-0000-0000-0000-000000000001']}}"
-        }
-      },
-      {
-        "id": "step-2",
-        "action": "b5768eaf-390c-476c-ab67-803e00d27f23"
-      },
-      {
-        "id": "step-3",
         "type": "navigateTo",
         "config": {
-          "path": {
-            "expr": "cat(route?.path, '?page=', max(1, max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (variables?.['fa000001-0000-0000-0000-000000000001'] || 12) + 1)) - 1))"
+          "path": "/search",
+          "queryParams": {
+            "page": { "formula": "toText(max(1, toNumber(globalContext?.browser?.query?.page || 1) - 1))" }
           }
         }
       }
@@ -518,23 +351,12 @@
     "steps": [
       {
         "id": "step-1",
-        "type": "goToPage",
-        "config": {
-          "path": "b7c8d9e0-f1a2-3456-bcde-567890123456",
-          "page": "{{$item}}",
-          "pageSize": "{{variables['fa000001-0000-0000-0000-000000000001']}}",
-          "fetchAction": "fetchSearchResults"
-        }
-      },
-      {
-        "id": "step-2",
-        "action": "b5768eaf-390c-476c-ab67-803e00d27f23"
-      },
-      {
-        "id": "step-3",
         "type": "navigateTo",
         "config": {
-          "path": "{{route.path}}?page={{$item}}"
+          "path": "/search",
+          "queryParams": {
+            "page": { "formula": "toText(context?.item?.data?.value)" }
+          }
         }
       }
     ]
@@ -545,22 +367,11 @@
     "steps": [
       {
         "id": "step-1",
-        "type": "increment",
-        "config": {
-          "path": "b7c8d9e0-f1a2-3456-bcde-567890123456",
-          "amount": "{{variables['fa000001-0000-0000-0000-000000000001']}}"
-        }
-      },
-      {
-        "id": "step-2",
-        "action": "b5768eaf-390c-476c-ab67-803e00d27f23"
-      },
-      {
-        "id": "step-3",
         "type": "navigateTo",
         "config": {
-          "path": {
-            "expr": "cat(route?.path, '?page=', min(max(1, ceil((collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems || 0) / (variables?.['fa000001-0000-0000-0000-000000000001'] || 12))), max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (variables?.['fa000001-0000-0000-0000-000000000001'] || 12) + 1)) + 1))"
+          "path": "/search",
+          "queryParams": {
+            "page": { "formula": "toText(min(max(1, ceil((collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems || 0) / 12)), toNumber(globalContext?.browser?.query?.page || 1) + 1))" }
           }
         }
       }

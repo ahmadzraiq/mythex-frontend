@@ -57,19 +57,11 @@ function flattenObject(
 function buildPaths(inMapContext = false): PathEntry[] {
   const paths: PathEntry[] = [];
 
-  // route.* — static path + named params from dynamic routes
-  paths.push({ path: 'route.path', label: 'route.path', type: 'string', group: 'route' });
-  paths.push({ path: 'route.slug', label: 'route.slug', type: 'string', group: 'route' });
-  const routes = (routesConfig as { routes: Array<{ config?: string; params?: string[] }> }).routes;
-  const seenParams = new Set<string>(['path', 'slug']);
-  for (const r of routes) {
-    for (const p of r.params ?? []) {
-      if (!seenParams.has(p)) {
-        seenParams.add(p);
-        paths.push({ path: `route.${p}`, label: `route.${p}`, type: 'string', group: 'route' });
-      }
-    }
-  }
+  // globalContext.browser.*
+  paths.push({ path: 'globalContext.browser.path', label: 'globalContext.browser.path', type: 'string', group: 'route' });
+  paths.push({ path: 'globalContext.browser.url', label: 'globalContext.browser.url', type: 'string', group: 'route' });
+  paths.push({ path: 'globalContext.browser.domain', label: 'globalContext.browser.domain', type: 'string', group: 'route' });
+  paths.push({ path: 'globalContext.browser.query', label: 'globalContext.browser.query', type: 'object', group: 'route' });
 
   // auth.*
   paths.push({ path: 'auth.user', label: 'auth.user', type: 'object', group: 'store' });

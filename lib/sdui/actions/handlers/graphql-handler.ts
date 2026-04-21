@@ -11,6 +11,7 @@
 
 import { getNestedValue } from '../../nested-utils';
 import { resolveValue, interpolateUrl } from '../resolve-value';
+import { buildAuthHeaders } from '../../auth-token-storage';
 import type { ActionDef, ActionHandlerContext } from './types';
 
 // ─── Simple LRU cache ────────────────────────────────────────────────────────
@@ -69,10 +70,25 @@ export const graphqlHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDe
         }
       }
     }
+    const authCfgTyped = (ctx as ActionHandlerContext & { getAuthConfig?: () => import('../../engine-types').AuthConfig }).getAuthConfig?.();
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      // Inject stored bearer token (when configured by the user)
+      ...buildAuthHeaders(authCfgTyped),
       ...actionHeaders,
     };
+
+    // Fallback: if no Authorization header from localStorage (e.g. persist: false),
+    // check the in-memory Zustand store. step-authenticate sets auth.accessToken
+    // synchronously before subsequent steps run, so ctx.get() finds it immediately.
+    const authHeaderKey = authCfgTyped?.tokenSend?.header ?? 'Authorization';
+    if (!headers[authHeaderKey]) {
+      const memToken = ctx.get('auth.accessToken') as string | null;
+      if (memToken && typeof memToken === 'string') {
+        const prefix = authCfgTyped?.tokenSend?.prefix ?? 'Bearer ';
+        headers[authHeaderKey] = `${prefix}${memToken}`;
+      }
+    }
 
     // ── Variables ─────────────────────────────────────────────────────────────
     // Start with actionDef.variables, then overlay ctx.payload so callers can
@@ -114,13 +130,34 @@ export const graphqlHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDe
     let stepError: unknown = undefined;
 
     try {
-      const credentials = (actionDef.credentials ?? 'include') as RequestCredentials;
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ query: actionDef.query, variables }),
-        credentials,
-      });
+      // ── Proxy routing ───────────────────────────────────────────────────────
+      // When actionDef.useProxy is true, route through /api/proxy (server-side)
+      // to bypass CORS or handle cookie-based auth across origins.
+      const useProxy = !!(actionDef.useProxy as boolean | undefined);
+
+      let res: Response;
+      if (useProxy) {
+        const { 'Content-Type': _ct, ...forwardHeaders } = { ...actionHeaders };
+        res = await fetch('/api/proxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            endpoint,
+            method: 'POST',
+            headers: Object.keys(forwardHeaders).length ? forwardHeaders : undefined,
+            body: JSON.stringify({ query: actionDef.query, variables }),
+          }),
+        });
+      } else {
+        const credentials = (actionDef.credentials ?? 'include') as RequestCredentials;
+        res = await fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ query: actionDef.query, variables }),
+          credentials,
+        });
+      }
 
       // ── HTTP error ──────────────────────────────────────────────────────────
       if (!res.ok) {
@@ -148,6 +185,14 @@ export const graphqlHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDe
 
       const json = await res.json() as { data?: unknown; errors?: Array<{ message: string }> };
 
+      // ── Build _response envelope ─────────────────────────────────────────────
+      // Expose status, statusText, and all CORS-visible response headers so
+      // workflow formulas can reference any of them, e.g.:
+      //   context?.workflow?.['login-id']?._response?.headers?.['vendure-auth-token']
+      const responseHeaders: Record<string, string> = {};
+      res.headers.forEach((value, key) => { responseHeaders[key] = value; });
+      const _response = { status: res.status, statusText: res.statusText, headers: responseHeaders };
+
       // ── GraphQL errors ──────────────────────────────────────────────────────
       if (json.errors && json.errors.length > 0) {
         const gqlErr = json.errors[0]?.message ?? 'GraphQL error';
@@ -169,9 +214,14 @@ export const graphqlHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDe
         data = getNestedValue(json as Record<string, unknown>, responsePath);
       }
 
-      // Workflow context always gets the full json.data so formulas can navigate
-      // the full response tree (e.g. context.workflow['id'].result?.login?.__typename).
-      stepResult = json.data ?? json;
+      // Workflow context always gets the full json.data plus _response (status, headers)
+      // so formulas can reference anything from the HTTP response:
+      //   context?.workflow?.['login-id']?.login?.__typename
+      //   context?.workflow?.['login-id']?._response?.headers?.['vendure-auth-token']
+      stepResult = {
+        ...(json.data != null && typeof json.data === 'object' ? json.data as object : { data: json.data ?? json }),
+        _response,
+      };
 
       // ── Store ───────────────────────────────────────────────────────────────
       if (storeIn) {

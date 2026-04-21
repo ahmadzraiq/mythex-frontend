@@ -61,9 +61,12 @@
     "steps": [
       {
         "id": "step-1",
-        "type": "toggle",
+        "type": "changeVariableValue",
         "config": {
-          "path": "e4f5a6b7-c8d9-0123-efab-234567890123"
+          "variableName": "e4f5a6b7-c8d9-0123-efab-234567890123",
+          "value": {
+            "formula": "!variables['e4f5a6b7-c8d9-0123-efab-234567890123']"
+          }
         }
       }
     ]
@@ -85,41 +88,20 @@
   "9b3dad1d-504c-4fe8-b270-52aac8b88ac2": {
     "name": "applyThemeLight",
     "trigger": "click",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setTheme",
-        "config": {
-          "value": "light"
-        }
-      }
-    ]
+    "type": "setTheme",
+    "value": "light"
   },
   "74948f69-b319-4b64-805f-ea51ea6e6cd9": {
     "name": "applyThemeDark",
     "trigger": "click",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setTheme",
-        "config": {
-          "value": "dark"
-        }
-      }
-    ]
+    "type": "setTheme",
+    "value": "dark"
   },
   "6a527b9d-4dea-4465-b126-8e1d88811f9b": {
     "name": "applyThemeSystem",
     "trigger": "click",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "setTheme",
-        "config": {
-          "value": "system"
-        }
-      }
-    ]
+    "type": "setTheme",
+    "value": "system"
   },
   "6e3af5bc-85bf-491e-984e-55faa5e975f9": {
     "name": "setThemeLight",
@@ -327,8 +309,12 @@
         "id": "step-1",
         "type": "navigateTo",
         "config": {
-          "routeConfig": "product",
-          "slug": "{{context.item.data.slug}}"
+          "path": "/product",
+          "queryParams": {
+            "slug": {
+              "formula": "context?.item?.data?.slug"
+            }
+          }
         }
       }
     ]
@@ -341,8 +327,12 @@
         "id": "step-1",
         "type": "navigateTo",
         "config": {
-          "routeConfig": "product",
-          "slug": "{{context.item.data.productVariant.product.slug}}"
+          "path": "/product",
+          "queryParams": {
+            "slug": {
+              "formula": "context?.item?.data?.productVariant?.product?.slug"
+            }
+          }
         }
       }
     ]
@@ -355,8 +345,12 @@
         "id": "step-1",
         "type": "navigateTo",
         "config": {
-          "routeConfig": "order-detail",
-          "slug": "{{context.item.data.code}}"
+          "path": "/account/order",
+          "queryParams": {
+            "id": {
+              "formula": "context?.item?.data?.code"
+            }
+          }
         }
       }
     ]
@@ -369,8 +363,12 @@
         "id": "step-1",
         "type": "navigateTo",
         "config": {
-          "routeConfig": "collection",
-          "slug": "{{context.item.data.slug}}"
+          "path": "/collection",
+          "queryParams": {
+            "slug": {
+              "formula": "context?.item?.data?.slug"
+            }
+          }
         }
       }
     ]
@@ -467,7 +465,7 @@
         "config": {
           "variableName": "d9e0f1a2-b3c4-5678-defa-789012345678",
           "value": {
-            "expr": "!(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress || '') ? 'contact' : !(collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1 || '') ? 'shipping' : (collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingLines?.length || 0 || 0) <= 0 ? 'delivery' : !(variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] || '') ? 'payment' : 'review'"
+            "formula": "!(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress || '') ? 'contact' : !(collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1 || '') ? 'shipping' : (collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingLines?.length || 0 || 0) <= 0 ? 'delivery' : !(variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] || '') ? 'payment' : 'review'"
           }
         }
       }
@@ -479,98 +477,122 @@
     "steps": [
       {
         "id": "step-1",
-        "type": "setVar",
+        "type": "setFormState",
         "config": {
           "path": "local.data.form.formData.emailAddress",
-          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.emailAddress}}"
+          "value": {
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress"
+          }
         }
       },
       {
         "id": "step-2",
-        "type": "setVar",
+        "type": "setFormState",
         "config": {
           "path": "local.data.form.formData.firstName",
-          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.firstName}}"
+          "value": {
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.firstName"
+          }
         }
       },
       {
         "id": "step-3",
-        "type": "setVar",
+        "type": "setFormState",
         "config": {
           "path": "local.data.form.formData.lastName",
-          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.customer.lastName}}"
+          "value": {
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.lastName"
+          }
         }
       },
       {
         "id": "step-4",
-        "type": "setVar",
+        "type": "setFormState",
         "config": {
           "path": "local.data.form.formData.fullName",
-          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.fullName}}"
+          "value": {
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.fullName"
+          }
         }
       },
       {
         "id": "step-5",
-        "type": "setVar",
+        "type": "setFormState",
         "config": {
           "path": "local.data.form.formData.company",
-          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.company}}"
+          "value": {
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.company"
+          }
         }
       },
       {
         "id": "step-6",
-        "type": "setVar",
+        "type": "setFormState",
         "config": {
           "path": "local.data.form.formData.streetLine1",
-          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine1}}"
+          "value": {
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1"
+          }
         }
       },
       {
         "id": "step-7",
-        "type": "setVar",
+        "type": "setFormState",
         "config": {
           "path": "local.data.form.formData.streetLine2",
-          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine2}}"
+          "value": {
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine2"
+          }
         }
       },
       {
         "id": "step-8",
-        "type": "setVar",
+        "type": "setFormState",
         "config": {
           "path": "local.data.form.formData.city",
-          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.city}}"
+          "value": {
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.city"
+          }
         }
       },
       {
         "id": "step-9",
-        "type": "setVar",
+        "type": "setFormState",
         "config": {
           "path": "local.data.form.formData.province",
-          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.province}}"
+          "value": {
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.province"
+          }
         }
       },
       {
         "id": "step-10",
-        "type": "setVar",
+        "type": "setFormState",
         "config": {
           "path": "local.data.form.formData.postalCode",
-          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.postalCode}}"
+          "value": {
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.postalCode"
+          }
         }
       },
       {
         "id": "step-11",
-        "type": "setVar",
+        "type": "setFormState",
         "config": {
           "path": "local.data.form.formData.countryCode",
-          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.countryCode}}"
+          "value": {
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.countryCode"
+          }
         }
       },
       {
         "id": "step-12",
-        "type": "setVar",
+        "type": "setFormState",
         "config": {
           "path": "local.data.form.formData.phoneNumber",
-          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.phoneNumber}}"
+          "value": {
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.phoneNumber"
+          }
         }
       },
       {
@@ -578,7 +600,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "a2b3c4d5-e6f7-8901-abcd-012345678901",
-          "value": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingLines.0.shippingMethod.id}}"
+          "value": {
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingLines?.0?.shippingMethod?.id"
+          }
         }
       }
     ]
@@ -653,7 +677,7 @@
       },
       {
         "id": "step-2",
-        "type": "clearPersistedPaths"
+        "action": "f0e1d2c3-b4a5-6789-f0e1-d2c3b4a56789"
       },
       {
         "id": "step-3",
@@ -669,8 +693,12 @@
         "id": "step-1",
         "type": "navigateTo",
         "config": {
-          "routeConfig": "orderConfirmation",
-          "slug": "{{collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.code}}"
+          "path": "/order-confirmation",
+          "queryParams": {
+            "code": {
+              "formula": "collections?.['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.code"
+            }
+          }
         }
       }
     ]
@@ -684,7 +712,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "d9e0f1a2-b3c4-5678-defa-789012345678",
-          "value": "{{$item}}"
+          "value": {
+            "formula": "context?.item?.data"
+          }
         }
       }
     ]
@@ -692,47 +722,26 @@
   "a1b2ce90-4498-47d2-b42f-e50f0a6972a7": {
     "name": "selectProductOption",
     "trigger": "click",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "mergeAtPath",
-        "config": {
-          "path": "c4d5e6f7-a8b9-0123-cdef-234567890123",
-          "key": "{{$parent.id}}",
-          "value": "{{context.item.data.id}}"
-        }
-      }
-    ]
+    "type": "mergeAtPath",
+    "path": "c4d5e6f7-a8b9-0123-cdef-234567890123",
+    "key": "{{$parent.id}}",
+    "value": "{{context.item.data.id}}"
   },
   "84c5de07-4f71-44a3-904a-020758146a5f": {
     "name": "prevProductImage",
     "trigger": "click",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "cycleIndex",
-        "config": {
-          "path": "d5e6f7a8-b9c0-1234-defa-345678901234",
-          "arrayPath": "product.assets",
-          "direction": "prev"
-        }
-      }
-    ]
+    "type": "cycleIndex",
+    "path": "d5e6f7a8-b9c0-1234-defa-345678901234",
+    "arrayPath": "product.assets",
+    "direction": "prev"
   },
   "b5760629-bb22-4ace-a567-406e1afe14d1": {
     "name": "nextProductImage",
     "trigger": "click",
-    "steps": [
-      {
-        "id": "step-1",
-        "type": "cycleIndex",
-        "config": {
-          "path": "d5e6f7a8-b9c0-1234-defa-345678901234",
-          "arrayPath": "product.assets",
-          "direction": "next"
-        }
-      }
-    ]
+    "type": "cycleIndex",
+    "path": "d5e6f7a8-b9c0-1234-defa-345678901234",
+    "arrayPath": "product.assets",
+    "direction": "next"
   },
   "59bc7c99-d110-4e01-8563-de6371d2147e": {
     "name": "selectProductImage",
@@ -743,7 +752,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "d5e6f7a8-b9c0-1234-defa-345678901234",
-          "value": "{{$index}}"
+          "value": {
+            "formula": "context?.item?.data?.index"
+          }
         }
       }
     ]
@@ -783,42 +794,136 @@
   },
   "navigateToNavbarTypes": {
     "trigger": "click",
-    "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/navbar-types", "linkType": "internal" } }]
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/navbar-types",
+          "linkType": "internal"
+        }
+      }
+    ]
   },
   "navigateToNavbarFixed": {
     "trigger": "click",
-    "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/navbar-fixed", "linkType": "internal" } }]
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/navbar-fixed",
+          "linkType": "internal"
+        }
+      }
+    ]
   },
   "navigateToNavbarSticky": {
     "trigger": "click",
-    "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/navbar-sticky", "linkType": "internal" } }]
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/navbar-sticky",
+          "linkType": "internal"
+        }
+      }
+    ]
   },
   "navigateToNavbarTransparent": {
     "trigger": "click",
-    "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/navbar-transparent", "linkType": "internal" } }]
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/navbar-transparent",
+          "linkType": "internal"
+        }
+      }
+    ]
   },
   "navigateToNavbarBlur": {
     "trigger": "click",
-    "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/navbar-blur", "linkType": "internal" } }]
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/navbar-blur",
+          "linkType": "internal"
+        }
+      }
+    ]
   },
   "navigateToNavbarFloating": {
     "trigger": "click",
-    "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/navbar-floating", "linkType": "internal" } }]
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/navbar-floating",
+          "linkType": "internal"
+        }
+      }
+    ]
   },
   "navigateToNavbarCentered": {
     "trigger": "click",
-    "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/navbar-centered", "linkType": "internal" } }]
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/navbar-centered",
+          "linkType": "internal"
+        }
+      }
+    ]
   },
   "navigateToNavbarSidebar": {
     "trigger": "click",
-    "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/navbar-sidebar", "linkType": "internal" } }]
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/navbar-sidebar",
+          "linkType": "internal"
+        }
+      }
+    ]
   },
   "navigateToNavbarBottom": {
     "trigger": "click",
-    "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/navbar-bottom", "linkType": "internal" } }]
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/navbar-bottom",
+          "linkType": "internal"
+        }
+      }
+    ]
   },
   "navigateToNavbarScrollAware": {
     "trigger": "click",
-    "steps": [{ "id": "step-1", "type": "navigateTo", "config": { "path": "/navbar-scroll-aware", "linkType": "internal" } }]
+    "steps": [
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/navbar-scroll-aware",
+          "linkType": "internal"
+        }
+      }
+    ]
+  },
+  "f0e1d2c3-b4a5-6789-f0e1-d2c3b4a56789": {
+    "name": "clearPersistedPaths",
+    "type": "clearPersistedPaths"
   }
 }

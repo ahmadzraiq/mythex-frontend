@@ -223,7 +223,7 @@ export function VarsFormulasSection() {
               <div style={{ borderTop: '1px solid #374151', padding: '8px' }}>
                 <ExprBuilder
                   value={expr as object | null}
-                  onChange={v => setGlobalFormula(name, v as object)}
+                  onChange={v => setGlobalFormula(name, v as import('./_store-types').GlobalFormulaDef)}
                 />
               </div>
             )}
@@ -234,11 +234,11 @@ export function VarsFormulasSection() {
             value={newName}
             onChange={e => setNewName(e.target.value)}
             placeholder="formula name…"
-            onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) { setGlobalFormula(newName.trim(), {}); setNewName(''); } }}
+            onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) { setGlobalFormula(newName.trim(), { name: newName.trim(), params: [], formula: '' }); setNewName(''); } }}
             style={{ flex: 1, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 6px', outline: 'none' }}
           />
           <button
-            onClick={() => { if (newName.trim()) { setGlobalFormula(newName.trim(), {}); setNewName(''); } }}
+            onClick={() => { if (newName.trim()) { setGlobalFormula(newName.trim(), { name: newName.trim(), params: [], formula: '' }); setNewName(''); } }}
             style={{ padding: '3px 10px', background: '#1d4ed8', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, cursor: 'pointer', flexShrink: 0 }}
           >+ Add</button>
         </div>

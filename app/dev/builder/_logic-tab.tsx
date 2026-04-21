@@ -5,7 +5,7 @@
  *
  * Two sections (editing via SlidePanel):
  *   A. Workflows  — named action sequences; triggered from interactions
- *   B. Formulas   — named JSON Logic expressions
+ *   B. Formulas   — named reusable JS formula functions with typed parameters
  *
  * Page-level "On load" workflow is always pinned at the top of Workflows.
  */
@@ -14,8 +14,10 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useBuilderStore } from './_store';
 import { SP_BTN_PRIMARY, SP_BTN_SECONDARY, SP_INPUT, SP_LABEL, SP_SECTION } from './_slide-panel';
 import { ActionBuilder } from './_action-builder';
-import { ExprBuilder } from './_expr-builder';
 import { toHumanName } from './_workflow-canvas';
+import type { GlobalFormulaDef, GlobalFormulaParam } from './_store-types';
+import { FormulaEditor } from './_formula-editor';
+import type { FormulaValue } from '@/lib/sdui/formula-evaluator';
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
@@ -249,52 +251,337 @@ function WorkflowsSection({ onOpenSlide }: { onOpenSlide: (id: string) => void }
 
 // ─── B. Formulas ──────────────────────────────────────────────────────────────
 
+const PARAM_TYPES: GlobalFormulaParam['type'][] = ['Text', 'Number', 'Boolean', 'Object', 'Array'];
+const PARAM_TYPE_ICONS: Record<string, string> = {
+  Text: 'T', Number: '#', Boolean: '◎', Object: '{ }', Array: '[ ]',
+};
+
+function FormulaParamEditor({
+  param,
+  onUpdate,
+  onRemove,
+}: {
+  param: GlobalFormulaParam;
+  onUpdate: (patch: Partial<GlobalFormulaParam>) => void;
+  onRemove: () => void;
+}) {
+  const [typeOpen, setTypeOpen] = useState(false);
+  const typeBtnRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!typeOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (typeBtnRef.current?.contains(e.target as Node)) return;
+      if (dropdownRef.current?.contains(e.target as Node)) return;
+      setTypeOpen(false);
+    };
+    document.addEventListener('mousedown', handler, true);
+    return () => document.removeEventListener('mousedown', handler, true);
+  }, [typeOpen]);
+
+  return (
+    <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 6, padding: '8px 10px', marginBottom: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+        {/* Type button */}
+        <div style={{ position: 'relative' }}>
+          <button
+            ref={typeBtnRef}
+            type="button"
+            onClick={e => { e.stopPropagation(); setTypeOpen(o => !o); }}
+            style={{
+              minWidth: 42, padding: '3px 7px', background: '#1e293b', border: '1px solid #374151',
+              borderRadius: 4, color: '#60a5fa', fontSize: 10, cursor: 'pointer', fontWeight: 700, fontFamily: 'monospace',
+            }}
+            title="Parameter type"
+          >
+            {PARAM_TYPE_ICONS[param.type] ?? param.type}
+          </button>
+          {typeOpen && (
+            <div
+              ref={dropdownRef}
+              style={{
+                position: 'fixed', background: '#1e293b', border: '1px solid #334155',
+                borderRadius: 6, zIndex: 99999, minWidth: 110, boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+                overflow: 'hidden',
+              }}
+            >
+              {PARAM_TYPES.map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => {
+                    const patch: Partial<GlobalFormulaParam> = { type: t };
+                    if (t === 'Boolean') patch.testValue = false;
+                    else if (t === 'Object') patch.testValue = '{}';
+                    else if (t === 'Array') patch.testValue = '[]';
+                    else patch.testValue = '';
+                    onUpdate(patch);
+                    setTypeOpen(false);
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                    padding: '7px 12px', background: param.type === t ? '#1d4ed8' : 'transparent',
+                    border: 'none', cursor: 'pointer', textAlign: 'left',
+                    color: param.type === t ? '#fff' : '#d1d5db', fontSize: 11,
+                  }}
+                >
+                  <span style={{ color: '#60a5fa', fontFamily: 'monospace', fontWeight: 700, width: 24 }}>
+                    {PARAM_TYPE_ICONS[t]}
+                  </span>
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Name input */}
+        <input
+          value={param.name}
+          onChange={e => onUpdate({ name: e.target.value })}
+          placeholder="paramName"
+          style={{
+            flex: 1, background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
+            color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', fontFamily: 'monospace',
+          }}
+          onKeyDown={e => e.stopPropagation()}
+        />
+
+        {/* Remove */}
+        <button
+          type="button"
+          onClick={onRemove}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4b5563', fontSize: 14, padding: 0, lineHeight: 1 }}
+          onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
+          onMouseLeave={e => (e.currentTarget.style.color = '#4b5563')}
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Test value row */}
+      <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 4 }}>Test value</div>
+      {param.type === 'Boolean' ? (
+        <div style={{ display: 'flex', background: '#1f2937', borderRadius: 4, overflow: 'hidden', gap: 1 }}>
+          {[true, false].map(v => (
+            <button key={String(v)} type="button"
+              onClick={() => onUpdate({ testValue: v })}
+              style={{
+                flex: 1, padding: '4px 0', fontSize: 10, border: 'none', cursor: 'pointer', fontWeight: 600,
+                background: (param.testValue === v || String(param.testValue) === String(v)) ? (v ? '#166534' : '#7f1d1d') : 'transparent',
+                color: (param.testValue === v || String(param.testValue) === String(v)) ? (v ? '#86efac' : '#fca5a5') : '#6b7280',
+              }}
+            >{v ? 'true' : 'false'}</button>
+          ))}
+        </div>
+      ) : param.type === 'Number' ? (
+        <input
+          type="number"
+          style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', boxSizing: 'border-box' as const }}
+          value={param.testValue === undefined ? '' : String(param.testValue)}
+          placeholder="0"
+          onChange={e => onUpdate({ testValue: e.target.value === '' ? '' : Number(e.target.value) })}
+          onKeyDown={e => e.stopPropagation()}
+        />
+      ) : (param.type === 'Object' || param.type === 'Array') ? (
+        <textarea
+          style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '4px 7px', outline: 'none', boxSizing: 'border-box' as const, fontFamily: 'monospace', resize: 'vertical', minHeight: 52 }}
+          value={typeof param.testValue === 'string' ? param.testValue : JSON.stringify(param.testValue ?? (param.type === 'Array' ? [] : {}), null, 2)}
+          placeholder={param.type === 'Array' ? '[]' : '{}'}
+          onChange={e => onUpdate({ testValue: e.target.value })}
+          onKeyDown={e => e.stopPropagation()}
+        />
+      ) : (
+        <input
+          style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', boxSizing: 'border-box' as const }}
+          value={String(param.testValue ?? '')}
+          placeholder="Test text…"
+          onChange={e => onUpdate({ testValue: e.target.value })}
+          onKeyDown={e => e.stopPropagation()}
+        />
+      )}
+    </div>
+  );
+}
+
+export { FormulaParamEditor };
+
 interface FormulaSlideContentProps {
-  formulaName: string;
+  formulaId: string;
   isNew: boolean;
   onClose: () => void;
 }
 
-function FormulaSlideContent({ formulaName, isNew, onClose }: FormulaSlideContentProps) {
-  const { globalFormulas, setGlobalFormula } = useBuilderStore();
-  const [name, setName] = useState(formulaName);
-  const [expr, setExpr] = useState<object | null>((globalFormulas[formulaName] as object | null) ?? null);
+// ─── Exported base form (used by component editor too) ────────────────────────
+
+export interface FormulaSlideBaseProps {
+  initial: {
+    name?: string;
+    folder?: string;
+    description?: string;
+    params?: GlobalFormulaParam[];
+    formula?: string | FormulaValue;
+  };
+  isNew: boolean;
+  onSave: (def: { name: string; folder?: string; description?: string; params: GlobalFormulaParam[]; formula: string }) => void;
+  onDelete?: () => void;
+  onClose: () => void;
+  /** Position for the FormulaEditor popup. Use anchorRight to anchor from the right edge of the viewport. */
+  anchorLeft?: number;
+  anchorRight?: number;
+  /** When true, formula params are shown in the Quick tab instead of the Workflow tab */
+  paramsInQuick?: boolean;
+}
+
+export function FormulaSlideBase({ initial, isNew, onSave, onDelete, onClose, anchorLeft, anchorRight, paramsInQuick }: FormulaSlideBaseProps) {
+  const [name, setName] = useState(initial.name ?? '');
+  const [folder, setFolder] = useState(initial.folder ?? '');
+  const [description, setDescription] = useState(initial.description ?? '');
+  const [params, setParams] = useState<GlobalFormulaParam[]>(initial.params ?? []);
+  const [formula, setFormula] = useState<FormulaValue>(initial.formula ?? '');
+  const [showFormulaEditor, setShowFormulaEditor] = useState(false);
+
+  const fnName = (name || 'myFormula').replace(/\s+/g, '');
+  const paramSig = params.map(p => p.name || '?').join(', ');
 
   const save = useCallback(() => {
     if (!name.trim()) return;
-    if (isNew || name !== formulaName) {
-      if (!isNew) setGlobalFormula(formulaName, null as unknown as object);
-      setGlobalFormula(name.trim(), expr ?? {});
-    } else {
-      setGlobalFormula(name.trim(), expr ?? {});
-    }
+    onSave({
+      name: fnName,
+      folder: folder.trim() || undefined,
+      description: description.trim() || undefined,
+      params,
+      formula: typeof formula === 'string' ? formula : (formula as { formula?: string })?.formula ?? '',
+    });
     onClose();
-  }, [name, expr, formulaName, isNew, setGlobalFormula, onClose]);
+  }, [name, folder, description, params, formula, fnName, onSave, onClose]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={SP_SECTION}>
-        <label style={SP_LABEL}>Name *</label>
-        <input
-          data-testid="formula-name"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          placeholder="formulaName"
-          style={SP_INPUT}
+      {showFormulaEditor && (
+        <FormulaEditor
+          label="Formula body"
+          value={formula}
+          onChange={v => { setFormula(v); }}
+          onClose={() => setShowFormulaEditor(false)}
+          anchor={anchorRight !== undefined ? 'right' : 'left'}
+          anchorLeft={anchorRight === undefined ? (anchorLeft ?? 568) : undefined}
+          anchorRight={anchorRight}
+          hideUnbind
+          formulaParams={params}
+          paramsInQuick={paramsInQuick}
         />
-        <div style={{ fontSize: 10, color: '#4b5563', marginTop: 4 }}>
-          Reference as <code style={{ color: '#fbbf24' }}>{`{{formula.${name || 'name'}}}`}</code>
+      )}
+
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {/* Name */}
+        <div style={SP_SECTION}>
+          <label style={SP_LABEL}>Function name *</label>
+          <input
+            data-testid="formula-name"
+            autoFocus
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="myFormula"
+            style={SP_INPUT}
+            onKeyDown={e => e.stopPropagation()}
+          />
+          {name && (
+            <div style={{ fontSize: 10, color: '#6b7280', marginTop: 4 }}>
+              Call as <code style={{ color: '#fbbf24', fontFamily: 'monospace' }}>{fnName}({paramSig})</code>
+            </div>
+          )}
+        </div>
+
+        {/* Folder */}
+        <div style={SP_SECTION}>
+          <label style={SP_LABEL}>Folder</label>
+          <input
+            value={folder}
+            onChange={e => setFolder(e.target.value)}
+            placeholder="e.g. Text, Math, Utils"
+            style={SP_INPUT}
+            onKeyDown={e => e.stopPropagation()}
+          />
+        </div>
+
+        {/* Description */}
+        <div style={SP_SECTION}>
+          <label style={SP_LABEL}>Description</label>
+          <textarea
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder="What does this formula do?"
+            style={{ ...SP_INPUT, resize: 'vertical', minHeight: 48, fontFamily: 'inherit' } as React.CSSProperties}
+            onKeyDown={e => e.stopPropagation()}
+          />
+        </div>
+
+        {/* Parameters */}
+        <div style={{ ...SP_SECTION, borderBottom: 'none' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <label style={SP_LABEL}>Parameters</label>
+            <button
+              type="button"
+              onClick={() => setParams(ps => [...ps, { id: `p-${Date.now()}`, name: '', type: 'Text' }])}
+              style={{ padding: '2px 8px', background: '#1d4ed8', border: 'none', borderRadius: 4, color: '#fff', fontSize: 10, cursor: 'pointer' }}
+            >
+              + Add
+            </button>
+          </div>
+          {params.length === 0 && (
+            <div style={{ fontSize: 11, color: '#4b5563', fontStyle: 'italic', marginBottom: 8 }}>No parameters yet.</div>
+          )}
+          {params.map((param, i) => (
+            <FormulaParamEditor
+              key={param.id}
+              param={param}
+              onUpdate={patch => setParams(ps => ps.map((p, idx) => idx === i ? { ...p, ...patch } : p))}
+              onRemove={() => setParams(ps => ps.filter((_, idx) => idx !== i))}
+            />
+          ))}
+        </div>
+
+        {/* Formula body */}
+        <div style={SP_SECTION}>
+          <label style={SP_LABEL}>Formula body</label>
+          <div
+            style={{
+              background: '#111827', border: '1px solid #374151', borderRadius: 5,
+              padding: '6px 10px', fontSize: 11, color: formula ? '#fbbf24' : '#4b5563',
+              fontFamily: 'monospace', minHeight: 34, cursor: 'pointer',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}
+            onClick={() => setShowFormulaEditor(true)}
+            title="Click to edit formula"
+          >
+            {formula
+              ? (typeof formula === 'string' ? formula : (formula as { formula?: string })?.formula ?? '')
+              : '(click to add formula body…)'}
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowFormulaEditor(true)}
+            style={{ marginTop: 5, padding: '4px 10px', background: '#1e293b', border: '1px solid #334155', borderRadius: 4, color: '#60a5fa', fontSize: 10, cursor: 'pointer' }}
+          >
+            ✎ Edit Formula
+          </button>
         </div>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 12px' }}>
-        <label style={SP_LABEL}>Expression (JSON Logic)</label>
-        <ExprBuilder
-          value={expr}
-          onChange={v => setExpr(typeof v === 'object' && v !== null ? v as object : null)}
-        />
-      </div>
-      <div style={{ padding: '10px 12px', borderTop: '1px solid #1f2937', display: 'flex', gap: 8, justifyContent: 'flex-end', flexShrink: 0 }}>
-        <button onClick={onClose} style={SP_BTN_SECONDARY}>Cancel</button>
+
+      {/* Footer */}
+      <div style={{ padding: '10px 12px', borderTop: '1px solid #1f2937', display: 'flex', gap: 8, flexShrink: 0 }}>
+        {!isNew && onDelete && (
+          <button
+            onClick={() => { onDelete(); onClose(); }}
+            style={{ padding: '5px 10px', background: 'none', border: '1px solid #7f1d1d', borderRadius: 4, color: '#f87171', fontSize: 11, cursor: 'pointer' }}
+          >
+            Delete
+          </button>
+        )}
+        <div style={{ flex: 1 }} />
+        <button onClick={onClose} style={SP_BTN_SECONDARY}>{isNew ? 'Cancel' : 'Close'}</button>
         <button
           data-testid="formula-save"
           onClick={save}
@@ -308,80 +595,103 @@ function FormulaSlideContent({ formulaName, isNew, onClose }: FormulaSlideConten
   );
 }
 
+// ─── Store-connected version (left panel) ─────────────────────────────────────
+
+function FormulaSlideContent({ formulaId, isNew, onClose }: FormulaSlideContentProps) {
+  const { globalFormulas, setGlobalFormulaFull, removeGlobalFormula } = useBuilderStore();
+  const existing = globalFormulas[formulaId] as GlobalFormulaDef | undefined;
+
+  const handleSave = useCallback((def: { name: string; folder?: string; description?: string; params: GlobalFormulaParam[]; formula: string }) => {
+    const full: GlobalFormulaDef = {
+      name: def.name,
+      folder: def.folder,
+      description: def.description,
+      params: def.params,
+      formula: def.formula,
+    };
+    setGlobalFormulaFull(formulaId, full);
+  }, [formulaId, setGlobalFormulaFull]);
+
+  const handleDelete = useCallback(() => {
+    removeGlobalFormula(formulaId);
+  }, [formulaId, removeGlobalFormula]);
+
+  return (
+    <FormulaSlideBase
+      key={formulaId}
+      initial={{
+        name: existing?.name,
+        folder: existing?.folder,
+        description: existing?.description,
+        params: existing?.params,
+        formula: existing?.formula,
+      }}
+      isNew={isNew}
+      onSave={handleSave}
+      onDelete={isNew ? undefined : handleDelete}
+      onClose={onClose}
+    />
+  );
+}
+
 function FormulaRow({
-  formulaName,
+  formulaId,
+  def,
   onOpen,
   onDelete,
-}: { formulaName: string; onOpen: () => void; onDelete: () => void }) {
+}: { formulaId: string; def: GlobalFormulaDef; onOpen: () => void; onDelete: () => void }) {
   const [hovered, setHovered] = useState(false);
+  const fnName = def.name || formulaId;
+  const paramSig = (def.params ?? []).map(p => p.name || '?').join(', ');
 
   return (
     <div
-      data-testid={`formula-row-${formulaName}`}
+      data-testid={`formula-row-${formulaId}`}
       style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        padding: '8px 12px', borderBottom: '1px solid #1f2937',
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '10px 14px', borderBottom: '1px solid #1f2937',
         cursor: 'pointer',
-        background: hovered ? 'rgba(59,130,246,0.08)' : 'transparent',
+        background: hovered ? 'rgba(255,255,255,0.04)' : 'transparent',
       }}
       onClick={onOpen}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <span style={{ fontSize: 13, color: '#fbbf24', flexShrink: 0, fontStyle: 'italic', fontFamily: 'serif' }}>ƒ</span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: '#fbbf24', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
-          {formulaName}
-        </div>
+      {/* Icon */}
+      <div style={{
+        width: 30, height: 30, borderRadius: 7, flexShrink: 0,
+        background: '#1e293b', border: '1px solid #334155',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 14, color: '#fbbf24', fontStyle: 'italic', fontFamily: 'serif',
+      }}>
+        ƒ
       </div>
+
+      {/* Name + signature */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#fbbf24', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
+          {fnName}({paramSig})
+        </div>
+        {def.description && (
+          <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {def.description}
+          </div>
+        )}
+        {def.folder && (
+          <div style={{ fontSize: 9, color: '#374151', marginTop: 1 }}>{def.folder}</div>
+        )}
+      </div>
+
+      {/* Delete */}
       <button
-        data-testid={`delete-formula-${formulaName}`}
+        data-testid={`delete-formula-${formulaId}`}
         onClick={e => { e.stopPropagation(); onDelete(); }}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4b5563', fontSize: 14, padding: '0 2px', flexShrink: 0 }}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#475569', fontSize: 16, padding: '0 2px', flexShrink: 0, lineHeight: 1 }}
         onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
-        onMouseLeave={e => (e.currentTarget.style.color = '#4b5563')}
+        onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
       >
         ×
       </button>
-    </div>
-  );
-}
-
-function FormulasSection({ onOpenSlide }: { onOpenSlide: (name: string, isNew: boolean) => void }) {
-  const { globalFormulas, setGlobalFormula, removeGlobalFormula } = useBuilderStore();
-  const entries = Object.keys(globalFormulas);
-
-  const addFormula = () => {
-    let name = 'untitled';
-    let i = 1;
-    while (globalFormulas[name] !== undefined) { name = `untitled${i++}`; }
-    setGlobalFormula(name, {});
-    onOpenSlide(name, true);
-  };
-
-  return (
-    <div>
-      <div style={SECTION_HDR}>
-        <span style={SEC_LABEL}>Formulas</span>
-        <button
-          data-testid="add-formula-btn"
-          onClick={addFormula}
-          style={ADD_BTN}
-        >
-          + New
-        </button>
-      </div>
-      {entries.length === 0 && (
-        <div style={EMPTY}>No formulas yet — click + New to add one.</div>
-      )}
-      {entries.map(name => (
-        <FormulaRow
-          key={name}
-          formulaName={name}
-          onOpen={() => onOpenSlide(name, false)}
-          onDelete={() => removeGlobalFormula(name)}
-        />
-      ))}
     </div>
   );
 }
@@ -390,7 +700,7 @@ function FormulasSection({ onOpenSlide }: { onOpenSlide: (name: string, isNew: b
 
 type LogicSlideState =
   | { kind: 'workflow'; id: string }
-  | { kind: 'formula'; name: string; isNew: boolean }
+  | { kind: 'formula'; id: string; isNew: boolean }
   | null;
 
 // ─── LogicSlidePanelContent — rendered inside page.tsx's SlidePanel ─────────
@@ -406,7 +716,7 @@ export function LogicSlidePanelContent({ slideState, onClose }: LogicSlidePanelC
     return <WorkflowSlideContent workflowId={slideState.id} onClose={onClose} />;
   }
   if (slideState.kind === 'formula') {
-    return <FormulaSlideContent formulaName={slideState.name} isNew={slideState.isNew} onClose={onClose} />;
+    return <FormulaSlideContent formulaId={slideState.id} isNew={slideState.isNew} onClose={onClose} />;
   }
   return null;
 }
@@ -414,7 +724,7 @@ export function LogicSlidePanelContent({ slideState, onClose }: LogicSlidePanelC
 export function getLogicSlideTitle(slideState: LogicSlideState): string {
   if (!slideState) return '';
   if (slideState.kind === 'workflow') return slideState.id;
-  if (slideState.kind === 'formula') return slideState.isNew ? 'New Formula' : slideState.name;
+  if (slideState.kind === 'formula') return slideState.isNew ? 'New Formula' : 'Edit Formula';
   return '';
 }
 
@@ -441,7 +751,7 @@ export function LogicTab({ onSetSlide }: LogicTabProps) {
   const [fmSearch, setFmSearch] = useState('');
   const [wfOpen, setWfOpen] = useState(true);
   const [fmOpen, setFmOpen] = useState(true);
-  const { globalWorkflows, setGlobalWorkflow, removeGlobalWorkflow, globalWorkflowMeta, setGlobalWorkflowMeta, globalFormulas, setGlobalFormula, removeGlobalFormula, openWorkflowCanvas } = useBuilderStore();
+  const { globalWorkflows, setGlobalWorkflow, removeGlobalWorkflow, globalWorkflowMeta, setGlobalWorkflowMeta, globalFormulas, setGlobalFormulaFull, removeGlobalFormula, openWorkflowCanvas } = useBuilderStore();
 
   // Only show truly global (project-level) workflows — NOT page-scoped ones
   const filteredGlobalWorkflows = Object.keys(globalWorkflows).filter(id => {
@@ -450,8 +760,12 @@ export function LogicTab({ onSetSlide }: LogicTabProps) {
     return name.toLowerCase().includes(wfSearch.toLowerCase());
   });
 
-  const allFormulas = Object.keys(globalFormulas);
-  const filteredFormulas = allFormulas.filter(n => n.toLowerCase().includes(fmSearch.toLowerCase()));
+  const filteredFormulas = Object.entries(globalFormulas).filter(([, def]) => {
+    const searchLower = fmSearch.toLowerCase();
+    return (def as GlobalFormulaDef).name?.toLowerCase().includes(searchLower) ||
+      (def as GlobalFormulaDef).folder?.toLowerCase().includes(searchLower) ||
+      (def as GlobalFormulaDef).description?.toLowerCase().includes(searchLower);
+  });
 
   const addWorkflow = () => {
     const id = crypto.randomUUID();
@@ -461,11 +775,9 @@ export function LogicTab({ onSetSlide }: LogicTabProps) {
   };
 
   const addFormula = () => {
-    let name = 'untitled';
-    let i = 1;
-    while (globalFormulas[name] !== undefined) { name = `untitled${i++}`; }
-    setGlobalFormula(name, {});
-    onSetSlide({ kind: 'formula', name, isNew: true });
+    const id = crypto.randomUUID();
+    setGlobalFormulaFull(id, { name: '', folder: '', description: '', params: [], formula: '' });
+    onSetSlide({ kind: 'formula', id, isNew: true });
   };
 
   return (
@@ -561,12 +873,13 @@ export function LogicTab({ onSetSlide }: LogicTabProps) {
                   {fmSearch ? 'No matching formulas.' : 'No formulas yet — click + New.'}
                 </div>
               )}
-              {filteredFormulas.map(name => (
+              {filteredFormulas.map(([id, def]) => (
                 <FormulaRow
-                  key={name}
-                  formulaName={name}
-                  onOpen={() => onSetSlide({ kind: 'formula', name, isNew: false })}
-                  onDelete={() => removeGlobalFormula(name)}
+                  key={id}
+                  formulaId={id}
+                  def={def as GlobalFormulaDef}
+                  onOpen={() => onSetSlide({ kind: 'formula', id, isNew: false })}
+                  onDelete={() => removeGlobalFormula(id)}
                 />
               ))}
             </div>

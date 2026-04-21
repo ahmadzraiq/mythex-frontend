@@ -2,6 +2,9 @@
   "meta": {
     "title": "Order Confirmation"
   },
+  "queryParams": [
+    { "name": "code", "value": "" }
+  ],
   "state": {},
   "layout": "store",
   "content": {
@@ -204,7 +207,7 @@
                                   "className": "font-semibold"
                                 },
                                 "text": {
-                                  "expr": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['a3b4c5d6-e7f8-9012-abcd-123456789012']?.data?.orderByCode?.currencyCode || 'USD')"
+                                  "formula": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['a3b4c5d6-e7f8-9012-abcd-123456789012']?.data?.orderByCode?.currencyCode || 'USD')"
                                 }
                               }
                             ]
@@ -232,7 +235,7 @@
                       {
                         "type": "Text",
                         "text": {
-                          "expr": "formatCurrency((collections['a3b4c5d6-e7f8-9012-abcd-123456789012']?.data?.orderByCode?.totalWithTax || 0) / 100, collections['a3b4c5d6-e7f8-9012-abcd-123456789012']?.data?.orderByCode?.currencyCode || 'USD')"
+                          "formula": "formatCurrency((collections['a3b4c5d6-e7f8-9012-abcd-123456789012']?.data?.orderByCode?.totalWithTax || 0) / 100, collections['a3b4c5d6-e7f8-9012-abcd-123456789012']?.data?.orderByCode?.currencyCode || 'USD')"
                         }
                       }
                     ]
@@ -282,7 +285,7 @@
                       "className": "text-[14px] text-[var(--theme-muted-foreground)] mt-[4px]"
                     },
                     "text": {
-                      "expr": "collections['a3b4c5d6-e7f8-9012-abcd-123456789012']?.data?.orderByCode?.shippingAddress?.streetLine1 + (collections['a3b4c5d6-e7f8-9012-abcd-123456789012']?.data?.orderByCode?.shippingAddress?.streetLine2 ? ', ' + collections['a3b4c5d6-e7f8-9012-abcd-123456789012']?.data?.orderByCode?.shippingAddress?.streetLine2 : '')"
+                      "formula": "collections['a3b4c5d6-e7f8-9012-abcd-123456789012']?.data?.orderByCode?.shippingAddress?.streetLine1 + (collections['a3b4c5d6-e7f8-9012-abcd-123456789012']?.data?.orderByCode?.shippingAddress?.streetLine2 ? ', ' + collections['a3b4c5d6-e7f8-9012-abcd-123456789012']?.data?.orderByCode?.shippingAddress?.streetLine2 : '')"
                     }
                   },
                   {

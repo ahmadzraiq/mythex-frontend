@@ -3099,5 +3099,157 @@
         }
       }
     ]
+  },
+
+  "greetUser": {
+    "name": "Greet User (Global Workflow Demo)",
+    "trigger": "execution",
+    "params": [
+      { "id": "p1", "name": "username", "type": "Text", "testValue": "Ahmad" },
+      { "id": "p2", "name": "greeting", "type": "Text", "testValue": "Hello" },
+      { "id": "p3", "name": "maxResults", "type": "Number", "testValue": 5 },
+      { "id": "p4", "name": "formal", "type": "Boolean", "testValue": true },
+      { "id": "p5", "name": "tags", "type": "Text", "allowMultiple": true, "testValue": ["vip", "member"] },
+      { "id": "p6", "name": "userProfile", "type": "Object", "testValue": { "role": "admin", "level": 3 } },
+      { "id": "p7", "name": "allowedRoles", "type": "Array", "testValue": ["admin", "editor", "viewer"] }
+    ],
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Build greeting from all params",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wf-param-0000-0000-0000-000000000001",
+          "value": {
+            "formula": "(parameters?.['formal'] ? 'Dear ' : '') + (parameters?.['greeting'] || 'Hello') + ', ' + (parameters?.['username'] || 'Guest') + (parameters?.['formal'] ? '.' : '!') + ' | max:' + String(parameters?.['maxResults'] ?? '?') + ' | tags:[' + (Array.isArray(parameters?.['tags']) ? parameters['tags'].join(', ') : String(parameters?.['tags'] || '-')) + '] | role:' + String(parameters?.['userProfile']?.['role'] ?? '?') + ' lvl:' + String(parameters?.['userProfile']?.['level'] ?? '?') + ' | allowed:[' + (Array.isArray(parameters?.['allowedRoles']) ? parameters['allowedRoles'].join(', ') : '-') + ']'"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "name": "Return summary to caller",
+        "type": "returnValue",
+        "config": {
+          "value": {
+            "formula": "'{' + (parameters?.['formal'] ? 'formal' : 'casual') + '} ' + (parameters?.['greeting'] || 'Hello') + ' ' + (parameters?.['username'] || 'Guest') + ' — roles: [' + (Array.isArray(parameters?.['allowedRoles']) ? parameters['allowedRoles'].join(', ') : '-') + '] | lvl ' + String(parameters?.['userProfile']?.['level'] ?? '?')"
+          }
+        }
+      }
+    ]
+  },
+
+  "callGreetFormal": {
+    "name": "Greet: Formal",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "greetUser",
+          "params": {
+            "username": "Ahmad",
+            "greeting": "Good morning",
+            "maxResults": 3,
+            "formal": true,
+            "tags": ["vip", "premium"],
+            "userProfile": { "role": "manager", "level": 5 },
+            "allowedRoles": ["admin", "manager"]
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "name": "Store return value from greetUser",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wf-return-0000-0000-0000-000000000002",
+          "value": {
+            "formula": "context?.workflow?.['s1']?.result"
+          }
+        }
+      }
+    ]
+  },
+
+  "callGreetCasual": {
+    "name": "Greet: Casual",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "greetUser",
+          "params": {
+            "username": "Ahmad",
+            "greeting": "Hey",
+            "maxResults": 10,
+            "formal": false,
+            "tags": ["friend"],
+            "userProfile": { "role": "guest", "level": 1 },
+            "allowedRoles": ["viewer"]
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "name": "Store return value from greetUser",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wf-return-0000-0000-0000-000000000002",
+          "value": {
+            "formula": "context?.workflow?.['s1']?.result"
+          }
+        }
+      }
+    ]
+  },
+
+  "fetchTodo": {
+    "trigger": "click",
+    "global": true,
+    "params": [
+      { "id": "p-todo-id", "name": "todoId", "type": "Number", "testValue": 1 }
+    ],
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Fetch todo from API",
+        "type": "fetchData",
+        "config": {
+          "url": { "formula": "'https://jsonplaceholder.typicode.com/todos/' + (parameters?.['todoId'] ?? 1)" },
+          "method": "GET"
+        }
+      }
+    ]
+  },
+
+  "callFetchTodo": {
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Run fetchTodo global workflow",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "fetchTodo",
+          "params": {
+            "todoId": { "formula": "1" }
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "name": "Store todo result",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wf-todo-result-0000-0000-0000-000000000002",
+          "value": {
+            "formula": "JSON.stringify(context?.workflow?.['s1']?.result, null, 2)"
+          }
+        }
+      }
+    ]
   }
 }

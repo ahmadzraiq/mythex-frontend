@@ -94,17 +94,18 @@ export function resolveValue(
       const resolved = get(path, scope);
       return resolved !== undefined && resolved !== null ? resolved : fallback;
     }
-    if ('expr' in obj && fullState) {
+    if ('formula' in obj && fullState) {
       try {
-        const stateForExpr = {
+        const stateForEval = {
           ...fullState,
           ...(scope ?? {}),
           _timestamp: Date.now(),
           _date: new Date().toISOString().slice(0, 10),
         };
-        const exprVal = (obj as { expr: string | object }).expr;
-        return evaluateFormula(exprVal, stateForExpr).value;
-      } catch {
+        const formulaVal = (obj as { formula: string | object }).formula;
+        return evaluateFormula(formulaVal, stateForEval).value;
+      } catch (e) {
+        if (typeof window !== 'undefined') console.warn('[resolveValue] formula eval failed:', e);
         return undefined;
       }
     }

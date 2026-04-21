@@ -25,24 +25,26 @@ export function interpolate(
   });
 }
 
-/** Resolve text: string (interpolate), { var } (path lookup), { expr, suffix?, prefix?, template? } (inline JSON Logic),
+/** Resolve text: string (interpolate), { var } (path lookup), { formula, suffix?, prefix?, template? } (inline formula),
  *  or any other object treated as a bare JSON Logic expression (e.g. { "formatCurrency": [...] }) */
 export function resolveText(
-  text: string | { expr?: object; var?: string | [string, unknown]; suffix?: string; prefix?: string; template?: string } | undefined,
+  text: string | { formula?: string | object; var?: string | [string, unknown]; suffix?: string; prefix?: string; template?: string } | undefined,
   context: SDUIContext,
   scope?: Record<string, unknown>
 ): string {
   if (text == null) return '';
   if (typeof text === 'string') return interpolate(text, context, scope);
   if (typeof text === 'object' && text !== null) {
-    // Builder formula binding: { formula: "expression string" }
     if ('formula' in text) {
-      const formulaStr = (text as { formula: string }).formula;
-      const evalResult = evaluateFormula(formulaStr, context.state ?? {});
-      if (evalResult.value !== undefined && evalResult.value !== null && typeof evalResult.value !== 'object') {
-        return String(evalResult.value);
-      }
-      return '';
+      const { formula: f, suffix = '', prefix = '', template } = text as { formula: string | object; suffix?: string; prefix?: string; template?: string };
+      const evalResult = evaluateFormula(
+        (typeof f === 'string' ? f : f) as string | object,
+        context.state ?? {}
+      );
+      const str = String(evalResult.value ?? '');
+      if (template != null) return template.replace('{0}', str);
+      if (suffix || prefix) return prefix + str + suffix;
+      return str;
     }
     if ('var' in text) {
       const v = text.var;
@@ -51,16 +53,6 @@ export function resolveText(
       const val = context.get(path, scope);
       const result = val !== undefined && val !== null ? val : fallback;
       return String(result ?? '');
-    }
-    if ('expr' in text) {
-      const { expr, suffix = '', prefix = '', template } = text;
-      const evalResult = evaluateFormula(
-        (typeof expr === 'string' ? expr : expr) as string | object,
-        context.state ?? {}
-      );
-      const str = String(evalResult.value ?? '');
-      if (template != null) return template.replace('{0}', str);
-      return prefix + str + suffix;
     }
     // Fallback: treat the entire object as a bare formula expression.
     // This handles AI-generated patterns like { "formatCurrency": { "var": "..." } }
@@ -138,22 +130,14 @@ export function resolveProps(
         const val = context.get(String(path), scope);
         const finalVal = val !== undefined && val !== null ? val : fallback;
         resolved[key] = coerceValue(finalVal);
-      } else if ('expr' in obj) {
+      } else if ('formula' in obj) {
         try {
+          const f = obj.formula;
           const evalResult = evaluateFormula(
-            (typeof obj.expr === 'string' ? obj.expr : obj.expr) as string | object,
+            (typeof f === 'string' ? f : f) as string | object,
             context.state ?? {}
           );
-          resolved[key] = evalResult.value != null ? String(evalResult.value) : evalResult.value;
-        } catch {
-          resolved[key] = value;
-        }
-      } else if ('formula' in obj && typeof obj.formula === 'string') {
-        // Builder formula binding in style/prop values (e.g. style.width = { formula: "200" })
-        try {
-          const evalResult = evaluateFormula(obj.formula, context.state ?? {});
           if (evalResult.value != null && typeof evalResult.value !== 'object') {
-            // Auto-append "px" for numeric results on known CSS dimension properties
             const v = evalResult.value;
             resolved[key] = (typeof v === 'number' && DIMENSION_KEYS.has(key)) ? `${v}px` : String(v);
           } else {

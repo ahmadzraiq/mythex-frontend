@@ -49,6 +49,7 @@ import pricing from './screens/pricing.json';
 import videoHero from './screens/video-hero.json';
 import techHero from './screens/tech-hero.json';
 import calculator from './screens/calculator.json';
+import counterExample from './screens/counter-example.json';
 import pricingNested from './screens/pricing-nested.json';
 import videoHeroTest from './screens/video-hero-test.json';
 import responsiveTest from './screens/responsive-test.json';
@@ -65,32 +66,13 @@ import navbarBottom from './screens/navbar-bottom.json';
 import navbarScrollAware from './screens/navbar-scroll-aware.json';
 import popoverTest from './screens/popover-test.json';
 import animationShowcase from './screens/animation-showcase.json';
-import queryParamsTest from './screens/query-params-test.json';
+import triggersTest from './screens/triggers-test.json';
 
 // Layouts
 import storeLayout from './layouts/store.json';
 import accountLayout from './layouts/account.json';
 import checkoutMinimalLayout from './layouts/checkout-minimal.json';
 
-// Fragments
-import navbar from './fragments/layout/navbar.json';
-import footer from './fragments/layout/footer.json';
-import cartDrawer from './fragments/layout/cart-drawer.json';
-import accountSidebar from './fragments/layout/account-sidebar.json';
-import productCard from './fragments/cards/product-card.json';
-import productImageCarousel from './fragments/cards/product-image-carousel.json';
-import productInfo from './fragments/product/product-info.json';
-import collectionPagination from './fragments/pagination/collection-pagination.json';
-import searchPagination from './fragments/pagination/search-pagination.json';
-import checkoutContactStep from './fragments/checkout/contact-step.json';
-import checkoutShippingStep from './fragments/checkout/shipping-step.json';
-import checkoutPaymentStep from './fragments/checkout/payment-step.json';
-import collectionLoadingSkeleton from './fragments/sections/collection-loading-skeleton.json';
-import searchLoadingSkeleton from './fragments/sections/search-loading-skeleton.json';
-import productCarousel from './fragments/sections/product-carousel.json';
-import hero from './fragments/sections/hero.json';
-import productGrid from './fragments/sections/product-grid.json';
-import featureGrid from './fragments/sections/feature-grid.json';
 
 // Actions
 import authActions from './actions/auth.json';
@@ -104,11 +86,13 @@ import workflowTestActions from './actions/workflow-test.json';
 import animationTestActions from './actions/animation-test.json';
 import controlsShowcaseActions from './actions/controls-showcase.json';
 import calculatorActions from './actions/calculator.json';
+import counterExampleActions from './actions/counter-example.json';
 import pricingNestedActions from './actions/pricing-nested.json';
 import responsiveTestActions from './actions/responsive-test.json';
 import sharedComponentTestActions from './actions/shared-component-test.json';
 import popoverTestActions from './actions/popover-test.json';
 import animationShowcaseActions from './actions/animation-showcase.json';
+import triggersTestActions from './actions/triggers-test.json';
 
 const screens = {
   home,
@@ -151,6 +135,7 @@ const screens = {
   videoHero,
   techHero,
   calculator,
+  counterExample,
   pricingNested,
   videoHeroTest,
   responsiveTest,
@@ -167,7 +152,7 @@ const screens = {
   navbarScrollAware,
   popoverTest,
   animationShowcase,
-  queryParamsTest,
+  triggersTest,
 };
 
 const layouts = {
@@ -176,26 +161,7 @@ const layouts = {
   checkoutMinimal: checkoutMinimalLayout,
 };
 
-const fragments = {
-  'fragments/layout/navbar': navbar,
-  'fragments/layout/footer': footer,
-  'fragments/layout/cart-drawer': cartDrawer,
-  'fragments/layout/account-sidebar': accountSidebar,
-  'fragments/cards/product-card': productCard,
-  'fragments/cards/product-image-carousel': productImageCarousel,
-  'fragments/product/product-info': productInfo,
-  'fragments/pagination/collection-pagination': collectionPagination,
-  'fragments/pagination/search-pagination': searchPagination,
-  'fragments/checkout/contact-step': checkoutContactStep,
-  'fragments/checkout/shipping-step': checkoutShippingStep,
-  'fragments/checkout/payment-step': checkoutPaymentStep,
-  'fragments/sections/collection-loading-skeleton': collectionLoadingSkeleton,
-  'fragments/sections/search-loading-skeleton': searchLoadingSkeleton,
-  'fragments/sections/product-carousel': productCarousel,
-  'fragments/sections/hero': hero,
-  'fragments/sections/product-grid': productGrid,
-  'fragments/sections/feature-grid': featureGrid,
-};
+const fragments = {};
 
 const actions = {
   ...authActions,
@@ -209,11 +175,13 @@ const actions = {
   ...animationTestActions,
   ...controlsShowcaseActions,
   ...calculatorActions,
+  ...counterExampleActions,
   ...pricingNestedActions,
   ...responsiveTestActions,
   ...sharedComponentTestActions,
   ...popoverTestActions,
   ...animationShowcaseActions,
+  ...triggersTestActions,
 };
 
 const actionsByFile = {
@@ -228,11 +196,13 @@ const actionsByFile = {
   animationTest: animationTestActions,
   controlsShowcase: controlsShowcaseActions,
   calculator: calculatorActions,
+  counterExample: counterExampleActions,
   pricingNested: pricingNestedActions,
   responsiveTest: responsiveTestActions,
   sharedComponentTest: sharedComponentTestActions,
   popoverTest: popoverTestActions,
   animationShowcase: animationShowcaseActions,
+  triggersTest: triggersTestActions,
 };
 
 export const root = {

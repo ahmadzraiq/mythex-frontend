@@ -9,6 +9,12 @@
       },
       "folder": "App"
     },
+    "c1d2e3f4-a5b6-7890-cdef-123456789012": {
+      "label": "Redirect After Login",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Auth"
+    },
     "b1c2d3e4-f5a6-7890-bcde-f01234567890": {
       "label": "Nav Drawer Open",
       "type": "boolean",
@@ -42,7 +48,6 @@
       "folder": "Navigation",
       "urlParam": {
         "param": "q",
-        "path": "route.q",
         "default": "",
         "triggersParamChange": true
       }
@@ -51,15 +56,7 @@
       "label": "Collection Skip",
       "type": "number",
       "initialValue": 0,
-      "folder": "Pagination",
-      "urlParam": {
-        "param": "page",
-        "default": "1",
-        "transform": "pageToSkip",
-        "pageSize": 12,
-        "routePrefix": "/collection",
-        "triggersParamChange": true
-      }
+      "folder": "Pagination"
     },
     "b7c8d9e0-f1a2-3456-bcde-567890123456": {
       "label": "Search Skip",
@@ -579,7 +576,6 @@
       "folder": "Routing",
       "urlParam": {
         "param": "sort",
-        "path": "route.sort",
         "default": "name-asc",
         "triggersParamChange": true
       }
@@ -591,7 +587,6 @@
       "folder": "Routing",
       "urlParam": {
         "param": "facets",
-        "path": "route.facets",
         "type": "array",
         "triggersParamChange": true
       }
@@ -603,7 +598,6 @@
       "folder": "Routing",
       "urlParam": {
         "param": "token",
-        "path": "route.token",
         "default": ""
       }
     },
@@ -1237,6 +1231,13 @@
         }
       ],
       "folder": "Video Hero"
+    },
+    "c71a0001-0000-0000-0000-000000000001": {
+      "label": "Counter Value",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Counter Example",
+      "saveInLocalStorage": false
     },
     "ca1c0001-0000-0000-0000-000000000001": {
       "label": "Calc Display",
@@ -2080,7 +2081,22 @@
     "dp-test-0000-0000-0000-000000000051": { "label": "Static DP: Year", "type": "number", "initialValue": 2026, "folder": "Popover Test" },
     "dp-test-0000-0000-0000-000000000052": { "label": "Static DP: Month", "type": "number", "initialValue": 3, "folder": "Popover Test" },
     "dp-test-0000-0000-0000-000000000053": { "label": "Static DP: Selected", "type": "string", "initialValue": "", "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000054": { "label": "Static DP: Grid", "type": "array", "initialValue": [], "folder": "Popover Test" }
+    "dp-test-0000-0000-0000-000000000054": { "label": "Static DP: Grid", "type": "array", "initialValue": [], "folder": "Popover Test" },
+
+    "wf-param-0000-0000-0000-000000000001": { "label": "Greet Result", "type": "string", "initialValue": "(not run yet)", "folder": "Workflow Params Demo" },
+    "wf-return-0000-0000-0000-000000000002": { "label": "Greet Return Value", "type": "string", "initialValue": "(no return yet)", "folder": "Workflow Params Demo" },
+    "wf-todo-result-0000-0000-0000-000000000002": { "label": "Todo API Result (JSON)", "type": "string", "initialValue": "(not fetched yet)", "folder": "Workflow Params Demo" },
+
+    "tr000000-0000-0000-0000-000000000001": { "label": "App Load Before Count", "type": "number", "initialValue": 0, "folder": "Triggers Test" },
+    "tr000000-0000-0000-0000-000000000002": { "label": "App Load Count", "type": "number", "initialValue": 0, "folder": "Triggers Test" },
+    "tr000000-0000-0000-0000-000000000003": { "label": "Page Load Before Count", "type": "number", "initialValue": 0, "folder": "Triggers Test" },
+    "tr000000-0000-0000-0000-000000000004": { "label": "Page Load Count", "type": "number", "initialValue": 0, "folder": "Triggers Test" },
+    "tr000000-0000-0000-0000-000000000005": { "label": "Page Unload Count", "type": "number", "initialValue": 0, "folder": "Triggers Test" },
+    "tr000000-0000-0000-0000-000000000006": { "label": "Scroll Y", "type": "string", "initialValue": "0", "folder": "Triggers Test" },
+    "tr000000-0000-0000-0000-000000000007": { "label": "Viewport Width", "type": "string", "initialValue": "—", "folder": "Triggers Test" },
+    "tr000000-0000-0000-0000-000000000008": { "label": "Last Keydown", "type": "string", "initialValue": "—", "folder": "Triggers Test" },
+    "tr000000-0000-0000-0000-000000000009": { "label": "Last Keyup", "type": "string", "initialValue": "—", "folder": "Triggers Test" },
+    "tr000000-0000-0000-0000-000000000010": { "label": "Collection Fetch Error", "type": "string", "initialValue": "None", "folder": "Triggers Test" }
   },
   "varFolders": [
     {
@@ -2186,6 +2202,14 @@
     {
       "id": "Popover Test",
       "label": "Popover Test"
+    },
+    {
+      "id": "Workflow Params Demo",
+      "label": "Workflow Params Demo"
+    },
+    {
+      "id": "Triggers Test",
+      "label": "Triggers Test"
     }
   ]
 }

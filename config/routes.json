@@ -23,18 +23,13 @@
       "path": "/product",
       "config": "product",
       "auth": false,
-      "layout": "full",
-      "dynamic": true,
-      "params": ["slug"]
+      "layout": "full"
     },
     {
       "path": "/collection",
       "config": "collection",
       "auth": false,
-      "layout": "full",
-      "dynamic": true,
-      "paramChangeAction": "fetchCollection",
-      "params": ["slug"]
+      "layout": "full"
     },
     {
       "path": "/search",
@@ -47,36 +42,42 @@
       "path": "/sign-in",
       "config": "signIn",
       "auth": false,
+      "guestOnly": true,
       "layout": "full"
     },
     {
       "path": "/register",
       "config": "register",
       "auth": false,
+      "guestOnly": true,
       "layout": "full"
     },
     {
       "path": "/forgot-password",
       "config": "forgotPassword",
       "auth": false,
+      "guestOnly": true,
       "layout": "full"
     },
     {
       "path": "/reset-password",
       "config": "resetPassword",
       "auth": false,
+      "guestOnly": true,
       "layout": "full"
     },
     {
       "path": "/verify",
       "config": "verify",
       "auth": false,
+      "guestOnly": true,
       "layout": "centered"
     },
     {
       "path": "/verify-pending",
       "config": "verifyPending",
       "auth": false,
+      "guestOnly": true,
       "layout": "centered"
     },
     {
@@ -86,12 +87,10 @@
       "layout": "full"
     },
     {
-      "path": "/account/orders",
+      "path": "/account/order",
       "config": "accountOrderDetail",
       "auth": true,
-      "layout": "full",
-      "dynamic": true,
-      "params": ["id"]
+      "layout": "full"
     },
     {
       "path": "/account/addresses",
@@ -109,9 +108,7 @@
       "path": "/order-confirmation",
       "config": "orderConfirmation",
       "auth": false,
-      "layout": "full",
-      "dynamic": true,
-      "params": ["id"]
+      "layout": "full"
     },
     {
       "path": "/not-found",
@@ -252,6 +249,12 @@
       "layout": "full"
     },
     {
+      "path": "/counter-example",
+      "config": "counterExample",
+      "auth": false,
+      "layout": "full"
+    },
+    {
       "path": "/pricing-nested",
       "config": "pricingNested",
       "auth": false,
@@ -348,8 +351,8 @@
       "layout": "full"
     },
     {
-      "path": "/query-params-test",
-      "config": "queryParamsTest",
+      "path": "/triggers-test",
+      "config": "triggersTest",
       "auth": false,
       "layout": "full"
     }

@@ -52,7 +52,7 @@ import { useBuilderStore, restorePreviewData, VIEWPORT_WIDTHS, type ViewportSize
 import { useSduiStore } from '@/store/sdui-store';
 import type { BuilderPage } from './_store';
 import BuilderCanvas from './_canvas';
-import PanelLeft, { PageConfigSlidePanelContent } from './_panel-left';
+import PanelLeft, { PageConfigSlidePanelContent, AuthSettingsSlidePanelContent } from './_panel-left';
 import PanelRight from './_panel-right';
 import { SlidePanel } from './_slide-panel';
 import {
@@ -1016,6 +1016,7 @@ type LeftSlideState =
   | { kind: 'data'; subState: DataTabSlideState }
   | { kind: 'logic'; subState: LogicSlideState }
   | { kind: 'pageConfig' }
+  | { kind: 'authConfig' }
   | null;
 
 function leftSlideTitle(state: LeftSlideState): string {
@@ -1023,6 +1024,7 @@ function leftSlideTitle(state: LeftSlideState): string {
   if (state.kind === 'data') return getDataSlideTitle(state.subState);
   if (state.kind === 'logic') return getLogicSlideTitle(state.subState);
   if (state.kind === 'pageConfig') return 'Page Settings';
+  if (state.kind === 'authConfig') return 'Auth Settings';
   return '';
 }
 
@@ -1193,9 +1195,9 @@ export default function BuilderPage() {
    *
    * When the builder is opened with ?projectId=xxx (from the workspace):
    *   1. Force-save the current state to the backend immediately (don't wait for debounce).
-   *   2. Open http://preview.localhost:3000/?projectId=xxx in a new tab.
-   *      The middleware rewrites preview.localhost/* → /app-preview/* so the SDUI
-   *      app renders in full isolation — no platform routes (like /login) conflict.
+   *   2. Open http://{projectId}.{baseHost}{pageRoute} in a new tab.
+   *      Each project gets its own subdomain origin → localStorage is isolated
+   *      per project automatically. No projectId query param needed.
    *
    * When there is no projectId (builder-dev mode, static config):
    *   Open preview-dev.localhost at the current page route — serves the same
@@ -1225,7 +1227,13 @@ export default function BuilderPage() {
       // active. Browsers expire popup permission after the first await, so any
       // window.open() call that comes after an await silently navigates the
       // current tab (destroying its history) instead of opening a new one.
-      const baseHost = window.location.host.replace(/^preview\./, '');
+      //
+      // URL: {projectId}.{baseHost}{pageRoute}
+      // Each project has its own subdomain origin — localStorage is isolated
+      // without any code-level namespacing.
+      const baseHost = window.location.host
+        .replace(/^builder-dev\./, '')
+        .replace(/^preview\./, '');
       const pageRoute = currentPage?.route ?? '/';
       const previewWin = window.open('about:blank', 'sdui-preview');
 
@@ -1254,7 +1262,7 @@ export default function BuilderPage() {
 
       // Fetch a short-lived preview token so the preview subdomain can call
       // /api/projects/:id/config without the auth cookie (which is bound to
-      // the main domain and not sent by preview.localhost).
+      // the main domain and not sent by the project subdomain).
       let previewToken = '';
       try {
         const tokenRes = await fetch(`/api/projects/${projectId}/preview-token`, {
@@ -1269,12 +1277,13 @@ export default function BuilderPage() {
         // Non-fatal — preview may still work if cookie is present
       }
 
-      // Navigate the already-open window to the final preview URL.
-      // Pass projectId + token as query params — middleware strips them,
-      // sets cookies, and redirects to the clean URL.
-      const params = new URLSearchParams({ projectId });
-      if (previewToken) params.set('token', previewToken);
-      const previewUrl = `${window.location.protocol}//preview.${baseHost}${pageRoute}?${params}`;
+      // Navigate to the project-specific subdomain.
+      // The middleware detects the {projectId}.* subdomain pattern and sets
+      // the preview_project_id cookie automatically — no query param needed.
+      let previewUrl = `${window.location.protocol}//${projectId}.${baseHost}${pageRoute}`;
+      if (previewToken) {
+        previewUrl += `?token=${encodeURIComponent(previewToken)}`;
+      }
       if (previewWin) {
         previewWin.location.href = previewUrl;
       } else {
@@ -1440,6 +1449,7 @@ export default function BuilderPage() {
           logicSlideState={leftSlide?.kind === 'logic' ? leftSlide.subState : null}
           onSetLogicSlide={s => { setLeftSlideWidth(320); setLeftSlide(s ? { kind: 'logic', subState: s } : null); }}
           onOpenPageConfig={() => { setLeftSlideWidth(320); setLeftSlide({ kind: 'pageConfig' }); }}
+          onOpenAuthConfig={() => { setLeftSlideWidth(360); setLeftSlide({ kind: 'authConfig' }); }}
           onWidthChange={setLeftSlideWidth}
         />
 
@@ -1478,6 +1488,9 @@ export default function BuilderPage() {
             )}
             {leftSlide.kind === 'pageConfig' && (
               <PageConfigSlidePanelContent onClose={() => { setLeftSlide(null); setLeftSlideWidth(320); }} />
+            )}
+            {leftSlide.kind === 'authConfig' && (
+              <AuthSettingsSlidePanelContent onClose={() => { setLeftSlide(null); setLeftSlideWidth(320); }} />
             )}
           </SlidePanel>
         )}

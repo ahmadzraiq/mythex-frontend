@@ -9,15 +9,34 @@
  */
 
 import initialData from '@/config/shared-components.json';
-import type { SharedComponentModel, SharedComponentProperty } from '@/config/shared-component-types';
+import type {
+  SharedComponentModel,
+  SharedComponentProperty,
+  ScopedVarDef,
+  ScopedFormulaDef,
+  ScopedWorkflow,
+} from '@/config/shared-component-types';
 
-export type { SharedComponentModel, SharedComponentProperty };
+export type { SharedComponentModel, SharedComponentProperty, ScopedVarDef, ScopedFormulaDef, ScopedWorkflow };
 
 // ── In-memory store ────────────────────────────────────────────────────────────
 
-let _store: Record<string, SharedComponentModel> = {
-  ...(initialData as unknown as Record<string, SharedComponentModel>),
-};
+// Normalise initial data from config so all models have the new optional fields.
+const _initialNormalised: Record<string, SharedComponentModel> = {};
+for (const [id, raw] of Object.entries(initialData as Record<string, Record<string, unknown>>)) {
+  _initialNormalised[id] = {
+    id,
+    name: String((raw as Record<string, unknown>).name ?? 'Unnamed'),
+    folder: (raw as Record<string, unknown>).folder != null ? String((raw as Record<string, unknown>).folder) : undefined,
+    description: (raw as Record<string, unknown>).description != null ? String((raw as Record<string, unknown>).description) : undefined,
+    properties: Array.isArray((raw as Record<string, unknown>).properties) ? ((raw as Record<string, unknown>).properties as SharedComponentProperty[]) : [],
+    variables: ((raw as Record<string, unknown>).variables ?? {}) as Record<string, ScopedVarDef>,
+    formulas: ((raw as Record<string, unknown>).formulas ?? {}) as Record<string, ScopedFormulaDef>,
+    workflows: ((raw as Record<string, unknown>).workflows ?? {}) as Record<string, ScopedWorkflow>,
+    content: ((raw as Record<string, unknown>).content ?? { type: 'Box', props: { className: 'flex flex-col' }, children: [] }) as Record<string, unknown>,
+  };
+}
+let _store: Record<string, SharedComponentModel> = _initialNormalised;
 const _subscribers = new Set<() => void>();
 
 function _notify() {
@@ -46,17 +65,42 @@ export function getSharedComponentList(): SharedComponentModel[] {
 
 // ── Write ─────────────────────────────────────────────────────────────────────
 
+/** Normalises a raw model object so all new optional fields have safe defaults. */
+export function normaliseSharedComponentModel(raw: Record<string, unknown>): SharedComponentModel {
+  return {
+    id: String(raw.id ?? ''),
+    name: String(raw.name ?? 'Unnamed'),
+    folder: raw.folder != null ? String(raw.folder) : undefined,
+    description: raw.description != null ? String(raw.description) : undefined,
+    properties: Array.isArray(raw.properties) ? (raw.properties as SharedComponentProperty[]) : [],
+    variables: (raw.variables ?? {}) as Record<string, ScopedVarDef>,
+    formulas: (raw.formulas ?? {}) as Record<string, ScopedFormulaDef>,
+    workflows: (raw.workflows ?? {}) as Record<string, ScopedWorkflow>,
+    content: (raw.content ?? { type: 'Box', props: { className: 'flex flex-col' }, children: [] }) as Record<string, unknown>,
+  };
+}
+
 /** Creates a new shared component model. Returns the created model. */
 export function createSharedComponent(data: {
   id: string;
   name: string;
+  folder?: string;
+  description?: string;
   properties?: SharedComponentProperty[];
+  variables?: Record<string, ScopedVarDef>;
+  formulas?: Record<string, ScopedFormulaDef>;
+  workflows?: Record<string, ScopedWorkflow>;
   content?: Record<string, unknown>;
 }): SharedComponentModel {
   const model: SharedComponentModel = {
     id: data.id,
     name: data.name,
+    folder: data.folder,
+    description: data.description,
     properties: data.properties ?? [],
+    variables: data.variables ?? {},
+    formulas: data.formulas ?? {},
+    workflows: data.workflows ?? {},
     content: data.content ?? { type: 'Box', props: { className: 'flex flex-col' }, children: [] },
   };
   _store = { ..._store, [model.id]: model };
@@ -84,11 +128,16 @@ export function deleteSharedComponent(id: string): boolean {
 }
 
 /**
- * Replaces the entire in-memory store with `models`.
- * Use to seed the store from localStorage in preview contexts.
+ * Replaces the entire in-memory store with `models`, normalising each entry
+ * so new optional fields (variables, formulas, workflows, folder, description)
+ * have safe defaults even when loading older data.
  */
 export function loadSharedComponents(models: Record<string, unknown>): void {
-  _store = models as Record<string, SharedComponentModel>;
+  const normalised: Record<string, SharedComponentModel> = {};
+  for (const [id, raw] of Object.entries(models)) {
+    normalised[id] = normaliseSharedComponentModel(raw as Record<string, unknown>);
+  }
+  _store = normalised;
   _notify();
 }
 
@@ -104,6 +153,6 @@ export function clearSharedComponents(): void {
  * Resets the store back to the initial data from config/shared-components.json.
  */
 export function resetToConfigSharedComponents(): void {
-  _store = { ...(initialData as unknown as Record<string, SharedComponentModel>) };
+  _store = { ..._initialNormalised };
   _notify();
 }

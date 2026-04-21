@@ -1,5 +1,5 @@
 /**
- * Handler for type: "navigate" - router navigation (path or routeConfig + slug)
+ * Handler for type: "navigate" - router navigation via path (with optional inline query string)
  */
 
 import { setNestedValue } from '../../nested-utils';
@@ -10,32 +10,12 @@ import type { ActionDef, ActionHandlerContext } from './types';
 export const navigateHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
   (ctx) => async (actionDef) => {
     const router = ctx.router;
-    const routes = ctx.routes ?? [];
     const payload = ctx.payload ?? actionDef;
-    const pl = payload as { path?: string | Record<string, unknown>; routeConfig?: string; slug?: unknown };
+    const pl = payload as { path?: string | Record<string, unknown> };
 
     if (!router) return;
 
-    if (pl.routeConfig != null) {
-      const targetRoute = routes.find(
-        (r) => r.config === pl.routeConfig && r.dynamic
-      );
-      let slug: string | undefined;
-      if (pl.slug != null && typeof pl.slug === 'object' && 'var' in pl.slug) {
-        const v = (pl.slug as { var: string | [string, unknown] }).var;
-        const varPath = Array.isArray(v) ? v[0] : v;
-        const resolved = ctx.get(String(varPath), ctx.scope);
-        slug = typeof resolved === 'string' ? resolved : (resolved as { slug?: string })?.slug;
-      } else if (typeof pl.slug === 'string') {
-        slug = pl.slug.includes('{{') ? interpolateUrl(pl.slug, ctx.get, ctx.scope) : pl.slug;
-      } else {
-        const item = ctx.scope?.$item as { slug?: string } | undefined;
-        slug = item?.slug;
-      }
-      if (targetRoute?.path && slug) {
-        router.push(`${targetRoute.path}/${slug}`);
-      }
-    } else if ('path' in pl && pl.path) {
+    if ('path' in pl && pl.path) {
       const fullState = ctx.getFullMergedState();
       const stateWithScope = ctx.scope ? { ...fullState, ...ctx.scope } : fullState;
       const resolvedPath = typeof pl.path === 'object'
@@ -60,7 +40,6 @@ export const navigateHandler: (ctx: ActionHandlerContext) => (actionDef: ActionD
       }
     }
 
-    // Reset variable store paths configured to clear on navigation (e.g. open menus)
     const resetPaths = RESET_ON_NAVIGATE_PATHS;
     if (resetPaths.length > 0) {
       ctx.store.getState().setState((prev) => {

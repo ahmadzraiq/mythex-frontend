@@ -635,7 +635,7 @@
             "id": "resp-s24w-info",
             "props": { "className": "text-gray-400 text-[12px] text-center" },
             "text": {
-              "expr": "'Breakpoint: ' + (globalContext?.browser?.breakpoint || 'desktop') + ' — Step size: ' + (globalContext?.browser?.breakpoint === 'mobile' ? '±1' : globalContext?.browser?.breakpoint === 'tablet' ? '±3' : globalContext?.browser?.breakpoint === 'laptop' ? '±5' : '±10')"
+              "formula": "'Breakpoint: ' + (globalContext?.browser?.breakpoint || 'desktop') + ' — Step size: ' + (globalContext?.browser?.breakpoint === 'mobile' ? '±1' : globalContext?.browser?.breakpoint === 'tablet' ? '±3' : globalContext?.browser?.breakpoint === 'laptop' ? '±5' : '±10')"
             }
           },
           {
@@ -662,7 +662,7 @@
                 "props": { "className": "bg-[#ef4444] text-white rounded-[8px] px-[20px] py-[10px] flex flex-row items-center justify-center cursor-pointer" },
                 "actions": [{ "action": "waRespDecrement" }],
                 "children": [
-                  { "type": "Text", "props": { "className": "text-white" }, "text": { "expr": "'- ' + (globalContext?.browser?.breakpoint === 'mobile' ? '1' : globalContext?.browser?.breakpoint === 'tablet' ? '3' : globalContext?.browser?.breakpoint === 'laptop' ? '5' : '10')" } }
+                  { "type": "Text", "props": { "className": "text-white" }, "text": { "formula": "'- ' + (globalContext?.browser?.breakpoint === 'mobile' ? '1' : globalContext?.browser?.breakpoint === 'tablet' ? '3' : globalContext?.browser?.breakpoint === 'laptop' ? '5' : '10')" } }
                 ]
               },
               {
@@ -680,7 +680,7 @@
                 "props": { "className": "bg-[#22c55e] text-white rounded-[8px] px-[20px] py-[10px] flex flex-row items-center justify-center cursor-pointer" },
                 "actions": [{ "action": "waRespIncrement" }],
                 "children": [
-                  { "type": "Text", "props": { "className": "text-white" }, "text": { "expr": "'+ ' + (globalContext?.browser?.breakpoint === 'mobile' ? '1' : globalContext?.browser?.breakpoint === 'tablet' ? '3' : globalContext?.browser?.breakpoint === 'laptop' ? '5' : '10')" } }
+                  { "type": "Text", "props": { "className": "text-white" }, "text": { "formula": "'+ ' + (globalContext?.browser?.breakpoint === 'mobile' ? '1' : globalContext?.browser?.breakpoint === 'tablet' ? '3' : globalContext?.browser?.breakpoint === 'laptop' ? '5' : '10')" } }
                 ]
               }
             ]
@@ -728,7 +728,7 @@
                 "id": "resp-s24s-btn-text",
                 "props": { "className": "text-white text-[15px] font-semibold text-center" },
                 "text": {
-                  "expr": "(globalContext?.browser?.breakpoint === 'mobile' || globalContext?.browser?.breakpoint === 'tablet') ? 'Tap to Subtract (−1)' : 'Click to Add (+1)'"
+                  "formula": "(globalContext?.browser?.breakpoint === 'mobile' || globalContext?.browser?.breakpoint === 'tablet') ? 'Tap to Subtract (−1)' : 'Click to Add (+1)'"
                 }
               }
             ]
@@ -738,7 +738,7 @@
             "id": "resp-s24s-mode",
             "props": { "className": "text-[12px] text-center" },
             "text": {
-              "expr": "'Mode: ' + ((globalContext?.browser?.breakpoint === 'mobile' || globalContext?.browser?.breakpoint === 'tablet') ? 'DECREMENT ▼' : 'INCREMENT ▲') + '  (' + (globalContext?.browser?.breakpoint || 'desktop') + ')'"
+              "formula": "'Mode: ' + ((globalContext?.browser?.breakpoint === 'mobile' || globalContext?.browser?.breakpoint === 'tablet') ? 'DECREMENT ▼' : 'INCREMENT ▲') + '  (' + (globalContext?.browser?.breakpoint || 'desktop') + ')'"
             },
             "responsive": {
               "tablet": { "styles": { "color": "#fca5a5" } }
@@ -867,7 +867,7 @@
             "id": "resp-s27-t1",
             "props": { "className": "text-[20px] font-bold text-center text-white" },
             "text": {
-              "expr": "globalContext?.browser?.breakpoint === 'mobile' ? 'Mobile View' : globalContext?.browser?.breakpoint === 'tablet' ? 'Tablet View' : globalContext?.browser?.breakpoint === 'laptop' ? 'Laptop View' : 'Desktop View'"
+              "formula": "globalContext?.browser?.breakpoint === 'mobile' ? 'Mobile View' : globalContext?.browser?.breakpoint === 'tablet' ? 'Tablet View' : globalContext?.browser?.breakpoint === 'laptop' ? 'Laptop View' : 'Desktop View'"
             }
           },
           {
@@ -875,7 +875,7 @@
             "id": "resp-s27-t2",
             "props": { "className": "text-[13px] text-gray-400 text-center mt-[8px]" },
             "text": {
-              "expr": "globalContext?.browser?.breakpoint === 'mobile' ? 'Showing compact layout for phones' : globalContext?.browser?.breakpoint === 'tablet' ? 'Optimized for tablets and iPads' : 'Full experience on wide screens'"
+              "formula": "globalContext?.browser?.breakpoint === 'mobile' ? 'Showing compact layout for phones' : globalContext?.browser?.breakpoint === 'tablet' ? 'Optimized for tablets and iPads' : 'Full experience on wide screens'"
             }
           }
         ]
@@ -939,7 +939,7 @@
             "id": "resp-s29-info",
             "props": { "className": "text-[12px] text-gray-500 dark:text-gray-400 italic" },
             "text": {
-              "expr": "'Showing ' + (globalContext?.browser?.breakpoint === 'mobile' ? '2' : globalContext?.browser?.breakpoint === 'tablet' ? '4' : '6') + ' items on ' + (globalContext?.browser?.breakpoint || 'desktop')"
+              "formula": "'Showing ' + (globalContext?.browser?.breakpoint === 'mobile' ? '2' : globalContext?.browser?.breakpoint === 'tablet' ? '4' : '6') + ' items on ' + (globalContext?.browser?.breakpoint || 'desktop')"
             }
           },
           {
@@ -954,7 +954,7 @@
               {
                 "type": "Box",
                 "map": {
-                  "expr": "(variables?.['resp0001-0000-0000-0000-000000000001'] || []).slice(0, globalContext?.browser?.breakpoint === 'mobile' ? 2 : globalContext?.browser?.breakpoint === 'tablet' ? 4 : 6)"
+                  "formula": "(variables?.['resp0001-0000-0000-0000-000000000001'] || []).slice(0, globalContext?.browser?.breakpoint === 'mobile' ? 2 : globalContext?.browser?.breakpoint === 'tablet' ? 4 : 6)"
                 },
                 "key": "context.item.data.id",
                 "props": { "className": "contents" },
@@ -1176,7 +1176,7 @@
                       {
                         "type": "Text",
                         "props": { "className": "text-[11px] text-gray-400 dark:text-gray-500" },
-                        "text": { "expr": "'ID: ' + context?.item?.data?.id" }
+                        "text": { "formula": "'ID: ' + context?.item?.data?.id" }
                       }
                     ]
                   }

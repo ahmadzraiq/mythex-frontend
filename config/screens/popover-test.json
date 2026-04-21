@@ -4250,7 +4250,7 @@
                                   "className": "text-[14px] font-semibold text-gray-800 dark:text-gray-200"
                                 },
                                 "text": {
-                                  "expr": "['January','February','March','April','May','June','July','August','September','October','November','December'][variables['dp-test-0000-0000-0000-000000000002']]+' '+variables['dp-test-0000-0000-0000-000000000001']"
+                                  "formula": "['January','February','March','April','May','June','July','August','September','October','November','December'][variables['dp-test-0000-0000-0000-000000000002']]+' '+variables['dp-test-0000-0000-0000-000000000001']"
                                 }
                               },
                               {
@@ -4421,7 +4421,7 @@
                   "className": "text-[12px] text-gray-500 dark:text-gray-400"
                 },
                 "text": {
-                  "expr": "'Selected: '+(variables['dp-test-0000-0000-0000-000000000003']||'(none)')"
+                  "formula": "'Selected: '+(variables['dp-test-0000-0000-0000-000000000003']||'(none)')"
                 }
               }
             ]
@@ -4603,7 +4603,7 @@
                                       "className": "text-[14px] font-semibold text-gray-800 dark:text-gray-200"
                                     },
                                     "text": {
-                                      "expr": "['January','February','March','April','May','June','July','August','September','October','November','December'][variables['dp-test-0000-0000-0000-000000000012']]+' '+variables['dp-test-0000-0000-0000-000000000011']"
+                                      "formula": "['January','February','March','April','May','June','July','August','September','October','November','December'][variables['dp-test-0000-0000-0000-000000000012']]+' '+variables['dp-test-0000-0000-0000-000000000011']"
                                     }
                                   },
                                   {
@@ -4776,7 +4776,7 @@
                   "className": "text-[12px] text-gray-500 dark:text-gray-400"
                 },
                 "text": {
-                  "expr": "'Selected: '+(variables['dp-test-0000-0000-0000-000000000013']||'(none)')"
+                  "formula": "'Selected: '+(variables['dp-test-0000-0000-0000-000000000013']||'(none)')"
                 }
               }
             ]
@@ -4906,7 +4906,7 @@
                                           "className": "text-[13px] text-gray-700 dark:text-gray-300 text-center"
                                         },
                                         "text": {
-                                          "expr": "String(context?.item?.data?.value ?? '').padStart(2,'0')"
+                                          "formula": "String(context?.item?.data?.value ?? '').padStart(2,'0')"
                                         }
                                       }
                                     ]
@@ -4962,7 +4962,7 @@
                                           "className": "text-[13px] text-gray-700 dark:text-gray-300 text-center"
                                         },
                                         "text": {
-                                          "expr": "String(context?.item?.data?.value ?? '').padStart(2,'0')"
+                                          "formula": "String(context?.item?.data?.value ?? '').padStart(2,'0')"
                                         }
                                       }
                                     ]
@@ -5011,7 +5011,7 @@
                   "className": "text-[12px] text-gray-500 dark:text-gray-400"
                 },
                 "text": {
-                  "expr": "'Selected: '+String(variables['dp-test-0000-0000-0000-000000000021']).padStart(2,'0')+':'+String(variables['dp-test-0000-0000-0000-000000000022']).padStart(2,'0')"
+                  "formula": "'Selected: '+String(variables['dp-test-0000-0000-0000-000000000021']).padStart(2,'0')+':'+String(variables['dp-test-0000-0000-0000-000000000022']).padStart(2,'0')"
                 }
               }
             ]
@@ -5129,7 +5129,7 @@
                                       "className": "text-[14px] font-semibold text-gray-800 dark:text-gray-200"
                                     },
                                     "text": {
-                                      "expr": "['January','February','March','April','May','June','July','August','September','October','November','December'][variables['dp-test-0000-0000-0000-000000000032']]+' '+variables['dp-test-0000-0000-0000-000000000031']"
+                                      "formula": "['January','February','March','April','May','June','July','August','September','October','November','December'][variables['dp-test-0000-0000-0000-000000000032']]+' '+variables['dp-test-0000-0000-0000-000000000031']"
                                     }
                                   },
                                   {
@@ -5334,7 +5334,7 @@
                                           "className": "text-[14px] font-medium text-gray-700 dark:text-gray-200"
                                         },
                                         "text": {
-                                          "expr": "String(variables['dp-test-0000-0000-0000-000000000035']).padStart(2,'0')"
+                                          "formula": "String(variables['dp-test-0000-0000-0000-000000000035']).padStart(2,'0')"
                                         }
                                       }
                                     ]
@@ -5371,7 +5371,7 @@
                                           "className": "text-[14px] font-medium text-gray-700 dark:text-gray-200"
                                         },
                                         "text": {
-                                          "expr": "String(variables['dp-test-0000-0000-0000-000000000036']).padStart(2,'0')"
+                                          "formula": "String(variables['dp-test-0000-0000-0000-000000000036']).padStart(2,'0')"
                                         }
                                       }
                                     ]
@@ -5412,7 +5412,7 @@
                   "className": "text-[12px] text-gray-500 dark:text-gray-400"
                 },
                 "text": {
-                  "expr": "'Selected: '+(variables['dp-test-0000-0000-0000-000000000033']||'(none)')+' '+String(variables['dp-test-0000-0000-0000-000000000035']).padStart(2,'0')+':'+String(variables['dp-test-0000-0000-0000-000000000036']).padStart(2,'0')"
+                  "formula": "'Selected: '+(variables['dp-test-0000-0000-0000-000000000033']||'(none)')+' '+String(variables['dp-test-0000-0000-0000-000000000035']).padStart(2,'0')+':'+String(variables['dp-test-0000-0000-0000-000000000036']).padStart(2,'0')"
                 }
               }
             ]
@@ -5551,7 +5551,7 @@
                                       "className": "text-[14px] font-semibold text-gray-800 dark:text-gray-200"
                                     },
                                     "text": {
-                                      "expr": "['January','February','March','April','May','June','July','August','September','October','November','December'][variables['dp-test-0000-0000-0000-000000000042']]+' '+variables['dp-test-0000-0000-0000-000000000041']"
+                                      "formula": "['January','February','March','April','May','June','July','August','September','October','November','December'][variables['dp-test-0000-0000-0000-000000000042']]+' '+variables['dp-test-0000-0000-0000-000000000041']"
                                     }
                                   },
                                   {
@@ -5745,7 +5745,7 @@
                                       "className": "text-[14px] font-semibold text-gray-800 dark:text-gray-200"
                                     },
                                     "text": {
-                                      "expr": "['January','February','March','April','May','June','July','August','September','October','November','December'][(variables['dp-test-0000-0000-0000-000000000042']+1)%12]+' '+(variables['dp-test-0000-0000-0000-000000000042']===11?variables['dp-test-0000-0000-0000-000000000041']+1:variables['dp-test-0000-0000-0000-000000000041'])"
+                                      "formula": "['January','February','March','April','May','June','July','August','September','October','November','December'][(variables['dp-test-0000-0000-0000-000000000042']+1)%12]+' '+(variables['dp-test-0000-0000-0000-000000000042']===11?variables['dp-test-0000-0000-0000-000000000041']+1:variables['dp-test-0000-0000-0000-000000000041'])"
                                     }
                                   },
                                   {
@@ -5941,7 +5941,7 @@
                               "className": "text-[12px] text-gray-500 dark:text-gray-400"
                             },
                             "text": {
-                              "expr": "(variables['dp-test-0000-0000-0000-000000000043']||'?')+' → '+(variables['dp-test-0000-0000-0000-000000000044']||'?')"
+                              "formula": "(variables['dp-test-0000-0000-0000-000000000043']||'?')+' → '+(variables['dp-test-0000-0000-0000-000000000044']||'?')"
                             }
                           },
                           {
@@ -5976,7 +5976,7 @@
                   "className": "text-[12px] text-gray-500 dark:text-gray-400"
                 },
                 "text": {
-                  "expr": "'Range: '+(variables['dp-test-0000-0000-0000-000000000043']||'?')+' → '+(variables['dp-test-0000-0000-0000-000000000044']||'?')"
+                  "formula": "'Range: '+(variables['dp-test-0000-0000-0000-000000000043']||'?')+' → '+(variables['dp-test-0000-0000-0000-000000000044']||'?')"
                 }
               }
             ]
@@ -6049,7 +6049,7 @@
                               "className": "text-[14px] font-semibold text-gray-800 dark:text-gray-200"
                             },
                             "text": {
-                              "expr": "['January','February','March','April','May','June','July','August','September','October','November','December'][variables['dp-test-0000-0000-0000-000000000052']]+' '+variables['dp-test-0000-0000-0000-000000000051']"
+                              "formula": "['January','February','March','April','May','June','July','August','September','October','November','December'][variables['dp-test-0000-0000-0000-000000000052']]+' '+variables['dp-test-0000-0000-0000-000000000051']"
                             }
                           },
                           {
@@ -6218,7 +6218,7 @@
                   "className": "text-[12px] text-gray-500 dark:text-gray-400"
                 },
                 "text": {
-                  "expr": "'Selected: '+(variables['dp-test-0000-0000-0000-000000000053']||'(none)')"
+                  "formula": "'Selected: '+(variables['dp-test-0000-0000-0000-000000000053']||'(none)')"
                 }
               }
             ]
